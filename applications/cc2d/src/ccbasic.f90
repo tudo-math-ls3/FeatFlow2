@@ -293,23 +293,13 @@ module ccbasic
 
 !</typeblock>
 
+!<typeblock>
 
-!<typeblock description="Application-specific type block for the Nav.St. problem">
-
-  type t_problem
+  ! This type block encapsules all physical constants and configuration
+  ! parameters for the primal equation. This includes e.g. the type of the equation,
+  ! viscosity parameter etc.
+  type t_problem_physics
   
-    ! Output level during the initialisation phase.
-    integer :: MSHOW_Initialisation
-  
-    ! Output level of the application.
-    integer :: MT_OutputLevel
-  
-    ! Minimum refinement level; = Level i in RlevelInfo
-    integer :: NLMIN
-    
-    ! Maximum refinement level
-    integer :: NLMAX
-    
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
     
@@ -335,6 +325,30 @@ module ccbasic
     ! Epsilon regularisation for the viscosity model
     real(DP) :: dviscoEps
 
+  end type
+
+!</typeblock>
+
+
+!<typeblock description="Application-specific type block for the Nav.St. problem">
+
+  type t_problem
+  
+    ! Output level during the initialisation phase.
+    integer :: MSHOW_Initialisation
+  
+    ! Output level of the application.
+    integer :: MT_OutputLevel
+  
+    ! Minimum refinement level; = Level i in RlevelInfo
+    integer :: NLMIN
+    
+    ! Maximum refinement level
+    integer :: NLMAX
+    
+    ! A block containing the physics of the problem.
+    type(t_problem_physics) :: rphysics
+
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
 
@@ -359,11 +373,11 @@ module ccbasic
     ! =0: stationary simulation.
     ! =1: time-dependent simulation with explicit time stepping configured 
     !     by rtimedependence
-    integer                               :: itimedependence
+    integer :: itimedependence
     
     ! A parameter block for everything that controls the time dependence.
     ! Only valid if itimedependence=1!
-    type(t_problem_explTimeStepping)      :: rtimedependence
+    type(t_problem_explTimeStepping) :: rtimedependence
     
     ! A configuration block for the stabilisation of the convection.
     type(t_problem_stabilisation) :: rstabilisation
@@ -371,14 +385,14 @@ module ccbasic
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
     ! callback routines.
-    type(t_collection)                    :: rcollection
+    type(t_collection) :: rcollection
     
     ! A param list that saves all parameters from the DAT/INI file(s).
-    type(t_parlist)                       :: rparamList
+    type(t_parlist) :: rparamList
 
     ! A statistics structure gathering statistical data about the
     ! simulation.
-    type(t_cc_statistics)                 :: rstatistics
+    type(t_cc_statistics) :: rstatistics
 
   end type
 

@@ -657,7 +657,7 @@ contains
 
 !<inputoutput>
   ! Problem structure.
-  type(t_problem), intent(inout) :: rproblem
+  type(t_problem), intent(inout), target :: rproblem
 !</inputoutput>
 
 !</subroutine>
@@ -687,7 +687,7 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'ibodyForcesBdComponent', ibodyForcesBdComponent, 2)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'dbdForcesCoeff1', dbdForcesCoeff1, rproblem%dnu)
+        'dbdForcesCoeff1', dbdForcesCoeff1, rproblem%rphysics%dnu)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'dbdForcesCoeff2', dbdForcesCoeff2, 0.1_DP * 0.2_DP**2)
     
@@ -742,32 +742,17 @@ contains
           ! Use the deformation tensor formulation for the forces if
           ! we are in the deformation tensor formulation
           cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
-          if (rproblem%isubequation .eq. 1) &
+          if (rproblem%rphysics%isubequation .eq. 1) &
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
           
-        ! Prepare a collection structure in the form necessary for
-        ! the computation of a nonconstant viscosity<
-        !
-        ! IquickAccess(1) = cviscoModel
-        rcollection%IquickAccess(1) = rproblem%cviscoModel
-        
-        ! IquickAccess(2) = type of the tensor
-        rcollection%IquickAccess(2) = rproblem%isubequation
-        
-        ! DquickAccess(1) = nu
-        rcollection%DquickAccess(1) = rproblem%dnu
-        
-        ! DquickAccess(2) = dviscoexponent
-        ! DquickAccess(3) = dviscoEps
-        rcollection%DquickAccess(2) = rproblem%dviscoexponent
-        rcollection%DquickAccess(3) = rproblem%dviscoEps
-        
-        ! The first quick access array specifies the evaluation point
-        ! of the velocity -- if it exists.
-        rcollection%p_rvectorQuickAccess1 => rsolution
+        ! Prepare the collection. The "next" collection points to the user defined 
+        ! collection.
+        rcollection%p_rnextCollection => rproblem%rcollection
+        call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
+            rcollection,rsolution)
           
-        if (rproblem%cviscoModel .eq. 0) then
+        if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_line (rsolution,rregion,Dforces,CUB_G1_1D,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else
@@ -802,32 +787,20 @@ contains
           ! Use the deformation tensor formulation for the forces if
           ! we are in the deformation tensor formulation
           cformulation = PPNAVST_GRADIENTTENSOR_SIMPLE
-          if (rproblem%isubequation .eq. 1) &
+          if (rproblem%rphysics%isubequation .eq. 1) &
             cformulation = PPNAVST_DEFORMATIONTENSOR
         end select
           
         ! Prepare a collection structure in the form necessary for
-        ! the computation of a nonconstant viscosity<
+        ! the computation of a nonconstant viscosity.
         !
-        ! IquickAccess(1) = cviscoModel
-        rcollection%IquickAccess(1) = rproblem%cviscoModel
-        
-        ! IquickAccess(2) = type of the tensor
-        rcollection%IquickAccess(2) = rproblem%isubequation
-        
-        ! DquickAccess(1) = nu
-        rcollection%DquickAccess(1) = rproblem%dnu
-        
-        ! DquickAccess(2) = dviscoexponent
-        ! DquickAccess(3) = dviscoEps
-        rcollection%DquickAccess(2) = rproblem%dviscoexponent
-        rcollection%DquickAccess(3) = rproblem%dviscoEps
-        
-        ! The first quick access array specifies the evaluation point
-        ! of the velocity -- if it exists.
-        rcollection%p_rvectorQuickAccess1 => rsolution
+        ! Prepare the collection. The "next" collection points to the user defined 
+        ! collection.
+        rcollection%p_rnextCollection => rproblem%rcollection
+        call ccmva_prepareViscoAssembly (rproblem,rproblem%rphysics,&
+            rcollection,rsolution)
           
-        if (rproblem%cviscoModel .eq. 0) then
+        if (rproblem%rphysics%cviscoModel .eq. 0) then
           call ppns2D_bdforces_vol(rsolution,rcharfct,Dforces,&
               dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
         else

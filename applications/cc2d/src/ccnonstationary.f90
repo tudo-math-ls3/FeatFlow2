@@ -409,7 +409,8 @@ contains
     
     rnonlinearCCMatrix%dalpha = -1.0_DP
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
-    rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * real(1-rproblem%iequation,DP)
+    rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
+        real(1-rproblem%rphysics%iequation,DP)
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
     
@@ -450,7 +451,8 @@ contains
     
     rnonlinearIterationTmp%dalpha = 1.0_DP
     rnonlinearIterationTmp%dtheta = rtimestepping%dweightMatrixLHS
-    rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * real(1-rproblem%iequation,DP)
+    rnonlinearIterationTmp%dgamma = rtimestepping%dweightMatrixLHS * &
+        real(1-rproblem%rphysics%iequation,DP)
     rnonlinearIterationTmp%deta   = 1.0_DP
     rnonlinearIterationTmp%dtau   = 1.0_DP
 

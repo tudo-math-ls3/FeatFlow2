@@ -1003,7 +1003,7 @@ contains
     ! above. It directly sets up the Laplace matrix.
     ! If it is necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
-    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%dnu)
+    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%rphysics%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)
@@ -1073,7 +1073,7 @@ contains
       !
       ! Set up the jump stabilisation structure.
       ! There is not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rproblem%dnu
+      rjumpStabil%dnu = rproblem%rphysics%dnu
       
       ! Set stabilisation parameter
       rjumpStabil%dgamma = rproblem%rstabilisation%dupsam

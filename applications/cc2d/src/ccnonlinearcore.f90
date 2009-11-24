@@ -493,7 +493,7 @@ contains
 
   !<input>
     ! Global problem structure.
-    type(t_problem), intent(in) :: rproblem
+    type(t_problem), intent(in), target :: rproblem
     
     ! Discretisation of the level where the matrix is to be assembled.
     type(t_blockDiscretisation), intent(in), target :: rdiscretisation
@@ -517,15 +517,8 @@ contains
       ! with basic global information.
       !
       ! 1.) Model, stabilisation
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%isubequation = rproblem%isubequation
-      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%ccubEOJ = rproblem%rstabilisation%ccubEOJ
-      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
+      rnonlinearCCMatrix%p_rstabilisation => rproblem%rstabilisation
+      rnonlinearCCMatrix%p_rphysics => rproblem%rphysics
       
       ! 2.) Pointers to global precalculated matrices.
       rnonlinearCCMatrix%p_rdiscretisation => rdiscretisation

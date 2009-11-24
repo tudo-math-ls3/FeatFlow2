@@ -185,43 +185,12 @@ module ccmatvecassembly
     ! = 0.0 deactivates the Newton part.
     real(DP) :: dnewton = 0.0_DP
 
-    ! Type of the tensor in the Stokes matrix.
-    ! =0: Use gradient tensor.
-    ! =1: Use deformation tensor
-    integer :: isubequation = 0
+    ! A structure referring to the physics of the problem.
+    type(t_problem_physics), pointer :: p_rphysics => null()
 
-    ! Model for the viscosity.
-    ! =0: Constant viscosity.
-    ! =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
-    integer :: cviscoModel = 0
+    ! A pointer referring to the stabilisation to use
+    type(t_problem_stabilisation), pointer :: p_rstabilisation => null()
 
-    ! STABILISATION: Parameter that defines how to set up the nonlinearity and 
-    ! whether to use some kind of stabilisation. One of the CCMASM_STAB_xxxx 
-    ! constants. Standard is CCMASM_STAB_STREAMLINEDIFF.
-    integer :: iupwind = CCMASM_STAB_STREAMLINEDIFF
-    
-    ! STABILISATION: Viscosity parameter. Used for stabilisation schemes when 
-    ! a nonlinearity is set up.
-    real(DP) :: dnu = 0.0_DP
-    
-    ! Exponent parameter for the viscosity model
-    real(DP) :: dviscoexponent = 2.0_DP
-
-    ! Epsilon regularisation for the viscosity model
-    real(DP) :: dviscoEps = 0.01_DP
-
-    ! STABILISATION: Stabilisation parameter for streamline diffusion, upwind and 
-    ! edge-oriented stabilisation. If iupwind=CCMASM_STAB_STREAMLINEDIFF, a value of 
-    ! 0.0 deactivates any stabilisation.
-    real(DP) :: dupsam = 0.0_DP
-    
-    ! STABILISATION: Cubature formula for EOJ stabilisation
-    integer(I32) :: ccubEOJ = CUB_G4_1D
-    
-    ! STABILISATION: Specifies how the local H should be calculated for
-    ! streamline diffusion.
-    integer :: clocalH
-    
     ! MATRIX RESTRICTION: Parameter to activate matrix restriction.
     ! Can be used to generate parts of the matrices on coarse grids where the
     ! aspect ratio of the cells is large. Only applicable for $\tilde Q_1$
@@ -260,6 +229,73 @@ module ccmatvecassembly
 
 contains
   
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine ccmva_prepareViscoAssembly (rproblem,rphysics,rcollection,rvelocityvector)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! Based on the the input parameters, this routine prepares a collection 
+  ! structure rcollection for being used with ffunctionViscoModel.
+  ! The structure realises the following setting:
+  !
+  ! IquickAccess(1) = cviscoModel
+  ! IquickAccess(2) = type of the tensor
+  ! DquickAccess(1) = nu
+  ! DquickAccess(2) = dviscoexponent
+  ! DquickAccess(3) = dviscoEps
+  ! p_rvectorQuickAccess1 => evaluation velocity vector
+  !
+!</description>
+  
+!<input>
+  ! Global problem structure.
+  type(t_problem), intent(in), target :: rproblem
+  
+  ! Physics of the problem
+  type(t_problem_physics), intent(in), target :: rphysics
+  
+  ! OPTIONAL: The current velocity/pressure vector. May not be present.
+  type(t_vectorBlock), intent(in), target, optional :: rvelocityvector
+!</input>
+
+!<inputoutput>
+  ! Collection structure to be prepared.
+  type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+  
+!</subroutine>
+
+    ! IquickAccess(1) = cviscoModel
+    rcollection%IquickAccess(1) = rphysics%cviscoModel
+    
+    ! IquickAccess(2) = type of the tensor
+    rcollection%IquickAccess(2) = rphysics%isubequation
+    
+    ! DquickAccess(1) = nu
+    rcollection%DquickAccess(1) = rphysics%dnu
+    
+    ! DquickAccess(2) = dviscoexponent
+    ! DquickAccess(3) = dviscoEps
+    rcollection%DquickAccess(2) = rphysics%dviscoexponent
+    rcollection%DquickAccess(3) = rphysics%dviscoEps
+    
+    ! The first quick access array specifies the evaluation point
+    ! of the velocity -- if it exists.
+    nullify(rcollection%p_rvectorQuickAccess1)
+    if (present(rvelocityvector)) &
+        rcollection%p_rvectorQuickAccess1 => rvelocityvector
+
+  end subroutine
+    
 ! *****************************************************************
 
 !<subroutine>
@@ -675,7 +711,7 @@ contains
         ! Should we assemble Newton or the deformation tensor? 
         ! If yes, we have a full-tensor matrix.
         bfulltensor = (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
-                      (rnonlinearCCMatrix%isubequation .ne. 0)
+                      (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0)
       end if
     
       ! Ask the problem structure to give us the discretisation structure
@@ -959,7 +995,7 @@ contains
       ! If the submatrices A12 and A21 exist, fill them with zero.
       ! If they do not exist, we do not have to do anything.
       if ((rnonlinearCCMatrix%dnewton .ne. 0.0_DP) .or. &
-          (rnonlinearCCMatrix%isubequation .ne. 0)) then
+          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0)) then
         rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
         rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
       else
@@ -978,8 +1014,8 @@ contains
         ! Plug in the Stokes matrix in case of the gradient tensor.
         ! In case of the deformation tensor ir nonconstant viscosity, 
         ! that is done during the assembly of the nonlinearity.
-        if ((rnonlinearCCMatrix%isubequation .eq. 0) .and. &
-            (rnonlinearCCMatrix%cviscoModel .eq. 0)) then
+        if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
+            (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
@@ -999,8 +1035,8 @@ contains
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
       if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
-          (rnonlinearCCMatrix%isubequation .ne. 0) .or. &
-          (rnonlinearCCMatrix%cviscoModel .ne. 0)) then
+          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
+          (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
         if (.not. present(rvelocityvector)) then
           call output_line ('Velocity vector not present!', &
@@ -1008,19 +1044,19 @@ contains
           stop
         end if
       
-        select case (rnonlinearCCMatrix%iupwind)
+        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
           ! Streamline diffusion.
 
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%dupsam
+          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -1039,12 +1075,12 @@ contains
 
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
           ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%cviscoModel .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             rstreamlineDiffusion2%bconstnu = .false.
             
             ! Assemble at least the Stokes matrix.
@@ -1052,36 +1088,19 @@ contains
             ! may be changed later.
             rstreamlineDiffusion2%dbeta = 1.0_DP
             
-            ! IquickAccess(1) = cviscoModel
-            rcollection%IquickAccess(1) = rnonlinearCCMatrix%cviscoModel
-            
-            ! IquickAccess(2) = type of the tensor
-            rcollection%IquickAccess(2) = rnonlinearCCMatrix%isubequation
-            
-            ! DquickAccess(1) = nu
-            rcollection%DquickAccess(1) = rnonlinearCCMatrix%dnu
-            
-            ! DquickAccess(2) = dviscoexponent
-            ! DquickAccess(3) = dviscoEps
-            rcollection%DquickAccess(2) = rnonlinearCCMatrix%dviscoexponent
-            rcollection%DquickAccess(3) = rnonlinearCCMatrix%dviscoEps
-            
-            ! The first quick access array specifies the evaluation point
-            ! of the velocity -- if it exists.
-            nullify(rcollection%p_rvectorQuickAccess1)
-            if (present(rvelocityvector)) &
-                rcollection%p_rvectorQuickAccess1 => rvelocityvector
-                
-            ! The "next" collection points to the user defined collection.
+            ! Prepare the collection. The "next" collection points to the user defined 
+            ! collection.
             rcollection%p_rnextCollection => rproblem%rcollection
+            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
+                rcollection,rvelocityVector)
             
           end if
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%dupsam
+          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
@@ -1090,7 +1109,7 @@ contains
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
@@ -1108,10 +1127,10 @@ contains
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rupwind%dnu = rnonlinearCCMatrix%dnu
+          rupwind%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rupwind%dupsam = rnonlinearCCMatrix%dupsam
+          rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
 
           ! Matrix weight
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
@@ -1143,13 +1162,13 @@ contains
           ! Set up the SD structure for the creation of the defect.
 
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -1169,13 +1188,13 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -1193,9 +1212,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -1219,13 +1238,13 @@ contains
           ! Set up the SD structure for the creation of the defect.
 
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -1258,9 +1277,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -1284,12 +1303,12 @@ contains
           ! Set up the SD structure for the creation of the defect.
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
 
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
           ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%cviscoModel .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             rstreamlineDiffusion2%bconstnu = .false.
             
             ! Assemble at least the Stokes matrix.
@@ -1297,28 +1316,11 @@ contains
             ! may be changed later.
             rstreamlineDiffusion2%dbeta = 1.0_DP
 
-            ! IquickAccess(1) = cviscoModel
-            rcollection%IquickAccess(1) = rnonlinearCCMatrix%cviscoModel
-            
-            ! IquickAccess(2) = type of the tensor
-            rcollection%IquickAccess(2) = rnonlinearCCMatrix%isubequation
-            
-            ! DquickAccess(1) = nu
-            rcollection%DquickAccess(1) = rnonlinearCCMatrix%dnu
-            
-            ! DquickAccess(2) = dviscoexponent
-            ! DquickAccess(3) = dviscoEps
-            rcollection%DquickAccess(2) = rnonlinearCCMatrix%dviscoexponent
-            rcollection%DquickAccess(3) = rnonlinearCCMatrix%dviscoEps
-            
-            ! The first quick access array specifies the evaluation point
-            ! of the velocity -- if it exists.
-            nullify(rcollection%p_rvectorQuickAccess1)
-            if (present(rvelocityvector)) &
-                rcollection%p_rvectorQuickAccess1 => rvelocityvector
-            
-            ! The "next" collection points to the user defined collection.
+            ! Prepare the collection. The "next" collection points to the user defined 
+            ! collection.
             rcollection%p_rnextCollection => rproblem%rcollection
+            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
+                rcollection,rvelocityVector)
 
           end if
           
@@ -1332,7 +1334,7 @@ contains
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
@@ -1349,13 +1351,13 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -1373,9 +1375,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -1405,22 +1407,22 @@ contains
       
         ! That is the Stokes-case. Jump stabilisation is possible...
       
-        select case (rnonlinearCCMatrix%iupwind)
+        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_EDGEORIENTED,CCMASM_STAB_EDGEORIENTED2)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -1438,9 +1440,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -1463,10 +1465,10 @@ contains
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1489,9 +1491,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -1901,8 +1903,8 @@ contains
       
         ! In case of the gradient tensor, we can directly substract
         ! the Stokes matrix.
-        if ((rnonlinearCCMatrix%isubequation .eq. 0) .and. &
-            (rnonlinearCCMatrix%cviscoModel .eq. 0)) then
+        if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
+            (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
       
           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
@@ -1922,21 +1924,21 @@ contains
       ! ---------------------------------------------------
       ! That was easy -- the adventure begins now... The nonlinearity!
       if ((rnonlinearCCMatrix%dgamma .ne. 0.0_DP) .or. &
-          (rnonlinearCCMatrix%isubequation .ne. 0) .or. &
-          (rnonlinearCCMatrix%cviscoModel .ne. 0)) then
+          (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) .or. &
+          (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0)) then
       
         ! Type of stablilisation?
-        select case (rnonlinearCCMatrix%iupwind)
+        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_STREAMLINEDIFF)
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%dupsam
+          rstreamlineDiffusion%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -1960,12 +1962,12 @@ contains
                   
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
           ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%cviscoModel .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             rstreamlineDiffusion2%bconstnu = .false.
             
             ! Assemble at least the Stokes matrix.
@@ -1973,24 +1975,11 @@ contains
             ! may be changed later.
             rstreamlineDiffusion2%dbeta = 1.0_DP
 
-            ! IquickAccess(1) = cviscoModel
-            rcollection%IquickAccess(1) = rnonlinearCCMatrix%cviscoModel
-            
-            ! IquickAccess(2) = type of the tensor
-            rcollection%IquickAccess(2) = rnonlinearCCMatrix%isubequation
-
-            ! DquickAccess(1) = nu
-            rcollection%DquickAccess(1) = rnonlinearCCMatrix%dnu
-            
-            ! DquickAccess(2) = dviscoexponent
-            ! DquickAccess(3) = dviscoEps
-            rcollection%DquickAccess(2) = rnonlinearCCMatrix%dviscoexponent
-            rcollection%DquickAccess(3) = rnonlinearCCMatrix%dviscoEps
-            
-            ! The first quick access array specifies the evaluation point
-            ! of the velocity -- if it exists.
-            nullify(rcollection%p_rvectorQuickAccess1)
-            rcollection%p_rvectorQuickAccess1 => rvelocityVector
+            ! Prepare the collection. The "next" collection points to the user defined 
+            ! collection.
+            rcollection%p_rnextCollection => rproblem%rcollection
+            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
+                rcollection,rvelocityVector)
 
             ! The "next" collection points to the user defined collection.
             rcollection%p_rnextCollection => rproblem%rcollection
@@ -1998,10 +1987,10 @@ contains
           end if
           
           ! Set stabilisation parameter
-          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%dupsam
+          rstreamlineDiffusion2%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
@@ -2010,7 +1999,7 @@ contains
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
@@ -2028,10 +2017,10 @@ contains
         case (CCMASM_STAB_UPWIND)
           ! Set up the upwind structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rupwind%dnu = rnonlinearCCMatrix%dnu
+          rupwind%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rupwind%dupsam = rnonlinearCCMatrix%dupsam
+          rupwind%dupsam = rnonlinearCCMatrix%p_rstabilisation%dupsam
 
           ! Matrix weight
           rupwind%dtheta = rnonlinearCCMatrix%dgamma
@@ -2055,13 +2044,13 @@ contains
           ! Set up the SD structure for the creation of the defect.
 
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -2102,13 +2091,13 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -2128,9 +2117,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -2147,12 +2136,12 @@ contains
           ! Set up the SD structure for the creation of the defect.
           ! Set up the SD structure for the creation of the defect.
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion2%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Probably, we have nonconstant viscosity.
           ! In that case, init a collection structure for a callback
           ! routine that specifies the viscosity
-          if (rnonlinearCCMatrix%cviscoModel .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%cviscoModel .ne. 0) then
             rstreamlineDiffusion2%bconstnu = .false.
             
             ! Assemble at least the Stokes matrix.
@@ -2160,26 +2149,11 @@ contains
             ! may be changed later.
             rstreamlineDiffusion2%dbeta = 1.0_DP
 
-            ! IquickAccess(1) = cviscoModel
-            rcollection%IquickAccess(1) = rnonlinearCCMatrix%cviscoModel
-            
-            ! IquickAccess(2) = type of the tensor
-            rcollection%IquickAccess(2) = rnonlinearCCMatrix%isubequation
-
-            ! DquickAccess(1) = nu
-            rcollection%DquickAccess(1) = rnonlinearCCMatrix%dnu
-            
-            ! DquickAccess(2) = dviscoexponent
-            ! DquickAccess(3) = dviscoEps
-            rcollection%DquickAccess(2) = rnonlinearCCMatrix%dviscoexponent
-            rcollection%DquickAccess(3) = rnonlinearCCMatrix%dviscoEps
-            
-            ! The first quick access array specifies the evaluation point
-            ! of the velocity -- if it exists.
-            rcollection%p_rvectorQuickAccess1 => rvelocityVector
-
-            ! The "next" collection points to the user defined collection.
+            ! Prepare the collection. The "next" collection points to the user defined 
+            ! collection.
             rcollection%p_rnextCollection => rproblem%rcollection
+            call ccmva_prepareViscoAssembly (rproblem,rnonlinearCCMatrix%p_rphysics,&
+                rcollection,rvelocityvector)
 
           end if
           
@@ -2187,7 +2161,7 @@ contains
           rstreamlineDiffusion2%dupsam = 0.0_DP
           
           ! Set calculation method for local H
-          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion2%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion2%ddelta = rnonlinearCCMatrix%dgamma
@@ -2196,7 +2170,7 @@ contains
           rstreamlineDiffusion2%dnewton = rnonlinearCCMatrix%dnewton
           
           ! Assemble the deformation tensor?
-          if (rnonlinearCCMatrix%isubequation .ne. 0) then
+          if (rnonlinearCCMatrix%p_rphysics%isubequation .ne. 0) then
             rstreamlineDiffusion2%dbeta = 0.5_DP
             rstreamlineDiffusion2%dbetaT = 0.5_DP
           end if
@@ -2235,13 +2209,13 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -2261,9 +2235,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -2284,13 +2258,13 @@ contains
           ! Set up the SD structure for the creation of the defect.
 
           ! There is not much to do, only initialise the viscosity...
-          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%dnu
+          rstreamlineDiffusion%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter to zero for central difference
           rstreamlineDiffusion%dupsam = 0.0_DP
           
           ! Set calculation method for local H
-          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%clocalH
+          rstreamlineDiffusion%clocalH = rnonlinearCCMatrix%p_rstabilisation%clocalH
           
           ! Matrix weight for the nonlinearity
           rstreamlineDiffusion%ddelta = rnonlinearCCMatrix%dgamma
@@ -2338,9 +2312,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -2362,22 +2336,22 @@ contains
         ! That is the Stokes-case. Jump stabilisation is possible...
         !
         ! Type of stablilisation?
-        select case (rnonlinearCCMatrix%iupwind)
+        select case (rnonlinearCCMatrix%p_rstabilisation%iupwind)
         case (CCMASM_STAB_EDGEORIENTED)
           ! Jump stabilisation.
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
 
           ! Cubature formula
-          rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+          rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it is independent of any
@@ -2390,9 +2364,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
@@ -2417,9 +2391,9 @@ contains
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
-            rjumpStabil%dgamma = rnonlinearCCMatrix%dupsam
+            rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
-            rjumpStabil%ccubType = rnonlinearCCMatrix%ccubEOJ
+            rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
