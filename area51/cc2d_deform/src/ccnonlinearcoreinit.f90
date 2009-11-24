@@ -607,12 +607,6 @@ contains
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_DIAG)
           case (102)
             call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_FULL)
-          case (103)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_PDOF)
-          case (104)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSOR)
-          case (105)
-            call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_NAVST2D_SPSSOR)
           end select
           
           ! Initialise the parameters -- if there are any.

@@ -175,8 +175,6 @@ contains
   ! An object for saving the domain:
   type(t_boundary) :: rboundary
   
-  type(t_griddefWork) :: rgriddefWork
-  
   ! An object for saving the triangulation on the domain
   type(t_triangulation) :: rtriangulation
 
@@ -203,23 +201,27 @@ contains
   !
   print *,"---------NumberOfElements---------"
   print *,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation%NEL
+  call output_lbrk ()
+
+
   ! griddeformation setup
-  call griddef_deformationInit(rgriddefInfo,rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
+  !rgriddefInfo,NLMIN,NLMAX,rboundary,iStyle,iadaptSteps
+  call griddef_deformationInit(rgriddefInfo,&
                                rproblem%NLMIN,&
-                               rproblem%NLMAX,rproblem%rboundary,10)                 
+                               rproblem%NLMAX,rproblem%rboundary,GRIDDEF_CLASSICAL,5)                 
   
   do iloop=rproblem%NLMIN,rproblem%NLMAX
     call griddef_buildHGrid(rgriddefInfo,rproblem%RlevelInfo(iloop)%rtriangulation,iloop)
   end do
   
-  
   ! Deform
-  call griddef_performDeformation(rgriddefInfo, rgriddefWork,idummy,&
+  call griddef_performDeformation(rgriddefInfo,idummy,&
                                   .TRUE., .FALSE., .FALSE., &
                                   .FALSE., NLMAX, 0, 0,&
                                   tridef2d_monitorfct)
+                                  
   ! Release Deformation structures
-  call griddef_DeformationDone(rgriddefInfo,rgriddefWork)
+  call griddef_DeformationDone(rgriddefInfo)
     
   end subroutine
 
@@ -244,7 +246,11 @@ contains
      real(dp),dimension(:,:),allocatable :: Dpoints
      integer :: ive,i1,ipoints
      integer :: iMethod
-     real(DP) :: Dist,t,dt,dmin
+     real(DP) :: Dist,t,dt,dmin,cx,cy,rad1,rad2
+     cx=0.5_dp
+     cy=0.5_dp
+     rad1=0.1_dp
+     rad2=0.1_dp
      iMethod = 1
       
      ipoints = ubound(Dentries,1) 
@@ -262,10 +268,10 @@ contains
        case(1)
          ! loop over all vertices and compute the monitor function
          do ive=1,ipoints
-           Dist = sqrt((0.5_dp - DvertexCoords(1,ive))**2 + (0.5_dp - DvertexCoords(2,ive))**2)
+           Dist = sqrt((cx - DvertexCoords(1,ive))**2 + (cy - DvertexCoords(2,ive))**2)
            ! Good now define the monitor function
-           Dist = abs(Dist - 0.2_dp)/0.2_dp
-           Dist=max(dist,0.1_dp)
+           Dist = abs(Dist - rad1)/rad1
+           Dist=max(dist,0.04_dp)
            Dist=min(1.0_dp,dist)
            Dentries(ive)=Dist
          end do
@@ -281,8 +287,8 @@ contains
         dt = 6.28_dp/real(10000)
         t  = 0.0_dp
         do i1=1,10000
-         Dpoints(1,i1) = 0.5_dp + 0.1_dp * cos(t)
-         Dpoints(2,i1) = 0.5_dp + 0.2_dp * sin(t)
+         Dpoints(1,i1) = cx + rad2 * cos(t)
+         Dpoints(2,i1) = cy + rad1 * sin(t)
          t = t + dt
         end do
         ! loop over all points on the elipse      
@@ -292,6 +298,8 @@ contains
             Dist = sqrt((Dpoints(1,i1)-DvertexCoords(1,ive))**2 + (Dpoints(2,i1)-DvertexCoords(2,ive))**2)
             dmin =min(Dist,dmin)
           end do
+          dmin=max(dmin,0.03_dp)
+          dmin=min(1.0_dp,dmin)
           Dentries(ive) = dmin
         end do
        !Case 4 
