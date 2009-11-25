@@ -615,6 +615,13 @@ contains
             scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,p_rparamList,&
             scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)        
+
+      case default
+      
+        call output_line ('Unknown coarse grid solver!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+        call sys_halt()
+
       end select
       
       ! Put the coarse grid solver node to the preconditioner structure.
@@ -693,6 +700,13 @@ contains
             call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D)
           case (202)
             call linsol_initSPSOR (p_rsmoother,LINSOL_SPSOR_NAVST2D_DIAG)
+
+          case default
+          
+            call output_line ('Unknown smoother!', &
+                OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+            call sys_halt()
+
           end select
           
           ! Initialise the parameters -- if there are any.
@@ -717,6 +731,12 @@ contains
               rnonlinearIteration%RcoreEquation(ilev+rnonlinearIteration%NLMIN-1)%&
               p_rprojection)
           
+        case default
+        
+          call output_line ('Unknown smoother!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+          call sys_halt()
+
         end select
       
       end do
@@ -728,6 +748,12 @@ contains
       call parlst_getvalue_double(rproblem%rparamList, 'CC-DISCRETISATION', &
           'dAdMatThreshold', rnonlinearIteration%rprecSpecials%dAdMatThreshold, 20.0_DP)
 
+    case default
+    
+      call output_line ('Unknown linear solver!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'cc_initLinearSolver')
+      call sys_halt()
+      
     end select    
 
     ! Put the final solver node to the preconditioner structure.

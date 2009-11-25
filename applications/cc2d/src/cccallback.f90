@@ -92,7 +92,7 @@
 !#      -> If the moving frame formulation is activated, this routine
 !#         returns the velocity and acceleration of the moving frame.
 !#
-!# 15.) getViscosity
+!# 15.) getNonconstantViscosity
 !#      -> If nonconstant viscosity is activated, this routine calculates
 !#         the viscosity.
 !#

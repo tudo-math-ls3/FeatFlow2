@@ -51,7 +51,10 @@
 !# 2.) cc_nonlinearMatMul
 !#     -> Performs a matrix vector multiplication $d:=A(y)x+d$.
 !#
-!# 3.) ffunctionViscoModel
+!# 3.) ccmva_prepareViscoAssembly
+!#     -> Prepare a collection for the use in ffunctionViscoModel
+!# 
+!# 4.) ffunctionViscoModel
 !#     -> Auxiliary function that defines the nonconstant viscosity
 !# </purpose>
 !##############################################################################
@@ -252,6 +255,7 @@ contains
   ! DquickAccess(1) = nu
   ! DquickAccess(2) = dviscoexponent
   ! DquickAccess(3) = dviscoEps
+  ! DquickAccess(4) = dviscoYield
   ! p_rvectorQuickAccess1 => evaluation velocity vector
   !
 !</description>
@@ -285,8 +289,10 @@ contains
     
     ! DquickAccess(2) = dviscoexponent
     ! DquickAccess(3) = dviscoEps
+    ! DquickAccess(4) = dviscoYield
     rcollection%DquickAccess(2) = rphysics%dviscoexponent
     rcollection%DquickAccess(3) = rphysics%dviscoEps
+    rcollection%DquickAccess(4) = rphysics%dviscoYield
     
     ! The first quick access array specifies the evaluation point
     ! of the velocity -- if it exists.
@@ -383,7 +389,7 @@ contains
 
     ! local variables
     integer :: cviscoModel,i,j,isubEquation
-    real(DP) :: dnu,dviscoexponent,dviscoEps
+    real(DP) :: dnu,dviscoexponent,dviscoEps,dviscoYield
     type(t_vectorBlock), pointer :: p_rvector
     integer, dimension(2) :: Ibounds
     real(DP), dimension(:,:,:), allocatable :: Ddata
@@ -400,6 +406,7 @@ contains
     dnu = rcollection%DquickAccess(1)
     dviscoexponent = rcollection%DquickAccess(2) 
     dviscoEps = rcollection%DquickAccess(3)
+    dviscoYield = rcollection%DquickAccess(4)
     p_rvector => rcollection%p_rvectorQuickAccess1
     
     ! p_rvector may point to NULL if there is no nonlinearity
@@ -461,8 +468,13 @@ contains
       ! Calculate the viscosity
       select case (cviscoModel)
       case (1)
-        ! Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+        ! Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
         Dcoefficients(:,:) = dnu * (Ddata(:,:,1)+dviscoEps)**(0.5_DP*dviscoexponent-1.0_DP)
+
+      case (2)
+        ! Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+        Dcoefficients(:,:) = dnu + dviscoyield / sqrt(Ddata(:,:,1)+dviscoEps**2)
+
       end select
       
       ! Deallocate needed memory.
@@ -1189,6 +1201,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1213,6 +1227,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -1278,6 +1294,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -1352,6 +1370,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1376,6 +1396,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -1417,6 +1439,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1441,6 +1465,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -1469,6 +1495,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -1492,6 +1520,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -2092,6 +2122,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -2210,6 +2242,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -2236,6 +2270,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -2313,6 +2349,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -2346,6 +2384,8 @@ contains
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
           
           ! Matrix weight
           rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
@@ -2365,6 +2405,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&
@@ -2392,6 +2434,8 @@ contains
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
             rjumpStabil%dnu = rstreamlineDiffusion%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
+            rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
+            rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
             call storage_getbase_int(rnonlinearCCMatrix%p_rdynamicInfo%hedgesDirichletBC,&

@@ -207,6 +207,14 @@ contains
 
 !</subroutine>
 
+    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'iEquation',rproblem%rphysics%iequation,0)
+
+    ! Type of subproblem (gradient tensor, deformation tensor,...)
+    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+                              'isubEquation',rproblem%rphysics%isubEquation,0)
+
     ! Get the viscosity model
     ! Standard = 0 = constant viscosity
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -217,6 +225,9 @@ contains
                                  
     call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
                                  'dviscoEps',rproblem%rphysics%dviscoEps,0.01_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'dviscoYield',rproblem%rphysics%dviscoYield,1.0_DP)
 
     ! Get the viscosity parameter, save it to the problem structure
     ! as well as into the collection.
@@ -282,14 +293,6 @@ contains
     
     ! Allocate memory for all the levels.
     allocate(rproblem%RlevelInfo(1:ilvmax))
-
-    ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'iEquation',rproblem%rphysics%iequation,0)
-
-    ! Type of subproblem (gradient tensor, deformation tensor,...)
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-                              'isubEquation',rproblem%rphysics%isubEquation,0)
 
     ! Type of boundary conditions
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
