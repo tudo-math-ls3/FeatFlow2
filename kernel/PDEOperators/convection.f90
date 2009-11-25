@@ -340,6 +340,10 @@ module convection
     ! =0.0: No Jump stabilisation (Standard)
     ! >0.0: Add Jump stabilisation with relaxation parameter dgammastar
     real(DP)              :: dgammastar = 0.0_DP
+    
+    ! Exponent for edge length weight in the jump stabilisation.
+    ! A value of 2 corresponds to a weight h_E^2, but this can be changed here.
+    real(dp)              :: deojEdgeExp = 2.0_DP
   
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
@@ -9973,7 +9977,7 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
@@ -10131,8 +10135,8 @@ contains
         ! Modify the defect?
         if (iand(cdef,CONV_MODDEFECT) .ne. 0) then
           call jstab_matvecUEOJumpStabilBlk2d ( &
-              rconfig%dgamma,rconfig%dgammastar,rconfig%ccubType,rconfig%dnu,&
-              rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
+              rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%ccubType,&
+              rconfig%dnu,rmatrix,rsolution,rdefect,-rconfig%dtheta,1.0_DP,&
               rdiscretisation,InodeList)
         end if
 
@@ -10141,7 +10145,7 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rmatrix,rconfig%dgamma,rconfig%deojEdgeExp,rconfig%dgammastar,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation,InodeList)
       end if
 
@@ -10311,7 +10315,7 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%dtheta,&
+          rmatrix,rconfig%dgamma,rconfig%deojEdgeExp,rconfig%dgammastar,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
@@ -11055,7 +11059,7 @@ contains
         ! is one can see as the local stabilisation weight Delta is also = 0.0.
         ! In this case, we even switch of the calculation of the local Delta,
         ! as it is always =0.0, so we save a little bit time.
-        if ((inonlinComplexity .gt. 0) .and. present(rvelocity)) then
+        if ((rconfig%dupsam .ne. 0.0_DP) .and. present(rvelocity)) then
           if (NVE .eq. 3) then
             call getLocalDeltaTriSim (rconfig%clocalh,&
                           Dvelocity,Dnu,duMaxR,&

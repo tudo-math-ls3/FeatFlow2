@@ -79,7 +79,7 @@ contains
 !<subroutine>
 
   subroutine jstab_calcUEOJumpStabilisation (&
-      rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,&
+      rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
       InodeList)
 
 !<description>
@@ -94,6 +94,10 @@ contains
   ! 2nd stabilisation parameter. Standard = 0
   real(DP), intent(in) :: dgammastar
   
+  ! Exponent for edge length weight in the jump stabilisation. Standard = 2.
+  ! A value of 2 corresponds to a weight h_E^2, but this can be changed here.
+  real(dp), intent(in) :: deojEdgeExp
+
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
   real(DP), intent(in) :: dtheta
@@ -149,7 +153,7 @@ contains
     case (BGEOM_SHAPE_QUAD)
       ! 2D quadrilateral element
       call jstab_ueoJumpStabil2d_m_unidble (&
-          rmatrix,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,InodeList)
+          rmatrix,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,InodeList)
 
     case (BGEOM_SHAPE_HEXA)
       ! 3D hexahedron element
@@ -170,7 +174,7 @@ contains
 !<subroutine>
 
   subroutine jstab_ueoJumpStabil2d_m_unidble ( &
-      rmatrixScalar,dgamma,dgammastar,dtheta,ccubType,dnu,rdiscretisation,&
+      rmatrixScalar,dgamma,dgammastar,deojEdgeExp,dtheta,ccubType,dnu,rdiscretisation,&
       InodeList)
       
 !<description>
@@ -198,6 +202,10 @@ contains
   ! 2nd stabilisation parameter. Standard=dgamma=0.0
   real(DP), intent(in) :: dgammastar
   
+  ! Exponent for edge length weight in the jump stabilisation. Standard = 2.
+  ! A value of 2 corresponds to a weight h_E^2, but this can be changed here.
+  real(dp), intent(in) :: deojEdgeExp
+
   ! Multiplication factor for the stabilisation matrix when adding
   ! it to the global matrix. Standard value = 1.0.
   real(DP), intent(in) :: dtheta
@@ -709,7 +717,7 @@ contains
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
       dcoeff = max(dgammastar * dnu * dedgelength, &
-                   dgamma * dedgelength**2 )
+                   dgamma * dedgelength**deojEdgeExp )
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.
@@ -1687,7 +1695,7 @@ contains
 !<subroutine>
 
   subroutine jstab_matvecUEOJumpStabilBlk2d ( &
-      dgamma,dgammastar,ccubType,dnu,&
+      dgamma,dgammastar,deojEdgeExp,ccubType,dnu,&
       rtemplateMat,rx,ry,cx,cy,rdiscretisation,&
       InodeList)
 !<description>
@@ -1717,6 +1725,10 @@ contains
   ! 2nd stabilisation parameter. Standard=dgamma=0.0
   real(DP), intent(in) :: dgammastar
   
+  ! Exponent for edge length weight in the jump stabilisation. Standard = 2.
+  ! A value of 2 corresponds to a weight h_E^2, but this can be changed here.
+  real(dp), intent(in) :: deojEdgeExp
+
   ! 1D cubature formula to use for line integration
   ! Standard = CUB_G2_1D.
   integer(I32), intent(in) :: ccubType
@@ -2242,7 +2254,7 @@ contains
       ! Compute the coefficient in front of the integral:
       ! < Ju,v > = sum_E max(gammastar*nu*h_E, gamma*h_E^2) int_E [grad u] [grad v] ds
       dcoeff = max(dgammastar * dnu * dedgelength, &
-                   dgamma * dedgelength**2 )
+                   dgamma * dedgelength**deojEdgeExp )
       
       ! Now we have the values of the basis functions in all the cubature 
       ! points.

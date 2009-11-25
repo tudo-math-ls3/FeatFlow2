@@ -1098,6 +1098,12 @@ contains
       end do
     end do
 
+    if ((nmaxLocalDOFs .eq. 0) .or. (ndofsPerElement .eq. 0)) then
+      call output_line (&
+          'Matrix is empty!',OU_CLASS_ERROR,OU_MODE_STD,'vanka_initGeneralVanka')
+      call sys_halt()
+    end if
+
     ! Save the max. and total number of local DOF`s
     rvankaGeneral%nmaxLocalDOFs = nmaxLocalDOFs
     rvankaGeneral%ndofsPerElement = ndofsPerElement

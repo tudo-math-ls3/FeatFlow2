@@ -90,6 +90,10 @@
 !# 22.) spdscr_releaseEdgeBlocking
 !#      -> Releases the edge blocking structure allocated by
 !#         spdscr_edgeBlocking2D
+!#
+!# 23.) spdiscr_concatBlockDiscr
+!#     -> Concatenates two block discretisation structures to a new
+!#        block discretisation structure.
 !# </purpose>
 !##############################################################################
 
@@ -401,6 +405,7 @@ module spatialdiscretisation
   public :: spdiscr_releaseDofMapping
   public :: spdscr_edgeBlocking2D
   public :: spdscr_releaseEdgeBlocking
+  public :: spdiscr_concatBlockDiscr
 
 contains
 
@@ -838,7 +843,7 @@ contains
 !<subroutine>
 
   subroutine spdiscr_deriveBlockDiscr (rsourceDiscr, rdestDiscr, &
-                                       ifirstBlock, ilastBlock)
+      ifirstBlock, ilastBlock, rtriangulation, rboundary)
   
 !<description>
   ! This routine derives a block discretisation structure from another one.
@@ -867,6 +872,14 @@ contains
   ! used as last block in rdestDiscr. Default value is the 
   ! number of components in rsourceDiscr.
   integer, intent(in), optional :: ilastBlock
+
+  ! OPTIONAL: Reference to a new triangulation, the new discretisation should use.
+  ! If not specified, the triangulation in rsourceDiscr is used.
+  type(t_triangulation), intent(in), target, optional :: rtriangulation
+  
+  ! OPTIONAL: Reference to a new domain, the new discretisation should use.
+  ! If not specified, the domain in rsourceDiscr is used.
+  type(t_boundary), intent(in), target, optional :: rboundary
 !</input>
   
 !<output>
@@ -910,6 +923,8 @@ contains
     rdestDiscr%ccomplexity      =  rsourceDiscr%ccomplexity          
     rdestDiscr%p_rboundary      => rsourceDiscr%p_rboundary          
     rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation     
+    if (present(rboundary)) rdestDiscr%p_rboundary => rsourceDiscr%p_rboundary
+    if (present(rtriangulation)) rdestDiscr%p_rtriangulation => rsourceDiscr%p_rtriangulation
     rdestDiscr%ncomponents      =  ncount       
     
     ! Copy all substructures -- from ifirstBlock to ilastBlock.
@@ -2199,4 +2214,92 @@ contains
   
   end subroutine
 
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_concatBlockDiscr (rsourceDiscr1, rsourceDiscr2, rdestDiscr,&
+      rtriangulation, rboundary)
+  
+!<description>
+  ! Concatenates two block discretisation structures to a new one
+!</description>
+
+!<input>
+  ! The first block discretisation structure to concatenate.
+  type(t_blockDiscretisation), intent(in), target :: rsourceDiscr1
+
+  ! The second block discretisation structure to concatenate.
+  ! Must have the same domain, triangulation and type FE structure
+  ! as rsourceDiscr1. (So the spatial subdiscretisations are at least "conformal" to
+  ! those in rsourceDiscr1).
+  type(t_blockDiscretisation), intent(in), target :: rsourceDiscr2
+  
+  ! OPTIONAL: Reference to a new triangulation, the new discretisation should use.
+  ! If not specified, the triangulation in rsourceDiscr1 is used.
+  ! If specified, the new triangulation must be compatible to both triangulations,
+  ! in rsourceDiscr1 and rsourceDiscr2.
+  type(t_triangulation), intent(in), target, optional :: rtriangulation
+  
+  ! OPTIONAL: Reference to a new domain, the new discretisation should use.
+  ! If not specified, the domain in rsourceDiscr1 is used.
+  ! If specified, the new domain must be compatible to both domains,
+  ! in rsourceDiscr1 and rsourceDiscr2.
+  type(t_boundary), intent(in), target, optional :: rboundary
+!</input>
+  
+!<output>
+  ! The discretisation structure to be initialised.
+  ! Receives the concatenated block discretisation "rsourceDiscr1 + rsourceDiscr2".
+  ! Any old existing information in rdestDiscr is released if necessary.
+  ! The new discretisation shares its information with rsourceDiscr1 and
+  ! rsourceDiscr2.
+  type(t_blockDiscretisation), intent(inout), target, optional :: rdestDiscr
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    
+    ! Check that the source discretisation structure is valid.
+    if ((rsourceDiscr1%ndimension .le. 0) .or. (rsourceDiscr2%ndimension .le. 0) .or.&
+        (rsourceDiscr1%ndimension .ne. rsourceDiscr2%ndimension)) then
+      call output_line ('Source structures invalid!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_concatBlockDiscr')  
+      call sys_halt()
+    end if
+
+    ! Copy all information from the source discretisation structures
+
+    rdestDiscr%ndimension       =  rsourceDiscr1%ndimension           
+    rdestDiscr%ccomplexity      =  SPDISC_UNIFORM
+    if ((rsourceDiscr1%ccomplexity .eq. SPDISC_CONFORMAL) .or. &
+        (rsourceDiscr2%ccomplexity .eq. SPDISC_CONFORMAL)) then
+      rdestDiscr%ccomplexity      =  SPDISC_CONFORMAL
+    end if
+    rdestDiscr%p_rboundary      => rsourceDiscr1%p_rboundary
+    rdestDiscr%p_rtriangulation => rsourceDiscr1%p_rtriangulation     
+    if (present(rboundary)) rdestDiscr%p_rboundary => rsourceDiscr1%p_rboundary
+    if (present(rtriangulation)) rdestDiscr%p_rtriangulation => rsourceDiscr1%p_rtriangulation
+    rdestDiscr%ncomponents      =  rsourceDiscr1%ncomponents + rsourceDiscr2%ncomponents  
+    
+    ! Copy all substructures -- from ifirstBlock to ilastBlock.
+    ! Use spdiscr_duplicateDiscrSc which savely copies the scalar discretisation
+    ! structures. We set bshare=.TRUE. here, so the information is shared
+    ! between the source and destination structure; the dynamic information 
+    ! 'belongs' to rdiscrSource and not to the newly created rdiscrDest!
+    allocate(rdestDiscr%RspatialDiscr(rdestDiscr%ncomponents))
+    do i = 1, rsourceDiscr1%ncomponents
+      call spdiscr_duplicateDiscrSc (rsourceDiscr1%RspatialDiscr(i), &
+          rdestDiscr%RspatialDiscr(i), .true.)
+    end do
+
+    do i = 1, rsourceDiscr2%ncomponents
+      call spdiscr_duplicateDiscrSc (rsourceDiscr2%RspatialDiscr(i), &
+          rdestDiscr%RspatialDiscr(rsourceDiscr1%ncomponents+i), .true.)
+    end do
+      
+    end subroutine  
+  
 end module
