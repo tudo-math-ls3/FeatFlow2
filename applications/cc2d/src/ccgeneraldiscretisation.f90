@@ -18,13 +18,13 @@
 !# 2.) cc_allocMatVec / cc_generateBasicMat / cc_doneMatVec
 !#     -> Allocates/ Generates / Releases memory for vectors/matrices on all levels.
 !#
-!# 4.) cc_allocStaticMatrices / cc_generateStaticMatrices / 
-!#     cc_releaseStaticMatrices
-!#     -> Allocates/Assembles/Releases matrix entries of static matrices 
+!# 4.) cc_allocTemplateMatrices / cc_generateTemplateMatrices / 
+!#     cc_releaseTemplateMatrices
+!#     -> Allocates/Assembles/Releases matrix entries of template matrices 
 !#        (Stokes, B) on one level
 !#
 !# 5.) cc_generateBasicMat
-!#     -> Assembles the matrix entries of all static matrices on all levels.
+!#     -> Assembles the matrix entries of all template matrices on all levels.
 !#
 !# 6.) cc_generateBasicRHS
 !#     -> Generates a general RHS vector without any boundary conditions
@@ -280,11 +280,11 @@ contains
             rproblem%RlevelInfo(i)%rdiscretisationStabil)
       end if
       
-      ! Add a reference of the velocity discretisation to the rstaticInfo
+      ! Add a reference of the velocity discretisation to the rasmTempl
       ! structure. The actual block structure we keep in the levelInfo-structure.
       call spdiscr_duplicateDiscrSc (&
           rproblem%RlevelInfo(i)%rdiscretisationStabil%RspatialDiscr(1), &
-          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationStabil, .true.)
+          rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationStabil, .true.)
       
       ! -----------------------------------------------------------------------
       ! Mass matrices. They are used in so many cases, it is better we always
@@ -296,13 +296,13 @@ contains
       ! and replace the cubature-formula identifier by that which is to be
       ! used for the mass matrix.
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(1), &
-          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass,.true.)
+          rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMass,.true.)
       call spdiscr_duplicateDiscrSc (p_rdiscretisation%RspatialDiscr(3), &
-          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure,.true.)
+          rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMassPressure,.true.)
           
-      p_rdiscretisationMass => rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass
+      p_rdiscretisationMass => rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMass
       p_rdiscretisationMassPressure => &
-          rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure
+          rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMassPressure
       
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
                                   'scubMass',sstr,'')
@@ -705,11 +705,11 @@ contains
       ! Remove the block discretisation structure and all substructures.
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisation)
       call spdiscr_releaseBlockDiscr(rproblem%RlevelInfo(i)%rdiscretisationStabil)
-      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationStabil)
+      call spdiscr_releaseDiscr(rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationStabil)
       
       ! Release the mass matrix discretisation.
-      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMass)
-      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rstaticInfo%rdiscretisationMassPressure)
+      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMass)
+      call spdiscr_releaseDiscr (rproblem%RlevelInfo(i)%rasmTempl%rdiscretisationMassPressure)
 
       ! Release dynamic level information
       call cc_doneDynamicLevelInfo (rproblem%RlevelInfo(i)%rdynamicInfo)
@@ -722,12 +722,12 @@ contains
 
 !<subroutine>
 
-  subroutine cc_allocStaticMatrices (rproblem,rdiscretisation,rstaticInfo,&
+  subroutine cc_allocTemplateMatrices (rproblem,rdiscretisation,rasmTempl,&
       rdiscretisationCoarse)
   
 !<description>
-  ! Allocates memory and generates the structure of all static matrices 
-  ! in rstaticInfo.
+  ! Allocates memory and generates the structure of all template matrices 
+  ! in rasmTempl.
 !</description>
 
 !<inputoutput>
@@ -738,8 +738,8 @@ contains
   ! operators.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisation
 
-  ! A t_staticLevelInfo structure. The static matrices in this structure are generated.
-  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+  ! A t_asmTemplates structure. The matrices in this structure are generated.
+  type(t_asmTemplates), intent(inout), target :: rasmTempl
   
   ! OPTIONAL: Discretisation structure of the level below the level
   ! identified by rdiscretisation. Must be specified on all levels except
@@ -797,25 +797,25 @@ contains
     ! Create the matrix structure
     call bilf_createMatrixStructure (&
               rdiscretisation%RspatialDiscr(1),LSYSSC_MATRIX9,&
-              rstaticInfo%rmatrixTemplateFEM,cconstrType=cmatBuildType)
+              rasmTempl%rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
     ! Create the matrices structure of the pressure using the 3rd
     ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
     call bilf_createMatrixStructure (&
               rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
-              rstaticInfo%rmatrixTemplateFEMPressure)
+              rasmTempl%rmatrixTemplateFEMPressure)
 
     ! Create the matrices structure of the pressure using the 3rd
     ! spatial discretisation structure in rdiscretisation%RspatialDiscr.
     call bilf_createMatrixStructure (&
               rdiscretisation%RspatialDiscr(3),LSYSSC_MATRIX9,&
-              rstaticInfo%rmatrixTemplateGradient,&
+              rasmTempl%rmatrixTemplateGradient,&
               rdiscretisation%RspatialDiscr(1))
               
     ! Transpose the B-structure to get the matrix template for the
     ! divergence matrices.
-    call lsyssc_transposeMatrix (rstaticInfo%rmatrixTemplateGradient,&
-        rstaticInfo%rmatrixTemplateDivergence,LSYSSC_TR_STRUCTURE)
+    call lsyssc_transposeMatrix (rasmTempl%rmatrixTemplateGradient,&
+        rasmTempl%rmatrixTemplateDivergence,LSYSSC_TR_STRUCTURE)
     
     ! Ok, now we use the matrices from above to create the actual submatrices
     ! that are used in the global system.
@@ -825,11 +825,11 @@ contains
     !
     ! Do not create a content array yet, it will be created by 
     ! the assembly routines later.
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
-                rstaticInfo%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rasmTempl%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     ! Allocate memory for the entries; do not initialise the memory.
-    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! Both have the structure of the template gradient matrix.
@@ -842,33 +842,33 @@ contains
     ! the assembly routines later.
     ! Allocate memory for the entries; do not initialise the memory.
     
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateGradient,&
-        rstaticInfo%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateGradient,&
+        rasmTempl%rmatrixB1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateGradient,&
-        rstaticInfo%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateGradient,&
+        rasmTempl%rmatrixB2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
               
-    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixB1,LSYSSC_SETM_UNDEFINED)
-    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixB2,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixB1,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixB2,LSYSSC_SETM_UNDEFINED)
 
     ! Set up memory for the divergence matrices D1 and D2.
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateDivergence,&
-        rstaticInfo%rmatrixD1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateDivergence,&
+        rasmTempl%rmatrixD1,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateDivergence,&
-        rstaticInfo%rmatrixD2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateDivergence,&
+        rasmTempl%rmatrixD2,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
-    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixD1,LSYSSC_SETM_UNDEFINED)
-    call lsyssc_allocEmptyMatrix (rstaticInfo%rmatrixD2,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixD1,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rasmTempl%rmatrixD2,LSYSSC_SETM_UNDEFINED)
     
     ! The D1^T and D2^T matrices are by default the same as B1 and B2.
     ! These matrices may be different for special VANCA variants if
     ! B1 and B2 is different from D1 and D2 (which is actually a rare case).
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixB1,&
-        rstaticInfo%rmatrixD1T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixB1,&
+        rasmTempl%rmatrixD1T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
                 
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixB2,&
-        rstaticInfo%rmatrixD2T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixB2,&
+        rasmTempl%rmatrixD2T,LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! -----------------------------------------------------------------------
     ! Projection matrices
@@ -883,12 +883,12 @@ contains
         call mlop_create2LvlMatrixStruct (&
             rdiscretisationCoarse%RspatialDiscr(1),&
             rdiscretisation%RspatialDiscr(1),&
-            LSYSSC_MATRIX9, rstaticInfo%rmatrixProlVelocity)
+            LSYSSC_MATRIX9, rasmTempl%rmatrixProlVelocity)
         
         ! And let the interpolation matrix share the structure
         call lsyssc_duplicateMatrix(&
-            rstaticInfo%rmatrixProlVelocity, &
-            rstaticInfo%rmatrixInterpVelocity, &
+            rasmTempl%rmatrixProlVelocity, &
+            rasmTempl%rmatrixInterpVelocity, &
             LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
         
       end if
@@ -899,12 +899,12 @@ contains
         call mlop_create2LvlMatrixStruct (&
             rdiscretisationCoarse%RspatialDiscr(3),&
             rdiscretisation%RspatialDiscr(3),&
-            LSYSSC_MATRIX9, rstaticInfo%rmatrixProlPressure)
+            LSYSSC_MATRIX9, rasmTempl%rmatrixProlPressure)
 
         ! And let the interpolation matrix share the structure
         call lsyssc_duplicateMatrix(&
-            rstaticInfo%rmatrixProlPressure, &
-            rstaticInfo%rmatrixInterpPressure, &
+            rasmTempl%rmatrixProlPressure, &
+            rasmTempl%rmatrixInterpPressure, &
             LSYSSC_DUP_SHARE, LSYSSC_DUP_REMOVE)
           
       end if
@@ -917,10 +917,10 @@ contains
 
 !<subroutine>
 
-  subroutine cc_generateStaticMatrices (rproblem,rdiscretisation,rstaticInfo)
+  subroutine cc_generateTemplateMatrices (rproblem,rdiscretisation,rasmTempl)
   
 !<description>
-  ! Calculates entries of all static matrices (Stokes, B-matrices,...)
+  ! Calculates entries of all template matrices (Stokes, B-matrices,...)
   ! in the specified problem structure, i.e. the entries of all matrices 
   ! that do not change during the computation or which serve as a template for
   ! generating other matrices.
@@ -937,8 +937,8 @@ contains
   ! operators.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisation
 
-  ! A t_staticLevelInfo structure. The static matrices in this structure are generated.
-  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+  ! A t_asmTemplates structure. The template matrices in this structure are generated.
+  type(t_asmTemplates), intent(inout), target :: rasmTempl
 !</inputoutput>
 
 !</subroutine>
@@ -1009,7 +1009,7 @@ contains
     ! above. It directly sets up the Laplace matrix.
     ! If it is necessary to modify the Laplace matrix, remove this command
     ! and comment in the stuff above.
-    call stdop_assembleLaplaceMatrix (rstaticInfo%rmatrixStokes,.true.,rproblem%rphysics%dnu)
+    call stdop_assembleLaplaceMatrix (rasmTempl%rmatrixStokes,.true.,rproblem%rphysics%dnu)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! These are build either as "int p grad(phi)" (standard case)
@@ -1020,52 +1020,52 @@ contains
       ! Standard case.
     
       ! Build the first pressure matrix B1.
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB1,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB1,&
           DER_FUNC,DER_DERIV_X,-1.0_DP)
 
       ! Build the second pressure matrix B2.
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB2,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB2,&
           DER_FUNC,DER_DERIV_Y,-1.0_DP)
       
       ! Set up the matrices D1 and D2 by transposing B1 and B2.
       ! For that purpose, virtually transpose B1/B2.
-      call lsyssc_transposeMatrix (rstaticInfo%rmatrixB1,&
-          rstaticInfo%rmatrixD1,LSYSSC_TR_CONTENT)
+      call lsyssc_transposeMatrix (rasmTempl%rmatrixB1,&
+          rasmTempl%rmatrixD1,LSYSSC_TR_CONTENT)
 
-      call lsyssc_transposeMatrix (rstaticInfo%rmatrixB2,&
-          rstaticInfo%rmatrixD2,LSYSSC_TR_CONTENT)
+      call lsyssc_transposeMatrix (rasmTempl%rmatrixB2,&
+          rasmTempl%rmatrixD2,LSYSSC_TR_CONTENT)
           
     else if (istrongDerivativeBmatrix .eq. 1) then
     
       ! Special case for nonconstant pressure.
     
       ! Build the first pressure matrix B1.
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB1,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB1,&
           DER_DERIV_X,DER_FUNC,1.0_DP)
 
       ! Build the second pressure matrix B2.
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixB2,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixB2,&
           DER_DERIV_Y,DER_FUNC,1.0_DP)
       
       ! Build the first divergence matrix D1
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixD1,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixD1,&
           DER_FUNC,DER_DERIV_X,-1.0_DP)
 
       ! Build the second divergence matrix D2
-      call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixD2,&
+      call stdop_assembleSimpleMatrix (rasmTempl%rmatrixD2,&
           DER_FUNC,DER_DERIV_Y,-1.0_DP)
           
       ! Set up the D1^T and D2^T matrices as transposed D1 and D2.
       ! We have to allocate separate memory for that.
-      call lsyssc_allocEmptyMatrix(rstaticInfo%rmatrixD1T,LSYSSC_SETM_UNDEFINED)
-      call lsyssc_allocEmptyMatrix(rstaticInfo%rmatrixD2T,LSYSSC_SETM_UNDEFINED)
+      call lsyssc_allocEmptyMatrix(rasmTempl%rmatrixD1T,LSYSSC_SETM_UNDEFINED)
+      call lsyssc_allocEmptyMatrix(rasmTempl%rmatrixD2T,LSYSSC_SETM_UNDEFINED)
       
       ! Transpose only the content, the structure is the same as B1 and B2.
-      call lsyssc_transposeMatrix (rstaticInfo%rmatrixD1,&
-          rstaticInfo%rmatrixD1T,LSYSSC_TR_CONTENT)
+      call lsyssc_transposeMatrix (rasmTempl%rmatrixD1,&
+          rasmTempl%rmatrixD1T,LSYSSC_TR_CONTENT)
 
-      call lsyssc_transposeMatrix (rstaticInfo%rmatrixD2,&
-          rstaticInfo%rmatrixD2T,LSYSSC_TR_CONTENT)
+      call lsyssc_transposeMatrix (rasmTempl%rmatrixD2,&
+          rasmTempl%rmatrixD2T,LSYSSC_TR_CONTENT)
           
     end if
                               
@@ -1091,16 +1091,16 @@ contains
       rjumpStabil%ccubType = rproblem%rstabilisation%ccubEOJ
       
       ! Allocate an empty matrix
-      call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
-                  rstaticInfo%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_clearMatrix (rstaticInfo%rmatrixStabil)
+      call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                  rasmTempl%rmatrixStabil,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rasmTempl%rmatrixStabil)
 
       ! Call the jump stabilisation technique to precalculate the
       ! matrix. The operator is assumed to be linear, so we can just
       ! precompute it.
       call conv_jumpStabilisation2d (&
-          rjumpStabil, CONV_MODMATRIX, rstaticInfo%rmatrixStabil,&
-          rdiscretisation=rstaticInfo%rdiscretisationStabil)
+          rjumpStabil, CONV_MODMATRIX, rasmTempl%rmatrixStabil,&
+          rdiscretisation=rasmTempl%rdiscretisationStabil)
           
     end if
 
@@ -1110,27 +1110,27 @@ contains
     ! -----------------------------------------------------------------------
 
     ! If there is an existing mass matrix, release it.
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMass)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMassPressure)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixMass)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixMassPressure)
 
     ! Generate mass matrix. The matrix has basically the same structure as
     ! our template FEM matrix, so we can take that.
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEM,&
-                rstaticInfo%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rstaticInfo%rmatrixTemplateFEMPressure,&
-                rstaticInfo%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEM,&
+                rasmTempl%rmatrixMass,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+    call lsyssc_duplicateMatrix (rasmTempl%rmatrixTemplateFEMPressure,&
+                rasmTempl%rmatrixMassPressure,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
                 
     ! Change the discretisation structure of the mass matrix to the
     ! correct one; at the moment it points to the discretisation structure
     ! of the Stokes matrix...
-    call lsyssc_assignDiscrDirectMat (rstaticInfo%rmatrixMass,&
-        rstaticInfo%rdiscretisationMass)
-    call lsyssc_assignDiscrDirectMat (rstaticInfo%rmatrixMassPressure,&
-        rstaticInfo%rdiscretisationMassPressure)
+    call lsyssc_assignDiscrDirectMat (rasmTempl%rmatrixMass,&
+        rasmTempl%rdiscretisationMass)
+    call lsyssc_assignDiscrDirectMat (rasmTempl%rmatrixMassPressure,&
+        rasmTempl%rdiscretisationMassPressure)
 
     ! Call the standard matrix setup routine to build the matrix.                    
-    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMass,DER_FUNC,DER_FUNC)
-    call stdop_assembleSimpleMatrix (rstaticInfo%rmatrixMassPressure,DER_FUNC,DER_FUNC)
+    call stdop_assembleSimpleMatrix (rasmTempl%rmatrixMass,DER_FUNC,DER_FUNC)
+    call stdop_assembleSimpleMatrix (rasmTempl%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
     ! Should we do mass lumping?
     call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
@@ -1144,8 +1144,8 @@ contains
                                       
       ! Lump the mass matrix. The constant from the DAT file corresponds
       ! to one of the LSYSSC_LUMP_xxxx constants for lsyssc_lumpMatrixScalar.
-      call lsyssc_lumpMatrixScalar (rstaticInfo%rmatrixMass,j)
-      call lsyssc_lumpMatrixScalar (rstaticInfo%rmatrixMassPressure,j)
+      call lsyssc_lumpMatrixScalar (rasmTempl%rmatrixMass,j)
+      call lsyssc_lumpMatrixScalar (rasmTempl%rmatrixMassPressure,j)
     
     end if
       
@@ -1159,10 +1159,10 @@ contains
 !<subroutine>
 
   subroutine cc_generateProjectionMatrices (&
-      rdiscretisationCoarse,rdiscretisationFine,rstaticInfoFine)
+      rdiscretisationCoarse,rdiscretisationFine,rasmTemplFine)
   
 !<description>
-  ! Calculates the matrix entries for the projection matrices in rstaticInfoFine.
+  ! Calculates the matrix entries for the projection matrices in rasmTemplFine.
   !
   ! Memory for those matrices must have been allocated before with 
   ! allocMatVec!
@@ -1177,42 +1177,42 @@ contains
   ! operators on the fine mesh.
   type(t_blockDiscretisation), intent(in), target :: rdiscretisationFine
 
-  ! A t_staticLevelInfo structure for the fine mesg. The projection 
+  ! A t_asmTemplates structure for the fine mesg. The projection 
   ! matrices in this structure are generated.
-  type(t_staticLevelInfo), intent(inout), target :: rstaticInfoFine
+  type(t_asmTemplates), intent(inout), target :: rasmTemplFine
 !</inputoutput>
 
 !</subroutine>
 
     ! Assemble projection matrix for velocity?
-    if(lsyssc_hasMatrixStructure(rstaticInfoFine%rmatrixProlVelocity)) then
+    if(lsyssc_hasMatrixStructure(rasmTemplFine%rmatrixProlVelocity)) then
     
       ! Assemble its entries
       call mlop_build2LvlProlMatrix(&
           rdiscretisationCoarse%RspatialDiscr(1),&
           rdiscretisationFine%RspatialDiscr(1),&
-          .true., rstaticInfoFine%rmatrixProlVelocity, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixProlVelocity, MLOP_AVRG_MASS)
 
       call mlop_build2LvlInterpMatrix(&
           rdiscretisationCoarse%RspatialDiscr(1),&
           rdiscretisationFine%RspatialDiscr(1),&
-          .true., rstaticInfoFine%rmatrixInterpVelocity, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixInterpVelocity, MLOP_AVRG_MASS)
 
     end if
 
     ! Assemble projection matrix for pressure?
-    if(lsyssc_hasMatrixStructure(rstaticInfoFine%rmatrixProlPressure)) then
+    if(lsyssc_hasMatrixStructure(rasmTemplFine%rmatrixProlPressure)) then
     
       ! Assemble its entries
       call mlop_build2LvlProlMatrix(&
           rdiscretisationCoarse%RspatialDiscr(3),&
           rdiscretisationFine%RspatialDiscr(3),&
-          .true., rstaticInfoFine%rmatrixProlPressure, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixProlPressure, MLOP_AVRG_MASS)
 
       call mlop_build2LvlInterpMatrix(&
           rdiscretisationCoarse%RspatialDiscr(3),&
           rdiscretisationFine%RspatialDiscr(3),&
-          .true., rstaticInfoFine%rmatrixInterpPressure, MLOP_AVRG_MASS)
+          .true., rasmTemplFine%rmatrixInterpPressure, MLOP_AVRG_MASS)
 
     end if
 
@@ -1222,50 +1222,50 @@ contains
 
 !<subroutine>
 
-  subroutine cc_releaseStaticMatrices (rstaticInfo)
+  subroutine cc_releaseTemplateMatrices (rasmTempl)
   
 !<description>
-  ! Releases all static matrices from a t_staticLevelInfo structure.
+  ! Releases all template matrices from a t_asmTemplates structure.
 !</description>
 
 !<inputoutput>
-  ! A t_staticLevelInfo structure to be cleaned up.
-  type(t_staticLevelInfo), intent(inout), target :: rstaticInfo
+  ! A t_asmTemplates structure to be cleaned up.
+  type(t_asmTemplates), intent(inout), target :: rasmTempl
 !</inputoutput>
 
 !</subroutine>
 
     ! If there is an existing mass matrix, release it.
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMass)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixMassPressure)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixMass)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixMassPressure)
 
     ! Release Stokes, B1, B2,... matrices
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD2T)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD1T)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD2)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixD1)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixB2)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixB1)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixStokes)
-    if (lsyssc_hasMatrixStructure(rstaticInfo%rmatrixStabil)) then
-      call lsyssc_releaseMatrix (rstaticInfo%rmatrixStabil)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixD2T)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixD1T)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixD2)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixD1)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixB2)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixB1)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixStokes)
+    if (lsyssc_hasMatrixStructure(rasmTempl%rmatrixStabil)) then
+      call lsyssc_releaseMatrix (rasmTempl%rmatrixStabil)
     end if
     
     ! Release the template matrices. This is the point, where the
     ! memory of the matrix structure is released.
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateDivergence)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateGradient)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateFEM)
-    call lsyssc_releaseMatrix (rstaticInfo%rmatrixTemplateFEMPressure)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixTemplateDivergence)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixTemplateGradient)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixTemplateFEM)
+    call lsyssc_releaseMatrix (rasmTempl%rmatrixTemplateFEMPressure)
     
     ! Release prolongation/interpolation matrices.
-    if(lsyssc_hasMatrixStructure(rstaticInfo%rmatrixProlVelocity)) then
-      call lsyssc_releaseMatrix(rstaticInfo%rmatrixInterpVelocity)
-      call lsyssc_releaseMatrix(rstaticInfo%rmatrixProlVelocity)
+    if(lsyssc_hasMatrixStructure(rasmTempl%rmatrixProlVelocity)) then
+      call lsyssc_releaseMatrix(rasmTempl%rmatrixInterpVelocity)
+      call lsyssc_releaseMatrix(rasmTempl%rmatrixProlVelocity)
     end if
-    if(lsyssc_hasMatrixStructure(rstaticInfo%rmatrixProlPressure)) then
-      call lsyssc_releaseMatrix(rstaticInfo%rmatrixInterpPressure)
-      call lsyssc_releaseMatrix(rstaticInfo%rmatrixProlPressure)
+    if(lsyssc_hasMatrixStructure(rasmTempl%rmatrixProlPressure)) then
+      call lsyssc_releaseMatrix(rasmTempl%rmatrixInterpPressure)
+      call lsyssc_releaseMatrix(rasmTempl%rmatrixProlPressure)
     end if
       
   end subroutine
@@ -1308,13 +1308,13 @@ contains
 
       ! Generate the matrices on this level.
       if (i .eq. rproblem%NLMIN) then
-        call cc_allocStaticMatrices (rproblem,&
+        call cc_allocTemplateMatrices (rproblem,&
             rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rstaticInfo)
+            rproblem%RlevelInfo(i)%rasmTempl)
       else
-        call cc_allocStaticMatrices (rproblem,&
+        call cc_allocTemplateMatrices (rproblem,&
             rproblem%RlevelInfo(i)%rdiscretisation,&
-            rproblem%RlevelInfo(i)%rstaticInfo,&
+            rproblem%RlevelInfo(i)%rasmTempl,&
             rproblem%RlevelInfo(i-1)%rdiscretisation)
       end if
       
@@ -1354,7 +1354,7 @@ contains
   subroutine cc_generateBasicMat (rproblem)
   
 !<description>
-  ! Calculates the entries of all static matrices (Mass, B,...) on all levels.
+  ! Calculates the entries of all template matrices (Mass, B,...) on all levels.
   !
   ! Memory for those matrices must have been allocated before with 
   ! allocMatVec!
@@ -1370,11 +1370,11 @@ contains
     ! local variables
     integer :: i
 
-    ! Assemble static system matrices
+    ! Assemble template matrices
     do i = rproblem%NLMIN, rproblem%NLMAX
-      call cc_generateStaticMatrices (rproblem,&
+      call cc_generateTemplateMatrices (rproblem,&
           rproblem%RlevelInfo(i)%rdiscretisation,&
-          rproblem%RlevelInfo(i)%rstaticInfo)
+          rproblem%RlevelInfo(i)%rasmTempl)
     end do
     
     ! Assemble projection matrices
@@ -1382,7 +1382,7 @@ contains
       call cc_generateProjectionMatrices(&
           rproblem%RlevelInfo(i-1)%rdiscretisation, &
           rproblem%RlevelInfo(i)%rdiscretisation, &
-          rproblem%RlevelInfo(i)%rstaticInfo)
+          rproblem%RlevelInfo(i)%rasmTempl)
     end do
 
   end subroutine
@@ -1416,8 +1416,8 @@ contains
 
     ! Release matrices and vectors on all levels
     do i=rproblem%NLMAX,rproblem%NLMIN,-1
-      ! Release the static matrices.
-      call cc_releaseStaticMatrices (rproblem%RlevelInfo(i)%rstaticInfo)
+      ! Release the template matrices.
+      call cc_releaseTemplateMatrices (rproblem%RlevelInfo(i)%rasmTempl)
       
       ! Remove the temp vector that was used for interpolating the solution
       ! from higher to lower levels in the nonlinear iteration.
@@ -1809,19 +1809,19 @@ contains
         ! X-velocity
         rcollection%IquickAccess(1) = 1
         call anprj_analytL2projectionByMass (rvector1%RvectorBlock(1),&
-            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMass,&
+            rproblem%RlevelInfo(ilev)%rasmTempl%rmatrixMass,&
             fcoeff_solProjection,rcollection)
 
         ! Y-velocity
         rcollection%IquickAccess(1) = 2
         call anprj_analytL2projectionByMass (rvector1%RvectorBlock(2),&
-            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMass,&
+            rproblem%RlevelInfo(ilev)%rasmTempl%rmatrixMass,&
             fcoeff_solProjection,rcollection)
             
         ! Pressure
         rcollection%IquickAccess(1) = 3
         call anprj_analytL2projectionByMass (rvector1%RvectorBlock(3),&
-            rproblem%RlevelInfo(ilev)%rstaticInfo%rmatrixMassPressure,&
+            rproblem%RlevelInfo(ilev)%rasmTempl%rmatrixMassPressure,&
             fcoeff_solProjection,rcollection)
         
         ! rvector2 is not needed anymore, as well as the temporary discretisation.
@@ -1936,7 +1936,7 @@ contains
       ! Prepare the solver for the velocity.
       ! Prepare the solver for the X-velocity.
       call lsysbl_createMatFromScalar(&
-          rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo%rmatrixMass,Rmatrices(1))
+          rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMass,Rmatrices(1))
       call linsol_setMatrices (p_rsolverNode,Rmatrices)
       call linsol_initStructure (p_rsolverNode,ierror)
       call linsol_initData (p_rsolverNode,ierror)
@@ -1992,7 +1992,7 @@ contains
 
           ! Attach a new matrix.
           call lsysbl_createMatFromScalar(&
-              rproblem%RlevelInfo(rproblem%NLMAX)%rstaticInfo%rmatrixMassPressure,Rmatrices(1))
+              rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl%rmatrixMassPressure,Rmatrices(1))
 
           call linsol_doneData (p_rsolverNode,ierror)
           call linsol_doneStructure (p_rsolverNode,ierror)

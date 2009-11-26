@@ -215,7 +215,7 @@ contains
     call output_line ("Time for matrix initialisation: "//&
       trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
 
-    ! On all levels, generate the static matrices used as templates
+    ! On all levels, generate the template matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)

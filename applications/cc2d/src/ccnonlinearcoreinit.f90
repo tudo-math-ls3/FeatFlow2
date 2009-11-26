@@ -171,11 +171,11 @@ contains
     p_rdiscretisation => rlevelInfo%rdiscretisation
     
     ! Get a pointer to the template FEM matrix.
-    p_rmatrixTemplateFEM => rlevelInfo%rstaticInfo%rmatrixTemplateFEM
+    p_rmatrixTemplateFEM => rlevelInfo%rasmTempl%rmatrixTemplateFEM
 
     ! In the global system, there are two gradient matrices B1 and B2.
     ! Get a pointer to the template structure for these.
-    p_rmatrixTemplateGradient => rlevelInfo%rstaticInfo%rmatrixTemplateGradient
+    p_rmatrixTemplateGradient => rlevelInfo%rasmTempl%rmatrixTemplateGradient
 
     ! Initialise the block matrix with default values based on
     ! the discretisation.
@@ -206,7 +206,7 @@ contains
     ! that is enough for the memory allocation.
     
     call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
-        rlevelInfo%rdiscretisation,rlevelInfo%rstaticInfo,&
+        rlevelInfo%rdiscretisation,rlevelInfo%rasmTempl,&
         rlevelInfo%rdynamicInfo)
     
     call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
@@ -307,8 +307,8 @@ contains
       rnonlinearIteration%RcoreEquation(ilevel)%p_rdiscretisation => &
         rproblem%RlevelInfo(ilevel)%rdiscretisation
 
-      rnonlinearIteration%RcoreEquation(ilevel)%p_rstaticInfo => &
-        rproblem%RlevelInfo(ilevel)%rstaticInfo
+      rnonlinearIteration%RcoreEquation(ilevel)%p_rasmTempl => &
+        rproblem%RlevelInfo(ilevel)%rasmTempl
       rnonlinearIteration%RcoreEquation(ilevel)%p_rdynamicInfo => &
         rproblem%RlevelInfo(ilevel)%rdynamicInfo
       rnonlinearIteration%RcoreEquation(ilevel)%p_rtempVector => &
@@ -1329,12 +1329,12 @@ contains
       ! for both X- and Y-velocity.
       call mlprj_initMatrixProjection(&
           rprojection%RscalarProjection(1,1), &
-          rlevelInfo%rstaticInfo%rmatrixProlVelocity, &
-          rlevelInfo%rstaticInfo%rmatrixInterpVelocity)
+          rlevelInfo%rasmTempl%rmatrixProlVelocity, &
+          rlevelInfo%rasmTempl%rmatrixInterpVelocity)
       call mlprj_initMatrixProjection(&
           rprojection%RscalarProjection(1,2), &
-          rlevelInfo%rstaticInfo%rmatrixProlVelocity, &
-          rlevelInfo%rstaticInfo%rmatrixInterpVelocity)
+          rlevelInfo%rasmTempl%rmatrixProlVelocity, &
+          rlevelInfo%rasmTempl%rmatrixInterpVelocity)
           
     end if
 
@@ -1345,8 +1345,8 @@ contains
       ! Yes, so link the prolongation matrix to the projection structure.
       call mlprj_initMatrixProjection(&
           rprojection%RscalarProjection(1,3), &
-          rlevelInfo%rstaticInfo%rmatrixProlPressure, &
-          rlevelInfo%rstaticInfo%rmatrixInterpPressure)
+          rlevelInfo%rasmTempl%rmatrixProlPressure, &
+          rlevelInfo%rasmTempl%rmatrixInterpPressure)
           
     end if
     

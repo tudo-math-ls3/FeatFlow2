@@ -216,8 +216,8 @@ module ccmatvecassembly
     ! (size of subvectors in the solution vector, trial/test functions,...).
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to static/precalculated information on this level.
-    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
+    ! Pointer to template information on this level.
+    type(t_asmTemplates), pointer :: p_rasmTempl => null()
 
     ! Pointer to dynamic information on this level (e.g. boundary conditions).
     ! This information usually changes with every timestep.
@@ -731,9 +731,9 @@ contains
       
       ! Get a pointer to the template FEM matrix. If that does not exist,
       ! take the Stokes matrix as template.
-      p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rstaticInfo%rmatrixTemplateFEM
+      p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEM
       if (.not. associated(p_rmatrixTemplateFEM)) &
-        p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes
+        p_rmatrixTemplateFEM => rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes
       if (.not. associated(p_rmatrixTemplateFEM)) then
         call output_line ('Cannot set up A matrices in system matrix!', &
             OU_CLASS_ERROR,OU_MODE_STD,'allocMatrix')
@@ -845,11 +845,11 @@ contains
       ! block matrix, while we create empty space for the entries. 
       ! Later, the B-matrices are copied into here and modified for boundary
       ! conditions.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
           rmatrix%RmatrixBlock(1,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
           rmatrix%RmatrixBlock(2,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
         
@@ -859,19 +859,17 @@ contains
       ! virtually transposing the B-matrices. (This may be need by some VANKA
       ! variants in the preconditioner e.g.)
       if (rnonlinearCCMatrix%bvirtualTransposedD) then
-        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1T,&
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1T,&
             rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
             
-        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2T,&
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2T,&
             rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
       else
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1, &
-            rmatrix%RmatrixBlock(3,1),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
+            rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2, &
-            rmatrix%RmatrixBlock(3,2),&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
+            rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
 
       ! Include a matrx for the pressure
@@ -884,7 +882,7 @@ contains
       ! This submatrix will be deactived by setting the scaling factor
       ! to 0.
       call lsyssc_duplicateMatrix (&
-          rnonlinearCCMatrix%p_rstaticInfo%rmatrixTemplateFEMPressure,&
+          rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEMPressure,&
           rmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
           
       rmatrix%RmatrixBlock(3,3)%dscaleFactor = 0.0_DP
@@ -974,7 +972,7 @@ contains
         end if
       
         call lsyssc_matrixLinearComb (&
-            rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass,rnonlinearCCMatrix%dalpha,&
+            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rnonlinearCCMatrix%dalpha,&
             rmatrix%RmatrixBlock(1,1),0.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
@@ -987,7 +985,7 @@ contains
           end if
 
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass,rnonlinearCCMatrix%dalpha,&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rnonlinearCCMatrix%dalpha,&
               rmatrix%RmatrixBlock(2,2),0.0_DP,&
               rmatrix%RmatrixBlock(2,2),&
               .false.,.false.,.true.,.true.)
@@ -1029,14 +1027,14 @@ contains
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1215,12 +1213,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
           end if
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1235,13 +1233,13 @@ contains
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                   rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
@@ -1277,14 +1275,14 @@ contains
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1302,13 +1300,13 @@ contains
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                   rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
@@ -1384,12 +1382,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
           end if
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1404,13 +1402,13 @@ contains
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                   rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
@@ -1453,12 +1451,12 @@ contains
           ! convective parts...
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(1,1),&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           if (.not. bshared) then
             call conv_jumpStabilisation2d (&
                 rjumpStabil,CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
           end if
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
@@ -1473,13 +1471,13 @@ contains
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                   rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
@@ -1503,14 +1501,14 @@ contains
 
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
-              rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
+              rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
               rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
           
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
+                rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
                 rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
@@ -1528,13 +1526,13 @@ contains
                 p_IedgesDirichletBC)
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODMATRIX, rmatrix%RmatrixBlock(1,1),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
 
             if (.not. bshared) then
               call conv_jumpStabilisation2d (&
                   rjumpStabil, CONV_MODMATRIX,rmatrix%RmatrixBlock(2,2),&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
             end if
           end if
@@ -1640,11 +1638,11 @@ contains
       !
       ! Note that idubContent = LSYSSC_DUP_COPY will automatically allocate
       ! memory if necessary.
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1, &
                                     rmatrix%RmatrixBlock(1,3),&
                                     idubStructure,idubContent)
 
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2, &
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2, &
                                     rmatrix%RmatrixBlock(2,3),&
                                     idubStructure,idubContent)
       
@@ -1654,17 +1652,17 @@ contains
       ! Check the flag bvirtualTransposedD; this decides on whether Di are
       ! created as virtually transposed B-matrices or by taking the D-matrices.
       if (rnonlinearCCMatrix%bvirtualTransposedD) then
-        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1T,&
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1T,&
             rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
             
-        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2T,&
+        call lsyssc_transposeMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2T,&
             rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
       else
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1, &
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1, &
                                       rmatrix%RmatrixBlock(3,1),&
                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2, &
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2, &
                                       rmatrix%RmatrixBlock(3,2),&
                                       LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
       end if
@@ -1784,26 +1782,26 @@ contains
     ! Put references to the Stokes- and B-matrices to Aij. assembleVelocityDefect 
     ! needs this template matrix to provide the structure for the stabilisation
     ! routines! The B-matrices are needed later.
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
         rmatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
         rmatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     if (rnonlinearCCMatrix%dnewton .ne. 0.0_DP) then
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
           rmatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
-      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes,&
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes,&
           rmatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     end if
     
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB1,&
         rmatrix%RmatrixBlock(1,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixB2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixB2,&
         rmatrix%RmatrixBlock(2,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD1,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD1,&
         rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rstaticInfo%rmatrixD2,&
+    call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixD2,&
         rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
 
     ! In the first step, we assemble the defect that arises in the velocity 
@@ -1918,11 +1916,11 @@ contains
       ! ---------------------------------------------------
       ! Subtract the mass matrix stuff?
       if (rnonlinearCCMatrix%dalpha .ne. 0.0_DP) then
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
 
-        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixMass, &
+        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
       end if
@@ -1936,11 +1934,11 @@ contains
         if ((rnonlinearCCMatrix%p_rphysics%isubequation .eq. 0) .and. &
             (rnonlinearCCMatrix%p_rphysics%cviscoModel .eq. 0)) then
       
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStokes, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStokes, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
               
@@ -2137,7 +2135,7 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           if (.not. bshared) then
             call output_line (&
@@ -2157,7 +2155,7 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
                 rsolution=rvector,rdefect=rdefect,&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
           end if
 
@@ -2257,7 +2255,7 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           if (.not. bshared) then
             call output_line (&
@@ -2279,7 +2277,7 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
                 rsolution=rvector,rdefect=rdefect,&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
           end if
 
@@ -2337,11 +2335,11 @@ contains
                               rmatrix,rsolution=rvector,rdefect=rdefect)          
         
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
@@ -2358,7 +2356,7 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
                 rsolution=rvector,rdefect=rdefect,&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
           end if
 
@@ -2399,7 +2397,7 @@ contains
           call conv_jumpStabilisation2d (&
               rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
               rsolution=rvector,rdefect=rdefect,&
-              rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil)
+              rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil)
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
@@ -2414,7 +2412,7 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
                 rsolution=rvector,rdefect=rdefect,&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
           end if
 
@@ -2422,11 +2420,11 @@ contains
           ! Fast Jump stabilisation. Precomputed matrix.
           
           ! Subtract the stabilisation matrix stuff.
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
-          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rstaticInfo%rmatrixStabil, &
+          call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
               rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
               -rnonlinearCCMatrix%dtheta, 1.0_DP)
 
@@ -2443,7 +2441,7 @@ contains
             call conv_jumpStabilisation2d (&
                 rjumpStabil, CONV_MODDEFECT,rmatrix%RmatrixBlock(1,1),&
                 rsolution=rvector,rdefect=rdefect,&
-                rdiscretisation=rnonlinearCCMatrix%p_rstaticInfo%rdiscretisationStabil,&
+                rdiscretisation=rnonlinearCCMatrix%p_rasmTempl%rdiscretisationStabil,&
                 InodeList=p_IedgesDirichletBC)
           end if
 

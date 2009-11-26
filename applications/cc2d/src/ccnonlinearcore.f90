@@ -361,8 +361,8 @@ module ccnonlinearcore
     ! Pointer to the discretisation structure of that level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to static/precalculated information on this level.
-    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
+    ! Pointer to template information on this level.
+    type(t_asmTemplates), pointer :: p_rasmTempl => null()
 
     ! Pointer to dynamic information on this level.
     type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo => null()
@@ -484,7 +484,7 @@ contains
   !<subroutine>
   
     subroutine cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
-        rdiscretisation,rstaticLevelInfo,rdynamicLevelInfo)
+        rdiscretisation,rasmTempl,rdynamicLevelInfo)
   
   !<description>
     ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
@@ -498,8 +498,8 @@ contains
     ! Discretisation of the level where the matrix is to be assembled.
     type(t_blockDiscretisation), intent(in), target :: rdiscretisation
     
-    ! Static structures on this level.
-    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+    ! Template structures on this level.
+    type(t_asmTemplates), intent(in), target :: rasmTempl
 
     ! Dynamic structures on this level. Usually change in every timestep.
     type(t_dynamicLevelInfo), intent(in), target :: rdynamicLevelInfo
@@ -522,7 +522,7 @@ contains
       
       ! 2.) Pointers to global precalculated matrices.
       rnonlinearCCMatrix%p_rdiscretisation => rdiscretisation
-      rnonlinearCCMatrix%p_rstaticInfo => rstaticLevelInfo
+      rnonlinearCCMatrix%p_rasmTempl => rasmTempl
       rnonlinearCCMatrix%p_rdynamicInfo => rdynamicLevelInfo
       
     end subroutine
@@ -655,7 +655,7 @@ contains
       ! matrix we want to have.
       call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
-        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rasmTempl,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
 
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
@@ -840,7 +840,7 @@ contains
  
       call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
-        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rasmTempl,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
         
       call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
@@ -1397,7 +1397,7 @@ contains
           
           call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
             rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation,&
-            rnonlinearIteration%RcoreEquation(ilev)%p_rstaticInfo,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rasmTempl,&
             rnonlinearIteration%RcoreEquation(ilev)%p_rdynamicInfo)
             
           call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&

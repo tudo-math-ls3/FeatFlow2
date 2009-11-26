@@ -44,10 +44,11 @@ module ccbasic
 
 !<typeblock>
 
-  ! A type block specifying all 'static' information which are depending
-  ! on a discretisation and a triangulation. Such static information can be
+  ! A type block specifying all 'template' information which are depending
+  ! on a discretisation and a triangulation. Such template information can be
   ! precalculated and is valid until the mesh or the FE spaces change.
-  type t_staticLevelInfo
+  ! It can be used to create vectors and matrices e.g.
+  type t_asmTemplates
   
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
@@ -178,8 +179,8 @@ module ccbasic
     ! Temporary vector in the size of the RHS/solution vector on that level.
     type(t_vectorBlock) :: rtempVector
 
-    ! A structure containing all static information about this level.
-    type(t_staticLevelInfo) :: rstaticInfo
+    ! A structure containing all template information about this level.
+    type(t_asmTemplates) :: rasmTempl
 
     ! A structure containing all dynamic information about this level.
     type(t_dynamicLevelInfo) :: rdynamicInfo
