@@ -102,6 +102,7 @@ contains
     type(t_timer) :: rtimerGridGeneration
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
+    type(t_ParticleDescriptor3D) :: rParticleDescriptor
     
     integer :: i
     
@@ -149,6 +150,22 @@ contains
     ! Evaluate these parameters and initialise global data in the problem
     ! structure for global access.
     call cc_initParameters (p_rproblem)
+    
+    p_rproblem%iParticles = 1
+    
+    if(p_rproblem%iParticles .gt. 0)then
+      call cc_initParticleDescriptor3D(rParticleDescriptor)
+      
+      ! initialize the particles
+      call geom_initParticleCollection3D(p_rproblem%rparticleCollection,rParticleDescriptor)
+      
+      deallocate(rParticleDescriptor%pparameters)
+    ! we put the geometry object into the collection
+    ! to make it easily accessible
+    call collct_setvalue_particles3D(p_rproblem%rcollection, 'particles',&
+                                   p_rproblem%rparticleCollection,.true.)
+    end if
+    
     
     ! So now the different steps - one after the other.
     !
@@ -321,6 +338,9 @@ contains
 
     ! Release the parameter list
     call parlst_done (p_rproblem%rparamList)
+    
+    call collct_deletevalue (p_rproblem%rcollection, 'particles')
+    call geom_releaseParticleCollection3D(p_rproblem%rparticleCollection)
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()

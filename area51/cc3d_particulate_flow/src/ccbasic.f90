@@ -33,7 +33,7 @@ module ccbasic
   use discretefbc
   use linearsystemscalar
   use linearsystemblock
-  
+  use geometry
   use collection
   
   use adaptivetimestep
@@ -225,6 +225,15 @@ module ccbasic
     
     ! A param list that saves all parameters from the DAT/INI file(s).
     type(t_parlist)                       :: rparamList
+    
+    integer  :: iParticles
+    
+    real(dp) :: dCoefficientDrag
+
+    real(dp) :: dCoefficientLift
+    
+    type(t_particleCollection3D) :: rparticleCollection
+    
 
   end type
 

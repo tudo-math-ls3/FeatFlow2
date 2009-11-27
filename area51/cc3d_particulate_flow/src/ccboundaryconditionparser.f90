@@ -800,8 +800,8 @@ contains
     ! We use the default initialisation of rfictBoundaryRegion and only
     ! change the name of the component.
     Iequations = (/1,2,3/)    ! 1=x, 2=y, 3=z-velocity
-    call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
-        getBoundaryValuesFBC3,rcollection)
+!    call bcasm_newDirichletBConFBD (rdiscretisation,Iequations,rdiscreteFBC,&
+!        getBoundaryValuesFBC3,rcollection)
 
     
   end subroutine  
