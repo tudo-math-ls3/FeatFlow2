@@ -141,6 +141,22 @@ module spatialdiscretisation
 
 !</constantblock>
 
+!<constantblock description="Operator types">
+
+  ! Mass matrix
+  integer(I32), parameter, public :: SPDISC_OPTP_MASS = 0
+
+  ! Laplace matrix
+  integer(I32), parameter, public :: SPDISC_OPTP_LAPLACE = 1
+  
+  ! RHS
+  integer(I32), parameter, public :: SPDISC_OPTP_RHS = 2
+  
+  ! Convection matrix
+  integer(I32), parameter, public :: SPDISC_OPTP_CONVEC = 3
+
+!</constantblock>
+
 !</constants>
 
 !<types>
@@ -624,7 +640,7 @@ contains
   
 !<function>
 
-  integer(I32) function spdiscr_getStdCubature (celement) result (ccubType)
+  integer(I32) function spdiscr_getStdCubature (celement,iopertype) result (ccubType)
   
 !<description>
   ! This routine returns a standard cubature formula for an element which
@@ -634,7 +650,12 @@ contains
 
 !<input>
   ! An element type identifier
-  integer(I32), intent(in)                       :: celement
+  integer(I32), intent(in) :: celement
+  
+  ! OPTIONAL: Type of operator which should be assembled using this cubature 
+  ! formula. One of the SPDISC_OPTP_xxxx constants. If not specified, 
+  ! SPDISC_OPTP_MASS is the default.
+  integer, intent(in), optional :: iopertype
 !</input>
 
 !<result>
@@ -644,27 +665,60 @@ contains
   
 !</function>
 
+    integer :: ioperation
+    
+    ioperation = SPDISC_OPTP_MASS
+    if (present(iopertype)) ioperation = iopertype
+
     select case (elem_igetDimension(celement))
     case (NDIM1D)
     
       select case (elem_getPrimaryElement(celement))
       case (EL_P0_1D)
-        ! 1-point Gauss
-        ccubType = CUB_G1_1D
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 2-point Gauss
+          ccubType = CUB_G2_1D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 1-point Gauss
+          ccubType = CUB_G1_1D
+        end select
 
       case (EL_P1_1D)
-        ! 2-point Gauss
-        ccubType = CUB_G2_1D
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3-point Gauss
+          ccubType = CUB_G3_1D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2-point Gauss
+          ccubType = CUB_G2_1D
+        end select
       
       case (EL_P2_1D)
-        ! 3-point Gauss
-        ccubType = CUB_G3_1D
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 4-point Gauss
+          ccubType = CUB_G4_1D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 3-point Gauss
+          ccubType = CUB_G3_1D
+        end select
 
       case (EL_S31_1D)
-        ! 4-point Gauss
-        ccubType = CUB_G4_1D
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 5-point Gauss
+          ccubType = CUB_G5_1D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 4-point Gauss
+          ccubType = CUB_G4_1D
+        end select
       
-      case DEFAULT
+      case default
         ccubType = 0
       end select
 
@@ -672,46 +726,116 @@ contains
     
       select case (elem_getPrimaryElement(celement))
       case (EL_P0)
-        ! Use Gauss 1X1
-        ccubType = CUB_G1_T
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! Use Gauss 3pt
+          ccubType = CUB_G3_T
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! Use Gauss 1X1
+          ccubType = CUB_G1_T
+        end select
 
       case (EL_P1)
-        ! Use Gauss-3pt
-        ccubType = CUB_G3_T
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! Use VMC
+          ccubType = CUB_VMC
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! Use Gauss-3pt
+          ccubType = CUB_G3_T
+        end select
 
       case (EL_P2)
-        ! Gauss-3pt
-        ccubType = CUB_G3_T
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! Use Gauss-4pt
+          ccubType = CUB_VMC
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! Use Gauss-3pt
+          ccubType = CUB_G3_T
+        end select
 
       case (EL_P1T)
-        ! Gauss-3pt
-        ccubType = CUB_G3_T
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! Use Gauss-4pt
+          ccubType = CUB_VMC
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! Use Gauss-3pt
+          ccubType = CUB_G3_T
+        end select
 
       case (EL_Q0)
-        ! 1x1 Gauss formula
-        ccubType = CUB_G1X1
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 2x2 Gauss formula
+          ccubType = CUB_G2X2
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 1x1 Gauss formula
+          ccubType = CUB_G1X1
+        end select
 
       case (EL_Q1)
-        ! 2x2 Gauss formula
-        ccubType = CUB_G2X2
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3X3
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2x2 Gauss formula
+          ccubType = CUB_G2X2
+        end select
 
       case (EL_Q2)
-        ! 3x3 Gauss formula
-        ccubType = CUB_G3X3
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 4x4 Gauss formula
+          ccubType = CUB_G4X4
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3X3
+        end select
 
       case (EL_Q3)
-        ! 3x3 Gauss formula
-        ccubType = CUB_G3X3
+      
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 4x4 Gauss formula
+          ccubType = CUB_G4X4
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3X3
+        end select
 
       case (EL_Q1T)
-        ! 2x2 Gauss formula
-        ccubType = CUB_G2X2
+      
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G2X2
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2x2 Gauss formula
+          ccubType = CUB_G2X2
+        end select
 
       case (EL_QP1)
-        ! 2x2 Gauss formula
-        ccubType = CUB_G2X2
       
-      case DEFAULT
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3X3
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2x2 Gauss formula
+          ccubType = CUB_G2X2
+        end select
+      
+      case default
         ccubType = 0
       end select
       
@@ -719,18 +843,32 @@ contains
 
       select case (elem_getPrimaryElement(celement))
       case (EL_Q0_3D)
-        ! 1x1 Gauss formula
-        ccubType = CUB_G1_3D
+
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 2pt Gauss formula
+          ccubType = CUB_G2_3D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 1pt Gauss formula
+          ccubType = CUB_G1_3D
+        end select
 
       case (EL_Q1_3D)
-        ! 2x2 Gauss formula
-        ccubType = CUB_G2_3D
 
-      case DEFAULT
+        select case (ioperation)
+        case (SPDISC_OPTP_MASS)
+          ! 3x3 Gauss formula
+          ccubType = CUB_G3_3D
+        case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
+          ! 2x2 Gauss formula
+          ccubType = CUB_G2_3D
+        end select
+
+      case default
         ccubType = 0
       end select
       
-    case DEFAULT
+    case default
       ccubType = 0
     end select
 
