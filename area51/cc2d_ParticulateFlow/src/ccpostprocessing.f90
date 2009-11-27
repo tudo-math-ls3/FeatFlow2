@@ -192,7 +192,7 @@ contains
 
     if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
-      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+      call cc_forcesNonStat(rvector,rproblem)
     end if
 
     ! Calculate body forces.
@@ -271,7 +271,7 @@ contains
     
     if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
-      call cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+      call cc_forcesNonStat(rvector,rproblem)
     end if
     
     ! Calculate body forces.
@@ -1709,7 +1709,7 @@ contains
 ! ***************************************************************************
 
   !<subroutine>
-  subroutine cc_forcesNonStat(rpostprocessing,rvector,rproblem)
+  subroutine cc_forcesNonStat(rvector,rproblem)
   !<description>
   ! A routine that calculated the forces acting on an object
   ! and moves the object according to these forces
@@ -1718,7 +1718,6 @@ contains
   ! structure for a geometry object
   !<inputoutput>
   type(t_problem), intent(INOUT) :: rproblem
-  type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
   !</inputoutput>  
 
   !<input>
@@ -1731,13 +1730,6 @@ contains
   ! pointer to the entries of the alpha vector  
   real(DP), dimension(:), pointer :: p_Dvector  
 
-  ! pointer to the nodes of the grid
-  real(DP), dimension(:,:), pointer :: p_Ddata
-  
-  ! Forces
-  real(DP) :: DResForceX
-  real(DP) :: DResForceY
-  
   ! save the particle mass centers in a temp variable
   real(DP) :: dcenterx
   real(DP) :: dcentery
@@ -1745,9 +1737,7 @@ contains
   ! pointer to the triangulation structure
   type(t_triangulation), pointer :: p_rtriangulation
   
-  integer :: ive,NEL,ipart
-
-  real(DP) :: mytime
+  integer :: ipart
   
   type(t_particleCollection), pointer :: p_rparticleCollection
 
@@ -1801,19 +1791,19 @@ contains
     dcentery=p_rgeometryObject%rcoord2D%Dorigin(2)
     
     ! we call this function to calculate the hydrodynamic forces
-    call cc_forcesIntegrationNonStat(rproblem,rvector,rpostprocessing,&
+    call cc_forcesIntegrationNonStat(rproblem,rvector,&
          p_rparticleCollection%p_rParticles(ipart)%rvectorScalarFB,&
-         DResForceX, DResForceY,rproblem%dnu,dcenterx,dcentery,rproblem%dnu,0.1_dp*0.2_dp**2)
-    
-    ! assign the forces
-    p_rparticleCollection%p_rParticles(ipart)%rResForceX(4)=rproblem%DResForceX(1)      
-    p_rparticleCollection%p_rParticles(ipart)%rResForceY(4)=rproblem%DResForcey(1)      
-    p_rparticleCollection%p_rParticles(ipart)%dTorque(1)=rproblem%DTrqForce(1)  
+         dcenterx,dcentery,&
+         p_rparticleCollection%p_rParticles(ipart)%rResForceX,&
+         p_rparticleCollection%p_rParticles(ipart)%rResForceY,&
+         p_rparticleCollection%p_rParticles(ipart)%dTorque,&
+         rproblem%dnu,0.1_dp*0.2_dp**2)
     
     call output_lbrk()
     call output_line ('Drag forces')
     call output_line ('-----------')  
-    print*, DResForceX," / ", DResForceY
+    print*, p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)," / ",&
+    p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)
     
   end do  ! end particles
   
@@ -1822,8 +1812,8 @@ contains
 ! ***************************************************************************  
 
 !<subroutine>
-  subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,rpostprocessing,&
-             rvectorAlpha,Dfx,Dfy,dnu,dcenterx,dcentery,df1,df2)
+  subroutine cc_forcesIntegrationNonStat(rproblem,rvectorSol,&
+             rvectorAlpha,dcenterx,dcentery,DforceX,DforceY,Dtor,df1,df2)
 !<description>
   ! This routine calculates the error of a given finite element function
   ! in rvector to a given analytical callback function ffunctionReference.
@@ -1841,9 +1831,6 @@ contains
   
   type(t_vectorScalar), intent(in), target :: rvectorAlpha
   
-  ! viscosity parameter
-  real(DP),intent(IN) :: dnu
-
   !  parameter
   !integer,intent(IN) :: ipart
   
@@ -1861,24 +1848,17 @@ contains
   real(DP), intent(IN), optional      :: df2
   
 !</input>
-
-  type (t_c2d2postprocessing),intent(inout) :: rpostprocessing
-
-  type(t_problem) :: rproblem
-
-!<output>
-  ! Array receiving the calculated error.
-  real(DP),intent(OUT) :: Dfx
-  real(DP),intent(OUT) :: Dfy
-!</output>
-  
+  real(dp), dimension(2), intent(inout) :: DforceX
+  real(dp), dimension(2), intent(inout) :: DforceY  
+  real(dp), dimension(2), intent(inout) :: Dtor 
+  type(t_problem), intent(INOUT) :: rproblem
 !</subroutine>
 
     ! local variables
     integer :: i,k,icurrentElementDistr, ICUBP, NVE
     integer(I32) :: IEL, IELmax, IELset
     real(DP) :: OM, DN1, DN2, DN3,dpp,xtorque,ytorque,atq,atqy
-    real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx2,Dfy2,dalx,daly
+    real(DP) :: ah1,ah2,du1x,du1y,du2x,du2y,Dfx,Dfy,dalx,daly,dTorque
     
     ! Cubature point coordinates on the reference element
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi
@@ -1948,12 +1928,8 @@ contains
     integer :: cevaluationTag
     
     real(dp) :: dpf1,dpf2,robx,roby,length
-    real(dp), dimension(:), pointer :: p_DforceX
-    real(dp), dimension(:), pointer :: p_DforceY  
-    real(dp), dimension(:), pointer :: p_DCoefficient
     
     character(len=SYS_STRLEN) :: sfilenameBodyForces
-    character(len=SYS_STRLEN) :: stemp
     integer :: iunit
     integer :: cflag
     logical :: bfileExists    
@@ -1963,10 +1939,6 @@ contains
     dpf2 = 2.0_DP
     if (present(df1)) dpf1 = df1
     if (present(df2)) dpf2 = df2    
-
-    ! get the work array
-    call lsyssc_getbase_double (rpostprocessing%rResForceX,p_DforceX)
-    call lsyssc_getbase_double (rpostprocessing%rResForceY,p_DforceY)
 
     ! make the l2 projection to get the normal vector
 
@@ -2065,15 +2037,9 @@ contains
       NEL = p_relementDistributionU%NEL
     
       ! Initialize the forces of the element with zero
-      Dfx = 0.0_dp
-      Dfy = 0.0_dp
-      Dfx2 = 0.0_dp
-      Dfy2 = 0.0_dp
-      p_DforceX(1)=  0.0_dp
-      p_DforceX(4)=  0.0_dp
-      p_DforceY(1)=  0.0_dp
-      p_DforceY(4)=  0.0_dp
-      rproblem%DTrqForce(1)= 0.0_dp
+      Dfx     = 0.0_dp
+      Dfy     = 0.0_dp
+      dTorque = 0.0_dp
       
           
       ! Prepare the call to the evaluation routine of the analytic function.    
@@ -2209,12 +2175,8 @@ contains
             Dfx = Dfx + ah1 * om         
             Dfy = Dfy + ah2 * om
             
-            p_DforceX(4) = p_DforceX(4) + ah1 * om
-            p_DforceY(4) = p_DforceY(4) + ah2 * om
-            
             ! for the torque calculate in 2d:
             ! (x-x_i) .perpdot. (sigma * n) 
-            
             ! calculate the (x-x_i) part
             xtorque = rintSubset%p_DpointsReal(1,icubp,iel) - dcenterx
             ytorque = rintSubset%p_DpointsReal(2,icubp,iel) - dcentery
@@ -2227,7 +2189,7 @@ contains
             !atq = robx * ah1 + roby * ah2
             
             ! add up the forces
-            rproblem%DTrqForce(1)=rproblem%DTrqForce(1) + atq * OM
+            dTorque = dTorque + atq * OM
 
           end do ! ICUBP 
 
@@ -2236,16 +2198,13 @@ contains
       end do ! IELset
       
       ! assign the forces
-      p_DforceX(1) = Dfx
-      p_DforceY(1) = Dfy
-      
-      ! assign the forces
-      rproblem%DResForceX(1) = Dfx
-      rproblem%DResForceY(1) = Dfy
+      DforceX(1) = Dfx
+      DforceY(1) = Dfy
+      Dtor(1)    = dTorque
       ! Output some values to get some readable stuff on the
       ! the screen
       print *,"--------------------------"
-      print *,"torque force1: ",rproblem%DTrqForce(1)
+      print *,"torque force1: ",dTorque
       print *,"--------------------------"
       print *,"ForceY: ",Dfy
       print *,"--------------------------"
@@ -2254,7 +2213,6 @@ contains
       ! calculate also the drag and lift coefficients
       Dfx = Dfx * 2.0_dp/dpf2
       Dfy = Dfy * 2.0_dp/dpf2
-
 
       sfilenameBodyForces='ns/DLBFMDT001'
       cflag = SYS_APPEND      
@@ -2283,7 +2241,173 @@ contains
 
     end do ! icurrentElementDistr
     
-  end subroutine  
+  end subroutine
+  
+! ***************************************************************************  
+  
+!<subroutine>
+  subroutine cc_updateParticlePosition(rproblem,dtimestep)
+!<description>
+  ! 
+!</description>
+
+!<inputoutput>
+  type(t_problem), intent(INOUT) :: rproblem
+  real(dp), intent(in) :: dtimestep
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ipart,i
+    real(DP) :: ah1,ah2,ah3,dvelx,dvely,dvelz,dmasssl,ddmasssl,dvolume,dimomir
+    real(DP) :: dfx,dfy
+    real(DP) :: dCenterX,dCenterY,dCenterXold,dCenterYold,domega
+    type(t_geometryObject), pointer :: p_rgeometryObject        
+    
+    ! this structure holds all the particles used in the application
+    type(t_particleCollection), pointer :: p_rparticleCollection
+
+    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+
+    ! loop over all the particles and move eac of them
+    ! individually
+    do ipart=1,p_rparticleCollection%nparticles
+    
+      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+      
+      ! position
+      dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
+      dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
+      
+      ! old position
+      dCenterXold=p_rgeometryObject%rcoord2D%Dorigin(1)
+      dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
+      
+      ! some physical parameters
+      dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
+      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume 
+      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume 
+      
+      ! Calculate the moment of inertia by formula,
+      ! this formula is valid only for a circle
+      ! note: for other shaped an approximation can
+      ! be calculated by the routine cc_torque:
+      ! there we calculated :int_Particle |r|^2 dParticle
+      ! the moment of inertia can then be calculated by
+      ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
+      ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
+      ! we already calculated earlier; so we just need to divide...
+      ! moment of inertia 
+      dimomir  = &
+      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
+      
+      ! Mean resistance forces for the given time step
+      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(5) &
+       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(4))
+      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(5) &
+       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(4))
+      
+      ! Velocity difference for the given time step
+      dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
+      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
+   
+      ! integrate the torque to get the angular velocity
+      ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
+      domega = dtimestep*0.5_dp*(p_rparticleCollection%p_rParticles(ipart)%dTorque(2) &
+               + p_rparticleCollection%p_rParticles(ipart)%dTorque(1)) /dimomir
+
+      !----------------------------------------------------------------------------------------   
+      !                          UPDATE THE TORQUE
+      !----------------------------------------------------------------------------------------   
+      ! set the new values for the torque
+      ! torque_old=torque_new
+      rproblem%DTrqForce(2)=rproblem%DTrqForce(1)
+      p_rparticleCollection%p_rParticles(ipart)%dTorque(2)= &
+      p_rparticleCollection%p_rParticles(ipart)%dTorque(1)
+      
+      !----------------------------------------------------------------------------------------   
+      !                          UPDATE THE ANGLES AND ANGULAR VELOCITY
+      !----------------------------------------------------------------------------------------   
+      ! 
+      ! a_new = a_old + time*(avel_old + 0.5*avel_new)
+      ! Overwrite rotation angle
+      p_rgeometryObject%rcoord2D%drotation = &
+      p_rgeometryObject%rcoord2D%drotation + &
+      dtimestep * (p_rparticleCollection%p_rParticles(ipart)%dangVelocity + 0.5_dp*domega)
+      
+      ! Recalculate SIN and COS values of angle
+      p_rgeometryObject%rcoord2D%dsin_rotation = sin(p_rgeometryObject%rcoord2D%drotation)
+      p_rgeometryObject%rcoord2D%dcos_rotation = cos(p_rgeometryObject%rcoord2D%drotation)
+      
+      ! Update the angular velocity
+      ! avel_new = avel_old + avel_new
+      p_rparticleCollection%p_rParticles(ipart)%dangVelocity= &
+      p_rparticleCollection%p_rParticles(ipart)%dangVelocity + domega
+    
+      !----------------------------------------------------------------------------------------   
+      !                          UPDATE THE FORCES
+      !----------------------------------------------------------------------------------------   
+      ! save the old forces for the next time step
+      p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) = &
+      p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)      
+
+      p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) = &
+      p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)      
+      
+      !----------------------------------------------------------------------------------------   
+      !                          UPDATE THE PARTICLE POSITION
+      !----------------------------------------------------------------------------------------   
+      ! update the position of the x-center
+      dCenterX = dCenterX + dtimestep * &
+      (p_rparticleCollection%p_rParticles(ipart)%dtransVelX+0.5_dp*dvelx)
+
+      ! update the position of the geometry object
+      p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
+      
+      ! if we are dealing with the reference particle
+      ! update the position of the y-center
+      dCenterY = dCenterY + dtimestep * &
+      (p_rparticleCollection%p_rParticles(ipart)%dtransVelY + &
+      0.5_dp*dvely)
+      p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
+
+
+      !----------------------------------------------------------------------------------------   
+      !                          UPDATE THE PARTICLE VELOCITY
+      !----------------------------------------------------------------------------------------   
+      ! save the current velocity
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
+      p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
+      
+      
+      
+      !----------------------------------------------------------------------------------------   
+      !                          SCREEN OUTPUT
+      !----------------------------------------------------------------------------------------   
+      ! Output some values to get some readable stuff on the
+      ! the screen
+      print *,"--------------------------"
+      print *,"Total torque force: ",p_rparticleCollection%p_rParticles(ipart)%dTorque(1)
+      print *,"--------------------------"
+      print *,"domega: ",domega
+      print *,"--------------------------"
+      print *,"DAngVel: ",p_rparticleCollection%p_rParticles(ipart)%dangVelocity
+      print *,"--------------------------"
+      print *,"New Position X: ",dCenterX
+      print *,"--------------------------"
+      print *,"New Position Y: ",dCenterY
+      print *,"--------------------------"      
+      print *,"VelocityYfromFlow: ",dvely
+      print *,"--------------------------"
+      print *,"VelocityYTotal: ",p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+      print *,"--------------------------"
+    
+    end do ! end ipart
+    
+  end subroutine
 
 ! ***************************************************************************  
   
