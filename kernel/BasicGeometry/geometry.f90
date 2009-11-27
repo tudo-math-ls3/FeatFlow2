@@ -581,6 +581,75 @@ module geometry
 
 ! *****************************************************************************  
 
+!<typeblock>  
+  ! The 3d version of a particle, see above for a description
+  type t_particle3D
+  
+    ! structure for a geometry object
+    type(t_geometryObject) :: rgeometryObject    
+
+    ! mass of the particle  
+    real(DP) :: dmass
+    
+    ! radius of the circle, that circumferes the particle
+    real(dp) :: drad
+    
+    ! density of the particle
+    real(dp) :: drho    
+
+    ! the translational x-velocity of the particle
+    real(dp) :: dtransVelX     = 0.0_dp  
+
+    ! the translational y-velocity of the particle
+    real(dp) :: dtransVelY     = 0.0_dp  
+
+    ! the translational z-velocity of the particle
+    real(dp) :: dtransVelZ     = 0.0_dp  
+    
+    ! the x-angular velocity of the particle
+    real(dp) :: dangVelocityX   = 0.0_dp  
+
+    ! the y-angular velocity of the particle
+    real(dp) :: dangVelocityY   = 0.0_dp  
+
+    ! the z-angular velocity of the particle
+    real(dp) :: dangVelocityZ   = 0.0_dp  
+    
+    ! A particle is considered a fictitious boundary object
+    ! these FBOs are described by a 01-Vector. If we have
+    ! a Q1-discretisation for example this 01-Vector has
+    ! the length #Nodes. If the i-th node is inside the i-th
+    ! vector entry will be 1. For other discretisation this
+    ! concept works similarly.
+    ! Finally the vector rvectorScalarFB holds these values
+    ! for the particle under consideration
+    type(t_vectorScalar) :: rvectorScalarFB
+    
+    ! In a particulate flow simulation we calculate the
+    ! hydrodynamic forces that act on a particle, these
+    ! forces are saved in the following arrays
+    ! rResForceX and rResForceY store the x and y
+    ! components of these forces.
+    ! dTorque stores the torque forces of the
+    ! current time step and of the previous time step
+    ! We save not only the forces from the current time
+    ! step, but also the forces from the previous time step
+    ! in rResForeX(1) are the current forces in (2) the old,
+    ! the same for the torque
+    real(dp), dimension(2) :: rResForceX = 0
+    real(dp), dimension(2) :: rResForceY = 0
+    real(dp), dimension(2) :: rResForceZ = 0
+    real(dp), dimension(2) :: dTorqueX = 0
+    real(dp), dimension(2) :: dTorqueY = 0
+    real(dp), dimension(2) :: dTorqueZ = 0
+  
+  end type
+
+!</typeblock>
+
+! *****************************************************************************  
+
+
 !<typeblock> 
   ! This structure holds a collection of particles
   ! the particles themselves are of "t_particle" type
@@ -600,6 +669,27 @@ module geometry
 !</typeblock>
 
 ! *****************************************************************************  
+
+!<typeblock> 
+  ! This structure holds a collection of particles
+  ! the particles themselves are of "t_particle" type
+  ! An example for the use of this structure is 
+  ! to add it to a collection, so that access to the
+  ! particles is possible in callback functions
+  type t_particleCollection3D
+  
+    ! number of particles in the particle collection
+    ! this number is initialized with 0
+    integer :: nparticles = 0
+  
+    ! pointer to the particle structures
+    type(t_particle3D), dimension(:), pointer :: p_rParticles
+  
+  end type
+!</typeblock>
+
+! *****************************************************************************  
+
   
 !<typeblock> 
   ! In a particulate flow simulation the user may want to
@@ -637,9 +727,44 @@ module geometry
 
 ! *****************************************************************************  
   
+!<typeblock> 
+  ! The 3d version of a particle descriptor, see above for a describtion
+  type t_particleDescriptor3D
+  
+    ! this routines initializes a Particle collection
+    ! according to the parameters given in pparameters
+    ! pparameters is a double array of size [4,iparticles]
+    ! The structure of this array is as follows:
+    !           
+    !       [1,i]:= initial x position of the i-th particle
+    !       [2,i]:= initial y position of the i-th particle
+    !       [3,i]:= initial z position of the i-th particle
+    !       [4,i]:= the radius of a sphere that circumferes the i-th particle
+    !               in later versions we want this to be the radius
+    !               of the smallest circumfering sphere...
+    !       [5,i]:= the density of the i-th particle
+           
+    ! the particle data
+    real(DP), dimension(:,:), pointer :: pparameters
+    
+    ! the number of particles that will take part in the simulation
+    integer :: iparticles = 0
+    
+    ! the shape id of the particle, initialized as a circle by default
+    integer :: ishape = GEOM_SPHERE
+    
+  end type
+!</typeblock>
+
+
+! *****************************************************************************  
+
+  public :: t_particleDescriptor3D
   public :: t_particleDescriptor
   public :: t_particle
+  public :: t_particle3D
   public :: t_particleCollection
+  public :: t_particleCollection3D
   public :: t_geometryObject
   
 
@@ -694,7 +819,9 @@ module geometry
   public :: geom_calcSignedDistanceArray
   public :: geom_polygonise
   public :: geom_initParticleCollection
+  public :: geom_initParticleCollection3D
   public :: geom_releaseParticleCollection
+  public :: geom_releaseParticleCollection3D
   
 contains
 
@@ -5338,7 +5465,7 @@ end subroutine
 ! ***************************************************************************  
 
 !<subroutine>  
-  subroutine geom_initParticle(rParticle,iid,dx,dy,drad,drho)
+  subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy)
 !<description>
   ! this routines initializes a t_particle structure
   ! according to the parameters iid,dx,dy,drad,drho
@@ -5372,13 +5499,13 @@ end subroutine
   
 !</subroutine>  
 
-  ! set the dimension of the particle
-  rParticle%rgeometryObject%ndimension = NDIM2D
   
   select case(iid)
   case (GEOM_CIRCLE)
   ! init the particle with the given parameters
   call geom_init_circle(rParticle%rgeometryObject,drad,(/dx,dy/))
+  ! set the dimension of the particle
+  rParticle%rgeometryObject%ndimension = NDIM2D
   case (GEOM_ELLIPSE)
     call output_line ('Unsupported geometry type for particle.!', &
         OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
@@ -5397,7 +5524,63 @@ end subroutine
     call output_line ('Unsupported geometry type for particle.!', &
         OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
     call sys_halt()
+  case default
+    call output_line ('Unsupported geometry type for particle.!', &
+        OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
+    call sys_halt()
+  end select
+
   
+  ! assign the radius
+  rParticle%drad = drad
+  ! particle density
+  rParticle%drho = drho
+  
+  end subroutine ! end geom_initParticle
+
+! ***************************************************************************  
+
+!<subroutine>  
+  subroutine geom_initParticle3D(rParticle,iid,drad,drho,dx,dy,dz)
+!<description>
+  ! this routines initializes a t_particle structure
+  ! according to the parameters iid,dx,dy,dz,drad,drho
+  ! The parameter iid should be one of the constants:
+  ! So far ONLY GEOM_SPHERE is fully supported!!!
+  !
+!</description>
+  
+!<inputoutput>  
+  ! structure for a geometry object
+  type(t_particle3D),intent(inout) :: rParticle    
+!</inputoutput>  
+  
+!<input>  
+  ! particle density
+  real(dp),intent(in) :: drho
+  
+  ! coordinate of the center
+  real(dp),intent(in) :: dx
+  
+  real(dp),intent(in) :: dy
+  
+  real(dp),intent(in) :: dz
+  
+  ! radius of the particle
+  real(dp),intent(in) :: drad
+  
+  ! shape of the object
+  integer, intent(in) :: iid
+  
+!</input>  
+  
+!</subroutine>  
+
+  
+  select case(iid)
+  case (GEOM_SPHERE)
+    call geom_init_sphere(rParticle%rgeometryObject, drad, (/dx,dy,dz/))
+    rParticle%rgeometryObject%ndimension = NDIM3D
   case default
     call output_line ('Unsupported geometry type for particle.!', &
         OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
@@ -5415,7 +5598,6 @@ end subroutine
 ! ***************************************************************************
 
 !<subroutine>
-
   subroutine geom_initParticleCollection(rparticleCollection,rparticleDescriptor)
   
 !<description>
@@ -5451,7 +5633,51 @@ end subroutine
     drho  = rparticleDescriptor%pparameters(4,i1)
     ! call the routine to initialize the particle
     call geom_initParticle(rparticleCollection%p_rParticles(i1),rparticleDescriptor%ishape,&
-                         dx,dy,drad,drho)
+                           drad,drho,dx,dy)
+  end do
+  
+  end subroutine ! end geom_initParticleCollection
+
+! ***************************************************************************
+
+!<subroutine>
+  subroutine geom_initParticleCollection3D(rparticleCollection3D,rparticleDescriptor3D)
+  
+!<description>
+  ! this routines initializes a Particle collection
+  ! according to the parameters given in rparticleDescriptor
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_particleCollection3D), intent(inout) :: rparticleCollection3D
+!</inputoutput>
+
+!<input>
+  type(t_particleDescriptor3D), intent(in) :: rparticleDescriptor3D
+  ! the number of particles that will take part in the simulation
+!</input>
+
+!</subroutine>
+  real(DP) :: dx,dy,dz,drad,drho
+  integer :: i1
+
+  ! set the number of particles in the collection
+  rparticleCollection3D%nparticles = rparticleDescriptor3D%iparticles
+
+  ! allocate memory for the number of particles that we want to use
+  allocate(rparticleCollection3D%p_rParticles(rparticleCollection3D%nparticles))
+    
+  ! loop to initialize the particles
+  do i1=1,rparticleCollection3D%nparticles
+    dx    = rparticleDescriptor3D%pparameters(1,i1)
+    dy    = rparticleDescriptor3D%pparameters(2,i1)
+    dz    = rparticleDescriptor3D%pparameters(3,i1)
+    drad  = rparticleDescriptor3D%pparameters(4,i1)
+    drho  = rparticleDescriptor3D%pparameters(5,i1)
+   ! call the routine to initialize the particle
+    call geom_initParticle3D(rparticleCollection3D%p_rParticles(i1),rparticleDescriptor3D%ishape,&
+                             drad,drho,dx,dy,dz)
   end do
   
   end subroutine ! end geom_initParticleCollection
@@ -5491,6 +5717,41 @@ end subroutine
   end subroutine ! end geom_initParticleCollection
   
 ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_releaseParticleCollection3D(rparticleCollection)
+           
+!<description>
+  ! releases the memory allocated in the
+  ! particle Collection structure
+!</description>
+  
+!<inputoutput>
+  ! A problem structure saving problem-dependent information.
+  type(t_particleCollection3D), intent(inout) :: rparticleCollection
+!</inputoutput>
+
+!</subroutine>
+  integer :: i
+  ! check if there are particles for
+  ! which memory has been allocated
+  
+  if(rparticleCollection%nparticles .gt. 0) then 
+  
+    do i=1,rparticleCollection%nparticles
+      if(rparticleCollection%p_rparticles(i)%rvectorScalarFB%NEQ .ne. 0) then
+        call lsyssc_releaseVector(rparticleCollection%p_rparticles(i)%rvectorScalarFB)
+      end if
+    end do
+    deallocate(rparticleCollection%p_rparticles)
+    
+  end if
+    
+  end subroutine ! end geom_releaseParticleCollection
+  
+! ***************************************************************************
+
 
   
 end module
