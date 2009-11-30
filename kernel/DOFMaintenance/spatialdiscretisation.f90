@@ -818,7 +818,7 @@ contains
         select case (ioperation)
         case (SPDISC_OPTP_MASS)
           ! 3x3 Gauss formula
-          ccubType = CUB_G2X2
+          ccubType = CUB_G3X3
         case (SPDISC_OPTP_LAPLACE,SPDISC_OPTP_RHS,SPDISC_OPTP_CONVEC)
           ! 2x2 Gauss formula
           ccubType = CUB_G2X2
