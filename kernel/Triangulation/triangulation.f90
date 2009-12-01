@@ -515,6 +515,10 @@ module triangulation
   ! May be set to higher vales in the future for the support of
   ! isoparametric elements! This is the old NNVE.
   integer, parameter, public :: TRIA_MAXNVE2D = 4
+
+  ! Maximum number of corner-vertices in each 2D element.
+  integer, parameter, public :: TRIA_MAXNVE3D = 8
+
   
   ! Maximum number of edges in each 2D element.
   ! We set this to 4 to allow triangle and quadrilateral element shapes.
@@ -1579,6 +1583,7 @@ module triangulation
   public :: tria_genFacesAtElement3D
   public :: tria_genElementVolume1D 
   public :: tria_genElementVolume2D
+  public :: tria_genElementVolume3D
   public :: tria_sortBoundaryVertices1D2D
   public :: tria_genElementsAtBoundary1D2D
   public :: tria_genBoundaryVertexPos1D2D
@@ -16061,6 +16066,92 @@ p_InodalPropertyDest = -4711
   end subroutine tria_genVerticesAtFace3D
 
   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine tria_genElementVolume3D(rtriangulation)
+
+!<description>
+  ! This routine generates the element volume array DelementVolume (DAREA). 
+  ! For this purpose, the following arrays are used:
+  !    DvertexCoordinates, IverticesAtElement.
+  ! If necessary, new memory is allocated.
+!</description>
+
+!<inputoutput>
+  ! The triangulation structure to be updated.
+  type(t_triangulation), intent(inout) :: rtriangulation
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(DP), dimension(:), pointer :: p_DelementVolume
+    integer :: iel
+    integer :: isize
+    real(DP) :: dtotalVolume
+    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dpoints
+    integer :: ive
+
+    ! Is everything here we need?
+    if (rtriangulation%h_DvertexCoords .eq. ST_NOHANDLE) then
+      call output_line ('DvertexCoords not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume3D')
+      call sys_halt()
+    end if
+
+    if (rtriangulation%h_IverticesAtElement .eq. ST_NOHANDLE) then
+      call output_line ('IverticesAtElement  not available!', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'tria_genElementVolume3D')
+      call sys_halt()
+    end if
+    
+    ! Do we have (enough) memory for that array?
+    if (rtriangulation%h_DelementVolume .eq. ST_NOHANDLE) then
+      call storage_new ('tria_genElementVolume3D', 'DAREA', &
+          rtriangulation%NEL+1, ST_DOUBLE, &
+          rtriangulation%h_DelementVolume, ST_NEWBLOCK_NOINIT)
+    else
+      call storage_getsize (rtriangulation%h_DelementVolume, isize)
+      if (isize .ne. rtriangulation%NEL+1) then
+        ! If the size is wrong, reallocate memory.
+        call storage_realloc ('tria_genElementVolume3D', &
+            rtriangulation%NEL+1, rtriangulation%h_DelementVolume, &
+            ST_NEWBLOCK_NOINIT, .false.)
+      end if
+    end if
+    
+    ! Get the arrays
+    call storage_getbase_double2D (rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_double (rtriangulation%h_DelementVolume,&
+        p_DelementVolume)
+        
+    dtotalVolume = 0.0_DP
+        
+    ! Calculate the element volume for all elements
+    do iel=1,rtriangulation%NEL
+      ! triangular element
+      do ive=1,TRIA_NVEHEXA3D
+        Dpoints(1,ive) = p_DvertexCoords(1,p_IverticesAtElement(ive,iel))
+        Dpoints(2,ive) = p_DvertexCoords(2,p_IverticesAtElement(ive,iel))
+        Dpoints(3,ive) = p_DvertexCoords(3,p_IverticesAtElement(ive,iel))
+      end do
+      p_DelementVolume(iel) = gaux_getVolume_hexa3D(Dpoints)
+      
+      dtotalVolume = dtotalVolume+p_DelementVolume(iel)
+    end do
+    
+    ! Store the total volume in the last element of DelementVolume
+    p_DelementVolume(rtriangulation%NEL+1) = dtotalVolume
+    
+  end subroutine tria_genElementVolume3D
+  
+  !************************************************************************
 
 !<subroutine>  
 
