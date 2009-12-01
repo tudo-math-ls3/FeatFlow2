@@ -125,7 +125,7 @@ module griddeform
   type t_hgridLevels
   
     ! An pointer to the original triangulation on the domain
-    type(t_triangulation), pointer :: p_rtriangulation
+    type(t_triangulation), pointer :: p_rtriangulation => null()
 
     ! Triangulation used during the mesh defornation
     type(t_triangulation) :: rtriangulation
@@ -171,7 +171,7 @@ module griddeform
   type t_griddefInfo
 
     ! 
-    type(t_hgridLevels), dimension(:), pointer :: p_rhLevels
+    type(t_hgridLevels), dimension(:), pointer :: p_rhLevels => null()
 
     ! this is a Pointer to the original triangulation structure,
     ! when our deformation was a success, we will overwrite 
@@ -184,7 +184,7 @@ module griddeform
     ! type(t_triangulation) :: rDeftriangulation 
     
     ! the boundary information of the undeformed grid
-    type(t_boundary), pointer :: p_rboundary
+    type(t_boundary), pointer :: p_rboundary => null() 
 
     ! description missing
     integer:: cdefStyle
@@ -332,6 +332,8 @@ module griddeform
   public :: griddef_getAreaDeformed
   public :: griddef_qMeasureM1
   public :: griddef_buildHGrid
+  public :: griddef_deformationInit3D
+  public :: griddef_performDeformation3D
 
 contains
 
@@ -1281,7 +1283,6 @@ contains
   end subroutine ! griddef_computeAdapSteps
   
 ! **************************************************************************************** 
- 
 
 !<subroutine>
   subroutine griddef_performOneDefStep(rgriddefInfo,&
@@ -1637,6 +1638,82 @@ contains
   end subroutine
 
   ! *************************************************************************** 
+
+!<subroutine>  
+  subroutine griddef_getArea3D(rgriddefInfo,iLevel)
+  
+  !<description>
+    ! In this function we build the nodewise area distribution out 
+    ! of an elementwise distribution
+  !</description>
+
+  !<inputoutput>
+    ! structure containing all parameter settings for grid deformation
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
+
+    integer, intent(in) :: iLevel
+    
+  !</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_DareaLevel
+    real(DP), dimension(:), pointer :: p_Darea
+    real(DP), dimension(:), pointer :: p_DareaProj
+    real(DP), dimension(:), pointer :: p_DelementVolume    
+    integer :: iel
+    integer :: ive
+    type(t_vectorScalar) :: rvectorAreaQ0 
+    type(t_vectorBlock) :: rvectorAreaBlockQ0
+    type(t_blockDiscretisation) :: rprjDiscretisation
+    type(t_blockDiscretisation), pointer :: rdiscretisation   
+    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dpoints
+    
+    rdiscretisation => rgriddefInfo%p_rhLevels(iLevel)%rdiscretisation
+    
+    ! Set up an empty block vector    
+    call lsysbl_createVecBlockByDiscr(rdiscretisation,&
+         rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1,.TRUE.)        
+        
+    ! Create a discretisation structure for Q0, based on our
+    ! previous discretisation structure:
+    call spdiscr_duplicateBlockDiscr(rdiscretisation,rprjDiscretisation)
+    call spdiscr_deriveSimpleDiscrSc (&
+                 rdiscretisation%RspatialDiscr(1), &
+                 EL_Q0_3D, CUB_G3_3D, rprjDiscretisation%RspatialDiscr(1))
+                 
+    ! Initialise a Q0 vector from the newly created discretisation         
+    call lsyssc_createVecByDiscr(rprjDiscretisation%RspatialDiscr(1), &
+    rvectorAreaQ0,.true.)
+    
+    ! get the pointer to the entries of this vector
+    call lsyssc_getbase_double(rvectorAreaQ0,p_Darea)    
+    
+    call tria_genElementVolume3D(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation)
+    
+    call storage_getbase_double (rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%h_DelementVolume,&
+        p_DelementVolume)
+
+    do iel=1,rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL
+    p_Darea(iel)=p_DelementVolume(iel)
+    end do
+    
+    ! now transform the q0 vector into a q1 vector
+    ! Setup a new solution vector based on this discretisation,
+    ! allocate memory.
+    call lsysbl_createVecFromScalar(rvectorAreaQ0,rvectorAreaBlockQ0,rprjDiscretisation)
+ 
+    ! Take the original solution vector and convert it according to the
+    ! new discretisation:
+    call spdp_projectSolution(rvectorAreaBlockQ0,rgriddefInfo%p_rhLevels(iLevel)%rvectorAreaBlockQ1)
+    
+    call lsysbl_releaseVector(rvectorAreaBlockQ0)
+    call lsyssc_releaseVector(rvectorAreaQ0)
+  
+  end subroutine
+
+  ! *************************************************************************** 
   
 !<subroutine>  
   subroutine griddef_buildMonFuncTest(rgriddefInfo,iLevel)
@@ -1758,9 +1835,6 @@ contains
   call pperr_scalar (p_Df1,PPERR_L1ERROR,dIntF1)
   call pperr_scalar (p_Df2,PPERR_L1ERROR,dIntF2)
   
-  ! compute the area for each element and add up
-  call tria_genElementVolume2D(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation)
-  
   ! The omega value is the total area of the domain
   Domega = p_DelementVolume(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation%NEL+1)
   
@@ -1831,9 +1905,6 @@ contains
   
   ! Integrate the functions f and g
   call griddef_normaliseFctsInvAux(rgriddefInfo,iLevel,dIntF1,dIntF2,domega)
-  
-  ! compute the area for each element and add up
-  call tria_genElementVolume2D(rgriddefInfo%p_rhLevels(iLevel)%p_rtriangulation)
   
   ! compute the scaling factor
   dScale1 = dintF1/domega 
@@ -2663,6 +2734,93 @@ contains
   end do
   
   end subroutine ! end griddef_moveMesh
+
+  !****************************************************************************
+ 
+!<subroutine>  
+  subroutine griddef_moveMesh3D(rgriddefInfo)
+!<description>
+    ! This subroutine performs the actual deformation of the mesh. To do this, the grid 
+    ! points are moved in a vector field represented by DphiX and DphiY, the monitor 
+    ! function Dfmon and the area distribution Darea.
+    ! The following ODE is solved:
+    !<tex>
+    ! \begin{displaymath}
+    !   \frac{\partial \varphi(x,t)}{\partial t} = \eta(\varphi(x,t),t),
+    !   \quad 0\leq t \leq  1, \quad
+    !   \varphi(x,0) = x
+    ! \end{displaymath}
+    ! \begin{displaymath}
+    !   \eta(y,s) := \frac{v(y)}{s\tilde{f}(y) + (1-s)\tilde{g}(y)}, \quad y \in \Omega,
+    !   s \in [0,1].
+    ! \end{displaymath}
+    !</tex>
+    ! To solve the ODE which describes the movement of the grid points, several ODE
+    ! solvers are avialable. The type of solver is chosen by codeMethod. Currently, we
+    ! support:
+    !
+    ! 1) explicit Euler (GRIDDEF_EXPL_EULER)
+    !
+    ! 6) RK4 (GRIDDEF_RK4)
+    !
+
+!</description>
+
+!<input>
+!</input>
+
+!<inputoutput>
+  ! structure containing all parameter settings for grid deformation
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
+
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  real(dp), dimension(:,:), pointer :: p_DvertexCoordsReal
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  real(dp), dimension(:), pointer :: p_DvertexParametersReal
+  real(dp), dimension(:), pointer :: p_DvertexParameters
+  integer :: i,NLMAX
+  
+  NLMAX=rgriddefInfo%NLMAX
+  
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
+  p_DvertexCoords)    
+
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation%h_dvertexCoords,&
+  p_DvertexCoordsReal)   
+  
+!  call storage_getbase_double(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexParameterValue,&
+!  p_DvertexParameters)
+!  
+!  call storage_getbase_double(rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation%h_DvertexParameterValue,&
+!  p_DvertexParametersReal)   
+  
+  call output_lbrk ()
+  call output_line('Starting Explicit Euler..."')
+  call output_lbrk ()
+  
+  ! call the explicit euler to move the grid points
+  call griddef_performEE3D(rgriddefInfo)
+
+  call output_line('Finished Explicit Euler..."')
+  call output_lbrk ()
+      
+  ! write back coordinates
+!  do i=1,rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation%NVT
+!    p_DvertexCoordsReal(1,i) = p_DvertexCoords(1,i)
+!    p_DvertexCoordsReal(2,i) = p_DvertexCoords(2,i)
+!    p_DvertexCoordsReal(3,i) = p_DvertexCoords(3,i)
+!  end do
+
+!  ! write back coordinates
+!  do i=1,rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation%NVBD
+!    p_DvertexParametersReal(i) = p_DvertexParameters(i)
+!  end do
+  
+  end subroutine ! end griddef_moveMesh3D
   
   !****************************************************************************
 
@@ -2862,6 +3020,237 @@ contains
               end if
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
+      endif ! dtime
+      
+  end if ! nodal_property .ne. 0
+  
+  end do ! ive
+  
+  end subroutine ! end griddef_performEE
+
+  !****************************************************************************
+
+!<subroutine>  
+  subroutine griddef_performEE3D(rgriddefInfo)
+!<description>
+  !
+  !
+  !
+!</description>
+
+!<input>
+!</input>
+
+!<inputoutput>
+  ! structure containing all parameter settings for grid deformation
+  type(t_griddefInfo), intent(inout)  :: rgriddefInfo
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  
+  ! true, if the point is not inside the domain
+  logical :: bsearchFailed
+
+  ! coordinates of evaluation point
+  real(dp) :: dx, dy, dz, dx_old, dy_old, dz_old,dx_old1,dy_old1,dz_old1
+
+  ! time and step size for ODE solving
+  real(dp) :: dtime, dstepSize,deps,dist
+
+  ! level diference between PDE and PDE level
+  integer:: ilevDiff
+
+  ! number of ODE time steps
+  integer::  ntimeSteps, ive, ielement,ivbd,nlmax
+
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  integer, dimension(:), pointer :: p_IelementsAtVertex  
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer, dimension(:), pointer :: p_InodalProperty
+
+  real(dp), dimension(5) :: Dvalues  
+  real(dp), dimension(3) :: Dpoint
+
+  deps = 0.0000000001_dp
+
+  NLMAX=rgriddefInfo%NLMAX
+  
+  ! get the elements at vertex index array
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
+  p_IelementsAtVertexIdx)
+
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
+  p_InodalProperty)
+  
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
+  p_IelementsAtVertex)
+  
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
+  p_IelementsAtVertex)
+  
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
+  p_DvertexCoords)    
+
+  ntimeSteps = rgriddefInfo%ntimeSteps
+  ! difference between grid level for ODE and PDE solving
+  ! write the coordinates of the moved points to the actual coordinate vector
+  ! Here, only the case ilevelODE < ilevel is considered, the opposite case
+  ! is treated by prolongating the vector field to ODE level.
+  ilevDiff = rgriddefInfo%imindefLevel
+
+  do ive=1, rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVT
+     
+    ! if we have a boundary node we treat it in a special routine
+    if(p_InodalProperty(ive) .ne. 0)then
+      ! We are dealing with a boundary node... do nothing yet
+      !call griddef_perform_boundary2(rgriddefInfo,ive)
+    else
+      ! inner node      
+      ! initialise time variable
+      dtime = 0.0_DP
+
+      ! initialise flag for failed search
+      bsearchFailed = .FALSE.
+      ! initial coordinates of the vertex
+      dx_old1 = p_DvertexCoords(1,ive)
+      dy_old1 = p_DvertexCoords(2,ive)
+      dz_old1 = p_DvertexCoords(3,ive)
+      
+      dx_old = p_DvertexCoords(1,ive)
+      dy_old = p_DvertexCoords(2,ive)
+      dz_old = p_DvertexCoords(3,ive)
+      
+      dx = p_DvertexCoords(1,ive)
+      dy = p_DvertexCoords(2,ive)
+      dz = p_DvertexCoords(3,ive)
+      
+      
+      ! some routines need the coordinates in
+      ! this format
+      Dpoint(1) = dx
+      Dpoint(2) = dy
+      Dpoint(3) = dz
+      
+      ! zero the Dvalues
+      Dvalues(:) = 0.0_dp
+      
+      ! for the first element read the element index
+      ielement = p_IelementsAtVertex(p_IelementsAtVertexIdx(ive))
+      
+      ! evaluate the functions on the element
+      call griddef_evalPhi_Known3D(DER_FUNC, Dvalues, &
+           rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(1), &
+           rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(2), &
+           rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(3), &
+           rgriddefInfo%p_rhLevels(NLMAX)%rvectorMonFuncQ1%RvectorBlock(1), &
+           rgriddefInfo%p_rhLevels(NLMAX)%rvectorAreaBlockQ1%RvectorBlock(1), &
+           Dpoint,ielement)
+
+      ! compute step size for next time step
+      dstepSize = 0.05_dp
+
+      ! so this means in Dvalues(1) there is the
+      ! x coordinate of the recovered gradient
+      ! so this means in Dvalues(2) there is the
+      ! y coordinate of the recovered gradient  
+      ! so this means in Dvalues(3) there is the
+      ! z coordinate of the recovered gradient              
+      ! In Dvalues(5) we find the g function(area distribution)
+      ! In Dvalues(4) the f function (monitor)
+      ! perform the actual Euler step
+      dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
+           dtime*(Dvalues(4)))
+      dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
+           dtime*(Dvalues(4)))
+      dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
+           dtime*(Dvalues(4)))
+           
+      ! update time
+      dtime = dtime + dstepSize
+
+      ! While the current time is less than 1.0-eps
+      if (dtime .le. 1.0_DP - deps) then
+
+         ! for the other time steps, we have really to search
+        calculationloopEE_inner : do
+        
+          ! zero the Dvalues
+          Dvalues(:) = 0.0_dp
+          
+          ! here we store the coordinates
+          Dpoint(1) = dx
+          Dpoint(2) = dy      
+          Dpoint(3) = dz 
+               
+!          Dpoint(1) = 0.75_dp
+!          Dpoint(2) = 0.75_dp
+!          Dpoint(3) = 0.75_dp 
+
+          ! we search for the point, we enter the element it
+          ! was found in last time
+          call griddef_evalphi_ray3D(DER_FUNC, Dvalues, &
+             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(1), &
+             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(2), &
+             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(3), &
+             rgriddefInfo%p_rhLevels(NLMAX)%rvectorMonFuncQ1%RvectorBlock(1), &
+             rgriddefInfo%p_rhLevels(NLMAX)%rvectorAreaBlockQ1%RvectorBlock(1), &
+             Dpoint,bsearchFailed,ielement)        
+
+          ! if the point is outside the domain, stop moving it
+          if (bsearchFailed) then
+            !print *,Dpoint(:)
+            bsearchFailed = .FALSE.
+            exit calculationloopEE_inner
+          endif
+
+          ! compute step size for next time step
+          ! griddef_computeStepSize(dtime, ntimeSteps)
+          dstepSize = 0.05_dp 
+
+          ! perform the actual Euler step
+          dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
+               dtime*(Dvalues(4)))
+          dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
+               dtime*(Dvalues(4)))
+          dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
+               dtime*(Dvalues(4)))
+
+          ! advance in time
+          dtime = dtime + dstepSize
+          ivbd = 0
+          
+          ! if time interval greater 1.0_-eps, we are finished
+          if (dtime .ge. 1.0_DP - deps) then
+          
+!                if(dx .gt. 1.0_dp)then
+!                  print *,ive
+!                end if
+                !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
+                !print *,"new coordinates: ",dx,dy,dz
+                
+                p_DvertexCoords(1,ive) = dx
+                p_DvertexCoords(2,ive) = dy
+                p_DvertexCoords(3,ive) = dz
+              exit calculationloopEE_inner
+            end if ! (dtime .ge. 1.0_DP - deps)
+        
+        enddo calculationloopEE_inner
+        
+      ! in case time interval exhausted in the first time step  
+      else
+        ! write the coordinates
+              if(dx .gt. 1.0_dp)then
+                print *,ive
+              end if
+        !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
+        !print *,"new coordinates: ",dx,dy,dz
+              
+        p_DvertexCoords(1,ive) = dx
+        p_DvertexCoords(2,ive) = dy     
+        p_DvertexCoords(3,ive) = dz     
       endif ! dtime
       
   end if ! nodal_property .ne. 0
@@ -3508,6 +3897,210 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   Dvalues(4) = 1.0_DP/Dvalues(4)
   
   end subroutine ! end griddef_evalPhi_Known
+
+ !****************************************************************************  
+
+!<subroutine>  
+  subroutine griddef_evalPhi_Known3D(iderType, Dvalues, rvecGradX, &
+             rvecGradY,rvecGradZ,rvecMon,rvecArea,Dpoint, &
+             Ielements, IelementsHint, cnonmeshPoints)
+!<description>
+  ! This is the most general (and completely slowest) finite element evaluation
+  ! routine. It allows to evaluate a general (scalar) FE function specified
+  ! by rvecMon in a set of points Dpoints. The values of the
+  ! FE function are written into Dvalues.
+!</description>
+
+!<input>
+  ! type of function value to evaluate. One of the DER_xxxx constants
+  integer, intent(in)           :: idertype
+  
+  ! the scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(in)              :: rvecMon
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradX
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradY  
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradZ  
+  
+  type(t_vectorScalar), intent(in)              :: rvecArea    
+  
+  ! a list of points where to evaluate
+  ! dimension(1..ndim,1..npoints)
+  real(dp), dimension(:), intent(in) :: Dpoint
+  
+  ! optional: a list of elements containing the points Dpoints.
+  ! if this is not specified the elment numbers containing the points 
+  ! are determined automatically
+  integer, intent(in), optional :: Ielements
+
+  ! OPTIONAL: A list of elements that are near the points in Dpoints.
+  ! This gives only a hint where to start searching for the actual elements
+  ! containing the points. This is ignored if Ielements is specified!
+  integer, intent(in), optional :: IelementsHint
+  
+  ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens
+  ! if a point is located outside of the domain. May happen e.g. in
+  ! nonconvex domains. FEVL_NONMESHPTS_NONE is the default 
+  ! parameter if cnonmeshPoints is not specified. 
+  integer, intent(in), optional :: cnonmeshPoints  
+  
+!</input>
+
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  real(dp), dimension(:), intent(out) :: Dvalues
+  
+
+  
+!</output>      
+
+  ! local variables
+  integer :: cnonmesh
+  integer :: ieltype,indof,nve,ibas
+  integer :: iel
+  integer, dimension(:), pointer :: p_IelementDistr
+  logical, dimension(el_maxnder) :: Bder
+  
+  real(dp), dimension(:), pointer :: p_ddatamon
+  real(dp), dimension(:), pointer :: p_ddataarea
+  real(dp), dimension(:), pointer :: p_ddatagradx
+  real(dp), dimension(:), pointer :: p_ddatagrady
+  real(dp), dimension(:), pointer :: p_ddatagradz
+  
+  ! Transformation
+  integer :: ctrafotype
+  real(dp), dimension(trafo_maxdimrefcoord) :: dparpoint 
+  
+  ! Values of basis functions and doF`s
+  real(DP), dimension(el_maxnbas,el_maxnder) :: Dbas
+  integer, dimension(el_maxnbas) :: Idofs
+  
+  ! List of element distributions in the discretisation structure
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+  ! Evaluation structure and tag
+  type(t_evalElement) :: revalElement
+  integer :: cevaluationTag  
+  
+  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
+  
+  ! for uniform discretisations, we get the element type in advance...
+  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  
+    ! Element type
+    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    
+    ! get the number of local doF`s for trial and test functions
+    indof = elem_igetNDofLoc(ieltype)
+    
+    ! number of vertices on the element
+    nve = elem_igetNDofLoc(ieltype)
+    
+    ! type of transformation from/to the reference element
+    ctrafoType = elem_igetTrafoType(ieltype)
+    
+    ! Get the element evaluation tag; neccessary for preparation
+    cevaluationTag = elem_getEvaluationTag(ieltype)
+    
+    NULLifY(p_IelementDistr)
+  else
+     call storage_getbase_int (&
+          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
+  end if
+  
+  ! get the data vector
+  select case (rvecMon%cdataType)
+  case (ST_doUBLE) 
+    call lsyssc_getbase_double(rvecMon,p_DdataMon)
+    call lsyssc_getbase_double(rvecArea,p_DdataArea)
+    call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
+    call lsyssc_getbase_double(rvecGradY,p_DdataGradY)    
+    call lsyssc_getbase_double(rvecGradZ,p_DdataGradZ)    
+  case (ST_SINGLE)
+  case default
+    call output_line ('Unsupported vector precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+    call sys_halt()
+  end SELECT  
+
+  ! What to evaluate
+  Bder = .FALSE.
+  Bder(iderType) = .TRUE.
+  
+  cnonmesh = FEVL_NONMESHPTS_NONE
+  if (PRESENT(cnonmeshPoints)) cnonmesh = cnonmeshPoints
+  
+  ! We loop over all points
+  iel = 1
+  
+  ! Get the element number that contains the point
+  if(PRESENT(Ielements))then
+    ! we have it...
+    iel = Ielements
+  end if
+  
+  ! get the type of the element iel
+  if(associated(p_ielementdistr))then
+    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+    
+    ! Get the number of local doF`s for trial and test functions
+    indof = elem_igetNDofLoc(ieltype)
+    
+    ! Number of vertices on the element
+    nve = elem_igetNVE(ieltype)
+    
+    ! Type of transformation from /to the reference element
+    ctrafoType = elem_igetTrafoType(ieltype)
+    
+    ! get the element evaluation tag; necessary for the preparation of the element
+    cevaluationTag = elem_getEvaluationTag(ieltype)
+  end if
+  
+  ! Calculate the global doF`s on that element into IdofsTest.
+  call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
+  
+  ! Get the element shape information
+  call elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
+       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
+       
+  ! calculate the transformation of the point to the reference element
+  call trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
+       Dpoint(:), DparPoint)
+       
+  ! Now calculate everything else what is necessary for the element
+  call elprep_prepareForEvaluation (revalElement, &
+      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
+      ctrafoType, DparPoint, Dpoint(:))    
+  
+  ! Call the element to calculate the values of the basis functions
+  ! in the point
+  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  
+  ! Combine the basis functions to get the function value
+  Dvalues(:) = 0.0_DP
+  
+  ! Now that we have the basis functions, we want to have the function values.
+  ! We get them by multiplying the FE-coefficients with the values of the
+  ! basis functions and summing up.
+  !          
+  ! Calculate the value in the point
+  do ibas = 1, indof
+    Dvalues(1) = Dvalues(1) + p_DdataGradX(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(2) = Dvalues(2) + p_DdataGradY(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(3) = Dvalues(3) + p_DdataGradZ(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(4) = Dvalues(4) + p_DdataMon(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(5) = Dvalues(5) + p_DdataArea(Idofs(ibas)) * Dbas(ibas,iderType)
+  end do
+  
+  Dvalues(4) = 1.0_DP/Dvalues(4)
+  Dvalues(5) = 1.0_DP/Dvalues(5)
+  
+  end subroutine ! end griddef_evalPhi_Known3D
+
   
   !**************************************************************************** 
   
@@ -3703,6 +4296,209 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   
   Dvalues(3) = 1.0_DP/Dvalues(3)
   Dvalues(4) = 1.0_DP/Dvalues(4)  
+  
+  
+  end subroutine ! end griddef_evalphi_ray
+
+  !**************************************************************************** 
+  
+!<subroutine>  
+  subroutine griddef_evalphi_ray3D(iderType, Dvalues, rvecGradX, &
+             rvecGradY,rvecGradZ,rvecMon,rvecArea,Dpoint,bsearchFailed, &
+             ielement)
+!<description>
+  ! This is the most general (and completely slowest) finite element evaluation
+  ! routine. It allows to evaluate a general (scalar) FE function specified
+  ! by rvecMon in a set of points Dpoints. The values of the
+  ! FE function are written into Dvalues.
+!</description>
+
+!<input>
+  ! type of function value to evaluate. One of the DER_xxxx constants
+  integer, intent(in)           :: iderType
+  
+  ! the scalar solution vector that is to be evaluated.
+  type(t_vectorScalar), intent(in)              :: rvecMon
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradX
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradY  
+  
+  type(t_vectorScalar), intent(in)              :: rvecGradZ  
+  
+  type(t_vectorScalar), intent(in)              :: rvecArea    
+  
+  ! a list of points where to evaluate
+  ! dimension(1..ndim,1..npoints)
+  real(dp), dimension(:), intent(in) :: Dpoint
+  
+  ! Previous element containing the point
+  integer, intent(in) :: ielement
+  
+!</input>
+
+
+!<inputoutput>
+  logical, intent(inout) :: bsearchFailed
+!</inputoutput>
+
+!<output>
+  ! Values of the FE function at the points specified by Dpoints.
+  real(dp), dimension(:), intent(out) :: Dvalues
+!</output>      
+
+!</subroutine>
+
+  ! local variables
+  integer :: ieltype,indof,nve,ibas
+  integer :: iel
+  integer, dimension(:), pointer :: p_IelementDistr
+  logical, dimension(el_maxnder) :: Bder
+  
+  real(dp), dimension(:), pointer :: p_DdataMon
+  real(dp), dimension(:), pointer :: p_DdataArea
+  real(dp), dimension(:), pointer :: p_DdataGradX
+  real(dp), dimension(:), pointer :: p_DdataGradY
+  real(dp), dimension(:), pointer :: p_DdataGradZ
+  ! Transformation
+  integer :: ctrafotype,iresult,ilastElement,ilastEdge
+  real(dp), dimension(trafo_maxdimrefcoord) :: DparPoint 
+  
+  ! Values of basis functions and doF`s
+  real(dp), dimension(el_maxnbas,el_maxnder) :: Dbas
+  integer, dimension(el_maxnbas) :: Idofs
+  
+  ! List of element distributions in the discretisation structure
+  type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+
+  ! Evaluation structure and tag
+  type(t_evalElement) :: revalElement
+  integer :: cevaluationTag  
+  
+  p_RelementDistribution => rvecMon%p_rspatialDiscr%RelementDistr
+  
+  ! for uniform discretisations, we get the element type in advance...
+  if(rvecMon%p_rspatialDiscr%ccomplexity .EQ. SPDISC_UNifORM) then
+  
+    ! Element type
+    ieltype = rvecMon%p_rspatialDiscr%RelementDistr(1)%celement
+    
+    ! get the number of local doF`s for trial and test functions
+    indof = elem_igetNDofLoc(ieltype)
+    
+    ! number of vertices on the element
+    nve = elem_igetNDofLoc(ieltype)
+    
+    ! type of transformation from/to the reference element
+    ctrafoType = elem_igetTrafoType(ieltype)
+    
+    ! Get the element evaluation tag; neccessary for preparation
+    cevaluationTag = elem_getEvaluationTag(ieltype)
+    
+    nullify(p_IelementDistr)
+  else
+     call storage_getbase_int (&
+          rvecMon%p_rspatialDiscr%h_IelementDistr,p_IelementDistr)    
+  end if
+  
+  ! get the data vector
+  select case (rvecMon%cdataType)
+  case (ST_doUBLE) 
+    call lsyssc_getbase_double(rvecMon,p_DdataMon)
+    call lsyssc_getbase_double(rvecArea,p_DdataArea)
+    call lsyssc_getbase_double(rvecGradX,p_DdataGradX)
+    call lsyssc_getbase_double(rvecGradY,p_DdataGradY)    
+    call lsyssc_getbase_double(rvecGradZ,p_DdataGradZ)    
+  case (ST_SINGLE)
+  case default
+    call output_line ('Unsupported vector precision!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+    call sys_halt()
+  end select  
+
+  ! What to evaluate
+  Bder = .FALSE.
+  Bder(iderType) = .TRUE.
+  
+  ! We loop over all points
+  iel = ielement
+  
+  ! Use raytracing search to find the element
+  ! containing the point.
+!  call tsrch_getElem_raytrace2D (&
+!    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
+!    iresult,ilastElement,ilastEdge,200)
+  ! Fehler, wenn die Iterationen ausgehen wird
+  ! das letzte Element zurückgegeben... verkehrt...
+  ! Ok, not found... Brute force search
+
+!  if((iel .eq. 0) .or. (iresult .le. 0))then
+    call tsrch_getElem_BruteForce (Dpoint(:), &
+      rvecMon%p_rspatialDiscr%p_rtriangulation,iel)
+ ! end if
+  
+  if((iel .eq. 0))then
+    print *,"daneben"
+    bsearchFailed = .true.
+    return
+  end if  
+  
+  ! get the type of the element iel
+  if(ASSOCIATED(p_IelementDistr))then
+    ieltype = p_RelementDistribution(p_IelementDistr(iel))%celement
+    
+    ! Get the number of local doF`s for trial and test functions
+    indof = elem_igetNDofLoc(ieltype)
+    
+    ! Number of vertices on the element
+    nve = elem_igetNVE(ieltype)
+    
+    ! Type of transformation from /to the reference element
+    ctrafoType = elem_igetTrafoType(ieltype)
+    
+    ! get the element evaluation tag; necessary for the preparation of the element
+    cevaluationTag = elem_getEvaluationTag(ieltype)
+  end if
+  
+  ! Calculate the global doF`s on that element into IdofsTest.
+  call dof_locGlobMapping(rvecMon%p_rspatialDiscr, iel, Idofs)
+  
+  ! Get the element shape information
+  call elprep_prepareForEvaluation(revalElement, EL_EVLTAG_COORDS, &
+       rvecMon%p_rspatialDiscr%p_rtriangulation, iel, ctrafoType)
+       
+  ! calculate the transformation of the point to the reference element
+  call trafo_calcRefCoords(ctrafoType, revalElement%Dcoords, &
+       Dpoint(:), DparPoint)
+       
+  ! Now calculate everything else what is necessary for the element
+  call elprep_prepareForEvaluation (revalElement, &
+      IAND(cevaluationTag,NOT(EL_EVLTAG_COORDS)), &
+      rvecMon%p_rspatialDiscr%p_rtriangulation, iel, &
+      ctrafoType, DparPoint, Dpoint(:))    
+  
+  ! Call the element to calculate the values of the basis functions
+  ! in the point
+  call elem_generic2(ieltype, revalElement, Bder, Dbas)
+  
+  ! Combine the basis functions to get the function value
+  Dvalues(:) = 0.0_DP
+  
+  ! Now that we have the basis functions, we want to have the function values.
+  ! We get them by multiplying the FE-coefficients with the values of the
+  ! basis functions and summing up.
+  !          
+  ! Calculate the value in the point
+  do ibas = 1, indof
+    Dvalues(1) = Dvalues(1) + p_DdataGradX(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(2) = Dvalues(2) + p_DdataGradY(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(3) = Dvalues(3) + p_DdataGradZ(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(4) = Dvalues(4) + p_DdataMon(Idofs(ibas)) * Dbas(ibas,iderType)
+    Dvalues(5) = Dvalues(5) + p_DdataArea(Idofs(ibas)) * Dbas(ibas,iderType)
+  end do
+  
+  Dvalues(4) = 1.0_DP/Dvalues(4)
+  Dvalues(5) = 1.0_DP/Dvalues(5)  
   
   
   end subroutine ! end griddef_evalphi_ray
@@ -4022,6 +4818,629 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
  
  end subroutine ! griddef_qMeasureM1
  
-  ! ***************************************************************************   
+! ***************************************************************************   
+  
+!<subroutine>
+  subroutine griddef_deformationInit3D(rgriddefInfo,NLMIN,NLMAX,iStyle,iadaptSteps)
+  
+!<description>
+  ! This subroutine initialises the rgriddefinfo structure which describes the
+  ! grid deformation algorithm. The values for the certain parameters defining
+  ! the deformation process are read in from the master.dat file. This routine
+  ! has to be called before starting grid deformation.
+!</description>  
+
+!<inputoutput>  
+  ! We will fill this structure with useful values
+  type(t_griddefInfo), intent(inout) :: rgriddefInfo
+  
+  ! user defined number of adaptation steps
+  integer,intent(in), optional :: iadaptSteps
+  
+!</inputoutput>
+
+!<input>
+  integer, intent(in) :: NLMAX 
+  
+  integer, intent(in) :: NLMIN
+  
+  ! the deformation method to use multilevel or classical
+  ! GRIDDEF_CLASSICAL or GRIDDEF_MULTILEVEL
+  integer, intent(in) :: iStyle
+!</input>  
+!</subroutine>
+  
+  ! Local variables
+  integer :: iaux
+  ! pointers to the arrays, we need to fill 
+  ! with useful default parameters
+  integer, dimension(:), pointer :: p_Dql2
+  integer, dimension(:), pointer :: p_Dqlinfty  
+  integer, dimension(:), pointer :: p_nadapSteps  
+  integer, dimension(:), pointer :: p_calcAdapSteps    
+  integer, dimension(:), pointer :: p_nadapStepsReally      
+  integer, dimension(:), pointer :: p_nmaxCorrSteps        
+  integer, dimension(:), pointer :: p_ncorrSteps          
+  integer, dimension(:), pointer :: p_ilevelODE          
+  integer, dimension(:), pointer :: p_ilevelODECorr         
+  integer, dimension(:), pointer :: p_npreSmoothSteps          
+  integer, dimension(:), pointer :: p_npostSmoothSteps          
+  integer, dimension(:), pointer :: p_nintSmoothSteps          
+  integer, dimension(:), pointer :: p_nmonSmoothsteps          
+  integer, dimension(:), pointer :: p_cpreSmoothMthd          
+  integer, dimension(:), pointer :: p_cpostSmoothMthd          
+  integer, dimension(:), pointer :: p_cintSmoothMthd            
+  real(dp), dimension(:), pointer :: p_DblendPar            
+  
+  rgriddefInfo%dblendPar = 1.0_dp
+  
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dql2',&
+                   NLMAX, ST_INT, rgriddefInfo%h_Dql2,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dqlinfty',&
+                   NLMAX, ST_INT, rgriddefInfo%h_Dqlinfty,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_nadapSteps,&
+                   ST_NEWBLOCK_ZERO)    
+                   
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_calcAdapSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_calcAdapSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapStepsReally',&
+                   NLMAX, ST_INT, rgriddefInfo%h_nadapStepsReally,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmaxCorrSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_nmaxCorrSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ncorrSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_ncorrSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODE',&
+                   NLMAX, ST_INT, rgriddefInfo%h_ilevelODE,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODECorr',&
+                   NLMAX, ST_INT, rgriddefInfo%h_ilevelODECorr,&
+                   ST_NEWBLOCK_ZERO)    
+
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npreSmoothSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_npreSmoothSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npostSmoothSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_npostSmoothSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nintSmoothSteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_nintSmoothSteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmonSmoothsteps',&
+                   NLMAX, ST_INT, rgriddefInfo%h_nmonSmoothsteps,&
+                   ST_NEWBLOCK_ZERO)    
+
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpreSmoothMthd',&
+                   NLMAX, ST_INT, rgriddefInfo%h_cpreSmoothMthd,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpostSmoothMthd',&
+                   NLMAX, ST_INT, rgriddefInfo%h_cpostSmoothMthd,&
+                   ST_NEWBLOCK_ZERO)    
+
+  ! now allocate memory for the arrays
+  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cintSmoothMthd',&
+                   NLMAX, ST_INT, rgriddefInfo%h_cintSmoothMthd,&
+                   ST_NEWBLOCK_ZERO)    
+
+    
+  
+  ! Now get all the just allocated pointers
+  call storage_getbase_int(rgriddefInfo%h_Dql2,p_Dql2)
+  
+  call storage_getbase_int(rgriddefInfo%h_Dqlinfty,p_Dqlinfty)  
+
+  call storage_getbase_int(rgriddefInfo%h_nadapSteps,p_nadapSteps)  
+  
+  call storage_getbase_int(rgriddefInfo%h_calcAdapSteps,p_calcAdapSteps)    
+  
+  call storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)      
+  
+  call storage_getbase_int(rgriddefInfo%h_nmaxCorrSteps,p_nmaxCorrSteps)        
+  
+  call storage_getbase_int(rgriddefInfo%h_ncorrSteps,p_ncorrSteps)          
+
+  call storage_getbase_int(rgriddefInfo%h_ilevelODE,p_ilevelODE)          
+
+  call storage_getbase_int(rgriddefInfo%h_ilevelODECorr,p_ilevelODECorr)          
+  
+  call storage_getbase_int(rgriddefInfo%h_npreSmoothSteps,p_npreSmoothSteps)          
+
+  call storage_getbase_int(rgriddefInfo%h_npostSmoothSteps,p_npostSmoothSteps)          
+
+  call storage_getbase_int(rgriddefInfo%h_nintSmoothSteps,p_nintSmoothSteps)          
+    
+  call storage_getbase_int(rgriddefInfo%h_nmonSmoothsteps,p_nmonSmoothsteps)          
+      
+  call storage_getbase_int(rgriddefInfo%h_cpreSmoothMthd,p_cpreSmoothMthd)          
+
+  call storage_getbase_int(rgriddefInfo%h_cpostSmoothMthd,p_cpostSmoothMthd)          
+  
+  call storage_getbase_int(rgriddefInfo%h_cintSmoothMthd,p_cintSmoothMthd)            
+
+
+  ! Set the deformation style to classical
+  rgriddefInfo%cdefStyle = iStyle
+
+  ! temp variable 
+  iaux = 0
+  
+  ! set the multigrid level for the deformation PDE
+  rgriddefInfo%iminDefLevel = NLMAX
+  
+  ! Here we initialize the structure with the standard values according to
+  ! the desired grid deformation method.
+  select case(rgriddefInfo%cdefStyle)
+  
+      case(GRIDDEF_CLASSICAL)
+
+        ! initialise... here should be the absolute PDE Level
+        ! where the deformation takes place.     
+        iaux = 1
+      
+        ! initialise the tolerance
+        rgriddefInfo%dtolQ = 1.0E10_DP      
+        
+        ! set the multigrid level for the deformation PDE(really ?)
+        p_ilevelODE(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
+
+        ! number of smoothing steps for creating the monitor function
+        p_nintSmoothSteps(rgriddefInfo%iminDefLevel) = 0
+        
+        ! smoothing method used
+        p_CintSmoothMthd(rgriddefInfo%iminDefLevel) = 0
+
+        ! number of smoothing steps for monitor function
+        p_NMonSmoothSteps(rgriddefInfo%iminDefLevel) = 0
+        
+        ! set standard value for number of correction steps
+        p_nmaxCorrSteps(iaux) = 0
+        
+        ! set standard value for number of ODE correction steps        
+        p_ilevelODECorr(iaux) = 0
+        
+        ! initialize the blending parameter
+        rgriddefInfo%dblendPar = 1.0_dp
+        
+        if(present(iadaptSteps))then
+          ! initialize the number of adaptation steps
+          rgriddefInfo%nadaptionSteps = iadaptSteps
+          
+          ! set Adaptive control
+          ! the number of steps on all levels is user defined
+          p_calcAdapSteps(:) = GRIDDEF_USER
+        else
+          ! initialize the number of adaptation steps
+          rgriddefInfo%nadaptionSteps = 1
+          
+          ! the number of steps on all levels is
+          ! fixed
+          p_calcAdapSteps(:) = GRIDDEF_FIXED
+        end if
+        
+     case(GRIDDEF_MULTILEVEL)
+     
+     ! do something here in the future        
+      call output_line ('MULTILEVEL method not yet implemented', &
+          OU_CLASS_ERROR,OU_MODE_STD,'griddef_deformationInit')
+      call sys_halt()     
+        
+  end select
+  
+  ! get number of correction steps on level iaux
+  p_nmaxCorrSteps(rgriddefInfo%iminDefLevel) = 0
+
+  ! get the minimum deformation level
+  p_ilevelODECorr(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
+  
+  ! store the value of NLMIN
+  rgriddefInfo%NLMIN = NLMIN
+
+  ! store the value of NLMAX  
+  rgriddefInfo%NLMAX = NLMAX
+  
+  ! Allocate memory for all the levels.
+  allocate(rgriddefInfo%p_rhLevels(NLMIN:NLMAX))
+
+  end subroutine 
+
+!****************************************************************************************
+
+!<subroutine>
+  subroutine griddef_performDeformation3D(rgriddefInfo, &
+                                        h_Dcontrib,&
+                                        bstartNew, blevelHasChanged, bterminate, &
+                                        bdegenerated, imgLevelCalc, iiteradapt, ibcIdx,& 
+                                        def_monitorfct)
+  !<description>
+    ! This subroutine is the main routine for the grid deformation process, as all 
+    ! necessary steps are included here. For performing grid deformation, it is sufficient
+    ! to define a monitor function and call this routine or to have an error distribution
+    ! at hand and call this subroutine.
+  !</description>
+
+  !<input>
+    ! A block matrix and a couple of block vectors. These will be filled
+    ! with data for the linear solver.
+
+    ! structure containing all parameter settings for grid deformation
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
+    
+    ! if true, start from scratch: new vectors, new boundary conditions structures
+    logical, intent(in) :: bstartNew
+
+    ! if true, adjust the vectors after level change since a previous deformation call
+    logical, intent(in) :: blevelHasChanged
+
+    logical, intent(in) :: bterminate
+    
+    ! number of adaptive iteration
+    integer, intent(in) :: iiterAdapt
+
+    ! multigrid level on which the simulation was computed
+    integer, intent(in) :: imgLevelCalc
+
+    ! index of boundary condition related to the deformation PDE
+    integer, intent(in):: ibcIdx
+  !</input>
+
+    ! flag for grid checking: if true, the deformation process would lead to
+    ! a grid with tangled elements
+    logical , intent(in):: bdegenerated
+
+  !<inoutput>
+    ! handle of vector with elementwise error contributions
+    integer, intent(inout):: h_Dcontrib
+  !</inoutput>
+  
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+  
+
+!</subroutine>
+
+  ! local variables
+  integer :: nmaxCorrSteps, NLMAX,NLMIN,ilevelODE,idef,i
+  ! A scalar matrix and vector. The vector accepts the RHS of the problem
+  ! in scalar form.
+  type(t_vectorScalar) , pointer :: p_Df2
+  integer, dimension(:), pointer :: p_nadapStepsReally
+  real(dp), dimension(:), pointer :: p_DblendPar    
+  integer, dimension(:), pointer :: p_ilevelODE  
+  
+  ! weighting parameter for Laplacian smoothing of the vector field
+  real(dp) :: dscale1,dscale2
+
+  
+  ! We deform on level nlmax
+  NLMAX = rgriddefInfo%iminDefLevel
+  NLMIN = rgriddefInfo%NLMIN
+  ! get some needed pointers
+  call storage_getbase_int(rgriddefInfo%h_nadapStepsReally,p_nadapStepsReally)
+  
+  call storage_getbase_int(rgriddefInfo%h_ilevelODE,p_ilevelODE)            
+
+  ! necessary for boundary projection only, not for adding the Neumann boundary
+  ! condition
+
+  ! create and modify all vectors necessary for deformation steps
+  call griddef_prepareDeformation(rgriddefInfo)
+
+  ! Compute the number of deformation steps 
+  call griddef_computeAdapSteps(rgriddefInfo)
+  ! Compute the blending parameter
+  
+  ! compute number of deformation steps on current level ilevel
+  !call griddef_computeAdapSteps(rparBlock, rgriddefInfo, ilevel, pfmon)
+
+  nmaxCorrSteps = 0
+
+  call storage_getbase_double(rgriddefInfo%h_DblendPar,p_DblendPar)
+
+  do i=NLMIN,NLMAX
+      call spdiscr_initBlockDiscr (rgriddefInfo%p_rhLevels(i)%rdiscretisation,1,&
+           rgriddefInfo%p_rhLevels(i)%p_rtriangulation)
+      
+      call spdiscr_initDiscr_simple (rgriddefInfo%p_rhLevels(i)%rdiscretisation%RspatialDiscr(1),&
+                                     EL_Q1_3D,CUB_G3_3D,&
+                                     rgriddefInfo%p_rhLevels(i)%p_rtriangulation)
+                                     
+  end do
+
+  ! loop over adaption cycles
+  do idef = 1,rgriddefInfo%nadaptionSteps
+
+    call output_lbrk ()
+    print *,"Adaptation Step: ",idef
+    call output_line ('-------------------')
+    call output_lbrk ()
+
+!    ! perform one deformation step: This routine appplies deformation to the
+    call griddef_performOneDefStep3D(rgriddefInfo,&
+                                     p_DblendPar(idef), NLMAX, NLMAX,&
+                                     def_monitorfct)
+     
+    ! nullifiy where neccesary 
+    if(idef .ne. rgriddefInfo%nadaptionSteps)then
+      call griddef_cleanLevels(rgriddefInfo%p_rhLevels,NLMIN,NLMAX)
+    end if
+  end do ! end do  
+
+  end subroutine
+ 
+! **************************************************************************************** 
+
+!<subroutine>
+  subroutine griddef_performOneDefStep3D(rgriddefInfo,&
+                                         dblendpar, ilevelODE, ilevel,&
+                                         def_monitorfct)
+  !<description>
+    ! This subroutine performs one deformation step of the enhanced deformation method.
+  !</description>
+
+  !<inputoutput>
+    ! structure containing all parameter settings for grid deformation
+    type(t_griddefInfo), intent(inout) :: rgriddefInfo
+  !</inputoutput>
+  
+  !<input>  
+    ! absolute level on which the points are moved
+    integer, intent(in) :: ilevelODE
+
+    ! absolute level on which the deformation PDE is solved
+    integer, intent(in) :: ilevel
+    
+    ! blending parameter for monitorfunction sf + (1-s)g
+    real(DP), intent(inout) :: dblendpar
+  !</input>
+    ! A callback routine for the monitor function
+    include 'intf_monitorfct.inc'
+    optional :: def_monitorfct
+
+!</subroutine>
+
+    ! local variables
+    real(dp), dimension(:,:), pointer :: Dresults
+    ! scaling factor for monitor function (exact case only)
+    real(dp) :: dscalefmon
+    ! scaling factor for the reciprocal of the blended monitor function (exact case only)
+    real(dp) :: dscalefmonInv
+    ! weighting parameter for Laplacian smoothing of the vector field
+    real(dp) :: dscale1,dscale2
+    logical :: bBlending
+    
+    ! An array of problem levels for the multigrid solver
+!    type(t_level), dimension(:), pointer :: Rlevels
+    
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    type(t_blockDiscretisation) :: rDubDiscretisation   
+    
+    ! A solver node that accepts parameters for the linear solver    
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner, p_rcoarseGridSolver, p_rsmoother
+
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    type(t_matrixBlock), dimension(:), pointer :: Rmatrices
+
+    ! A filter chain that describes how to filter the matrix/vector
+    ! before/during the solution process. The filters usually implement
+    ! boundary conditions.
+    type(t_filterChain), dimension(2), target :: RfilterChain
+    type(t_filterChain), dimension(:), pointer :: p_RfilterChain
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+    ! Error indicator during initialisation of the solver
+    integer :: ierror,NLMAX, i,NLMIN   
+    
+    NLMIN=rgriddefInfo%NLMIN
+    NLMAX=rgriddefInfo%NLMAX
+    
+    ! initialise Dresults
+    Dresults  => NULL()
+
+    ! no blending
+    bBlending = .TRUE.
+    
+    !---------------------------------------------------------------------------------
+    !                                 FOR EVERY LEVEL
+    !---------------------------------------------------------------------------------
+    
+    do i=NLMIN,NLMAX
+    
+      ! compute the original area distribution g(x)
+      call griddef_getArea3D(rgriddefInfo,i)
+
+      if(present(def_monitorfct))then
+        ! calculate the monitor/target grid area distribution f(x)
+        call griddef_calcMonitorFunction(rgriddefInfo,i,def_monitorfct)
+      else
+        ! or build a test monitor function
+        call griddef_buildMonFuncTest(rgriddefInfo, i)
+      end if
+      
+
+      ! blend monitor with current area distribution, if necessary
+      if(bBlending) then
+        ! Compute the scaling factors dscale1 and dscale2 for f and g and scale them
+        call griddef_normaliseFctsNum(rgriddefInfo,dscale1,dscale2,i)
+        call griddef_blendmonitor(rgriddefInfo,dblendpar,i)
+      end if
+
+      ! normalise the reciprocal of the functions
+      call griddef_normaliseFctsInv(rgriddefInfo,i)
+    
+    
+      
+      ! create the matrix for the poisson problem
+      call griddef_createMatrixDef(rgriddefInfo,i)
+
+      ! create rhs for deformation problem
+      call griddef_createRhs(rgriddefInfo,i)
+!    
+    end do
+    
+    !---------------------------------------------------------------------------------
+    !     end                          FOR EVERY LEVEL
+    !---------------------------------------------------------------------------------
+    
+    ! During the linear solver, the boundary conditions are also
+    ! frequently imposed to the vectors. But as the linear solver
+    ! does not work with the actual solution vectors but with
+    ! defect vectors instead.
+    ! So, set up a filter chain that filters the defect vector
+    ! during the solution process to implement discrete boundary conditions.
+    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFreal
+    RfilterChain(2)%ifilterType = FILTER_SMALLL1TO0
+    RfilterChain(2)%ismallL1to0component = 1
+    
+    
+    ! Create a Multigrid-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    call linsol_initMultigrid2 (p_rsolverNode,NLMAX-NLMIN+1,RfilterChain)
+    
+    ! Set up a coarse grid solver.
+    ! The coarse grid in multigrid is always grid 1!
+    call linsol_getMultigrid2Level (p_rsolverNode,1,p_rlevelInfo)
+    call linsol_initUMFPACK4 (p_rlevelInfo%p_rcoarseGridSolver)
+    
+    ! Now set up the other levels...
+    do i = NLMIN+1, NLMAX
+    
+      
+      ! Create an ILU(0) smoother
+      call linsol_initMILUs1x1 (p_rsmoother,0,0.0_DP)
+      
+      ! We will use 4 smoothing steps with damping parameter 0.7
+      call linsol_convertToSmoother(p_rsmoother, 4, 0.7_DP)
+      
+      ! And add this multi-grid level. We will use the same smoother
+      ! for pre- and post-smoothing.
+      call linsol_getMultigrid2Level (p_rsolverNode,i-NLMIN+1,p_rlevelInfo)
+      p_rlevelInfo%p_rpresmoother => p_rsmoother
+      p_rlevelInfo%p_rpostsmoother => p_rsmoother
+      
+    end do
+    
+    allocate(Rmatrices(NLMIN:NLMAX))
+    do i = NLMIN, NLMAX
+      call lsysbl_duplicateMatrix (rgriddefInfo%p_rhLevels(i)%rmatDeform,&
+          Rmatrices(i),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+    end do
+    
+    call linsol_setMatrices(p_RsolverNode,Rmatrices(NLMIN:NLMAX))
+    
+    do i=NLMIN,NLMAX
+      call lsysbl_releaseMatrix (Rmatrices(i))
+    end do
+    deallocate(Rmatrices)
+    
+    ! Create a BiCGStab-solver. Attach the above filter chain
+    ! to the solver, so that the solver automatically filters
+    ! the vector during the solution process.
+    p_RfilterChain => RfilterChain
+    
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 2    
+    
+    p_rsolverNode%nmaxIterations = 20
+    
+    ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .NE. LINSOL_ERR_NOERROR) stop
+    
+    ! Finally solve the system. As we want to solve Ax=b with
+    ! b being the real RHS and x being the real solution vector,
+    ! we use linsol_solveAdaptively. If b is a defect
+    ! RHS and x a defect update to be added to a solution vector,
+    ! we would have to use linsol_precondDefect instead.
+    call linsol_solveAdaptively (p_rsolverNode,rgriddefInfo%p_rhLevels(NLMAX)%rSolBlock,&
+                                 rgriddefInfo%p_rhLevels(NLMAX)%rrhsBlock,&
+                                 rgriddefInfo%p_rhLevels(NLMAX)%rtempBlock)    
+
+    !-----------------------------------------------------------------------------
+    !                            MESH MOVING PHASE
+    !-----------------------------------------------------------------------------
+
+    call spdiscr_initBlockDiscr (rDubDiscretisation,3,&
+                                 rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation)
+
+    call spdiscr_deriveSimpleDiscrSc (&
+                 rgriddefInfo%p_rhLevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
+                 EL_Q1_3D, CUB_G3_3D, rDubDiscretisation%RspatialDiscr(1))
+                 
+    call spdiscr_deriveSimpleDiscrSc (&
+                 rgriddefInfo%p_rhLevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
+                 EL_Q1_3D, CUB_G3_3D, rDubDiscretisation%RspatialDiscr(2))
+                 
+    call spdiscr_deriveSimpleDiscrSc (&
+                 rgriddefInfo%p_rhLevels(NLMAX)%rdiscretisation%RspatialDiscr(1),&
+                 EL_Q1_3D, CUB_G3_3D, rDubDiscretisation%RspatialDiscr(3))
+                 
+    ! initialise the block vector that should hold the solution
+    call lsysbl_createVecBlockByDiscr(rDubDiscretisation,&
+                                      rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,.TRUE.)
+    
+    ! get the recovered gradient of the solution
+    call ppgrd_calcGradient(rgriddefInfo%p_rhLevels(NLMAX)%rSolBlock%RvectorBlock(1),&
+                            rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock,PPGRD_INTERPOL)
+
+    ! Solve the ODE and move the mesh
+    call griddef_moveMesh3D(rgriddefInfo)
+    
+    ! Release solver data and structure
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
+    
+    ! Release the discretisation structure and all spatial discretisation
+    ! structures in it.
+    
+    call spdiscr_releaseBlockDiscr(rDubDiscretisation)
+    
+  
+  end subroutine ! end griddef_performOneDefStep
  
 end module
