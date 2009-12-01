@@ -152,7 +152,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
+  subroutine tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
   
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
