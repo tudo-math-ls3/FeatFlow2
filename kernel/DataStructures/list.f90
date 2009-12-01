@@ -373,6 +373,9 @@ contains
 !</output>
 !</subroutine>
     
+    ! local variables
+    integer, dimension(2) :: Isize
+
     ! Set factor
     if (present(dfactor)) then
       if (dfactor > 1_DP) rlist%dfactor=dfactor
@@ -441,19 +444,22 @@ contains
 
     ! Allocate memory for auxiliary data
     if (isizeDble > 0) then
-      call storage_new('list_createList','DData',(/isizeDble,nna/),&
+      Isize = (/isizeDble,nna/)
+      call storage_new('list_createList','DData',Isize,&
           ST_DOUBLE,rlist%h_DData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_double2D(rlist%h_DData,rlist%DData)
     end if
 
      if (isizeSngl > 0) then
-      call storage_new('list_createList','SData',(/isizeSngl,nna/),&
+       Isize = (/isizeSngl,nna/)
+      call storage_new('list_createList','SData',Isize,&
           ST_SINGLE,rlist%h_SData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_single2D(rlist%h_SData,rlist%SData)
     end if
 
     if (isizeInt > 0) then
-      call storage_new('list_createList','IData',(/isizeInt,nna/),&
+      Isize = (/isizeInt,nna/)
+      call storage_new('list_createList','IData',Isize,&
           ST_INT,rlist%h_IData,ST_NEWBLOCK_NOINIT)
       call storage_getbase_int2D(rlist%h_IData,rlist%IData)
     end if
