@@ -78,7 +78,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine tsrch_getElem_BruteForce_dir (&
+ pure subroutine tsrch_getElem_BruteForce_dir (&
       Dpoint,DvertexCoords,IverticesAtElement,iel)
   
 !<description>
@@ -107,7 +107,7 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(NDIM2D,TRIA_MAXNVE) :: Dcorners
+    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dcorners
     logical :: binside
   
     select case (ubound(Dpoint,1))
@@ -135,7 +135,12 @@ contains
         end if
       
       end do
-      
+    case(NDIM3D)
+      do iel=1,ubound(IverticesAtElement,2)
+        Dcorners(1:3,1:8) = DvertexCoords(1:3,IverticesAtElement(1:8,iel))
+        call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners,binside)
+        if (binside) return
+      end do
     end select
   
     ! No element found
@@ -147,7 +152,7 @@ contains
 
 !<subroutine>
 
-  subroutine tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
+  pure subroutine tsrch_getElem_BruteForce_ind (Dpoint,rtriangulation,iel)
   
 !<description>
   ! Find an element in the triangulation containing the point Dpoint.
