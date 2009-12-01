@@ -64,7 +64,8 @@ module geometryaux
   public :: gaux_isInElement_tri2D
   public :: gaux_getBarycentricCoords_tri2D
   public :: gaux_isFlipped_hexa3D
-
+  public :: gaux_isInElement_tetra
+  public :: gaux_isInElement_hexa
 contains
 
   ! ***************************************************************************
@@ -773,5 +774,230 @@ contains
     gaux_isFlipped_hexa3D = (dt .lt. 0.0_DP)
 
   end function gaux_isFlipped_hexa3D
+  
+!************************************************************************
+
+!<subroutine>
+  
+  pure subroutine gaux_isInElement_tetra(dx,dy,dz,Dpoints,binside)
+  
+!<description>
+  ! Checks if a point (dx,dy) is inside of a 2D triangular element
+  ! given by the corners DcornerCoords.
+!</description>
+
+!<input>
+  ! Point to check
+  real(DP), intent(in) :: dx,dy,dz
+  
+  ! Array with coordinates of the four corner points of the element.
+  ! The corners must be ordered in counterclockwise order.
+  !
+  ! Note: For performance reasons, this array is defined as
+  !   explicit array of dimension (3,4). As this deactivates array
+  !   checking in Fortran, the caller must take care to specify exactly
+  !   this type of array here!
+  real(DP), dimension(3,4), intent(in) :: Dpoints
+!</input>
+
+!<result>
+  ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
+  logical, intent(out) :: binside
+!</result>
+
+!</subroutine>
+  real(DP), dimension(3,4) :: Dnormals
+  real(DP), dimension(3,4) :: Dpv
+  real(DP), dimension(3,1) :: DP1
+  real(DP) :: ddot1,ddot2,ddot3,ddot4
+  
+  DP1(1,1)=dx
+  DP1(2,1)=dy
+  DP1(3,1)=dz
+
+  ! compute the face normals
+  Dnormals(1,1) = ((Dpoints(2,2) - Dpoints(2,4)) * (Dpoints(3,3) - Dpoints(3,4))) &
+                - ((Dpoints(3,2) - Dpoints(3,4)) * (Dpoints(2,3) - Dpoints(2,4)))
+                
+  Dnormals(2,1) = ((Dpoints(3,2) - Dpoints(3,4)) * (Dpoints(1,3) - Dpoints(1,4))) &
+                - ((Dpoints(1,2) - Dpoints(1,4)) * (Dpoints(3,3) - Dpoints(3,4)))
+
+  Dnormals(3,1) = ((Dpoints(1,2) - Dpoints(1,4)) * (Dpoints(2,3) - Dpoints(2,4))) &
+                - ((Dpoints(2,2) - Dpoints(2,4)) * (Dpoints(1,3) - Dpoints(1,4)))
+  
+  Dnormals(1,2) = ((Dpoints(2,1) - Dpoints(2,3)) * (Dpoints(3,4) - Dpoints(3,3))) &
+                - ((Dpoints(3,1) - Dpoints(3,3)) * (Dpoints(2,4) - Dpoints(2,3)))
+                
+  Dnormals(2,2) = ((Dpoints(3,1) - Dpoints(3,3)) * (Dpoints(1,4) - Dpoints(1,3))) &
+                - ((Dpoints(1,1) - Dpoints(1,3)) * (Dpoints(3,4) - Dpoints(3,3)))
+
+  Dnormals(3,2) = ((Dpoints(1,1) - Dpoints(1,3)) * (Dpoints(2,4) - Dpoints(2,3))) &
+                - ((Dpoints(2,1) - Dpoints(2,3)) * (Dpoints(1,4) - Dpoints(1,3)))
+
+  Dnormals(1,3) = ((Dpoints(2,4) - Dpoints(2,2)) * (Dpoints(3,1) - Dpoints(3,2))) &
+                - ((Dpoints(3,4) - Dpoints(3,2)) * (Dpoints(2,1) - Dpoints(2,2)))
+                
+  Dnormals(2,3) = ((Dpoints(3,4) - Dpoints(3,2)) * (Dpoints(1,1) - Dpoints(1,2))) &
+                - ((Dpoints(1,4) - Dpoints(1,2)) * (Dpoints(3,1) - Dpoints(3,2)))
+
+  Dnormals(3,3) = ((Dpoints(1,4) - Dpoints(1,2)) * (Dpoints(2,1) - Dpoints(2,2))) &
+                - ((Dpoints(2,4) - Dpoints(2,2)) * (Dpoints(1,1) - Dpoints(1,2)))
+
+  Dnormals(1,4) = ((Dpoints(2,3) - Dpoints(2,1)) * (Dpoints(3,2) - Dpoints(3,1))) &
+                - ((Dpoints(3,3) - Dpoints(3,1)) * (Dpoints(2,2) - Dpoints(2,1)))
+                
+  Dnormals(2,4) = ((Dpoints(3,3) - Dpoints(3,1)) * (Dpoints(1,2) - Dpoints(1,1))) &
+                - ((Dpoints(1,3) - Dpoints(1,1)) * (Dpoints(3,2) - Dpoints(3,1)))
+
+  Dnormals(3,4) = ((Dpoints(1,3) - Dpoints(1,1)) * (Dpoints(2,2) - Dpoints(2,1))) &
+                - ((Dpoints(2,3) - Dpoints(2,1)) * (Dpoints(1,2) - Dpoints(1,1)))
+  
+  ! calculate all p-v
+  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,4) 
+  
+  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,3) 
+  
+  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,2) 
+  
+  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,1) 
+  
+  ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
+  ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
+  ddot3 = Dpv(1,3) * Dnormals(1,3) + Dpv(2,3) * Dnormals(2,3) + Dpv(3,3) * Dnormals(3,3)
+  ddot4 = Dpv(1,4) * Dnormals(1,4) + Dpv(2,4) * Dnormals(2,4) + Dpv(3,4) * Dnormals(3,4)
+  
+  if((ddot1 .le. 0.0001_dp).and.(ddot2 .le. 0.0001_dp).and.(ddot3 .le. 0.0001_dp).and.(ddot4 .le. 0.0001_dp))then
+    binside = .true.  
+  else
+    binside = .false.
+  end if
+
+  end subroutine  
+
+!************************************************************************
+
+!<subroutine>
+  
+  pure subroutine gaux_isInElement_hexa(dx,dy,dz,Dpoints,binside)
+  
+!<description>
+  ! Checks whether a point (dx,dy,dz) is inside of a hexahedron
+!</description>
+
+!<input>
+  ! Point to check
+  real(DP), intent(in) :: dx,dy,dz
+  
+  ! Array with coordinates of the four corner points of the element.
+  ! The corners must be ordered in counterclockwise order!
+  !
+  ! Note: For performance reasons, this array is defined as
+  !   explicit array of dimension (3,8). As this deactivates array
+  !   checking in Fortran, the caller must take care to specify exactly
+  !   this type of array here!
+  real(DP), dimension(3,8), intent(in) :: Dpoints
+!</input>
+
+!<result>
+  ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
+  logical, intent(out) :: binside
+!</result>
+
+!</subroutine>
+  real(dp), dimension(3,6) :: dnormals
+  real(DP), dimension(3,6) :: Dpv
+  real(DP), dimension(3,1) :: DP1
+  real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6
+  
+  DP1(1,1)=dx
+  DP1(2,1)=dy
+  DP1(3,1)=dz
+  
+  ! compute the face normals 1
+  Dnormals(1,1) = ((Dpoints(2,4) - Dpoints(2,1)) * (Dpoints(3,2) - Dpoints(3,1))) &
+                - ((Dpoints(3,4) - Dpoints(3,1)) * (Dpoints(2,2) - Dpoints(2,1)))
+                
+  Dnormals(2,1) = ((Dpoints(3,4) - Dpoints(3,1)) * (Dpoints(1,2) - Dpoints(1,1))) &
+                - ((Dpoints(1,4) - Dpoints(1,1)) * (Dpoints(3,2) - Dpoints(3,1)))
+
+  Dnormals(3,1) = ((Dpoints(1,4) - Dpoints(1,1)) * (Dpoints(2,2) - Dpoints(2,1))) &
+                - ((Dpoints(2,4) - Dpoints(2,1)) * (Dpoints(1,2) - Dpoints(1,1)))
+  
+  ! compute the face normals 2
+  Dnormals(1,2) = ((Dpoints(2,2) - Dpoints(2,1)) * (Dpoints(3,5) - Dpoints(3,1))) &
+                - ((Dpoints(3,2) - Dpoints(3,1)) * (Dpoints(2,5) - Dpoints(2,1)))
+                
+  Dnormals(2,2) = ((Dpoints(3,2) - Dpoints(3,1)) * (Dpoints(1,5) - Dpoints(1,1))) &
+                - ((Dpoints(1,2) - Dpoints(1,1)) * (Dpoints(3,5) - Dpoints(3,1)))
+
+  Dnormals(3,2) = ((Dpoints(1,2) - Dpoints(1,1)) * (Dpoints(2,5) - Dpoints(2,1))) &
+                - ((Dpoints(2,2) - Dpoints(2,1)) * (Dpoints(1,5) - Dpoints(1,1)))
+  ! compute the face normals 3
+  Dnormals(1,3) = ((Dpoints(2,7) - Dpoints(2,3)) * (Dpoints(3,2) - Dpoints(3,3))) &
+                - ((Dpoints(3,7) - Dpoints(3,3)) * (Dpoints(2,2) - Dpoints(2,3)))
+                
+  Dnormals(2,3) = ((Dpoints(3,7) - Dpoints(3,3)) * (Dpoints(1,2) - Dpoints(1,3))) &
+                - ((Dpoints(1,7) - Dpoints(1,3)) * (Dpoints(3,2) - Dpoints(3,3)))
+
+  Dnormals(3,3) = ((Dpoints(1,7) - Dpoints(1,3)) * (Dpoints(2,2) - Dpoints(2,3))) &
+                - ((Dpoints(2,7) - Dpoints(2,3)) * (Dpoints(1,2) - Dpoints(1,3)))
+  ! compute the face normals 4
+  Dnormals(1,4) = ((Dpoints(2,4) - Dpoints(2,3)) * (Dpoints(3,7) - Dpoints(3,3))) &
+                - ((Dpoints(3,4) - Dpoints(3,3)) * (Dpoints(2,7) - Dpoints(2,3)))
+                
+  Dnormals(2,4) = ((Dpoints(3,4) - Dpoints(3,3)) * (Dpoints(1,7) - Dpoints(1,3))) &
+                - ((Dpoints(1,4) - Dpoints(1,3)) * (Dpoints(3,7) - Dpoints(3,3)))
+
+  Dnormals(3,4) = ((Dpoints(1,4) - Dpoints(1,3)) * (Dpoints(2,7) - Dpoints(2,3))) &
+                - ((Dpoints(2,4) - Dpoints(2,3)) * (Dpoints(1,7) - Dpoints(1,3)))
+  ! compute the face normals 5
+  Dnormals(1,5) = ((Dpoints(2,4) - Dpoints(2,8)) * (Dpoints(3,5) - Dpoints(3,8))) &
+                - ((Dpoints(3,4) - Dpoints(3,8)) * (Dpoints(2,5) - Dpoints(2,8)))
+                
+  Dnormals(2,5) = ((Dpoints(3,4) - Dpoints(3,8)) * (Dpoints(1,5) - Dpoints(1,8))) &
+                - ((Dpoints(1,4) - Dpoints(1,8)) * (Dpoints(3,5) - Dpoints(3,8)))
+
+  Dnormals(3,5) = ((Dpoints(1,4) - Dpoints(1,8)) * (Dpoints(2,5) - Dpoints(2,8))) &
+                - ((Dpoints(2,4) - Dpoints(2,8)) * (Dpoints(1,5) - Dpoints(1,8)))
+  
+  ! compute the face normals 6
+  Dnormals(1,6) = ((Dpoints(2,7) - Dpoints(2,6)) * (Dpoints(3,5) - Dpoints(3,6))) &
+                - ((Dpoints(3,7) - Dpoints(3,6)) * (Dpoints(2,5) - Dpoints(2,6)))
+                
+  Dnormals(2,6) = ((Dpoints(3,7) - Dpoints(3,6)) * (Dpoints(1,5) - Dpoints(1,6))) &
+                - ((Dpoints(1,7) - Dpoints(1,6)) * (Dpoints(3,5) - Dpoints(3,6)))
+
+  Dnormals(3,6) = ((Dpoints(1,7) - Dpoints(1,6)) * (Dpoints(2,5) - Dpoints(2,6))) &
+                - ((Dpoints(2,7) - Dpoints(2,6)) * (Dpoints(1,5) - Dpoints(1,6)))
+  
+  
+  ! calculate all p-v
+  Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,1) 
+  
+  Dpv(1:3,2)= DP1(1:3,1) - Dpoints(1:3,2) 
+  
+  Dpv(1:3,3)= DP1(1:3,1) - Dpoints(1:3,3) 
+  
+  Dpv(1:3,4)= DP1(1:3,1) - Dpoints(1:3,4) 
+  
+  Dpv(1:3,5)= DP1(1:3,1) - Dpoints(1:3,5) 
+  
+  Dpv(1:3,6)= DP1(1:3,1) - Dpoints(1:3,6) 
+  
+  ddot1 = Dpv(1,1) * Dnormals(1,1) + Dpv(2,1) * Dnormals(2,1) + Dpv(3,1) * Dnormals(3,1)
+  ddot2 = Dpv(1,2) * Dnormals(1,2) + Dpv(2,2) * Dnormals(2,2) + Dpv(3,2) * Dnormals(3,2)
+  ddot3 = Dpv(1,3) * Dnormals(1,3) + Dpv(2,3) * Dnormals(2,3) + Dpv(3,3) * Dnormals(3,3)
+  ddot4 = Dpv(1,4) * Dnormals(1,4) + Dpv(2,4) * Dnormals(2,4) + Dpv(3,4) * Dnormals(3,4)
+  ddot5 = Dpv(1,5) * Dnormals(1,5) + Dpv(2,5) * Dnormals(2,5) + Dpv(3,5) * Dnormals(3,5)
+  ddot6 = Dpv(1,6) * Dnormals(1,6) + Dpv(2,6) * Dnormals(2,6) + Dpv(3,6) * Dnormals(3,6)
+  
+  if((ddot1 .le. 0.0001_dp).and.(ddot2 .le. 0.0001_dp).and.(ddot3 .le. 0.0001_dp).and.&
+     (ddot4 .le. 0.0001_dp).and.(ddot5 .le. 0.0001_dp).and.(ddot6 .le. 0.0001_dp))then
+    binside = .true.  
+  else
+    binside = .false.
+  end if
+  
+  end subroutine  
 
 end module
