@@ -91,6 +91,11 @@
 !# 22.) sys_silsb, sys_simsb
 !#      -> String routine to convert integer numbers to string in bis
 !#         representation (LSB/MSB)
+!#
+!# 23.) sys_adjustl, sys_adjustr
+!#      -> Extended version of ADJUSTL/ADJUSTR that allow to specify
+!#         the length of the resulting string as parameter
+!# 
 !# </purpose>
 !##############################################################################
 
@@ -1984,6 +1989,68 @@ contains
     real(DP), intent(in) :: dvalue
     sys_s10E = trim(sys_sdEL(dvalue, 2))
   end function sys_s10E
+
+!************************************************************************
+
+
+!<function>
+
+  function sys_adjustr(sstring,nchars) result(soutput)
+
+!<description>
+    ! Extended ADJUSTR.
+    ! Right-adjusts a string onto a length on nchars characters
+!</description>
+
+!<input>
+    ! value to be converted
+    character(len=*), intent(in) :: sstring
+
+    ! number of characters
+    integer, intent(in)      :: nchars
+!</input>
+
+!<result>
+    ! String representation of the value (right-aligned),
+    ! fixed length of nchars characters
+    character (len=nchars) :: soutput
+!</result>
+!</function>
+
+    write(soutput,"(A"//trim(sys_siL(nchars,10))//")") trim(adjustl(sstring))
+    
+  end function
+
+!************************************************************************
+
+
+!<function>
+
+  function sys_adjustl(sstring,nchars) result(soutput)
+
+!<description>
+    ! Extended ADJUSTR.
+    ! Left-adjusts a string onto a length on nchars characters
+!</description>
+
+!<input>
+    ! value to be converted
+    character(len=*), intent(in) :: sstring
+
+    ! number of characters
+    integer, intent(in)      :: nchars
+!</input>
+
+!<result>
+    ! String representation of the value (right-aligned),
+    ! fixed length of nchars characters
+    character (len=nchars) :: soutput
+!</result>
+!</function>
+
+    soutput = trim(adjustl(sstring))
+    
+  end function
 
   ! ***************************************************************************
 

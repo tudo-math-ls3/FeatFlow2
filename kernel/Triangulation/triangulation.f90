@@ -6006,7 +6006,7 @@ p_InodalPropertyDest = -4711
       0.0_DP, 0.0_DP, DbboxPS(1), DbboxPS(2)
     
     ! Write the line width
-    write(iunit,'(F12.6,A)') (dwidth*MM2PTS), ' setlinewidth'
+    write(iunit,'(F12.6,A)') real(dwidth*MM2PTS,dp), ' setlinewidth'
     
     ! Begin a new path
     write(iunit,'(A)') 'newpath'
