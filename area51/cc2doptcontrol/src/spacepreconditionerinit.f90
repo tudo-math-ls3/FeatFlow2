@@ -171,7 +171,7 @@ contains
     ! Initialise them with the same structure, i.e. A11, A22 share (!) their
     ! structure (not the entries) with that of the template matrix.
     !
-    ! We allocate the system matrix using the cc_assembleMatrix routine.
+    ! We allocate the system matrix using the smva_assembleMatrix routine.
     ! For this purpose, we have to initialise a t_nonlinearSpatialMatrix structure
     ! which defines the shape of the matrix. We simply set the parameters
     ! of those terms which wshould appear in the matrix to a value <> 0,
@@ -188,7 +188,7 @@ contains
     
     ! As matrix flag we specify 0 here. This allocates a basic matrix which is
     ! modified later for our needs.
-    call cc_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
+    call smva_assembleMatrix (CCMASM_ALLOCMEM,CCMASM_MTP_AUTOMATIC,&
         rmatrix,rnonlinearSpatialMatrix)
                                   
     ! That's it, all submatrices are set up.

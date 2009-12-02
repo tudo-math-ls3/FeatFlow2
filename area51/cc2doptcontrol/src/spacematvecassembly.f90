@@ -73,7 +73,7 @@
 !#
 !# The module contains the following routines:
 !#
-!# 1.) cc_assembleMatrix
+!# 1.) smva_assembleMatrix
 !#     -> Assembles a matrix based on a set of input parameters.
 !#
 !# 2.) cc_assembleDefect
@@ -974,7 +974,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleMatrix (coperation,cmatrixType,&
+  subroutine smva_assembleMatrix (coperation,cmatrixType,&
       rmatrix,rnonlinearSpatialMatrix,&
       rvector1,rvector2,rvector3,rfineMatrix)
 
@@ -1996,14 +1996,30 @@ contains
                     rmatrix%RmatrixBlock(1,1),&
                     rmatrix%RmatrixBlock(2,2))
              
+      call lsysbl_getbase_double (rvector,p_Ddata1)
+      call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1),p_Ddata2)
+
       if ((dgamma .ne. 0.0_DP) .or. (dgammaT .ne. 0.0_DP) .or. &
           (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
                       
         ! Switch on the offdiagonal matrices if necessary
         if ((dgammaT .ne. 0.0_DP) .or. &
             (dnewton .ne. 0.0_DP) .or. (dnewtonT .ne. 0.0_DP)) then
-          rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-          rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+          ! Switch on missing matrices. Initialise with zero when they
+          ! are created the first time.
+          if (rmatrix%RmatrixBlock(1,2)%dscaleFactor .eq. 0.0_DP) then
+            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
+            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          end if
+        else
+          ! If the submatrices A12 and A21 exist, fill them with zero.
+          ! If they don't exist, we don't have to do anything.
+          if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
+            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
+          end if
         end if
                       
         select case (rstabilisation%iupwind)
@@ -2021,24 +2037,6 @@ contains
           rstreamlineDiffusion%dnewton           = dnewton
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
           
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-          
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that may receive parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-          end if
-
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
@@ -2063,24 +2061,6 @@ contains
           rstreamlineDiffusion2%dnewton = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-          
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that may receive parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-          end if
-
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
@@ -2109,28 +2089,6 @@ contains
           rstreamlineDiffusion%ddeltaTransposed  = dgammaT
           rstreamlineDiffusion%dnewton           = dnewton
           rstreamlineDiffusion%dnewtonTransposed = dnewtonT
-          
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-            
-          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -2182,30 +2140,6 @@ contains
           rstreamlineDiffusion2%dnewton  = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
           
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-            
-          end if
-          
-          call lsyssc_getbase_double (rmatrix%RmatrixBlock(1,1), p_Ddata1)
-          
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
           ! Therefore, the primal velcity is always used for assembling
@@ -2251,28 +2185,6 @@ contains
           rstreamlineDiffusion2%ddeltaT  = dgammaT
           rstreamlineDiffusion2%dnewton  = dnewton
           rstreamlineDiffusion2%dnewtonT = dnewtonT
-          
-          if ((dnewton .eq. 0.0_DP) .and. (dgammaT .eq. 0.0_DP) .and. &
-              (dnewtonT .eq. 0.0_DP)) then
-
-            ! If the submatrices A12 and A21 exist, fill them with zero.
-            ! If they don't exist, we don't have to do anything.
-            if (lsysbl_isSubmatrixPresent (rmatrix,1,2)) then
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-              call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-            end if
-            
-          else
-
-            ! Clear A12/A21 that receives parts of the Newton matrix
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(1,2))
-            call lsyssc_clearMatrix (rmatrix%RmatrixBlock(2,1))
-          
-            ! Activate the submatrices A12 and A21 if they aren't.
-            rmatrix%RmatrixBlock(1,2)%dscaleFactor = 1.0_DP
-            rmatrix%RmatrixBlock(2,1)%dscaleFactor = 1.0_DP
-            
-          end if
           
           ! Call the SD method to calculate the nonlinearity.
           ! As velocity vector, specify rvector!
@@ -3238,7 +3150,7 @@ contains
 !      
 !        if (.not. present(rvector)) then
 !          call output_line ('Velocity vector not present!', &
-!                             OU_CLASS_ERROR,OU_MODE_STD,'cc_assembleMatrix')
+!                             OU_CLASS_ERROR,OU_MODE_STD,'smva_assembleMatrix')
 !          call sys_halt()
 !        end if
 !      

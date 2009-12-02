@@ -485,6 +485,7 @@ contains
 
         rnonlinearSpatialMatrix%iprimalSol = 2
         rnonlinearSpatialMatrix%idualSol = 2
+        rnonlinearSpatialMatrix%idualSol2 = 3
         
         ! WARNING: For a very strange situation, taking xi here (which is said
         ! to be the correct evaluation point from the theory) does not lead
@@ -585,9 +586,11 @@ contains
         if (.not. bconvectionExplicit) then
           rnonlinearSpatialMatrix%iprimalSol = 2
           rnonlinearSpatialMatrix%idualSol = 2
+          rnonlinearSpatialMatrix%idualSol2 = 3
         else
           rnonlinearSpatialMatrix%iprimalSol = 2
           rnonlinearSpatialMatrix%idualSol = 3
+          rnonlinearSpatialMatrix%idualSol2 = 2
         end if
 
         rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
@@ -772,6 +775,7 @@ contains
         ! The diagonal matrix.
         rnonlinearSpatialMatrix%iprimalSol = 2
         rnonlinearSpatialMatrix%idualSol = 2
+        rnonlinearSpatialMatrix%idualSol2 = 2
 
         ! Current formulation:
         ! -(gamma+1/dt)*M*y + (M+dt*nu*L)*lambda = -(gamma+1/dt)*z
@@ -1403,6 +1407,50 @@ contains
     
   end subroutine 
    
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine stlin_disableSubmatrix (rnonlinearSpatialMatrix,irow,icolumn)
+
+!<description>
+  ! Disables a subbklock in the nonlinear matrix rnonlinearSpatialMatrix.
+  ! All weights of the correspopnding subblock are set to 0.
+!</description>
+
+!<input>
+  ! The row/column of the submatrix to be disabled.
+  integer :: irow,icolumn
+!</input>
+
+!<inputoutput>
+  ! A t_nonlinearSpatialMatrix structure that defines the shape of the core
+  ! equation. The weights that specify the submatrices of a small 6x6 
+  ! block matrix system are initialised depending on the position
+  ! specified by isubstep and nsubsteps.
+  !
+  ! The structure must have been initialised with smva_initNonlinMatrix!
+  type(t_nonlinearSpatialMatrix), intent(inout) :: rnonlinearSpatialMatrix
+!</inputoutput>
+
+!</subroutine>
+
+    ! Clear the coefficients
+    rnonlinearSpatialMatrix%Diota(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dalpha(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtheta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dgamma(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dnewton2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DgammaT2(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%DnewtonT(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Deta(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dtau(irow,icolumn) = 0.0_DP
+    rnonlinearSpatialMatrix%Dkappa(irow,icolumn) = 0.0_DP
+
+  end subroutine
+
 
   ! ***************************************************************************
   
@@ -1472,11 +1520,19 @@ contains
     ! (Navier--)Stokes equation and what we receive is the RHS for the
     ! terminal condition. We only have to take care of bondary conditions.
     
+    call lsysbl_getbase_double (rb,p_Ddata)
+
     ! Set up the basic components of the Navier--Stokes matrix
     p_rlevelInfo => rspaceTimeDiscr%p_rlevelInfo
 
     call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
         p_rlevelInfo%rdiscretisation,p_rlevelInfo%rstaticInfo)
+
+    ! Disable the submatices for the dual solution and the coupling.
+    ! We only want to generate the RHS for the primal solution.
+    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
 
     ! Change the sign of dupsam2 for a consistent stabilisation.
     ! Reason: The stablisation is added to the dual operator by the SD/
@@ -1516,9 +1572,11 @@ contains
     rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
         
     ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1
-    call lsysbl_clearVector (rb)
+    ! Clear the primal RHS for that purpose.
+    call lsyssc_clearVector(rb%RvectorBlock(1))
+    call lsyssc_clearVector(rb%RvectorBlock(2))
+    call lsyssc_clearVector(rb%RvectorBlock(3))
     call cc_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP,rx,rx,rx)
-    call lsysbl_getbase_double (rb,p_Ddata)
 
   end subroutine
 

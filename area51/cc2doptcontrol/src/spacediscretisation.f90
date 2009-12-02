@@ -1364,6 +1364,7 @@ contains
     character(LEN=10), dimension(3), parameter :: EXPR_VARIABLES = &
       (/'X    ','Y    ','TIME '/)
     type(t_collection) :: rcollection
+    real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2
 
     ! Get the parameter what to do with rvector
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
@@ -1483,6 +1484,9 @@ contains
       ! Call the analytic projection method and calculate the FE representation
       ! of the analytic expression. 
       call lsysbl_clearVector (rvector)
+      
+      call lsyssc_getbase_double(rvector%RvectorBlock(1),p_Ddata1)
+      call lsyssc_getbase_double(rvector%RvectorBlock(2),p_Ddata2)
       
       rcollection%IquickAccess(1) = 1  ! discretise X-component
       call anprj_discrDirect (rvector%RvectorBlock(1),&

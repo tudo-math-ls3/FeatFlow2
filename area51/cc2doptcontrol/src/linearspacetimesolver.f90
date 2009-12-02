@@ -5091,7 +5091,7 @@ contains
           ! 0th time step -> only dual pressure because of init. cond.;
           ! implement the unit vector twice, so there's no special handling ti
           ! be done to the array indices.
-          Iidx(2*i-1) = idof*neq+neq-ipSize+1
+          Iidx(2*i-1) = idof*neq+ivelSize+1 ! idof*neq+neq-ipSize+1
           Iidx(2*i  ) = idof*neq+neq-ipSize+1
         else
           Iidx(2*i-1) = idof*neq+ivelSize+1
@@ -5156,6 +5156,9 @@ contains
     logical :: bhasNeumann
     integer :: ivelSize,ipSize,neq
     integer, dimension(2) :: Iidx
+
+    ! DEBUG!!!
+    real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
       
     ! Initialise the collection for the assembly.
     call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
@@ -5196,6 +5199,10 @@ contains
     call lsysbl_createVecBlockIndMat(rblockTemp,rvector1)
     call lsysbl_createVecBlockIndMat(rblockTemp,rvector2)
     call lsysbl_createVecBlockIndMat(rblockTemp,rvector3)
+    
+    call lsysbl_getbase_double (rvector1,p_Ddata1)
+    call lsysbl_getbase_double (rvector2,p_Ddata2)
+    call lsysbl_getbase_double (rvector3,p_Ddata3)
     
     ! Put the 'current' solution to the 'middle' vector.
     if (associated(rsupermatrix%p_rsolution))  then
@@ -5247,7 +5254,7 @@ contains
         ! Assemble the matrix in rblockTemp.
         ! Note that the weights of the matrices must be set before, otherwise
         ! the assembly routines would complain about missing matrices :-)
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rblockTemp,rnonlinearSpatialMatrix,rvector1,rvector2,rvector3) 
 
         ! Switch of matrices that aren't needed.

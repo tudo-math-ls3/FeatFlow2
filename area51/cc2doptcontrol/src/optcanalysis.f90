@@ -165,9 +165,12 @@ contains
     integer :: isubstep
     real(DP) :: dtstep,dtime
     real(DP),dimension(2) :: Derr
+    real(dp), dimension(:), pointer :: p_Dx
     
     Derror(1:4) = 0.0_DP
     dtstep = rsolution%p_rtimeDiscretisation%dtstep
+    
+    call lsysbl_getbase_double (rtempVector,p_Dx)
 
     do isubstep = 0,rsolution%NEQtime-1
       ! Current point in time
@@ -214,10 +217,12 @@ contains
       call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalpha)
       call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
       
-      call cc_projectControlTimestep (rtempVector%RvectorBlock(4),&
-          rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
-      call cc_projectControlTimestep (rtempVector%RvectorBlock(5),&
-          rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
+      if (rproblem%roptControl%ccontrolConstraints .ne. 0.0_DP) then
+        call cc_projectControlTimestep (rtempVector%RvectorBlock(4),&
+            rproblem%roptControl%dumin1,rproblem%roptControl%dumax1)
+        call cc_projectControlTimestep (rtempVector%RvectorBlock(5),&
+            rproblem%roptControl%dumin2,rproblem%roptControl%dumax2)
+      end if
       
       call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
       call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
@@ -431,6 +436,9 @@ contains
       (/'X    ','Y    ','TIME '/)
     type(t_collection) :: rcollection
     type(t_fparser) :: rsolParser
+    real(dp), dimension(:), pointer :: p_Ddata
+    
+    call lsysbl_getbase_double (rtempVector,p_Ddata)
     
     derrorU = 0.0_DP
     derrorP = 0.0_DP

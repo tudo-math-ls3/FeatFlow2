@@ -1089,7 +1089,7 @@ contains
             ichunk-1,-1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+          call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
               RsystemMatrix(-1,ichunkrel),rnonlinearSpatialMatrix,&
               rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
@@ -1125,7 +1125,7 @@ contains
           ichunk-1,0,rnonlinearSpatialMatrix)
         
         ! Set up the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             RsystemMatrix(0,ichunkrel),rnonlinearSpatialMatrix,&
             rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         
@@ -1252,7 +1252,7 @@ contains
             ichunk-1,1,rnonlinearSpatialMatrix)
           
           ! Set up the matrix
-          call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+          call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
               RsystemMatrix(1,ichunkrel),rnonlinearSpatialMatrix,&
               rtimeVector(1),rtimeVector(2),rtimeVector(3)) 
         

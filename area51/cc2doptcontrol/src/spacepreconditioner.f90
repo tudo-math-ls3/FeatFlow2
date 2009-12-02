@@ -762,11 +762,11 @@ contains
           ! Assemble the matrix.
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           if (ilev .eq. rpreconditioner%NLMAX) then
-            call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
                 p_rmatrix,rlocalNonlSpatialMatrix,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
           else
-            call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+            call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
                 p_rmatrix,rlocalNonlSpatialMatrix,&
                 p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3,&
                 p_rmatrixFine)

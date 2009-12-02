@@ -784,7 +784,7 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
           
         ! Assemble the matrix. No 'previous' solution vector.
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
           
@@ -808,7 +808,7 @@ contains
           isubstep,1,rnonlinearSpatialMatrix)
       
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -848,7 +848,7 @@ contains
           isubstep,-1,rnonlinearSpatialMatrix)
 
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -883,7 +883,7 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
             
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -902,7 +902,7 @@ contains
           isubstep,1,rnonlinearSpatialMatrix)
 
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -940,7 +940,7 @@ contains
           isubstep,-1,rnonlinearSpatialMatrix)
       
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -972,7 +972,7 @@ contains
           isubstep,0,rnonlinearSpatialMatrix)
         
         ! Assemble the matrix
-        call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
+        call smva_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
             rmatrix,rnonlinearSpatialMatrix,&
             rtempVectorSol(1),rtempVectorSol(2),rtempVectorSol(3)) 
         
@@ -2159,6 +2159,7 @@ contains
     call lsysbl_createVecBlockByDiscr (p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
         rinitialCondRHS,.false.)
     call sptivec_getTimestepData (rx, 1, rtempVectorX)
+    call lsysbl_clearVector (rinitialCondRHS)
     call lsysbl_copyVector (rtempVectorX,rinitialCondSol)
     call cc_generateInitCondRHS (rproblem,p_rspaceTimeDiscr,&
         rtempVectorX,rinitialCondRHS)
@@ -2320,7 +2321,9 @@ contains
         case (6)
           ! UMFPACK
           call sptils_initUMFPACK4 (rproblem,p_rprecond)
-
+          p_rprecond%p_rsubnodeUMFPACK4%cwriteMatrix = 0
+          p_rprecond%p_rsubnodeUMFPACK4%sfilename = "./matrix.txt"
+          
           ! Defect correction solver
           call sptils_initDefCorr (rproblem,p_rcgrSolver,p_rprecond)
           p_rcgrSolver%domega = domega
