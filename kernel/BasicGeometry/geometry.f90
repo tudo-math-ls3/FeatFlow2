@@ -818,10 +818,10 @@ module geometry
   public :: geom_calcSignedDistance
   public :: geom_calcSignedDistanceArray
   public :: geom_polygonise
-  public :: geom_initParticleCollection
-  public :: geom_initParticleCollection3D
-  public :: geom_releaseParticleCollection
-  public :: geom_releaseParticleCollection3D
+  public :: geom_initParticleCollct
+  public :: geom_initParticleCollct3D
+  public :: geom_releaseParticleCollct
+  public :: geom_releaseParticleCollct3D
   
 contains
 
@@ -5598,7 +5598,7 @@ end subroutine
 ! ***************************************************************************
 
 !<subroutine>
-  subroutine geom_initParticleCollection(rparticleCollection,rparticleDescriptor)
+  subroutine geom_initParticleCollct(rparticleCollection,rparticleDescriptor)
   
 !<description>
   ! this routines initializes a Particle collection
@@ -5641,7 +5641,7 @@ end subroutine
 ! ***************************************************************************
 
 !<subroutine>
-  subroutine geom_initParticleCollection3D(rparticleCollection3D,rparticleDescriptor3D)
+  subroutine geom_initParticleCollct3D(rparticleCollection3D,rparticleDescriptor3D)
   
 !<description>
   ! this routines initializes a Particle collection
@@ -5686,7 +5686,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine geom_releaseParticleCollection(rparticleCollection)
+  subroutine geom_releaseParticleCollct(rparticleCollection)
            
 !<description>
   ! releases the memory allocated in the
@@ -5720,7 +5720,7 @@ end subroutine
 
 !<subroutine>
 
-  subroutine geom_releaseParticleCollection3D(rparticleCollection)
+  subroutine geom_releaseParticleCollct3D(rparticleCollection)
            
 !<description>
   ! releases the memory allocated in the
