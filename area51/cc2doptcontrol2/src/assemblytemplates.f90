@@ -1,0 +1,206 @@
+!##############################################################################
+!# ****************************************************************************
+!# <name> assemblytemplates </name>
+!# ****************************************************************************
+!#
+!# <purpose>
+!# Contains template structures that are used to collect information
+!# necessary for the assembly of matrices and vectors.
+!#
+!# The following routines can be found here:
+!#
+!# 1.) astmpl_createLevelInfoHier
+!#     -> Creates a template assembly hierarchy
+!#
+!# 2.) astmpl_releaseLevelInfoHier
+!#     -> Releases a template assembly hierarchy
+!#
+!# </purpose>
+!##############################################################################
+
+module assemblytemplates
+
+  use fsystem
+  use storage
+  use boundary
+  use triangulation
+  use linearsystemscalar
+  
+  use spatialdiscretisation
+  use timediscretisation
+  use timescalehierarchy
+
+  use meshhierarchy  
+  use fespacehierarchy
+  use spacetimehierarchy
+
+  implicit none
+  
+  private
+  
+  public :: t_staticSpaceAsmTemplates
+  public :: t_staticSpaceAsmHierarchy
+  public :: astmpl_createSpaceAsmHier
+  public :: astmpl_releaseSpaceAsmHier
+  
+!<types>
+
+!<typeblock>
+
+  ! A type block specifying all 'static' information in space which are depending
+  ! on a discretisation and a triangulation. Such static information can be
+  ! precalculated and is valid until the mesh or the FE spaces change.
+  type t_staticSpaceAsmTemplates
+  
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! A scalar discretisation structure for the velocity space.
+    type(t_spatialDiscretisation), pointer :: p_rdiscrVelocity
+
+    ! A scalar discretisation structure for the pressure space.
+    type(t_spatialDiscretisation), pointer :: p_rdiscrPressure
+
+    ! A scalar discretisation structure that specifies how to generate 
+    ! the mass matrix in the velocity FEM space.
+    ! May use a different cubature rule that the velocity discretisation
+    type(t_spatialDiscretisation), pointer :: p_rdiscrMassVelocity
+
+    ! A scalar discretisation structure that specifies how to generate 
+    ! the mass matrix in the pressure FEM space.
+    type(t_spatialDiscretisation), pointer :: p_rdiscrMassPressure
+
+    ! A template FEM matrix that defines the structure of Laplace/Stokes/...
+    ! matrices. The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateFEM
+
+    ! A template FEM matrix that defines the structure of the offdiagonal
+    ! matrices. Needed e.g. by Newton and may have different structure
+    ! than the diagonal velocity matrices ikn case EOJ is activated.
+    ! The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateFEMOffdiag
+
+    ! A template FEM matrix that defines the structure of the pressure
+    ! matrices. The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateFEMPressure
+
+    ! A template FEM matrix that defines the structure of gradient
+    ! matrices (B1/B2). The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateGradient
+
+    ! A template FEM matrix that defines the structure of divergence
+    ! matrices (D1/D2). The matrix contains only a stucture, no content.
+    type(t_matrixScalar) :: rmatrixTemplateDivergence
+
+    ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
+    type(t_matrixScalar) :: rmatrixStokes
+    
+    ! Precalculated B1-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixB1
+
+    ! Precalculated B2-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixB2
+    
+    ! Precalculated D1-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixD1
+
+    ! Precalculated D2-matrix for that specific level. 
+    type(t_matrixScalar) :: rmatrixD2
+
+    ! Precalculated D1^T-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D1=B1^T)
+    ! or describes an independent D1 matrix.
+    type(t_matrixScalar) :: rmatrixD1T
+
+    ! Precalculated D2-matrix for that specific level. 
+    ! This matrix either coincides with rmatrixB1 (in case D2=B2^T)
+    ! or describes an independent D2 matrix.
+    type(t_matrixScalar) :: rmatrixD2T
+
+    ! Precalculated mass matrix for the velocity space.
+    type(t_matrixScalar) :: rmatrixMassVelocity
+
+    ! Precalculated mass matrix for the pressure space.
+    type(t_matrixScalar) :: rmatrixMassPressure
+
+    ! Matrix with a precomputed EOJ stabilisation operator -- if EOJ is active.
+    type(t_matrixScalar) :: rmatrixEOJ1
+    type(t_matrixScalar) :: rmatrixEOJ2
+    
+  end type
+
+!</typeblock>
+
+!<typeblock>
+
+  ! A hierarchy of t_staticSpaceAsmTemplates structures.
+  type t_staticSpaceAsmHierarchy
+
+    ! Number of levels in the hierarchy.
+    integer :: nlevels = 0
+  
+    ! The level info structures on all levels.
+    type(t_staticSpaceAsmTemplates), dimension(:), pointer :: p_RasmTemplList => null()
+  
+  end type
+
+!</typeblock>
+
+!</types>
+
+contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine astmpl_createSpaceAsmHier (rhierarchy,nlevels)
+  
+!<description>
+  ! Allocates memory for a level hierarchy consisting of nlevels levels
+!</description>
+
+!<input>
+  ! Number of levels.
+  integer :: nlevels
+!</input>
+
+!<output>
+  ! A t_staticLevelInfoHierarchy to initialise.
+  type(t_staticSpaceAsmHierarchy), intent(out) :: rhierarchy
+!</output>
+
+!</subroutine>
+
+    ! Allocate memory.
+    rhierarchy%nlevels = nlevels
+    allocate(rhierarchy%p_RasmTemplList(nlevels))
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine astmpl_releaseSpaceAsmHier (rhierarchy)
+  
+!<description>
+  ! Releases a levle info hierarchy.
+  !
+  ! WARNING: Attached matrices are NOT automatically released!
+!</description>
+
+!<inputoutput>
+  ! A t_staticLevelInfoHierarchy to clean up.
+  type(t_staticSpaceAsmHierarchy), intent(inout) :: rhierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    ! Release memory.
+    deallocate(rhierarchy%p_RasmTemplList)
+    rhierarchy%nlevels = 0
+
+  end subroutine
+
+end module

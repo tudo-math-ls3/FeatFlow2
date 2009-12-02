@@ -1,0 +1,145 @@
+# ========================================================================
+# Configures various postprocessing settings
+# ------------------------------------------------------------------------
+
+#####################
+[POSTPROC_FORWARDSIM]
+#####################
+
+# Standard postprocessing during a forward simulation.
+
+# Type of output file to generate from solutions.
+# 0=disabled
+# 1=GMV
+# 2=AVS
+# 3=Paraview (VTK)
+
+ioutputUCD = 3
+
+# Filename for UCD output.
+# In a nonstationary simulation, a number '.0001','.0002',... is appended
+# to this.
+
+sfilenameUCD = './gmv/u.vtk'
+
+
+#####################
+[TIME-POSTPROCESSING]
+#####################
+
+# Type of output file to generate from solutions.
+# 0=disabled
+# 1=GMV
+# 2=AVS
+# 3=Paraview (VTK)
+
+ioutputUCD = 3
+
+# Filename prefix for visualisation output.
+# ='': Disable visualisation output
+
+sfilenameUCD = ''
+
+# Filename prefix for output of the solution vector. If this is '',
+# the solution vector is not written out.
+
+sfinalSolutionFileName = ''
+
+# Whether or not calculate drag/lift forces
+
+icalcForces = 1
+
+# Whether to calculate functional values (J(.)) during and after the computation.
+
+icalcFunctionalValues = 1
+
+# Whether or not calculate the error of the solution.
+# =0: No error analysis.
+# =1: Calculate the error to a given analytical expression 
+#     specified by the section in ssectionReferenceFunction below.
+
+icalcError = 0
+
+# Name of a section containing the definition of the reference function
+# to use if icalcError <> 0
+
+ssectionReferenceFunction = REFERENCE-FUNCTION
+
+
+####################
+[REFERENCE-FUNCTION]
+####################
+
+# Type of flow.
+# =-1: zero flow
+# =0: analytically given as callback function
+# =1: stationary flow as prescribed by a solution vector read in from a file.
+#     The filename is stargetFlow below.
+# =2: nonstationary flow as prescribed by a sequence of files on the 
+#     hard disc. stargetFlow is the basic filename target. A number
+#     '.0000','.0001',... is appended to this to form the filename of the
+#     solution vector in every timestep. There must be exactly as many
+#     files present on the hard disc as prescribed by the 
+#     time discretisation!
+# =3: analytically given in expression sflowExpressionY1/sflowExpressionY2
+
+ctype = -1
+
+# Id of the flow in case ctype=0.
+
+iid = 0
+
+# Analytical expression that defines the flow for the X/Y coordinate
+# in case ctype = 3. Valid variables/constants:
+#    X / Y  = coordinate of the point where to evaluate the expression
+#    TIME   = current time
+#    _PI    = The number Pi
+#    _EXP   = The natural number E
+#    _INFTY = infinity
+
+sflowExpressionY1 = ''
+sflowExpressionY2 = ''
+sflowExpressionP = ''
+sflowExpressionL1 = ''
+sflowExpressionL2 = ''
+sflowExpressionXI = ''
+
+# Refinement level of the coarse mesh corresponding to the flow vector.
+# Only valid if ctype =1 or =2.
+
+ilevel = 7
+
+# Element type of the flow.
+# =-1: Use the same element as the discretisation.
+# >=0: Use an alternative element.
+
+ielementType = -1
+
+# Name and path to the TRI file containing the mesh that corresponds to the
+# flow. ='': Use the same TRI file as for the computation of the
+# solution.
+# Only valid if ctype =1 or =2.
+
+smesh = ''
+
+# If ctype = 1, this is the filename of a file on disc containing
+# the flow. The file must contain a solution at the same spatial
+# level as prescribed by ilevel.
+
+sflowFile = 'ns/drivencav_stat_lv7/solution7'
+
+# Granularity parameter for the filenames of the flow.
+# =1 will read '.00000', '.00001', '.00002', etc.
+# =2 will read '.00000', '.00002', '.00004', etc.
+# =n will read '.00000', '.0000n', etc.
+
+idelta = 1
+
+# Number of files that describe the flow. If this is set to -1,
+# the number of files is automatically determined by the number of timesteps
+# in the finest level. If this is >= 0, the flow consists of nimesteps
+# files with file extension '.00000', '.00001', '.00002',...
+# If there are less files available on the hard disc that specified here,
+# the last solution is duplicated to fill the remaining time steps.
+
+ntimesteps = 64 
