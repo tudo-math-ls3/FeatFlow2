@@ -10145,7 +10145,7 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%deojEdgeExp,rconfig%dgammastar,rconfig%dtheta,&
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation,InodeList)
       end if
 
@@ -10315,7 +10315,7 @@ contains
       ! Modify the matrix?
       if (iand(cdef,CONV_MODMATRIX) .ne. 0) then
         call jstab_calcUEOJumpStabilisation (&
-          rmatrix,rconfig%dgamma,rconfig%deojEdgeExp,rconfig%dgammastar,rconfig%dtheta,&
+          rmatrix,rconfig%dgamma,rconfig%dgammastar,rconfig%deojEdgeExp,rconfig%dtheta,&
           rconfig%ccubType,rconfig%dnu,rdiscretisation)
       end if
 
