@@ -1195,7 +1195,7 @@ contains
                               
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
@@ -1223,7 +1223,7 @@ contains
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -1290,7 +1290,7 @@ contains
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -1364,7 +1364,7 @@ contains
 
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
@@ -1392,7 +1392,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -1461,7 +1461,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -1484,21 +1484,7 @@ contains
 
         case (CCMASM_STAB_FASTEDGEORIENTED)
           ! Fast Jump stabilisation. Precomputed matrix.
-          !
-          ! Sum
         
-          ! Set up the jump stabilisation structure.
-          ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
-          
-          ! Set stabilisation parameter
-          rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
-          rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
-          rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
-          
-          ! Matrix weight
-          rjumpStabil%dtheta = rnonlinearCCMatrix%dtheta
-
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
               rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil,rnonlinearCCMatrix%dtheta,&
@@ -1516,7 +1502,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -2116,7 +2102,7 @@ contains
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
@@ -2146,7 +2132,7 @@ contains
           
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dtheta = -rnonlinearCCMatrix%dtheta
             rjumpStabil%ccubType = rnonlinearCCMatrix%p_rstabilisation%ccubEOJ
@@ -2236,7 +2222,7 @@ contains
                               
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
-          rjumpStabil%dnu = rstreamlineDiffusion%dnu
+          rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
           
           ! Set stabilisation parameter
           rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
@@ -2266,7 +2252,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -2345,7 +2331,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -2401,7 +2387,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp
@@ -2430,7 +2416,7 @@ contains
 
           ! Subtract the EOJ matrix for the Dirichlet boundary conditions.
           if (rnonlinearCCMatrix%p_rdynamicInfo%nedgesDirichletBC .ne. 0) then
-            rjumpStabil%dnu = rstreamlineDiffusion%dnu
+            rjumpStabil%dnu = rnonlinearCCMatrix%p_rphysics%dnu
             rjumpStabil%dgamma = rnonlinearCCMatrix%p_rstabilisation%dupsam
             rjumpStabil%dgammastar = rnonlinearCCMatrix%p_rstabilisation%dupsamstar
             rjumpStabil%deojEdgeExp = rnonlinearCCMatrix%p_rstabilisation%deojEdgeExp

@@ -1083,6 +1083,8 @@ contains
       
       ! Set stabilisation parameter
       rjumpStabil%dgamma = rproblem%rstabilisation%dupsam
+      rjumpStabil%dgammastar = rproblem%rstabilisation%dupsamstar
+      rjumpStabil%deojEdgeExp = rproblem%rstabilisation%deojEdgeExp
       
       ! Matrix weight
       rjumpStabil%dtheta = 1.0_DP
