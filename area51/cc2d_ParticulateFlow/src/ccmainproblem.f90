@@ -151,7 +151,7 @@ contains
       call cc_initParticleDescriptor(rParticleDescriptor)
       
       ! initialize the particles
-      call geom_initParticleCollection(p_rproblem%rparticleCollection,rParticleDescriptor)
+      call geom_initParticleCollct(p_rproblem%rparticleCollection,rParticleDescriptor)
       
       deallocate(rParticleDescriptor%pparameters)
     ! we put the geometry object into the collection
@@ -342,7 +342,7 @@ contains
     
     call collct_deletevalue (p_rproblem%rcollection, 'mini')
     call collct_deletevalue (p_rproblem%rcollection, 'particles')
-    call geom_releaseParticleCollection(p_rproblem%rparticleCollection)
+    call geom_releaseParticleCollct(p_rproblem%rparticleCollection)
     
     
     ! Print some statistical data about the collection - anything forgotten?

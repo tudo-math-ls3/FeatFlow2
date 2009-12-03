@@ -2303,10 +2303,10 @@ contains
       dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
       
       ! Mean resistance forces for the given time step
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(5) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(4))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(5) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(4))
+      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
+       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
+      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
+       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
       
       ! Velocity difference for the given time step
       dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
