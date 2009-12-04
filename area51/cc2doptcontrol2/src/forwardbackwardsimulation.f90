@@ -190,11 +190,6 @@ module forwardbackwardsimulation
 
   ! This configuration block configures all parameters that are needed
   ! by the callback routines to perform the nonlinear iteration.
-  ! On start of the program, a structure of this type is initialised.
-  ! The entries of this structure are saved to the collection structure.
-  ! When a callback routine is called, the structure is rebuild from
-  ! the collection. When he nonlinear iteration is finished, the
-  ! parameters are removed from the colletion again.
   type t_fbsimNonlinearIteration
   
     ! Norm of initial residuum for the complete solution vector.
@@ -258,16 +253,17 @@ module forwardbackwardsimulation
     real(DP) :: drhoLinearSolver = 0.0_DP
     
     ! Type of the iteration.
-    ! =0: undefined
-    ! =1: linear solver.
+    ! =-1: undefined
+    ! =0: simple linear solver
+    ! =1: nonlinear defect correction solver.
     ! =2: Newton solver
     ! =3: adaptive Newton with parameters in radaptiveNewton
-    integer :: ctypeIteration = 0
+    integer :: ctypeIteration = -1
     
     ! Output mode. Used for printing messages.
     ! =OU_MODE_STD: Print messages to the terminal and probably to a log 
     ! file (if a log file is opened).
-    integer(I32)               :: coutputmode = OU_MODE_STD
+    integer(I32) :: coutputmode = OU_MODE_STD
 
     ! Parameters for the adaptive Newton iteration.
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
@@ -351,10 +347,10 @@ module forwardbackwardsimulation
     !<!-- Parameters / structures for Preconditioner: Linear solver, e.g. MG -->
     
     ! Minimum refinement level
-    integer :: NLMIN = 0
+    integer :: nlmin = 0
     
     ! Maximum refinement level
-    integer :: NLMAX = 0
+    integer :: nlmax = 0
     
     ! A pointer to a hierarchy of space assembly template structures.
     type(t_staticSpaceAsmHierarchy), pointer :: p_rspaceAsmTemplHier => null()
@@ -402,6 +398,9 @@ module forwardbackwardsimulation
     type(t_discreteFBC), dimension(:), pointer :: p_RdiscreteFBC => null()
     
     ! An array of 3x#levels temp vectors.
+    ! Note: The temp vectors on the maximum level are created but
+    ! actually not used. The application can use them to save the
+    ! evaluation point of the nonlinearity there!
     type(t_vectorBlock), dimension(:,:), pointer :: p_RtempVec
     
     ! Assembly data on all levels.
@@ -527,6 +526,7 @@ module forwardbackwardsimulation
   public :: t_fbsimPreconditioner
   public :: t_simSolver
   
+  public :: fbsim_getNLsimParamsLinSol
   public :: fbsim_getNLsimParameters
   public :: fbsim_setMatrix
 
@@ -542,6 +542,50 @@ module forwardbackwardsimulation
   public :: fbsim_assemblePrecMatrices
   
 contains
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fbsim_getNLsimParamsLinSol (rnonlinearIteration)
+  
+!<description>
+  ! Initialises the parameters in rnonlinearIteration with dummy parameters
+  ! to reflect a simple linear solver without nonlinear iteration.
+  ! The min/max number of iterations are set to 1, stopping criteria
+  ! are switched off.
+  !
+  ! The resulting structure can be used for forward/backward simulations
+  ! which do not involve a nonlinear iteration in each timestep.
+  ! For simulations that need a nonlinear iteration in each timestep,
+  ! the user can call fbsim_getNLsimParameters to initialise the structure
+  ! based on a parameter list for a real nonlinear iteration.
+!</description>
+
+!<output>
+  ! Nonlinar iteration structure saving data for the callback routines.
+  ! Is filled with data.
+  type(t_fbsimNonlinearIteration), intent(out) :: rnonlinearIteration
+!</output>
+
+!</subroutine>
+
+    ! Clear auxiliary variables for the nonlinear iteration
+    rnonlinearIteration%DresidualInit = 0.0_DP
+    rnonlinearIteration%DresidualOld  = 0.0_DP
+    
+    ! Set number of iterations to 1.
+    rnonlinearIteration%nminIterations = 1
+    rnonlinearIteration%nmaxIterations = 1
+
+    ! We write out the data of the nonlinear solver to the benchmark
+    ! log file as well.
+    rnonlinearIteration%coutputMode = OU_MODE_STD+OU_MODE_BENCHLOG
+    
+    ! The solver is a simple linear solver without a nonlinear iteration
+    rnonlinearIteration%ctypeIteration = 0
+
+  end subroutine
 
   ! ***************************************************************************
 
@@ -687,7 +731,9 @@ contains
   ! Param,eter list containing the parameters for the solver.
   type(t_parlist), intent(in) :: rparlist
   
-  ! Name of the section containing the parameters of the (nonlinear) solver.
+  ! Name of the section containing the parameters of the solver in
+  ! each timestep. This section identifies either a linear or a nonlinear
+  ! solver, depending on csimtype.
   character(len=*), intent(in) :: ssection
 
   ! Minimum space level allowed to be used by the preconditioner.
@@ -701,8 +747,11 @@ contains
   ! Type of simulation solver.
   ! =0: Navier-Stokes forward solver on the primal solution vector.
   !     The dual solution influences the simulation.
+  !     ssection must identify a parameter block of a nonlinear solver.
   ! =1: Oseen forward solver on the primal solution vector.
+  !     ssection must identify a parameter block of a linear solver.
   ! =2: Oseen backward solver simulation on the dual solution vector.
+  !     ssection must identify a parameter block of a linear solver.
   integer, intent(in) :: csimtype
 !</input>
 
@@ -714,7 +763,7 @@ contains
 !</subroutine>
 
     integer :: cspace
-    character(len=SYS_STRLEN) :: sstr
+    character(len=SYS_STRLEN) :: ssectionLinSol
 
     ! Take the information from the problem structure.
     rsimsolver%ilevel = nlmax
@@ -726,24 +775,37 @@ contains
     select case (csimtype)
     case (FBSIM_SOLVER_NLFORWARD)
       cspace = CCSPACE_PRIMAL
+      
+      ! Get the parameters of the nonlinear solver 
+      call fbsim_getNLsimParameters (rparlist,ssection, &  !"CC-NONLINEAR",&
+          rsimsolver%rnonlinearIteration)
+
+      ! Get the section defining the linear solver.
+      call parlst_getvalue_string (rparlist, ssection,"slinearSolver", ssectionLinSol, "CC-LINEARSOLVER")
+
     case (FBSIM_SOLVER_LINFORWARD)
       cspace = CCSPACE_PRIMAL
+      
+      ! Initialise the nonlinear solver structure as dummy.
+      call fbsim_getNLsimParamsLinSol(rsimsolver%rnonlinearIteration)
+      
+      ssectionLinSol = ssection
+      
     case (FBSIM_SOLVER_LINBACKWARD)
       cspace = CCSPACE_DUAL
+
+      ! Initialise the nonlinear solver structure as dummy.
+      call fbsim_getNLsimParamsLinSol(rsimsolver%rnonlinearIteration)
+
+      ssectionLinSol = ssection
+      
     end select
     
-    ! Get the parameters of the nonlinear solver in case we need them
-    call fbsim_getNLsimParameters (rparlist,ssection, &  !"CC-NONLINEAR",&
-        rsimsolver%rnonlinearIteration)
-
-    ! Get the section defining the linear solver.
-    call parlst_getvalue_string (rparlist, ssection,"slinearSolver", sstr, "CC-LINEARSOLVER")
-
     ! Initialise the preconditioner.
     ! Do not initialise the time discretisation; this will be initialised
     ! during setmatix!
     call fbsim_initPreconditioner (rsimsolver%rpreconditioner, rsettings, &
-        nlmin, nlmax, cspace, rparamlist=rparlist, ssection=sstr)
+        nlmin, nlmax, cspace, rparamlist=rparlist, ssection=ssectionLinSol)
         
     ! Get the assembly data on our level that allows us to create nonlinear
     ! matrices.
@@ -1083,9 +1145,19 @@ contains
         ! pressure equation with -1. This (un)symmetrises the operator and gives
         ! much better convergence rates.
         call cgcor_release(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection)
-        call cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,3)
-        p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(3) &
-            = -1.0_DP
+
+        select case (cspace)
+        case (CCSPACE_PRIMAL, CCSPACE_DUAL)
+          call cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,3)
+          p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(3) &
+              = -1.0_DP
+        case (CCSPACE_PRIMALDUAL)
+          call cgcor_init(p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection,6)
+          p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(3) &
+              = -1.0_DP
+          p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%p_DequationWeights(6) &
+              = -1.0_DP
+        end select
 
         ! Init standard solver parameters and extended multigrid parameters
         ! from the DAT file.
@@ -1277,9 +1349,6 @@ contains
               scoarseGridSolverSection,LINSOL_ALG_UNDEFINED)
           call linsolinit_initParams (p_rlevelInfo%p_rcoarseGridSolver,rparamList,&
               scoarseGridSolverSection,p_rlevelInfo%p_rcoarseGridSolver%calgorithm)
-
-          ! We need virtually transposed B-matrices as D-matrices for this preconditioner.
-          rpreconditioner%bneedVirtTransposedDonCoarse = .true.
 
         case default
         
@@ -2007,9 +2076,8 @@ contains
       end if
       
       ! Prepare a local nonlinearity structure for the matrix assembly.
-      rlocalNonlinearity%p_rvector1 => p_rvectorCoarse1
-      rlocalNonlinearity%p_rvector2 => p_rvectorCoarse2
-      rlocalNonlinearity%p_rvector3 => p_rvectorCoarse3
+      call smva_initNonlinearData (rlocalNonlinearity,&
+          p_rvectorCoarse1,p_rvectorCoarse2,p_rvectorCoarse3)
 
       ! Create a nonlinear matrix on the current level.
       call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -2209,7 +2277,7 @@ contains
 
 !<subroutine>
 
-  subroutine fbsim_precondSpaceDefect (rnonlinearIteration,rpreconditioner,rd,bsuccess)
+  subroutine fbsim_precondSpaceDefect (rpreconditioner,rd,bsuccess,rnonlinearIteration)
 
   use linearsystemblock
   use collection
@@ -2219,10 +2287,6 @@ contains
 !</description>
 
 !<inputoutput>
-  ! Reference to the nonlinear solver structure.
-  ! Convergence rates are written to here.
-  type(t_fbsimNonlinearIteration), intent(inout) :: rnonlinearIteration
-
   ! Spatial preconditioner structure that defines all parameters how to perform
   ! preconditioning.
   type(t_fbsimPreconditioner), intent(inout) :: rpreconditioner
@@ -2235,6 +2299,10 @@ contains
   ! set to FALSE. In this case, the nonlinear solver breaks down with
   ! the error flag set to 'preconditioner broke down'.
   logical, intent(inout) :: bsuccess
+
+  ! OPTIONAL: Reference to the nonlinear solver structure.
+  ! If present, convergence rates are written to here.
+  type(t_fbsimNonlinearIteration), intent(inout), optional :: rnonlinearIteration
 !</inputoutput>
 
 !</subroutine>
@@ -2262,12 +2330,6 @@ contains
       call linsol_setMatrices(p_rsolverNode,&
           rpreconditioner%p_RmatrixPrecond(rpreconditioner%NLMIN:rpreconditioner%NLMAX))
       
-      ! DEBUG!!!
-      !DO i=rnonlinearIteration%NLMIN,rnonlinearIteration%NLMAX
-      !  CALL storage_getbase_double (Rmatrices(i)% &
-      !      RmatrixBlock(4,1)%h_Da,p_Ddata)
-      !END DO
-      
       ! Initialise data of the solver. This in fact performs a numeric
       ! factorisation of the matrices in UMFPACK-like solvers.
       call linsol_initStructure (rpreconditioner%p_rsolverNode,ierror)
@@ -2291,9 +2353,11 @@ contains
       call linsol_doneStructure (p_rsolverNode)
       
       ! Remember convergence rate for output
-      rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
-      rnonlinearIteration%dlastInitPrecDef = p_rsolverNode%dinitialDefect
-      rnonlinearIteration%dlastPrecDef = p_rsolverNode%dfinalDefect
+      if (present(rnonlinearIteration)) then
+        rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
+        rnonlinearIteration%dlastInitPrecDef = p_rsolverNode%dinitialDefect
+        rnonlinearIteration%dlastPrecDef = p_rsolverNode%dfinalDefect
+      end if
 
       ! Did the preconditioner work?
       bsuccess = p_rsolverNode%iresult .eq. 0
@@ -2658,7 +2722,7 @@ contains
       call lsysbl_copyVector (rrhs,rdefect)
     end select
     
-    call cc_assembleDefect (rnonlinearSpatialMatrix,rsolution,&
+    call smva_assembleDefect (rnonlinearSpatialMatrix,rsolution,&
       rdefect,1.0_DP)
 
   end subroutine
@@ -3153,9 +3217,7 @@ contains
     ! Create a nonlinear-data structure that specifies the evaluation point
     ! of nonlinear matrices. the evaluation point is given by the three vectors
     ! roseensolX.
-    rnonlinearData%p_rvector1 => roseensol1
-    rnonlinearData%p_rvector2 => roseensol2
-    rnonlinearData%p_rvector3 => roseensol3
+    call smva_initNonlinearData (rnonlinearData,roseensol1,roseensol2,roseensol3)
     
     ! DEBUG!!!
     call lsysbl_getbase_double (roseensol1,p_Doseen1)
@@ -3308,7 +3370,7 @@ contains
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,-1,rnonlinearSpatialMatrix)
           
-          call cc_assembleDefect (rnonlinearSpatialMatrix,rprevsol,rrhs,1.0_DP)
+          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,rrhs,1.0_DP)
         end if
         
         ! Filter the current RHS in rdefect as well as the solution vector
@@ -3347,15 +3409,15 @@ contains
             !        
             ! Newton or standard matrix?
             select case (rsimsolver%rnonlinearIteration%ctypeIteration)
-            case (0)
+            case (0,1)
               ! Standard iteration.
               rspaceTimeMatrixPrecond%cmatrixType = 0
               
-            case (1)
+            case (2)
               ! Newton iteration
               rspaceTimeMatrixPrecond%cmatrixType = 1
               
-            case (2)
+            case (3)
               ! Adaptive Newton iteration. That's a bit more involving.
               ! We start being a standard iteration.
               rspaceTimeMatrixPrecond%cmatrixType = 0
@@ -3446,8 +3508,8 @@ contains
                 iiterate,0,rspaceTimeMatrixPrecond,rnonlinearData,.true.)
                 
             ! Do preconditioning to the defect
-            call fbsim_precondSpaceDefect (rsimsolver%rnonlinearIteration,&
-                rsimsolver%rpreconditioner,rdefectPrimal,blocalsuccess)
+            call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
+                rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
             
             ! If bsuccess=false, the preconditioner had an error.
             if (.not. blocalsuccess) then
@@ -3610,7 +3672,7 @@ contains
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
           
-          call cc_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
+          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
               rdefect,1.0_DP)
             
         else
@@ -3628,7 +3690,7 @@ contains
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
         
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
           rdefect,1.0_DP)
 
         ! Implement the boundary conditions        
@@ -3639,8 +3701,8 @@ contains
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
             
         ! Do preconditioning to the defect
-        call fbsim_precondSpaceDefect (rsimsolver%rnonlinearIteration,&
-            rsimsolver%rpreconditioner,rdefectPrimal,blocalsuccess)
+        call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
+            rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
             
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Forward Iteration "//&
@@ -3735,7 +3797,7 @@ contains
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
           
-          call cc_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
+          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
               rdefect,1.0_DP)
             
         else
@@ -3753,7 +3815,7 @@ contains
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
         
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
             rdefect,1.0_DP)
         
         ! Implement the boundary conditions        
@@ -3764,8 +3826,8 @@ contains
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
             
         ! Do preconditioning to the defect
-        call fbsim_precondSpaceDefect (rsimsolver%rnonlinearIteration,&
-            rsimsolver%rpreconditioner,rdefectDual,blocalsuccess)
+        call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
+            rdefectDual,blocalsuccess,rsimsolver%rnonlinearIteration)
         
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Backward Iteration "//&

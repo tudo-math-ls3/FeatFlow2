@@ -352,9 +352,9 @@ contains
       call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
       
       if (rconstraints%ccontrolConstraints .ne. 0) then
-        call cc_projectControlTimestep (rtempVector%RvectorBlock(4),&
+        call smva_projectControlTimestep (rtempVector%RvectorBlock(4),&
             rconstraints%dumin1,rconstraints%dumax1)
-        call cc_projectControlTimestep (rtempVector%RvectorBlock(5),&
+        call smva_projectControlTimestep (rtempVector%RvectorBlock(5),&
             rconstraints%dumin2,rconstraints%dumax2)
       end if
       

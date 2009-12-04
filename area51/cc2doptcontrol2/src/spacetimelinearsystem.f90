@@ -1265,7 +1265,7 @@ contains
     call sptivec_getTimestepData(rx, 1+0, rtempVector(2))
     
     ! If necesary, multiply the rtempVectorX. We have to take a -1 into
-    ! account as the actual matrix multiplication routine cc_assembleDefect
+    ! account as the actual matrix multiplication routine smva_assembleDefect
     ! introduces another -1!
     if (cx .ne. -1.0_DP) then
       call lsysbl_scaleVector (rtempVector(2),-cx)
@@ -1350,7 +1350,7 @@ contains
         call sptivec_getTimestepData(rx, ieqTime+1, rtempVector(3))
 
         ! If necesary, multiply the rtempVectorX. We have to take a -1 into
-        ! account as the actual matrix multiplication routine cc_assembleDefect
+        ! account as the actual matrix multiplication routine smva_assembleDefect
         ! introduces another -1!
         if (cx .ne. -1.0_DP) then
           call lsysbl_scaleVector (rtempVector(3),-cx)
@@ -1388,7 +1388,7 @@ contains
           ieqTime,0,rnonlinearSpatialMatrix)
           
         ! Subtract: rd = rd - A11 x1
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
 
         ! -----
       
@@ -1402,7 +1402,7 @@ contains
           ieqTime,1,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - A12 x2
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,1.0_DP)
 
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
@@ -1435,7 +1435,7 @@ contains
         ! Subtract: rd = rd - Aii-1 xi-1.
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xi due to the discretisation scheme!!!
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,1.0_DP)
 
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
@@ -1452,7 +1452,7 @@ contains
           ieqTime,0,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - Aii xi
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
             
         ! -----
         
@@ -1466,7 +1466,7 @@ contains
           ieqTime,1,rnonlinearSpatialMatrix)
           
         ! Subtract: rd = rd - Aii+1 xi+1
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(3),rtempVectorD,1.0_DP)
         
         ! Release the block mass matrix.
         call lsysbl_releaseMatrix (rblockTemp)
@@ -1497,7 +1497,7 @@ contains
         ! Subtract: rd = rd - Ann-1 xn-1
         ! Note that at this point, the nonlinearity must be evaluated
         ! at xn due to the discretisation scheme!!!
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(1),rtempVectorD,1.0_DP)
      
         ! -----
         
@@ -1511,7 +1511,7 @@ contains
           ieqTime,0,rnonlinearSpatialMatrix)
 
         ! Subtract: rd = rd - Ann xn
-        call cc_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
+        call smva_assembleDefect (rnonlinearSpatialMatrix,rtempVector(2),rtempVectorD,1.0_DP)
       
       end if
 

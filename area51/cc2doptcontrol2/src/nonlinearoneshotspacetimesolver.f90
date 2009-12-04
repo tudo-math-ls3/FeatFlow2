@@ -1771,7 +1771,7 @@ contains
 !    ! Solve the global space-time coupled system.
 !    !
 !    ! Get the initial defect: d=b-Ax
-!    !CALL cc_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
+!    !CALL smva_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
 !    !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
 !    !CALL cc_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
 !    !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
@@ -2168,7 +2168,7 @@ contains
 !    ! Solve the global space-time coupled system.
 !    !
 !    ! Get the initial defect: d=b-Ax
-!    !CALL cc_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
+!    !CALL smva_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
 !    !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
 !    !CALL cc_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rb, &
 !    !  rtempvectorX, rtempvectorB, rtempvector, .FALSE.)    
@@ -2247,7 +2247,7 @@ contains
 !    ! Release the preconditioner of the nonlinear iteration
 !    call cc_doneSpacePreconditioner (rpreconditioner)
 !    
-!    !CALL cc_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
+!    !CALL smva_assembleDefectSupersystem (rproblem, rspaceTimeDiscr, rx, rd, &
 !    !    rtempvectorX, rtempvectorB, rtempVector, ddefNorm)
 !    !CALL cc_assembleSpaceTimeRHS (rproblem, rspaceTimeDiscr, rd, &
 !    !  rtempvectorX, rtempvectorB, rtempvector,.FALSE.)

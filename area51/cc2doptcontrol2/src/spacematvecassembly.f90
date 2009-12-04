@@ -76,14 +76,17 @@
 !# 1.) smva_assembleMatrix
 !#     -> Assembles a matrix based on a set of input parameters.
 !#
-!# 2.) cc_assembleDefect
+!# 2.) smva_assembleDefect
 !#     -> Set up a defect vector d:=b-A(x)x
 !#
-!# 3.) cc_projectControlTimestep
-!#     Projects the entries of a vector into a range of numbers.
+!# 3.) smva_projectControlTimestep
+!#     -> Projects the entries of a vector into a range of numbers.
 !#
 !# 4.) smva_initNonlinMatrix
-!#     Initialises a nonlinear-matrix structure with basic parameters.
+!#     -> Initialises a nonlinear-matrix structure with basic parameters.
+!#
+!# 5.) smva_initNonlinearData
+!#     -> Initialises a nonlinear-data structure.
 !# </purpose>
 !##############################################################################
 
@@ -219,9 +222,10 @@ module spacematvecassembly
   public :: t_matrixAssemblyFlags
   public :: smva_initNonlinMatrix
   public :: smva_assembleMatrix
-  public :: cc_assembleDefect
-  public :: cc_projectControlTimestep
+  public :: smva_assembleDefect
+  public :: smva_projectControlTimestep
   public :: smva_getDiscrData
+  public :: smva_initNonlinearData
 
 !<types>
 
@@ -512,7 +516,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_nonlinMatrixSetNonlinearity (rnonlinearSpatialMatrix,rnonlinearity)
+  subroutine smva_nonlinMatrixSetNonlinearity (rnonlinearSpatialMatrix,rnonlinearity)
 
 !<description>
   ! Defines the nonlinearity of a nonlinear matrix. Allows to change the
@@ -2639,7 +2643,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleDefect (rnonlinearSpatialMatrix,rx,rd,cx)
+  subroutine smva_assembleDefect (rnonlinearSpatialMatrix,rx,rd,cx)
 
 !<description>
   ! This routine assembles the nonlinear defect
@@ -2709,6 +2713,7 @@ contains
     
     dcx = 1.0_DP
     if (present(cx)) dcx = cx
+    if (dcx .eq. 0.0_DP) return
     
     if (.not. bnewmethod) then
     
@@ -3065,10 +3070,10 @@ contains
         
         ! Project that to the allowed range.
         if (rnonlinearSpatialMatrix%rdiscrData%rconstraints%ccontrolConstraints .ne. 0) then
-          call cc_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
+          call smva_projectControlTimestep (rtempVectorX%RvectorBlock(1),&
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin1,&
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax1)
-          call cc_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
+          call smva_projectControlTimestep (rtempVectorX%RvectorBlock(2),&
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumin2,&
               rnonlinearSpatialMatrix%rdiscrData%rconstraints%dumax2)
         end if
@@ -3930,7 +3935,7 @@ contains
   
 !<subroutine>
 
-  subroutine cc_projectControlTimestep (rdualSolution,dumin,dumax)
+  subroutine smva_projectControlTimestep (rdualSolution,dumin,dumax)
 
 !<description>
   ! Projects a dual solution vector u in such a way, that
@@ -3963,6 +3968,47 @@ contains
     do i=1,rdualSolution%NEQ
       p_Ddata(i) = min(max(p_Ddata(i),dumin),dumax)
     end do
+
+  end subroutine   
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine smva_initNonlinearData (rnonlinearData,rvector1,rvector2,rvector3)
+
+!<description>
+  ! Initialises a nonlinear-data structure that defines the nonlinearity
+  ! in a nonlinear matrix.
+!</description>
+
+!<input>
+    ! Specifies where to evaluate the nonlinearity and must contain the data
+    ! for the 'previous' timestep. If there is no previous timestep (e.g.
+    ! like in the 0th timestep), the vector can be undefined.
+    type(t_vectorBlock), intent(in), target :: rvector1
+
+    ! Specifies where to evaluate the nonlinearity and must contain the data
+    ! for the 'current' timestep. 
+    type(t_vectorBlock), intent(in), target :: rvector2
+
+    ! Specifies where to evaluate the nonlinearity and must contain the data
+    ! for the 'next' timestep. If there is no next timestep (e.g.
+    ! like in the last timestep), the vector can be undefined.
+    type(t_vectorBlock), intent(in), target :: rvector3
+!</input>
+
+!<inputoutput>
+  ! Nonlinear-data structure to be created.
+  type(t_spatialMatrixNonlinearData), intent(out) :: rnonlinearData
+!</inputoutput>
+
+!</subroutine>
+ 
+    ! Set the pointers.
+    rnonlinearData%p_rvector1 => rvector1
+    rnonlinearData%p_rvector2 => rvector2
+    rnonlinearData%p_rvector3 => rvector3
 
   end subroutine   
 

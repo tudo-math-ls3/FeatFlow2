@@ -61,6 +61,9 @@ module structuresspacetimelinsol
 
     ! Damping parameter
     real(dp) :: domega = 0.9 
+    
+    ! Relaxation parameter (e.g. in SOR)
+    real(dp) :: drelax = 1.0
 
     ! Number of presmoothing steps
     integer :: nsmpre = 0
@@ -132,6 +135,9 @@ module structuresspacetimelinsol
     ! Damping parameter
     real(dp) :: domega = 1.0 
 
+    ! Relaxation parameter (e.g. in SOR)
+    real(dp) :: drelax = 1.0
+
     ! Damping of residuals, i.e. reduction of relative error 
     ! on finest grid; smaller -> more iterations
     ! Not used if inexact Newton is used as nonlinear solver.
@@ -174,8 +180,11 @@ module structuresspacetimelinsol
     ! Maximum number of time-iterations on the coarsest time-mesh
     integer :: nmaxIterations = 1 
 
-    ! Relaxation parameter (e.g. for SOR)
+    ! Damping parameter
     real(dp) :: domega = 1.0 
+
+    ! Relaxation parameter (e.g. in SOR)
+    real(dp) :: drelax = 1.0
 
     ! Damping of residuals, i.e. reduction of relative error 
     ! on finest grid; smaller -> more iterations
@@ -586,6 +595,35 @@ contains
 
     ! Based on the parameters in rsolversettings, create p_rsolver.
     select case (rsolversettings%cspaceTimeSmoother)
+    case (0)
+      ! Defect correction with Block Jacobi preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%domega)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (1)
+    
+      ! Block SOR preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%drelax,1.0_DP)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
     case (8)
       ! Simple defect correction with UMFPACK preconditioning.
       !
@@ -603,16 +641,6 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
-      ! Transfer all parameters
-      p_rsolver%nminIterations     = 0
-      p_rsolver%nmaxIterations     = 0
-      p_rsolver%domega             = rsolversettings%domega
-      p_rsolver%depsRel            = rsolversettings%depsRel
-      p_rsolver%depsAbs            = rsolversettings%depsAbs
-      p_rsolver%depsDiff           = rsolversettings%depsDiff
-      p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
-      p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
-
     case (9)
       ! forward-backward preconditioning.
       !
@@ -621,17 +649,17 @@ contains
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
           p_rsolver,1.0_DP)
           
-      ! Transfer all parameters
-      p_rsolver%nminIterations     = 0
-      p_rsolver%nmaxIterations     = 0
-      p_rsolver%domega             = rsolversettings%domega
-      p_rsolver%depsRel            = rsolversettings%depsRel
-      p_rsolver%depsAbs            = rsolversettings%depsAbs
-      p_rsolver%depsDiff           = rsolversettings%depsDiff
-      p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
-      p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
-
     end select
+
+    ! Transfer all parameters
+    p_rsolver%nminIterations     = 0
+    p_rsolver%nmaxIterations     = 0
+    p_rsolver%domega             = rsolversettings%domega
+    p_rsolver%depsRel            = rsolversettings%depsRel
+    p_rsolver%depsAbs            = rsolversettings%depsAbs
+    p_rsolver%depsDiff           = rsolversettings%depsDiff
+    p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
+    p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
 
   end subroutine  
 
@@ -674,6 +702,39 @@ contains
 
     ! Based on the parameters in rsolversettings, create p_rsolver.
     select case (rsolversettings%ctypeSolver)
+    case (0)
+      ! Defect correction with Block Jacobi preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%domega)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+      
+    case (1)
+    
+      ! Defect correction with Block SOR preconditioning.
+      !
+      ! Create a Block SOR preconditioner. We set the 2nd parameter to
+      ! 1.0 which leads to a standard SOR preconditioner without
+      ! GS relaxation.
+      call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%drelax,1.0_DP)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+      
     case (8)
       ! Simple defect correction with UMFPACK preconditioning.
       !
@@ -689,17 +750,6 @@ contains
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
-
-      ! Transfer all parameters
-      p_rsolver%nminIterations     = rsolversettings%nminIterations
-      p_rsolver%nmaxIterations     = rsolversettings%nmaxIterations
-      p_rsolver%domega             = rsolversettings%domega
-      p_rsolver%depsRel            = rsolversettings%depsRel
-      p_rsolver%depsAbs            = rsolversettings%depsAbs
-      p_rsolver%depsDiff           = rsolversettings%depsDiff
-      p_rsolver%ddivRel            = rsolversettings%ddivRel
-      p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
-      p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
 
     case (9)
       ! Simple defect correction with forward-backward preconditioning.
@@ -717,18 +767,18 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
-      ! Transfer all parameters
-      p_rsolver%nminIterations     = rsolversettings%nminIterations
-      p_rsolver%nmaxIterations     = rsolversettings%nmaxIterations
-      p_rsolver%domega             = rsolversettings%domega
-      p_rsolver%depsRel            = rsolversettings%depsRel
-      p_rsolver%depsAbs            = rsolversettings%depsAbs
-      p_rsolver%depsDiff           = rsolversettings%depsDiff
-      p_rsolver%ddivRel            = rsolversettings%ddivRel
-      p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
-      p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
-
     end select
+
+    ! Transfer all parameters
+    p_rsolver%nminIterations     = rsolversettings%nminIterations
+    p_rsolver%nmaxIterations     = rsolversettings%nmaxIterations
+    p_rsolver%domega             = rsolversettings%domega
+    p_rsolver%depsRel            = rsolversettings%depsRel
+    p_rsolver%depsAbs            = rsolversettings%depsAbs
+    p_rsolver%depsDiff           = rsolversettings%depsDiff
+    p_rsolver%ddivRel            = rsolversettings%ddivRel
+    p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
+    p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
 
   end subroutine  
 

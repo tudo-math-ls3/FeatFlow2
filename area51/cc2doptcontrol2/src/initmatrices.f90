@@ -359,6 +359,7 @@ contains
     ! Stabilisation stuff
     type(t_jumpStabilisation) :: rjumpStabil
     type(t_collection) :: rcollection
+    integer, dimension(:), pointer :: p_Kld
 
     ! Initialise the collection for the assembly process with callback routines.
     ! Basically, this stores the simulation time in the collection if the
@@ -397,7 +398,6 @@ contains
         DER_FUNC,DER_DERIV_Y,-1.0_DP)
     
     ! Set up the matrices D1 and D2 by transposing B1 and B2.
-    ! For that purpose, virtually transpose B1/B2.
     call lsyssc_transposeMatrix (rstaticAsmTemplates%rmatrixB1,&
         rstaticAsmTemplates%rmatrixD1,LSYSSC_TR_CONTENT)
 

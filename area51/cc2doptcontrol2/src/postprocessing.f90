@@ -462,10 +462,10 @@ contains
       call lsyssc_scaleVector (rprjVector%RvectorBlock(5),-1.0_DP/roptControl%dalphaC)
 
       if (roptControl%rconstraints%ccontrolConstraints .ne. 0) then
-        call cc_projectControlTimestep (rprjVector%RvectorBlock(4),&
+        call smva_projectControlTimestep (rprjVector%RvectorBlock(4),&
             roptControl%rconstraints%dumin1,roptControl%rconstraints%dumax1)
 
-        call cc_projectControlTimestep (rprjVector%RvectorBlock(5),&
+        call smva_projectControlTimestep (rprjVector%RvectorBlock(5),&
             roptControl%rconstraints%dumin2,roptControl%rconstraints%dumax2)
       end if
 

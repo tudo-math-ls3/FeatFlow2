@@ -2232,6 +2232,9 @@ contains
 
     call parlst_getvalue_double (rparlist, ssection, &
         'domega', rparams%domega, 1.0_DP)
+
+    call parlst_getvalue_double (rparlist, ssection, &
+        'drelax', rparams%drelax, 1.0_DP)
                                 
     call parlst_getvalue_int (rparlist, ssection, &
         'nminIterations', rparams%nminIterations, 1)
@@ -2292,6 +2295,9 @@ contains
 
     call parlst_getvalue_double (rparlist, ssection, &
         'domega', rparams%domega, 1.0_DP)
+
+    call parlst_getvalue_double (rparlist, ssection, &
+        'drelax', rparams%drelax, 1.0_DP)
 
     call parlst_getvalue_int (rparlist, ssection, &
         'nminIterations', rparams%nminIterations, 1)
@@ -2782,7 +2788,7 @@ contains
     call lsyssc_clearVector(rb%RvectorBlock(1))
     call lsyssc_clearVector(rb%RvectorBlock(2))
     call lsyssc_clearVector(rb%RvectorBlock(3))
-    call cc_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
+    call smva_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
     
     ! Save the new RHS.
     call sptivec_setTimestepData (rrhs, 1, rb)
