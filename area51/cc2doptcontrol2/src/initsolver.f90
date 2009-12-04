@@ -2027,7 +2027,7 @@ contains
           rsettingsPrecond%rsmoother)
 
       ! Read the parameters for the preconditioner of the smoother on every level.
-      call init_getParamsPrec_sgrprec (rparlist,sstrSmoother,&
+      call init_getParamsPrec_sgrprec (rparlist,sstrSmootherPrec,&
           rsettingsPrecond%rprecsmoother)
       
       ! Go on reading the parameters of the coarse grid solver,

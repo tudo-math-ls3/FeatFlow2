@@ -658,9 +658,9 @@ icalcError = 1
 
 [TIME-SOLVER]
 nminIterations         = 1
-nmaxIterations         = 2
+nmaxIterations         = 100
 depsRel                = 1E-13 #1E-8
-cpreconditioner        = 1
+cpreconditioner        = 2
 ctypeNonlinearIteration = 3
 ioutputLevel=2
 
@@ -672,7 +672,7 @@ nmaxIterations     = 100
 depsRel            = 1E-2
 
 [TIME-SMOOTHER]
-cspaceTimeSmoother = 9
+cspaceTimeSmoother = 1
 domega = 1.0
 nsmPre = 0
 nsmPost = 1
@@ -680,18 +680,22 @@ ioutputLevel = 1
 
 [TIME-SMOOTHERPRECOND]
 ioutputLevel = 1
+nmaxIterations = 1
+domega = 1.0
 
 [TIME-SINGLEGRIDSOLVER]
-ctypeSolver = 9
-nmaxIterations = 1
+ctypeSolver = 1
+nmaxIterations = 100
 depsRel = 1E-5
 depsdiff = 1E-6
 domega = 1.0
+drelax = 0.0
 ioutputlevel = 1
 
 [TIME-SINGLEGRIDPRECOND]
 domega = 1.0
-nmaxIterations = 2
+drelax = 1.0
+nmaxIterations = 1
 ioutputlevel = 1
 
 [CC-LINEARSOLVER]

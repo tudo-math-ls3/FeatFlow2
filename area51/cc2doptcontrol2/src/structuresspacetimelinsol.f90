@@ -605,7 +605,7 @@ contains
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       
-      ! Initialise the defect correction solver.
+      ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
@@ -613,14 +613,16 @@ contains
     
       ! Block SOR preconditioning.
       !
-      ! Create a Block_Jacobi preconditioner
+      ! Create a SOR preconditioner
       call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
           p_rprecond,rprecsettings%drelax,1.0_DP)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
       
-      ! Initialise the defect correction solver.
+      ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
@@ -637,7 +639,7 @@ contains
       p_rprecond%p_rsubnodeUMFPACK4%sfilename = &
           rsettings%rdebugFlags%sumfpackMatrixFilename
       
-      ! Initialise the defect correction solver.
+      ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 

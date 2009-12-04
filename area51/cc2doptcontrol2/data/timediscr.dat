@@ -260,6 +260,10 @@ cspaceTimeSmoother = 1
 # Damping parameter
 domega = 0.9
 
+# Relaxation parameter (e.g. in SOR)
+
+drelax = 1.0
+
 # Number of presmoothing steps
 nsmpre = 0
 
@@ -300,6 +304,10 @@ slinearSolver        = CC-LINEARSOLVER
 
 domega = 1.0
 
+# Relaxation parameter (e.g. in SOR)
+
+drelax = 1.0
+
 # Output level of the smoother
 
 ioutputLevel = 0
@@ -322,8 +330,8 @@ ifbSORPartialUpdate=0
 #######################
 
 # Type of solver.
-# =0: Iterative Defect correction with Block Jacobi prec.
-# =1: Iterative Defect correction with Block SOR(domega, [TIME-COARSEPRECOND].domega)
+# =0: Iterative Defect correction with Block Jacobi ([PRECOND].drelax)
+# =1: Iterative Defect correction with Block SOR([PRECOND].drelax)
 # =2: Iterative Defect correction with Block Forward-Backward Gauss-Seidel precond.
 # =3: Iterative CG
 # =4: direct (UMFPACK Gauss elimination)
@@ -344,6 +352,9 @@ nmaxIterations = 100 #20
 
 # Damping parameter
 domega = 1.0
+
+# Relaxation parameter (e.g. in SOR)
+drelax = 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
@@ -384,8 +395,11 @@ nminIterations = 1
 # Maximum number of time-iterations
 nmaxIterations = 1
 
-# Relaxation parameter (e.g. for SOR)
+# damping parameter
 domega = 1.0
+
+# Relaxation parameter (e.g. in SOR)
+drelax = 1.0
 
 # Damping of residuals, i.e. reduction of relative error 
 # on finest grid; smaller -> more iterations
