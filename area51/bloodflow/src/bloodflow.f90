@@ -24,11 +24,11 @@
 !# 5.) bloodflow_adaptObject
 !#     -> Adaps the computational mesh to the object
 !#
-!# 6.) bloodflow_evalIndicator
-!#     -> Evaluates the indicator vector based on the object
+!# 6.) bloodflow_evalMarker
+!#     -> Evaluates the marker array based on the object
 !#
-!# 7.) bloodflow_convertRefIndicator
-!#     -> Converts the indicator function into refinement indicator
+!# 7.) bloodflow_convertRefMarker
+!#     -> Converts the marker function into refinement indicator
 !#
 !# 8.) bloodflow_performAdaptation
 !#     -> Performs (r)h-adaptation
@@ -79,7 +79,7 @@ module bloodflow
   public :: bloodflow_outputStructure
   public :: bloodflow_evalObject
   public :: bloodflow_adaptObject
-  public :: bloodflow_evalIndicator
+  public :: bloodflow_evalMarker
 
   !*****************************************************************************
 
@@ -91,38 +91,26 @@ module bloodflow
   real(DP), parameter :: POINT_EQUAL_TOLERANCE = 1e-8
 
   ! Tolerance for considering two points as equivalent
-  real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/3.0
+  real(DP), parameter :: POINT_COLLAPSE_TOLERANCE = 1.0/2.0
   
 !</constantblock>
 
 !<constantblock description="Bitfield patterns for element states">
 
-  ! Bitfield to identify an interior vertex
-  integer, parameter :: BITFIELD_INNER = ibset(0,0)
-
-  ! Bitfield to identify the corners
-  integer, parameter :: BITFIELD_POINT1 = ibset(0,1)
-  integer, parameter :: BITFIELD_POINT2 = ibset(0,2)
-  integer, parameter :: BITFIELD_POINT3 = ibset(0,3)
-  integer, parameter :: BITFIELD_POINT4 = ibset(0,4)
+  ! Bitfiled to identify a quadrilateral element
+  integer, parameter :: BITFIELD_QUAD  = ibset(0,0)
 
   ! Bitfield to identify the edges
-  integer, parameter :: BITFIELD_EDGE1 = ibset(0,5)
-  integer, parameter :: BITFIELD_EDGE2 = ibset(0,6)
-  integer, parameter :: BITFIELD_EDGE3 = ibset(0,7)
-  integer, parameter :: BITFIELD_EDGE4 = ibset(0,8)
-
+  integer, parameter :: BITFIELD_EDGE1 = ibset(0,1)
+  integer, parameter :: BITFIELD_EDGE2 = ibset(0,2)
+  integer, parameter :: BITFIELD_EDGE3 = ibset(0,3)
+  integer, parameter :: BITFIELD_EDGE4 = ibset(0,4)
+  
   ! Bitfield to identify elements in list
-  integer, parameter :: BITFIELD_INLIST = ibset(0,9)
+  integer, parameter :: BITFIELD_INLIST = ibset(0,5)
 
-  ! Bitfield to identify multi-intersected edges
-  integer, parameter :: BITFIELD_MULTI_INTERSECTION = ibset(0,10)
-
-  ! Bitfield used to check point intersection
-  integer, parameter :: BITFIELD_POINT_INTERSECTION = BITFIELD_POINT1 +&
-                                                      BITFIELD_POINT2 +&
-                                                      BITFIELD_POINT3 +&
-                                                      BITFIELD_POINT4
+  ! Bitfield for multiple intersections
+  integer, parameter :: BITFIELD_MULTIINTERSECT = ibset(0,6)
 
   ! Bitfield used to check edge intersection
   integer, parameter :: BITFIELD_EDGE_INTERSECTION = BITFIELD_EDGE1 +&
@@ -165,8 +153,8 @@ module bloodflow
     ! Handle to array storing the points of the object
     integer :: h_DobjectCoords = ST_NOHANDLE
 
-    ! Indicator vector
-    type(t_vectorScalar) :: rindicator    
+    ! Marker array
+    type(t_vectorScalar) :: rmarker    
 
     ! List of elements intersected by object
     type(t_list) :: relementList
@@ -300,8 +288,8 @@ contains
       call storage_free(rbloodflow%h_IobjectCoordsIdx)
       call storage_free(rbloodflow%h_DobjectCoords)
 
-      ! Release indicator vector
-      call lsyssc_releaseVector(rbloodflow%rindicator)
+      ! Release marker array
+      call lsyssc_releaseVector(rbloodflow%rmarker)
 
       ! Release list of elements
       call list_releaseList(rbloodflow%relementList)
@@ -600,7 +588,6 @@ contains
 
       p_IobjectCoordsIdx(n+1) = n*4+1
 
-
     case default
       call output_line('Invalid test case!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'bloodflow_evalObject')
@@ -630,6 +617,7 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_vectorScalar) :: rindicator
     integer :: iadapt,npreadapt,npostadapt
     
     
@@ -638,18 +626,21 @@ contains
     call hadapt_initFromTriangulation(rbloodflow%rhadapt, rbloodflow%rtriangulation)
 
     
-    ! Perform prescribed number of standard h-adaptation steps
+    ! Perform prescribed number of standard h-adaptation steps by
+    !  refining the mesh "in the vicinity" of the object
     call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'npreadapt', npreadapt)
 
     do iadapt = 1, npreadapt
-      ! Evaluate the indicator
-      call bloodflow_evalIndicator(rbloodflow)
+      ! Evaluate the marker array
+      call bloodflow_evalMarker(rbloodflow)
       
       ! Convert it to standard h-adaptation indicator
-      call bloodflow_convertRefIndicator(rbloodflow)
+      call bloodflow_convertRefMarker(rbloodflow, rindicator,&
+          rbloodflow%rhadapt%drefinementTolerance+SYS_EPSREAL)
       
       ! Adapt the computational mesh
-      call hadapt_performAdaptation(rbloodflow%rhadapt, rbloodflow%rindicator)
+      call hadapt_performAdaptation(rbloodflow%rhadapt, rindicator)
+      call lsyssc_releaseVector(rindicator)
       
       ! Generate raw mesh from adaptation structure
       call hadapt_generateRawMesh(rbloodflow%rhadapt, rbloodflow%rtriangulation)
@@ -661,8 +652,8 @@ contains
     call parlst_getvalue_int(rbloodflow%rparlist, 'Adaptation', 'npostadapt', npostadapt)
 
     do iadapt = 1, npostadapt
-      ! Evaluate the indicator
-      call bloodflow_evalIndicator(rbloodflow)
+      ! Evaluate the marker array
+      call bloodflow_evalMarker(rbloodflow)
       
       ! Perform rh-adaptation
       call bloodflow_performAdaptation(rbloodflow)
@@ -681,11 +672,11 @@ contains
 
 !<subroutine>
 
-  subroutine bloodflow_evalIndicator(rbloodflow)
+  subroutine bloodflow_evalMarker(rbloodflow)
 
 !<description>
 
-    ! This subroutine evaluates the indicator function
+    ! This subroutine evaluates the marker function
 
 !</description>
 
@@ -701,7 +692,7 @@ contains
     real(DP), dimension(:,:), pointer :: p_DobjectCoords, p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement, p_IneighboursAtElement
     integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
-    integer, dimension(:), pointer :: p_Iindicator, p_IobjectCoordsIdx
+    integer, dimension(:), pointer :: p_Imarker, p_IobjectCoordsIdx
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords
     real(DP), dimension(TRIA_NVETRI2D) :: DlineParam
     real(DP) :: dparamMax
@@ -709,18 +700,19 @@ contains
     integer :: ipoint,ipos,iobj,ive,jve,iel,jel,ivt,istatus,idx,iel0,i1,i2,i3
 
     
-    ! Release the indicator vector (if any)
-    call lsyssc_releaseVector(rbloodflow%rindicator)
+    ! Release the marker array (if any)
+    call lsyssc_releaseVector(rbloodflow%rmarker)
 
     ! Release the list of elements (if any)
     call list_releaseList(rbloodflow%relementList)
     
-    ! Create new indicator vector as integer array
-    call lsyssc_createVector(rbloodflow%rindicator,&
+    ! Create new marker array as integer array
+    call lsyssc_createVector(rbloodflow%rmarker,&
         rbloodflow%rtriangulation%NEL, .true., ST_INT)
-    call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+    call lsyssc_getbase_int(rbloodflow%rmarker, p_Imarker)
     
-    ! Create linked list for storing the elements adjacent to the object
+    ! Create linked list for storing the elements adjacent to the
+    ! object; start with 10% of the total number of element
     call list_createList(rbloodflow%relementList,&
         ceiling(0.1*rbloodflow%rtriangulation%NEL), ST_INT, 0, 0, 0)
 
@@ -748,7 +740,7 @@ contains
         p_IobjectCoordsIdx)
     
     
-    ! Loop over all objects    
+    ! Loop over all objects
     do iobj = 1, size(p_IobjectCoordsIdx)-1
       
       ! Initialize point number
@@ -767,23 +759,68 @@ contains
       ! Loop over all elements in the triangulation
       do iel = 1, rbloodflow%rtriangulation%NEL
         
-        ! Get vertices at element
-        i1 = p_IverticesAtElement(1, iel)
-        i2 = p_IverticesAtElement(2, iel)
-        i3 = p_IverticesAtElement(3, iel)
+        ! What type of element are we
+        select case(tria_getNVE(p_IverticesAtElement, iel))
+
+        case (TRIA_NVETRI2D)
+          
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(1, iel)
+          i2 = p_IverticesAtElement(2, iel)
+          i3 = p_IverticesAtElement(3, iel)
         
-        ! Get global coordinates of corner vertices
-        DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-        DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-        DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
-        ! Check if the point is 'inside' or on the boundary of the element
-        call TestPointInTriangle2D(DtriaCoords,&
-            p_DobjectCoords(:,ipoint), 0.0_DP, istatus)
-        if (istatus .eq. 1) exit
+          ! Check if the point is 'inside' or on the boundary of the
+          ! current element; then we are done for this object
+          call TestPointInTriangle2D(DtriaCoords,&
+              p_DobjectCoords(:,ipoint), 0.0_DP, istatus)
+          if (istatus .eq. 1) exit
+
+        case (TRIA_NVEQUAD2D)
+
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(1, iel)
+          i2 = p_IverticesAtElement(2, iel)
+          i3 = p_IverticesAtElement(3, iel)
+        
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+        
+          ! Check if the point is 'inside' or on the boundary of the
+          ! current element; then we are done for this object
+          call TestPointInTriangle2D(DtriaCoords,&
+              p_DobjectCoords(:,ipoint), 0.0_DP, istatus)
+          if (istatus .eq. 1) exit
+
+          ! Get vertices at element
+          i1 = p_IverticesAtElement(3, iel)
+          i2 = p_IverticesAtElement(4, iel)
+          i3 = p_IverticesAtElement(1, iel)
+        
+          ! Get global coordinates of corner vertices
+          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+        
+          ! Check if the point is 'inside' or on the boundary of the
+          ! current element; then we are done for this object
+          call TestPointInTriangle2D(DtriaCoords,&
+              p_DobjectCoords(:,ipoint), 0.0_DP, istatus)
+          if (istatus .eq. 1) exit
+          
+        case default
+          call output_line('Unsupported element type!',&
+              OU_CLASS_ERROR, OU_MODE_STD, 'bloodflow_evalMarker')
+        end select
       end do
       
-      ! Loop over all remaining points
+      ! Loop over all remaining points of the object
       do while (ipoint .le. p_IobjectCoordsIdx(iobj+1)-2)
         
         !-------------------------------------------------------------------------
@@ -857,33 +894,27 @@ contains
                   if (iel0 .ge. 0) iel0 = jel
                 end if
                 
-                if (Iedgestatus(jve) .eq. 1) then
-                  ! Check if edge has been intersected previously,
-                  ! then mark this element as multiply intersected one
-                  if (btest(p_Iindicator(jel), jve+TRIA_MAXNVE2D))&
-                      p_Iindicator(jel) = ior(p_Iindicator(jel),&
-                                              BITFIELD_MULTI_INTERSECTION)
-                  
-                  ! Mark element for potential refinement
-                  p_Iindicator(jel) = ibset(p_Iindicator(jel), jve+TRIA_MAXNVE2D)
-                end if
+                ! Mark element for potential refinement
+                if (Iedgestatus(jve) .eq. 1)&
+                    p_Imarker(jel) = ibset(p_Imarker(jel), jve)
               end do
               
               ! Append element to the list of elements adjacent to the object
-              if (iand(p_Iindicator(jel), BITFIELD_INLIST) .ne. BITFIELD_INLIST) then
-                p_Iindicator(jel) = ior(p_Iindicator(jel), BITFIELD_INLIST)          
+              if (iand(p_Imarker(jel), BITFIELD_INLIST)&
+                                     .ne. BITFIELD_INLIST) then
+                p_Imarker(jel) = ior(p_Imarker(jel), BITFIELD_INLIST)
                 call list_appendToList(rbloodflow%relementList, jel, ipos)
               end if
             end if
           end do
         end do
-
+        
         ! If the new starting element has been determined already then
         !  we do not have to perform additional point in triangle
         !  tests, and hence, we can directly proceed to the next line
         !  segment of the polygon
         if (iel0 .lt. 0) then
-          iel = -iel0
+          iel    = -iel0
           ipoint = ipoint+1
         else
           
@@ -914,90 +945,52 @@ contains
         end if
       end do
     end do
-
-!!$    >>> PROOF OF CONCEPT < CODE <<<
-!!$    do iobj = 1, size(p_IobjectCoordsIdx)-1
-!!$
-!!$      ! Initialize point number
-!!$      do ipoint = p_IobjectCoordsIdx(iobj),&
-!!$                  p_IobjectCoordsIdx(iobj+1)-2
-!!$
-!!$        do iel = 1, rbloodflow%rtriangulation%NEL
-!!$          
-!!$          ! Get vertices at element
-!!$          i1 = p_IverticesAtElement(1, iel)
-!!$          i2 = p_IverticesAtElement(2, iel)
-!!$          i3 = p_IverticesAtElement(3, iel)
-!!$          
-!!$          ! Get global coordinates of corner vertices
-!!$          DtriaCoords(:,1) = p_DvertexCoords(:,i1)
-!!$          DtriaCoords(:,2) = p_DvertexCoords(:,i2)
-!!$          DtriaCoords(:,3) = p_DvertexCoords(:,i3)
-!!$          
-!!$          ! Test if line segment intersects with triangle edges
-!!$          call TestTriangleLineIntersection2D(DtriaCoords,&
-!!$              p_DobjectCoords(:,ipoint:ipoint+1), 0.0_DP, .false., Iedgestatus)
-!!$          
-!!$          do ive = 1, TRIA_NVETRI2D
-!!$            if (Iedgestatus(ive) .ne. 0 ) then
-!!$              
-!!$              ! Check if edge has been intersected previously
-!!$              if (btest(p_Iindicator(iel), ive+TRIA_MAXNVE2D))&
-!!$                  p_Iindicator(iel) = ior(p_Iindicator(iel),&
-!!$                                          BITFIELD_MULTI_INTERSECTION)
-!!$              
-!!$              ! Append element to the list of elements adjacent to the object
-!!$              if (iand(p_Iindicator(iel), BITFIELD_INLIST)&
-!!$                  .ne. BITFIELD_INLIST) then
-!!$                p_Iindicator(iel) = ior(p_Iindicator(iel), BITFIELD_INLIST)
-!!$                call list_appendToList(rbloodflow%relementList, iel, ipos)
-!!$              end if
-!!$              
-!!$              ! Mark element for potential refinement
-!!$              p_Iindicator(iel) = ibset(p_Iindicator(iel), ive+TRIA_MAXNVE2D)
-!!$            end if
-!!$          end do
-!!$        end do
-!!$      end do
-!!$    end do
-!!$    >>> END OF PROOF OF CONCEPT CODE <<<<
-
-  end subroutine bloodflow_evalIndicator
+    
+  end subroutine bloodflow_evalMarker
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine bloodflow_convertRefIndicator(rbloodflow)
+  subroutine bloodflow_convertRefMarker(rbloodflow, rindicator, dtolerance)
 
 !<description>
 
-    ! This subroutine converts the indicator function into a pure
+    ! This subroutine converts the marker array into a pure
     ! refinement indicator used in the h-adaptation procedure
 
 !</description>
 
-!<inputoutput>
-
+!<input>
+    
     ! Bloodflow structure
     type(t_bloodflow), intent(inout) :: rbloodflow
+
+    ! Tolerance parameter
+    real(DP), intent(in) :: dtolerance
+
+!</input>
+
+!<inputoutput>
+
+    ! Refinement indicator
+    type(t_vectorScalar), intent(inout) :: rindicator
 
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    type(t_vectorScalar) :: rvector
     real(DP), dimension(:), pointer :: p_Dindicator
-    integer, dimension(:), pointer :: p_Iindicator
+    integer, dimension(:), pointer :: p_Imarker
     integer :: ipos, iel
 
     ! Create new indicator vector in double precision
-    call lsyssc_createVector(rvector,&
+    call lsyssc_createVector(rindicator,&
         rbloodflow%rtriangulation%NEL, .true., ST_DOUBLE)
     
-    ! Convert the (integer) indicator vector to double precision
-    call lsyssc_getbase_double(rvector, p_Dindicator)
-    call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+    ! Convert the (integer) marker function to double precision
+    call lsyssc_getbase_double(rindicator, p_Dindicator)
+    call lsyssc_getbase_int(rbloodflow%rmarker, p_Imarker)
     
     !---------------------------------------------------------------------------
     ! Loop over all segments/elements and decide if the element needs
@@ -1013,18 +1006,12 @@ contains
       call list_getByPosition(rbloodflow%relementList, ipos, iel)
       ipos = list_getNextInList(rbloodflow%relementList, .false.)
       
-      ! Set indicator for element
-      
-      if (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION) .ne. 0)&
-          p_Dindicator(iel) = 1.0
+      ! Set indicator for the current element
+      if (iand(p_Imarker(iel), BITFIELD_EDGE_INTERSECTION) .ne. 0)&
+          p_Dindicator(iel) = dtolerance
     end do list
 
-    ! Replace the indicator vector by the double precision data and
-    ! release the auxiliary vector
-    call lsyssc_swapVectors(rvector, rbloodflow%rindicator)
-    call lsyssc_releaseVector(rvector)
-
-  end subroutine bloodflow_convertRefIndicator
+  end subroutine bloodflow_convertRefMarker
 
   !*****************************************************************************
 
@@ -1034,7 +1021,7 @@ contains
 
 !<description>
 
-    ! This subroutine performs rh-adaptation based on the indicator
+    ! This subroutine performs rh-adaptation based on the marker
 
 !</description>
 
@@ -1051,28 +1038,19 @@ contains
         p_DvertexCoords
     integer, dimension(:,:), pointer :: p_IverticesAtElement,&
         p_IneighboursAtElement
-    integer, dimension(:), pointer :: p_Iindicator, p_Imarker,&
+    integer, dimension(:), pointer :: p_Imarker,&
         p_IvertexAge, p_InodalProperty
     real(DP), dimension(NDIM2D,TRIA_NVETRI2D) :: DtriaCoords,&
         DpointCoords, DpointCoordsAux
-    real(DP), dimension(TRIA_NVETRI2D) :: DedgeParam, DedgeParamAux
-    real(DP) :: dscale
-    integer, dimension(TRIA_NVETRI2D) :: Iedgestatus, IedgestatusAux
+    real(DP), dimension(TRIA_NVETRI2D) :: DedgeParam, DedgeParamAux,&
+        DbarycentricCoords
+    integer, dimension(TRIA_NVETRI2D) :: IcornerStatus, Iedgestatus,&
+        IedgestatusAux
     integer, dimension(2) :: Isize
-    integer :: ive,jve,nve,iel,nel,ivt,jvt,nvt
-    integer :: i1,i2,i3,istatus,ipoint,ipos,iresult
+    integer :: ive,nve,iel,nel,ivt,nvt,i1,i2,i3,ipoint,ipos,istatus
     
-
-    ! Initialize marker structure (if required)
-    if (rbloodflow%rhadapt%h_Imarker .ne. ST_NOHANDLE)&
-        call storage_free(rbloodflow%rhadapt%h_Imarker)
-    call storage_new('bloodflow_convertMoveRefIndicator', &
-        'Imarker', rbloodflow%rindicator%NEQ, ST_INT,&
-        rbloodflow%rhadapt%h_Imarker, ST_NEWBLOCK_ZERO)
-
+    
     ! Set pointers
-    call storage_getbase_int(&
-        rbloodflow%rhadapt%h_Imarker, p_Imarker)
     call storage_getbase_int(&
         rbloodflow%rhadapt%h_IvertexAge, p_IvertexAge)
     call storage_getbase_int(&
@@ -1083,9 +1061,9 @@ contains
         rbloodflow%rhadapt%h_IneighboursAtElement, p_IneighboursAtElement)
     call storage_getbase_double2d(&
         rbloodflow%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-    
-    call storage_getbase_double2d(rbloodflow%h_DobjectCoords, p_DobjectCoords)
-    call lsyssc_getbase_int(rbloodflow%rindicator, p_Iindicator)
+    call storage_getbase_double2d(&
+        rbloodflow%h_DobjectCoords, p_DobjectCoords)
+    call lsyssc_getbase_int(rbloodflow%rmarker, p_Imarker)
 
 
     ! Initialize initial dimensions
@@ -1103,7 +1081,9 @@ contains
     
     ! Set state of all vertices to "free". Note that vertices of the
     ! initial triangulation are always "locked", i.e. have no positive
-    ! age. Moreover, boundary vertices are also locked at the moment
+    ! age. Moreover, boundary vertices are also locked at the moment.
+    ! In a more sophisticated implementation, boundary vertices may be
+    ! allowed to move along the boundary but not into the interior.
     do ivt = 1, rbloodflow%rhadapt%NVT
       p_IvertexAge(ivt) = abs(p_IvertexAge(ivt))*&
           merge(1, -1, p_InodalProperty(ivt) .eq. 0)
@@ -1139,7 +1119,96 @@ contains
 !!$      end do
 !!$    end do locking
     
-
+!!$    !---------------------------------------------------------------------------
+!!$    ! (1) Loop over all elements and check if there is an object
+!!$    !     point that can be captured by repositioning a corner node
+!!$    !---------------------------------------------------------------------------
+!!$    
+!!$    ! Loop over all elements adjacent to the object
+!!$    ipos = list_getNextInList(rbloodflow%relementList, .true.)
+!!$    list1: do while(ipos .ne. LNULL)
+!!$
+!!$      ! Get element number and proceed to next position
+!!$      call list_getByPosition(rbloodflow%relementList, ipos, iel)
+!!$      ipos = list_getNextInList(rbloodflow%relementList, .false.)
+!!$
+!!$      ! Get number of vertices of current element
+!!$      nve = tria_getNVE(p_IverticesAtElement, iel)
+!!$      
+!!$      ! Get vertices at element
+!!$      i1 = p_IverticesAtElement(1, iel)
+!!$      i2 = p_IverticesAtElement(2, iel)
+!!$      i3 = p_IverticesAtElement(3, iel)
+!!$      
+!!$      ! Get global coordinates of corner vertices
+!!$      DtriaCoords(:,1) = p_DvertexCoords(:,i1)
+!!$      DtriaCoords(:,2) = p_DvertexCoords(:,i2)
+!!$      DtriaCoords(:,3) = p_DvertexCoords(:,i3)
+!!$
+!!$      ! Initialization
+!!$      IcornerStatus = 0
+!!$
+!!$      ! Loop over all segments and check intersection point
+!!$      do ipoint = 1, size(p_DobjectCoords,2)
+!!$        
+!!$        ! Test if point is inside the triangle
+!!$        call TestPointInTriangle2D(DtriaCoords,&
+!!$            p_DobjectCoords(:,ipoint), POINT_EQUAL_TOLERANCE,&
+!!$            istatus, DbarycentricCoords)
+!!$        
+!!$        if (istatus .eq. 1) then
+!!$          ! The point is inside the element. Check if it is in the
+!!$          ! neighborhood of one corner vertex that can be
+!!$          ! repositioned. If more than one point is in the
+!!$          ! neighborhood reposition the corner w.r.t. to first one
+!!$          
+!!$          if (DbarycentricCoords(1) .ge.&
+!!$              max(DbarycentricCoords(2),DbarycentricCoords(3))) then
+!!$            if ((IcornerStatus(1) .ne. 0) .or.&
+!!$                (p_IvertexAge(i1) .lt. 0)) then
+!!$              call markTriaForRefine(iel)
+!!$              cycle list1
+!!$            else
+!!$              IcornerStatus(1) = ipoint
+!!$            end if
+!!$          elseif (DbarycentricCoords(2) .ge.&
+!!$              max(DbarycentricCoords(1),DbarycentricCoords(3))) then
+!!$            if ((IcornerStatus(2) .ne. 0) .or.&
+!!$                (p_IvertexAge(i2) .lt. 0)) then
+!!$              call markTriaForRefine(iel)
+!!$              cycle list1
+!!$            else
+!!$              IcornerStatus(2) = ipoint
+!!$            end if
+!!$          else
+!!$            if ((IcornerStatus(3) .ne. 0) .or.&
+!!$                (p_IvertexAge(i3) .lt. 0)) then
+!!$              call markTriaForRefine(iel)
+!!$              cycle list1
+!!$            else
+!!$              IcornerStatus(3) = ipoint
+!!$            end if
+!!$          end if
+!!$        end if
+!!$      end do
+!!$      
+!!$      do ive = 1, nve
+!!$        ivt = p_IverticesAtElement(ive, iel)
+!!$        if (IcornerStatus(ive) .ne. 0) then
+!!$          ! Update coordinate of vertex in quadtree
+!!$          istatus = qtree_moveInQuadtree(&
+!!$              rbloodflow%rhadapt%rVertexCoordinates2D,&
+!!$              p_DvertexCoords(:,ivt),&
+!!$              p_DobjectCoords(:,IcornerStatus(ive)))
+!!$          
+!!$          ! Adjust vertex coordinates and lock it
+!!$          p_DvertexCoords(:,ivt) = p_DobjectCoords(:,IcornerStatus(ive))
+!!$          p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
+!!$        end if
+!!$      end do
+!!$          
+!!$    end do list1
+      
     !---------------------------------------------------------------------------
     ! (1) Loop over all segments/elements and decide whether to refine or to
     !     reposition mesh points so that elements get aligned to the object
@@ -1153,101 +1222,26 @@ contains
       call list_getByPosition(rbloodflow%relementList, ipos, iel)
       ipos = list_getNextInList(rbloodflow%relementList, .false.)
     
-!!$      ! Check if multi-intersections are present
-!!$      if (iand(p_Iindicator(iel), BITFIELD_MULTI_INTERSECTION) .eq.&
-!!$                                  BITFIELD_MULTI_INTERSECTION) then
-!!$
-!!$        ! Clear indicator
-!!$        p_Iindicator(iel) = 0
-!!$
-!!$        ! One or more edges of the current element are intersected
-!!$        ! multiple times so that repositioning vertices does not
-!!$        ! suffice. Therefore, set the refinement indicator to
-!!$        ! enforce regular subdivision of the elements.
-!!$        nve = hadapt_getNVE(rbloodflow%rhadapt, iel)
-!!$
-!!$        select case(nve)
-!!$        case (TRIA_NVETRI2D)
-!!$          p_Imarker(iel) = MARK_REF_TRIA4TRIA
-!!$          
-!!$        case (TRIA_NVEQUAD2D)
-!!$          p_Imarker(iel) = MARK_REF_QUAD4QUAD
-!!$          
-!!$          ! Increase number of vertices to be created by one to
-!!$          ! account for the new vertex in the center of the quad
-!!$          rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-!!$          
-!!$        case default
-!!$          call output_line('Unsupported type of element!',&
-!!$              OU_CLASS_ERROR,OU_MODE_STD,'bloodflow_performAdaptation')
-!!$          call sys_halt()
-!!$        end select
-!!$        
-!!$        ! Compute number of new vertices to be created at edge midpoints
-!!$        do ive = 1, nve
-!!$          if (p_IneighboursAtElement(ive, iel) .eq. 0) then
-!!$            
-!!$            ! Edge is adjacent to boundary
-!!$            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-!!$            
-!!$          elseif(p_Imarker(p_IneighboursAtElement(ive, iel)) .eq. 0) then
-!!$
-!!$            ! Edge has not been marked in previous steps
-!!$            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-!!$
-!!$          end if
-!!$        end do
-!!$        
-!!$        ! That's it for multiply intersected edges
-!!$        cycle list
-!!$      end if
-          
-!!$      ! Remove "multi-intersection" flag from indicator
-!!$      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_MULTI_INTERSECTION))
-!!$
-!!$      ! Remove "in list" flag from indicator
-!!$      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INLIST))
-!!$      
-!!$      ! Remove "corner vertices" flags from indicator (if any).
-!!$      ! This may be used in future versions of this code.
-!!$      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_POINT_INTERSECTION))
-!!$      
-!!$      ! Remove "interior vertex" flag from indicator (if any).
-!!$      ! This may be used in future versions of this code.
-!!$      p_Iindicator(iel) = iand(p_Iindicator(iel), not(BITFIELD_INNER))
+      ! Remove "in list" flag from marker
+      p_Imarker(iel) = iand(p_Imarker(iel),not(BITFIELD_INLIST))
       
-
       ! Check status of intersected element edges
-      select case (iand(p_Iindicator(iel), BITFIELD_EDGE_INTERSECTION))
+      select case (iand(p_Imarker(iel), BITFIELD_EDGE_INTERSECTION))
+        
+      case (0)
+        ! None of the edges is intersected!
 
       case (BITFIELD_EDGE1 + BITFIELD_EDGE2 + BITFIELD_EDGE3)
-        ! All three edges are intersected!
+        ! All three edges are intersected, therefore regular
+        ! refinement is performed for this element
+        call markTriaForRefine(iel)
         
-        ! Set the refinement indicator to regular refinement
-        p_Imarker(iel) = MARK_REF_TRIA4TRIA
-
-        ! Compute number of new vertices
-        do ive = 1, TRIA_NVETRI2D
-          if (p_IneighboursAtElement(ive, iel) .eq. 0) then
-            
-            ! Edge is adjacent to boundary
-            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-
-          elseif(p_Imarker(p_IneighboursAtElement(ive, iel)) .eq. 0) then
-
-            ! Edge has not been marked in previous steps
-            rbloodflow%rhadapt%increaseNVT = rbloodflow%rhadapt%increaseNVT+1
-            
-          end if
-        end do
-        
-        
-      case (BITFIELD_EDGE1 + BITFIELD_EDGE2,&
-            BITFIELD_EDGE2 + BITFIELD_EDGE3,&
-            BITFIELD_EDGE1 + BITFIELD_EDGE3,&
-            BITFIELD_EDGE1, BITFIELD_EDGE2, BITFIELD_EDGE3)
+      case default
         ! One or two edges are intersected!
         
+        ! Get number of vertices of current element
+        nve = tria_getNVE(p_IverticesAtElement, iel)
+
         ! Get vertices at element
         i1 = p_IverticesAtElement(1, iel)
         i2 = p_IverticesAtElement(2, iel)
@@ -1258,9 +1252,13 @@ contains
         DtriaCoords(:,2) = p_DvertexCoords(:,i2)
         DtriaCoords(:,3) = p_DvertexCoords(:,i3)
         
-        IedgeStatus  = 0
-        DedgeParam   = 0.0_DP
-        DpointCoords = 0.0_DP
+        ! Initialization
+        IedgeStatus   = 0
+        DedgeParam    = 0.0_DP
+        DpointCoords  = 0.0_DP
+
+        ! Clear the bitfield for detecting multiple intersections
+        p_Imarker(iel) = ibclr(p_Imarker(iel), BITFIELD_MULTIINTERSECT)
 
         ! Loop over all segments and check intersection point
         do ipoint = 1, size(p_DobjectCoords,2)-1
@@ -1271,61 +1269,87 @@ contains
               .false., IedgestatusAux, DpointCoordsAux,&
               DedgeParam=DedgeParamAux)
           
-          where (IedgestatusAux .eq. 1)
-            Iedgestatus = IedgestatusAux
-            DedgeParam  = DedgeParamAux
-            DpointCoords(1,:) = DpointCoordsAux(1,:)
-            DpointCoords(2,:) = DpointCoordsAux(2,:)
-          end where
+          do ive = 1, nve
+            if (IedgestatusAux(ive) .eq. 1) then
+              ! Check for multiple intersection
+              if (Iedgestatus(ive) .eq. 1) p_Imarker(iel) =&
+                  ibset(p_Imarker(iel), BITFIELD_MULTIINTERSECT)
+
+              ! Update global element values    
+              Iedgestatus(ive)    = IedgestatusAux(ive)
+              DedgeParam(ive)     = DedgeParamAux(ive)
+              DpointCoords(:,ive) = DpointCoordsAux(:,ive)
+            end if
+          end do
         end do
         
-        ! Loop over all edges of the current element
-        nve = tria_getNVE(p_IverticesAtElement, iel)
-        do ive = 1, nve
+        ! If the edge is intersected multiple times, then perform
+        ! regular refinement of the element until no multiple
+        ! intersection of the elements occurs
+        if (btest(p_Imarker(iel), BITFIELD_MULTIINTERSECT)) then
+
+          ! Mark element for regular refinement
+          call markTriaForRefine(iel)
           
-          ! Skip edges which are not intersected
-          if (Iedgestatus(ive) .ne. 1) cycle
+!!$        elseif (sum(IedgeStatus) .eq. 2) then
+!!$
+!!$          print *, "Two edges"
+!!$          
+!!$        elseif (sum(IedgeStatus) .eq. 1) then
+!!$
+!!$          print *, "One edge"
+
+        else
           
-          if ((DedgeParam(ive) .lt. POINT_COLLAPSE_TOLERANCE) .and.&
-              (DedgeParam(ive) .gt. POINT_EQUAL_TOLERANCE)) then
-            ! The "1/3"-rule applies
-            ivt = p_IverticesAtElement(ive,iel)
-            if (p_IvertexAge(ivt) .gt. 0) then
-              ! Update coordinate of vertex in quadtree
-              iresult = qtree_moveInQuadtree(&
-                  rbloodflow%rhadapt%rVertexCoordinates2D,&
-                  p_DvertexCoords(:, ivt), DpointCoords(:,ive))
+          ! Loop over all edges of the current element
+          do ive = 1, nve
+            
+            ! Skip edges which are not intersected
+            if (Iedgestatus(ive) .ne. 1) cycle
+            
+            if ((DedgeParam(ive) .lt. POINT_COLLAPSE_TOLERANCE) .and.&
+                (DedgeParam(ive) .gt. POINT_EQUAL_TOLERANCE)) then
+              ! The "1/3"-rule applies
+              ivt = p_IverticesAtElement(ive,iel)
+              if (p_IvertexAge(ivt) .ge. 0) then
+                ! Update coordinate of vertex in quadtree
+                istatus = qtree_moveInQuadtree(&
+                    rbloodflow%rhadapt%rVertexCoordinates2D,&
+                    p_DvertexCoords(:, ivt), DpointCoords(:,ive))
               
-              ! Adjust vertex coordinates and lock it
-              p_DvertexCoords(:, ivt) = DpointCoords(:,ive)
-              p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
+                ! Adjust vertex coordinates and lock it
+                p_DvertexCoords(:, ivt) = DpointCoords(:,ive)
+                p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
+              end if
+              
+              ! Remove the refinement marker for current edge
+              p_Imarker(iel) = ibclr(p_Imarker(iel), ive+TRIA_MAXNVE2D)
+              
+            elseif((DedgeParam(ive) .gt. 1-POINT_COLLAPSE_TOLERANCE) .and.&
+                   (DedgeParam(ive) .lt. 1-POINT_EQUAL_TOLERANCE)) then
+              ! The "2/3"-rule applies
+              ivt = p_IverticesAtElement(mod(ive, nve)+1,iel)
+              if (p_IvertexAge(ivt) .ge. 0) then
+                ! Update coordinate of vertex in quadtree
+                istatus = qtree_moveInQuadtree(&
+                    rbloodflow%rhadapt%rVertexCoordinates2D,&
+                    p_DvertexCoords(:, ivt), DpointCoords(:,ive))
+                ! Adjust vertex coordinates and lock it
+                p_DvertexCoords(:,ivt) = DpointCoords(:,ive)
+                p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
+              end if
+              
+              ! Remove the refinement marker for current edge
+              p_Imarker(iel) = ibclr(p_Imarker(iel), ive+TRIA_MAXNVE2D)
+              
+            else
+              ! Mark element for regular refinement
+              call markTriaForRefine(iel)
             end if
-            
-            ! Remove the refinement indicator for current edge
-            p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+TRIA_MAXNVE2D)
+          end do
 
-          elseif((DedgeParam(ive) .gt. 1-POINT_COLLAPSE_TOLERANCE) .and.&
-                 (DedgeParam(ive) .lt. 1-POINT_EQUAL_TOLERANCE)) then
-            ! The "2/3"-rule applies
-            ivt = p_IverticesAtElement(mod(ive, nve)+1,iel)
-            if (p_IvertexAge(ivt) .gt. 0) then
-              ! Update coordinate of vertex in quadtree
-              iresult = qtree_moveInQuadtree(&
-                  rbloodflow%rhadapt%rVertexCoordinates2D,&
-                  p_DvertexCoords(:, ivt), DpointCoords(:,ive))
-              ! Adjust vertex coordinates and lock it
-              p_DvertexCoords(:,ivt) = DpointCoords(:,ive)
-              p_IvertexAge(ivt) = -abs(p_IvertexAge(ivt))
-            end if
+        end if
 
-            ! Remove the refinement indicator for current edge
-            p_Iindicator(iel) = ibclr(p_Iindicator(iel), ive+TRIA_MAXNVE2D)
-            
-          else
-            ! Mark element for regular refinement
-            call markRefine(iel)
-          end if
-        end do
       end select
     end do list
 
@@ -1397,17 +1421,17 @@ contains
 
   contains
 
-    subroutine markRefine(iel)
+    subroutine markTriaForRefine(iel)
       integer, intent(in) :: iel
 
       ! local variables
       integer :: ive,ivt
 
       ! Check if the element has reached maximum refinement level
-      if (maxval(abs(p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D&
-          ,iel)))) .lt. rbloodflow%rhadapt%nsubdividemax) then
+      if (maxval(abs(p_IvertexAge(p_IverticesAtElement(1:TRIA_NVETRI2D,iel))))&
+        .lt. rbloodflow%rhadapt%nsubdividemax) then
         
-        ! Set the refinement indicator to regular refinement
+        ! Set the refinement marker to regular refinement
         p_Imarker(iel) = MARK_REF_TRIA4TRIA
         
         ! Compute number of new vertices
@@ -1424,7 +1448,7 @@ contains
           end if
         end do
       end if
-    end subroutine markRefine
+    end subroutine markTriaForRefine
 
   end subroutine bloodflow_performAdaptation
   
@@ -1882,7 +1906,7 @@ contains
 !<subroutine>
   
   pure subroutine TestPointInTriangle2D(DtriaCoords, DpointCoords,&
-      dtolerance, istatus)
+      dtolerance, istatus, DbarycentricCoords)
 
 !<description>
     
@@ -1914,6 +1938,9 @@ contains
     ! Status of the test
     integer, intent(out) :: istatus
 
+    ! OPTIONAL: Barycentric coordinates
+    real(DP), dimension(TRIA_NVETRI2D), intent(out), optional :: DbarycentricCoords
+
 !</output>
 
 !</subroutine>
@@ -1941,6 +1968,10 @@ contains
     else
       istatus = 0
     end if
+
+    ! If present, return the barycentric coordinates
+    if (present(DbarycentricCoords))&
+        DbarycentricCoords = (/baryc1, baryc2, baryc3/)
     
   end subroutine TestPointInTriangle2D
   
