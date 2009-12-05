@@ -20,9 +20,10 @@
 !# obtained.
 !# With 'storage_free', the memory assigned to a handle can be released.
 !#
-!# The memory management supports 1D and 2D arrays for SINGLE and DOUBLE
-!# PRECISION floating point variables as well as I32 integer variables and
-!# LOGICAL and CHAR variables.
+!# The memory management supports 1D and 2D arrays for SINGLE, DOUBLE
+!# and (on some architectures) QUAD PRECISION floating point variables
+!# as well as I8, I16, I32 and I64 integer variables and LOGICAL and
+!# CHAR variables.
 !#
 !# Before any memory is allocated, the memory management must be initialised
 !# by a call to 'storage_init'! 
@@ -93,6 +94,10 @@
 !#
 !# 18.) storage_setdatatype
 !#      -> Change the data type of a memory block behind a handle
+!#
+!# 19.) storage_getblocktype
+!#      -> Get the type of the data type from a given string
+!#         representation or return ST_NOHANDLE if data type is not supported
 !# </purpose>
 !##############################################################################
 
@@ -641,6 +646,7 @@ module storage
   public :: storage_createFpdbObject
   public :: storage_restoreFpdbObject
   public :: storage_setdatatype
+  public :: storage_getblocktype
 
 contains
 
@@ -11117,5 +11123,56 @@ contains
     call storage_free (inewhandle)
   
   end subroutine storage_setdatatype
+
+!************************************************************************
+
+!<function>
+
+  function storage_getblocktype (stype) result (ctype)
+
+!<description>
+  ! This function tries to determine the corresponding data type
+  !  ST_XXX from the string stype and return ST_NOHANDLE otherwise.
+!</description>  
+
+!<input>
+  character(LEN=*), intent(in) :: stype
+!</input>
+
+!<result>
+  integer :: ctype
+!</result>
+
+    ! local variable
+    character(len=(len(stype))) :: sdatatype
+
+    call sys_tolower(stype, sdatatype)
+
+    ! Determine data type
+    select case((trim(adjustl(sdatatype))))
+    case ('single','real(sp)')
+      ctype = ST_SINGLE
+    case ('double','real(dp)')
+      ctype = ST_DOUBLE
+    case ('quad','real(qp)')
+      ctype = ST_QUAD
+    case ('integer')
+      ctype = ST_INT
+    case ('int8','integer(i8)')
+      ctype = ST_INT8
+    case ('int16','integer(i16)')
+      ctype = ST_INT16
+    case ('int32','integer(i32)')
+      ctype = ST_INT32
+    case ('int64','integer(i64)')
+      ctype = ST_INT64
+    case ('logical')
+      ctype = ST_LOGICAL
+    case ('char','character')
+      ctype = ST_CHAR
+    case default
+      ctype = ST_NOHANDLE
+    end select
+  end function storage_getblocktype
 
 end module storage
