@@ -1134,7 +1134,7 @@ contains
   
   dot = 1.0_dp/dot
   
-  s(:) = Dpoint(:) - Dtri(:,1)
+  s(:) = Dpoint1(:) - Dtri(:,1)
   
   dot2 =  s(1) * p(1) + s(2) * p(2) + s(3) * p(3) 
   
