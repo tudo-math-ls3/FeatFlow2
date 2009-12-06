@@ -143,12 +143,6 @@ contains
         end if
       
       end do
-    case(NDIM3D)
-      do iel=1,ubound(IverticesAtElement,2)
-        Dcorners(1:3,1:8) = DvertexCoords(1:3,IverticesAtElement(1:8,iel))
-        call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners,binside)
-        if (binside) return
-      end do
     case (NDIM3D)
     
       ! Loop through all elements. Check if the element contains the point.
