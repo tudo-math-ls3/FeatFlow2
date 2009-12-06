@@ -42,6 +42,15 @@
 !#
 !# 11.) gaux_isFlipped_hexa3D
 !#      -> Checks whether a hexahedron is flipped or not.
+!#
+!# 12.) gaux_isInElement_hexa
+!#      -> Checks whether a point is in a hexa or not
+!#
+!# 13.) gaux_isIntersection_face
+!#      -> test for face/line segment intersection
+!#
+!# 14.) gaux_isIntersection_triangle
+!#      -> test for triangle/line segment intersection
 !# </purpose>
 !##############################################################################
 
@@ -60,6 +69,7 @@ module geometryaux
   public :: gaux_getVolume_hexa3D
   public :: gaux_isIntersection_line2D
   public :: gaux_getIntersection_ray2D
+  public :: gaux_isIntersection_face
   public :: gaux_isInElement_quad2D
   public :: gaux_isInElement_tri2D
   public :: gaux_getBarycentricCoords_tri2D
@@ -996,6 +1006,162 @@ contains
     binside = .true.  
   else
     binside = .false.
+  end if
+  
+  end subroutine  
+  
+!************************************************************************
+
+!<subroutine>
+  
+  pure subroutine gaux_isIntersection_face(&
+      Dpoint1,Dpoint2,Dface, bintersect)
+  
+!<description>
+! This routine calculates whether there is
+! an intersection between the face Dface and the
+! line defined by the vertices Dpoint1 and Dface
+! the face is split into two triangles, the
+! triangles are tested for intersection
+!</description>
+
+!<input>
+  ! First point on ray 
+  real(DP), dimension(3), intent(in) :: Dpoint1
+
+  ! second point on ray
+  real(DP), dimension(3), intent(in) :: Dpoint2
+  
+  ! Vertices of the face
+  real(DP), dimension(3,4), intent(in) :: Dface
+  
+  ! TRUE if the two rays intersect. FALSE otherwise.
+  logical, intent(out) :: bintersect
+!</result>
+
+!</subroutine>
+
+    ! local variables: aux parameters
+    real(DP) :: daux1, daux2, daux3, daux4
+    ! we split up the face into two triangles
+    real(DP), dimension(3,3) :: Dtri1
+    real(DP), dimension(3,3) :: Dtri2
+    
+    ! build the first triangle
+    Dtri1(1:3,1)=Dface(1:3,1)
+    Dtri1(1:3,2)=Dface(1:3,2)
+    Dtri1(1:3,3)=Dface(1:3,4)
+
+    ! build the second triangle
+    Dtri2(1:3,1)=Dface(1:3,2)
+    Dtri2(1:3,2)=Dface(1:3,3)
+    Dtri2(1:3,3)=Dface(1:3,4)
+    
+    ! test for intersection
+    call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri1,bintersect)
+    
+    if (bintersect) then
+      return
+    end if
+    
+    ! test for intersection
+    call gaux_isIntersection_triangle(Dpoint1,Dpoint2,Dtri2,bintersect)    
+
+    if (bintersect) then
+      return
+    end if
+
+    ! no intersection
+    bintersect = .false.
+
+  end subroutine
+
+!************************************************************************
+  
+!<subroutine>  
+  
+  pure subroutine gaux_isIntersection_triangle(&
+      Dpoint1,Dpoint2,Dtri, bintersect)
+      
+!<description>
+! This routine calculates whether there is
+! an intersection between the triangle Dtri and
+! the line segment between Dpoint1 and Dpoint2
+!</description>
+
+!<input>
+  ! start of the ray
+  real(DP), dimension(3), intent(in) :: Dpoint1
+
+  ! 2nd point of the ray
+  real(DP), dimension(3), intent(in) :: Dpoint2
+  
+  ! Vertices of the face
+  real(DP), dimension(3,3), intent(in) :: Dtri
+  
+  ! TRUE if the two rays intersect. FALSE otherwise.
+  logical, intent(out) :: bintersect
+!</result>
+
+!</subroutine>
+  real(dp) :: eps, dot, dot2, dot3, u, v, t
+  real(dp), dimension(3) :: De1, De2, p, s, q, Ddirect
+  
+  ! our epsilon when we test for zero
+  eps = 0.000001_dp
+  ! the algorithm is as follows, it is called the Moeller & Trumbore algorithm
+  !                                    
+  !                              1                                |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),(Dtri(:,2)-Dtri(:,0)))|
+  !----------------------------------------------------------- *  |dot(Ddirect x (Dtri(:,2)-Dtri(:,0)),(Dpoint2-Dtri(:,0)))              |
+  ! dot(Ddirect x (Dtri(:,2)-Dtri(:,0)),(Dtri(:,1)-Dtri(:,0)))    |dot((Dpoint2-Dtri(:,0)) x (Dtri(:,1)-Dtri(:,0)),Ddirect))             |
+  !                                                               
+  
+  Ddirect(1:3) = Dpoint2(1:3) - Dpoint1(1:3)
+  
+  De1(1:3) = Dtri(1:3,2) - Dtri(1:3,1)
+  De2(1:3) = Dtri(1:3,3) - Dtri(1:3,1)
+      
+  p(1) = Ddirect(2)*De2(3) - Ddirect(3)*De2(2)  
+  p(2) = Ddirect(3)*De2(1) - Ddirect(1)*De2(3)  
+  p(3) = Ddirect(1)*De2(2) - Ddirect(2)*De2(1)  
+  
+  dot = p(1) * De1(1) + p(2) * De1(2) + p(3) * De1(3) 
+  
+  if(dot > -eps .and. dot < eps)then
+    bintersect = .false.
+    return
+  end if
+  
+  dot = 1.0_dp/dot
+  
+  s(:) = Dpoint(:) - Dtri(:,1)
+  
+  dot2 =  s(1) * p(1) + s(2) * p(2) + s(3) * p(3) 
+  
+  u = dot * dot2
+  
+  if(u < 0.0_dp .or. u > 1.0_dp)then
+    bintersect = .false.
+    return
+  end if
+  
+  q(1) = s(2)*De1(3) - s(3)*De1(2)  
+  q(2) = s(3)*De1(1) - s(1)*De1(3)  
+  q(3) = s(1)*De1(2) - s(2)*De1(1)  
+
+  dot3 =  q(1) * Ddirect(1) + q(2) * Ddirect(2) + q(3) * Ddirect(3)
+  
+  v = dot * dot3
+  
+  if(v < 0.0_dp .or. v > 1.0_dp)then
+    bintersect = .false.
+    return
+  end if
+  
+  t = dot * (De2(1) * q(1) + De2(2) * q(2) + De2(3) * q(3))
+  
+  if(t > 0.0_dp .and. t < 1.0_dp)then
+    bintersect = .true.
   end if
   
   end subroutine  
