@@ -67,6 +67,14 @@ module triasearch
   end interface
 
   public :: tsrch_getElem_raytrace2D
+  
+  interface tsrch_getElem_raytrace3D
+    module procedure tsrch_getElem_raytrace3d_dir
+    module procedure tsrch_getElem_raytrace3d_ind
+  end interface
+  
+  public :: tsrch_getElem_raytrace3D
+  
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -141,6 +149,26 @@ contains
         call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners,binside)
         if (binside) return
       end do
+    case (NDIM3D)
+    
+      ! Loop through all elements. Check if the element contains the point.
+      ! If yes, quit.
+      do iel=1,ubound(IverticesAtElement,2)
+        ! Fetch the coordinates of the element
+        Dcorners(1:3,1) = DvertexCoords(1:3,IverticesAtElement(1,iel))
+        Dcorners(1:3,2) = DvertexCoords(1:3,IverticesAtElement(2,iel))
+        Dcorners(1:3,3) = DvertexCoords(1:3,IverticesAtElement(3,iel))
+        Dcorners(1:3,4) = DvertexCoords(1:3,IverticesAtElement(4,iel))
+        Dcorners(1:3,5) = DvertexCoords(1:3,IverticesAtElement(5,iel))
+        Dcorners(1:3,6) = DvertexCoords(1:3,IverticesAtElement(6,iel))
+        Dcorners(1:3,7) = DvertexCoords(1:3,IverticesAtElement(7,iel))
+        Dcorners(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
+
+        call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners,binside)
+        if (binside) return
+      
+      end do
+      
     end select
   
     ! No element found
@@ -657,5 +685,289 @@ contains
     
   end subroutine
 
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tsrch_getElem_raytrace3D_dir(&
+      Dpoint,rtriangulation,iel, &
+      DvertexCoords,IverticesAtElement,IfacesAtElement,IneighboursAtElement,&
+      iresult,ilastElement,ilastFace,imaxIterations)
+  
+!<description>
+  ! Find an element in the triangulation containing the point Dpoint.
+  ! Ray trace method for 3D meshes. The setup is the same as in 2d
+!</description>
+  
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  real(DP), dimension(:), intent(in) :: Dpoint
+  
+  ! Triangulation structure.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
+  integer, intent(in), optional :: imaxIterations
+
+!</input>
+
+!<inputoutput>
+  ! On input: Number of an element where to start the search.
+  !           =0: Choose element automatically.
+  ! On output: Number of the element containing the point Dpoint.
+  !            =0 if the element was not found.
+  integer, intent(inout) :: iel
+!</inputoutput>
+  
+!<output>
+  ! OPTIONAL: Result of the search.
+  ! =1 : The element was found successfully.
+  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =-1: The search broke down because the domain was left.
+  ! =-2: The maximum number of iterations was exceeded
+  integer, intent(out), optional :: iresult
+  
+  ! OPTIONAL: Last analysed element.
+  ! If iresult= 1: ilastElement = iel
+  ! If iresult= 0: Number of the last analysed element before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the element through which the
+  !                domain was left. 
+  ! If iresult=-2: Number of the last element in the raytracing search
+  integer, intent(out), optional :: ilastElement
+
+  ! OPTIONAL: Number of the last analysed edge. Range 1..NMT.
+  ! If iresult= 1: ilastFace=0
+  ! If iresult= 0: Number of the last analysed face before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the face through which the domain was left. 
+  ! If iresult=-2: Number of the last face 
+  integer, intent(out), optional :: ilastFace
+!</output>
+  
+!</subroutine>
+  ! Vertex coordinates of the mesh
+  real(DP), dimension(:,:) :: DvertexCoords
+  
+  ! Vertices adjacent to an element in the mesh
+  integer, dimension(:,:) :: IverticesAtElement
+  
+  ! faces of an element in the mesh
+  integer, dimension(:,:) :: IfacesAtElement
+  
+  ! Neighbours around an element in the mesh
+  integer, dimension(:,:) :: IneighboursAtElement
+  
+!  if (rtriangulation%h_IfacesAtElement .eq. ST_NOHANDLE) &
+!      call tria_genFacesAtElement3D (rtriangulation)
+!  
+!  if (rtriangulation%h_IverticesAtFace .eq. ST_NOHANDLE) &
+!      call tria_genVerticesAtFace3D (rtriangulation)          
+
+
+    
+    integer :: imaxIter,ite
+    integer :: ielold
+    real(DP), dimension(3,8) :: DcornerCoords
+    integer :: ive,nnae,iae
+    logical :: bcheck
+    real(DP) :: dxmid,dymid
+    real(DP) :: dx1,dy1,dx2,dy2
+    integer, dimension(4), parameter :: Inext = (/2,3,4,1/)
+    real(dp), dimension(3) :: Dmid
+    real(dp), dimension(3,4) :: Dface
+    integer, dimension(4,TRIA_NAEHEXA3D), parameter :: IverticesHexa =&
+             reshape((/1,2,3,4, 1,5,6,2, 2,6,7,3,&
+                       3,7,8,4, 1,4,8,5, 5,8,7,6/), (/4,TRIA_NAEHEXA3D/))
+    
+    
+    ! Maximum number of iterations
+    imaxIter = 100
+    if (present(imaxIterations)) imaxIter = imaxIterations
+
+    ! Start element. If the start element is not known, we start at 1.
+    if (iel .le. 0) iel = 1
+  
+    ielold = iel
+    
+    nnae = ubound(IfacesAtElement,1)
+    
+    ! DEBUG!!!
+    ! call io_deleteFile('overview.dat')
+    ! call geoout_writeGnuplotPoint (Dpoint,0,'overview.dat')
+    
+    ! We restrict our raytracing search to imaxIter neighbour cells;
+    ! let us hope a point is not moved more than imaxIter elements in 
+    ! one step...
+    ieliteration: do ite = 1,imaxIter
+    
+      ! Fetch the element
+      do ive = 1,TRIA_NVEHEXA3D
+        DcornerCoords(1:3,ive) = DvertexCoords(1:3,IverticesAtElement(ive,iel))
+      end do
+      
+      ! Check if the point is in the element.
+      ! bcheck will be set to TRUE if that is the case.
+      call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),DcornerCoords,bcheck)
+      ! call geoout_writeGnuplotQuad2D (DcornerCoords,0,'overview.dat')
+      if (bcheck) then
+        ! We found the element.
+        if (present(iresult)) iresult = 1
+        if (present(ilastElement)) ilastElement = iel
+        if (present(ilastFace)) ilastFace = 0
+        return
+      end if
+      
+      ! Calculate a point inside of the element. We start the ray from there.
+      ! For simplicity we take the center point of the element
+      Dmid(1:3) = DvertexCoords(1:3,IverticesAtElement(1,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(2,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(3,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(4,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(5,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(6,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(7,iel)) + &
+                  DvertexCoords(1:3,IverticesAtElement(8,iel))
+                  
+      Dmid(:) = Dmid(:) * 0.125_dp                  
+                        
+      ! Check all faces to find an intersection point:
+      do iae = 1,nnae
+      
+        do ive=1,TRIA_NVEQUAD2D
+          Dface(1:3,ive)=DcornerCoords(1:3,IverticesHexa(ive,iae))
+        end do
+      
+        ! Do not jump back to the old element
+        if (IneighboursAtElement(iae,iel) .ne. ielold) then
+          
+          ! Calculate point of intersection with face
+          call gaux_isIntersection_face (Dmid,&
+               Dpoint,Dface, bcheck)
+          
+          if (bcheck) then
+          
+            ! Go on searching in the neighbour element
+            ielold = iel
+            
+            ! Stop here if we leave our domain. To test that use the
+            ! fact that KADJ()=0 if there is no neighbour element!
+            ! The caller can use IEL to find out the information
+            ! about the boundary where the domain was left...
+            
+            if (IneighboursAtElement(iae,iel) .eq. 0) then
+              if (present(iresult)) iresult = -1
+              if (present(ilastElement)) ilastElement = iel
+              if (present(ilastFace)) then
+                ilastFace = IfacesAtElement(iae,iel)
+              end if
+              iel = 0
+              return
+            end if ! if IneighboursAtElement(ive,iel) .eq. 0
+            
+            ! Continue with the next element
+            iel = IneighboursAtElement(iae,iel)
+            cycle ieliteration
+            
+          end if ! bcheck
+          
+        end if ! (IneighboursAtElement(ive,iel) .ne. ielold)
+        
+      end do ! for all faces
+    
+    
+    end do ieliteration ! end for max search path length
+    
+    ! No face was found through which we could left the element.
+    ! So the element contains the whole line (dxmid,dymid)->(dx,dy) --
+    ! and so indeed the point (dx,dy)! That is it.
+    ! iel already has the element number, we only have to set the optional
+    ! argiments.
+    iel = 0
+    if (present(iresult)) iresult = -2
+    if (present(ilastElement)) ilastElement = ielold
+    if (present(ilastFace)) ilastFace = 0
+  
+  end subroutine
+  
+!************************************************************************
+
+!<subroutine>
+
+  subroutine tsrch_getElem_raytrace3D_ind (&
+      Dpoint,rtriangulation,iel, iresult,ilastElement,ilastFace,imaxIterations)
+  
+!<description>
+  ! Find an element in the triangulation containing the point Dpoint.
+  ! Ray trace method for 3d meshes.
+!</description>
+  
+!<input>
+  ! The coordinate of a point where the routine should check which element
+  ! contains the point.
+  real(DP), dimension(:), intent(in) :: Dpoint
+  
+  ! Triangulation structure.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! OPTIONAL: Maximum number of cell layers to pass. Default value is 100.
+  integer, intent(in), optional :: imaxIterations
+!</input>
+
+!<inputoutput>
+  ! On input: Number of an element where to start the search.
+  !           =0: Choose element automatically.
+  ! On output: Number of the element containing the point Dpoint.
+  !            =0 if the element was not found.
+  integer, intent(inout) :: iel
+!</inputoutput>
+  
+!<output>
+  ! OPTIONAL: Result of the search.
+  ! =1 : The element was found successfully.
+  ! =0 : The raytracing search broke down inside of the domain. 
+  ! =-1: The search broke down because the domain was left.
+  integer, intent(out), optional :: iresult
+  
+  ! OPTIONAL: Last analysed element.
+  ! If iresult= 1: ilastElement = iel
+  ! If iresult= 0: Number of the last analysed element before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the element through which the
+  !                domain was left. 
+  integer, intent(out), optional :: ilastElement
+
+  ! OPTIONAL: Number of the last analysed Face. Range 1..NMT.
+  ! If iresult= 1: ilastFace=0
+  ! If iresult= 0: Number of the last analysed Face before the search
+  !                was stopped.
+  ! If iresult=-1: Number of the Face through which the domain was left. 
+  integer, intent(out), optional :: ilastFace
+!</output>
+  
+!</subroutine>
+    
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer, dimension(:,:), pointer :: p_IneighboursAtElement
+    
+    ! Get triangulation arrays
+    call storage_getbase_double2d (rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+    call storage_getbase_int2d (rtriangulation%h_IverticesAtElement,&
+        p_IverticesAtElement)
+    call storage_getbase_int2d (rtriangulation%h_IneighboursAtElement,&
+        p_IneighboursAtElement)
+    call storage_getbase_int2d (rtriangulation%h_IedgesAtElement,&
+        p_IedgesAtElement)
+
+    call tsrch_getElem_raytrace3d_dir (&
+        Dpoint,rtriangulation,iel, &
+        p_DvertexCoords,p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
+        iresult,ilastElement,ilastFace,imaxIterations)    
+    
+  end subroutine
 
 end module

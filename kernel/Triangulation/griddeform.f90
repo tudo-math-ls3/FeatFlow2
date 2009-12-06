@@ -4330,7 +4330,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   
   ! a list of points where to evaluate
   ! dimension(1..ndim,1..npoints)
-  real(dp), dimension(:), intent(in) :: Dpoint
+  real(dp), dimension(:), intent(inout) :: Dpoint
   
   ! Previous element containing the point
   integer, intent(in) :: ielement
@@ -4422,20 +4422,20 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   
   ! We loop over all points
   iel = ielement
-  
   ! Use raytracing search to find the element
   ! containing the point.
-!  call tsrch_getElem_raytrace2D (&
-!    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
-!    iresult,ilastElement,ilastEdge,200)
+  call tsrch_getElem_raytrace3D (&
+    Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
+    iresult,ilastElement,ilastEdge,200)
   ! Fehler, wenn die Iterationen ausgehen wird
   ! das letzte Element zurückgegeben... verkehrt...
   ! Ok, not found... Brute force search
 
-!  if((iel .eq. 0) .or. (iresult .le. 0))then
+  if((iel .eq. 0) .or. (iresult .le. 0))then
+    print *,"Brute force"
     call tsrch_getElem_BruteForce (Dpoint(:), &
       rvecMon%p_rspatialDiscr%p_rtriangulation,iel)
- ! end if
+  end if
   
   if((iel .eq. 0))then
     print *,"daneben"
