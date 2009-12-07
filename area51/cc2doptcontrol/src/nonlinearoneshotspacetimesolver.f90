@@ -2333,6 +2333,15 @@ contains
           call sptils_initBlockFBSOR (rproblem,p_rcgrSolver,domega,&
               domegaPrecond,RspatialPrecond(ilev),ifbSORPartialUpdate .ne. 0)
 
+        case (8)
+          ! Forward backward SOR as preconditioner
+          call sptils_initBlockJacobi (rproblem,p_rprecond,&
+            domegaPrecond,RspatialPrecond(ilev))
+          !CALL sptils_initBlockJacobi (rproblem,p_rprecond,domegaPrecond,RspatialPrecond(ilev))
+
+          ! BiCGStab solver        
+          call sptils_initBiCGStab (rproblem,p_rcgrSolver,p_rprecond)
+
         case default
           print *,'Unknown solver: ',ctypeCoarseGridSolver
           stop

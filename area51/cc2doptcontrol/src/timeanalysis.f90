@@ -167,7 +167,7 @@ contains
 
 !<output>
   ! OPTIONAL: Time error analysis block. Returns values of different time error functionals.
-  type(t_timeError), intent(OUT), target, optional :: rtimeError
+  type(t_timeError), intent(inout), target, optional :: rtimeError
 !</output>
 
 !<result>
