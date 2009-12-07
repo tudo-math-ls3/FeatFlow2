@@ -1192,8 +1192,9 @@ contains
   ! output vector during the matriux vector multiplication.
   integer(I32), intent(in) :: cfilter
 
-  ! Space-time boundary conditions.
-  type(t_optcBDC), intent(in) :: rboundaryConditions
+  ! OPTIONAL: Space-time boundary conditions. Must be specified if
+  ! the boundary-condition filter should be applied.
+  type(t_optcBDC), intent(in), optional :: rboundaryConditions
   
   ! If set to TRUE and dnorm is present, too, the residuals are printed to the
   ! terminal.
@@ -1220,6 +1221,7 @@ contains
 
     ! local variables
     integer :: ieqTime,icp,neqTime
+    logical :: blocalPrintRes
     type(t_vectorBlock) :: rtempVectorD
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_vectorBlock), dimension(3) :: rtempVector
@@ -1237,6 +1239,9 @@ contains
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dx3,p_Db
     real(DP), dimension(:), pointer :: p_DxE1,p_DxE2,p_DxE3
+    
+    blocalPrintRes = .false.
+    if (present(bprintRes)) blocalPrintRes = bprintRes
     
     ! Get the current space- and time discretisation
     p_rdiscr => rspaceTimeMatrix%rdiscrData%p_rspaceDiscr
@@ -1517,13 +1522,19 @@ contains
 
       ! Implement the BC`s?      
       if (iand(cfilter,SPTID_FILTER_BCDEF) .ne. 0) then
+      
+        if (.not. present(rboundaryConditions)) then
+          call output_line ('Boundary conditions not specified!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'stlin_spaceTimeMatVec')
+          call sys_halt()
+        end if
 
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (rboundaryConditions,dtime,p_rdiscr,p_rtimediscr,&
+        call sbc_assembleBDconditions (rboundaryConditions,dtime,p_rdiscr,p_rtimediscr,&
             CCSPACE_PRIMALDUAL,rdiscreteBC,rspaceTimeMatrix%p_rglobalData)
-        call cc_assembleFBDconditions (dtime,p_rdiscr,p_rtimediscr,&
+        call sbc_assembleFBDconditions (dtime,p_rdiscr,p_rtimediscr,&
             CCSPACE_PRIMALDUAL,rdiscreteFBC,rspaceTimeMatrix%p_rglobalData)
 
         ! Implement the boundary conditions into the defect.
@@ -1547,22 +1558,21 @@ contains
       
       ! If dnorm is specified, calculate the norm of the sub-defect vector and
       ! add it to dnorm.
-      if (present(dnorm)) then
+      if (present(dnorm) .or. blocalPrintRes) then
         dnormpart = lsysbl_vectorNorm(rtempVectorD,LINALG_NORML2)**2
-        dnorm = dnorm + dnormpart
+        if (present(dnorm)) &
+          dnorm = dnorm + dnormpart
         
-        if (present(bprintRes)) then
-          if (bprintRes) then
-            call output_line ('||D_'//trim(sys_siL(ieqTime,10))//'|| = '//&
-                trim(sys_sdEL(sqrt(dnormpart),10)) )
-            do icp=1,rtempVectorD%nblocks
-              call output_line ('  ||D_'//&
-                  trim(sys_siL(ieqTime,10))//'^'//trim(sys_siL(icp,2))&
-                  //'|| = '//&
-                  trim(sys_sdEL(&
-                      lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2),10)) )
-            end do
-          end if
+        if (blocalPrintRes) then
+          call output_line ('||D_'//trim(sys_siL(ieqTime,10))//'|| = '//&
+              trim(sys_sdEL(sqrt(dnormpart),10)) )
+          do icp=1,rtempVectorD%nblocks
+            call output_line ('  ||D_'//&
+                trim(sys_siL(ieqTime,10))//'^'//trim(sys_siL(icp,2))&
+                //'|| = '//&
+                trim(sys_sdEL(&
+                    lsyssc_vectorNorm(rtempVectorD%RvectorBlock(icp),LINALG_NORML2),10)) )
+          end do
         end if
       end if
       

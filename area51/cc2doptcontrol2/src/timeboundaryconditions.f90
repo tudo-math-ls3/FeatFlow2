@@ -185,9 +185,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleFBDconditions (dtime,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -213,9 +213,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleFBDconditions (dtime,&
             rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -326,9 +326,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleFBDconditions (dtime,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -353,9 +353,9 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleFBDconditions (dtime,&
             rb%p_rspaceDiscr,rb%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -421,6 +421,7 @@ contains
 
     real(DP) :: dtime
     integer :: isubstep
+    logical :: bhasNeumann
     type(t_vectorBlock) :: rtempVector
     type(t_discreteBC) :: rdiscreteBC
     type(t_discreteFBC) :: rdiscreteFBC
@@ -460,9 +461,10 @@ contains
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
-            rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
+            rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData,&
+            bhasNeumann)
+        call sbc_assembleFBDconditions (dtime,&
             rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -470,6 +472,14 @@ contains
         
         call vecfil_discreteBCdef (rtempVector)
         call vecfil_discreteFBCdef (rtempVector)
+        
+!        if (.not. bhasNeumann) then
+!          ! Filter the vector to the L^1_0-space.
+!          call vecfil_subvectorSmallL1To0 (rtempVector,3)
+!          if (rtempVector%nblocks .gt. 3) then
+!            call vecfil_subvectorSmallL1To0 (rtempVector,6)
+!          end if
+!        end if
         
         ! In the very first time step, we have the initial condition for the
         ! solution. The defect is =0 there!
@@ -497,9 +507,9 @@ contains
         ! if the boundary conditions are nonconstant in time!
         call bcasm_clearDiscreteBC(rdiscreteBC)
         call bcasm_clearDiscreteFBC(rdiscreteFBC)
-        call cc_assembleBDconditions (roptcBDC,dtime,&
+        call sbc_assembleBDconditions (roptcBDC,dtime,&
             rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-        call cc_assembleFBDconditions (dtime,&
+        call sbc_assembleFBDconditions (dtime,&
             rd%p_rspaceDiscr,rd%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
         
         ! Implement the boundary conditions into the global solution vector.
@@ -602,7 +612,7 @@ contains
 
       ! Assemble the BC's.
       call bcasm_clearDiscreteBC(rdiscreteBC)
-      call cc_assembleBDconditions (roptcBDC,&
+      call sbc_assembleBDconditions (roptcBDC,&
           dtime,rx%p_rspaceDiscr,rx%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,&
           rglobalData,bhasNeumann)
     
@@ -876,10 +886,10 @@ contains
     call bcasm_initDiscreteFBC(rdiscreteFBC)
 
     ! Assemble the BC's.
-    call cc_assembleBDconditions (roptcBDC,dtime,&
+    call sbc_assembleBDconditions (roptcBDC,dtime,&
         rvector%p_rblockDiscr,rtimeDiscr,&
         CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-    call cc_assembleFBDconditions (dtime,&
+    call sbc_assembleFBDconditions (dtime,&
         rvector%p_rblockDiscr,rtimeDiscr,&
         CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
 
@@ -950,9 +960,9 @@ contains
     call bcasm_initDiscreteFBC(rdiscreteFBC)
 
     ! Assemble the BC's.
-    call cc_assembleBDconditions (roptcBDC,dtime,&
+    call sbc_assembleBDconditions (roptcBDC,dtime,&
         rd%p_rblockDiscr,rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rglobalData)
-    call cc_assembleFBDconditions (dtime,&
+    call sbc_assembleFBDconditions (dtime,&
         rd%p_rblockDiscr,rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteFBC,rglobalData)
 
     ! Implement the boundary conditions into the RHS.

@@ -92,6 +92,12 @@ depsRel            = 1E-2
 
 depsAbs            = 1E-0
 
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
+
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
@@ -191,7 +197,13 @@ depsRel            = 1E-2
 # The linear solver stops if both, absolute error < depsAbs and 
 # rel. error < depsRel
 
-depsAbs            = 1E-0 # 2
+depsAbs            = 1E-0
+
+# Limit for residual differences.
+# If > 0, the solver stops if
+# |defect_new - defect_old| < depsDiff * |defect_old|
+
+depsDiff = 1E-10
 
 # Type of stopping criterion.
 # =0: Relative AND absolute stopping criterion must hold.

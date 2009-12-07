@@ -604,6 +604,7 @@ contains
           p_rprecond,rprecsettings%domega)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
@@ -621,9 +622,59 @@ contains
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (2)
+      ! BiCGStab with Block Jacobi preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%domega)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (3)
+      ! BiCGStab with Block SOR preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%drelax,1.0_DP)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (4)
+      ! BiCGStab with Forward backward preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
     case (8)
@@ -638,6 +689,8 @@ contains
           
       p_rprecond%p_rsubnodeUMFPACK4%sfilename = &
           rsettings%rdebugFlags%sumfpackMatrixFilename
+
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction smoother.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
@@ -649,7 +702,7 @@ contains
       ! Create a forward-backward solver.
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rsolver,1.0_DP)
+          p_rsolver)
           
     end select
 
@@ -713,6 +766,7 @@ contains
           p_rprecond,rprecsettings%domega)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
@@ -732,11 +786,63 @@ contains
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
       
+    case (2)
+      ! BiCGStab with Block Jacobi preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%domega)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (3)
+      ! BiCGStab with Block SOR preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initBlockFBSOR (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond,rprecsettings%drelax,1.0_DP)
+          
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (4)
+      ! BiCGStab with Forward backward preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+      !call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+      !    p_rsolver,p_rprecond)
+
     case (8)
       ! Simple defect correction with UMFPACK preconditioning.
       !
@@ -748,6 +854,7 @@ contains
           rsettings%rdebugFlags%cumfpackWriteMatrix
       p_rprecond%p_rsubnodeUMFPACK4%sfilename = &
           rsettings%rdebugFlags%sumfpackMatrixFilename
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
@@ -759,11 +866,12 @@ contains
       ! Create a forward-backward solver.
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%domega)
+          p_rprecond)
           
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
       
       ! Initialise the defect correction solver.
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&

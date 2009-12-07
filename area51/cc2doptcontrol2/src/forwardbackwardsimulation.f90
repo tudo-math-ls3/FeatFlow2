@@ -1771,12 +1771,12 @@ contains
       call bcasm_clearDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_clearDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
       
-      call cc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtime,&
+      call sbc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtime,&
           rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
           rpreconditioner%p_rtimeDiscr,&
           rpreconditioner%cspace,rpreconditioner%p_RdiscreteBC(ilev),&
           rglobalData,bneumann)
-      call cc_assembleFBDconditions (dtime,&
+      call sbc_assembleFBDconditions (dtime,&
           rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
           rpreconditioner%p_rtimeDiscr,&
           rpreconditioner%cspace,rpreconditioner%p_RdiscreteFBC(ilev),&
@@ -2366,6 +2366,12 @@ contains
         ! Filter the final defect.
         call vecfil_discreteBCdef (rd,rpreconditioner%p_RdiscreteBC(rpreconditioner%NLMAX))
         call vecfil_discreteFBCdef (rd,rpreconditioner%p_RdiscreteFBC(rpreconditioner%NLMAX))
+        if (.not. rpreconditioner%bhasNeumann) then
+          call vecfil_normaliseToL20Sca (rd%RvectorBlock(3))
+          if (rpreconditioner%cspace .eq. CCSPACE_PRIMALDUAL) then
+            call vecfil_normaliseToL20Sca (rd%RvectorBlock(6))
+          end if
+        end if
       end if
       
       if (p_rsolverNode%dfinalDefect .gt. p_rsolverNode%dinitialDefect*0.99_DP) then
@@ -2914,10 +2920,10 @@ contains
 
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
-    call cc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtime,&
+    call sbc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtime,&
         rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
         rpostprocessing%cspace,rpostprocessing%rdiscreteBC,rsettings%rglobalData)
-    call cc_assembleFBDconditions (dtime,&
+    call sbc_assembleFBDconditions (dtime,&
         rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
         rpostprocessing%cspace,rpostprocessing%rdiscreteFBC,rsettings%rglobalData)
     

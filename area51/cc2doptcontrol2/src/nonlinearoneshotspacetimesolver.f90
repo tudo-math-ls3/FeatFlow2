@@ -1301,10 +1301,10 @@ contains
 !      ! Discretise the boundary conditions at the new point in time.
 !      call bcasm_clearDiscreteBC(rdiscreteBC)
 !      call bcasm_clearDiscreteFBC(rdiscreteFBC)
-!      call cc_assembleBDconditions (rproblem,dtime,&
+!      call sbc_assembleBDconditions (rproblem,dtime,&
 !          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
 !          CCSPACE_PRIMALDUAL,rdiscreteBC,rproblem%rcollection)
-!      call cc_assembleFBDconditions (rproblem,dtime,&
+!      call sbc_assembleFBDconditions (rproblem,dtime,&
 !          p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
 !          CCSPACE_PRIMALDUAL,rdiscreteFBC,rproblem%rcollection)
 !      

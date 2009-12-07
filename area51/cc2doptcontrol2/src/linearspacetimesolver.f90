@@ -202,6 +202,7 @@ module linearspacetimesolver
   public :: sptils_precondDefect
   public :: sptils_initBlockJacobi
   public :: sptils_initBlockFBSOR
+  public :: sptils_initBiCGStab
   public :: sptils_initDefCorr
   public :: sptils_initFBsim
   public :: sptils_initMultigrid
@@ -2483,6 +2484,9 @@ contains
     p_rvector1 => p_rpreconditioner%p_RtempVec(1,p_rpreconditioner%nlmax)
     p_rvector2 => p_rpreconditioner%p_RtempVec(2,p_rpreconditioner%nlmax)
     p_rvector3 => p_rpreconditioner%p_RtempVec(3,p_rpreconditioner%nlmax)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rtempVectorD,p_Dd)
         
     ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
     call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
@@ -5054,7 +5058,7 @@ contains
 
 !<subroutine>
   
-  subroutine sptils_initBiCGStab (rsettings,p_rsolverNode,p_rpreconditioner)
+  subroutine sptils_initBiCGStab (rsettings,ispaceTimeLevel,p_rsolverNode,p_rpreconditioner)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the BiCGStab solver. The node
@@ -5068,6 +5072,9 @@ contains
   ! A pointer to this is saved in the solver node, so the problem structure
   ! must not be released before the solver node is released.
   type(t_settings_optflow), target :: rsettings
+
+  ! Id of the space-time level, this solver is based on.
+  integer, intent(in) :: ispaceTimeLevel
 
   ! OPTIONAL: A pointer to the solver structure of a solver that should be 
   ! used for preconditioning. If not given or set to NULL(), no preconditioning 
@@ -5083,26 +5090,25 @@ contains
   
 !</subroutine>
 
-!    ! Create a default solver structure
-!    call sptils_initSolverGeneral(rsettings,p_rsolverNode)
-!    
-!    ! Initialise the type of the solver
-!    p_rsolverNode%calgorithm = SPTILS_ALG_BICGSTAB
-!    
-!    ! Initialise the ability bitfield with the ability of this solver:
-!    p_rsolverNode%ccapability = SPTILS_ABIL_CHECKDEF + &
-!                                SPTILS_ABIL_USESUBSOLVER
-!    
-!    ! Allocate the subnode for BiCGStab.
-!    ! This initialises most of the variables with default values appropriate
-!    ! to this solver.
-!    allocate(p_rsolverNode%p_rsubnodeBiCGStab)
-!    
-!    ! Attach the preconditioner if given. 
-!    
-!    if (present(p_rpreconditioner)) then 
-!      p_rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner => p_rpreconditioner
-!    end if
+    ! Create a default solver structure
+    call sptils_initSolverGeneral(rsettings,ispaceTimeLevel,p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = SPTILS_ALG_BICGSTAB
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = SPTILS_ABIL_CHECKDEF + &
+                                SPTILS_ABIL_USESUBSOLVER
+    
+    ! Allocate the subnode for BiCGStab.
+    ! This initialises most of the variables with default values appropriate
+    ! to this solver.
+    allocate(p_rsolverNode%p_rsubnodeBiCGStab)
+    
+    ! Attach the preconditioner if given. 
+    if (present(p_rpreconditioner)) then 
+      p_rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner => p_rpreconditioner
+    end if
 
   end subroutine
   
@@ -5170,39 +5176,39 @@ contains
 
 !</subroutine>
 
-!    ! local variables
-!    integer :: isubgroup,i,NEQtime
-!    type(t_sptilsSubnodeBiCGStab), pointer :: p_rsubnode
-!    
-!    ! A-priori we have no error...
-!    ierror = SPTILS_ERR_NOERROR
-!
-!    ! We simply pass isubgroup to the subsolvers when calling them.
-!    ! Inside of this routine, there's not much to do with isubgroup,
-!    ! as there is no special information (like a factorisation)
-!    ! associated with this type of solver, which has to be allocated,
-!    ! released or updated...
-!
-!    ! Call the init routine of the preconditioner.
-!    if (associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) then
-!      call sptils_initStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
-!                                isubgroup)
-!    end if
-!    
-!    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. 
-!    ! Allocate that here! Use the default data type prescribed in the solver 
-!    ! structure for allocating the temp vectors.
-!    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-!    NEQtime = rsolverNode%rmatrix%p_rspaceTimeDiscr%NEQtime
-!    do i=1,6
-!      call sptivec_initVector (p_rsubnode%RtempVectors(i),NEQtime,&
-!        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation)
-!    end do
-!    
-!    ! Allocate memory for a spatial temp vector.
-!    call lsysbl_createVecBlockByDiscr (&
-!        rsolverNode%rmatrix%p_rspaceTimeDiscr%p_rlevelInfo%rdiscretisation,&
-!        rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
+    ! local variables
+    integer :: isubgroup,i
+    type(t_sptilsSubnodeBiCGStab), pointer :: p_rsubnode
+    
+    ! A-priori we have no error...
+    ierror = SPTILS_ERR_NOERROR
+
+    ! We simply pass isubgroup to the subsolvers when calling them.
+    ! Inside of this routine, there's not much to do with isubgroup,
+    ! as there is no special information (like a factorisation)
+    ! associated with this type of solver, which has to be allocated,
+    ! released or updated...
+
+    ! Call the init routine of the preconditioner.
+    if (associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) then
+      call sptils_initStructure (rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner, &
+                                isubgroup)
+    end if
+    
+    ! BiCGStab needs 5 temporary vectors + 1 for preconditioning. 
+    ! Allocate that here! Use the default data type prescribed in the solver 
+    ! structure for allocating the temp vectors.
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    do i=1,6
+      call sptivec_initVector (p_rsubnode%RtempVectors(i),&
+          rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
+          rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
+    end do
+    
+    ! Allocate memory for a spatial temp vector.
+    call lsysbl_createVecBlockByDiscr (&
+        rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+        rsolverNode%p_rsubnodeBiCGStab%rtempVectorSpace)
     
   end subroutine
   
@@ -5373,6 +5379,8 @@ contains
   
 !</subroutine>
 
+    if (.not. associated(rsolverNode%p_rsubnodeBiCGStab)) return
+
     ! Check if there's a preconditioner attached. If yes, release it.
     if (associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)) then
       call sptils_releaseSolver(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
@@ -5390,7 +5398,8 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-
+!aktuelle Konfiguration iteriert in der referenz-Konfiguration anders.
+!aktuelle Iteration konvergiert nicht!
   recursive subroutine sptils_precBiCGStab (rsolverNode,rd)
   
 !<description>
@@ -5420,383 +5429,380 @@ contains
   
 !</subroutine>
 
-!  ! local variables
-!  real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
-!  real(DP) :: drho1,drho0,dfr,dresscale,dresunprec
-!  integer :: ite
-!
-!  ! The system matrix
-!  type(t_ccoptSpaceTimeDiscretisation), pointer :: p_rspaceTimeDiscr
-!  type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
-!  
-!  ! Minimum number of iterations, print-sequence for residuals
-!  integer :: nminIterations, niteResOutput
-!  
-!  ! Whether to filter/prcondition
-!  logical bprec,bfilter
-!  
-!  ! Our structure
-!  type(t_sptilsSubnodeBiCGStab), pointer :: p_rsubnode
-!  
-!  ! Pointers to temporary vectors - named for easier access
-!  type(t_spaceTimeVector), pointer :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx
-!  type(t_sptilsNode), pointer :: p_rprecSubnode
-!  
-!    ! Solve the system!
-!  
-!    ! Status reset
-!    rsolverNode%iresult = 0
-!    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
-!    
-!    ! Getch some information
-!    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
-!    p_rspaceTimeDiscr => rsolverNode%rmatrix%p_rspaceTimeDiscr
-!    p_rmatrix => rsolverNode%rmatrix
-!
-!    ! Check the parameters
-!    if ((rd%NEQtime .eq. 0) .or. &
-!        (p_rspaceTimeDiscr%rtimeDiscr%nintervals .eq. 0)) then
-!    
-!      ! Parameters wrong
-!      rsolverNode%iresult = 2
-!      return
-!    end if
-!
-!    ! Minimum number of iterations
-! 
-!    nminIterations = max(rsolverNode%nminIterations,0)
-!      
-!    ! Use preconditioning? Filtering?
-!
-!    bprec = associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
-!    
-!    ! Iteration when the residuum is printed:
-!
-!    niteResOutput = max(1,rsolverNode%niteResOutput)
-!
-!    ! Set pointers to the temporary vectors
-!    p_DR   => p_rsubnode%RtempVectors(1)
-!    p_DR0  => p_rsubnode%RtempVectors(2)
-!    p_DP   => p_rsubnode%RtempVectors(3)
-!    p_DPA  => p_rsubnode%RtempVectors(4)
-!    p_DSA  => p_rsubnode%RtempVectors(5)
-!    p_rx   => p_rsubnode%RtempVectors(6)
-!    
-!    if (bprec) then
-!      p_rprecSubnode => p_rsubnode%p_rpreconditioner
-!    end if
-!    
-!    ! rd is our RHS. p_rx points to a new vector which will be our
-!    ! iteration vector. At the end of this routine, we replace
-!    ! rd by p_rx.
-!    ! Clear our iteration vector p_rx.
-!    call sptivec_clearVector (p_rx)
-!      
-!    ! Initialize used vectors with zero
-!      
-!    call sptivec_clearVector(p_DP)
-!    call sptivec_clearVector(p_DPA)
-!    
-!    ! Initialise the iteration vector with zero.
-!
-!    ! Initialization
-!
-!    drho0  = 1.0_DP
-!    dalpha = 1.0_DP
-!    domega0 = 1.0_DP
-!
-!    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
-!    ! is also our initial defect.
-!
-!    call sptivec_copyVector(rd,p_DR)
-!    
-!    ! Filter the defect for boundary conditions in space and time.
-!    call tbc_implementInitCondDefect (&
-!        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-!    call tbc_implementBCdefect (rsolverNode%p_rsettings,&
-!        p_rspaceTimeDiscr,p_DR,p_rsubnode%rtempVectorSpace)
-!
-!    ! Get the norm of the residuum
-!    dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
-!    if (.not.((dres .ge. 1E-99_DP) .and. &
-!              (dres .le. 1E99_DP))) dres = 0.0_DP
-!
-!    if (bprec) then
-!      ! Perform preconditioning with the assigned preconditioning
-!      ! solver structure.
-!      call sptils_precondDefect (p_rprecSubnode,p_DR)
-!      call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
-!      
-!      ! We scane the absolute stopping criterion by the difference
-!      ! between the preconditioned and unpreconditioned defect --
-!      ! to encounter the difference in the residuals.
-!      ! This is of course an approximation to 
-!      dresunprec = dres
-!      dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
-!      
-!      call output_line ('Space-Time-BiCGStab: Iteration '// &
-!          trim(sys_siL(0,10))//',  !!RES(unscaled)!! = '//&
-!          trim(sys_sdEL(dres,15)) )
-!      
-!      if (.not.((dres .ge. 1E-99_DP) .and. &
-!                (dres .le. 1E99_DP))) dres = 1.0_DP
-!      dresscale = dresunprec / dres
-!    else
-!      dresscale = 1.0_DP
-!    end if
-!    
-!    ! Initialize starting residuum
-!      
-!    rsolverNode%dinitialDefect = dres
-!    rsolverNode%dlastDefect = 0.0_DP
-!
-!    ! Check if out initial defect is zero. This may happen if the filtering
-!    ! routine filters "everything out"!
-!    ! In that case we can directly stop our computation.
-!
-!    if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
-!     
-!      ! final defect is 0, as initialised in the output variable above
-!
-!      call sptivec_clearVector(p_rx)
-!      ite = 0
-!      rsolverNode%dfinalDefect = dres
-!          
-!    else
-!
-!      if (rsolverNode%ioutputLevel .ge. 2) then
-!        if (bprec) then
-!          call output_line ('Space-Time-BiCGStab: Iteration '// &
-!              trim(sys_siL(0,10))//',  !!RES(scaled)!! = '//&
-!              trim(sys_sdEL(rsolverNode%dinitialDefect*dresscale,15)) )
-!        else
-!          call output_line ('Space-Time-BiCGStab: Iteration '// &
-!              trim(sys_siL(0,10))//',  !!RES!! = '//&
-!              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-!        end if
-!      end if
-!
-!      call sptivec_copyVector(p_DR,p_DR0)
-!
-!      ! Perform at most nmaxIterations loops to get a new vector
-!
-!      do ite = 1,rsolverNode%nmaxIterations
-!      
-!        rsolverNode%icurrentIteration = ite
-!
-!        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
-!
-!        if (drho0*domega0 .eq. 0.0_DP) then
-!          ! Should not happen
-!          if (rsolverNode%ioutputLevel .ge. 2) then
-!            call output_line ('Space-Time-BiCGStab: Iteration prematurely stopped! '//&
-!                 'Correction vector is zero!')
-!          end if
-!
-!          ! Some tuning for the output, then cancel.
-!
-!          rsolverNode%iresult = -1
-!          rsolverNode%iiterations = ITE-1
-!          exit
-!          
-!        end if
-!
-!        dbeta=(drho1*dalpha)/(drho0*domega0)
-!        drho0 = drho1
-!
-!        call sptivec_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
-!        call sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
-!
-!        call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, p_rmatrix, &
-!            p_DP,p_DPA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
-!        
-!        ! Filter the defect for boundary conditions in space and time.
-!        call tbc_implementInitCondDefect (&
-!            p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
-!        call tbc_implementBCdefect (rsolverNode%p_rsettings,&
-!            p_rspaceTimeDiscr,p_DPA,p_rsubnode%rtempVectorSpace)
-!
-!        if (bprec) then
-!          ! Perform preconditioning with the assigned preconditioning
-!          ! solver structure.
-!          call sptils_precondDefect (p_rprecSubnode,p_DPA)
-!          call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
-!        end if
-!
-!        dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
-!        
-!        if (dalpha .eq. 0.0_DP) then
-!          ! We are below machine exactness - we can't do anything more...
-!          ! May happen with very small problems with very few unknowns!
-!          if (rsolverNode%ioutputLevel .ge. 2) then
-!            call output_line ('Space-Time-BiCGStab: Convergence failed, ALPHA=0!')
-!            rsolverNode%iresult = -2
-!            exit
-!          end if
-!        end if
-!        
-!        dalpha = drho1/dalpha
-!
-!        call sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
-!
-!        call stlin_spaceTimeMatVec (rsolverNode%p_rsettings, p_rmatrix, &
-!            p_DR,p_DSA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
-!        
-!        ! Filter the defect for boundary conditions in space and time.
-!        call tbc_implementInitCondDefect (&
-!            p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
-!        call tbc_implementBCdefect (rsolverNode%p_rsettings,&
-!            p_rspaceTimeDiscr,p_DSA,p_rsubnode%rtempVectorSpace)
-!
-!        if (bprec) then
-!          ! Perform preconditioning with the assigned preconditioning
-!          ! solver structure.
-!          call sptils_precondDefect (p_rprecSubnode,p_DSA)
-!          call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
-!        end if
-!        
-!        domega1 = sptivec_scalarProduct (p_DSA,p_DR)
-!        domega2 = sptivec_scalarProduct (p_DSA,p_DSA)
-!        
-!        if (domega1 .eq. 0.0_DP) then
-!          domega0 = 0.0_DP
-!        else
-!          if (domega2 .eq. 0.0_DP) then
-!            if (rsolverNode%ioutputLevel .ge. 2) then
-!              call output_line ('Space-Time-BiCGStab: Convergence failed: omega=0!')
-!              rsolverNode%iresult = -2
-!              exit
-!            end if
-!          end if
-!          domega0 = domega1/domega2
-!        end if
-!
-!        call sptivec_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
-!        call sptivec_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
-!
-!        call sptivec_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
-!
-!        ! Get the norm of the new (final?) residuum
-!        dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
-!     
-!        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
-!        rsolverNode%dfinalDefect = dfr
-!
-!        ! Test if the iteration is diverged
-!        dfr = dfr*dresscale
-!        if (sptils_testDivergence(rsolverNode,dfr)) then
-!          call output_line ('Space-Time-BiCGStab: Solution diverging!')
-!          rsolverNode%iresult = 1
-!          exit
-!        end if
-!     
-!        ! At least perform nminIterations iterations
-!        if (ite .ge. nminIterations) then
-!        
-!          ! Check if the iteration converged
-!          if (sptils_testConvergence(rsolverNode,dfr)) exit
-!          
-!        end if
-!
-!        ! print out the current residuum
-!
-!        if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-!            (mod(ite,niteResOutput).eq.0)) then
-!          if (bprec) then
-!            call output_line ('Space-Time-BiCGStab: Iteration '// &
-!                trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
-!                trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
-!          else
-!            call output_line ('Space-Time-BiCGStab: Iteration '// &
-!                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
-!                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-!          end if
-!        end if
-!
-!      end do
-!
-!      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
-!      ! completed
-!
-!      if (ite .gt. rsolverNode%nmaxIterations) &
-!        ite = rsolverNode%nmaxIterations
-!
-!      ! Finish - either with an error or if converged.
-!      ! Print the last residuum.
-!
-!      if ((rsolverNode%ioutputLevel .ge. 2) .and. &
-!          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
-!          (rsolverNode%iresult .ge. 0)) then
-!        if (bprec) then
-!          call output_line ('Space-Time-BiCGStab: Iteration '// &
-!              trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
-!              trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
-!        else
-!          call output_line ('Space-Time-BiCGStab: Iteration '// &
-!              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
-!              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-!        end if
-!      end if
-!
-!    end if
-!
-!    rsolverNode%iiterations = ite
-!    
-!    ! Overwrite our previous RHS by the new correction vector p_rx.
-!    ! This completes the preconditioning.
-!    call sptivec_copyVector (p_rx,rd)
-!      
-!    ! Don't calculate anything if the final residuum is out of bounds -
-!    ! would result in NaN's,...
-!      
-!    if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
-!    
-!      ! If the initial defect was zero, the solver immediately
-!      ! exits - and so the final residuum is zero and we performed
-!      ! no steps; so the resulting convergence rate stays zero.
-!      ! In the other case the convergence rate computes as
-!      ! (final defect/initial defect) ** 1/nit :
-!
-!      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
-!        rsolverNode%dconvergenceRate = &
-!                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
-!                    (1.0_DP/real(rsolverNode%iiterations,DP))
-!      end if
-!
-!      if (rsolverNode%ioutputLevel .ge. 2) then
-!        call output_lbrk()
-!        call output_line ('Space-Time-BiCGStab statistics:')
-!        call output_lbrk()
-!        call output_line ('Iterations              : '//&
-!             trim(sys_siL(rsolverNode%iiterations,10)) )
-!        call output_line ('!!INITIAL RES!!         : '//&
-!             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
-!        call output_line ('!!RES!!                 : '//&
-!             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
-!        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
-!          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
-!            trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
-!        else
-!          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
-!               trim(sys_sdEL(0.0_DP,15)) )
-!        end if
-!        call output_lbrk ()
-!        call output_line ('Rate of convergence     : '//&
-!             trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
-!
-!      end if
-!
-!      if (rsolverNode%ioutputLevel .eq. 1) then
-!        call output_line (&
-!              'Space-Time-BiCGStab: Iterations/Rate of convergence: '//&
-!              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
-!              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
-!      end if
-!      
-!    else
-!      ! DEF=Infinity; RHO=Infinity, set to 1
-!      rsolverNode%dconvergenceRate = 1.0_DP
-!    end if  
+  ! local variables
+  real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
+  real(DP) :: drho1,drho0,dfr,dresscale,dresunprec
+  integer :: ite
+
+  ! The system matrix
+  type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  integer :: nminIterations, niteResOutput
+  
+  ! Whether to filter/prcondition
+  logical bprec,bfilter
+  
+  ! Our structure
+  type(t_sptilsSubnodeBiCGStab), pointer :: p_rsubnode
+  
+  ! Pointers to temporary vectors - named for easier access
+  type(t_spaceTimeVector), pointer :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx
+  type(t_sptilsNode), pointer :: p_rprecSubnode
+  
+    ! Solve the system!
+  
+    ! Status reset
+    rsolverNode%iresult = 0
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    
+    ! Getch some information
+    p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
+    p_rmatrix => rsolverNode%rmatrix
+
+    ! Check the parameters
+    if (rd%NEQtime .eq. 0) then
+    
+      ! Parameters wrong
+      rsolverNode%iresult = 2
+      return
+    end if
+
+    ! Minimum number of iterations
+ 
+    nminIterations = max(rsolverNode%nminIterations,0)
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = associated(rsolverNode%p_rsubnodeBiCGStab%p_rpreconditioner)
+    
+    ! Iteration when the residuum is printed:
+
+    niteResOutput = max(1,rsolverNode%niteResOutput)
+
+    ! Set pointers to the temporary vectors
+    p_DR   => p_rsubnode%RtempVectors(1)
+    p_DR0  => p_rsubnode%RtempVectors(2)
+    p_DP   => p_rsubnode%RtempVectors(3)
+    p_DPA  => p_rsubnode%RtempVectors(4)
+    p_DSA  => p_rsubnode%RtempVectors(5)
+    p_rx   => p_rsubnode%RtempVectors(6)
+    
+    if (bprec) then
+      p_rprecSubnode => p_rsubnode%p_rpreconditioner
+    end if
+    
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    call sptivec_clearVector (p_rx)
+      
+    ! Initialize used vectors with zero
+      
+    call sptivec_clearVector(p_DP)
+    call sptivec_clearVector(p_DPA)
+    
+    ! Initialise the iteration vector with zero.
+
+    ! Initialization
+
+    drho0  = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
+    ! is also our initial defect.
+
+    call sptivec_copyVector(rd,p_DR)
+    
+    ! Filter the defect for boundary conditions in space and time.
+    call tbc_implementInitCondDefect (&
+        p_DR,p_rsubnode%rtempVectorSpace)
+    call tbc_implementBCdefect (rsolverNode%p_roptcBDC,&
+        p_DR,rsolverNode%p_rsettings%rglobalData,p_rsubnode%rtempVectorSpace)
+
+    ! Get the norm of the residuum
+    dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+    if (.not.((dres .ge. 1E-99_DP) .and. &
+              (dres .le. 1E99_DP))) dres = 0.0_DP
+
+    if (bprec) then
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      call sptils_precondDefect (p_rprecSubnode,p_DR)
+      call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      
+      ! We scane the absolute stopping criterion by the difference
+      ! between the preconditioned and unpreconditioned defect --
+      ! to encounter the difference in the residuals.
+      ! This is of course an approximation to 
+      dresunprec = dres
+      dres = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+      
+      call output_line ('Space-Time-BiCGStab: Iteration '// &
+          trim(sys_siL(0,10))//',  !!RES(unscaled)!! = '//&
+          trim(sys_sdEL(dres,15)) )
+      
+      if (.not.((dres .ge. 1E-99_DP) .and. &
+                (dres .le. 1E99_DP))) dres = 1.0_DP
+      dresscale = dresunprec / dres
+    else
+      dresscale = 1.0_DP
+    end if
+    
+    ! Initialize starting residuum
+      
+    rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    if ( rsolverNode%dinitialDefect .lt. rsolverNode%drhsZero ) then
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      call sptivec_clearVector(p_rx)
+      ite = 0
+      rsolverNode%dfinalDefect = dres
+          
+    else
+
+      if (rsolverNode%ioutputLevel .ge. 2) then
+        if (bprec) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(rsolverNode%dinitialDefect*dresscale,15)) )
+        else
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        end if
+      end if
+
+      call sptivec_copyVector(p_DR,p_DR0)
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      do ite = 1,rsolverNode%nmaxIterations
+      
+        rsolverNode%icurrentIteration = ite
+
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+
+        if (drho0*domega0 .eq. 0.0_DP) then
+          ! Should not happen
+          if (rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('Space-Time-BiCGStab: Iteration prematurely stopped! '//&
+                 'Correction vector is zero!')
+          end if
+
+          ! Some tuning for the output, then cancel.
+
+          rsolverNode%iresult = -1
+          rsolverNode%iiterations = ITE-1
+          exit
+          
+        end if
+
+        dbeta=(drho1*dalpha)/(drho0*domega0)
+        drho0 = drho1
+
+        call sptivec_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
+        call sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
+
+        call stlin_spaceTimeMatVec (p_rmatrix, p_DP, p_DPA, &
+            1.0_DP,0.0_DP,SPTID_FILTER_NONE)
+        
+        ! Filter the defect for boundary conditions in space and time.
+        call tbc_implementInitCondDefect (&
+            p_DPA,p_rsubnode%rtempVectorSpace)
+        call tbc_implementBCdefect (rsolverNode%p_roptcBDC,&
+            p_DPA,rsolverNode%p_rsettings%rglobalData,p_rsubnode%rtempVectorSpace)
+
+        if (bprec) then
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          call sptils_precondDefect (p_rprecSubnode,p_DPA)
+          call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+        end if
+
+        dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
+        
+        if (dalpha .eq. 0.0_DP) then
+          ! We are below machine exactness - we can't do anything more...
+          ! May happen with very small problems with very few unknowns!
+          if (rsolverNode%ioutputLevel .ge. 2) then
+            call output_line ('Space-Time-BiCGStab: Convergence failed, ALPHA=0!')
+            rsolverNode%iresult = -2
+            exit
+          end if
+        end if
+        
+        dalpha = drho1/dalpha
+
+        call sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
+
+        call stlin_spaceTimeMatVec (p_rmatrix, &
+            p_DR,p_DSA, 1.0_DP,0.0_DP,SPTID_FILTER_NONE)
+        
+        ! Filter the defect for boundary conditions in space and time.
+        call tbc_implementInitCondDefect (&
+            p_DSA,p_rsubnode%rtempVectorSpace)
+        call tbc_implementBCdefect (rsolverNode%p_roptcBDC,&
+            p_DSA,rsolverNode%p_rsettings%rglobalData,p_rsubnode%rtempVectorSpace)
+
+        if (bprec) then
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          call sptils_precondDefect (p_rprecSubnode,p_DSA)
+          call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+        end if
+        
+        domega1 = sptivec_scalarProduct (p_DSA,p_DR)
+        domega2 = sptivec_scalarProduct (p_DSA,p_DSA)
+        
+        if (domega1 .eq. 0.0_DP) then
+          domega0 = 0.0_DP
+        else
+          if (domega2 .eq. 0.0_DP) then
+            if (rsolverNode%ioutputLevel .ge. 2) then
+              call output_line ('Space-Time-BiCGStab: Convergence failed: omega=0!')
+              rsolverNode%iresult = -2
+              exit
+            end if
+          end if
+          domega0 = domega1/domega2
+        end if
+
+        call sptivec_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
+        call sptivec_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
+
+        call sptivec_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
+
+        ! Get the norm of the new (final?) residuum
+        dfr = sptivec_vectorNorm (p_DR,rsolverNode%iresNorm)
+     
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
+        rsolverNode%dfinalDefect = dfr
+
+        ! Test if the iteration is diverged
+        dfr = dfr*dresscale
+        if (sptils_testDivergence(rsolverNode,dfr)) then
+          call output_line ('Space-Time-BiCGStab: Solution diverging!')
+          rsolverNode%iresult = 1
+          exit
+        end if
+     
+        ! At least perform nminIterations iterations
+        if (ite .ge. nminIterations) then
+        
+          ! Check if the iteration converged
+          if (sptils_testConvergence(rsolverNode,dfr)) exit
+          
+        end if
+
+        ! print out the current residuum
+
+        if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+            (mod(ite,niteResOutput).eq.0)) then
+          if (bprec) then
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+                trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+          else
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+                trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+          end if
+        end if
+
+      end do
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      if (ite .gt. rsolverNode%nmaxIterations) &
+        ite = rsolverNode%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+      if ((rsolverNode%ioutputLevel .ge. 2) .and. &
+          (ite .ge. 1) .and. (ITE .lt. rsolverNode%nmaxIterations) .and. &
+          (rsolverNode%iresult .ge. 0)) then
+        if (bprec) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect*dresscale,15)) )
+        else
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        end if
+      end if
+
+    end if
+
+    rsolverNode%iiterations = ite
+    
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    call sptivec_copyVector (p_rx,rd)
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+    if (rsolverNode%dfinalDefect .lt. 1E99_DP) then
+    
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      if (rsolverNode%dfinalDefect .gt. rsolverNode%drhsZero) then
+        rsolverNode%dconvergenceRate = &
+                    (rsolverNode%dfinalDefect / rsolverNode%dinitialDefect) ** &
+                    (1.0_DP/real(rsolverNode%iiterations,DP))
+      end if
+
+      if (rsolverNode%ioutputLevel .ge. 2) then
+        call output_lbrk()
+        call output_line ('Space-Time-BiCGStab statistics:')
+        call output_lbrk()
+        call output_line ('Iterations              : '//&
+             trim(sys_siL(rsolverNode%iiterations,10)) )
+        call output_line ('!!INITIAL RES!!         : '//&
+             trim(sys_sdEL(rsolverNode%dinitialDefect,15)) )
+        call output_line ('!!RES!!                 : '//&
+             trim(sys_sdEL(rsolverNode%dfinalDefect,15)) )
+        if (rsolverNode%dinitialDefect .gt. rsolverNode%drhsZero) then     
+          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            trim(sys_sdEL(rsolverNode%dfinalDefect / rsolverNode%dinitialDefect,15)) )
+        else
+          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               trim(sys_sdEL(0.0_DP,15)) )
+        end if
+        call output_lbrk ()
+        call output_line ('Rate of convergence     : '//&
+             trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+
+      end if
+
+      if (rsolverNode%ioutputLevel .eq. 1) then
+        call output_line (&
+              'Space-Time-BiCGStab: Iterations/Rate of convergence: '//&
+              trim(sys_siL(rsolverNode%iiterations,10))//' /'//&
+              trim(sys_sdEL(rsolverNode%dconvergenceRate,15)) )
+      end if
+      
+    else
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      rsolverNode%dconvergenceRate = 1.0_DP
+    end if  
   
   end subroutine
   
@@ -7539,6 +7545,8 @@ contains
     ! OUTPUT: Calculated step length parameter
     real(DP), intent(OUT) :: dstep
     
+      dstep = 1.0_DP
+    
 !      ! local variables
 !      real(DP) :: dnom, ddenom
 !    
@@ -7602,7 +7610,7 @@ contains
 !<subroutine>
   
   recursive subroutine sptils_initFBsim (rsettings,ispaceTimeLevel,&
-      rparlist,ssection,p_rsolverNode,domega)
+      rparlist,ssection,p_rsolverNode)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the forward-backward preconditioner.
@@ -7622,9 +7630,6 @@ contains
   
   ! Name of a section in the parameter list configuring the forward-backward solver.
   character(len=*), intent(in) :: ssection
-  
-  ! Damping parameter (currently not used!)
-  real(DP), intent(in) :: domega
 !</input>
   
 !<output>
@@ -7644,8 +7649,6 @@ contains
     ! Initialise the ability bitfield with the ability of this solver:
     p_rsolverNode%ccapability = 0
 
-    p_rsolverNode%domega = domega
-    
     p_rsolverNode%nmaxiterations = p_rsolverNode%nminiterations
     
     ! Allocate a subnode for our solver.

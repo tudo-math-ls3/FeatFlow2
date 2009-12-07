@@ -357,9 +357,9 @@ contains
     call collct_init(rcollection)
     call user_initCollectForAssembly(rsettings%rglobalData,dtime,rcollection)
     
-    call cc_assembleBDconditions (rsettings%roptcBDC,dtime,rpostproc%rspaceDiscrLinear,&
+    call sbc_assembleBDconditions (rsettings%roptcBDC,dtime,rpostproc%rspaceDiscrLinear,&
         rpostproc%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rsettings%rglobalData)
-    call cc_assembleFBDconditions (dtime,rpostproc%rspaceDiscrLinear,rpostproc%p_rtimeDiscr,&
+    call sbc_assembleFBDconditions (dtime,rpostproc%rspaceDiscrLinear,rpostproc%p_rtimeDiscr,&
         CCSPACE_PRIMALDUAL,rdiscreteFBC,rsettings%rglobalData)
     
     call user_doneCollectForAssembly(rsettings%rglobalData,rcollection)

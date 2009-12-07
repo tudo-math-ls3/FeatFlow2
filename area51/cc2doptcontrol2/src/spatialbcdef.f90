@@ -9,11 +9,11 @@
 !#
 !# The following files can be found here:
 !#
-!# 1.) cc_assembleBDconditions
+!# 1.) sbc_assembleBDconditions
 !#     -> Assembles the definition of the BC's from sections given by DAT files
 !#        and sets up an analytical boundary condition description
 !#
-!# 2.) cc_assembleFBDconditions
+!# 2.) sbc_assembleFBDconditions
 !#     -> Assembles the definition of the BC's given by fictitious boundaries
 !#        by evaluating sections given by DAT files
 !#        and sets up an analytical boundary condition description
@@ -106,8 +106,8 @@ module spatialbcdef
 
 !</constants>
 
-  public :: cc_assembleBDconditions
-  public :: cc_assembleFBDconditions
+  public :: sbc_assembleBDconditions
+  public :: sbc_assembleFBDconditions
 
 contains
   
@@ -115,7 +115,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleBDconditions (roptcBDC,dtime,rspaceDiscr,rtimediscr,cbctype,&
+  subroutine sbc_assembleBDconditions (roptcBDC,dtime,rspaceDiscr,rtimediscr,cbctype,&
       rdiscreteBC,rglobalData,bhasNeumann)
 
 !<description>
@@ -1124,7 +1124,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_assembleFBDconditions (dtime,rspaceDiscr,rtimeDiscr,cbctype,&
+  subroutine sbc_assembleFBDconditions (dtime,rspaceDiscr,rtimeDiscr,cbctype,&
       rdiscreteFBC,rglobalData)
 
 !<description>

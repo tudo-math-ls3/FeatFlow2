@@ -894,11 +894,11 @@ contains
       call bcasm_clearDiscreteBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteBC)
       call bcasm_clearDiscreteFBC(rpreconditioner%RcoreEquation(ilevel)%rdiscreteFBC)
       
-      call cc_assembleBDconditions (rproblem,dtime,&
+      call sbc_assembleBDconditions (rproblem,dtime,&
           rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
           CCSPACE_PRIMALDUAL,rpreconditioner%RcoreEquation(ilevel)%rdiscreteBC,&
           rproblem%rcollection,rpreconditioner%RcoreEquation(ilevel)%bhasNeumann)
-      call cc_assembleFBDconditions (rproblem,dtime,&
+      call sbc_assembleFBDconditions (rproblem,dtime,&
           rpreconditioner%RcoreEquation(ilevel)%p_rdiscrBlock,&
           CCSPACE_PRIMALDUAL,rpreconditioner%RcoreEquation(ilevel)%rdiscreteFBC,&
           rproblem%rcollection)
