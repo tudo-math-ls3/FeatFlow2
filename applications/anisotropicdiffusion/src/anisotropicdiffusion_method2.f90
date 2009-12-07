@@ -442,7 +442,7 @@ contains
         ! stabilisation
         call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
         call jstab_calcUEOJumpStabilisation (&
-            rmatrix,dgamma,dgamma,1.0_DP,CUB_G3_1D,1.0_DP)
+            rmatrix,dgamma,dgamma,2.0_DP,1.0_DP,CUB_G3_1D,1.0_DP)
       case DEFAULT    
         ! No stabilisation. Create the Laplace matrix directly.
         call bilf_buildMatrixScalar (rform,.true.,rmatrix,coeff_Laplace)
