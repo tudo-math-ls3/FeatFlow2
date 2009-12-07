@@ -760,6 +760,9 @@ contains
       call parlst_getvalue_double (p_rsection, 'depsAbs', &
                                   rsolverNode%depsAbs, rsolverNode%depsAbs)
 
+      call parlst_getvalue_double (p_rsection, 'depsDiff', &
+                                  rsolverNode%depsDiff, rsolverNode%depsDiff)
+
       call parlst_getvalue_int (p_rsection, 'iresNorm', &
                                 rsolverNode%iresNorm, rsolverNode%iresNorm)
 

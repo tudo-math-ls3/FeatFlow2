@@ -1132,6 +1132,17 @@ module linearsolver
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP)                        :: depsAbs = 1E-5_DP
 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
+    ! Difference in the residual stopping criterion. Stop iteration if
+    ! !!defect_new!! - !!defect_old!! < depsDiff * !!defect_old!!.
+    ! This stopping criterion holds additionally to depsAbs/depsRel
+    ! in an OR sense -- i.e. the iteration is stopped if
+    ! !!defect_new!! - !!defect_old!! < depsDiff * !!defect_old!!
+    ! holds OR if the stopping criterion given by depsAbs/depsRel
+    ! holds!
+    ! =0: ignore this stopping criterion
+    real(DP)                        :: depsDiff = 0.0_DP
+
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Relative divergence criterion.  Treat iteration as
     ! diverged if
@@ -1250,6 +1261,9 @@ module linearsolver
     
     ! STATUS FOR ITERATIVE SOLVERS: Current iteration
     integer                    :: icurrentIteration
+
+    ! STATUS FOR ITERATIVE SOLVERS: Last defect
+    real(DP) :: dlastDefect = 0.0_DP
 
     ! Pointer to a structure for the VANKA solver; NULL() if not set
     type (t_linsolSubnodeVANKA), pointer          :: p_rsubnodeVANKA       => null()
@@ -2928,6 +2942,15 @@ contains
       dvecNorm = lsysbl_vectorNorm (rdef,rsolverNode%iresNorm)
     end if
     
+    ! Relative difference in the residuals small enough?
+    if (rsolverNode%depsDiff .ne. 0.0_DP) then
+      if (abs(dvecNorm-rsolverNode%dlastDefect) .lt. &
+              rsolverNode%depsDiff*rsolverNode%dlastDefect) then
+        loutput = .true.
+        return
+      end if
+    end if
+
     select case (rsolverNode%istoppingCriterion)
     
     case (LINSOL_STOP_ONEOF)
@@ -3787,6 +3810,7 @@ contains
     rsolverNode%iresult = 0
     rsolverNode%icurrentIteration = 0
     rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dlastDefect = 0.0_DP
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
@@ -3866,6 +3890,7 @@ contains
 
     ! Initialize starting residuum
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! initialize the queue of the last residuals with RES
     Dresqueue = dres
@@ -3917,8 +3942,9 @@ contains
      
         ! Shift the queue with the last residuals and add the new
         ! residual to it. 
-        Dresqueue = eoshift(Dresqueue,1,dres)
+        Dresqueue = eoshift(Dresqueue,1,dfr)
 
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -6977,6 +7003,7 @@ contains
       ! Just for algorithms that check the residuum, set the
       ! initial/final residuum values to valid values.
       rsolverNode%dinitialDefect = 1.0_DP
+      rsolverNode%dlastDefect = 1.0_DP
       rsolverNode%dfinalDefect = 0.0_DP
       
       ! Scale defect by omega
@@ -8482,6 +8509,7 @@ contains
 
     ! Initialize starting residuum
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! initialize the queue of the last residuals with RES
     Dresqueue = dres
@@ -8580,8 +8608,9 @@ contains
      
         ! Shift the queue with the last residuals and add the new
         ! residual to it. 
-        Dresqueue = eoshift(Dresqueue,1,dres)
+        Dresqueue = eoshift(Dresqueue,1,dfr)
 
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -9381,6 +9410,7 @@ contains
 
     ! Initialize starting residuum
     rsolverNode%dinitialDefect = dres
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! initialize the queue of the last residuals with RES
     Dresqueue = dres
@@ -9499,8 +9529,9 @@ contains
      
         ! Shift the queue with the last residuals and add the new
         ! residual to it. 
-        Dresqueue = eoshift(Dresqueue,1,dres)
+        Dresqueue = eoshift(Dresqueue,1,dfr)
 
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -10402,6 +10433,7 @@ contains
 
     ! Initialize starting residuum
     rsolverNode%dinitialDefect = dfr
+    rsolverNode%dlastDefect = 0.0_DP
 
     ! initialize the queue of the last residuals with RES
     Dresqueue = dfr
@@ -10642,8 +10674,9 @@ contains
         
         ! Shift the queue with the last residuals and add the new
         ! residual to it. 
-        Dresqueue = eoshift(Dresqueue,1,dres)
+        Dresqueue = eoshift(Dresqueue,1,dfr)
 
+        rsolverNode%dlastDefect = rsolverNode%dfinalDefect
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
@@ -13167,6 +13200,12 @@ contains
           ' !!RES!! = '//trim(sys_sdEL(dres,15)) )
     end if
     
+    ! Apply the filter to the solution to enforce e.g. integral-mean-value = 0
+    ! (property may be lost for some VANKA smoothers!)
+    if (bfilter) then
+      call filter_applyFilterChainVec (rtemp, p_RfilterChain)
+    end if
+    
   end subroutine
 
   ! ***************************************************************************
@@ -13269,6 +13308,7 @@ contains
     rsolverNode%iresult = 0
     rsolverNode%icurrentIteration = 0
     rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dlastDefect = 0.0_DP
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
@@ -13294,6 +13334,7 @@ contains
       
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
+      rsolverNode%dlastDefect = p_rcurrentLevel%p_rcoarseGridSolver%dlastDefect
       rsolverNode%dfinalDefect = p_rcurrentLevel%p_rcoarseGridSolver%dfinalDefect
       rsolverNode%dconvergenceRate = p_rcurrentLevel%p_rcoarseGridSolver%dconvergenceRate
       rsolverNode%iiterations = p_rcurrentLevel%p_rcoarseGridSolver%iiterations
@@ -13310,6 +13351,7 @@ contains
 
       ! Initialize starting residuum
       rsolverNode%dinitialDefect = dres
+      rsolverNode%dlastDefect = 0.0_DP
 
       ! initialize the queue of the last residuals with RES
       Dresqueue = dres
@@ -13321,7 +13363,6 @@ contains
       
         ! final defect is 0, as initialised in the output variable above
         call lsysbl_clearVector(rd)
-        rsolverNode%dfinalDefect = dres
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
         rsolverNode%iiterations = 0
@@ -13862,6 +13903,7 @@ contains
           ! residual to it. 
           Dresqueue = eoshift(Dresqueue,1,dres)
 
+          rsolverNode%dlastDefect = rsolverNode%dfinalDefect
           rsolverNode%dfinalDefect = dres
           
           ! Test if the iteration is diverged
@@ -15366,6 +15408,7 @@ contains
     rsolverNode%iresult = 0
     rsolverNode%icurrentIteration = 0
     rsolverNode%dinitialDefect = 0.0_DP
+    rsolverNode%dlastDefect = 0.0_DP
     rsolverNode%dfinalDefect = 0.0_DP
     rsolverNode%dconvergenceRate = 0.0_DP
     rsolverNode%dasymptoticConvergenceRate = 0.0_DP
@@ -15389,6 +15432,7 @@ contains
       ! Take the statistics from the coarse grid solver.
       rsolverNode%dinitialDefect = p_rcurrentLevel%p_rcoarseGridSolver%dinitialDefect
       rsolverNode%dfinalDefect = p_rcurrentLevel%p_rcoarseGridSolver%dfinalDefect
+      rsolverNode%dlastDefect = p_rcurrentLevel%p_rcoarseGridSolver%dlastDefect
       rsolverNode%dconvergenceRate = p_rcurrentLevel%p_rcoarseGridSolver%dconvergenceRate
       rsolverNode%iiterations = p_rcurrentLevel%p_rcoarseGridSolver%iiterations
       rsolverNode%dasymptoticConvergenceRate = p_rcurrentLevel% &
@@ -15406,6 +15450,7 @@ contains
 
       ! Initialize starting residuum
       rsolverNode%dinitialDefect = dres
+      rsolverNode%dlastDefect = 0.0_DP
 
       ! initialize the queue of the last residuals with RES
       Dresqueue = dres
@@ -15418,7 +15463,6 @@ contains
       
         ! final defect is 0, as initialised in the output variable above
         call lsysbl_clearVector(rd)
-        rsolverNode%dfinalDefect = dres
         rsolverNode%dfinalDefect = dres
         rsolverNode%dconvergenceRate = 0.0_DP
         rsolverNode%iiterations = 0
@@ -15959,6 +16003,7 @@ contains
           ! residual to it. 
           Dresqueue = eoshift(Dresqueue,1,dres)
 
+          rsolverNode%dlastDefect = rsolverNode%dfinalDefect
           rsolverNode%dfinalDefect = dres
           
           ! Test if the iteration is diverged
