@@ -442,8 +442,7 @@ contains
     ! If there's a ´filename for the solution file given,
     ! write out the current solution.
     call parlst_getvalue_string (rproblem%rparamList, 'TIME-POSTPROCESSING', &
-                                 'sfinalSolutionFileName', stemp, '')
-    read (stemp,*) sfileName
+        'sfinalSolutionFileName', sfileName, "", bdequote=.true.)
     if (sfilename .ne. '') then
       stemp = '('''//trim(adjustl(sfilename))//'.'',I5.5)'
       call sptivec_saveToFileSequence(rvector,stemp,.true.)

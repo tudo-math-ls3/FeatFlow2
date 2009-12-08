@@ -55,6 +55,7 @@ module initmatrices
   
   use constantsoptc
   use assemblytemplates
+  use assemblytemplatesoptc
   use structuresoptc
   use structuresoptflow
   use user_callback
@@ -67,9 +68,13 @@ module initmatrices
   public :: inmat_allocStaticMatrices
   public :: inmat_releaseStaticMatrices
   public :: inmat_generateStaticMatrices
+  public :: inmat_generateStaticMatOptC
   public :: inmat_initStaticAsmTemplHier
+  public :: inmat_initStaticTemplHierOptC
   public :: inmat_doneStaticAsmTemplHier
+  public :: inmat_doneStaticTemplHierOptC
   public :: inmat_calcStaticLevelAsmHier
+  public :: inmat_calcStaticLvlAsmHierOptC
   public :: imnat_getL2PrjMatrix
   
 contains
@@ -228,10 +233,10 @@ contains
     ! Don't create a content array yet, it will be created by 
     ! the assembly routines later.
     call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-        rstaticAsmTemplates%rmatrixStokes,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
+        rstaticAsmTemplates%rmatrixLaplace,LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
     
     ! Allocate memory for the entries; don't initialise the memory.
-    call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixStokes,LSYSSC_SETM_UNDEFINED)
+    call lsyssc_allocEmptyMatrix (rstaticAsmTemplates%rmatrixLaplace,LSYSSC_SETM_UNDEFINED)
     
     ! In the global system, there are two coupling matrices B1 and B2.
     ! Both have the structure of the template gradient matrix.
@@ -302,13 +307,7 @@ contains
     call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixD1)
     call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixB2)
     call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixB1)
-    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixStokes)
-    if (lsyssc_hasMatrixStructure(rstaticAsmTemplates%rmatrixEOJ2)) then
-      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixEOJ2)
-    end if
-    if (lsyssc_hasMatrixStructure(rstaticAsmTemplates%rmatrixEOJ1)) then
-      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixEOJ1)
-    end if
+    call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixLaplace)
     
     ! Release the template matrices. This is the point, where the
     ! memory of the matrix structure is released.
@@ -324,8 +323,32 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_generateStaticMatrices (rstaticAsmTemplates,&
-      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings)
+  subroutine inmat_releaseStaticMatricesOptC (rstaticAsmTemplates)
+  
+!<description>
+  ! Releases all static matrices from rstaticAsmTemplates structure.
+!</description>
+
+!<inputoutput>
+  ! A t_staticLevelInfo structure to be cleaned up.
+  type(t_staticSpaceAsmTemplatesOptC), intent(inout) :: rstaticAsmTemplates
+!</inputoutput>
+
+!</subroutine>
+    if (lsyssc_hasMatrixStructure(rstaticAsmTemplates%rmatrixEOJ2)) then
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixEOJ2)
+    end if
+    if (lsyssc_hasMatrixStructure(rstaticAsmTemplates%rmatrixEOJ1)) then
+      call lsyssc_releaseMatrix (rstaticAsmTemplates%rmatrixEOJ1)
+    end if
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_generateStaticMatrices (rstaticAsmTemplates,rsettings)
   
 !<description>
   ! Calculates entries of all static matrices (Stokes, B-matrices,...)
@@ -338,13 +361,6 @@ contains
 !</description>
 
 !<input>
-  ! Physics of the problem
-  type(t_settings_physics), intent(in) :: rphysicsPrimal
-  
-  ! Stabilisation parameters for the primal and dual system.
-  type(t_settings_stabil), intent(in) :: rstabilPrimal
-  type(t_settings_stabil), intent(in) :: rstabilDual
-  
   ! Solver parameters.
   type(t_settings_optflow), intent(inout) :: rsettings
 !</input>
@@ -357,16 +373,8 @@ contains
 !</subroutine>
 
     ! Stabilisation stuff
-    type(t_jumpStabilisation) :: rjumpStabil
-    type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_Kld
 
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    call collct_init(rcollection)
-    call user_initCollectForAssembly (rsettings%rglobalData,0.0_DP,rcollection)
-    
     ! -----------------------------------------------------------------------
     ! Basic (Navier-) Stokes problem
     ! -----------------------------------------------------------------------
@@ -386,8 +394,8 @@ contains
     ! as well as both B-matrices.
     
     ! Assemble the Stokes operator:
-    call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixStokes,.true.,&
-        rsettings%rphysicsPrimal%dnu)
+    call stdop_assembleLaplaceMatrix (rstaticAsmTemplates%rmatrixLaplace,.true.,&
+        1.0_DP)
     
     ! Build the first pressure matrix B1.
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixB1,&
@@ -404,66 +412,6 @@ contains
     call lsyssc_transposeMatrix (rstaticAsmTemplates%rmatrixB2,&
         rstaticAsmTemplates%rmatrixD2,LSYSSC_TR_CONTENT)
           
-    ! -----------------------------------------------------------------------
-    ! EOJ matrix, if the edge oriented stabilisation is active
-    ! -----------------------------------------------------------------------
-
-    if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
-      ! Create an empty matrix
-      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-          rstaticAsmTemplates%rmatrixEOJ1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixEOJ1)
-    
-      ! Set up the jump stabilisation structure.
-      ! There's not much to do, only initialise the viscosity...
-      rjumpStabil%dnu = rphysicsPrimal%dnu
-      
-      ! Set stabilisation parameter
-      rjumpStabil%dgamma = rstabilPrimal%dupsam
-      
-      ! Matrix weight
-      rjumpStabil%dtheta = 1.0_DP
-
-      ! Call the jump stabilisation technique to stabilise that stuff.   
-      ! We can assemble the jump part any time as it's independent of any
-      ! convective parts...
-      call conv_jumpStabilisation2d (&
-          rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplates%rmatrixEOJ1)   
-    end if
-
-    if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
-    
-      ! Perhaps the second matrix is like the first, then we don't
-      ! have to assemble it.
-      if ((rstabilPrimal%dupsam .eq. rstabilDual%dupsam) .and. &
-          (rstabilPrimal%cupwind .eq. rstabilDual%cupwind)) then
-        ! Take that from the primal space.
-        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixEOJ1,rstaticAsmTemplates%rmatrixEOJ2,&
-            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
-      else
-        ! Create an empty matrix
-        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
-            rstaticAsmTemplates%rmatrixEOJ2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-        call lsyssc_clearMatrix (rstaticAsmTemplates%rmatrixEOJ2)
-
-        ! Set up the jump stabilisation structure.
-        ! There's not much to do, only initialise the viscosity...
-        rjumpStabil%dnu = rphysicsPrimal%dnu
-        
-        ! Set stabilisation parameter
-        rjumpStabil%dgamma = rstabilDual%dupsam
-        
-        ! Matrix weight
-        rjumpStabil%dtheta = 1.0_DP
-
-        ! Call the jump stabilisation technique to stabilise that stuff.   
-        ! We can assemble the jump part any time as it's independent of any
-        ! convective parts...
-        call conv_jumpStabilisation2d (&
-            rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplates%rmatrixEOJ2)   
-      end if
-    end if
-
     ! -----------------------------------------------------------------------
     ! Mass matrices. They are used in so many cases, it's better we always
     ! have them available.
@@ -492,6 +440,117 @@ contains
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassVelocity,DER_FUNC,DER_FUNC)
     call stdop_assembleSimpleMatrix (rstaticAsmTemplates%rmatrixMassPressure,DER_FUNC,DER_FUNC)
                 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_generateStaticMatOptC (rstaticAsmTemplates,rstaticAsmTemplatesOptC,&
+      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings)
+  
+!<description>
+  ! Calculates entries of all static stabilisation matrices which depend
+  ! on physical parameters
+  !
+  ! Memory for those matrices must have been allocated before with 
+  ! inmat_allocStaticMatrices!
+!</description>
+
+!<input>
+  ! Physics of the problem
+  type(t_settings_physics), intent(in) :: rphysicsPrimal
+  
+  ! Stabilisation parameters for the primal and dual system.
+  type(t_settings_stabil), intent(in) :: rstabilPrimal
+  type(t_settings_stabil), intent(in) :: rstabilDual
+  
+  ! Solver parameters.
+  type(t_settings_optflow), intent(inout) :: rsettings
+
+  ! A t_staticSpaceAsmTemplates structure. 
+  type(t_staticSpaceAsmTemplates), intent(in), target :: rstaticAsmTemplates
+!</input>
+
+!<inputoutput>
+  ! A t_staticSpaceAsmTemplates structure. The static matrices in this structure are generated.
+  type(t_staticSpaceAsmTemplatesOptC), intent(inout), target :: rstaticAsmTemplatesOptC
+!</inputoutput>
+
+!</subroutine>
+
+    ! Stabilisation stuff
+    type(t_jumpStabilisation) :: rjumpStabil
+    type(t_collection) :: rcollection
+    integer, dimension(:), pointer :: p_Kld
+
+    ! Initialise the collection for the assembly process with callback routines.
+    ! Basically, this stores the simulation time in the collection if the
+    ! simulation is nonstationary.
+    call collct_init(rcollection)
+    call user_initCollectForAssembly (rsettings%rglobalData,0.0_DP,rcollection)
+    
+    ! -----------------------------------------------------------------------
+    ! EOJ matrix, if the edge oriented stabilisation is active
+    ! -----------------------------------------------------------------------
+
+    if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
+      ! Create an empty matrix
+      call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
+          rstaticAsmTemplatesOptC%rmatrixEOJ1,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      call lsyssc_clearMatrix (rstaticAsmTemplatesOptC%rmatrixEOJ1)
+    
+      ! Set up the jump stabilisation structure.
+      ! There's not much to do, only initialise the viscosity...
+      rjumpStabil%dnu = rphysicsPrimal%dnu
+      
+      ! Set stabilisation parameter
+      rjumpStabil%dgamma = rstabilPrimal%dupsam
+      
+      ! Matrix weight
+      rjumpStabil%dtheta = 1.0_DP
+
+      ! Call the jump stabilisation technique to stabilise that stuff.   
+      ! We can assemble the jump part any time as it's independent of any
+      ! convective parts...
+      call conv_jumpStabilisation2d (&
+          rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ1)   
+    end if
+
+    if ((rstabilPrimal%cupwind .eq. CCSTAB_EDGEORIENTED3)) then
+    
+      ! Perhaps the second matrix is like the first, then we don't
+      ! have to assemble it.
+      if ((rstabilPrimal%dupsam .eq. rstabilDual%dupsam) .and. &
+          (rstabilPrimal%cupwind .eq. rstabilDual%cupwind)) then
+        ! Take that from the primal space.
+        call lsyssc_duplicateMatrix (rstaticAsmTemplatesOptC%rmatrixEOJ1,& 
+            rstaticAsmTemplatesOptC%rmatrixEOJ2,&
+            LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      else
+        ! Create an empty matrix
+        call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
+            rstaticAsmTemplatesOptC%rmatrixEOJ2,LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+        call lsyssc_clearMatrix (rstaticAsmTemplatesOptC%rmatrixEOJ2)
+
+        ! Set up the jump stabilisation structure.
+        ! There's not much to do, only initialise the viscosity...
+        rjumpStabil%dnu = rphysicsPrimal%dnu
+        
+        ! Set stabilisation parameter
+        rjumpStabil%dgamma = rstabilDual%dupsam
+        
+        ! Matrix weight
+        rjumpStabil%dtheta = 1.0_DP
+
+        ! Call the jump stabilisation technique to stabilise that stuff.   
+        ! We can assemble the jump part any time as it's independent of any
+        ! convective parts...
+        call conv_jumpStabilisation2d (&
+            rjumpStabil, CONV_MODMATRIX, rstaticAsmTemplatesOptC%rmatrixEOJ2)   
+      end if
+    end if
+
     ! Clean up the collection (as we are done with the assembly, that's it.
     call user_doneCollectForAssembly (rsettings%rglobalData,rcollection)
     call collct_done(rcollection)
@@ -552,21 +611,40 @@ contains
 
 !<subroutine>
 
-  subroutine inmat_calcStaticLevelAsmHier(rhierarchy,&
-      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings,bprint)
+  subroutine inmat_initStaticTemplHierOptC(rhierarchy,rfeHierPrimal)
+  
+!<description>
+  ! Initialises the static optimal control submatrices on all levels.
+!</description>
+
+!<input>
+  ! A hierarchy of space levels for velocity+pressure (primal/dual space)
+  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+!</input>
+
+!<inputoutput>
+  ! Level info hierarchy to initialise
+  type(t_staticSpaceAsmHierarchyOptC), intent(out) :: rhierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    ! Create the hierarchy.
+    call astmplo_createSpaceAsmHier (rhierarchy,rfeHierPrimal%nlevels)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_calcStaticLevelAsmHier(rhierarchy,rsettings,bprint)
   
 !<description>
   ! Calculates the static matrices on all levels.
 !</description>
 
 !<input>
-  ! Physics of the problem
-  type(t_settings_physics) :: rphysicsPrimal
-
-  ! Stabilisation parameters for the primal and dual system.
-  type(t_settings_stabil), intent(in) :: rstabilPrimal
-  type(t_settings_stabil), intent(in) :: rstabilDual
-
   ! Settings structure for the optimal control solver.
   ! Not used here, but passed to callback routines called during
   ! the assembly process.
@@ -600,6 +678,68 @@ contains
       end if
 
       call inmat_generateStaticMatrices (rhierarchy%p_RasmTemplList(ilevel),&
+          rsettings)
+
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_calcStaticLvlAsmHierOptC(rhierarchy,rhierarchyOptC,&
+      rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings,bprint)
+  
+!<description>
+  ! Calculates the static matrices of the optimal control problem on all levels.
+!</description>
+
+!<input>
+  ! Level info hierarchy 
+  type(t_staticSpaceAsmHierarchy), intent(inout) :: rhierarchy
+
+  ! Physics of the problem
+  type(t_settings_physics) :: rphysicsPrimal
+
+  ! Stabilisation parameters for the primal and dual system.
+  type(t_settings_stabil), intent(in) :: rstabilPrimal
+  type(t_settings_stabil), intent(in) :: rstabilDual
+
+  ! Settings structure for the optimal control solver.
+  ! Not used here, but passed to callback routines called during
+  ! the assembly process.
+  type(t_settings_optflow), intent(inout) :: rsettings
+
+  ! OPTIONAL: Whether to print the current state of the assembly to
+  ! the terminal. If set to TRUE, numbers "2 3 4..:" will be printed
+  ! to the terminal for every level currently being processed.
+  logical, intent(in), optional :: bprint
+!</input>
+
+!<inputoutput>
+  ! Level info hierarchy to initialise
+  type(t_staticSpaceAsmHierarchyOptC), intent(inout) :: rhierarchyOptC
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel
+    logical :: boutput
+
+    ! Calculate structures
+    do ilevel = 1,rhierarchy%nlevels
+      if (bprint) then
+        ! Print current state.
+        if (ilevel .eq. 1) then
+          call output_line (trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+        else
+          call output_line (" "//trim(sys_siL(ilevel,10)),bnolinebreak=.true.)
+        end if
+      end if
+
+      call inmat_generateStaticMatOptC (rhierarchy%p_RasmTemplList(ilevel),&
+          rhierarchyOptC%p_RasmTemplList(ilevel),&
           rphysicsPrimal,rstabilPrimal,rstabilDual,rsettings)
     end do
 
@@ -631,6 +771,35 @@ contains
     
     ! Release the hierarchy
     call astmpl_releaseSpaceAsmHier (rhierarchy)
+      
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine inmat_doneStaticTemplHierOptC(rhierarchy)
+  
+!<description>
+  ! Cleans up the static matrices on all levels.
+!</description>
+
+!<inputoutput>
+  ! Level info hierarchy to initialise
+  type(t_staticSpaceAsmHierarchyOptC), intent(inout) :: rhierarchy
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: ilevel
+
+    ! Clean up the levels
+    do ilevel = 1,rhierarchy%nlevels
+      call inmat_releaseStaticMatricesOptC(rhierarchy%p_RasmTemplList(ilevel))
+    end do
+    
+    ! Release the hierarchy
+    call astmplo_releaseSpaceAsmHier (rhierarchy)
       
   end subroutine
 

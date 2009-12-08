@@ -167,12 +167,10 @@ contains
       ! Create an analytic solution structure based on the
       ! RHS expressions.
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'srhsExpressionX',sstring,'''''')
-      read(sstring,*) SrhsExpressions(1)
+          'srhsExpressionX',SrhsExpressions(1),"", bdequote=.true.)
 
       call parlst_getvalue_string (rproblem%rparamList,'CC-DISCRETISATION',&
-                                  'srhsExpressionY',sstring,'''''')
-      read(sstring,*) SrhsExpressions(2)
+          'srhsExpressionY',SrhsExpressions(2),"", bdequote=.true.)
       
       call ansol_init_meshless (rproblem%rrhs)
       call ansol_configAnalytical (rsolution,SrhsExpressions)
@@ -259,7 +257,6 @@ contains
   integer :: i,imeshType,ncellsX
   
     ! Variable for a filename:  
-    character(LEN=256) :: sString
     character(LEN=60) :: sPRMFile, sTRIFile
 
     ! Get the .prm and the .tri file from the parameter list.
@@ -267,12 +264,10 @@ contains
     ! in the parameter file, so we have to apply READ to get rid of
     ! probable ''!
     call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sParametrisation',sString)
-    read (sString,*) sPRMFile
+        "sParametrisation",sPRMFile,bdequote=.true.)
                               
     call parlst_getvalue_string (rproblem%rparamList,'PARAMTRIANG',&
-                                 'sMesh',sString)
-    read (sString,*) sTRIFile
+        "sMesh",sTRIFile,bdequote=.true.)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
     call boundary_read_prm(rproblem%rboundary, sPrmFile)
@@ -283,7 +278,7 @@ contains
     ! Now set up the basic triangulation. Which type of triangulation should
     ! be set up?
     call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
-                              'imeshType',imeshType,0)
+        'imeshType',imeshType,0)
     select case (imeshType)
     case (0)
       ! Standard mesh, specified by a TRI file.

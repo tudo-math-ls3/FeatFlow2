@@ -36,6 +36,7 @@ module structuresoptflow
   use spacetimeinterlevelprojection
   
   use assemblytemplates
+  use assemblytemplatesoptc
 
   use constantsoptc
   use structuresoptc
@@ -191,6 +192,9 @@ module structuresoptflow
     
     ! A level info hierarchy for the assembly of stuff on all levels.
     type(t_staticSpaceAsmHierarchy) :: rspaceAsmHierarchy
+
+    ! A level info hierarchy for the assembly of optimal control stuff on all levels.
+    type(t_staticSpaceAsmHierarchyOptC) :: rspaceAsmHierarchyOptC
 
     ! A hierarchy of space levels for mass matrices
     type(t_feHierarchy) :: rfeHierMass

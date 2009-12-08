@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# Contains template structures that are used to collect information
+!# Contains general template structures that are used to collect information
 !# necessary for the assembly of matrices and vectors.
 !#
 !# The following routines can be found here:
@@ -92,8 +92,8 @@ module assemblytemplates
     ! matrices (D1/D2). The matrix contains only a stucture, no content.
     type(t_matrixScalar) :: rmatrixTemplateDivergence
 
-    ! Precalculated Stokes matrix for that specific level (=nu*Laplace)
-    type(t_matrixScalar) :: rmatrixStokes
+    ! Precalculated Laplace matrix for that specific level
+    type(t_matrixScalar) :: rmatrixLaplace
     
     ! Precalculated B1-matrix for that specific level. 
     type(t_matrixScalar) :: rmatrixB1
@@ -123,10 +123,6 @@ module assemblytemplates
     ! Precalculated mass matrix for the pressure space.
     type(t_matrixScalar) :: rmatrixMassPressure
 
-    ! Matrix with a precomputed EOJ stabilisation operator -- if EOJ is active.
-    type(t_matrixScalar) :: rmatrixEOJ1
-    type(t_matrixScalar) :: rmatrixEOJ2
-    
   end type
 
 !</typeblock>

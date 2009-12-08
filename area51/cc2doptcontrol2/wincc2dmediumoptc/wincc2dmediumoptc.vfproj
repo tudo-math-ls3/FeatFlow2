@@ -34,13 +34,17 @@
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
 		<File RelativePath="..\data\bdconditions.dat"/>
 		<File RelativePath="..\data\discretisation.dat"/>
+		<File RelativePath="..\data\flows.dat"/>
 		<File RelativePath="..\data\linsol.dat"/>
+		<File RelativePath="..\data\main.dat"/>
 		<File RelativePath="..\Makefile"/>
 		<File RelativePath="..\data\master.dat"/>
-		<File RelativePath="..\data\nonlinsol.dat"/>
+		<File RelativePath="..\data\forwardsolver.dat"/>
+		<File RelativePath="..\data\optcontrol.dat"/>
 		<File RelativePath="..\data\output.dat"/>
 		<File RelativePath="..\data\paramtriang.dat"/>
 		<File RelativePath="..\data\postprocessing.dat"/>
+		<File RelativePath="..\data\spacetimesolver.dat"/>
 		<File RelativePath="..\data\timediscr.dat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="f90">
@@ -57,23 +61,8 @@
 		<Filter Name="main">
 		<File RelativePath="..\src\cc2doptc.f90"/>
 		<File RelativePath="..\src\initsolver.f90"/>
-		<File RelativePath="..\src\main_program.f90"/></Filter>
-		<Filter Name="unused">
-		<File RelativePath="..\src\nonstationaryoptcsolver.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\src\paramtriainit.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\src\spacepreconditioner.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\src\spacepreconditionerinit.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
-		<File RelativePath="..\src\spacetimevanca.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Filter>
+		<File RelativePath="..\src\main_program.f90"/>
+		<File RelativePath="..\src\structuresmain.f90"/></Filter>
 		<Filter Name="optflow">
 		<Filter Name="boundary">
 		<File RelativePath="..\src\spatialbcdef.f90"/></Filter>
@@ -110,9 +99,26 @@
 		<File RelativePath="..\src\linearspacetimesolver.f90"/>
 		<File RelativePath="..\src\nonlinearoneshotspacetimesolver.f90"/></Filter>
 		<Filter Name="template assembly">
+		<File RelativePath="..\src\assemblytemplatesoptc.f90"/>
 		<File RelativePath="..\src\initmatrices.f90"/></Filter></Filter>
 		<Filter Name="template assembly">
-		<File RelativePath="..\src\assemblytemplates.f90"/></Filter></Filter></Filter>
+		<File RelativePath="..\src\assemblytemplates.f90"/></Filter>
+		<Filter Name="unused">
+		<File RelativePath="..\src\nonstationaryoptcsolver.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\paramtriainit.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\spacepreconditioner.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\spacepreconditionerinit.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\spacetimevanca.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Filter></Filter></Filter>
 		<File RelativePath="..\log\output.log">
 			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File></Files>
 	<Globals/></VisualStudioProject>

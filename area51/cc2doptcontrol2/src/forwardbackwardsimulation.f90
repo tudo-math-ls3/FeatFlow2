@@ -87,6 +87,7 @@ module forwardbackwardsimulation
   ! Include main structures; used for matrix assembly!
   use constantsoptc
   use assemblytemplates
+  use assemblytemplatesoptc
   use structuresoptc
   
   use structuresoptflow
@@ -354,6 +355,9 @@ module forwardbackwardsimulation
     
     ! A pointer to a hierarchy of space assembly template structures.
     type(t_staticSpaceAsmHierarchy), pointer :: p_rspaceAsmTemplHier => null()
+
+    ! A pointer to a hierarchy of space assembly template structures.
+    type(t_staticSpaceAsmHierarchyOptC), pointer :: p_rspaceAsmTemplHierOptC => null()
     
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer :: p_rsolverNode => null()
@@ -677,7 +681,7 @@ contains
     ! into the Adaptive-Newton configuration block.
     
     call parlst_getvalue_string (rparamList, sname, &
-                                'spreconditionerAdaptiveNewton', sstring, '')
+        'spreconditionerAdaptiveNewton', sstring, "",bdequote=.true.)
     snewton = ''
     if (sstring .ne. '') read (sstring,*) snewton
     if (snewton .ne. '') then
@@ -781,7 +785,8 @@ contains
           rsimsolver%rnonlinearIteration)
 
       ! Get the section defining the linear solver.
-      call parlst_getvalue_string (rparlist, ssection,"slinearSolver", ssectionLinSol, "CC-LINEARSOLVER")
+      call parlst_getvalue_string (rparlist, ssection,"slinearSolver", &
+          ssectionLinSol, "CC-LINEARSOLVER",bdequote=.true.)
 
     case (FBSIM_SOLVER_LINFORWARD)
       cspace = CCSPACE_PRIMAL
@@ -985,6 +990,7 @@ contains
     rpreconditioner%NLMIN = nlmin
     rpreconditioner%NLMAX = nlmax
     rpreconditioner%p_rspaceAsmTemplHier => rsettings%rspaceAsmHierarchy
+    rpreconditioner%p_rspaceAsmTemplHierOptC => rsettings%rspaceAsmHierarchyOptC
     
     rpreconditioner%cspace = cspace
     
@@ -1114,13 +1120,12 @@ contains
       rpreconditioner%ismootherType = ismootherType
       rpreconditioner%icoarseGridSolverType = icoarseGridSolverType
 
-      call parlst_getvalue_string (p_rsection, 'ssolverSection', sstring,'')
-      read (sstring,*) ssolverSection
-      call parlst_getvalue_string (p_rsection, 'ssmootherSection', sstring,'')
-      read (sstring,*) ssmootherSection
-      call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', sstring,'')
-      read (sstring,*) scoarseGridSolverSection
-      
+      call parlst_getvalue_string (p_rsection, 'ssolverSection', ssolverSection,&
+          "",bdequote=.true.)
+      call parlst_getvalue_string (p_rsection, 'ssmootherSection', ssmootherSection,&
+          "",bdequote=.true.)
+      call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', &
+          scoarseGridSolverSection,"",bdequote=.true.)
       
       ! Which type of solver do we have?
       
@@ -1187,7 +1192,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-              'spreconditionerSection', sstring, '')
+              'spreconditionerSection', sstring, "",bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)
@@ -1217,7 +1222,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-              'spreconditionerSection', sstring, '')
+              'spreconditionerSection', sstring, "", bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)
@@ -1247,7 +1252,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
+            'spreconditionerSection', sstring, "", bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)
@@ -1277,7 +1282,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
+            'spreconditionerSection', sstring, "", bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)
@@ -1307,7 +1312,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
+            'spreconditionerSection', sstring, "", bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)
@@ -1335,7 +1340,7 @@ contains
           end select
           
           call parlst_getvalue_string (rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
+            'spreconditionerSection', sstring, "", bdequote=.true.)
           read (sstring,*) spreconditionerSection
           call linsolinit_initParams (p_rpreconditioner,rparamList,&
               spreconditionerSection,LINSOL_ALG_UNDEFINED)

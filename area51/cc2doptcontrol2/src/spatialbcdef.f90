@@ -240,7 +240,7 @@ contains
     ! specified section.
     do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
     
-      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, "", i)
       
       ! Get the type and decide on the identifier how to save the expression.
       read(cstr,*) cname,ityp

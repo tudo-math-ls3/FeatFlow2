@@ -1,10 +1,3 @@
-# ------------------------------------------------------------------------
-# Linear solver
-#
-# This file contains parameters that configure the behavious of
-# the linear sub-solver for CCxD.
-# ------------------------------------------------------------------------
-
 # ========================================================================
 # The following section defines the configuration of the linear solver,
 # which is used as preconditioner in each nonlinear iteration.

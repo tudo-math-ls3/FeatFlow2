@@ -125,6 +125,7 @@ module spacematvecassembly
   
   use constantsoptc
   use assemblytemplates
+  use assemblytemplatesoptc
   use structuresoptc
   
   use structuresoptflow
@@ -276,6 +277,9 @@ module spacematvecassembly
     
     ! Assembly template data on that level.
     type(t_staticSpaceAsmTemplates), pointer :: p_rstaticAsmTemplates => null()
+
+    ! Assembly template data on that level for the optimal control problem.
+    type(t_staticSpaceAsmTemplatesOptC), pointer :: p_rstaticAsmTemplatesOptC => null()
 
   end type
 
@@ -458,6 +462,9 @@ contains
     rdiscrData%p_rstaticAsmTemplates => &
         rsettings%rspaceAsmHierarchy%p_RasmTemplList(ilevel)
 
+    rdiscrData%p_rstaticAsmTemplatesOptC => &
+        rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ilevel)
+
   end subroutine
   
   ! ***************************************************************************
@@ -516,7 +523,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_nonlinMatrixSetNonlinearity (rnonlinearSpatialMatrix,rnonlinearity)
+  subroutine smva_nonlinMatrixSetNonlin (rnonlinearSpatialMatrix,rnonlinearity)
 
 !<description>
   ! Defines the nonlinearity of a nonlinear matrix. Allows to change the
@@ -1194,7 +1201,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ1)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1202,7 +1209,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ1)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1210,7 +1217,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
               rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ1)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)      
         end select
 
         ! Reintegrate the computed matrix
@@ -1262,7 +1269,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ2)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
         case (2)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1270,7 +1277,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ2)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
         case (3)
           call assembleConvection (&
               rnonlinearSpatialMatrix,rtempMatrix,&
@@ -1278,7 +1285,7 @@ contains
               rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
               rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
               rnonlinearSpatialMatrix%rdiscrData%rstabilDual,&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ2)      
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)      
         end select
 
         ! Reintegrate the computed matrix
@@ -1913,15 +1920,17 @@ contains
         ! Plug in the Stokes matrix?
         if (dtheta .ne. 0.0_DP) then
           call lsyssc_matrixLinearComb (&
-              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
-              dtheta,rmatrix%RmatrixBlock(1,1),1.0_DP,&
+              rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
+              rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,&
+              rmatrix%RmatrixBlock(1,1),1.0_DP,&
               rmatrix%RmatrixBlock(1,1),&
               .false.,.false.,.true.,.true.)
               
           if (.not. bshared) then
             call lsyssc_matrixLinearComb (&
-                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
-                dtheta,rmatrix%RmatrixBlock(2,2),1.0_DP,&
+                rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace,&
+                rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu * dtheta,&
+                rmatrix%RmatrixBlock(2,2),1.0_DP,&
                 rmatrix%RmatrixBlock(2,2),&
                 .false.,.false.,.true.,.true.)
           end if
@@ -2816,26 +2825,30 @@ contains
       !    (                            ) 
       if (rnonlinearSpatialMatrix%Dtheta(1,1) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes, &
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(1), rd%RvectorBlock(1), &
-            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            1.0_DP)
 
         call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes, &
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(2), rd%RvectorBlock(2), &
-            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dtheta(1,1)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            1.0_DP)
       end if
             
       if (rnonlinearSpatialMatrix%Dtheta(2,2) .ne. 0.0_DP) then
         call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes, &
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(4), rd%RvectorBlock(4), &
-            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            1.0_DP)
 
         call lsyssc_scalarMatVec (&
-            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes, &
+            rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixLaplace, &
             rx%RvectorBlock(5), rd%RvectorBlock(5), &
-            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx, 1.0_DP)
+            -rnonlinearSpatialMatrix%Dtheta(2,2)*dcx*rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu,&
+            1.0_DP)
       end if
       
       ! ---------------------------------------------------
@@ -2956,16 +2969,16 @@ contains
       ! The matrix does not need any entries, we only need the structure.
       call lsysbl_createMatBlockByDiscr (rvelDiscr,rtempMatrix)
       call lsyssc_duplicateMatrix (&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
           rtempMatrix%RmatrixBlock(1,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       call lsyssc_duplicateMatrix (&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,&
           rtempMatrix%RmatrixBlock(1,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       call lsyssc_duplicateMatrix (&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,&
           rtempMatrix%RmatrixBlock(2,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
       call lsyssc_duplicateMatrix (&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixStokes,&
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixTemplateFEM,&
           rtempMatrix%RmatrixBlock(2,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_REMOVE)
 
       ! 1.) Primal equation, y*grad(.), probably + grad(.)*y
@@ -2985,7 +2998,7 @@ contains
           rnonlinearSpatialMatrix%Dgamma(1,1),rnonlinearSpatialMatrix%DgammaT(1,1),&
           rnonlinearSpatialMatrix%Dnewton(1,1),rnonlinearSpatialMatrix%DnewtonT(1,1),&
           rnonlinearSpatialMatrix%rdiscrData%rstabilPrimal,dcx,&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ1)    
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ1)    
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)
@@ -3007,7 +3020,7 @@ contains
           rnonlinearSpatialMatrix%Dgamma(2,2),rnonlinearSpatialMatrix%DgammaT(2,2),&
           rnonlinearSpatialMatrix%Dnewton(2,2),rnonlinearSpatialMatrix%DnewtonT(2,2),&
           rnonlinearSpatialMatrix%rdiscrData%rstabilDual,dcx,&
-          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixEOJ2)    
+          rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplatesOptC%rmatrixEOJ2)    
       
       call lsysbl_releaseVector (rtempVectorX)
       call lsysbl_releaseVector (rtempVectorB)

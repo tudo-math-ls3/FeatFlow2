@@ -62,6 +62,8 @@ module initsolver
   use structuresoptcspacetimenlsol
   use structuresoptflow
   
+  use structuresmain
+  
   use spacediscretisation
   
   use spatialbcdef
@@ -95,16 +97,20 @@ contains
 
 !<subroutine>
 
-  subroutine init_initStandardSolver (rparlist,rsettings,rnlstsolver,rpostproc,rrhs,ioutputLevel)
+  subroutine init_initStandardSolver (rparlist,rsettings,&
+      rsettingsSolver,rnlstsolver,rpostproc,rrhs,ioutputLevel)
   
 !<description>
-  ! Reads standard information from the DAT file and initialises rsettings.
+  ! Reads standard information from the DAT file and initialises rsettingsSolver.
 !</description>
   
 !<input>
   ! Parameter list
   type(t_parlist), intent(in), target :: rparlist
   
+  ! Basic program settings
+  type(t_settings_main), intent(in) :: rsettings
+
   ! Amount of output during the initialisation.
   ! =0: no output. =1: basic output.
   integer, intent(in) :: ioutputLevel
@@ -112,7 +118,7 @@ contains
   
 !<output>
   ! Settings structure for the optimal control solver.
-  type(t_settings_optflow), intent(out), target :: rsettings
+  type(t_settings_optflow), intent(out), target :: rsettingsSolver
   
   ! Nonlinear space-time solver structure configuring the solver.
   type(t_nlstsolver), intent(out) :: rnlstsolver
@@ -126,7 +132,7 @@ contains
 
 !</subroutine>
 
-    character(len=SYS_STRLEN) :: sstr
+    character(len=SYS_STRLEN) :: sstr,sstr2
     integer :: nlevels
     type(t_staticSpaceAsmTemplates), pointer :: p_rasmTempl
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -134,7 +140,7 @@ contains
     type(t_matrixBlock) :: rmassMatrix
     
     ! Put refrences to the parameter list to the settings structure.
-    rsettings%p_rparlist => rparlist
+    rsettingsSolver%p_rparlist => rparlist
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -142,33 +148,26 @@ contains
     end if
 
     ! At first, read all debug flags.
-    call init_getDebugFlags (rparlist,"DEBUG",rsettings%rdebugFlags)
+    call init_getDebugFlags (rparlist,rsettings%ssectionDebugFlags,&
+        rsettingsSolver%rdebugFlags)
 
-    ! Initialise the physics parameter that describe the 
-    ! physical equation
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising physics.")
-    end if
-    call init_initPhysics (rparlist,rsettings%rphysicsPrimal,"CC-PHYSICSPRIMAL")
-    
-    ! ... plus the stabilisation that is necessary for the discretisation.
+    ! Read the stabilisation that is necessary for the discretisation.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising stabilisation.")
     end if
     call init_initStabil (rparlist,&
-        rsettings%rstabilPrimal,rsettings%rstabilDual,&
-        "CC-DISCRETISATION")
+        rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual,&
+        rsettings%ssectionDiscrSpace)
     
     ! Now, read the mesh and the domain
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising coarse mesh.")
     end if
-    call init_initParamTria (rparlist,rsettings%rboundary,&
-        rsettings%rtriaCoarse,rsettings%rtimeCoarse,&
-        "PARAMTRIANG","TIME-DISCRETISATION")
+    call init_initParamTria (rparlist,rsettingsSolver%rboundary,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rtimeCoarse,&
+        rsettings%ssectionParamTriang,rsettings%ssectionTimeDiscretisation)
 
     ! Get information about the refinement
     if (ioutputLevel .ge. 1) then
@@ -176,24 +175,24 @@ contains
       call output_line ("Initialising refinement.")
     end if
     call init_getRefinementParams (rparlist,&
-        rsettings%rrefinementSpace,rsettings%rrefinementTime,&
-        "CC-DISCRETISATION","TIME-DISCRETISATION")
+        rsettingsSolver%rrefinementSpace,rsettingsSolver%rrefinementTime,&
+        rsettings%ssectionDiscrSpace,rsettings%ssectionTimeDiscretisation)
 
     ! Generate hierarchies, in space...
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Refining meshes in space.")
     end if
-    call init_initSpaceHierarchy (rsettings%rboundary,rsettings%rrefinementSpace,&
-        rsettings%rtriaCoarse,rsettings%rmeshHierarchy,ioutputlevel)
+    call init_initSpaceHierarchy (rsettingsSolver%rboundary,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rmeshHierarchy,ioutputlevel)
 
     ! and time.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Refining meshes in time.")
     end if
-    call init_initTimeHierarchy (rsettings%rrefinementTime,&
-        rsettings%rtimeCoarse,rsettings%rtimeHierarchy,ioutputlevel)
+    call init_initTimeHierarchy (rsettingsSolver%rrefinementTime,&
+        rsettingsSolver%rtimeCoarse,rsettingsSolver%rtimeHierarchy,ioutputlevel)
 
     ! We now have all space and time meshes and their hierarchies.
     ! Now it is time to generate the discretisation structures that define
@@ -202,77 +201,34 @@ contains
       call output_lbrk()
       call output_line ("Initialising space discretisation hierarchy.")
     end if
-    call init_initSpaceDiscrHier (rparlist,"CC-DISCRETISATION",rsettings%rboundary,&
-        rsettings%rmeshHierarchy,rsettings,ioutputLevel)
+    call init_initSpaceDiscrHier (rparlist,rsettings%ssectionDiscrSpace,&
+        rsettingsSolver%rboundary,rsettingsSolver%rmeshHierarchy,&
+        rsettingsSolver,ioutputLevel)
         
     ! Create interlevel projection structures for prlongation/restriction in space.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising projection hierarchy.")
     end if
-    call init_initSpacePrjHierarchy (rsettings%rprjHierSpacePrimal,&
-        rsettings%rfeHierPrimal,rparlist,"CC-PROLREST")
-    call init_initSpacePrjHierarchy (rsettings%rprjHierSpacePrimalDual,&
-        rsettings%rfeHierPrimalDual,rparlist,"CC-PROLREST")
+    call init_initSpacePrjHierarchy (rsettingsSolver%rprjHierSpacePrimal,&
+        rsettingsSolver%rfeHierPrimal,rparlist,rsettings%ssectionProlRestSpace)
+    call init_initSpacePrjHierarchy (rsettingsSolver%rprjHierSpacePrimalDual,&
+        rsettingsSolver%rfeHierPrimalDual,rparlist,rsettings%ssectionProlRestSpace)
 
-    ! Ok, now we can initialise the Optimal-Control settings, read in the
-    ! target flow etc.
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising optimal control parameters.")
-    end if
-    call init_initOptControl (rparlist,"OPTIMALCONTROL","CC-DISCRETISATION",&
-        rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-        rsettings%rfeHierPrimal,rsettings%rtimeHierarchy,&
-        rsettings%rboundary,rsettings%rsettingsOptControl)
-
-    ! Initialise the initial condition and RHS.
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising initial condition.")
-    end if
-    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
-        "sinitialCondition",sstr,"INITIALCONDITION")
-    call init_initFlow (rparlist,sstr,rsettings%rinitialCondition,&
-        "CC-DISCRETISATION",rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-        rsettings%rfeHierPrimal,rsettings%rboundary,&
-        rsettings%rtimeHierarchy%dtimeInit,rsettings%rtimeHierarchy%dtimeMax)
-
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising RHS.")
-    end if
-    call parlst_getvalue_string (rparlist,"CC-DISCRETISATION",&
-        "srhs",sstr,"RIGHTHANDSIDE")
-    call init_initFlow (rparlist,sstr,rrhs,&
-        "CC-DISCRETISATION",rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-        rsettings%rfeHierPrimal,rsettings%rboundary,&
-        rsettings%rtimeHierarchy%dtimeInit,rsettings%rtimeHierarchy%dtimeMax)
-       
-    ! Init+Allocate memory for the matrices on all levels and create all 
-    ! static matrices.
-    if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising template matrices.")
-    end if
-    call inmat_initStaticAsmTemplHier (rsettings%rspaceAsmHierarchy,&
-        rsettings%rfeHierPrimal,rsettings%rfeHierMass,&
-        rsettings%rstabilPrimal,rsettings%rstabilDual)
-        
     ! Initialise the underlying space-time hierarchies of the solver.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising space-time hierarchy.")
     end if
     call init_initSpaceTimeHierarchy (rparlist,"SPACETIME-REFINEMENT",&
-        rsettings%rrefinementSpace,rsettings%rrefinementTime,&
-        rsettings%rfeHierPrimal,rsettings%rfeHierPrimalDual,&
-        rsettings%rtimeHierarchy,&
-        rsettings%rspaceTimeHierPrimal,rsettings%rspaceTimeHierPrimalDual)    
+        rsettingsSolver%rrefinementSpace,rsettingsSolver%rrefinementTime,&
+        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rfeHierPrimalDual,&
+        rsettingsSolver%rtimeHierarchy,&
+        rsettingsSolver%rspaceTimeHierPrimal,rsettingsSolver%rspaceTimeHierPrimalDual)    
     if (ioutputLevel .ge. 2) then
       call output_line("Space-time hierarchy statistics:")
       call output_lbrk()
-      call sth_printHierStatistics(rsettings%rspaceTimeHierPrimalDual)
+      call sth_printHierStatistics(rsettingsSolver%rspaceTimeHierPrimalDual)
     end if
         
     ! Initialise the space-time interlevel projection structures
@@ -280,60 +236,139 @@ contains
       call output_lbrk()
       call output_line ("Initialising space-time projection operators.")
     end if
-    call init_initSpaceTimePrjHierarchy (rsettings%rprjHierSpaceTimePrimal,&
-        rsettings%rtimeCoarse,rsettings%rspaceTimeHierPrimal,&
-        rsettings%rprjHierSpacePrimal,rparlist,"TIME-DISCRETISATION")
-    call init_initSpaceTimePrjHierarchy (rsettings%rprjHierSpaceTimePrimalDual,&
-        rsettings%rtimeCoarse,rsettings%rspaceTimeHierPrimalDual,&
-        rsettings%rprjHierSpacePrimalDual,rparlist,"TIME-DISCRETISATION")
+    call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimal,&
+        rsettingsSolver%rtimeCoarse,rsettingsSolver%rspaceTimeHierPrimal,&
+        rsettingsSolver%rprjHierSpacePrimal,rparlist,rsettings%ssectionTimeDiscretisation)
+    call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimalDual,&
+        rsettingsSolver%rtimeCoarse,rsettingsSolver%rspaceTimeHierPrimalDual,&
+        rsettingsSolver%rprjHierSpacePrimalDual,rparlist,rsettings%ssectionTimeDiscretisation)
         
-    ! Get the discretisation of the maximum level.
-    p_rtimeDiscr => rsettings%rtimeHierarchy%p_rtimeLevels(rsettings%rtimeHierarchy%nlevels)
-    p_rfeSpacePrimalDual => rsettings%rfeHierPrimalDual% &
-        p_rfeSpaces(rsettings%rfeHierPrimalDual%nlevels)
-
-    ! Get the boudary conditions.
+    ! Init+Allocate memory for the matrices on all levels and create all 
+    ! static matrices.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
-      call output_line ("Initialising boundary conditions.")
+      call output_line ("Initialising template matrices.")
     end if
-    call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,SEC_SBDCONDITIONS,&
-        rsettings%roptcBDC)
+    call inmat_initStaticAsmTemplHier (rsettingsSolver%rspaceAsmHierarchy,&
+        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rfeHierMass,&
+        rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual)
 
-    ! Initialise the postprocessing
+    ! Calculate template matrices, independent of the physics
     if (ioutputLevel .ge. 1) then
-      call output_lbrk()
-      call output_line ("Initialising postprocessing.")
+      call output_line ("Calculating template matrices.")
+      call output_line ("Level: [",bnoLineBreak=.true.)
     end if
-    call init_initPostprocessing (rparlist,"TIME-POSTPROCESSING","CC-DISCRETISATION",&
-        rsettings%roptcBDC,p_rtimeDiscr,p_rfeSpacePrimalDual%p_rdiscretisation,&
-        rpostproc,rsettings)
+    
+    call inmat_calcStaticLevelAsmHier (rsettingsSolver%rspaceAsmHierarchy,&
+        rsettingsSolver,ioutputlevel .ge. 1)
+
+    if (ioutputLevel .ge. 1) then
+      call output_line ("]")
+    end if
 
     ! Initialise the nonlinear solver
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising nonlinear space-time solver.")
     end if
-    call init_initNlSpaceTimeSolver (rsettings,rparlist,"TIME-SOLVER",rsettings%rtimeCoarse,&
+    call init_initNlSpaceTimeSolver (rsettingsSolver,rparlist,&
+        rsettings%ssectionSpaceTimeSolver,rsettingsSolver%rtimeCoarse,&
         rnlstsolver)
+
+    ! Get the boudary conditions.
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising boundary conditions.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionBoundaryExpressions",sstr,bdequote=.true.)
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionBoundaryConditions",sstr2,bdequote=.true.)
+    call init_initBoundaryConditions (rparlist,sstr,sstr2,&
+        rsettingsSolver%roptcBDC)
+
+    ! Initialise the physics parameter that describe the 
+    ! physical equation
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising physics.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "ssectionPhysics",sstr,bdequote=.true.)
+    call init_initPhysics (rparlist,rsettingsSolver%rphysicsPrimal,sstr)
+
+    ! Ok, now we can initialise the Optimal-Control settings, read in the
+    ! target flow etc.
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising optimal control parameters.")
+    end if
+    call init_initOptControl (rparlist,rsettings%ssectionOptControl,&
+        rsettings%ssectionDiscrSpace,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
+        rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
+
+    ! Initialise the initial condition and RHS.
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising initial condition.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "sinitialCondition",sstr,bdequote=.true.)
+    call init_initFlow (rparlist,sstr,rsettingsSolver%rinitialCondition,&
+        rsettings%ssectionDiscrSpace,rsettingsSolver%rtriaCoarse,&
+        rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+        rsettingsSolver%rtimeHierarchy%dtimeInit,rsettingsSolver%rtimeHierarchy%dtimeMax)
+
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising RHS.")
+    end if
+    call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
+        "srhs",sstr,bdequote=.true.)
+    call init_initFlow (rparlist,sstr,rrhs,rsettings%ssectionDiscrSpace,&
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+        rsettingsSolver%rtimeHierarchy%dtimeInit,rsettingsSolver%rtimeHierarchy%dtimeMax)
+       
+    ! Get the discretisation of the maximum level.
+    p_rtimeDiscr => &
+        rsettingsSolver%rtimeHierarchy%p_rtimeLevels(rsettingsSolver%rtimeHierarchy%nlevels)
+    p_rfeSpacePrimalDual => rsettingsSolver%rfeHierPrimalDual% &
+        p_rfeSpaces(rsettingsSolver%rfeHierPrimalDual%nlevels)
+
+    ! Initialise the postprocessing
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising postprocessing.")
+    end if
+    call init_initPostprocessing (rparlist,rsettings%ssectionSpaceTimePostprocessing,&
+        rsettings%ssectionDiscrSpace,rsettingsSolver%roptcBDC,&
+        p_rtimeDiscr,p_rfeSpacePrimalDual%p_rdiscretisation,&
+        rpostproc,rsettingsSolver)
 
     ! Call the first user defined init routine to fetch parameters from
     ! the settings structure to the global data structure.
     ! From that point on, we can call assembly routines that use callback
     ! routines.
-    call user_initGlobalData (rsettings,rrhs,rsettings%rglobalData)
+    call user_initGlobalData (rsettingsSolver,rrhs,rsettingsSolver%rglobalData)
 
     ! Now we calculate all assembly template data.
     !
-    ! Calculate
     if (ioutputLevel .ge. 1) then
-      call output_line ("Calculating template matrices.")
+      call output_line ("Calculating template optimal control matrices.")
       call output_line ("Level: [",bnoLineBreak=.true.)
     end if
     
-    call inmat_calcStaticLevelAsmHier (rsettings%rspaceAsmHierarchy,&
-        rsettings%rphysicsPrimal,rsettings%rstabilPrimal,rsettings%rstabilDual,&
-        rsettings,ioutputlevel .ge. 1)
+    call inmat_initStaticTemplHierOptC (rsettingsSolver%rspaceAsmHierarchyOptC,&
+        rsettingsSolver%rfeHierPrimal)
+    
+    call inmat_calcStaticLvlAsmHierOptC (rsettingsSolver%rspaceAsmHierarchy,&
+        rsettingsSolver%rspaceAsmHierarchyOptC,rsettingsSolver%rphysicsPrimal,&
+        rsettingsSolver%rstabilPrimal,rsettingsSolver%rstabilDual,&
+        rsettingsSolver,ioutputlevel .ge. 1)
 
     if (ioutputLevel .ge. 1) then
       call output_line ("]")
@@ -385,6 +420,7 @@ contains
     call sth_doneHierarchy(rsettings%rspaceTimeHierPrimal)
 
     ! Release all matrices.
+    call inmat_doneStaticTemplHierOptC(rsettings%rspaceAsmHierarchyOptC)
     call inmat_doneStaticAsmTemplHier(rsettings%rspaceAsmHierarchy)
 
     ! Release the initial condition / RHS
@@ -550,14 +586,12 @@ contains
 !</output>
 
 !</subroutine>
-    character(len=SYS_STRLEN) :: sstr
 
     ! Get the parameters
     call parlst_getvalue_int (rparlist, ssection, &
         'ioutputUCD', rpostprocessing%ioutputUCD)
     call parlst_getvalue_string (rparlist, ssection, &
-        'sfilenameUCD', sstr)
-    read(sstr,*) rpostprocessing%sfilenameUCD
+        'sfilenameUCD', rpostprocessing%sfilenameUCD,"",bdequote=.true.)
 
   end subroutine
   
@@ -600,7 +634,6 @@ contains
   integer :: imeshType,ncellsX
   
     ! Variable for a filename:  
-    character(LEN=256) :: sString
     character(LEN=60) :: sPRMFile, sTRIFile
     
     integer :: niterations
@@ -613,12 +646,12 @@ contains
     ! Get the .prm and the .tri file from the parameter list.
     ! note that parlst_getvalue_string returns us exactly what stands
     ! in the parameter file, so we have to apply READ to get rid of
-    ! probable ''!
-    call parlst_getvalue_string (rparlist,ssectionSpace,'sParametrisation',sString)
-    read (sString,*) sPRMFile
+    ! probable ""!
+    call parlst_getvalue_string (rparlist,ssectionSpace,'sParametrisation',&
+        sPRMFile,bdequote=.true.)
                               
-    call parlst_getvalue_string (rparlist,ssectionSpace,'sMesh',sString)
-    read (sString,*) sTRIFile
+    call parlst_getvalue_string (rparlist,ssectionSpace,'sMesh',&
+        sTRIFile,bdequote=.true.)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
     call boundary_read_prm(rboundary, sPrmFile)
@@ -941,24 +974,24 @@ contains
     call parlst_getvalue_int (rparlist,ssectionDiscr,&
                               'ielementType',rcollection%IquickAccess(1),3)
                               
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubStokes',sstr,'')
-    if (sstr .eq. '') then
+    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubStokes',sstr,"")
+    if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssectionDiscr,&
           'icubStokes',rcollection%IquickAccess(3),int(SPDISC_CUB_AUTOMATIC))
     else
       rcollection%IquickAccess(3) = cub_igetID(sstr)
     end if
 
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubB',sstr,'')
-    if (sstr .eq. '') then
+    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubB',sstr,"")
+    if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssectionDiscr,&
           'icubB',rcollection%IquickAccess(4),int(SPDISC_CUB_AUTOMATIC))
     else
       rcollection%IquickAccess(4) = cub_igetID(sstr)
     end if
 
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubF',sstr,'')
-    if (sstr .eq. '') then
+    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubF',sstr,"")
+    if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssectionDiscr,&
           'icubF',rcollection%IquickAccess(5),int(SPDISC_CUB_AUTOMATIC))
     else
@@ -984,8 +1017,8 @@ contains
         rsettings%rfeHierMass,1,3)
 
     ! Which cubature rule to use for mass matrices?
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubMass',sstr,'')
-    if (sstr .eq. '') then
+    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubMass',sstr,"")
+    if (sstr .eq. "") then
       call parlst_getvalue_int (rparlist,ssectionDiscr,&
           'icubM',icubM,int(SPDISC_CUB_AUTOMATIC))
     else
@@ -1329,7 +1362,7 @@ contains
 
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        'stargetFlow',sstr,'OPTCTARGETFLOW')
+        'stargetFlow',sstr,'OPTCTARGETFLOW',bdequote=.true.)
     call init_initFlow (rparlist,sstr,roptcontrol%rtargetFlow,&
         ssectionDiscr,rtriaCoarse,rrefinementSpace,rfeHierPrimal,rboundary,&
         rtimeHierarchy%dtimeInit,rtimeHierarchy%dtimeMax)
@@ -1426,28 +1459,22 @@ contains
 
     ! Read some more parameters, we may need them.
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY1',sstr,'''''')
-    read(sstr,*) Sexpressions(1)
+        'sflowExpressionY1',Sexpressions(1),"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY2',sstr,'''''')
-    read(sstr,*) Sexpressions(2)
+        'sflowExpressionY2',Sexpressions(2),"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionP',sstr,'''''')
-    read(sstr,*) Sexpressions(3)
+        'sflowExpressionP',Sexpressions(3),"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL1',sstr,'''''')
-    read(sstr,*) Sexpressions(4)
+        'sflowExpressionL1',Sexpressions(4),"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL2',sstr,'''''')
-    read(sstr,*) Sexpressions(5)
+        'sflowExpressionL2',Sexpressions(5),"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionXi',sstr,'''''')
-    read(sstr,*) Sexpressions(6)
+        'sflowExpressionXi',Sexpressions(6),"",bdequote=.true.)
     
     ! Id, level, element type
 
@@ -1463,12 +1490,10 @@ contains
     ! Mesh, the flow diles
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'smesh',spar,'''''')
-    read(spar,*) smesh
+        'smesh',smesh,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowFile',spar,'''''')
-    read(spar,*) sflowFile
+        'sflowFile',sflowFile,"",bdequote=.true.)
 
     ! Time discretisation
 
@@ -1612,7 +1637,7 @@ contains
       ! Read nonstationary flow from hard disc
       call ansol_configNonstationaryFile (rflow, &
           dstartTime,dendTime,ntimesteps,&
-          '('''//trim(sflowfile)//'.'',I5.5)',&
+          '(""'//trim(sflowfile)//'."",I5.5)',&
           0,idelta,.true.)
           
     end select
@@ -1923,9 +1948,8 @@ contains
         'cumfpackWriteMatrix',rdebugFlags%cumfpackWriteMatrix,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sumfpackMatrixFilename',sstr,"'./matrix.txt'")
-
-    read (sstr,*) rdebugFlags%sumfpackMatrixFilename
+        'sumfpackMatrixFilename',rdebugFlags%sumfpackMatrixFilename,&
+        "./matrix.txt",bdequote=.true.)
 
   end subroutine
 
@@ -1985,10 +2009,12 @@ contains
       
       ! Get the section with the parameters
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionSingleGridSolver',sstrSgrSolver,"TIME-SINGLEGRIDSOLVER")
+          'ssectionSingleGridSolver',sstrSgrSolver,&
+          "TIME-SINGLEGRIDSOLVER",bdequote=.true.)
           
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionSinglePreconditioner',sstrSgrPrecond,"TIME-SINGLEGRIDPRECOND")
+          'ssectionSinglePreconditioner',sstrSgrPrecond,&
+          "TIME-SINGLEGRIDPRECOND",bdequote=.true.)
           
       ! Get the parameters from that subsection. This configures the solver.
       call init_getParamsPrec_sgrsolver (rparlist,sstrSgrSolver,&
@@ -2004,19 +2030,22 @@ contains
     
       ! Get the section with the parameters
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionMultigrid',sstr,"TIME-MULTIGRID")
+          'ssectionMultigrid',sstr,"TIME-MULTIGRID",bdequote=.true.)
           
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionSmoother',sstrSmoother,"TIME-SMOOTHER")
+          'ssectionSmoother',sstrSmoother,"TIME-SMOOTHER",bdequote=.true.)
 
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionSmootherPrecond',sstrSmootherPrec,"TIME-SMOOTHERPRECOND")
+          'ssectionSmootherPrecond',sstrSmootherPrec,&
+          "TIME-SMOOTHERPRECOND",bdequote=.true.)
           
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionCgrSolver',sstrSgrSolver,"TIME-SINGLEGRIDSOLVER")
+          'ssectionCgrSolver',sstrSgrSolver,&
+          "TIME-SINGLEGRIDSOLVER",bdequote=.true.)
           
       call parlst_getvalue_string (rparlist,ssection,&
-          'ssectionCgrPreconditioner',sstrSgrPrecond,"TIME-SINGLEGRIDPRECOND")
+          'ssectionCgrPreconditioner',sstrSgrPrecond,&
+          "TIME-SINGLEGRIDPRECOND",bdequote=.true.)
           
       ! Get the parameters from that subsections.
       call cc_getParamsPrec_mgsolver (rparlist,&
@@ -2195,7 +2224,7 @@ contains
     ! Probably there is a linear subsolver. Get the name with the section
     ! configuring it.
     call parlst_getvalue_string (rparlist, ssection, &
-        'slinearSolver', rparams%slinearSpaceSolver, "")
+        'slinearSolver', rparams%slinearSpaceSolver, "",bdequote=.true.)
 
   end subroutine
 
@@ -2329,7 +2358,7 @@ contains
     ! Probably there is a linear subsolver. Get the name with the section
     ! configuring it.
     call parlst_getvalue_string (rparlist, ssection, &
-        'slinearSolver', rparams%slinearSpaceSolver, "")
+        'slinearSolver', rparams%slinearSpaceSolver, "",bdequote=.true.)
         
     ! Remember the parameter list, it contains additional parameters
     ! about the linear solver in space.
@@ -2397,16 +2426,18 @@ contains
         'ctypeStartVector', ctypeStartVector, 0)
 
     call parlst_getvalue_string (rparlist, ssection, &
-        'sstartVector', sstartVector, "")
+        'sstartVector', sstartVector, "",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist, ssection, &
-        'sstartVectorSolver', sstartVectorSolver, "CC-NONLINEAR")
+        'sstartVectorSolver', sstartVectorSolver, "CC-NONLINEAR",bdequote=.true.)
         
     call parlst_getvalue_string (rparlist, ssection, &
-        'sstartVectorBoundaryConditions', sstartVectorBoundaryConditions, "BDCONDITIONS")
+        'sstartVectorBoundaryConditions', sstartVectorBoundaryConditions,&
+        "BDCONDITIONS",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist, ssection, &
-        'sstartVectorPostprocessing', sstartVectorPostprocessing, "")
+        'sstartVectorPostprocessing', sstartVectorPostprocessing, &
+        "",bdequote=.true.)
         
     ! Create a temp vector in space in the form of the space-time
     ! vector.
@@ -2572,17 +2603,14 @@ contains
         'icalcFunctionalValues',rpostproc%icalcFunctionalValues,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfilenameUCD',sstr,"''")
-    
-    read(sstr,*) rpostproc%sfilenameUCD
+        'sfilenameUCD',rpostproc%sfilenameUCD,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfinalSolutionFileName',sstr,"''")
-    
-    read(sstr,*) rpostproc%sfinalSolutionFileName
+        'sfinalSolutionFileName',rpostproc%sfinalSolutionFileName,&
+        "",bdequote=.true.)
     
     call parlst_getvalue_string (rparlist,ssection,&
-        'ssectionReferenceFunction',sstr,"")
+        'ssectionReferenceFunction',sstr,"",bdequote=.true.)
     
     if (sstr .eq. "") &
         rpostproc%icalcError = 0

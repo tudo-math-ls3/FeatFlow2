@@ -4426,7 +4426,7 @@ contains
       if (ntimesteps .eq. 0) return
     
       neq = dof_igetNDofGlobBlock(rsupermatrix%rdiscrData%p_rspaceDiscr)
-      ivelSize = 2 * rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixStokes%NEQ
+      ivelSize = 2 * rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEM%NEQ
       ipSize = rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixB1%NCOLS
     
       ! Create an array containing all the rows where a unit vector is to be
@@ -4527,7 +4527,7 @@ contains
 
     neq = dof_igetNDofGlobBlock(rsupermatrix%rdiscrData%p_rspaceDiscr)
     neqtime = tdiscr_igetNDofGlob(rsupermatrix%rdiscrData%p_rtimeDiscr)
-    ivelSize = 2 * rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixStokes%NEQ
+    ivelSize = 2 * rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEM%NEQ
     ipSize = rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixB1%NCOLS
    
     ! Create a global matrix:

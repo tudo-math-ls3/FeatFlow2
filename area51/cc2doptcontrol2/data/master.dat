@@ -1,12 +1,16 @@
-simportdatafiles(8) = 
+simportdatafiles(12) = 
+  "main.dat"
+  "bdconditions.dat"
   "discretisation.dat"
+  "flows.dat"
   "linsol.dat"
+  "forwardsolver.dat"
+  "optcontrol.dat"
   "output.dat"
   "paramtriang.dat"
-  "bdconditions.dat"
-  "timediscr.dat"
-  "nonlinsol.dat"
   "postprocessing.dat"
+  "spacetimesolver.dat"
+  "timediscr.dat"
 
 #######################################
 # DC configuration
@@ -660,8 +664,8 @@ icalcError = 1
 nminIterations         = 1
 nmaxIterations         = 100
 depsRel                = 1E-13 #1E-8
-cpreconditioner        = 2
-ctypeNonlinearIteration = 3
+cpreconditioner        = 1
+ctypeNonlinearIteration = 2
 ioutputLevel=2
 
 [SPACETIME-REFINEMENT]
@@ -672,11 +676,11 @@ nmaxIterations     = 100
 depsRel            = 1E-2
 
 [TIME-SMOOTHER]
-cspaceTimeSmoother = 1
+cspaceTimeSmoother = 4
 domega = 1.0
 nsmPre = 0
 nsmPost = 1
-ioutputLevel = 1
+ioutputLevel = 2
 
 [TIME-SMOOTHERPRECOND]
 ioutputLevel = 1
@@ -684,13 +688,13 @@ nmaxIterations = 1
 domega = 1.0
 
 [TIME-SINGLEGRIDSOLVER]
-ctypeSolver = 1
+ctypeSolver = 4
 nmaxIterations = 100
 depsRel = 1E-5
-depsdiff = 1E-6
+depsdiff = 1E-5
 domega = 1.0
 drelax = 0.0
-ioutputlevel = 1
+ioutputlevel = 2
 
 [TIME-SINGLEGRIDPRECOND]
 domega = 1.0
@@ -712,6 +716,7 @@ ioutputlevel=0
 ioutputLevel       = 0
 depsAbs            = 1E-15
 istoppingCriterion = 1
+ioutputlevel = 0
 
 [DEBUG]
 cumfpackWriteMatrix = 0

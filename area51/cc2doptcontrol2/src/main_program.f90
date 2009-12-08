@@ -76,6 +76,8 @@ module main_program
   use structuresoptcspacetimenlsol
   use nonlinearoneshotspacetimesolver
   
+  use structuresmain
+  
   implicit none
 
 !<globals>
@@ -981,7 +983,6 @@ contains
 !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: sstring
 
     ! Init parameter list that accepts parameters for output files
     call parlst_init (rparlist)
@@ -991,12 +992,10 @@ contains
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'')
-    read(sstring,*) slogfile
+        'smsgLog',slogfile,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',sstring,'')
-    read(sstring,*) serrorfile
+        'serrorLog',serrorfile,"",bdequote=.true.)
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -1026,7 +1025,6 @@ contains
     ! local variables
     type(t_parlist) :: rparamList
     logical :: bexists
-    character(SYS_STRLEN) :: sdata
 
     ! Figure out if the file exists.
     inquire(file='./cmdline.dat', exist=bexists)
@@ -1038,8 +1036,7 @@ contains
       
       ! Evaluate parameters
       call parlst_getvalue_string ( &
-          rparamList, '','datdirectory', sdata, DIR_DATA)
-      read(sdata,*) DIR_DATA
+          rparamList, "","datdirectory", DIR_DATA, DIR_DATA,bdequote=.true.)
 
       call parlst_done (rparamList)
       
@@ -1051,7 +1048,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc2doptc_getDAT (rparamList)
+  subroutine main_getDat (rparamList)
   
 !<description>
   ! Reads in all DAT files into the parameter list rparlist
@@ -1080,14 +1077,18 @@ contains
     else
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/main.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/bdconditions.dat')
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/discretisation.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//linsol.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//nonlinsol.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//postprocessing.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//output.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//paramtriang.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//bdconditions.dat')
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'//timediscr.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/flows.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/linsol.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/forwardsolver.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/optcontrol.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/output.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/paramtriang.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/postprocessing.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/spacetimesolver.dat')
+      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/timediscr.dat')
     end if
   
   end subroutine
@@ -1096,7 +1097,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc2doptccalculate
+  subroutine cc2doptccalculate (rsettings,rparlist)
   
 !<description>
   ! This is a 'separated' Navier-Stokes solver for solving a Navier-Stokes
@@ -1120,17 +1121,22 @@ contains
   ! 8.) Release all variables, finish
 !</description>
 
+!<input>
+  ! Basic program settings
+  type(t_settings_main), intent(in) :: rsettings
+  
+  ! Parameter list containing the DAT file parameters
+  type(t_parlist), intent(in) :: rparlist
+!</input>
+
 !</subroutine>
 
     ! Local variables
     !
-    ! A parameter list with all parameters from the DAT files.
-    type(t_parlist), target :: rparlist
-    
     ! The following structure configures our solver.
     ! We allocate this dynamically since the structure may be too large
     ! for the stack.
-    type(t_settings_optflow), pointer :: p_rsettings
+    type(t_settings_optflow), pointer :: p_rsettingsSolver
     
     ! Nonlinear solve structure representing the solver.
     type(t_nlstsolver), pointer :: p_rnlstsolver
@@ -1154,16 +1160,12 @@ contains
     call exstor_init (999,100)
     !CALL exstor_attachDirectory('./ff2storage')
     
-    ! Initialise the parameter list object. This creates an empty parameter list.
-    call parlst_init (rparlist)
-    
-    ! Read parameters from the INI/DAT files into the parameter list. 
-    call cc2doptc_getDAT (rparlist)
-    
     ! Ok, parameters are read in.
     ! Print the parameters to the terminal.
-    call parlst_info (rparlist)
-    call output_separator (OU_SEP_EQUAL)
+    if (rsettings%routput%ioutputInit .ge. 2) then
+      call parlst_info (rparlist)
+      call output_separator (OU_SEP_EQUAL)
+    end if
     
     ! Measure the total time.
     call stat_clearTimer (rtotalTime)
@@ -1171,43 +1173,46 @@ contains
     
     ! Initialise the settings of the solver,
     ! allocate all template matrices etc.
-    allocate(p_rsettings)
+    allocate(p_rsettingsSolver)
     allocate(p_rnlstsolver)
     
     call stat_clearTimer (rinitTime)
     call stat_startTimer (rinitTime)
 
     call output_line ("Initialising solver structures.")
-    call init_initStandardSolver (rparlist,p_rsettings,p_rnlstsolver,rpostproc,rrhs,2)
+    call init_initStandardSolver (rparlist,rsettings,p_rsettingsSolver,p_rnlstsolver,&
+        rpostproc,rrhs,rsettings%routput%ioutputInit)
 
     ! Discretise the RHS according to the time stepping scheme.
     call output_lbrk()
     call output_line ("Discretising RHS.")
     call sptivec_initVector (rrhsdiscrete,&
-        p_rsettings%rtimeHierarchy%p_rtimeLevels(p_rsettings%rtimeHierarchy%nlevels),&
-        p_rsettings%rfeHierPrimalDual% &
-        p_rfeSpaces(p_rsettings%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
+        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
+        p_rsettingsSolver%rfeHierPrimalDual% &
+        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
     call sptivec_clearVector (rrhsdiscrete)
-    call init_discretiseRHS (p_rsettings,rrhs,rrhsDiscrete)
+    call init_discretiseRHS (p_rsettingsSolver,rrhs,rrhsDiscrete)
     
     ! Create a start vector for the solver.
     call output_lbrk()
     call output_line ("Initialising start vector.")
     call sptivec_initVector (rsolution,&
-        p_rsettings%rtimeHierarchy%p_rtimeLevels(p_rsettings%rtimeHierarchy%nlevels),&
-        p_rsettings%rfeHierPrimalDual% &
-        p_rfeSpaces(p_rsettings%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-    call init_initStartVector(p_rsettings,p_rsettings%rspaceTimeHierPrimalDual%nlevels,&
-        rparlist,"CC-DISCRETISATION",p_rsettings%rinitialCondition,rsolution,rrhsdiscrete)
+        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
+        p_rsettingsSolver%rfeHierPrimalDual% &
+        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
+    call init_initStartVector(p_rsettingsSolver,&
+        p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
+        rparlist,rsettings%ssectionSpaceTimePostprocessing,&
+        p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete)
     
     ! Implement the initial condition to the discrete RHS.
-    call init_generateInitCondRHS (p_rsettings,rsolution,rrhsdiscrete)
+    call init_generateInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
 
     ! Create a temp vector    
     call sptivec_initVector (rtemp,&
-        p_rsettings%rtimeHierarchy%p_rtimeLevels(p_rsettings%rtimeHierarchy%nlevels),&
-        p_rsettings%rfeHierPrimalDual% &
-        p_rfeSpaces(p_rsettings%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
+        p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
+        p_rsettingsSolver%rfeHierPrimalDual% &
+        p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
 
     call stat_stopTimer (rinitTime)
 
@@ -1219,7 +1224,7 @@ contains
     ! Solve the system
     call stat_clearTimer (rsolverTime)
     call stat_startTimer (rsolverTime)
-    call nlstslv_solve (p_rsettings,p_rnlstsolver,rpostproc,rsolution,rrhsdiscrete,rtemp)
+    call nlstslv_solve (p_rsettingsSolver,p_rnlstsolver,rpostproc,rsolution,rrhsdiscrete,rtemp)
     call stat_stopTimer (rsolverTime)
     
     call output_separator (OU_SEP_EQUAL)
@@ -1232,8 +1237,7 @@ contains
     call sptivec_releaseVector (rsolution)
     call sptivec_releaseVector (rrhsdiscrete)
     call ansol_done(rrhs)
-    call init_doneStandardSolver (p_rsettings,p_rnlstsolver,rpostproc)
-    call parlst_done (rparlist)
+    call init_doneStandardSolver (p_rsettingsSolver,p_rnlstsolver,rpostproc)
     
     call stat_stopTimer (rtotalTime)
 
@@ -1246,116 +1250,8 @@ contains
         sys_sdL(rtotalTime%delapsedReal,10))
     call output_separator (OU_SEP_EQUAL)
     
-    deallocate(p_rsettings)
+    deallocate(p_rsettingsSolver)
     deallocate(p_rnlstsolver)
-
-!    ! A problem structure for our problem
-!    type(t_problem), pointer :: p_rproblem
-!    
-!    ! An analytic solution identifying the RHS.
-!    ! The ID in this RHS defines the type of the RHS irhs:
-!    ! =-1: given as FE solution in rrhs.
-!    ! = 0: RHS=0.
-!    ! > 0: analytically given by callback function
-!    type(t_anSolution) :: rrhs
-!    
-!    ! Space-time vector that resembles the solution for all timesteps.
-!    type(t_sptivec) :: rvector
-    
-!    ! Allocate memory for the problem; it's rather large.
-!    allocate (p_rproblem)
-!    
-!    ! Initialise the collection
-!    call collct_init (p_rproblem%rcollection)
-
-!    ! Initialise the parameter list object. This creates an empty parameter list.
-!    call parlst_init (p_rproblem%rparamList)
-!    
-!    ! Read parameters from the INI/DAT files into the parameter list. 
-!    call cc2doptc_getDAT (p_rproblem%rparamList)
-!    
-!    ! Ok, parameters are read in.
-!    ! Get the output levels during the initialisation phase and during the program.
-!    call cc_initOutput (p_rproblem)
-!    OU_LINE_LENGTH = 132
-!    
-!    ! Print the parameters 
-!    call parlst_info (p_rproblem%rparamList)
-!    
-!    ! Evaluate these parameters and initialise global data in the problem
-!    ! structure for global access.
-!    call cc_initParameters (p_rproblem)
-!    
-!    do i=1,p_rproblem%NLMAX
-!      call collct_addlevel (p_rproblem%rcollection)
-!    end do
-!    
-!    ! So now the different steps - one after the other.
-!    !
-!    ! Initialisation
-!    call cc_initParamTriang (p_rproblem)
-!    call cc_initDiscretisation (p_rproblem)    
-!    call cc_allocMatVec (p_rproblem)   
-!    
-!    ! Print information about the discretisation
-!    call output_line ('Discretisation statistics:')
-!    call output_line ('--------------------------')
-!    do i=p_rproblem%NLMIN,p_rproblem%NLMAX
-!      call output_lbrk ()
-!      call output_line ('Level '//sys_siL(i,10))
-!      call output_line ('---------')
-!      call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
-!    end do
-!     
-!    ! On all levels, generate the static matrices used as templates
-!    ! for the system matrix (Laplace, B, Mass,...)
-!    call cc_generateBasicMat (p_rproblem)
-!    
-!    ! Set up the basic RHS of the system
-!    call cc_initRHS (p_rproblem,rrhs)
-!    
-!    ! Create a start vector.
-!    call sptivec_initVectorDiscr (rvector,rtimeDiscr,rblockDiscr)
-!
-!    ! Prepare the start vector of the iteration.
-!    call cc_initStartVector (p_rproblem,p_rproblem%roptcontrol,rvector)
-!    
-!    ! Time dependent simulation with explicit time stepping.
-!    
-!    ! Don't read the target flow, this is done in 
-!    ! cc_solveNonstationaryDirect!
-!
-!    call parlst_getvalue_int (p_rproblem%rparamList,'CC-DISCRETISATION',&
-!                              'ctypeStartVector',ctypeStartVector,0)
-!
-!    ! Call the nonstationary solver to solve the problem.
-!    call cc_solveNonstationaryDirect (p_rproblem,rvector)
-!      
-!    ! (Probably) write final solution vector
-!    call cc_writeSolution (p_rproblem,rvector)
-!    
-!    ! Cleanup
-!    call cc_doneRHS (p_rproblem)
-!    call cc_doneMatVec (p_rproblem,rvector,rrhs)
-!    call cc_doneDiscretisation (p_rproblem)
-!    call cc_doneParamTriang (p_rproblem)
-!    
-!    ! Release parameters from the DAT/INI files from the problem structure.
-!    call cc_doneParameters (p_rproblem)
-
-!    ! Release the parameter list
-!    call parlst_done (p_rproblem%rparamList)
-    
-    ! Print some statistical data about the collection - anything forgotten?
-!    call output_lbrk ()
-!    call output_line ('Remaining collection statistics:')
-!    call output_line ('--------------------------------')
-!    call output_lbrk ()
-!    call collct_printStatistics (p_rproblem%rcollection)
-!    
-!    ! Finally release the collection and the problem structure.
-!    call collct_done (p_rproblem%rcollection)
-!    
     
     ! Information about external storage usage
     call output_lbrk ()
@@ -1370,23 +1266,23 @@ contains
 
   subroutine cc2doptcmain
     
-    character(LEN=SYS_STRLEN) :: slogfile,serrorfile
+    ! Program parameters
+    type(t_parlist) :: rparlist
+    type(t_settings_main) :: rsettings
     
     ! The very first thing in every application: 
     ! Initialise system-wide settings:
     call system_init()
     
-    ! Get command line parameters.
-    call cc2doptc_evalParameters()
+    ! Read the program parameters.
+    call parlst_init (rparlist)
+    call main_getDat (rparlist)
     
-    ! Read the name of the message and error log file.
-    call cc2doptc_getLogFiles (slogfile,serrorfile)
-    
-    ! Release output stuff
-    call output_done()
+    ! Read the basic parameter settings from the "MAIN" section.
+    call smain_initMainParams (rsettings,rparlist,"MAIN")
     
     ! Initialise log file for output.
-    call output_init (slogfile,serrorfile)
+    call output_init (rsettings%routput%smsgLog,rsettings%routput%serrorLog)
     OU_LINE_LENGTH = 132
     
     ! Now we can really start!
@@ -1402,7 +1298,7 @@ contains
     call output_line ('Calculating cc2doptc-Problem')
     call output_separator (OU_SEP_MINUS)
     
-    call cc2doptccalculate ()
+    call cc2doptccalculate (rsettings,rparlist)
 
     ! Release the parser
     call fparser_done ()
@@ -1413,8 +1309,9 @@ contains
     call output_lbrk ()
     call storage_info(.true.)
     
-    ! Clean up the storage management, finish
+    ! Clean up the storage management, parameter list, finish
     call storage_done()
+    call parlst_done (rparlist)
     
   end subroutine
 

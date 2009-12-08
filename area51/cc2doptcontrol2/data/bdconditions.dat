@@ -1,3 +1,6 @@
+# ========================================================================
+# this file defines the boundary conditions in the problem.
+
 ###############
 [BDEXPRESSIONS]
 ###############

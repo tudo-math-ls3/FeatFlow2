@@ -125,7 +125,7 @@ contains
     type(t_collection) :: rcollection
     
     character(len=SYS_STRLEN), dimension(2) :: StargetFlowExpressions
-    character(len=SYS_STRLEN) :: smeshTargetFlow,stargetFlow,spar
+    character(len=SYS_STRLEN) :: smeshTargetFlow,stargetFlow
     integer :: ilevelTargetFlow,ielementTypeTargetFlow,itargetFlowDelta
     integer :: itargetFlowTimesteps
     
@@ -135,10 +135,10 @@ contains
 
     ! Read some more parameters, we may need them.
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'stargetFlowExpressionX',StargetFlowExpressions(1),'''''')
+        'stargetFlowExpressionX',StargetFlowExpressions(1),"",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'stargetFlowExpressionY',StargetFlowExpressions(2),'''''')
+        'stargetFlowExpressionY',StargetFlowExpressions(2),"",bdequote=.true.)
 
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ilevelTargetFlow',ilevelTargetFlow,0)
@@ -147,12 +147,10 @@ contains
         'ielementTypeTargetFlow',ielementTypeTargetFlow,-1)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'smeshTargetFlow',spar,'''''')
-    read(spar,*) smeshTargetFlow
+        'smeshTargetFlow',smeshTargetFlow,"",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'stargetFlow',spar,'')
-    read(spar,*) stargetFlow
+        'stargetFlow',stargetFlow,"",bdequote=.true.)
 
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itargetFlowDelta',itargetFlowDelta,1)
@@ -337,7 +335,7 @@ contains
     type(t_collection) :: rcollection
     
     character(len=SYS_STRLEN), dimension(3) :: Sexpressions
-    character(len=SYS_STRLEN) :: smeshInitCond,sfileInitialCond,spar
+    character(len=SYS_STRLEN) :: smeshInitCond,sfileInitialCond
     integer :: ilevelInitCond,ielementTypeInitCond
     
     ! Type of the initial condition?    
@@ -346,13 +344,13 @@ contains
 
     ! Read some more parameters, we may need them.
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'ssolutionInitialCondY1',Sexpressions(1),'''0''')
+        'ssolutionInitialCondY1',Sexpressions(1),"0",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'ssolutionInitialCondY2',Sexpressions(2),'''0''')
+        'ssolutionInitialCondY2',Sexpressions(2),"0",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'ssolutionInitialCondP',Sexpressions(3),'''0''')
+        'ssolutionInitialCondP',Sexpressions(3),"0",bdequote=.true.)
 
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'ilevelInitCond',ilevelInitCond,0)
@@ -361,12 +359,10 @@ contains
         'ielementTypeInitCond',ielementTypeInitCond,-1)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'smeshInitCond',spar,'''''')
-    read(spar,*) smeshInitCond
+        'smeshInitCond',smeshInitCond,"",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'sfileInitialCond',spar,'')
-    read(spar,*) sfileInitialCond
+        'sfileInitialCond',sfileInitialCond,"",bdequote=.true.)
 
     ! Set it up...
     select case (ctypeInitCond)

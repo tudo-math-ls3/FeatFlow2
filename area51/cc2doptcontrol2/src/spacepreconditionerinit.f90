@@ -259,12 +259,12 @@ contains
     rpreconditioner%rprecSpecials%ismootherType = ismootherType
     rpreconditioner%rprecSpecials%icoarseGridSolverType = icoarseGridSolverType
 
-    call parlst_getvalue_string (p_rsection, 'ssolverSection', sstring,'')
-    read (sstring,*) ssolverSection
-    call parlst_getvalue_string (p_rsection, 'ssmootherSection', sstring,'')
-    read (sstring,*) ssmootherSection
-    call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', sstring,'')
-    read (sstring,*) scoarseGridSolverSection
+    call parlst_getvalue_string (p_rsection, 'ssolverSection', &
+        ssolverSection,"",bdequote=.true.)
+    call parlst_getvalue_string (p_rsection, 'ssmootherSection', &
+        ssmootherSection,,"",bdequote=.true.)
+    call parlst_getvalue_string (p_rsection, 'scoarseGridSolverSection', &
+        scoarseGridSolverSection,"",bdequote=.true.)
     
     ! Which type of solver do we have?
     
@@ -343,8 +343,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-            'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+            "spreconditionerSection", spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -368,8 +367,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "",bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -393,8 +391,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOC)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -418,8 +415,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_GENERAL)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "", bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
@@ -441,8 +437,7 @@ contains
         call linsol_initVANKA (p_rpreconditioner,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
         
         call parlst_getvalue_string (p_rparamList, scoarseGridSolverSection, &
-           'spreconditionerSection', sstring, '')
-        read (sstring,*) spreconditionerSection
+           'spreconditionerSection', spreconditionerSection, "",bdequote=.true.)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&
             spreconditionerSection,LINSOL_ALG_UNDEFINED)
         call linsolinit_initParams (p_rpreconditioner,p_rparamList,&

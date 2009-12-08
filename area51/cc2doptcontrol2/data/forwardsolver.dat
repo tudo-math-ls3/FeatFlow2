@@ -1,9 +1,35 @@
-# ------------------------------------------------------------------------
-# Nonlinear solver
+# ========================================================================
+# This file configures a pure forward solver which can be used for
+# the simulation of flows which are to be used as initial solution
+# or target flow e.g.
+
+###################
+#[CC-FORWARDSOLVER]
+###################
 #
-# These parameters configure the nonlinear solver for creating e.g.
-# the initial flow by a forward simulation.
-# ------------------------------------------------------------------------
+# -> not yet used, has to be established...
+#
+## Section defining the boundary expressions
+#ssectionBoundaryExpressions = BDEXPRESSIONS
+#
+## Section defining the boundary conditions of the optimal control problem
+#ssectionBoundaryConditions = BDCONDITIONS
+#
+## Name of the section that defines the initial condition.
+#sinitialCondition = INITIALCONDITION
+#
+## Name of the section that defines the RHS of the (Navier-)Stokes equation
+#srhs = RIGHTHANDSIDE
+#
+## Name of the section defining the physics
+#ssectionPhysics = CC-PHYSICSPRIMAL
+#
+## Name of the section configuring the nonlinear solver
+#ssectionNonlinearSolver = CC-NONLINEAR
+#
+## Name of the section configuring the underlying time discretisation.
+## The solution is calculated on the maximum time level.
+#ssectionTimeDiscretisation = TIME-DISCRETISATION
 
 ##############
 [CC-NONLINEAR]

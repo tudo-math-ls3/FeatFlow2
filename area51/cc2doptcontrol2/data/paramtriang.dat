@@ -5,7 +5,9 @@
 # (coarse grid) triangulation of the problem.
 # ------------------------------------------------------------------------
 
+#############
 [PARAMTRIANG]
+#############
 
 # Filename of the parametrisation of the domain
 sParametrisation = './pre/bench1.prm'
