@@ -236,6 +236,15 @@ contains
                                  'RE',rproblem%rphysics%dnu,1000.0_DP)
     
     rproblem%rphysics%dnu = 1.0_DP/rproblem%rphysics%dnu
+
+    ! assuming a 2-phase flow we read two density parameters
+    ! where rho1 is the density of the 1 phase and 2 for the
+    ! second phase
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'RHO1',rproblem%rphysics%drho1,1.0_DP)
+
+    call parlst_getvalue_double (rproblem%rparamList,'CC-DISCRETISATION',&
+                                 'RHO2',rproblem%rphysics%drho2,1.0_DP)
     
   end subroutine
 

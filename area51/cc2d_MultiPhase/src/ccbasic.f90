@@ -132,6 +132,33 @@ module ccbasic
 !</typeblock>
 
 
+!<typeblock>
+
+  ! A type block specifying all the information required to
+  ! describe and solve the Level-Set equation
+  type t_level_setInfo
+  
+   ! the solution vector for the level-set equation
+   type(t_vectorblock) :: rvector
+   
+   ! the RHS vector for the level-set equation
+   type(t_vectorblock) :: rrhs
+  
+   ! the discretisation structure for the level-set equation
+   type(t_blockDiscretisation) :: rdiscretisationLS
+   
+   ! the mass matrix for the level-set problem
+   type(t_matrixScalar) :: rmatrixMassLS   
+   
+   ! the system matrix for the level-set problem
+   type(t_matrixBlock) :: rmatrixLS
+  
+  end type
+
+!</typeblock>
+
+
+
 !<typeblock description="Type block defining dynamic information about a level that change in every timestep">
 
   type t_dynamicLevelInfo
@@ -232,6 +259,12 @@ module ccbasic
   
     ! Viscosity parameter nu = 1/Re
     real(DP) :: dnu
+
+    ! density parameter rho1 for 1st phase
+    real(DP) :: drho1
+
+    ! density parameter rho2 for 2st phase
+    real(DP) :: drho2
     
     ! Type of problem.
     ! =0: Stokes.
@@ -408,8 +441,6 @@ module ccbasic
     ! simulation.
     type(t_cc_statistics) :: rstatistics
     
-    real(DP) :: dnu
-
     real(dp) :: dmass
     
     real(dp) :: dx
@@ -417,10 +448,6 @@ module ccbasic
     real(dp) :: dy
     
     real(dp) :: drad
-    
-    real(DP) :: drho1
-    real(DP) :: drho2
-    
 
   end type
 

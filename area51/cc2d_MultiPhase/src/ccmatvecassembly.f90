@@ -983,49 +983,28 @@ contains
         rform%ballCoeffConstant = .false.
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = rnonlinearCCMatrix%dalpha
+        
+        ! The first quick access array specifies the evaluation point
+        rproblem%rcollection%DquickAccess(5) = rproblem%rphysics%drho1
+        rproblem%rcollection%DquickAccess(6) = rproblem%rphysics%drho2
 
         ! we here want to create a matrix for the term (rho/dT)*u_n
         ! and to incorporate this into our matrix rmatrix
-        ! BILF_MATC_ELEMENTBASED BILF_MATC_EDGEBASED
-        call bilf_createMatrixStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
-                                        rmatrix%RmatrixBlock(1,1)%cmatrixFormat,&
-                                        rMass1,&
-                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,BILF_MATC_ELEMENTBASED)
-
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEM,rMass1,&
+                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        
+        call lsyssc_clearMatrix(rMass1)
+        
         ! Now we can build the matrix entries.
-        ! We specify the callback function coeff_Stokes for the coefficients.
-        ! As long as we use constant coefficients, this routine is not used.
-        ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
-        ! the framework will call the callback routine to get analytical data.
-        !
-        ! We pass our collection structure as well to this routine, 
-        ! so the callback routine has access to everything what is
-        ! in the collection.
         call bilf_buildMatrixScalar (rform,.true.,&
-                                     rMass1,cc_Rho,&
+                                     rMass1,cc_getDensityMMass,&
                                      rproblem%rcollection)
         
-
-!        call matio_writeMatrixHR (rMass1, 'rho',&
-!                                .TRUE., 0, 'matrixrho.txt', '(E20.5)')
-!        
-!      
-!        call matio_writeMatrixHR (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, 'Mass',&
-!                                        .TRUE., 0, 'matrixmass.txt', '(E20.5)')        
-
         call lsyssc_matrixLinearComb (&
             rMass1,rnonlinearCCMatrix%dalpha,&
             rmatrix%RmatrixBlock(1,1),0.0_DP,&
             rmatrix%RmatrixBlock(1,1),&
             .false.,.false.,.true.,.true.)
-
-        
-      
-!        call lsyssc_matrixLinearComb (&
-!            rnonlinearCCMatrix%p_rasmTempl%rmatrixMass,rnonlinearCCMatrix%dalpha,&
-!            rmatrix%RmatrixBlock(1,1),0.0_DP,&
-!            rmatrix%RmatrixBlock(1,1),&
-!            .false.,.false.,.true.,.true.)
         
         ! release the temporary matrix    
         call lsyssc_releaseMatrix(rMass1)
@@ -1126,28 +1105,11 @@ contains
           
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
-          
-          ! Call the SD method to calculate the nonlinearity.
-!          call conv_streamlineDiffusionBlk2d (&
-!                              rvelocityvector, rvelocityvector, &
-!                              dvecWeight, 0.0_DP,&
-!                              rstreamlineDiffusion, CONV_MODMATRIX, &
-!                              rmatrix)
-!
-!          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'SD',&
-!                                   .TRUE., 0, 'matrixsd.txt', '(E20.5)')
-
-
                               
           ! compute the nonlinearity          
-          call cc_NonlinBlinform (rvector, rvector, &
-                               rstreamlineDiffusion, CONV_MODMATRIX, &
-                               rmatrix,rproblem)
-                              
-                              
-!          call matio_writeMatrixHR (rmatrix%RmatrixBlock(1,1), 'Bilin',&
-!                                   .TRUE., 0, 'matrixbilin.txt', '(E20.5)')
-                              
+          call cc_NonlinBlinform (rvector, rvector,&
+                                  rstreamlineDiffusion, CONV_MODMATRIX,&
+                                  rmatrix,rproblem,rnonlinearCCMatrix)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)
 
@@ -1255,17 +1217,9 @@ contains
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
 
           ! calculate the nonlinearity with a bilinearform
-          
-          ! Call the SD method to calculate the nonlinearity.
-!          call conv_streamlineDiffusionBlk2d (&
-!                              rvelocityvector, rvelocityvector, &
-!                              dvecWeight, 0.0_DP,&
-!                              rstreamlineDiffusion, CONV_MODMATRIX, &
-!                              rmatrix)
-
           call cc_NonlinBlinform (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODMATRIX, &
-                               rmatrix,rproblem)
+                               rmatrix,rproblem,rnonlinearCCMatrix)
 
                               
           ! Set up the jump stabilisation structure.
@@ -1341,12 +1295,17 @@ contains
           ! Weight for the Newton part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          ! Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              rvelocityvector, rvelocityvector, &
-                              dvecWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODMATRIX, &
-                              rmatrix)
+!          ! Call the SD method to calculate the nonlinearity.
+!          call conv_streamlineDiffusionBlk2d (&
+!                              rvelocityvector, rvelocityvector, &
+!                              dvecWeight, 0.0_DP,&
+!                              rstreamlineDiffusion, CONV_MODMATRIX, &
+!                              rmatrix)
+        
+          ! calculate the nonlinearity with a bilinearform
+          call cc_NonlinBlinform (rvector, rvector, &
+                               rstreamlineDiffusion, CONV_MODMATRIX, &
+                               rmatrix,rproblem,rnonlinearCCMatrix)
         
           ! Sum up the precomputed edge stabilisation matrix.
           call lsyssc_matrixLinearComb (&
@@ -1990,17 +1949,22 @@ contains
         rform%BconstantCoeff = .false.
         rform%Dcoefficients(1)  = rnonlinearCCMatrix%dalpha
         
-        ! BILF_MATC_ELEMENTBASED BILF_MATC_EDGEBASED
-        call bilf_createMatrixStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
-                                        rmatrix%RmatrixBlock(1,1)%cmatrixFormat,&
-                                        rMass1,&
-                                        rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest,BILF_MATC_EDGEBASED)
-
+        ! The first quick access array specifies the evaluation point
+        rproblem%rcollection%DquickAccess(5) = rproblem%rphysics%drho1
+        rproblem%rcollection%DquickAccess(6) = rproblem%rphysics%drho2
+        
+        ! we here want to create a matrix for the term (rho/dT)*u_n
+        ! and to incorporate this into our matrix rmatrix
+        call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEM,rMass1,&
+                                     LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+        
+        call lsyssc_clearMatrix(rMass1)
+        
         call bilf_buildMatrixScalar (rform,.true.,&
-                                     rMass1,cc_Rho,&
+                                     rMass1,cc_getDensityMMass,&
                                      rproblem%rcollection)
         
-
+        ! build the defect
         call lsyssc_scalarMatVec (rMass1, &
             rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
@@ -2008,20 +1972,6 @@ contains
         call lsyssc_scalarMatVec (rMass1, &
             rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
             -rnonlinearCCMatrix%dalpha, 1.0_DP)
-      
-!        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!            rvector%RvectorBlock(1), rdefect%RvectorBlock(1), &
-!            -rnonlinearCCMatrix%dalpha, 1.0_DP)
-!
-!        call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixMass, &
-!            rvector%RvectorBlock(2), rdefect%RvectorBlock(2), &
-!            -rnonlinearCCMatrix%dalpha, 1.0_DP)
-            
-!        call vecio_writeVectorHR (rdefect%RvectorBlock(1), 'defbillin', .TRUE.,&
-!                                  0, 'vectorbilin.txt', '(E20.5)')
-
-!        call vecio_writeVectorHR (rdefect%RvectorBlock(1), 'defbsd', .TRUE.,&
-!                                  0, 'vectorsd.txt', '(E20.5)')
             
         ! release the temporary matrix
         call lsyssc_releaseMatrix(rMass1)
@@ -2077,32 +2027,11 @@ contains
           ! Weight for the Newtop part; =0 deactivates Newton.
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
-          ! Call the SD method to calculate the defect of the nonlinearity.
-          ! As rrhsTemp shares its entries with rdefect, the result is
-          ! directly written to rdefect!
-          ! As velocity field, we specify rvelocityVector here. The first two
-          ! subvectors are used as velocity field.
-          
-!          call conv_streamlineDiffusionBlk2d (&
-!                              rvelocityVector, rvelocityVector, &
-!                              dvectorWeight, 0.0_DP,&
-!                              rstreamlineDiffusion, CONV_MODDEFECT, &
-!                              rmatrix,rsolution=rvector,rdefect=rdefect)
-
           ! compute the nonlinearity          
           call cc_NonlinBlinform (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODDEFECT, &
-                               rmatrix,rproblem,rsolution=rvector,rdefect=rdefect)
-                              
-                              
-!        call vecio_writeVectorHR (rdefect%RvectorBlock(1), 'defbillin2', .TRUE.,&
-!                                  0, 'vectorbilin2.txt', '(E20.5)')
-
-!        call vecio_writeVectorHR (rdefect%RvectorBlock(1), 'defbsd2', .TRUE.,&
-!                                  0, 'vectorsd2.txt', '(E20.5)')
-
-                              
-                              
+                               rmatrix,rproblem,rnonlinearCCMatrix,&
+                               rsolution=rvector,rdefect=rdefect)
                               
         case (CCMASM_STAB_STREAMLINEDIFF2)     
                   
@@ -2205,7 +2134,7 @@ contains
           rstreamlineDiffusion%dnewton = rnonlinearCCMatrix%dnewton
           
           if (rnonlinearCCMatrix%dnewton .eq. 0.0_DP) then
-
+            
             ! Deactivate the matrices A12 and A21 by setting the multiplicators
             ! to 0.0. Whatever the content is (if there is content at all),
             ! these matrices are ignored then by the kernel.
@@ -2225,17 +2154,11 @@ contains
            
           end if
          
-          ! Call the SD method to calculate the nonlinearity.
-!          call conv_streamlineDiffusionBlk2d (&
-!                              rvelocityVector, rvelocityVector, &
-!                              dvectorWeight, 0.0_DP,&
-!                              rstreamlineDiffusion, CONV_MODDEFECT, &
-!                              rmatrix,rsolution=rvector,rdefect=rdefect)
-                              
+          ! compute the nonlinearity          
           call cc_NonlinBlinform (rvector, rvector, &
                                rstreamlineDiffusion, CONV_MODDEFECT, &
-                               rmatrix,rproblem,rsolution=rvector,rdefect=rdefect)
-                              
+                               rmatrix,rproblem,rnonlinearCCMatrix,&
+                               rsolution=rvector,rdefect=rdefect)
         
           ! Set up the jump stabilisation structure.
           ! There is not much to do, only initialise the viscosity...
@@ -2450,12 +2373,19 @@ contains
            
           end if
          
-          ! Call the SD method to calculate the nonlinearity.
-          call conv_streamlineDiffusionBlk2d (&
-                              rvelocityvector, rvelocityvector, &
-                              dvectorWeight, 0.0_DP,&
-                              rstreamlineDiffusion, CONV_MODDEFECT, &
-                              rmatrix,rsolution=rvector,rdefect=rdefect)          
+          ! compute the nonlinearity          
+          call cc_NonlinBlinform (rvector, rvector, &
+                               rstreamlineDiffusion, CONV_MODDEFECT, &
+                               rmatrix,rproblem,rnonlinearCCMatrix,&
+                               rsolution=rvector,rdefect=rdefect)
+         
+         
+!          ! Call the SD method to calculate the nonlinearity.
+!          call conv_streamlineDiffusionBlk2d (&
+!                              rvelocityvector, rvelocityvector, &
+!                              dvectorWeight, 0.0_DP,&
+!                              rstreamlineDiffusion, CONV_MODDEFECT, &
+!                              rmatrix,rsolution=rvector,rdefect=rdefect)          
         
           ! Subtract the stabilisation matrix stuff.
           call lsyssc_scalarMatVec (rnonlinearCCMatrix%p_rasmTempl%rmatrixStabil, &
@@ -2585,7 +2515,7 @@ contains
 
   subroutine cc_NonlinBlinform(rvecPrimary, rvecSecondary,&
                                rconfig, cdef, &
-                               rmatrix, rproblem, rsolution ,rdefect)
+                               rmatrix, rproblem,rnonlinearCCMatrix,rsolution ,rdefect)
 
 !<description>
 ! this subroutine computes the nonlinearity with a bilinearform
@@ -2612,6 +2542,8 @@ contains
   ! CONV_MODBOTH  : Set up the nonlinear matrix as well as the nonlinear defect.
   !                 rmatrix, rdefect and rsolution must all be present.
   integer, intent(IN) :: cdef
+  
+  type(t_nonlinearCCMatrix), intent(in) :: rnonlinearCCMatrix
 
   ! optional: Solution vector u_2.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
@@ -2639,7 +2571,6 @@ contains
 !</inputoutput>
 
 !</subroutine>
-
     ! local variables
     integer :: i
     integer :: celement
@@ -2652,8 +2583,6 @@ contains
     ! The bilinear form specifying the operator
     type(t_bilinearForm) :: rform    
     
-    ! assign the vector pointer
-    rproblem%rcollection%p_rvectorQuickAccess1 => rvecPrimary
     
     ! At first check the input parameters that everything is present what
     ! we need:
@@ -2762,6 +2691,15 @@ contains
       end if
     end if
     
+    ! The first quick access array specifies the velocity values
+    nullify(rproblem%rcollection%p_rvectorQuickAccess1)
+    ! assign the vector pointer
+    rproblem%rcollection%p_rvectorQuickAccess1 => rvecPrimary
+    
+    ! The first quick access array specifies the evaluation point
+    rproblem%rcollection%DquickAccess(5) = rproblem%rphysics%drho1
+    rproblem%rcollection%DquickAccess(6) = rproblem%rphysics%drho2
+    
     ! Hide the p_rsol...-parameters to prevent passing the NULL()-pointer
     ! if rsolution is not present -- some compilers don't like that ^^
 
@@ -2790,10 +2728,10 @@ contains
       rform%Dcoefficients(2)  = rconfig%ddelta
 
       ! Here create a matrix for the defect b=b-N(u)*u
-      call bilf_createMatrixStructure(rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTrial,&
-                                      rmatrix%RmatrixBlock(1,1)%cmatrixFormat,&
-                                      rmatrixScalar,&
-                                      rmatrix%RmatrixBlock(1,1)%p_rspatialDiscrTest)
+      call lsyssc_duplicateMatrix (rnonlinearCCMatrix%p_rasmTempl%rmatrixTemplateFEM,rmatrixScalar,&
+                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+      
+      call lsyssc_clearMatrix(rmatrixScalar)
 
 
       ! Now we can build the matrix entries.
@@ -2806,7 +2744,7 @@ contains
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.true.,&
-                                   rmatrixScalar,cc_ST,&
+                                   rmatrixScalar,cc_ncDensNonLin,&
                                    rproblem%rcollection)
 
 !      call matio_writeMatrixHR (rmatrixScalar, 'Nu',&
@@ -2821,8 +2759,6 @@ contains
       
       ! free the temporary matrix
       call lsyssc_releaseMatrix(rmatrixScalar)
-      
-      
       
     else
       ! we will set up a bilinearform
@@ -2848,7 +2784,7 @@ contains
       ! so the callback routine has access to everything what is
       ! in the collection.
       call bilf_buildMatrixScalar (rform,.false.,&
-                                   rmatrix%RmatrixBlock(1,1),cc_ST,&
+                                   rmatrix%RmatrixBlock(1,1),cc_ncDensNonLin,&
                                    rproblem%rcollection)
 
     end if
@@ -2857,7 +2793,7 @@ contains
   
   ! ***************************************************************************
   
-  subroutine cc_ST (rdiscretisationTrial,rdiscretisationTest,rform, &
+  subroutine cc_ncDensNonLin (rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -2948,8 +2884,8 @@ contains
     ! get a pointer to the geometry object
     p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
     
-    drho1    = 1.0_dp
-    drho2    = 4.0_dp
+    drho1=rcollection%DquickAccess(5)
+    drho2=rcollection%DquickAccess(6)
 
     ! get the pointers form the collection
     p_rvectorScalarUx => rcollection%p_rvectorQuickAccess1%RvectorBlock(1)
@@ -2984,7 +2920,7 @@ contains
 
 ! ***************************************************************************
 
-  subroutine cc_Rho(rdiscretisationTrial,rdiscretisationTest,rform, &
+  subroutine cc_getDensityMMass(rdiscretisationTrial,rdiscretisationTest,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTrial,IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -2997,7 +2933,7 @@ contains
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
+    ! the coefficients in front of the mass matrix in case of non-constant density
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -3071,9 +3007,9 @@ contains
     ! get a pointer to the geometry object
     p_rgeometryObject => collct_getvalue_geom (rcollection, 'mini')       
     
-    drho1    = 1.0_dp
-    drho2    = 4.0_dp
-
+    drho1=rcollection%DquickAccess(5)
+    drho2=rcollection%DquickAccess(6)
+        
     ! loop over the elements and cubature points
     ! and assign the coefficients 
     do iel=1,nelements
