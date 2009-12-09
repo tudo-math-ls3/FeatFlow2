@@ -1,0 +1,17 @@
+# ------------------------------------------------------------------------
+# Parametrization and triangulation
+#
+# This file contains parameters about the parametrization and
+# (coarse grid) triangulation of the problem.
+# ------------------------------------------------------------------------
+
+[PARAMTRIANG]
+
+# Filename of the parametrisation of the domain
+sParametrisation = '%{spredirectory}/bench2m55.prm'
+
+# Filename of the coarse grid mesh
+sMesh = '%{spredirectory}/bench2m55.tri'
+
+# Whether to convert the mesh into a pure triangular mesh or not
+iconvertToTriangleMesh = 0
