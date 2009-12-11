@@ -26,27 +26,34 @@
 !#     -> Reads a solution from a sequence of files, configures the flow 
 !#        to be nonstationary
 !#
-!# 6.) ansol_prepareEval = 
+!# 6.) ansol_configNonstatPrecalc
+!#     -> Configures a nonstationary flow based on a precalculated solution
+!#
+!# 7.) ansol_prepareEval = 
 !#       ansol_prepareEvalCollection / ansol_prepareEvalDirect
 !#     -> Prepares the evaluation of an solution using a collection or
 !#     -> Prepares the direct evaluation of an solution
 !#
-!# 7.) ansol_evaluate =
+!# 8.) ansol_evaluate =
 !#       ansol_evaluateByCollection / ansol_evaluateDirect
 !#     -> Evaluates a solution using a collection or
 !#     -> Evaluates a solution using an analytic solution structure
 !#     -> Does not include any boundary conditions
 !#
-!# 8.) ansol_doneEval
+!# 9.) ansol_doneEval
 !#       ansol_doneEvalCollection / ansol_doneEvalDirect
 !#     -> Cleans up the evaluation of a solution using a collection or
 !#     -> Cleans up a direct evaluation of a FE solution
 !#
-!# 9.) ansol_prjToVector
-!#     -> Project a solution to a vector
+!# 10.) ansol_prjToVector
+!#      -> Project a solution to a vector
 !#
-!# 10.) ansol_prjToSpaceTimeVector
-!#     -> Project a solution to a space-time vector
+!# 11.) ansol_prjToSpaceTimeVector
+!#      -> Project a solution to a space-time vector
+!#
+!# 12.) ansol_getSpaceTimeDiscr
+!#      -> Obtains the space/time discretisation of an underlying
+!#         space-time solution if possible.
 !# </purpose>
 !##############################################################################
 
@@ -84,6 +91,7 @@ module analyticsolution
   public :: ansol_configExpressions
   public :: ansol_configStationaryFile
   public :: ansol_configNonstationaryFile
+  public :: ansol_configNonstatPrecalc
 
   public :: ansol_prepareEval
   public :: ansol_evaluate
@@ -99,6 +107,8 @@ module analyticsolution
   
   public :: ansol_prjToVector
   public :: ansol_prjToSpaceTimeVector
+  
+  public :: ansol_getSpaceTimeDiscr
   
 !<constants>
 
@@ -134,10 +144,10 @@ module analyticsolution
   ! Stationary solution, specified by the application, mesh-based. Arbitrary level.
   integer, parameter, public :: ANSOL_TP_MBSTATIONARY = 3
 
-  ! Nonstationary solution, specified by the application, mesh-based. Arbitrary level.
+  ! Nonstationary solution, read from file, mesh-based. Arbitrary level.
   integer, parameter, public :: ANSOL_TP_MBNONSTATIONARYFILE = 4
 
-  ! Nonstationary solution, read from file, mesh-based. Arbitrary level.
+  ! Nonstationary solution, specified by the application, mesh-based. Arbitrary level.
   integer, parameter, public :: ANSOL_TP_MBNONSTATIONARY = 5
 
 !</constantblock>
@@ -750,7 +760,7 @@ contains
     if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
         (rsolution%ctype .ne. ANSOL_TP_MBSTATIONARYFILE)) then
       call output_line('Incorrect solution initialisation!',&
-          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configStationaryFile')
+          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configNonstationaryFile')
       call sys_halt()
     end if
     
@@ -774,6 +784,57 @@ contains
         sfilename,istart,istart+ntimesteps*idelta,idelta,bformatted,.true.)
 
     rsolution%ctype = ANSOL_TP_MBNONSTATIONARYFILE
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ansol_configNonstatPrecalc (rsolution, rvector)
+
+!<description>
+  ! Configures a nonstationary solution which is taken from a precalculated
+  ! space-time solution vector.
+  ! The flow must have been initialised by ansol_init_file.
+!</description>
+
+!<input>
+  ! Space-time vector that defines the precalculated solution vector.
+  type(t_spaceTimeVector), intent(in) :: rvector
+!</input>
+
+!<inputoutput>
+  ! The solution to set up.
+  type(t_anSolution), intent(inout) :: rsolution
+!</inputoutput>
+
+!</subroutine>
+
+    ! Basic checks
+    if ((rsolution%ctype .ne. ANSOL_TP_MBUNDEFINED) .and. &
+        (rsolution%ctype .ne. ANSOL_TP_MBSTATIONARYFILE)) then
+      call output_line('Incorrect solution initialisation!',&
+          OU_CLASS_ERROR, OU_MODE_STD,'ansol_configNonstationaryPrecalc')
+      call sys_halt()
+    end if
+    
+    ! Create the vector holding the solution if not yet created.
+    if (rsolution%ctype .eq. ANSOL_TP_MBUNDEFINED) then
+    
+      call tdiscr_copy (rvector%p_rtimeDiscr,rsolution%rtimeDiscr)
+
+      call sptivec_initVector (rsolution%rnonstationary,&
+          rsolution%rtimeDiscr,&
+          rsolution%rfeSpace%p_rdiscretisation)
+
+    endif
+    
+    ! Copy the vector.
+    call sptivec_copyVector (rvector,rsolution%rnonstationary)
+
+    ! This is a solution specified by the application. No file is behind.
+    rsolution%ctype = ANSOL_TP_MBNONSTATIONARY
 
   end subroutine
 
@@ -1769,6 +1830,45 @@ contains
     end do
     
     call lsysbl_releaseVector (rvectemp)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine ansol_getSpaceTimeDiscr (rsolution,p_rspaceDiscr,p_rtimeDiscr)
+
+!<description>
+  ! If the analytical solution is connected to a space and time discretisation,
+  ! this routine returns pointers to these underlying discretisation structures.
+  ! If not, NULL() is returned.
+!</description>
+
+!<input>
+  ! The solution.
+  type(t_anSolution), intent(inout), target :: rsolution
+!</input>
+
+!<output>
+  ! Pointer to the underlying space discretisation or NULL()
+  type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+  
+  ! Pointer to the underlying time discretisation or NULL()
+  type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+  
+!</output>
+  
+!</subroutine>
+    
+    nullify(p_rtimeDiscr)
+    nullify(p_rspaceDiscr)
+
+    if ((rsolution%ctype .eq. ANSOL_TP_MBNONSTATIONARY) .or. &
+        (rsolution%ctype .eq. ANSOL_TP_MBNONSTATIONARYFILE)) then
+      p_rtimeDiscr => rsolution%rtimeDiscr
+      p_rspaceDiscr => rsolution%rfeSpace%p_rdiscretisation
+    end if
 
   end subroutine
 

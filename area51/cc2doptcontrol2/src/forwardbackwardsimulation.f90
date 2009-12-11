@@ -721,7 +721,8 @@ contains
 
 !<subroutine>
 
-  subroutine fbsim_init (rsettings, rparlist, ssection, nlmin, nlmax, csimtype, rsimsolver)
+  subroutine fbsim_init (rsettings, rparlist, ssection, nlmin, nlmax, csimtype, rsimsolver,&
+      rphysics)
   
 !<description>
   ! Initialises a rsimsolver structure based on the general problem structure
@@ -757,6 +758,10 @@ contains
   ! =2: Oseen backward solver simulation on the dual solution vector.
   !     ssection must identify a parameter block of a linear solver.
   integer, intent(in) :: csimtype
+  
+  ! OPTIONAL: Alternative physics definition to use.
+  ! If not present, the standard global physics settings are used.
+  type(t_settings_physics), intent(in), optional :: rphysics
 !</input>
 
 !<output>
@@ -814,7 +819,7 @@ contains
         
     ! Get the assembly data on our level that allows us to create nonlinear
     ! matrices.
-    call smva_getDiscrData (rsettings, nlmax, rsimsolver%rdiscrData)
+    call smva_getDiscrData (rsettings, nlmax, rsimsolver%rdiscrData, rphysics)
         
   end subroutine
 
@@ -3382,6 +3387,8 @@ contains
               iiterate,-1,rnonlinearSpatialMatrix)
           
           call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,rrhs,1.0_DP)
+        else
+          call lsysbl_copyVector (rcurrentrhs,rrhs)
         end if
         
         ! Filter the current RHS in rdefect as well as the solution vector
