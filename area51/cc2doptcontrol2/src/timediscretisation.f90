@@ -65,6 +65,7 @@ module timediscretisation
   public :: tdiscr_getTimestepWeights
   public :: tdiscr_getOrder
   public :: tdiscr_infoStatistics
+  public :: tdiscr_copy
 
 !<constantblock description="Time discretisation type identifiers">
 
