@@ -11,10 +11,10 @@
 !# The following routines can be found here:
 !#
 !# 1.) fget1LevelDiscretisation
-!#     -> Callback routine for cc_get1LevelDiscretisation to be used in
+!#     -> Callback routine for spdsc_get1LevelDiscretisation to be used in
 !#        routines from fespacehierarchy.
 !#
-!# 2.) cc_get1LevelDiscretisation
+!# 2.) spdsc_get1LevelDiscretisation
 !#     -> Creates a FE discretisation for one spatial level
 !#
 !# #####
@@ -94,7 +94,7 @@ module spacediscretisation
   private
   
   public :: fget1LevelDiscretisation
-  public :: cc_get1LevelDiscretisation
+  public :: spdsc_get1LevelDiscretisation
   
 contains
 
@@ -105,7 +105,7 @@ contains
   subroutine fget1LevelDiscretisation(rtriangulation,rdiscr,rboundary,rcollection)
 
 !<description>
-  ! Callback routine wrapper for cc_get1LevelDiscretisation. Allows to create
+  ! Callback routine wrapper for spdsc_get1LevelDiscretisation. Allows to create
   ! a discretisation with the routines from fespacehierarchy.
   ! Expects the following information in rcollection:
   !   rcollection%IquickAccess(1) = ieltype
@@ -124,7 +124,7 @@ contains
     
     ! Create the discretisation corresponding to the triangulation
     ! and element type ieltype.
-    call cc_get1LevelDiscretisation (rboundary,rtriangulation,&
+    call spdsc_get1LevelDiscretisation (rboundary,rtriangulation,&
       rcollection%IquickAccess(2),rdiscr,&
       rcollection%IquickAccess(1),&
       int(rcollection%IquickAccess(3),I32),&
@@ -137,7 +137,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_get1LevelDiscretisation (rboundary,rtriangulation,&
+  subroutine spdsc_get1LevelDiscretisation (rboundary,rtriangulation,&
       nequations,rdiscretisation,ieltype,ccubA,ccubB,ccubF)
   
 !<description>
@@ -577,7 +577,7 @@ contains
 !      ! Now we can start to initialise the discretisation. At first, set up
 !      ! a block discretisation structure that specifies the blocks in the
 !      ! solution vector.
-!      call cc_get1LevelDiscretisation (&
+!      call spdsc_get1LevelDiscretisation (&
 !          rproblem%rboundary,p_rtriangulation,nequations,&
 !          rproblem%RlevelInfo(i)%rdiscretisation,rparlist=rproblem%rparamList)
 !
