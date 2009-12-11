@@ -93,7 +93,6 @@ module forwardbackwardsimulation
   use structuresoptflow
   
   use timediscretisation
-  !use spacepreconditioner
   use spatialbcdef
   use spacematvecassembly
   use spacetimevectors

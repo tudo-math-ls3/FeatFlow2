@@ -1455,7 +1455,7 @@ contains
     
     ! Type of the flow?    
     call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ctype',ctype,0)
+        'ctype',ctype,-1)
 
     ! Read some more parameters, we may need them.
     call parlst_getvalue_string (rparlist,ssectionFlow,&
@@ -1506,13 +1506,13 @@ contains
     ! Set it up...
     select case (ctype)
     case (-1)
-      ! Zero flow
-      call ansol_init(rflow,6)
+      ! Analytic flow given by a callback routine
+      call ansol_init(rflow,6,0)
       return
     
     case (0)
-      ! Analytic flow given by a callback routine
-      call ansol_init(rflow,6,0)
+      ! Zero flow
+      call ansol_init(rflow,6)
       return
 
     case (3)
