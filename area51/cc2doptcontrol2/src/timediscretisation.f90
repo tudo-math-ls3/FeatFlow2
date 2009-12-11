@@ -39,6 +39,9 @@
 !#
 !# 9.) tdiscr_infoStatistics
 !#     -> Print statistics about a time mesh.
+!#
+!# 10.) tdiscr_copy
+!#      -> Copies a time discretisation structure.
 !# </purpose>
 !##############################################################################
 
@@ -283,6 +286,32 @@ contains
     rtimediscr%nintervals = 0.0_DP
     rtimediscr%dtstep = 0.0_DP
     rtimediscr%dtheta = 1.0_DP
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine tdiscr_copy(rtimediscr,rtimeDiscrDest)
+  
+!<description>
+  ! Copies a time discretisation.
+!</description>
+
+!<inputoutput>
+  ! Source time discretisation
+  type(t_timeDiscretisation), intent(in) :: rtimediscr
+!</inputoutput>
+
+!<inputoutput>
+  ! The time discrtisation structure to be initialised.
+  type(t_timeDiscretisation), intent(out) :: rtimediscrDest
+!</inputoutput>
+
+    ! As long as we do not do anything fancy (like allocating memory),
+    ! we can do a flat copy.
+    rtimeDiscrDest = rtimediscr
 
   end subroutine
   
