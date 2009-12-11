@@ -133,11 +133,8 @@ contains
 !</subroutine>
 
     character(len=SYS_STRLEN) :: sstr,sstr2
-    integer :: nlevels
-    type(t_staticSpaceAsmTemplates), pointer :: p_rasmTempl
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_feSpaceLevel), pointer :: p_rfeSpacePrimalDual
-    type(t_matrixBlock) :: rmassMatrix
     
     ! Put refrences to the parameter list to the settings structure.
     rsettingsSolver%p_rparlist => rparlist
@@ -304,6 +301,13 @@ contains
       call output_line ("Initialising optimal control parameters.")
     end if
     call init_initOptControl (rparlist,rsettings%ssectionOptControl,&
+        rsettingsSolver%rsettingsOptControl)
+
+    if (ioutputLevel .ge. 1) then
+      call output_lbrk()
+      call output_line ("Initialising target flow.")
+    end if
+    call init_initOptControlTargetFlow (rparlist,rsettings%ssectionOptControl,&
         rsettings%ssectionDiscrSpace,&
         rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
         rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
@@ -1285,12 +1289,70 @@ contains
 
 !<subroutine>
 
-  subroutine init_initOptControl (rparlist,ssectionOptC,ssectionDiscr,&
-      rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
+  subroutine init_initOptControl (rparlist,ssectionOptC,roptcontrol)
   
 !<description>
   ! Initialises the optimal control data structure based on parameters
   ! in a parameter list
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters of the optimal control can be found.
+  character(len=*), intent(in) :: ssectionOptC
+!</input>
+
+!<inputoutput>
+  ! Structure defining the parameters for the optimal control.
+  type(t_settings_optcontrol), intent(inout) :: roptcontrol
+!</inputoutput>
+
+!</subroutine>
+
+    ! Alpha/Gamma parameters
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dalphaC',roptcontrol%dalphaC,1.0_DP)
+        
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dgammaC',roptcontrol%dgammaC,0.0_DP)
+        
+    ! Type of the formulation
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'ispaceTimeFormulation',roptcontrol%ispaceTimeFormulation,0)
+    
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'iconvectionExplicit',roptcontrol%iconvectionExplicit,0)
+    
+    ! Parameters defining the constraints
+    call parlst_getvalue_int (rparlist,ssectionOptC,&
+        'ccontrolConstraints',roptcontrol%rconstraints%ccontrolConstraints,0)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dumin1',roptcontrol%rconstraints%dumin1,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dumax1',roptcontrol%rconstraints%dumax1,1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dumin2',roptcontrol%rconstraints%dumin2,-1.0E10_DP)
+
+    call parlst_getvalue_double (rparlist,ssectionOptC,&
+        'dumax2',roptcontrol%rconstraints%dumax2,1.0E10_DP)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine init_initOptControlTargetFlow (rparlist,ssectionOptC,ssectionDiscr,&
+      rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
+  
+!<description>
+  ! Initialises the target flow for the optimal control problem
+  ! based on the parameters in the DAT file.
 !</description>
 
 !<input>
@@ -1330,39 +1392,9 @@ contains
 
     character(len=SYS_STRLEN) :: sstr
     
-    ! Alpha/Gamma parameters
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dalphaC',roptcontrol%dalphaC,1.0_DP)
-        
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dgammaC',roptcontrol%dgammaC,0.0_DP)
-        
-    ! Type of the formulation
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'ispaceTimeFormulation',roptcontrol%ispaceTimeFormulation,0)
-    
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'iconvectionExplicit',roptcontrol%iconvectionExplicit,0)
-    
-    ! Parameters defining the constraints
-    call parlst_getvalue_int (rparlist,ssectionOptC,&
-        'ccontrolConstraints',roptcontrol%rconstraints%ccontrolConstraints,0)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumin1',roptcontrol%rconstraints%dumin1,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumax1',roptcontrol%rconstraints%dumax1,1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumin2',roptcontrol%rconstraints%dumin2,-1.0E10_DP)
-
-    call parlst_getvalue_double (rparlist,ssectionOptC,&
-        'dumax2',roptcontrol%rconstraints%dumax2,1.0E10_DP)
-
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        'stargetFlow',sstr,'OPTCTARGETFLOW',bdequote=.true.)
+        'stargetFlow',sstr,bdequote=.true.)
     call init_initFlow (rparlist,sstr,roptcontrol%rtargetFlow,&
         ssectionDiscr,rtriaCoarse,rrefinementSpace,rfeHierPrimal,rboundary,&
         rtimeHierarchy%dtimeInit,rtimeHierarchy%dtimeMax)
@@ -1449,7 +1481,7 @@ contains
     type(t_collection) :: rcollection
     
     character(len=SYS_STRLEN), dimension(6) :: Sexpressions
-    character(len=SYS_STRLEN) :: smesh,sflowFile,spar,sstr
+    character(len=SYS_STRLEN) :: smesh,sflowFile
     integer :: ilevel,ielementType,idelta,ieltype
     integer :: ntimesteps
     
@@ -1929,8 +1961,6 @@ contains
 !</output>
 
 !</subroutine>
-
-    character(len=SYS_STRLEN) :: sstr
 
     call parlst_getvalue_double (rparlist,ssection,&
         'dprimalDualCoupling',rdebugFlags%dprimalDualCoupling,1.0_DP)
