@@ -425,7 +425,7 @@ contains
 
 !<subroutine>
 
-  subroutine smva_getDiscrData (rsettings, ilevel, rdiscrData)
+  subroutine smva_getDiscrData (rsettings, ilevel, rdiscrData,rphysics)
   
 !<description>
   ! Fetches all discretisation data from the main program structure that is
@@ -438,6 +438,10 @@ contains
   
   ! Level where the discretisation takes place.
   integer, intent(in) :: ilevel
+
+  ! OPTIONAL: Alternative physics definition to use.
+  ! If not present, the standard global physics settings are used.
+  type(t_settings_physics), intent(in), optional :: rphysics
 !</input>
 
 !<output>
@@ -449,6 +453,9 @@ contains
 
     ! Get level-independent data.
     rdiscrData%rphysicsPrimal = rsettings%rphysicsPrimal
+    if (present(rphysics)) then
+      rdiscrData%rphysicsPrimal = rphysics
+    end if
     rdiscrData%rstabilPrimal = rsettings%rstabilPrimal
     rdiscrData%rstabilDual = rsettings%rstabilDual
     rdiscrData%rconstraints = rdiscrData%rconstraints
