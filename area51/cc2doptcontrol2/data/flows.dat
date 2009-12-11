@@ -6,8 +6,8 @@
 ##################
 
 # Type of flow.
-# =-1: zero flow
-# =0: analytically given as callback function
+# =-1: analytically given as callback function
+# =0: zero flow
 # =1: stationary flow as prescribed by a solution vector read in from a file.
 #     The filename is stargetFlow below.
 # =2: The first file of a nonstationary flow as prescribed by a sequence of 
@@ -84,8 +84,8 @@ ntimesteps = 64
 ###############
 
 # Type of flow.
-# =-1: zero flow
-# =0: analytically given as callback function using iid
+# =-1: analytically given as callback function using iid
+# =0: zero flow
 # =3: analytically given in expression sflowExpressionX/sflowExpressionY
 
 ctype = -1
@@ -114,8 +114,8 @@ sflowExpressionP = ''
 ################
 
 # Type of flow.
-# =-1: zero flow
-# =0: analytically given as callback function
+# =-1: analytically given as callback function
+# =0: zero flow
 # =1: stationary flow as prescribed by a solution vector read in from a file.
 #     The filename is stargetFlow below.
 # =2: nonstationary flow as prescribed by a sequence of files on the 
@@ -125,6 +125,8 @@ sflowExpressionP = ''
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
 # =3: analytically given in expression sflowExpressionX/sflowExpressionY
+# =4: Created by a forward simulation. ssectionSimulation configures
+#     the simulation.
 
 ctype = -1
 
@@ -184,6 +186,12 @@ idelta = 1
 
 ntimesteps = 64 
 
+# If ctype=4, this specifies the name of a section defining a forward simulation
+# to create the flow.
+
+ssectionSimulation = DISCR_TARGETFLOW
+
+
 # =======================================================================================
 # Section that defines the initial iterate in the optimal control problem.
 
@@ -192,8 +200,8 @@ ntimesteps = 64
 ################
 
 # Type of flow.
-# =-1: zero flow
-# =0: analytically given as callback function
+# =-1: analytically given as callback function
+# =0: zero flow
 # =1: stationary flow as prescribed by a solution vector read in from a file.
 #     The filename is stargetFlow below.
 # =2: The first file of a nonstationary flow as prescribed by a sequence of 
@@ -204,7 +212,7 @@ ntimesteps = 64
 #     time discretisation!
 # =3: analytically given in expression sflowExpressionX/sflowExpressionY
 
-ctype = -1
+ctype = 0
 
 # Id of the initial condition in case ctype=0.
 
@@ -261,6 +269,7 @@ idelta = 1
 # the last solution is duplicated to fill the remaining time steps.
 
 ntimesteps = 64 
+
 
 # =======================================================================================
 # Section defining a reference solution for error calculation
