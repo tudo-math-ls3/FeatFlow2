@@ -2596,7 +2596,7 @@ contains
 
 !<subroutine>
   
-  subroutine parlst_readfromfile (rparlist, sfilename, sdirectory)
+  subroutine parlst_readfromfile (rparlist, sfilename, sdirectory, bexpandVars)
   
 !<description>
   
@@ -2643,6 +2643,11 @@ contains
   ! the main file sfilename contains references to subfiles.
   character(LEN=*), intent(in), optional :: sdirectory
   
+  ! OPTIONAL: Expand references to subvariables.
+  ! TRUE: Subvariables like "%{section.varname} are expanded to actual values.
+  !       This is the standard setting.
+  ! FALSE: Subvariables are left as they are.
+  logical, intent(in), optional :: bexpandVars
 !</input>
 
     ! local variables
@@ -2723,7 +2728,7 @@ contains
       end if
       
       if (bexists) then
-        call parlst_readfromsinglefile (rparlist, sstring, .false.)
+        call parlst_readfromsinglefile (rparlist, sstring, .false., .false.)
         
         ! Replace the filename with the string including the path.
         ! Then the actual read process at the end of the routine can be
@@ -2794,7 +2799,8 @@ contains
       
       if (bexists) then
         ! Read the sub-files...
-        call parlst_readfromsinglefile (rparlist, sstring, .true.)
+        ! Do not yet expand variables.
+        call parlst_readfromsinglefile (rparlist, sstring, .true., .false.)
       end if
     end do
     
@@ -2804,7 +2810,8 @@ contains
     inquire(file=sstring, exist=bexists)
     
     if (bexists) then
-      call parlst_readfromsinglefile (rparlist, sstring, .true.)
+      ! Do not yet expand variables.
+      call parlst_readfromsinglefile (rparlist, sstring, .true., .false.)
     end if
 
     if (nsubfiles .gt. 1) then
@@ -2826,12 +2833,21 @@ contains
 
     ! Release memory, finish
     deallocate(p_Ssubfiles)
-    
+
+    ! Now expand all subvariables and environment variables to the actual values.
+    if (.not. present(bexpandVars)) then
+      call parlst_expandEnvVariables(rparlist)
+      call parlst_expandSubvars(rparlist)
+    else if (bexpandVars) then
+      call parlst_expandEnvVariables(rparlist)
+      call parlst_expandSubvars(rparlist)
+    end if
+
   end subroutine
   
   ! ***************************************************************************
 
-  subroutine parlst_readfromsinglefile (rparlist, sfilename, bimportSections)
+  subroutine parlst_readfromsinglefile (rparlist, sfilename, bimportSections, bexpandVars)
     
 !<description>
   
@@ -2863,6 +2879,12 @@ contains
   ! FALSE: Import only the main (unnamed) section and ignore all other
   ! sections.#
   logical, intent(in) :: bimportSections
+  
+  ! OPTIONAL: Expand references to subvariables.
+  ! TRUE: Subvariables like "%{section.varname} are expanded to actual values.
+  !       This is the standard setting.
+  ! FALSE: Subvariables are left as they are.
+  logical, intent(in), optional :: bexpandVars
   
 !</input>
     
@@ -2959,9 +2981,15 @@ contains
     ! Close the file.
     close (iunit)
 
-    ! Expand all subvariables and environment variables to the actual values.
-    call parlst_expandEnvVariables(rparlist)
-    call parlst_expandSubvars(rparlist)
+    if (.not. present(bexpandVars)) then
+      ! Expand all subvariables and environment variables to the actual values.
+      call parlst_expandEnvVariables(rparlist)
+      call parlst_expandSubvars(rparlist)
+    else if (bexpandVars) then
+      ! Expand all subvariables and environment variables to the actual values.
+      call parlst_expandEnvVariables(rparlist)
+      call parlst_expandSubvars(rparlist)
+    end if
     
   end subroutine
   
