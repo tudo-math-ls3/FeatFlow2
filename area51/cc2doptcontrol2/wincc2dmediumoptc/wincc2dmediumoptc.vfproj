@@ -35,11 +35,11 @@
 		<File RelativePath="..\data\bdconditions.dat"/>
 		<File RelativePath="..\data\discretisation.dat"/>
 		<File RelativePath="..\data\flows.dat"/>
+		<File RelativePath="..\data\forwardsolver.dat"/>
 		<File RelativePath="..\data\linsol.dat"/>
 		<File RelativePath="..\data\main.dat"/>
 		<File RelativePath="..\Makefile"/>
 		<File RelativePath="..\data\master.dat"/>
-		<File RelativePath="..\data\forwardsolver.dat"/>
 		<File RelativePath="..\data\optcontrol.dat"/>
 		<File RelativePath="..\data\output.dat"/>
 		<File RelativePath="..\data\paramtriang.dat"/>
@@ -50,12 +50,8 @@
 		<Filter Name="f90">
 		<Filter Name="basediscretisation">
 		<File RelativePath="..\src\analyticsolution.f90"/>
-		<File RelativePath="..\src\fespacehierarchy.f90"/>
-		<File RelativePath="..\src\meshhierarchy.f90"/>
 		<File RelativePath="..\src\spacetimehierarchy.f90"/>
-		<File RelativePath="..\src\spacetimevectors.f90"/>
-		<File RelativePath="..\src\timediscretisation.f90"/>
-		<File RelativePath="..\src\timescalehierarchy.f90"/></Filter>
+		<File RelativePath="..\src\spacetimevectors.f90"/></Filter>
 		<Filter Name="basic">
 		<File RelativePath="..\src\user_callback.f90"/></Filter>
 		<Filter Name="main">
@@ -73,9 +69,6 @@
 		<File RelativePath="..\src\structuresoptflow.f90"/>
 		<File RelativePath="..\src\structuresspacetimelinsol.f90"/></Filter>
 		<Filter Name="general">
-		<File RelativePath="..\src\optcinit.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
-			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\src\scriptfilesupport.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
@@ -105,6 +98,9 @@
 		<File RelativePath="..\src\assemblytemplates.f90"/></Filter>
 		<Filter Name="unused">
 		<File RelativePath="..\src\nonstationaryoptcsolver.f90">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
+			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\optcinit.f90">
 			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/>
 			<FileConfiguration Name="Release ohne IPO|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\src\paramtriainit.f90">
