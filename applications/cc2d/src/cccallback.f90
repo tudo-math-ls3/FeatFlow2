@@ -1699,5 +1699,52 @@ contains
     Dcoefficients(:,:) = 0.0_DP
 
   end subroutine
+
+! *****************************************************************
   
+!<subroutine>
+  subroutine calcAdaptiveTimestep (dtstep,dtimeInit,dtime,isolverStatus,rcollection)
+!</subroutine>
+  
+!<description>
+  ! Is called by the framework to calculate a new timestep size if
+  ! cadaptiveTimeStepping=-1. 
+!</description>
+
+!<input>
+  ! Initial time
+  real(dp), intent(in) :: dtimeInit 
+  
+  ! Current simulation time
+  real(dp), intent(in) :: dtime     
+
+  ! Status of the solver
+  !  TADTS_SST_NLFAIL           = failure of the nonlinear solver
+  !  TADTS_SST_NLPRECFAIL       = failure of the nonlinear solver and 
+  !                               preconditioner in the nonlinear solver
+  !  TADTS_SST_NLINCOMPLETE     = nonlinear solver did not converge completely
+  !  TADTS_SST_NLPREDFAIL       = failure of the nonlinear solver and preconditioner 
+  !                               in the nonlinear solver during the predictor step
+  !  TADTS_SST_NLPREDPRECFAIL   = failure of the nonlinear solver during 
+  !                               the predictor step
+  !  TADTS_SST_NLPREDINCOMPLETE = nonlinear solver in the predictor step did 
+  !                               not converge completely
+  integer, intent(in) :: isolverStatus 
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(in), optional :: rcollection
+!</input>
+
+!<inputoutput>
+  ! Current timestep size. The routine may change this as needed.
+  ! Must be > 0!
+  real(dp), intent(inout) :: dtstep
+!</inputoutput>
+    
+    ! Current implementation: No nothing.
+    ! Then, a fixed timestep is used.
+    
+  end subroutine
+
 end module

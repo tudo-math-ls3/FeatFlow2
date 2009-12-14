@@ -644,6 +644,9 @@ contains
       !
       ! Do we use adaptive time stepping?
       select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
+      case (TADTS_USERDEF)
+        ! Nothing to be done
+        
       case (TADTS_FIXED) 
         ! Nothing to be done
         
@@ -803,7 +806,7 @@ contains
         ! Respecting this, i is assigned the number of the substep in the
         ! macrostep.
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
-        case (TADTS_FIXED) 
+        case (TADTS_FIXED,TADTS_USERDEF) 
           i = 1
           j = 1
         case (TADTS_PREDICTION,TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
@@ -821,78 +824,128 @@ contains
             //trim(sys_sdL(rproblem%rtimedependence%dtime,5)) &
             //' finished. ',coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
 
-        ! Did the solver break down?
-        if (rnlSol%iresult .lt. 0) then
-          call output_line ('Accuracy notice: Nonlinear solver did not reach '// &
-                            'the convergence criterion!',&
-                            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-        else if (rnlSol%iresult .gt. 0) then
-          ! Oops, not really good. 
-          babortTimestep = .true.
+        if (rproblem%rtimedependence%radaptiveTimeStepping%ctype .eq. TADTS_USERDEF) then
 
-          ! Do we have a time stepping algorithm that allowes recomputation?          
-          select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
-          case (TADTS_FIXED,TADTS_PREDICTION)
-            ! That is bad. Our solution is garbage!
-            ! We do not do anything in this case. The repetition technique will
-            ! later decide on whether to repeat the step or to stop the 
-            ! computation.
-            call output_line ('Nonlinear solver broke down. Solution probably garbage!',&
-                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-            
-          case (TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
-            ! Yes, we have. 
-            call output_line ('Nonlinear solver broke down. '// &
-                              'Calculating new time step size...',&
-                              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-            
-            ! Calculate a new time step size.
-            select case (rnlSol%iresult)
-            case (:-1)
-              ! Nonlinear solver worked, but could not reach convergence criterion
-              isolverStatus = ior(isolverStatus,TADTS_SST_NLINCOMPLETE)
-            case (0)
-              ! Everything fine
-            case (1)
-              ! Nonlinear solver diverged
-              isolverStatus =  ior(isolverStatus,TADTS_SST_NLFAIL)
-            case (2)
-              ! Nonlinear solver diverged because of error in the preconditioner
-              isolverStatus =  ior(isolverStatus,&
-                                   TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
-            case (3)
-              ! General error
-              isolverStatus = not(0)
-            end select
-            dtmp = adtstp_calcTimeStep (&
-                rproblem%rtimedependence%radaptiveTimeStepping, &
-                0.0_DP, &
-                rproblem%rtimedependence%dtimeInit,&
-                rproblem%rtimedependence%dtime, &
-                rtimeStepping%dtstepFixed, &
-                timstp_getOrder(rtimeStepping), &
-                isolverStatus,irepetition) 
-
-            ! Tell the user that we have a new time step size.
-            !CALL output_line ('Timestepping by '&
-            !    //TRIM(sys_siL(irepetition,2)) &
-            !    //' (' &
-            !    //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
-            !    //'), New Stepsize = ' &
-            !    //TRIM(sys_sdEP(dtmp,9,2)) &
-            !    //', Old Stepsize = ' &
-            !    //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
-            call output_line ('New Stepsize = ' &
-                //trim(sys_sdEP(dtmp,9,2)) &
-                //', Old Stepsize = ' &
-                //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
-                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
-            call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
-
-            ! Accept the new step size
-            call timstp_setBaseSteplength (rtimeStepping, dtmp)
-
+          ! User defined time stepping.
+          !
+          ! Calculate a new time step size.
+          isolverStatus = 0
+          select case (rnlSol%iresult)
+          case (:-1)
+            ! Nonlinear solver worked, but could not reach convergence criterion
+            isolverStatus = ior(isolverStatus,TADTS_SST_NLINCOMPLETE)
+          case (0)
+            ! Everything fine
+          case (1)
+            ! Nonlinear solver diverged
+            isolverStatus =  ior(isolverStatus,TADTS_SST_NLFAIL)
+          case (2)
+            ! Nonlinear solver diverged because of error in the preconditioner
+            isolverStatus =  ior(isolverStatus,&
+                                TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
+          case (3)
+            ! General error
+            isolverStatus = not(0)
           end select
+          call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+          dtmp = adtstp_calcTimeStep (&
+              rproblem%rtimedependence%radaptiveTimeStepping, &
+              0.0_DP, &
+              rproblem%rtimedependence%dtimeInit,&
+              rproblem%rtimedependence%dtime, &
+              rtimeStepping%dtstepFixed, &
+              timstp_getOrder(rtimeStepping), &
+              isolverStatus,irepetition,calcAdaptiveTimestep,rproblem%rcollection)
+          call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
+          ! Tell the user that we have a new time step size.
+          call output_line ('New Stepsize = ' &
+              //trim(sys_sdEP(dtmp,9,2)) &
+              //', Old Stepsize = ' &
+              //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
+              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+          call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+
+          ! Accept the new step size
+          call timstp_setBaseSteplength (rtimeStepping, dtmp)
+        
+        else
+
+          ! Did the solver break down?
+          if (rnlSol%iresult .lt. 0) then
+            call output_line ('Accuracy notice: Nonlinear solver did not reach '// &
+                              'the convergence criterion!',&
+                              coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+          else if (rnlSol%iresult .gt. 0) then
+            ! Oops, not really good. 
+            babortTimestep = .true.
+
+            ! Do we have a time stepping algorithm that allowes recomputation?          
+            select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
+            case (TADTS_FIXED,TADTS_PREDICTION)
+              ! That is bad. Our solution is garbage!
+              ! We do not do anything in this case. The repetition technique will
+              ! later decide on whether to repeat the step or to stop the 
+              ! computation.
+              call output_line ('Nonlinear solver broke down. Solution probably garbage!',&
+                  coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+              
+            case (TADTS_PREDICTREPEAT,TADTS_PREDREPTIMECONTROL)
+              ! Yes, we have. 
+              call output_line ('Nonlinear solver broke down. '// &
+                                'Calculating new time step size...',&
+                                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+              
+              ! Calculate a new time step size.
+              isolverStatus = 0
+              select case (rnlSol%iresult)
+              case (:-1)
+                ! Nonlinear solver worked, but could not reach convergence criterion
+                isolverStatus = ior(isolverStatus,TADTS_SST_NLINCOMPLETE)
+              case (0)
+                ! Everything fine
+              case (1)
+                ! Nonlinear solver diverged
+                isolverStatus =  ior(isolverStatus,TADTS_SST_NLFAIL)
+              case (2)
+                ! Nonlinear solver diverged because of error in the preconditioner
+                isolverStatus =  ior(isolverStatus,&
+                                    TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL)
+              case (3)
+                ! General error
+                isolverStatus = not(0)
+              end select
+              dtmp = adtstp_calcTimeStep (&
+                  rproblem%rtimedependence%radaptiveTimeStepping, &
+                  0.0_DP, &
+                  rproblem%rtimedependence%dtimeInit,&
+                  rproblem%rtimedependence%dtime, &
+                  rtimeStepping%dtstepFixed, &
+                  timstp_getOrder(rtimeStepping), &
+                  isolverStatus,irepetition) 
+
+              ! Tell the user that we have a new time step size.
+              !CALL output_line ('Timestepping by '&
+              !    //TRIM(sys_siL(irepetition,2)) &
+              !    //' (' &
+              !    //TRIM(sys_siL(rproblem%rtimedependence%itimeStep,6)) &
+              !    //'), New Stepsize = ' &
+              !    //TRIM(sys_sdEP(dtmp,9,2)) &
+              !    //', Old Stepsize = ' &
+              !    //TRIM(sys_sdEP(rtimeStepping%dtstepFixed,9,2)) )
+              call output_line ('New Stepsize = ' &
+                  //trim(sys_sdEP(dtmp,9,2)) &
+                  //', Old Stepsize = ' &
+                  //trim(sys_sdEP(rtimeStepping%dtstepFixed,9,2)),&
+                  coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+              call output_separator(OU_SEP_AT,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+
+              ! Accept the new step size
+              call timstp_setBaseSteplength (rtimeStepping, dtmp)
+
+            end select
+            
+          end if
           
         end if  
             
@@ -909,6 +962,9 @@ contains
         ! adapts the time step size and probably wants to repeat the 
         ! calculation?
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
+        case (TADTS_USERDEF)
+          ! No, continue as usual.
+          
         case (TADTS_FIXED) 
           ! No, continue as usual.
          
@@ -1122,7 +1178,7 @@ contains
         
         ! Do we have a time stepping algorithm that allowes recomputation?          
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
-        case (TADTS_FIXED) 
+        case (TADTS_FIXED,TADTS_USERDEF) 
           ! That is bad. Our solution is most probably garbage!
           ! We cancel the timeloop, it does not make any sense to continue.
           call output_line ('Solution garbage! Stopping simulation.',&
