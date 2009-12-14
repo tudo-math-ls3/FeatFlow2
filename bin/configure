@@ -187,6 +187,8 @@ use constant SRCLIST_KERNEL =>
     "ElementCubature/element_tri2d.f90 ElementCubature/elementbase.f90 " .
     "ElementCubature/elementpreprocessing.f90 ElementCubature/transformation.f90 " .
 
+    "Hierarchies/fespacehierarchy.f90 Hierarchies/meshhierarchy.f90 Hierarchies/timescalehierarchy.f90 " .
+
     "LinearAlgebra/linearalgebra.f90 " .
 
     "LinearSolver/coarsegridcorrection.f90 LinearSolver/filtersupport.f90 " .
@@ -223,7 +225,7 @@ use constant SRCLIST_KERNEL =>
     "System/paramlist.f90 System/signals.f90 System/sort.f90 System/statistics.f90 " .
     "System/storage.f90 System/textstream.f90 System/uuid.f90 " .
 
-    "TimeDependence/timestepping.f90 " .
+    "TimeDependence/timestepping.f90 TimeDependence/timediscretisation.f90 " .
 
     "Triangulation/griddeform.f90 Triangulation/meshadjacency.f90 Triangulation/meshmodification.f90 " .
     "Triangulation/meshregion.f90 Triangulation/triangulation.f90 Triangulation/triasearch.f90";
