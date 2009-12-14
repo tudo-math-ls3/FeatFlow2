@@ -39,7 +39,7 @@ NLMAX              = 3
 iElementType       = 6
 
 [TIME-PREPROCESSING]
-ctypeStartVector   = 3
+ctypeStartVector   = 0
 
 [RIGHTHANDSIDE]
 ctype = 3
@@ -69,7 +69,7 @@ bdComponent1(1)=
 
 [TIME-DISCRETISATION]
 niterations = 2
-TIMENLMIN = 1
+TIMENLMIN = 2
 TIMENLMAX = 2
 dtimeStepTheta = 0.5
 
@@ -88,7 +88,8 @@ sflowExpressionY1 = '2*(TIME-1)*(-X)+TIME^2*(-X)'
 sflowExpressionY2 = '2*(TIME-1)*(Y)+TIME^2*(Y)'
 
 [TIME-POSTPROCESSING]
-#sgmvFileName = 'gmv/utest2quad.gmv' 
+sfilenameUCD = 'gmv/utest2quad.gmv' 
+sfinalSolutionFileName = 'ns/solution'
 icalcError = 1
 
 [TIME-SOLVER]
@@ -119,7 +120,7 @@ nmaxIterations = 1
 domega = 1.0
 
 [TIME-SINGLEGRIDSOLVER]
-ctypeSolver = 9
+ctypeSolver = 8
 nmaxIterations = 100
 depsRel = 1E-5
 depsAbs = 1E-15

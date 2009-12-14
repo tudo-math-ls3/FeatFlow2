@@ -76,9 +76,6 @@ module structuresoptflow
     ! ="": Disable.
     character(len=SYS_STRLEN) :: sfinalSolutionFileName = ""
     
-    ! Whether to calculate drag/lift forces.
-    integer :: icalcForces = 0
-    
     ! Whether to calculate the values of the optimisation functional
     ! J(.) as well as ||y-y0|| etc. during the postprocessing of space-time vectors.
     integer :: icalcFunctionalValues = 0
@@ -91,6 +88,28 @@ module structuresoptflow
     ! if icalcError > 0.
     type(t_anSolution) :: ranalyticRefFunction   
     
+    ! Whether to calculate drag/lift forces.
+    integer :: icalcForces = 0
+    
+    ! Boundary component where to calculate body forces
+    integer :: ibodyForcesBdComponent = 0
+    
+    ! 1st coefficient in the boundary integral of the drag coefficient.
+    ! If this is commented out, 1/RE is assumed.
+    real(DP) :: dbdForcesCoeff1 = 0.0_DP
+    
+    ! 2nd coefficient in the boundary integral of the drag coefficient.
+    ! If this is commented out, 0.004 is assumed (corresonds to flow 
+    ! around cylinder with RE=1000: Umean=0.2, len=0.1
+    ! -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
+    real(DP) :: dbdForcesCoeff2 = 0.0_DP
+
+    ! Whether to write drag/lift forces to hard disc.
+    integer :: iwriteBodyForces = 0
+
+    ! Filename for the body forces
+    character(len=SYS_STRLEN) :: sfilenameBodyForces = ""
+
     ! <!-- the following parameters are automatically maintained during a simulation -->
     
     ! Space that is available in rsolution. One of the CCSPACE_xxxx constants.

@@ -31,6 +31,7 @@ module postprocessing
   use fsystem
   use storage
   use genoutput
+  use io
   use basicgeometry
   use linearsolver
   use boundary
@@ -58,6 +59,7 @@ module postprocessing
   use convection
   
   use ucd
+  use vectorio
   
   use pprocnavierstokes
 
@@ -215,7 +217,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocessSingleSol (rpostproc,ifileid,dtime,rvector,&
-      roptcontrol,rsettings)
+      roptcontrol,rsettings,bfirstFile)
   
 !<description>
   ! Postprocessing of a single solution at a definite time.
@@ -242,12 +244,17 @@ contains
   
   ! Parameters about the optimal control
   type(t_settings_optcontrol), intent(in) :: roptControl
+  
+  ! Must be set to TRUE for the first file of a sequence of files or
+  ! of teh file does not belong to a sequence.
+  logical, intent(in) :: bfirstFile
 !</input>
 
 !</subroutine>
 
   ! local variables
-  integer :: ieltype
+  integer :: ieltype,cflag,iunit
+  logical :: bfileexists
   type(t_collection) :: rcollection
 
   ! We need some more variables for postprocessing - i.e. writing
@@ -271,7 +278,7 @@ contains
   ! Divergence
   !type(t_vectorScalar), target :: rtempVector
   
-  character(SYS_STRLEN) :: sgmvName
+  character(SYS_STRLEN) :: sfilename
 
   ! Discrete boundary conditions
   type(t_discreteBC) :: rdiscreteBC
@@ -279,13 +286,16 @@ contains
   ! Discrete fictitious boundary conditions
   type(t_discreteFBC) :: rdiscreteFBC
 
-    if (rpostproc%ioutputUCD .eq. 0) return ! nothing to do
+    ! When writing to a file is enabled, delete the file in the first timestep.
+    cflag = SYS_APPEND
+    if (bfirstFile) cflag = SYS_REPLACE
 
     ! If we have a uniform discretisation, calculate the body forces on the
     ! 2nd boundary component - if it exists.
     if ((rpostproc%p_rspaceDiscr%RspatialDiscr(1)% &
          ccomplexity .eq. SPDISC_UNIFORM) .and. &
-        (boundary_igetNBoundComp(rvector%p_rblockDiscr%p_rboundary) .ge. 2) .and.&
+        (boundary_igetNBoundComp(rvector%p_rblockDiscr%p_rboundary) .ge. &
+            rpostproc%ibodyForcesBdComponent) .and.&
         (rpostproc%icalcForces .ne. 0)) then
 
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
@@ -295,7 +305,8 @@ contains
       rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
       df1 = 1.0_DP/1000.0_DP
       df2 = 0.1_DP * 0.2_DP**2
-      call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,df1,df2)
+      call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,&
+          rpostproc%dbdForcesCoeff1,rpostproc%dbdForcesCoeff2)
       
       call output_lbrk()
       call output_line ('Body forces real bd., bdc/horiz/vert')
@@ -303,8 +314,36 @@ contains
           //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
           //trim(sys_sdEP(Dforces(2),15,6)) )
       
+      if (rpostproc%iwriteBodyForces .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(rpostproc%sfilenameBodyForces, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time bdc horiz vert'
+        end if
+        write (iunit,'(A)') trim(sys_siL(ifileid,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_siL(rpostproc%ibodyForcesBdComponent,10)) // ' ' &
+            // trim(sys_sdEL(Dforces(1),10)) // ' '&
+            // trim(sys_sdEL(Dforces(2),10))
+        close (iunit)
+      end if
+      
     endif
     
+    if (rpostproc%sfinalSolutionFileName .ne. "") then
+      ! Write the current solution to disc as it is.
+      sfilename = trim(rpostproc%sfinalSolutionFileName)//'.'//sys_si0(ifileid,5)
+      
+      call output_lbrk ()
+      call output_line ('Writing solution file: '//trim(sfilename))
+      
+      call vecio_writeBlockVectorHR (rvector, "vector"//sys_si0(ifileid,5), .false.,&
+          0, sfilename,  "(E20.10)")
+    end if
+
     ! If we have a simple Q1~ discretisation, calculate the streamfunction.
 !    IF (rvector%p_rblockDiscretisation%RspatialDiscr(1)% &
 !        ccomplexity .EQ. SPDISC_UNIFORM) THEN
@@ -382,23 +421,23 @@ contains
     p_rtriangulation => rpostproc%p_rspaceDiscr%p_rtriangulation
     
     ! Check if we have a filename where to write GMV output to.
-    if (rpostproc%sfilenameUCD .ne. "") then
+    if ((rpostproc%ioutputUCD .ne. 0) .and. (rpostproc%sfilenameUCD .ne. "")) then
     
       ! Start UCD export:
-      sgmvName = trim(rpostproc%sfilenameUCD)//'.'//sys_si0(ifileid,5)
+      sfilename = trim(rpostproc%sfilenameUCD)//'.'//sys_si0(ifileid,5)
       
       call output_lbrk ()
-      call output_line ('Writing visualisation file: '//trim(sgmvName))
+      call output_line ('Writing visualisation file: '//trim(sfilename))
       
       select case (rpostproc%ioutputUCD)
       case (1)
-        call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sgmvName)
+        call ucd_startGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
 
       case (2)
-        call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sgmvName)
+        call ucd_startAVS (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
             
       case (3)
-        call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sgmvName)
+        call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfilename)
             
       case default
         call output_line ('Invalid UCD ooutput type.', &
@@ -535,18 +574,24 @@ contains
   real(dp) :: dtime
   real(DP), dimension(4) :: Derror
 
+    ! Create a temp vector in space for postprocessing
+    call lsysbl_createVectorBlock (rvector%p_rspaceDiscr,rvecTemp)
+
     ! Write a file for every timestep
     do istep = 1,rvector%NEQtime
       call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtime)
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
       call optcpp_postprocessSingleSol (rpostproc,istep,dtime,rvecTemp,&
-          roptControl,rsettings)
+          roptControl,rsettings,istep .eq. 1)
     end do
+    
+    call lsysbl_releaseVector (rvecTemp)
     
     ! Should we calculate the functional?
     if (rpostproc%icalcFunctionalValues .ne. 0) then
       call optcana_nonstatFunctional (rsettings%rglobalData,roptControl%rconstraints,&
           rvector,roptcontrol%rtargetFlow,roptControl%dalphaC,roptControl%dgammaC,Derror)
+      call output_lbrk ()
       call output_line ('||y-z||       = '//trim(sys_sdEL(Derror(1),10)))
       call output_line ('||u||         = '//trim(sys_sdEL(Derror(2),10)))
       call output_line ('||y(T)-z(T)|| = '//trim(sys_sdEL(Derror(3),10)))
@@ -621,7 +666,7 @@ contains
       call tdiscr_getTimestep(rtimediscr,istep-1,dtime)
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
       call optcpp_postprocessSingleSol (rpostproc,istep,dtime,rvecTemp,&
-          rsettings%rsettingsOptControl,rsettings)
+          rsettings%rsettingsOptControl,rsettings,istep .eq. 1)
     end do
     
     ! Release all created stuff

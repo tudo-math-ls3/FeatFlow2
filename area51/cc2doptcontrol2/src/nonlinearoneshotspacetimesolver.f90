@@ -314,6 +314,7 @@ contains
     call stat_clearTimer (rnlstsolver%rtimeLinearAlgebra)
     call stat_clearTimer (rnlstsolver%rtimeProlRest)
     call stat_clearTimer (rnlstsolver%rtimeSpacePrecond)
+    call stat_clearTimer (rnlstsolver%rtimePostprocessing)
     
     call stat_clearTimer (rnlstsolver%rtimerPreconditioner)
     call stat_clearTimer (rnlstsolver%rtimerNonlinear)
@@ -440,6 +441,7 @@ contains
       end if
 
       ! Value of the functional
+      call stat_startTimer (rnlstsolver%rtimePostprocessing)
       call optcana_nonstatFunctional (rsettings%rglobalData,&
           rsettings%rsettingsOptControl%rconstraints,&
           rx,rsettings%rsettingsOptControl%rtargetFlow,&
@@ -467,6 +469,7 @@ contains
           call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
         end if
       end if
+      call stat_stopTimer (rnlstsolver%rtimePostprocessing)
 
       if (rnlstsolver%ioutputLevel .ge. 1) then
         if (rnlstsolver%ctypeNonlinearIteration .eq. CCNLS_INEXACTNEWTON) then
@@ -602,6 +605,7 @@ contains
     ! Value of the functional
     if (rnlstsolver%ioutputLevel .ge. 1) &
       call output_separator (OU_SEP_MINUS)
+    call stat_startTimer (rnlstsolver%rtimePostprocessing)
     call optcana_nonstatFunctional (rsettings%rglobalData,&
         rsettings%rsettingsOptControl%rconstraints,&
         rx,rsettings%rsettingsOptControl%rtargetFlow,&
@@ -628,6 +632,7 @@ contains
         call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
       end if
     end if
+    call stat_stopTimer (rnlstsolver%rtimePostprocessing)
 
   end subroutine
 

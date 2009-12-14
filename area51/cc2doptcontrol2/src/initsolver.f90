@@ -2812,6 +2812,22 @@ contains
         'icalcForces',rpostproc%icalcForces,0)
 
     call parlst_getvalue_int (rparlist,ssection,&
+        'ibodyForcesBdComponent',rpostproc%ibodyForcesBdComponent,2)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dbdForcesCoeff1',rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnu)
+
+    call parlst_getvalue_double (rparlist,ssection,&
+        'dbdForcesCoeff2',rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        'iwriteBodyForces',rpostproc%iwriteBodyForces,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameBodyForces",rpostproc%sfilenameBodyForces,&
+        "",bdequote=.true.)
+
+    call parlst_getvalue_int (rparlist,ssection,&
         'icalcFunctionalValues',rpostproc%icalcFunctionalValues,0)
 
     call parlst_getvalue_string (rparlist,ssection,&

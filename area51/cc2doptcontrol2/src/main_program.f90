@@ -63,8 +63,9 @@ module main_program
 !  use paramtriainit
 !  use spatialbc
 !  use spacediscretisation
-!  use postprocessing
-!  
+
+  use postprocessing
+  
   use externalstorage
   use paramlist
   
@@ -1153,8 +1154,8 @@ contains
     ! Postprocessing data.    
     type(t_optcPostprocessing) :: rpostproc
     
-    ! Total time
-    type(t_timer) :: rtotalTime,rinitTime,rsolverTime
+    ! Some timers
+    type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc
 
     ! Ok, let us start. 
     !
@@ -1233,6 +1234,19 @@ contains
     call stat_stopTimer (rsolverTime)
     
     call output_separator (OU_SEP_EQUAL)
+
+    ! Pipe the solution through our postprocessing routines
+    call output_line ("Postprocessing of the final solution...")
+    call stat_clearTimer (rtimePostProc)
+    call stat_startTimer (rtimePostProc)
+    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,&
+        p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)    
+    call stat_stopTimer (rtimePostProc)
+    
+    ! Sum up the time for the postprocesing during the simulation
+    call stat_addTimers (p_rnlstsolver%rtimePostprocessing,rtimePostProc)
+
+    call output_separator (OU_SEP_EQUAL)
     
     ! Print out statistics about our solver.
     call stnlsinit_printSolverStatistics (p_rnlstsolver)
@@ -1249,6 +1263,8 @@ contains
     call output_separator (OU_SEP_EQUAL)
     call output_line ("Time for initialisation            = "//&
         sys_sdL(rinitTime%delapsedReal,10))
+    call output_line ("Time for postprocessing            = "//&
+        sys_sdL(rtimePostProc%delapsedReal,10))
     call output_line ("Time for solving                   = "//&
         sys_sdL(rsolverTime%delapsedReal,10))
     call output_line ("Total time                         = "//&

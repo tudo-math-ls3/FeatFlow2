@@ -189,6 +189,9 @@ module structuresoptcspacetimenlsol
     ! STATISTICS: Time for initialisation / factorisation of the space time system;
     ! global and in one step
     type(t_timer) :: rtimeFactorisation
+
+    ! STATISTICS: Time for postprocessing
+    type(t_timer) :: rtimePostprocessing
     
   end type
 
@@ -333,6 +336,8 @@ contains
         trim(sys_siL(rsolver%nnonlinearIterations,10)))
     call output_line ('#iterations preconditioner         = '//&
         trim(sys_siL(rsolver%nlinearIterations,10)))
+    call output_line ('Total time for postprocessing      = '// &
+        trim(sys_sdL(rsolver%rtimePostprocessing%delapsedReal,10)))
 
     call output_separator (OU_SEP_MINUS)
 

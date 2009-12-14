@@ -79,10 +79,6 @@ sfilenameUCD = ''
 
 sfinalSolutionFileName = ''
 
-# Whether or not calculate drag/lift forces
-
-icalcForces = 1
-
 # Whether to calculate functional values (J(.)) during and after the computation.
 
 icalcFunctionalValues = 1
@@ -99,19 +95,32 @@ icalcError = 0
 
 ssectionReferenceFunction = REFERENCE-FUNCTION
 
-# Write final solution vector to a file. After a stationary simulation,
-# the stationary solution is written out. After a nonstationary simulation,
-# the solution after the last timestep is written out.
-# 0=don't write
-# |.|=1: write start vector to sSolutionWrite vector on level NLMAX,
-# |.|=2: write start vector to sSolutionWrite on level NLMAX-1.
-# etc...
-# <0: sSolutionWrite is unformatted file 
-#     (smaller, but processor dependent and not human readable)
+# Whether or not calculate drag/lift forces
 
-iSolutionWrite     = 0
+icalcForces = 1
 
-# Name of file for writing the final solution
+# Number of the boundary component where to calculate the body forces.
+# For flow around cylinder, this is =2 e.g.
 
-sSolutionWrite     = 'ns/DX4'
+ibodyForcesBdComponent = 2
+
+# 1st coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 1/RE is assumed.
+
+# dbdForcesCoeff1 = 0.001
+
+# 2nd coefficient in the boundary integral of the drag coefficient.
+# If this is commented out, 0.004 is assumed (corresonds to flow 
+# around cylinder with RE=1000: Umean=0.2, len=0.1
+# -> coeff = Umean^2*len = 0.04*0.1 = 0.004 )
+
+# dbdForcesCoeff2 = 0.004
+
+# Whether to write the body forces to a file
+
+iwriteBodyForces = 1
+
+# Filename for the body forces
+
+sfilenameBodyForces = 'ns/bdforces'
 
