@@ -2754,7 +2754,7 @@ contains
         
         ! if nnewsubfiles=0, there is (hopefully) only one string here.
         if (nnewsubfiles .eq. 0) then
-          call parlst_getvalue_string(rparlist%p_Rsections(1), iidxsubfiles, sstring)
+          call parlst_getvalue_string(rparlist%p_Rsections(1), iidxsubfiles, sstring,bdequote=.true.)
           if (trim(sstring) .ne. "") then
             ! Append the data.
             allocate(p_SsubfilesTemp(nsubfiles+1))
@@ -2763,7 +2763,13 @@ contains
             p_Ssubfiles => p_SsubfilesTemp
             nullify(p_SsubfilesTemp)
             
-            read (sstring,*) p_Ssubfiles(nsubfiles+1)
+            ! Expand subvariables and environment variables here.
+            ! This point is independent of a parameter bexpandVars
+            ! as subfiles may otherwise not be found!
+            call parlst_expandEnvVariable(sstring) 
+            call parlst_expandSubvariable(rparlist,sstring)
+
+            p_Ssubfiles(nsubfiles+1) = sstring
             nsubfiles = nsubfiles + 1
           end if
         else
@@ -2776,8 +2782,13 @@ contains
           
           do j=1,nnewsubfiles
             call parlst_getvalue_string(rparlist%p_Rsections(1), iidxsubfiles, &
-                sstring,isubstring=j)
-            read (sstring,*) p_Ssubfiles(nsubfiles+j)
+                p_Ssubfiles(nsubfiles+j),isubstring=j,bdequote=.true.)
+                
+            ! Expand subvariables and environment variables here.
+            ! This point is independent of a parameter bexpandVars
+            ! as subfiles may otherwise not be found!
+            call parlst_expandEnvVariable(p_Ssubfiles(nsubfiles+j)) 
+            call parlst_expandSubvariable(rparlist,p_Ssubfiles(nsubfiles+j))
           end do
           
           nsubfiles = nsubfiles + nnewsubfiles
@@ -3278,82 +3289,82 @@ contains
     
     end do ! isection
       
-  contains
-
-  !<function>
-  
-    subroutine expandEnvVariable(sbuffer) 
-
-    !<description>
-      ! This subroutine recursively expands all environment variables in the given
-      ! string sbuffer.
-    !</description>
-
-    !<input>
-      ! string; all environment variables in here are replaced
-      character(len=*), intent(inout) :: sbuffer
-    !</input>
-
-    !<errors>
-      ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
-    !</errors>
-  !</function>
-
-      ! flag
-      logical :: bfoundInEnv
-
-      ! start and end position of variable
-      integer(I32) :: istartPos, istopPosRelative
-
-      ! variable to expand environment variable on-the-fly to if found
-      character(len=SYS_STRLEN) :: sauxEnv
-
-      ! Buffer for the result
-      character(len=SYS_STRLEN) :: sresult
-
-      ! Initialise return value
-      sresult = trim(sbuffer)
-
-      ! check for a $ character
-      istartPos = index(sresult, "$")
-      do while (istartPos .gt. 0)
-        ! Detect end of variable: a variable ends at the first character that
-        ! is neither in '[A-Z]', '[0-9]' nor '_'.
-        istopPosRelative = verify(sresult(istartPos+1:), &
-                            "abcdefghijklmnopqrstuvwxyz" // &
-                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
-                            "0123456789_")
-
-        bfoundInEnv = .false.
-        ! Retrieve value of environment variable
-        ! (Do not forget to cut the dollar sign.)
-        bfoundInEnv = &
-            sys_getenv_string(trim(&
-                sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
-        if (bfoundInEnv) then
-          ! Replace environment variable by its content
-          sresult = sresult(1:istartPos-1) // &
-                    trim(sauxEnv) // &
-                    trim(sresult(istartPos + istopPosRelative:))
-        else
-          call output_line ('Environment variable <'//&
-              trim(sresult(istartPos + 1 : istartPos + istopPosRelative - 1))//&
-              '> not found!',&
-              OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandEnvVariables')
-          call sys_halt()
-        endif
-
-        ! check for next $ character
-        istartPos = index(sresult, "$")
-      enddo
-      
-      ! Replace by the result
-      sbuffer = sresult
-
-    end subroutine
-    
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine parlst_expandEnvVariable(sbuffer) 
+
+  !<description>
+    ! This subroutine recursively expands all environment variables in the given
+    ! string sbuffer.
+  !</description>
+
+  !<input>
+    ! string; all environment variables in here are replaced
+    character(len=*), intent(inout) :: sbuffer
+  !</input>
+
+  !<errors>
+    ! ERR_CONV_ENV_VAR_NOT_FOUND (critical)
+  !</errors>
+!</subroutine>
+
+    ! flag
+    logical :: bfoundInEnv
+
+    ! start and end position of variable
+    integer(I32) :: istartPos, istopPosRelative
+
+    ! variable to expand environment variable on-the-fly to if found
+    character(len=SYS_STRLEN) :: sauxEnv
+
+    ! Buffer for the result
+    character(len=SYS_STRLEN) :: sresult
+
+    ! Initialise return value
+    sresult = trim(sbuffer)
+
+    ! check for a $ character
+    istartPos = index(sresult, "$")
+    do while (istartPos .gt. 0)
+      ! Detect end of variable: a variable ends at the first character that
+      ! is neither in '[A-Z]', '[0-9]' nor '_'.
+      istopPosRelative = verify(sresult(istartPos+1:), &
+                          "abcdefghijklmnopqrstuvwxyz" // &
+                          "ABCDEFGHIJKLMNOPQRSTUVWXYZ" // &
+                          "0123456789_")
+
+      bfoundInEnv = .false.
+      ! Retrieve value of environment variable
+      ! (Do not forget to cut the dollar sign.)
+      bfoundInEnv = &
+          sys_getenv_string(trim(&
+              sresult(istartPos + 1 : istartPos + istopPosRelative - 1)), sauxEnv)
+      if (bfoundInEnv) then
+        ! Replace environment variable by its content
+        sresult = sresult(1:istartPos-1) // &
+                  trim(sauxEnv) // &
+                  trim(sresult(istartPos + istopPosRelative:))
+      else
+        call output_line ('Environment variable <'//&
+            trim(sresult(istartPos + 1 : istartPos + istopPosRelative - 1))//&
+            '> not found!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'parlst_expandEnvVariables')
+        call sys_halt()
+      endif
+
+      ! check for next $ character
+      istartPos = index(sresult, "$")
+    enddo
+    
+    ! Replace by the result
+    sbuffer = sresult
+
+  end subroutine
+    
   ! ***************************************************************************
 
 !<subroutine>
@@ -3412,185 +3423,205 @@ contains
     
     end do ! isection
       
-  contains
-  
-    subroutine findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
-    
-    ! Searchs in the string sstring for the first occurance of a subvariable.
-    ! A subvariable has the form "%{NAME}" or "{SECTION.NAME}"
-    ! or "%{NAME:INDEX}" or "%{SECTION.NAME:INDEX}"
-    ! depending on whether it is part of the main section or not.
-    
-    ! The string where a subvariable is searched.
-    character(len=*), intent(in) :: sstring
-    
-    ! Returns the start of the variable in the string or 0 if no subvariable
-    ! is found.
-    integer, intent(out) :: istart
-
-    ! Returns the end of the variable in the string or 0 if no subvariable
-    ! is found.
-    integer, intent(out) :: iend
-    
-    ! Returns the name of the section or "" if either no subvariable is found
-    ! or the unnamed section is referred to.
-    character(len=*), intent(out) :: ssection
-
-    ! Returns the name of the subvariable or "" if no subvariable is found.
-    character(len=*), intent(out) :: sname
-    
-    ! Returns the number/index INDEX of the subvalue or 0, if there is
-    ! no index or if no subvariable is found.
-    integer, intent(out) :: ivalue
-    
-    ! local variables
-    integer :: i,j,istrlen,idotpos,icolonpos
-    logical :: bstartfound
-    
-      ! Ok, this is a parser. We have the following rules:
-      ! "%%" means one "%" and is not interpreted as the begin of a
-      ! token.
-      ! "%{NAME}" is a token referring to a variable in the unnamed section.
-      ! "%{NAME:INDEX}" is a token referring to a subvariable
-      ! of variable NAME in section SECTION.
-      ! "%{SECTION.NAME}" is a token referring to a name in a named section
-      ! which must exist.
-      ! "%{SECTION.NAME:INDEX}" is a token referring to a subvariable
-      ! of variable NAME in section SECTION.
-      !
-      istart = 0
-      iend = 0
-      ivalue = 0
-      bstartfound = .false.
-      
-      ! Lets loop through the characters.
-      istrlen = len(sstring)
-      do i=1,istrlen
-        if (sstring(i:i) .eq. "%") then
-          ! Did we already found the "%"?
-          if (bstartfound) then
-            ! That is our escape sequence. Do not do anything, just
-            ! return to 'normal' mode.
-            bstartfound = .false.
-          else
-            ! That is probably the beginning of a token.
-            bstartfound = .true.
-          end if
-          
-          ! Go on.
-          cycle
-        end if
-        
-        ! The next things only execute if we are close to a token...
-        if (bstartfound) then
-          if (sstring(i:I) .eq. "{") then
-            ! Yes, that is a token.
-            istart = i-1
-            
-            ! Find the end of the token and probably the dot/colon
-            idotpos = 0
-            icolonpos = 0
-            do j=istart+1,istrlen
-              if (sstring(j:J) .eq. ".") then
-                ! Here is the dot.
-                idotpos = j
-              end if
-
-              if (sstring(j:J) .eq. ":") then
-                ! Here is the dot.
-                icolonpos = j
-              end if
-              
-              if (sstring(j:j) .eq. "}") then
-                ! Here, the token ends. 
-                iend = j
-                
-                ! Extract name and probably the section
-                if (idotpos .eq. 0) then
-                  ssection = ""
-                  if (icolonpos .eq. 0) then
-                    sname = sstring(istart+2:iend-1)
-                  else
-                    sname = sstring(istart+2:icolonpos-1)
-                    
-                    ! Get the value
-                    read(sstring(icolonpos+1:iend-1),*) ivalue
-                  end if
-                else
-                  ssection = sstring(istart+2:idotpos-1)
-                  if (icolonpos .eq. 0) then
-                    sname = sstring(idotpos+1:iend-1)
-                  else
-                    sname = sstring(idotpos+1:icolonpos-1)
-
-                    ! Get the value
-                    read(sstring(icolonpos+1:iend-1),*) ivalue
-                  end if
-                end if
-                
-                ! That is it.
-                return
-                
-              end if
-            end do
-          end if
-        end if
-      end do
-      
-      ! Nothing found.
-      ssection = ""
-      sname = ""
-      
-    end subroutine
-    
-    ! ---------------------------------------------------------------
-    
-    subroutine expandSubvariable(rparlist,sstring)
-    
-    ! Expands the subvariables in sstring to a fully qualified string.
-    
-    ! The parameter list containing the variables that can be used
-    ! as subvariables.
-    type(t_parlist), intent(in) :: rparlist
-    
-    ! The string to be expanded. Receives the expanded string upon return.
-    character(len=*), intent(inout) :: sstring
-    
-      ! local variables
-      integer :: istart,iend,ilen,ivalue
-      character(len=PARLST_MLSECTION) :: ssection
-      character(len=PARLST_MLNAME) :: sname
-      character(len=len(sstring)) :: sbuffer
-      character(len=PARLST_MLDATA) :: sdata
-      
-      ! Repeat until we found all subvariables
-      istart = 1
-      iend = 0
-      do while (istart .ne. 0)
-  
-        ! Find the first subvariable
-        call findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
-        
-        if (istart .ne. 0) then
-          ! Copy the string to the buffer
-          sbuffer = sstring
-          
-          ! Now copy back and replace the variable by the stuff from the
-          ! parameter list.
-          if (ivalue .eq. 0) then
-            call parlst_getvalue_string (rparlist, ssection, sname, sdata)
-          else
-            call parlst_getvalue_string (rparlist, ssection, sname, sdata, &
-                isubstring=ivalue)
-          end if
-          sstring = sbuffer(1:istart-1)//trim(sdata)//sbuffer(iend+1:)
-          
-        end if
-      
-      end do
-    
-    end subroutine
-
   end subroutine
   
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine parlst_findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
+  
+!<description>
+  ! Searchs in the string sstring for the first occurance of a subvariable.
+  ! A subvariable has the form "%{NAME}" or "{SECTION.NAME}"
+  ! or "%{NAME:INDEX}" or "%{SECTION.NAME:INDEX}"
+  ! depending on whether it is part of the main section or not.
+!</description>
+  
+!<input>
+  ! The string where a subvariable is searched.
+  character(len=*), intent(in) :: sstring
+!</input>  
+
+!<output>
+  ! Returns the start of the variable in the string or 0 if no subvariable
+  ! is found.
+  integer, intent(out) :: istart
+
+  ! Returns the end of the variable in the string or 0 if no subvariable
+  ! is found.
+  integer, intent(out) :: iend
+  
+  ! Returns the name of the section or "" if either no subvariable is found
+  ! or the unnamed section is referred to.
+  character(len=*), intent(out) :: ssection
+
+  ! Returns the name of the subvariable or "" if no subvariable is found.
+  character(len=*), intent(out) :: sname
+  
+  ! Returns the number/index INDEX of the subvalue or 0, if there is
+  ! no index or if no subvariable is found.
+  integer, intent(out) :: ivalue
+!</output>
+  
+!</subroutine>
+  
+  ! local variables
+  integer :: i,j,istrlen,idotpos,icolonpos
+  logical :: bstartfound
+  
+    ! Ok, this is a parser. We have the following rules:
+    ! "%%" means one "%" and is not interpreted as the begin of a
+    ! token.
+    ! "%{NAME}" is a token referring to a variable in the unnamed section.
+    ! "%{NAME:INDEX}" is a token referring to a subvariable
+    ! of variable NAME in section SECTION.
+    ! "%{SECTION.NAME}" is a token referring to a name in a named section
+    ! which must exist.
+    ! "%{SECTION.NAME:INDEX}" is a token referring to a subvariable
+    ! of variable NAME in section SECTION.
+    !
+    istart = 0
+    iend = 0
+    ivalue = 0
+    bstartfound = .false.
+    
+    ! Lets loop through the characters.
+    istrlen = len(sstring)
+    do i=1,istrlen
+      if (sstring(i:i) .eq. "%") then
+        ! Did we already found the "%"?
+        if (bstartfound) then
+          ! That is our escape sequence. Do not do anything, just
+          ! return to 'normal' mode.
+          bstartfound = .false.
+        else
+          ! That is probably the beginning of a token.
+          bstartfound = .true.
+        end if
+        
+        ! Go on.
+        cycle
+      end if
+      
+      ! The next things only execute if we are close to a token...
+      if (bstartfound) then
+        if (sstring(i:I) .eq. "{") then
+          ! Yes, that is a token.
+          istart = i-1
+          
+          ! Find the end of the token and probably the dot/colon
+          idotpos = 0
+          icolonpos = 0
+          do j=istart+1,istrlen
+            if (sstring(j:J) .eq. ".") then
+              ! Here is the dot.
+              idotpos = j
+            end if
+
+            if (sstring(j:J) .eq. ":") then
+              ! Here is the dot.
+              icolonpos = j
+            end if
+            
+            if (sstring(j:j) .eq. "}") then
+              ! Here, the token ends. 
+              iend = j
+              
+              ! Extract name and probably the section
+              if (idotpos .eq. 0) then
+                ssection = ""
+                if (icolonpos .eq. 0) then
+                  sname = sstring(istart+2:iend-1)
+                else
+                  sname = sstring(istart+2:icolonpos-1)
+                  
+                  ! Get the value
+                  read(sstring(icolonpos+1:iend-1),*) ivalue
+                end if
+              else
+                ssection = sstring(istart+2:idotpos-1)
+                if (icolonpos .eq. 0) then
+                  sname = sstring(idotpos+1:iend-1)
+                else
+                  sname = sstring(idotpos+1:icolonpos-1)
+
+                  ! Get the value
+                  read(sstring(icolonpos+1:iend-1),*) ivalue
+                end if
+              end if
+              
+              ! That is it.
+              return
+              
+            end if
+          end do
+        end if
+      end if
+    end do
+    
+    ! Nothing found.
+    ssection = ""
+    sname = ""
+    
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine parlst_expandSubvariable(rparlist,sstring)
+  
+!<description>
+  ! Expands the subvariables in sstring to a fully qualified string.
+!</description>
+  
+!<input>
+  ! The parameter list containing the variables that can be used
+  ! as subvariables.
+  type(t_parlist), intent(in) :: rparlist
+!</input>
+
+!<inputoutput>
+  ! The string to be expanded. Receives the expanded string upon return.
+  character(len=*), intent(inout) :: sstring
+!</inputoutput>
+
+!</subroutine>
+  
+    ! local variables
+    integer :: istart,iend,ivalue
+    character(len=PARLST_MLSECTION) :: ssection
+    character(len=PARLST_MLNAME) :: sname
+    character(len=len(sstring)) :: sbuffer
+    character(len=PARLST_MLDATA) :: sdata
+    
+    ! Repeat until we found all subvariables
+    istart = 1
+    iend = 0
+    do while (istart .ne. 0)
+
+      ! Find the first subvariable
+      call findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
+      
+      if (istart .ne. 0) then
+        ! Copy the string to the buffer
+        sbuffer = sstring
+        
+        ! Now copy back and replace the variable by the stuff from the
+        ! parameter list.
+        if (ivalue .eq. 0) then
+          call parlst_getvalue_string (rparlist, ssection, sname, sdata)
+        else
+          call parlst_getvalue_string (rparlist, ssection, sname, sdata, &
+              isubstring=ivalue)
+        end if
+        sstring = sbuffer(1:istart-1)//trim(sdata)//sbuffer(iend+1:)
+        
+      end if
+    
+    end do
+  
+  end subroutine
+
 end module
