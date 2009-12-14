@@ -986,7 +986,7 @@ contains
   
 !<subroutine>
   subroutine parlst_getvalue_string_indir (rsection, sparameter, svalue, &
-                                           sdefault, isubstring)
+                                           sdefault, isubstring, bdequote)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -1021,6 +1021,13 @@ contains
   ! >0: returns substring isubstring.
   integer, intent(in), optional :: isubstring
   
+  ! OPTIONAL: De-quote the string.
+  ! This provides a save way of removing quotation marks around a string in case
+  ! the parameter contains exactly one string.
+  ! =false: Return the string as it is (standard)
+  ! =true: Re-read the string and remove any leading and trailing quotation marks
+  !   (if there are any).
+  logical, intent(in), optional :: bdequote
 !</input>
   
 !<output>
@@ -1069,6 +1076,12 @@ contains
       svalue = rsection%p_Rvalues(i)%p_Sentry(isub)
     end if
   end if
+  
+  if (present(bdequote)) then
+    if (bdequote) then
+      call sys_dequote(svalue)
+    end if
+  end if
 
   end subroutine
   
@@ -1076,7 +1089,7 @@ contains
   
 !<subroutine>
   subroutine parlst_getvalue_string_fetch (rsection, iparameter, svalue,&
-                                           bexists, isubstring)
+                                           bexists, isubstring, bdequote)
 !<description>
   
   ! Returns the value of a parameter in the section rsection.
@@ -1112,6 +1125,13 @@ contains
   ! >0: returns substring isubstring.
   integer, intent(in), optional :: isubstring
 
+  ! OPTIONAL: De-quote the string.
+  ! This provides a save way of removing quotation marks around a string in case
+  ! the parameter contains exactly one string.
+  ! =false: Return the string as it is (standard)
+  ! =true: Re-read the string and remove any leading and trailing quotation marks
+  !   (if there are any).
+  logical, intent(in), optional :: bdequote
 !</input>
   
 !<output>
@@ -1162,6 +1182,12 @@ contains
   
   if (present(bexists)) bexists = .true.
 
+  if (present(bdequote)) then
+    if (bdequote) then
+      call sys_dequote(svalue)
+    end if
+  end if
+
   end subroutine
   
   ! ***************************************************************************
@@ -1169,7 +1195,7 @@ contains
 !<subroutine>
   subroutine parlst_getvalue_string_direct (rparlist, ssectionName, &
                                             sparameter, svalue, sdefault,&
-                                            isubstring)
+                                            isubstring,bdequote)
 !<description>
   
   ! Returns the value of a parameter in the section ssection.
@@ -1207,6 +1233,14 @@ contains
   ! >0: returns substring isubstring.
   integer, intent(in), optional :: isubstring
 
+  ! OPTIONAL: De-quote the string.
+  ! This provides a save way of removing quotation marks around a string in case
+  ! the parameter contains exactly one string.
+  ! =false: Return the string as it is (standard)
+  ! =true: Re-read the string and remove any leading and trailing quotation marks
+  !   (if there are any).
+  logical, intent(in), optional :: bdequote
+
 !</input>
   
 !<output>
@@ -1243,7 +1277,7 @@ contains
 
   ! Get the value
   call parlst_getvalue_string_indir (p_rsection, sparameter, svalue, sdefault,&
-                                     isubstring)
+                                     isubstring,bdequote)
 
   end subroutine
   

@@ -95,6 +95,9 @@
 !# 23.) sys_adjustl, sys_adjustr
 !#      -> Extended version of ADJUSTL/ADJUSTR that allow to specify
 !#         the length of the resulting string as parameter
+!#
+!# 24.) sys_dequote
+!#      -> De-quote a string; remove any quotation marks
 !# 
 !# </purpose>
 !##############################################################################
@@ -2330,5 +2333,39 @@ contains
     end do
 
   end function
+
+! ****************************************************************************************
+
+!<subroutine>
+
+  subroutine sys_dequote (sstring)
+  
+!<description>
+  ! Removes possible quotation marks around a string.
+!</description>
+  
+!<inputoutput>
+  ! String to de-quote
+  character(len=*), intent(inout) :: sstring
+!</inputoutput>
+
+!</subroutine>
+  
+  character(len=len(sstring)+1) :: sstring2
+  
+    ! Adjust the string
+    sstring2=trim(adjustl(sstring))
+    
+    ! Does the string start with a quotation mark?
+    if ((sstring2(1:1) .eq. "'") .or. &
+        (sstring2(1:1) .eq. """")) then
+      ! Re-read the string, remove them.
+      read (sstring2,*) sstring
+    else
+      ! Just transfer the string, it is ok.
+      sstring = sstring2
+    end if
+  
+  end subroutine
 
 end module fsystem
