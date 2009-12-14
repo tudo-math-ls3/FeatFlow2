@@ -43,7 +43,7 @@ module ccinitgeneralparameters
   
   use collection
   use convection
-    
+  use geometry    
   use ccbasic
   use ccnonstationary
   
@@ -92,6 +92,48 @@ subroutine cc_initParticleDescriptor3D(rPDescriptor)
 end subroutine ! end cc_initParticleDescriptor
 
 ! ***************************************************************************
+
+!<subroutine>
+
+subroutine cc_initParticleDescriptor(rPDescriptor)
+  
+!<description>
+  ! here we initialise a particle descriptor
+  ! with the values we want to use
+!</description>
+  
+!<inputoutput>
+  type(t_particleDescriptor3D), intent(inout) :: rPDescriptor
+!</inputoutput>
+
+!</subroutine>
+  ! locals
+  integer :: i
+  real(dp) :: dx,dy,dz,drho,drad
+  
+  rPDescriptor%iparticles=1
+  
+  allocate(rPDescriptor%pparameters(5,1))
+  
+  drad = 0.125_dp
+  drho = 1.25_dp
+  dx = 0.5_dp
+  dy = 0.2_dp
+  dz = 0.2_dp
+  
+  do i=1,rPDescriptor%iparticles
+    rPDescriptor%pparameters(1,i)= dx
+    rPDescriptor%pparameters(2,i)= dy
+    rPDescriptor%pparameters(3,i)= dz
+    rPDescriptor%pparameters(4,i)= drad
+    rPDescriptor%pparameters(5,i)= drho
+    dx = dx + 1.0_dp
+    dy = dy + 0.5_dp
+  end do
+  
+end subroutine ! end cc_initParticleDescriptor
+
+  ! ***************************************************************************
 
 !<subroutine>
 

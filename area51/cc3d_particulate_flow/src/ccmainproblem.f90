@@ -102,8 +102,8 @@ contains
     type(t_timer) :: rtimerGridGeneration
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
-    type(t_ParticleDescriptor3D) :: rParticleDescriptor
     
+    type(t_particleDescriptor3D) :: rParticleDescriptor
     integer :: i
     
     ! Ok, let's start. 
@@ -122,14 +122,6 @@ contains
     
     ! Initialise the collection
     call collct_init (p_rproblem%rcollection)
-    
-    ! initial x-position
-    p_rproblem%rcollection%Dquickaccess(7)=0.2_dp
-    ! initial y-position
-    p_rproblem%rcollection%Dquickaccess(8)=0.2_dp
-    ! initial z-position
-    p_rproblem%rcollection%Dquickaccess(9)=0.2_dp
-    
     
     ! Initialise the parameter list object. This creates an empty parameter list.
     call parlst_init (p_rproblem%rparamList)
@@ -151,13 +143,16 @@ contains
     ! structure for global access.
     call cc_initParameters (p_rproblem)
     
+
+
+
     p_rproblem%iParticles = 1
     
     if(p_rproblem%iParticles .gt. 0)then
-      call cc_initParticleDescriptor3D(rParticleDescriptor)
+      call cc_initParticleDescriptor(rParticleDescriptor)
       
       ! initialize the particles
-      call geom_initParticleCollection3D(p_rproblem%rparticleCollection,rParticleDescriptor)
+      call geom_initParticleCollct3D(p_rproblem%rparticleCollection,rParticleDescriptor)
       
       deallocate(rParticleDescriptor%pparameters)
     ! we put the geometry object into the collection
@@ -338,9 +333,11 @@ contains
 
     ! Release the parameter list
     call parlst_done (p_rproblem%rparamList)
-    
+
+    ! clean collection    
     call collct_deletevalue (p_rproblem%rcollection, 'particles')
-    call geom_releaseParticleCollection3D(p_rproblem%rparticleCollection)
+    call geom_releaseParticleCollct3D(p_rproblem%rparticleCollection)
+    
     
     ! Print some statistical data about the collection - anything forgotten?
     call output_lbrk ()
