@@ -3274,13 +3274,13 @@ contains
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
         if (icount .eq. 0) then
           ! Expand the value if is refers to subvalues.
-          call expandEnvVariable(&
+          call parlst_expandEnvVariable(&
               rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
         else
           ! Loop through the subvalues.
           do ientry = 1,icount
             ! Expand the value if is refers to subvalues.
-            call expandEnvVariable(&
+            call parlst_expandEnvVariable(&
                 rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
           end do
         end if
@@ -3408,13 +3408,13 @@ contains
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
         if (icount .eq. 0) then
           ! Expand the value if is refers to subvalues.
-          call expandSubvariable(rparlist,&
+          call parlst_expandSubvariable(rparlist,&
               rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
         else
           ! Loop through the subvalues.
           do ientry = 1,icount
             ! Expand the value if is refers to subvalues.
-            call expandSubvariable(rparlist,&
+            call parlst_expandSubvariable(rparlist,&
                 rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
           end do
         end if
@@ -3602,7 +3602,7 @@ contains
     do while (istart .ne. 0)
 
       ! Find the first subvariable
-      call findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
+      call parlst_findSubvariable(sstring,istart,iend,ssection,sname,ivalue)
       
       if (istart .ne. 0) then
         ! Copy the string to the buffer
