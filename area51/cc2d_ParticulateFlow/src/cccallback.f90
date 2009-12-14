@@ -1688,7 +1688,7 @@ contains
     ! in cc_parseFBDconditions!!!
     
     ! local variables
-    real(DP) :: dxcenter, dycenter, dradius, dx, dy,dtime,dspeed
+    real(DP) :: dxcenter, dycenter, dradius, dx, dy,dtime,dspeed,lvx,lvy,robx,roby
     real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
     integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtElement
     integer(PREC_POINTIDX), dimension(:,:), pointer :: p_IverticesAtEdge
@@ -1745,10 +1745,10 @@ contains
         Revaluation(2)%p_Iinside (idx) = 1
         
         ! calculate the linear velocity from angular velocity
-!        robx = -1.0_dp*(dy-dycenter)
-!        roby = dx-dxcenter
-!        lvx = p_rparticleCollection%p_rParticles(ipart)%dangVelocity * robx
-!        lvy = p_rparticleCollection%p_rParticles(ipart)%dangVelocity * roby
+        robx = -1.0_dp*(dy-dycenter)
+        roby = dx-dxcenter
+        lvx = p_rparticleCollection%p_rParticles(ipart)%dangVelocity * robx
+        lvy = p_rparticleCollection%p_rParticles(ipart)%dangVelocity * roby
         
         ! We prescribe our values as Dirichlet value here - for x- and y-velocity
         ! add the velocity that comes from angular velocity
@@ -1758,11 +1758,11 @@ contains
 !        Revaluation(1)%p_Dvalues (idx,1) = rcollection%Dquickaccess(10) + lvx
 !        Revaluation(2)%p_Dvalues (idx,1) = rcollection%Dquickaccess(11) + lvy
 
-!        Revaluation(1)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelX + lvx
-!        Revaluation(2)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelY + lvy
+        Revaluation(1)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelX + lvx
+        Revaluation(2)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelY + lvy
 
-        Revaluation(1)%p_Dvalues (idx,1) = 0.0_dp !dspeed
-        Revaluation(2)%p_Dvalues (idx,1) = 0.0_dp
+!        Revaluation(1)%p_Dvalues (idx,1) = 0.0_dp !dspeed
+!        Revaluation(2)%p_Dvalues (idx,1) = 0.0_dp
 
         
       end if

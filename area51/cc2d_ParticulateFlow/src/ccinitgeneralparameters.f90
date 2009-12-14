@@ -76,10 +76,10 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   
   allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
-  drad = 0.05_dp
+  drad = 0.225_dp
   drho = 1.25_dp
-  dx = 0.2_dp
-  dy = 0.2_dp
+  dx = 1.0_dp
+  dy = 1.0_dp
   
   do i=1,rPDescriptor%iparticles
     rPDescriptor%pparameters(1,i)= dx
@@ -179,7 +179,7 @@ end subroutine ! end cc_initParticleDescriptor
     
     ! Check if a command line parameter specifies the master.dat file.
     call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
-
+    
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
