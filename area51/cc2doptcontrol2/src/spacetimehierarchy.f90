@@ -23,9 +23,6 @@
 !#
 !# 4.) sth_getLevel
 !#     -> Returns pointers to the space and time level of a space-time level.
-!#
-!# 5.) sth_createSpaceTimeDiscr
-!#     -> Creates a space-time discretisation structure of a level.
 !# </purpose>
 !##############################################################################
 
@@ -57,7 +54,6 @@ module spacetimehierarchy
   public :: sth_defineHierarchyByCoarsening
   public :: sth_getLevel
   public :: sth_printHierStatistics
-  !public :: sth_createSpaceTimeDiscr
   
 !<types>
 
@@ -400,39 +396,5 @@ contains
     end do
     
   end subroutine
-
-!  ! ***************************************************************************
-!
-!!<subroutine>
-!
-!  subroutine sth_createSpaceTimeDiscr(rhierarchy,ilevel,rspacetimeDiscr)
-!
-!!<description>
-!  ! Creates a space-time discretisation based on a specific level.
-!!</description>
-! 
-!!<input>
-!  ! A space-time hierarchy.
-!  type(t_spacetimeHierarchy), intent(in), target :: rhierarchy
-!  
-!  ! Space-time level.
-!  integer, intent(in) :: ilevel
-!!</input>
-!
-!!<output>
-!  ! Space-time discretisation structure of level ilevel.
-!  type(t_spaceTimeDiscretisation), intent(out) :: rspaceTimeDiscr
-!!</outout>
-!  
-!!</subroutine>
-!    
-!    ! Create the corresponding space-time discretisation from the data in the
-!    ! structures.
-!    call sptidis_initDiscretisation (&
-!        rhierarchy%p_rfeHierarchy%p_rfeSpaces(rhierarchy%p_IlevelDef(1,ilevel))%p_rdiscretisation,&
-!        rhierarchy%p_rtimeHierarchy%p_rtimeLevels(rhierarchy%p_IlevelDef(2,ilevel)),&
-!        rspaceTimeDiscr)
-!
-!  end subroutine
 
 end module

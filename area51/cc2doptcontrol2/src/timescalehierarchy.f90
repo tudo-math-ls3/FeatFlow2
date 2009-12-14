@@ -12,6 +12,15 @@
 !#
 !# The following routines can be found here:
 !#
+!# 1.) tmsh_createHierarchy
+!#     -> Creates a time scale hierarchy
+!#
+!# 2.) tmsh_releaseHierarchy
+!#     -> Releases a timescale hierarchy
+!#
+!# 3.) tmsh_printHierStatistics
+!#     -> Prints statistical data of a time scale hierarchy to the terminal
+!#
 !# </purpose>
 !##############################################################################
 

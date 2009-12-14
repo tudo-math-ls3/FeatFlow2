@@ -71,7 +71,7 @@ module forwardbackwardsimulation
   use discretefbc
   use linearalgebra
   use bcassembly
-  use spatialDiscretisation
+  use spatialdiscretisation
   use coarsegridcorrection
   use linearsolverautoinitialise
   use vectorfilters
