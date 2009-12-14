@@ -34,7 +34,7 @@ sfilenameUCD = './gmv/u.vtk'
 #     to all timesteps (stationary sequence).
 # =2: The start vector is created by evaluating the section sstartVector.
 # =3: The start vector is created by a forward simulation starting from
-#     the initial solution. The dual solution is initialised to zero.
+#     the initial condition. The dual solution is initialised to zero.
 
 ctypeStartVector = 3
 

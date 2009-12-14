@@ -288,7 +288,7 @@ ioutputLevel = 2
 # =0: Relative AND absolute stopping criterion must hold.
 # =1: Relative OR absolute stopping criterion must hold.
 
-istoppingCriterion = 0
+istoppingCriterion = 1
 
 ########################
 [TIME-SINGLEGRIDPRECOND]

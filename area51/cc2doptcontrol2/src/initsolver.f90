@@ -19,12 +19,15 @@
 !# 3.) init_initStartVector
 !#     -> Create a start vector to be used in the nonlinear solver.
 !#
-!# 4.) init_generateInitCondRHS
+!# 4.) init_implementInitCondRHS
 !#     -> Implement the initial condition corresponding to a space-time
 !#        solution into a discretised space-time RHS vector.
 !#
 !# 5.) init_discretiseRHS
 !#     -> Discretise an analytically given RHS.
+!#
+!# 6.) init_getSpaceDiscrSettings
+!#     -> Reads space discretisation settings from the DAT file.
 !#
 !# Auxiliary routines:
 !#
@@ -88,8 +91,9 @@ module initsolver
   public :: init_initStandardSolver
   public :: init_doneStandardSolver
   public :: init_initStartVector
-  public :: init_generateInitCondRHS
+  public :: init_implementInitCondRHS
   public :: init_discretiseRHS
+  public :: init_getSpaceDiscrSettings
   
 contains
 
@@ -135,6 +139,8 @@ contains
     character(len=SYS_STRLEN) :: sstr,sstr2
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     type(t_feSpaceLevel), pointer :: p_rfeSpacePrimalDual
+    type(t_settings_discr) :: rsettingsSpaceDiscr
+    integer :: isuccess
     
     ! Put refrences to the parameter list to the settings structure.
     rsettingsSolver%p_rparlist => rparlist
@@ -191,6 +197,10 @@ contains
     call init_initTimeHierarchy (rsettingsSolver%rrefinementTime,&
         rsettingsSolver%rtimeCoarse,rsettingsSolver%rtimeHierarchy,ioutputlevel)
 
+    ! Fetch the space discretisation parameters.
+    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
+        rsettingsSpaceDiscr)
+
     ! We now have all space and time meshes and their hierarchies.
     ! Now it is time to generate the discretisation structures that define
     ! which FEM spaces to use for the discretisation on each level.
@@ -198,7 +208,7 @@ contains
       call output_lbrk()
       call output_line ("Initialising space discretisation hierarchy.")
     end if
-    call init_initSpaceDiscrHier (rparlist,rsettings%ssectionDiscrSpace,&
+    call init_initSpaceDiscrHier (rparlist,rsettingsSpaceDiscr,&
         rsettingsSolver%rboundary,rsettingsSolver%rmeshHierarchy,&
         rsettingsSolver,ioutputLevel)
         
@@ -308,7 +318,7 @@ contains
       call output_line ("Initialising target flow.")
     end if
     call init_initOptControlTargetFlow (rparlist,rsettings%ssectionOptControl,&
-        rsettings%ssectionDiscrSpace,&
+        rsettingsSpaceDiscr,&
         rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
         rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
         rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
@@ -321,10 +331,14 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "sinitialCondition",sstr,bdequote=.true.)
     call init_initFlow (rparlist,sstr,rsettingsSolver%rinitialCondition,&
-        rsettings%ssectionDiscrSpace,rsettingsSolver%rtriaCoarse,&
-        rsettingsSolver%rrefinementSpace,&
-        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
-        rsettingsSolver%rtimeHierarchy%dtimeInit,rsettingsSolver%rtimeHierarchy%dtimeMax)
+        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+        rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+        isuccess)
+    if (isuccess .eq. 1) then
+      call output_line ('Flow created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call sys_halt()
+    end if
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
@@ -332,10 +346,15 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhs",sstr,bdequote=.true.)
-    call init_initFlow (rparlist,sstr,rrhs,rsettings%ssectionDiscrSpace,&
+    call init_initFlow (rparlist,sstr,rrhs,&
         rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
-        rsettingsSolver%rtimeHierarchy%dtimeInit,rsettingsSolver%rtimeHierarchy%dtimeMax)
+        rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+        isuccess)
+    if (isuccess .eq. 1) then
+      call output_line ('Flow created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
+      call sys_halt()
+    end if
        
     ! Get the discretisation of the maximum level.
     p_rtimeDiscr => &
@@ -349,7 +368,7 @@ contains
       call output_line ("Initialising postprocessing.")
     end if
     call init_initPostprocessing (rparlist,rsettings%ssectionSpaceTimePostprocessing,&
-        rsettings%ssectionDiscrSpace,rsettingsSolver%roptcBDC,&
+        rsettingsSpaceDiscr,rsettingsSolver%roptcBDC,&
         p_rtimeDiscr,p_rfeSpacePrimalDual%p_rdiscretisation,&
         rpostproc,rsettingsSolver)
 
@@ -924,9 +943,9 @@ contains
 
 !<subroutine>
 
-  subroutine init_initSpaceDiscrHier (rparlist,ssectionDiscr,rboundary,&
+  subroutine init_initSpaceDiscrHier (rparlist,rsettingsSpaceDiscr,rboundary,&
       rmeshHierarchy,rsettings,ioutputLevel)
-  
+
 !<description>
   ! Initialises the hierarchies for the space discretisation on all levels
   ! based on the parameters in the parameter list.
@@ -936,8 +955,8 @@ contains
   ! Parameter list
   type(t_parlist), intent(in) :: rparlist
   
-  ! Section where the parameters of the spatial discretisation can be found.
-  character(len=*), intent(in) :: ssectionDiscr
+  ! Structure with space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
   ! Description of the boundary
   type(t_boundary), intent(in) :: rboundary
@@ -962,7 +981,6 @@ contains
     integer :: icubM
     integer :: i,j,k
     integer(I32) :: celement
-    character(len=SYS_STRLEN) :: sstr
     
     ! Read the parameters that define the underlying discretisation.
     ! We use fget1LevelDiscretisation to create the basic spaces.
@@ -975,33 +993,10 @@ contains
     !   rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC or icubF
     !
     ! Get parameters about the discretisation from the parameter list
-    call parlst_getvalue_int (rparlist,ssectionDiscr,&
-                              'ielementType',rcollection%IquickAccess(1),3)
-                              
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubStokes',sstr,"")
-    if (sstr .eq. "") then
-      call parlst_getvalue_int (rparlist,ssectionDiscr,&
-          'icubStokes',rcollection%IquickAccess(3),int(SPDISC_CUB_AUTOMATIC))
-    else
-      rcollection%IquickAccess(3) = cub_igetID(sstr)
-    end if
+    rcollection%IquickAccess(3) = rsettingsSpaceDiscr%icubStokes
+    rcollection%IquickAccess(4) = rsettingsSpaceDiscr%icubB
+    rcollection%IquickAccess(5) = rsettingsSpaceDiscr%icubF
 
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubB',sstr,"")
-    if (sstr .eq. "") then
-      call parlst_getvalue_int (rparlist,ssectionDiscr,&
-          'icubB',rcollection%IquickAccess(4),int(SPDISC_CUB_AUTOMATIC))
-    else
-      rcollection%IquickAccess(4) = cub_igetID(sstr)
-    end if
-
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubF',sstr,"")
-    if (sstr .eq. "") then
-      call parlst_getvalue_int (rparlist,ssectionDiscr,&
-          'icubF',rcollection%IquickAccess(5),int(SPDISC_CUB_AUTOMATIC))
-    else
-      rcollection%IquickAccess(5) = cub_igetID(sstr)
-    end if
-    
     ! We want primal+dual space.
     rcollection%IquickAccess(2) = 6
 
@@ -1021,13 +1016,7 @@ contains
         rsettings%rfeHierMass,1,3)
 
     ! Which cubature rule to use for mass matrices?
-    call parlst_getvalue_string (rparlist,ssectionDiscr,'scubMass',sstr,"")
-    if (sstr .eq. "") then
-      call parlst_getvalue_int (rparlist,ssectionDiscr,&
-          'icubM',icubM,int(SPDISC_CUB_AUTOMATIC))
-    else
-      icubM = cub_igetID(sstr)
-    end if
+    icubM = rsettingsSpaceDiscr%icubMass
     
     ! Set the cubature rule in the mass matrix discretisation structure.
     if (icubM .ne. SPDISC_CUB_AUTOMATIC) then
@@ -1347,7 +1336,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initOptControlTargetFlow (rparlist,ssectionOptC,ssectionDiscr,&
+  subroutine init_initOptControlTargetFlow (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
       rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
   
 !<description>
@@ -1362,8 +1351,8 @@ contains
   ! Section where the parameters of the optimal control can be found.
   character(len=*), intent(in) :: ssectionOptC
 
-  ! Section with parameters about the discretisation.
-  character(len=*), intent(in) :: ssectionDiscr
+  ! Structure with space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
   ! Underlying spatial coarse mesh of the problem.
   type(t_triangulation), intent(in) :: rtriaCoarse
@@ -1390,14 +1379,21 @@ contains
 
 !</subroutine>
 
+    ! local variables
     character(len=SYS_STRLEN) :: sstr
+    integer :: isuccess
     
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
         'stargetFlow',sstr,bdequote=.true.)
     call init_initFlow (rparlist,sstr,roptcontrol%rtargetFlow,&
-        ssectionDiscr,rtriaCoarse,rrefinementSpace,rfeHierPrimal,rboundary,&
-        rtimeHierarchy%dtimeInit,rtimeHierarchy%dtimeMax)
+        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
+    if (isuccess .eq. 1) then
+      call output_line ('Flow created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+      call sys_halt()
+    end if
+
 
   end subroutine
 
@@ -1427,46 +1423,41 @@ contains
 
 !<subroutine>
 
-  subroutine init_initFlow (rparlist,ssectionFlow,rflow,&
-      ssectionDiscr,rtriaCoarse,rrefinementSpace,rfeHierPrimal,rboundary,&
-      dstartTime,dendTime)
+  recursive subroutine init_initDiscreteAnalytFlow (ielementType,rboundary,&
+      smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
+      ilevel,rflow)
   
 !<description>
-  ! Reads in and sets up a flow. ssectionFlow is the name of a section
-  ! containing all parameters that configure the flow. The routine creates
-  ! a structure rflow based on these parameters.
+  ! Creates a analytical-flow structure that resembles a discrete flow.
 !</description>
 
 !<input>
-  ! Parameter list
-  type(t_parlist), intent(in) :: rparlist
+  ! Element to use.
+  ! =-1: use the default element in rsettingsSpaceDiscr.
+  integer, intent(in) :: ielementType
+
+  ! Definition of the domain
+  type(t_boundary), intent(in), target :: rboundary
+
+  ! Underlying mesh. May be ="", in this case the default mesh in rtriaCoarse is used.
+  character(len=*), intent(in) :: smesh
   
-  ! Section where the parameters can be found that specify the target flow.
-  character(len=*), intent(in) :: ssectionFlow
-
-  ! Section where the parameters can be found that specify the basic underlying
-  ! discretisation of rfeHierPrimal.
-  character(len=*), intent(in) :: ssectionDiscr
-
-  ! Coarse mesh, corresponding to rfeHierPrimal.
+  ! Default mesh.
   type(t_triangulation), intent(in) :: rtriaCoarse
 
   ! Description of the refinement in space, how rfeHierPrimal was created
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
+  ! Space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
   ! If the element of the target flow matches the one of the primary
   ! flow, this hierarchy is used to save memory.
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
-
-  ! Definition of the domain.
-  type(t_boundary), intent(in), target :: rboundary
-
-  ! OPTIONAL: Start time in a nonstationary simulation.
-  real(DP), intent(IN) :: dstartTime
-
-  ! OPTIONAL: Start time in a nonstationary simulation.
-  real(DP), intent(IN) :: dendTime
+  
+  ! Refinement level, the analytical flow should resemble.
+  integer, intent(in) :: ilevel
 !</input>
 
 !<output>
@@ -1477,92 +1468,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ctype,iavaillevel,iid
+    integer :: ieltype,iavaillevel
     type(t_collection) :: rcollection
-    
-    character(len=SYS_STRLEN), dimension(6) :: Sexpressions
-    character(len=SYS_STRLEN) :: smesh,sflowFile
-    integer :: ilevel,ielementType,idelta,ieltype
-    integer :: ntimesteps
-    
-    ! Type of the flow?    
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ctype',ctype,-1)
 
-    ! Read some more parameters, we may need them.
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY1',Sexpressions(1),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY2',Sexpressions(2),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionP',Sexpressions(3),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL1',Sexpressions(4),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL2',Sexpressions(5),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionXi',Sexpressions(6),"",bdequote=.true.)
-    
-    ! Id, level, element type
-
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'iid',iid,0)
-
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ilevel',ilevel,0)
-
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ielementType',ielementType,-1)
-
-    ! Mesh, the flow diles
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'smesh',smesh,"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowFile',sflowFile,"",bdequote=.true.)
-
-    ! Time discretisation
-
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'idelta',idelta,1)
-
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ntimesteps',ntimesteps,-1)
-    
-    ! Set it up...
-    select case (ctype)
-    case (-1)
-      ! Analytic flow given by a callback routine
-      call ansol_init(rflow,6,0)
-      return
-    
-    case (0)
-      ! Zero flow
-      call ansol_init(rflow,6)
-      return
-
-    case (3)
-      ! Analytical expression as flow.
-      call ansol_init (rflow,6)
-      call ansol_configExpressions (rflow,Sexpressions)
-      return
-
-    end select
-    
-    rflow%iid = iid
-    
-    ! Our flow is given as a file or a sequence of files.
     ! Can we reuse our hierarchy?
     if (smesh .eq. "") then
     
-      ! The underlying coarse mesh is the same. Is the refinement level
-      ! smaller than NLMIN?
+      ! Is the refinement level smaller than NLMIN?
       if (ilevel .lt. rrefinementSpace%npreref+1) then
         ! We have to create that level.
         !
@@ -1575,8 +1487,7 @@ contains
         
         if (ielementType .eq. -1) then
           ! Get the element type from the discretisation section
-          call parlst_getvalue_int (rparlist,ssectionDiscr,&
-              'ielementType',rcollection%IquickAccess(1),3)
+          rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
         end if
         
         ! Create the basic analytic solution: Mesh, discretisation structure,...
@@ -1593,9 +1504,8 @@ contains
         rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC
         rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
 
-        ! Get the element type from the discretisation section
-        call parlst_getvalue_int (rparlist,ssectionDiscr,&
-            'ielementType',ieltype,3)
+        ! Get the element type from the discretisation
+        ieltype = rsettingsSpaceDiscr%ielementType
         
         if ((ielementType .eq. -1) .or. &
             (ielementType .eq. ieltype)) then
@@ -1644,9 +1554,8 @@ contains
       rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC
       
       if (ielementType .eq. -1) then
-        ! Get the element type from the discretisation section
-        call parlst_getvalue_int (rparlist,ssectionDiscr,&
-            'ielementType',rcollection%IquickAccess(1),3)
+        ! Get the element type from the discretisation
+        rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
       end if
       
       ! Create the basic analytic solution: Mesh, discretisation structure,...
@@ -1655,6 +1564,152 @@ contains
           fget1LevelDiscretisation,rcollection,rboundary)
     
     end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine init_initFlow (rparlist,ssectionFlow,rflow,&
+      rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
+      isuccess)
+  
+!<description>
+  ! Reads in and sets up a flow. ssectionFlow is the name of a section
+  ! containing all parameters that configure the flow. The routine creates
+  ! a structure rflow based on these parameters.
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section where the parameters can be found that specify the target flow.
+  character(len=*), intent(in) :: ssectionFlow
+
+  ! Space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
+  ! Coarse mesh, corresponding to rfeHierPrimal.
+  type(t_triangulation), intent(in) :: rtriaCoarse
+
+  ! Description of the refinement in space, how rfeHierPrimal was created
+  type(t_settings_refinement), intent(in) :: rrefinementSpace
+
+  ! A hierarchy of space levels for velocity+pressure (primal/dual space).
+  ! If the element of the target flow matches the one of the primary
+  ! flow, this hierarchy is used to save memory.
+  type(t_feHierarchy), intent(in) :: rfeHierPrimal
+
+  ! Definition of the domain.
+  type(t_boundary), intent(in), target :: rboundary
+!</input>
+
+!<output>
+  ! Flow structure to create.
+  type(t_anSolution), intent(out) :: rflow
+  
+  ! Success-flag. Returns whether this routine successfully created the flow.
+  ! =0: Flow was successfully created.
+  ! =1: Flow is defined as forward simulation and was not possible to create.
+  !     The caller must invoke init_initFlowBySimulation to create the flow.
+  integer, intent(out) :: isuccess
+  
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: ctype,iid
+    real(dp) :: dstartTime,dtimeMax
+    character(len=SYS_STRLEN), dimension(6) :: Sexpressions
+    character(len=SYS_STRLEN) :: smesh,sflowFile
+    integer :: ilevel,ielementType,idelta
+    integer :: ntimesteps
+    
+    ! Type of the flow?    
+    call parlst_getvalue_int (rparlist,ssectionFlow,'ctype',ctype,-1)
+        
+    if (ctype .eq. 4) then
+      ! Forget it, there are not enough parameters here to create the flow.
+      ! This situation is more complicated!
+      isuccess = 1
+      return
+    end if
+
+    ! Read some more parameters, we may need them.
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionY1',Sexpressions(1),"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionY2',Sexpressions(2),"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionP',Sexpressions(3),"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionL1',Sexpressions(4),"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionL2',Sexpressions(5),"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowExpressionXi',Sexpressions(6),"",bdequote=.true.)
+    
+    ! Id, level, element type
+
+    call parlst_getvalue_int (rparlist,ssectionFlow,&
+        'iid',iid,0)
+
+    call parlst_getvalue_int (rparlist,ssectionFlow,&
+        'ilevel',ilevel,0)
+
+    call parlst_getvalue_int (rparlist,ssectionFlow,&
+        'ielementType',ielementType,-1)
+
+    ! Mesh, the flow diles
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'smesh',smesh,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssectionFlow,&
+        'sflowFile',sflowFile,"",bdequote=.true.)
+
+    ! Time discretisation
+
+    call parlst_getvalue_int (rparlist,ssectionFlow,&
+        'idelta',idelta,1)
+
+    ! Set it up...
+    select case (ctype)
+    case (-1)
+      ! Analytic flow given by a callback routine
+      call ansol_init(rflow,6,0)
+      rflow%iid = iid
+      return
+    
+    case (0)
+      ! Zero flow
+      call ansol_init(rflow,6)
+      rflow%iid = iid
+      return
+
+    case (3)
+      ! Analytical expression as flow.
+      call ansol_init (rflow,6)
+      call ansol_configExpressions (rflow,Sexpressions)
+      rflow%iid = iid
+      return
+
+    end select
+    
+    ! Create an analytical flow that resembles a discrete flow.
+    call init_initDiscreteAnalytFlow (ielementType,rboundary,&
+        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
+        ilevel,rflow)  
+        
+    rflow%iid = iid  
     
     ! Finally, set up the flow.
     select case (ctype)
@@ -1667,8 +1722,18 @@ contains
     case (2)
     
       ! Read nonstationary flow from hard disc
+      
+      call parlst_getvalue_double (rparlist,ssectionFlow,&
+          'dstartTime',dstartTime)
+
+      call parlst_getvalue_double (rparlist,ssectionFlow,&
+          'dtimeMax',dtimeMax)
+      
+      call parlst_getvalue_int (rparlist,ssectionFlow,&
+          'ntimesteps',ntimesteps)
+
       call ansol_configNonstationaryFile (rflow, &
-          dstartTime,dendTime,ntimesteps,&
+          dstartTime,dtimeMax,ntimesteps,&
           '(""'//trim(sflowfile)//'."",I5.5)',&
           0,idelta,.true.)
           
@@ -1676,6 +1741,114 @@ contains
 
   end subroutine
 
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  recursive subroutine init_initFlowBySimulation (rparlist,ssectionFlow,rflow,&
+!      rsettingsSpaceDiscr,rsettingsSolver)
+!  
+!!<description>
+!  ! Sets up a flow by performing a forward simulation.
+!!</description>
+!
+!!<input>
+!  ! Parameter list
+!  type(t_parlist), intent(in) :: rparlist
+!  
+!  ! Section where the parameters can be found that specify the target flow.
+!  character(len=*), intent(in) :: ssectionFlow
+!
+!  ! Space discretisation settings
+!  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+!
+!  ! Settings structure for the optimal control solver.
+!  type(t_settings_optflow), intent(out), target :: rsettingsSolver
+!!</input>
+!
+!!<output>
+!  ! Flow structure to create.
+!  type(t_anSolution), intent(out) :: rflow
+!!</output>
+!
+!!</subroutine>
+!
+!    ! local variables
+!    integer :: ctype,iavaillevel,iid,isuccess
+!    type(t_collection) :: rcollection
+!    real(dp) :: dstartTime,dtimeMax,dtimeStepTheta
+!    character(len=SYS_STRLEN) :: ssectionInitCond
+!    character(len=SYS_STRLEN) :: smesh,sflowFile
+!    integer :: ilevel,ielementType,idelta,ieltype
+!    integer :: ntimesteps,ctimeStepScheme
+!    type(t_anSolution) :: rinitcondflow
+!    
+!    ! Read some parameters, we may need them.
+!    
+!    ! Id, level, element type
+!
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'iid',iid,0)
+!
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'ilevel',ilevel,0)
+!
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'ielementType',ielementType,-1)
+!
+!    ! Mesh, initial condition
+!
+!    call parlst_getvalue_string (rparlist,ssectionFlow,&
+!        'smesh',smesh,"",bdequote=.true.)
+!
+!    call parlst_getvalue_string (rparlist,ssectionFlow,&
+!        'ssectionInitSol',ssectionInitSol,bdequote=.true.)
+!
+!    ! Time discretisation
+!
+!    call parlst_getvalue_double (rparlist,ssectionFlow,&
+!        'dstartTime',dstartTime)
+!
+!    call parlst_getvalue_double (rparlist,ssectionFlow,&
+!        'dtimeMax',dtimeMax)
+!    
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'ntimesteps',ntimesteps)
+!
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'ctimeStepScheme',ctimeStepScheme)
+!
+!    call parlst_getvalue_int (rparlist,ssectionFlow,&
+!        'dtimeStepTheta',dtimeStepTheta)
+!
+!    ! Prepare the flow
+!    call init_initDiscreteAnalytFlow (ielementType,rboundary,&
+!        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,&
+!        rsettingsSolver%rfeHierPrimal,ilevel,rflow)
+!
+!    rflow%iid = iid
+!    
+!    ! What is with the initial condition?  
+!    call init_initFlow (rparlist,ssectionInitSol,rinitcondflow,&
+!        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,
+!        rboundary,isuccess)
+!    
+!    if (isuccess .eq. 1) then
+!      ! Oops, that one must be calculated by simulation.
+!      call init_initFlowBySimulation (rparlist,ssectionInitSol,rinitcondflow,&
+!          rsettingsSpaceDiscr,rsettingsSolver)
+!    end if
+!    
+!    ! Solution at the start time in rinitcondflow is our initial condition.
+!    
+!    
+!    
+!    
+!    
+!    ! Release the initial condition
+!    call ansol_done (rinitcondflow)
+!
+!  end subroutine
 
   ! ***************************************************************************
 
@@ -2400,7 +2573,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initStartVector (rsettings,ilevel,rparlist,ssection,&
+  subroutine init_initStartVector (rsettings,rsettingsSpaceDiscr,ilevel,rparlist,ssection,&
       rinitialCondition,rvector,rrhs)
   
 !<description>
@@ -2411,6 +2584,10 @@ contains
   ! Settings structure.
   type(t_settings_optflow), intent(inout) :: rsettings
   
+  ! Structure with space discretisation settings. Defines how the space 
+  ! discretisation hierarchy in rsettings is set up.
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
+
   ! Level in the global space-time hierarchy where the start vector should
   ! be created.
   integer, intent(in) :: ilevel
@@ -2437,7 +2614,7 @@ contains
 
 !</subroutine>
 
-    integer :: ctypeStartVector,i,ispacelevel
+    integer :: ctypeStartVector,i,ispacelevel,isuccess
     real(dp) :: dtime
     logical :: bsuccess
     type(t_anSolution) :: rlocalsolution
@@ -2503,9 +2680,13 @@ contains
     case (2)
       ! Read the analytic solution.
       call init_initFlow (rparlist,sstartVector,rlocalsolution,&
-          sstartVector,rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-          rsettings%rfeHierPrimal,rsettings%rboundary,&
-          rsettings%rtimeHierarchy%dtimeInit,rsettings%rtimeHierarchy%dtimeMax)
+          rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+          rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Flow created by simulation not yet supported!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+        call sys_halt()
+      end if
       
       ! Project it down to all timesteps.
       do i=1,rvector%neqTime
@@ -2553,7 +2734,7 @@ contains
       
       ! Simulate...
       call fbsim_simulate (rsimsolver, rvector, rrhs, &
-          rboudaryConditions,1, rvector%NEQtime,rvector,bsuccess)
+          rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,bsuccess)
           
       ! Clean up
       call fbsim_done (rsimsolver)
@@ -2575,7 +2756,7 @@ contains
   
 !<subroutine>
 
-  subroutine init_initPostprocessing (rparlist,ssection,ssectionDiscr,&
+  subroutine init_initPostprocessing (rparlist,ssection,rsettingsSpaceDiscr,&
       rboundaryConditions,rtimeDiscr,rspaceDiscr,rpostproc,rsettings)
 
 !<description>
@@ -2589,8 +2770,8 @@ contains
   ! Section where the parameters can be found.
   character(len=*), intent(in) :: ssection
   
-  ! Section where the parameters of the spatial discretisation can be found.
-  character(len=*), intent(in) :: ssectionDiscr
+  ! Structure with space discretisation settings
+  type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
   ! Boundary conditions to use.
   type(t_optcBDC), intent(in), target  :: rboundaryConditions
@@ -2614,6 +2795,7 @@ contains
 
     ! local variables
     character(len=SYS_STRLEN) :: sstr
+    integer :: isuccess
 
     ! Basic initialisation of the postprocessing structure
     call optcpp_initpostprocessing (rpostproc,CCSPACE_PRIMALDUAL,&
@@ -2648,9 +2830,13 @@ contains
     if (rpostproc%icalcError .ne. 0) then
       ! Initialise the reference solution
       call init_initFlow (rparlist,sstr,rpostproc%ranalyticRefFunction,&
-          ssectionDiscr,rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-          rsettings%rfeHierPrimal,rsettings%rboundary,&
-          rtimeDiscr%dtimeInit,rtimeDiscr%dtimeMax)
+          rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+          rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+      if (isuccess .eq. 1) then
+        call output_line ('Flow created by simulation not yet supported!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+        call sys_halt()
+      end if
     end if
 
   end subroutine
@@ -2718,7 +2904,7 @@ contains
   
 !<subroutine>
 
-  subroutine init_generateInitCondRHS (rsettings,rsolution,rrhs)
+  subroutine init_generateInitCondRHS(rsettings,rtimediscr,rx,rb)
 
 !<description>
   ! Generates the RHS vector used for the initial condition.
@@ -2728,15 +2914,16 @@ contains
   ! All settings of the optimal control flow solver.
   type(t_settings_optflow), intent(in), target :: rsettings
   
-  ! Space time solution vector.
-  type(t_spaceTimeVector), intent(in), target :: rsolution
+  ! Structure defining the time discretisation
+  type(t_timeDiscretisation), intent(in) :: rtimediscr
+  
+  ! Space solution at the start time.
+  type(t_vectorBlock), intent(in), target :: rx
 !</input>
 
 !<inputoutput>
-  ! Vector where the first entry receives the RHS for the initial condition.
-  ! The vector must have been initialised. The vector data is overwritten
-  ! by the RHS data.
-  type(t_spaceTimeVector), intent(inout) :: rrhs
+  ! RHS at the initial time.
+  type(t_vectorBlock), intent(inout) :: rb
 !</inputoutput>
 
 !</subroutine>
@@ -2744,13 +2931,11 @@ contains
     ! local variables
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     logical :: bconvectionExplicit
-    real(DP) :: dequationType
-    type(t_spatialMatrixDiscrData) :: rspaceDiscr
+    real(DP) :: dequationType,dtstep
+    type(t_spatialMatrixDiscrData) :: rmatrixDiscr
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
     real(dp), dimension(:), pointer :: p_Ddata
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    type(t_vectorBlock), target :: rx,rb
     
 !    ! If the following constant is set from 1.0 to 0.0, the primal system is
 !    ! decoupled from the dual system!
@@ -2771,14 +2956,8 @@ contains
     dtimeCoupling = rsettings%rdebugFlags%dtimeCoupling
     
     ! Create two temp vectors representing the first timestep.
-    p_rspaceDiscr => rsolution%p_rspaceDiscr
-    p_rtimeDiscr => rsolution%p_rtimeDiscr
+    p_rspaceDiscr => rx%p_rblockDiscr
         
-    call lsysbl_createVectorBlock(p_rspaceDiscr,rx)
-    call lsysbl_createVectorBlock(p_rspaceDiscr,rb)
-    call sptivec_getTimestepData (rsolution, 1, rx)
-    call sptivec_getTimestepData (rrhs, 1, rb)
-
     ! DEBUG!!!
     call lsysbl_getbase_double (rb,p_Ddata)
 
@@ -2796,8 +2975,8 @@ contains
     ! (Navier--)Stokes equation and what we receive is the RHS for the
     ! terminal condition. We only have to take care of bondary conditions.
 
-    call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rspaceDiscr)
-    call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rspaceDiscr,rnonlinearity)
+    call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
+    call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
     
     ! Disable the submatices for the dual solution and the coupling.
     ! We only want to generate the RHS for the primal solution.
@@ -2805,22 +2984,6 @@ contains
     call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
     call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
 
-    ! Change the sign of dupsam2 for a consistent stabilisation.
-    ! Reason: The stablisation is added to the dual operator by the SD/
-    ! EOJ stabilisation in the following way:
-    !
-    !    ... - (u grad lamda + dupsam2*stabilisation) + ... = rhs
-    !
-    ! We want to *add* the stabilisation, so we have to introduce a "-" sign
-    ! in dupsam2 to get
-    !
-    !    ... - (u grad lamda) - (-dupsam2*stabilisation) + ... = rhs
-    ! <=>
-    !    ... - (u grad lamda) + dupsam2*stabilisation + ... = rhs
-    
-    rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam = &
-        -rnonlinearSpatialMatrix%rdiscrData%rstabilDual%dupsam
-    
     ! Set up the matrix weights the matrix in the 0th timestep.
     ! We set up only the stuff for the primal equation; for setting up
     ! the RHS, there is no dual equation and also no coupling between the
@@ -2831,7 +2994,8 @@ contains
     if (rsettings%rsettingsOptControl%ispaceTimeFormulation .ne. 0) &
       dequationType = -1.0_DP
       
-    rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/p_rtimeDiscr%dtstep
+    call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
+    rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
     rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
     
     if (.not. bconvectionExplicit) then
@@ -2848,12 +3012,127 @@ contains
     call lsyssc_clearVector(rb%RvectorBlock(3))
     call smva_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
     
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine init_implementInitCondRHS (rsettings,rsolution,rrhs)
+
+!<description>
+  ! Generates the RHS vector used for the initial condition and implements
+  ! it into the space-time vector rrhs.
+!</description>
+
+!<input>
+  ! All settings of the optimal control flow solver.
+  type(t_settings_optflow), intent(in), target :: rsettings
+  
+  ! Space time solution vector.
+  type(t_spaceTimeVector), intent(in), target :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Vector where the first entry receives the RHS for the initial condition.
+  ! The vector must have been initialised. The vector data is overwritten
+  ! by the RHS data.
+  type(t_spaceTimeVector), intent(inout) :: rrhs
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    real(dp), dimension(:), pointer :: p_Ddata
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    type(t_vectorBlock), target :: rx,rb
+    
+    ! Create two temp vectors representing the first timestep.
+    p_rtimeDiscr => rsolution%p_rtimeDiscr
+    p_rspaceDiscr => rsolution%p_rspaceDiscr
+        
+    call lsysbl_createVectorBlock(p_rspaceDiscr,rx)
+    call lsysbl_createVectorBlock(p_rspaceDiscr,rb)
+    call sptivec_getTimestepData (rsolution, 1, rx)
+    call sptivec_getTimestepData (rrhs, 1, rb)
+
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rb,p_Ddata)
+
+    call init_generateInitCondRHS(rsettings,p_rtimediscr,rx,rb)
+
     ! Save the new RHS.
     call sptivec_setTimestepData (rrhs, 1, rb)
     
     ! Release the temp vectors.
     call lsysbl_releaseVector(rb)
     call lsysbl_releaseVector(rx)
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine init_getSpaceDiscrSettings (rparlist,ssection,rsettingsSpaceDiscr)
+
+!<description>
+  ! Extracts main discretisation settings in space from the DAT file.
+!</description>
+
+!<input>
+  ! Parameter list
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Section containing the parameters
+  character(len=*), intent(in) :: ssection
+!</input>
+
+!<output>
+   ! Structure receiving the main discretisation settings
+   type(t_settings_discr), intent(out) :: rsettingsSpaceDiscr
+!</output>
+
+!</subroutine>
+
+    character(len=SYS_STRLEN) :: sstr
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        'ielementType',rsettingsSpaceDiscr%ielementType,3)
+                              
+    call parlst_getvalue_string (rparlist,ssection,'scubStokes',sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rparlist,ssection,&
+          'icubStokes',rsettingsSpaceDiscr%icubStokes,int(SPDISC_CUB_AUTOMATIC))
+    else
+      rsettingsSpaceDiscr%icubStokes = cub_igetID(sstr)
+    end if
+
+    call parlst_getvalue_string (rparlist,ssection,'scubB',sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rparlist,ssection,&
+          'icubB',rsettingsSpaceDiscr%icubB,int(SPDISC_CUB_AUTOMATIC))
+    else
+      rsettingsSpaceDiscr%icubB = cub_igetID(sstr)
+    end if
+
+    call parlst_getvalue_string (rparlist,ssection,'scubF',sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rparlist,ssection,&
+          'icubF',rsettingsSpaceDiscr%icubF,int(SPDISC_CUB_AUTOMATIC))
+    else
+      rsettingsSpaceDiscr%icubF = cub_igetID(sstr)
+    end if
+    
+    ! Which cubature rule to use for mass matrices?
+    call parlst_getvalue_string (rparlist,ssection,'scubMass',sstr,"")
+    if (sstr .eq. "") then
+      call parlst_getvalue_int (rparlist,ssection,&
+          'icubM',rsettingsSpaceDiscr%icubMass,int(SPDISC_CUB_AUTOMATIC))
+    else
+      rsettingsSpaceDiscr%icubMass = cub_igetID(sstr)
+    end if    
 
   end subroutine
 

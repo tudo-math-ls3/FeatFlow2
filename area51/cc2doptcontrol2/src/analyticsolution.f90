@@ -311,7 +311,7 @@ contains
       ielementType,fgetDiscr,rcollection)
 
 !<description>
-  ! Initialises a solution structure to be used with a mesh.
+  ! Initialises a solution structure based on a space discretisation.
   ! rdiscr describes the underlying discretisation on refinement level ilevel
   ! (mesh + domain). ilevelDiscr defines the refinement level of the mesh
   ! in rsolution; if necessary, the mesh in rdiscr is automatically refined.

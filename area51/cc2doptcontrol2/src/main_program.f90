@@ -1138,6 +1138,9 @@ contains
     ! for the stack.
     type(t_settings_optflow), pointer :: p_rsettingsSolver
     
+    ! Basic space discretisation settings
+    type(t_settings_discr) :: rsettingsSpaceDiscr
+    
     ! Nonlinear solve structure representing the solver.
     type(t_nlstsolver), pointer :: p_rnlstsolver
     
@@ -1200,13 +1203,15 @@ contains
         p_rsettingsSolver%rtimeHierarchy%p_rtimeLevels(p_rsettingsSolver%rtimeHierarchy%nlevels),&
         p_rsettingsSolver%rfeHierPrimalDual% &
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
-    call init_initStartVector(p_rsettingsSolver,&
+    call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
+        rsettingsSpaceDiscr)
+    call init_initStartVector(p_rsettingsSolver,rsettingsSpaceDiscr,&
         p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
-        rparlist,rsettings%ssectionSpaceTimePostprocessing,&
+        rparlist,rsettings%ssectionSpaceTimePreprocessing,&
         p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete)
     
     ! Implement the initial condition to the discrete RHS.
-    call init_generateInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
+    call init_implementInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
 
     ! Create a temp vector    
     call sptivec_initVector (rtemp,&

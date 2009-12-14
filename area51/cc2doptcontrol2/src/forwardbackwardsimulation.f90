@@ -3173,6 +3173,7 @@ contains
 
 !<inputoutput>
   ! An initial space-time solution vector. This is modified according to the iteration.
+  ! the first subvector must contain a proper initial condition.
   type(t_spacetimevector), intent(inout) :: rsolvector
   
   ! TRUE if the iteration was successful.
@@ -3317,7 +3318,7 @@ contains
 
       call output_separator (OU_SEP_MINUS,&
           coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
-      call output_line ('Time-Step '//trim(sys_siL(ifirstinterval,6))// &
+      call output_line ('Time-Iterate '//trim(sys_siL(ifirstinterval,6))// &
           ', Time = '//trim(sys_sdL(dtime,5)), &
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
           
@@ -3340,8 +3341,9 @@ contains
       call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,ifirstinterval,&
           dtime,rsimsolver%p_rsettings)
           
-      ! Loop through the timesteps.
-      do iiterate = ifirstinterval,ilastinterval+1
+      ! Loop through the timesteps. Ignore the initial solution, this is the
+      ! initial condition.
+      do iiterate = ifirstinterval+1,ilastinterval+1
       
         ! Timestep size? Current time step?
         call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate-1,&
@@ -3350,7 +3352,7 @@ contains
         if (rsimSolver%ioutputLevel .ge. 1) then
           call output_separator (OU_SEP_MINUS,&
               coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
-          call output_line ('Time-Step '//trim(sys_siL(iiterate,6))// &
+          call output_line ('Time-Iterate '//trim(sys_siL(iiterate,6))// &
               ', Time = '//trim(sys_sdL(dtime,5))// &
               ', Stepsize = '//trim(sys_sdL(dtstep,5)),&
               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
