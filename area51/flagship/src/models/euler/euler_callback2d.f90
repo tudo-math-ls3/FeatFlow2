@@ -175,7 +175,7 @@ contains
 !</subroutine>
     
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -225,7 +225,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -326,13 +326,13 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-    ! Compute fluxes for x-direction
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -342,7 +342,7 @@ contains
     a = dscale * 0.5_DP*(C_ij-C_ji)
 
     ! Assembly fluxes and exploit skew-symmetry of a_ij and F_ij
-    F_ij = a(1)*dF1_ij + a(2)*dF2_ij
+    F_ij = dscale * (a(1)*dF1_ij + a(2)*dF2_ij)
     F_ji = F_ij
 
   end subroutine euler_calcFluxGalerkinNoBdr2d
@@ -380,7 +380,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -404,7 +404,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -450,7 +450,7 @@ contains
 #endif
 
     !---------------------------------------------------------------------------
-    ! Evaluate the scalar dissipation 
+    ! Evaluate the issipation 
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient
@@ -460,15 +460,15 @@ contains
     aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
     u_ij = (aux*ui+uj)/(aux+1.0_DP)
     v_ij = (aux*vi+vj)/(aux+1.0_DP)
-    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
     hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
     H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
     ! Compute auxiliary variables
-    aux = sqrt(a(1)*a(1)+a(2)*a(2))
-    vel = u_ij*a(1) + v_ij*a(2)
-    cs  = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
+    vel  = u_ij*a(1) + v_ij*a(2)
+    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+    cs   = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
     d_ij = dscale * (abs(vel) + aux*cs)
@@ -516,7 +516,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -540,7 +540,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -586,7 +586,7 @@ contains
 #endif    
 
     !---------------------------------------------------------------------------
-    ! Evaluate the scalar dissipation 
+    ! Evaluate the dissipation 
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient
@@ -596,12 +596,12 @@ contains
     aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
     u_ij = (aux*ui+uj)/(aux+1.0_DP)
     v_ij = (aux*vi+vj)/(aux+1.0_DP)
-    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
     hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
     H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
     ! Compute auxiliary variable
+    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
     aux  = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
 
     ! Scalar dissipation for x- and y-direction
@@ -650,7 +650,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -676,7 +676,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -722,7 +722,7 @@ contains
 #endif    
     
     !---------------------------------------------------------------------------
-    ! Evaluate the tensorial dissipation 
+    ! Evaluate the dissipation 
     !---------------------------------------------------------------------------
     
     ! Compute the skew-symmetric coefficient
@@ -768,11 +768,14 @@ contains
       w3 = l3 * (aux1 - aux2)
       w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)+a(2)*Diff(2)-a(1)*Diff(3))
 
+      ! Compute "anorm * dscale"
+      anorm = anorm*dscale
+
       ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = dscale * anorm * ( w1 + w2 + w3 )
-      Diff(2) = dscale * anorm * ( (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4 )
-      Diff(3) = dscale * anorm * ( (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4 )
-      Diff(4) = dscale * anorm * ( (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
+      Diff(1) = anorm * ( w1 + w2 + w3 )
+      Diff(2) = anorm * ( (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4 )
+      Diff(3) = anorm * ( (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4 )
+      Diff(4) = anorm * ( (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
       
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
@@ -816,7 +819,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -842,7 +845,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -888,7 +891,7 @@ contains
 #endif    
     
     !---------------------------------------------------------------------------
-    ! Evaluate the tensorial dissipation 
+    ! Evaluate the dissipation 
     !---------------------------------------------------------------------------
     
     ! Compute the skew-symmetric coefficient
@@ -1017,14 +1020,14 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
 #endif
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
-    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
+    real(DP) :: d_ij,ci,cj,Ei,Ej
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -1040,7 +1043,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -1086,22 +1089,29 @@ contains
 #endif    
 
     !---------------------------------------------------------------------------
-    ! Evaluate the scalar dissipation 
+    ! Evaluate the dissipation 
     !---------------------------------------------------------------------------
     
-    ! Compute enthalpy
-    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$    ! Compute enthalpy
+!!$    hi = GAMMA*Ei-G2*(ui*ui+vi*vi)
+!!$    hj = GAMMA*Ej-G2*(uj*uj+vj*vj)
+!!$
+!!$    ! Compute the speed of sound
+!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    ! Compute speed of sound
-    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
-                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
-    
     ! Scalar dissipation for the Rusanov flux
-    Diff = dscale*d_ij*(U_j-U_i)
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) +&
+                sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) +&
+                sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
+    
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = dscale * d_ij*(U_j-U_i)
 
     ! Add the artificial diffusion to the fluxes
     F_ij = F_ij+Diff
@@ -1143,14 +1153,14 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
 #endif
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
-    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
+    real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
+    real(DP) :: d_ij,ci,cj,Ei,Ej
 
     !---------------------------------------------------------------------------
     ! Evaluate the Galerkin fluxes
@@ -1166,7 +1176,7 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
-#ifdef ENABLE_WEAK_BDRCOND
+#ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
@@ -1212,24 +1222,29 @@ contains
 #endif    
 
     !---------------------------------------------------------------------------
-    ! Evaluate the scalar dissipation 
+    ! Evaluate the dissipation 
     !---------------------------------------------------------------------------
 
-    ! Compute enthalpy
-    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$    ! Compute enthalpy
+!!$    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+!!$    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$
+!!$    ! Compute speed of sound
+!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
-    ! Compute speed of sound
-    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
+    ! Scalar dissipation
     d_ij = max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
                 abs(C_ji(1)*ui) + abs(C_ji(1))*ci )&
          + max( abs(C_ij(2)*vj) + abs(C_ij(2))*cj,&
                 abs(C_ji(2)*vi) + abs(C_ji(2))*ci )
 
-    ! Scalar dissipation for the Rusanov flux
-    Diff = dscale*d_ij*(U_j-U_i)
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = dscale * d_ij*(U_j-U_i)
 
     ! Add the artificial diffusion to the fluxes
     F_ij = F_ij+Diff
@@ -1276,9 +1291,9 @@ contains
 
     ! Compute Galerkin coefficient K_ii
     K_ii(1) = 0.0_DP
-    K_ii(2) = dscale*(G13*ui*C_ii(1)+vi*C_ii(2))
-    K_ii(3) = dscale*(ui*C_ii(1)+G13*vi*C_ii(2))
-    K_ii(4) = dscale*(GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
+    K_ii(2) = dscale * (G13*ui*C_ii(1)+vi*C_ii(2))
+    K_ii(3) = dscale * (ui*C_ii(1)+G13*vi*C_ii(2))
+    K_ii(4) = dscale * (GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
 
   end subroutine euler_calcMatrixDiagonalDiag2d
 
@@ -1314,35 +1329,33 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: Ei,ui,vi,qi,uvi,uPow2i,vPow2i,aux
+    real(DP) :: ui,vi,qi,Ei,uvi,uPow2i,vPow2i,aux
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
-    
     uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
-    
     aux = ui*C_ii(1)+vi*C_ii(2)
     
-    ! Compute Galerkin coefficient K_ij
+    ! Compute Galerkin coefficient K_ii
     K_ii( 1) = 0.0_DP
-    K_ii( 2) = dscale*((G2*qi-uPow2i)*C_ii(1)-uvi*C_ii(2))
-    K_ii( 3) = dscale*((G2*qi-vPow2i)*C_ii(2)-uvi*C_ii(1))
-    K_ii( 4) = dscale*(G1*qi-GAMMA*Ei)*aux
+    K_ii( 2) = dscale * ((G2*qi-uPow2i)*C_ii(1)-uvi*C_ii(2))
+    K_ii( 3) = dscale * ((G2*qi-vPow2i)*C_ii(2)-uvi*C_ii(1))
+    K_ii( 4) = dscale * (G1*qi-GAMMA*Ei)*aux
 
-    K_ii( 5) = dscale*C_ii(1)
-    K_ii( 6) = dscale*(G13*ui*C_ii(1)+vi*C_ii(2))
-    K_ii( 7) = dscale*(vi*C_ii(1)-G1*ui*C_ii(2))
-    K_ii( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ii(1)-G1*ui*aux)
+    K_ii( 5) = dscale * C_ii(1)
+    K_ii( 6) = dscale * (G13*ui*C_ii(1)+vi*C_ii(2))
+    K_ii( 7) = dscale * (vi*C_ii(1)-G1*ui*C_ii(2))
+    K_ii( 8) = dscale * ((GAMMA*Ei-G2*qi)*C_ii(1)-G1*ui*aux)
 
-    K_ii( 9) = dscale*C_ii(2)
-    K_ii(10) = dscale*(ui*C_ii(2)-G1*vi*C_ii(1))
-    K_ii(11) = dscale*(ui*C_ii(1)+G13*vi*C_ii(2))
-    K_ii(12) = dscale*((GAMMA*Ei-G2*qi)*C_ii(2)-G1*vi*aux)
+    K_ii( 9) = dscale * C_ii(2)
+    K_ii(10) = dscale * (ui*C_ii(2)-G1*vi*C_ii(1))
+    K_ii(11) = dscale * (ui*C_ii(1)+G13*vi*C_ii(2))
+    K_ii(12) = dscale * ((GAMMA*Ei-G2*qi)*C_ii(2)-G1*vi*aux)
 
     K_ii(13) = 0.0_DP
-    K_ii(14) = dscale*G1*C_ii(1)
-    K_ii(15) = dscale*G1*C_ii(2)
-    K_ii(16) = dscale*(GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
+    K_ii(14) = dscale * G1*C_ii(1)
+    K_ii(15) = dscale * G1*C_ii(2)
+    K_ii(16) = dscale * (GAMMA*(ui*C_ii(1)+vi*C_ii(2)))
 
   end subroutine euler_calcMatrixDiagonal2d
 
@@ -1372,7 +1385,7 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
@@ -1386,15 +1399,15 @@ contains
 
     ! Compute Galerkin coefficient K_ij
     K_ij(1) = 0.0_DP
-    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(2) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij(3) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(4) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji(1) = 0.0_DP
-    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(2) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji(3) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     ! Nullify dissipation tensor
     D_ij = 0.0_DP
@@ -1427,7 +1440,7 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
@@ -1447,45 +1460,45 @@ contains
     
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
-    K_ij( 2) = dscale*((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
-    K_ij( 3) = dscale*((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
-    K_ij( 4) = dscale*(G1*qj-GAMMA*Ej)*aux1
+    K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
+    K_ij( 3) = dscale * ((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
+    K_ij( 4) = dscale * (G1*qj-GAMMA*Ej)*aux1
 
-    K_ij( 5) = dscale*C_ij(1)
-    K_ij( 6) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij( 7) = dscale*(vj*C_ij(1)-G1*uj*C_ij(2))
-    K_ij( 8) = dscale*((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
+    K_ij( 5) = dscale * C_ij(1)
+    K_ij( 6) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij( 7) = dscale * (vj*C_ij(1)-G1*uj*C_ij(2))
+    K_ij( 8) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
 
-    K_ij( 9) = dscale*C_ij(2)
-    K_ij(10) = dscale*(uj*C_ij(2)-G1*vj*C_ij(1))
-    K_ij(11) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(12) = dscale*((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
+    K_ij( 9) = dscale * C_ij(2)
+    K_ij(10) = dscale * (uj*C_ij(2)-G1*vj*C_ij(1))
+    K_ij(11) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(12) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
 
     K_ij(13) = 0.0_DP
-    K_ij(14) = dscale*G1*C_ij(1)
-    K_ij(15) = dscale*G1*C_ij(2)
-    K_ij(16) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(14) = dscale * G1*C_ij(1)
+    K_ij(15) = dscale * G1*C_ij(2)
+    K_ij(16) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji( 1) = 0.0_DP
-    K_ji( 2) = dscale*((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
-    K_ji( 3) = dscale*((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
-    K_ji( 4) = dscale*(G1*qi-GAMMA*Ei)*aux2
+    K_ji( 2) = dscale * ((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
+    K_ji( 3) = dscale * ((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
+    K_ji( 4) = dscale * (G1*qi-GAMMA*Ei)*aux2
 
-    K_ji( 5) = dscale*C_ji(1)
-    K_ji( 6) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji( 7) = dscale*(vi*C_ji(1)-G1*ui*C_ji(2))
-    K_ji( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
+    K_ji( 5) = dscale * C_ji(1)
+    K_ji( 6) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji( 7) = dscale * (vi*C_ji(1)-G1*ui*C_ji(2))
+    K_ji( 8) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
 
-    K_ji( 9) = dscale*C_ji(2)
-    K_ji(10) = dscale*(ui*C_ji(2)-G1*vi*C_ji(1))
-    K_ji(11) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(12) = dscale*((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
+    K_ji( 9) = dscale * C_ji(2)
+    K_ji(10) = dscale * (ui*C_ji(2)-G1*vi*C_ji(1))
+    K_ji(11) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(12) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
 
     K_ji(13) = 0.0_DP
-    K_ji(14) = dscale*G1*C_ji(1)
-    K_ji(15) = dscale*G1*C_ji(2)
-    K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(14) = dscale * G1*C_ji(1)
+    K_ji(15) = dscale * G1*C_ji(2)
+    K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     ! Nullify dissipation tensor
     D_ij = 0.0_DP
@@ -1519,14 +1532,14 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,aux1,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1)
@@ -1534,15 +1547,19 @@ contains
 
     ! Compute Galerkin coefficient K_ij
     K_ij(1) = 0.0_DP
-    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(2) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij(3) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(4) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji(1) = 0.0_DP
-    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(2) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji(3) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient and its norm
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
@@ -1556,13 +1573,16 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary variables
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
          
       ! Compute scalar dissipation
-      D_ij = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
-      
+      D_ij = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
+                       anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))     
     else
-
+      
+      ! Nullify dissipation tensor
       D_ij = 0.0_DP
 
     end if
@@ -1596,15 +1616,15 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+    real(DP) :: anorm,aux,aux1,aux2,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
@@ -1618,45 +1638,49 @@ contains
     
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
-    K_ij( 2) = dscale*((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
-    K_ij( 3) = dscale*((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
-    K_ij( 4) = dscale*(G1*qj-GAMMA*Ej)*aux1
+    K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
+    K_ij( 3) = dscale * ((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
+    K_ij( 4) = dscale * (G1*qj-GAMMA*Ej)*aux1
 
-    K_ij( 5) = dscale*C_ij(1)
-    K_ij( 6) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij( 7) = dscale*(vj*C_ij(1)-G1*uj*C_ij(2))
-    K_ij( 8) = dscale*((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
+    K_ij( 5) = dscale * C_ij(1)
+    K_ij( 6) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij( 7) = dscale * (vj*C_ij(1)-G1*uj*C_ij(2))
+    K_ij( 8) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
 
-    K_ij( 9) = dscale*C_ij(2)
-    K_ij(10) = dscale*(uj*C_ij(2)-G1*vj*C_ij(1))
-    K_ij(11) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(12) = dscale*((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
+    K_ij( 9) = dscale * C_ij(2)
+    K_ij(10) = dscale * (uj*C_ij(2)-G1*vj*C_ij(1))
+    K_ij(11) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(12) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
 
     K_ij(13) = 0.0_DP
-    K_ij(14) = dscale*G1*C_ij(1)
-    K_ij(15) = dscale*G1*C_ij(2)
-    K_ij(16) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(14) = dscale * G1*C_ij(1)
+    K_ij(15) = dscale * G1*C_ij(2)
+    K_ij(16) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji( 1) = 0.0_DP
-    K_ji( 2) = dscale*((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
-    K_ji( 3) = dscale*((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
-    K_ji( 4) = dscale*(G1*qi-GAMMA*Ei)*aux2
+    K_ji( 2) = dscale * ((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
+    K_ji( 3) = dscale * ((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
+    K_ji( 4) = dscale * (G1*qi-GAMMA*Ei)*aux2
 
-    K_ji( 5) = dscale*C_ji(1)
-    K_ji( 6) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji( 7) = dscale*(vi*C_ji(1)-G1*ui*C_ji(2))
-    K_ji( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
+    K_ji( 5) = dscale * C_ji(1)
+    K_ji( 6) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji( 7) = dscale * (vi*C_ji(1)-G1*ui*C_ji(2))
+    K_ji( 8) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
 
-    K_ji( 9) = dscale*C_ji(2)
-    K_ji(10) = dscale*(ui*C_ji(2)-G1*vi*C_ji(1))
-    K_ji(11) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(12) = dscale*((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
+    K_ji( 9) = dscale * C_ji(2)
+    K_ji(10) = dscale * (ui*C_ji(2)-G1*vi*C_ji(1))
+    K_ji(11) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(12) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
 
     K_ji(13) = 0.0_DP
-    K_ji(14) = dscale*G1*C_ji(1)
-    K_ji(15) = dscale*G1*C_ji(2)
-    K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(14) = dscale * G1*C_ji(1)
+    K_ji(15) = dscale * G1*C_ji(2)
+    K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
     ! Compute coefficients
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
@@ -1670,10 +1694,13 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
          
       ! Compute scalar dissipation
-      aux = dscale*(abs(a(1)*u_ij+a(2)*v_ij) + anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+      aux = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
+                      anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
       
       D_ij     = 0.0_DP
       D_ij( 1) = aux
@@ -1716,7 +1743,7 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
@@ -1733,15 +1760,19 @@ contains
 
     ! Compute Galerkin coefficient K_ij
     K_ij(1) = 0.0_DP
-    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(2) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij(3) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(4) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji(1) = 0.0_DP
-    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(2) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji(3) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient and its norm
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
@@ -1755,12 +1786,12 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-
+      
       ! Compute auxiliary values
       c1    = a(1)/anorm
       c2    = a(2)/anorm
       vel   = c1*u_ij+c2*v_ij
+      q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
       
@@ -1867,7 +1898,7 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
@@ -1890,45 +1921,49 @@ contains
     
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
-    K_ij( 2) = dscale*((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
-    K_ij( 3) = dscale*((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
-    K_ij( 4) = dscale*(G1*qj-GAMMA*Ej)*aux1
+    K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
+    K_ij( 3) = dscale * ((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
+    K_ij( 4) = dscale * (G1*qj-GAMMA*Ej)*aux1
 
-    K_ij( 5) = dscale*C_ij(1)
-    K_ij( 6) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij( 7) = dscale*(vj*C_ij(1)-G1*uj*C_ij(2))
-    K_ij( 8) = dscale*((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
+    K_ij( 5) = dscale * C_ij(1)
+    K_ij( 6) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij( 7) = dscale * (vj*C_ij(1)-G1*uj*C_ij(2))
+    K_ij( 8) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
 
-    K_ij( 9) = dscale*C_ij(2)
-    K_ij(10) = dscale*(uj*C_ij(2)-G1*vj*C_ij(1))
-    K_ij(11) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(12) = dscale*((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
+    K_ij( 9) = dscale * C_ij(2)
+    K_ij(10) = dscale * (uj*C_ij(2)-G1*vj*C_ij(1))
+    K_ij(11) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(12) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
 
     K_ij(13) = 0.0_DP
-    K_ij(14) = dscale*G1*C_ij(1)
-    K_ij(15) = dscale*G1*C_ij(2)
-    K_ij(16) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(14) = dscale * G1*C_ij(1)
+    K_ij(15) = dscale * G1*C_ij(2)
+    K_ij(16) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji( 1) = 0.0_DP
-    K_ji( 2) = dscale*((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
-    K_ji( 3) = dscale*((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
-    K_ji( 4) = dscale*(G1*qi-GAMMA*Ei)*aux2
+    K_ji( 2) = dscale * ((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
+    K_ji( 3) = dscale * ((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
+    K_ji( 4) = dscale * (G1*qi-GAMMA*Ei)*aux2
 
-    K_ji( 5) = dscale*C_ji(1)
-    K_ji( 6) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji( 7) = dscale*(vi*C_ji(1)-G1*ui*C_ji(2))
-    K_ji( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
+    K_ji( 5) = dscale * C_ji(1)
+    K_ji( 6) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji( 7) = dscale * (vi*C_ji(1)-G1*ui*C_ji(2))
+    K_ji( 8) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
 
-    K_ji( 9) = dscale*C_ji(2)
-    K_ji(10) = dscale*(ui*C_ji(2)-G1*vi*C_ji(1))
-    K_ji(11) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(12) = dscale*((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
+    K_ji( 9) = dscale * C_ji(2)
+    K_ji(10) = dscale * (ui*C_ji(2)-G1*vi*C_ji(1))
+    K_ji(11) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(12) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
 
     K_ji(13) = 0.0_DP
-    K_ji(14) = dscale*G1*C_ji(1)
-    K_ji(15) = dscale*G1*C_ji(2)
-    K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(14) = dscale * G1*C_ji(1)
+    K_ji(15) = dscale * G1*C_ji(2)
+    K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
     ! Compute coefficients
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
@@ -1942,16 +1977,14 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
 
       ! Compute auxiliary variables
-      c1   = a(1)/anorm
-      c2   = a(2)/anorm
-      vel  = c1*u_ij+c2*v_ij
-
-      ! Compute speed of sound
+      c1    = a(1)/anorm
+      c2    = a(2)/anorm
+      vel   = c1*u_ij+c2*v_ij
+      q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
       cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
-      cs = sqrt(cPow2)
+      cs    = sqrt(cPow2)
       
       ! Diagonal matrix of eigenvalues
       l1 = abs(vel-cs)
@@ -2040,13 +2073,13 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
-    real(DP) :: aux,hi,hj,ui,uj,vi,vj,ci,cj,Ei,Ej
+    real(DP) :: ui,uj,vi,vj,ci,cj,Ei,Ej
     
     
     ! Compute auxiliary variables
@@ -2055,28 +2088,36 @@ contains
 
     ! Compute Galerkin coefficient K_ij
     K_ij(1) = 0.0_DP
-    K_ij(2) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij(3) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(4) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(2) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij(3) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(4) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji(1) = 0.0_DP
-    K_ji(2) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji(3) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(4) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(2) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji(3) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-    ! Compute auxiliary quantities
-    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
-    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+!!$    ! Compute auxiliary quantities
+!!$    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+!!$    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$
+!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
     ! Compute dissipation tensor D_ij
-    aux = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-               abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-
-    D_ij = aux*dscale
+    D_ij = dscale * max( abs(C_ij(1)*uj+C_ij(2)*vj) +&
+                         sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                         abs(C_ji(1)*ui+C_ji(2)*vi) +&
+                         sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
 
   end subroutine euler_calcMatrixRusanovDiag2d
 
@@ -2107,14 +2148,14 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
     ! local variable
-    real(DP) :: aux,hi,hj,ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj&
-        ,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
+    real(DP) :: ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj
+    real(DP) :: uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
     
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
@@ -2128,62 +2169,72 @@ contains
     
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
-    K_ij( 2) = dscale*((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
-    K_ij( 3) = dscale*((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
-    K_ij( 4) = dscale*(G1*qj-GAMMA*Ej)*aux1
+    K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
+    K_ij( 3) = dscale * ((G2*qj-vPow2j)*C_ij(2)-uvj*C_ij(1))
+    K_ij( 4) = dscale * (G1*qj-GAMMA*Ej)*aux1
 
-    K_ij( 5) = dscale*C_ij(1)
-    K_ij( 6) = dscale*(G13*uj*C_ij(1)+vj*C_ij(2))
-    K_ij( 7) = dscale*(vj*C_ij(1)-G1*uj*C_ij(2))
-    K_ij( 8) = dscale*((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
+    K_ij( 5) = dscale * C_ij(1)
+    K_ij( 6) = dscale * (G13*uj*C_ij(1)+vj*C_ij(2))
+    K_ij( 7) = dscale * (vj*C_ij(1)-G1*uj*C_ij(2))
+    K_ij( 8) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(1)-G1*uj*aux1)
 
-    K_ij( 9) = dscale*C_ij(2)
-    K_ij(10) = dscale*(uj*C_ij(2)-G1*vj*C_ij(1))
-    K_ij(11) = dscale*(uj*C_ij(1)+G13*vj*C_ij(2))
-    K_ij(12) = dscale*((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
+    K_ij( 9) = dscale * C_ij(2)
+    K_ij(10) = dscale * (uj*C_ij(2)-G1*vj*C_ij(1))
+    K_ij(11) = dscale * (uj*C_ij(1)+G13*vj*C_ij(2))
+    K_ij(12) = dscale * ((GAMMA*Ej-G2*qj)*C_ij(2)-G1*vj*aux1)
 
     K_ij(13) = 0.0_DP
-    K_ij(14) = dscale*G1*C_ij(1)
-    K_ij(15) = dscale*G1*C_ij(2)
-    K_ij(16) = dscale*(GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
+    K_ij(14) = dscale * G1*C_ij(1)
+    K_ij(15) = dscale * G1*C_ij(2)
+    K_ij(16) = dscale * (GAMMA*(uj*C_ij(1)+vj*C_ij(2)))
 
     ! Compute Galerkin coefficient K_ji
     K_ji( 1) = 0.0_DP
-    K_ji( 2) = dscale*((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
-    K_ji( 3) = dscale*((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
-    K_ji( 4) = dscale*(G1*qi-GAMMA*Ei)*aux2
+    K_ji( 2) = dscale * ((G1*qi-uPow2i)*C_ji(1)-uvi*C_ji(2))
+    K_ji( 3) = dscale * ((G1*qi-vPow2i)*C_ji(2)-uvi*C_ji(1))
+    K_ji( 4) = dscale * (G1*qi-GAMMA*Ei)*aux2
 
-    K_ji( 5) = dscale*C_ji(1)
-    K_ji( 6) = dscale*(G13*ui*C_ji(1)+vi*C_ji(2))
-    K_ji( 7) = dscale*(vi*C_ji(1)-G1*ui*C_ji(2))
-    K_ji( 8) = dscale*((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
+    K_ji( 5) = dscale * C_ji(1)
+    K_ji( 6) = dscale * (G13*ui*C_ji(1)+vi*C_ji(2))
+    K_ji( 7) = dscale * (vi*C_ji(1)-G1*ui*C_ji(2))
+    K_ji( 8) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(1)-G1*ui*aux2)
 
-    K_ji( 9) = dscale*C_ji(2)
-    K_ji(10) = dscale*(ui*C_ji(2)-G1*vi*C_ji(1))
-    K_ji(11) = dscale*(ui*C_ji(1)+G13*vi*C_ji(2))
-    K_ji(12) = dscale*((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
+    K_ji( 9) = dscale * C_ji(2)
+    K_ji(10) = dscale * (ui*C_ji(2)-G1*vi*C_ji(1))
+    K_ji(11) = dscale * (ui*C_ji(1)+G13*vi*C_ji(2))
+    K_ji(12) = dscale * ((GAMMA*Ei-G2*qi)*C_ji(2)-G1*vi*aux2)
 
     K_ji(13) = 0.0_DP
-    K_ji(14) = dscale*G1*C_ji(1)
-    K_ji(15) = dscale*G1*C_ji(2)
-    K_ji(16) = dscale*(GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
+    K_ji(14) = dscale * G1*C_ji(1)
+    K_ji(15) = dscale * G1*C_ji(2)
+    K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
-    ! Compute auxiliary quantities
-    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
-    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
 
-    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+!!$    ! Compute auxiliary quantities
+!!$    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+!!$    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+!!$
+!!$    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+!!$    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
 
     ! Compute dissipation tensor D_ij
-    aux = dscale * max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
-                        abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+    aux1 = dscale * max( abs(C_ij(1)*uj+C_ij(2)*vj) +&
+                         sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                         abs(C_ji(1)*ui+C_ji(2)*vi) +&
+                         sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
     
     D_ij = 0.0_DP
-    D_ij( 1) = aux
-    D_ij( 6) = aux
-    D_ij(11) = aux
-    D_ij(16) = aux
+    D_ij( 1) = aux1
+    D_ij( 6) = aux1
+    D_ij(11) = aux1
+    D_ij(16) = aux1
     
   end subroutine euler_calcMatrixRusanov2d
 
@@ -2223,8 +2274,8 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj,cPow2&
-        ,uPow2,vPow2,a1,a2,anorm    
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
+    real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm    
     
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
