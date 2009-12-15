@@ -421,10 +421,10 @@ module collection
 
   ! Particles structure
   integer, parameter, public :: COLLCT_PARTICLES    = 34
-
-  ! Particles structure
-  integer, parameter, public :: COLLCT_PARTICLES3D  = 35
-
+  
+  ! Particles structure3D
+  integer, parameter, public :: COLLCT_PARTICLES3D    = 35
+  
 
 !</constantblock>
 
@@ -754,8 +754,6 @@ module collection
   public :: collct_setvalue_btree 
   public :: collct_setvalue_graph 
   public :: collct_queryvalue
-  public :: collct_setvalue_particles 
-  public :: collct_setvalue_particles3D 
 
   public :: collct_getmaxlevel_direct 
   public :: collct_getmaxlevel_indir 
@@ -784,7 +782,6 @@ module collection
   public :: collct_getvalue_pars 
   public :: collct_getvalue_geom
   public :: collct_getvalue_particles 
-  public :: collct_getvalue_particles3D 
   public :: collct_getvalue_fchn 
   public :: collct_getvalue_hadapt 
   public :: collct_getvalue_afcstab 
@@ -793,7 +790,8 @@ module collection
   public :: collct_getvalue_arraylist 
   public :: collct_getvalue_btree 
   public :: collct_getvalue_graph
-  
+  public :: collct_setvalue_particles 
+  public :: collct_setvalue_particles3D 
 
 contains
   
@@ -6574,7 +6572,8 @@ contains
     
   end subroutine collct_setvalue_particles
 
-! ***************************************************************************
+! ***************************************************************************  
+
   
 !<subroutine>
 
@@ -6634,72 +6633,6 @@ contains
     p_rvalue%p_rparticles3D => value
     
   end subroutine collct_setvalue_particles3D
-
-  ! ***************************************************************************
-  
-!<function>
-
-  function collct_getvalue_particles3D(rcollection, sparameter, &
-                                 ilevel, ssectionName, bexists) result(value)
-!<description>
-  ! Returns the the parameter sparameter as pointer to a particle collection object.
-  ! An error is thrown if the value is of the wrong type.
-!</description>  
-  
-!<result>
-
-  ! The value of the parameter.
-  ! A standard value if the value does not exist.
-  type(t_particleCollection3D), pointer :: value
-
-!</result>
-
-!<input>
-    
-  ! The parameter list.
-  type(t_collection), intent(INOUT) :: rcollection
-  
-  ! The parameter name to search for.
-  character(LEN=*), intent(IN) :: sparameter
-  
-  ! OPTIONAL: The level where to search.
-  ! If =0 or not given, the search is in the level-independent parameter block.
-  integer, intent(IN), optional :: ilevel
-
-  ! OPTIONAL: The section name where to search.
-  ! If ='' or not given, the search is in the unnamed section.
-  character(LEN=*), intent(IN), optional :: ssectionName
-
-!</input>
-  
-!<output>
-
-  ! OPTIONAL: Returns TRUE if the variable exists, FALSE otherwise.
-  ! There is no error thrown if a variable does not exist.
-  logical, intent(OUT), optional :: bexists
-
-!</output>
-
-!</function>
-
-    ! local variables
-    type(t_collctValue), pointer :: p_rvalue
-    
-    ! Get the pointer to the parameter
-    call collct_getvalue_struc (rcollection, sparameter, COLLCT_PARTICLES3D,&
-                                .false.,p_rvalue, ilevel, bexists, ssectionName)
-    
-    ! Return the quantity
-    if (associated(p_rvalue)) then
-      value => p_rvalue%p_rparticles3D
-    else
-      nullify(value)
-    end if
-    
-  end function collct_getvalue_particles3D
-
-  ! ***************************************************************************
-  
   
   
 end module collection
