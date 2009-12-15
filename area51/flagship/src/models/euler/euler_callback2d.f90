@@ -175,7 +175,11 @@ contains
 !</subroutine>
     
     ! local variables
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
 
     !---------------------------------------------------------------------------
@@ -213,7 +217,7 @@ contains
     ! The auxiliary values for node j are defined accordingly.
     ! ---------------------------------------------------------------------------
 
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -221,13 +225,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -236,6 +268,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
+#endif
 
   end subroutine euler_calcFluxGalerkin2d
 
@@ -285,7 +318,7 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -347,7 +380,11 @@ contains
 !</subroutine>
 
     ! local variables
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
@@ -359,7 +396,7 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -367,13 +404,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -382,7 +447,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
@@ -451,7 +516,11 @@ contains
 !</subroutine>
 
     ! local variables
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
@@ -463,7 +532,7 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -471,13 +540,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -486,7 +583,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif    
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
@@ -553,7 +650,12 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(NVAR2D) :: dF1_ij,dF2_ij,Diff
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif    
+    real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
@@ -566,7 +668,7 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -574,13 +676,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -589,7 +719,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif    
     
     !---------------------------------------------------------------------------
     ! Evaluate the tensorial dissipation 
@@ -686,7 +816,12 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(NVAR2D) :: dF1_ij,dF2_ij,Diff
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
+    real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
+    real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
@@ -699,7 +834,7 @@ contains
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
     
-    ! Compute velocities and energy
+    ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
 
@@ -707,13 +842,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -722,7 +885,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif    
     
     !---------------------------------------------------------------------------
     ! Evaluate the tensorial dissipation 
@@ -854,7 +1017,11 @@ contains
 !</subroutine>
 
     ! local variables
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
@@ -873,13 +1040,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -888,7 +1083,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif    
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
@@ -948,7 +1143,11 @@ contains
 !</subroutine>
 
     ! local variables
+#ifdef ENABLE_WEAK_BDRCOND
+    real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
+#else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
+#endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j,ci,cj,Ei,Ej
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
@@ -967,13 +1166,41 @@ contains
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
     
+#ifdef ENABLE_WEAK_BDRCOND
     ! Compute fluxes for x-direction
+    dF1_i(1) = U_i(2)
+    dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
+    dF1_i(3) = U_i(3)*ui
+    dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
+    
+    dF1_j(1) = U_j(2)
+    dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
+    dF1_j(3) = U_j(3)*uj
+    dF1_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
+
+    ! Compute fluxes for y-direction
+    dF2_i(1) = U_i(3)
+    dF2_i(2) = U_i(3)*ui
+    dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
+    dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
+    
+    dF2_j(1) = U_j(3)
+    dF2_j(2) = U_j(3)*uj
+    dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
+    dF2_j(4) = (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF1_j + C_ji(2)*dF2_j &
+                     -C_ij(1)*dF1_i - C_ij(2)*dF2_i)
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
     dF1_ij(3) = U_i(3)*ui                        - U_j(3)*uj
     dF1_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*uj
 
-    ! Compute fluxes for y-direction
+    ! Compute flux difference for y-direction
     dF2_ij(1) = U_i(3)                           - U_j(3)
     dF2_ij(2) = U_i(3)*ui                        - U_j(3)*uj
     dF2_ij(3) = G1*U_i(4)-G14*rv2i-G2*ru2i       - (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -982,7 +1209,7 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-
+#endif    
 
     !---------------------------------------------------------------------------
     ! Evaluate the scalar dissipation 
