@@ -111,6 +111,8 @@ bdExpressions(3) =
 
 [CC2D-NONLINEAR]
 itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
+depsD              = $NONLINEAR_DEPSD
+depsDiv            = $NONLINEAR_DEPSDIV
 
 [CC-LINEARSOLVER]
 ismootherType = $LINEARSOLVER_ISMOOTHERTYPE
