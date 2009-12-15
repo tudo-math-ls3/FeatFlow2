@@ -72,8 +72,6 @@
 		<File RelativePath="..\src\spacetimelinearsystem.f90"/>
 		<File RelativePath="..\src\spacetimevectors.f90"/>
 		<File RelativePath="..\src\timeboundaryconditions.f90"/>
-		<File RelativePath="..\src\timediscretisation.f90">
-			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File>
 		<File RelativePath="..\src\timeevaluation.f90"/>
 		<File RelativePath="..\src\timerhsevaluation.f90"/></Filter>
 		<Filter Name="spacetimesolver">
