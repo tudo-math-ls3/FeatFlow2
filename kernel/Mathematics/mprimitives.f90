@@ -441,7 +441,7 @@ contains
 
       select case(ndim)
       case (1)
-        if (Da(1,1) .gt. SYS_EPSREAL) then
+        if (Da(1,1) .ne. 0.0_DP) then
           Dx(1) = Df(1) / Da(1,1)
         else
           return
@@ -572,7 +572,7 @@ contains
     Db(1,2)=-Da(1,2)
     Db(2,2)= Da(1,1)
     daux=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
-    if (abs(daux) .ge. SYS_EPSREAL) then
+    if (daux .ne. 0.0_DP) then
       Db=Db*(1.0_DP/daux)
       bsuccess = .true.
     else
@@ -625,7 +625,7 @@ contains
     Db(2,3)=Da(1,3)*Da(2,1)-Da(1,1)*Da(2,3)
     Db(3,3)=Da(1,1)*Da(2,2)-Da(1,2)*Da(2,1)
     daux = Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)+Da(1,3)*Db(3,1)
-    if (abs(daux) .ge. SYS_EPSREAL) then
+    if (daux .ne. 0.0_DP) then
       !daux=Da(1,1)*Da(2,2)*Da(3,3)+Da(2,1)*Da(3,2)*Da(1,3)+ Da(3,1)&
       !    &*Da(1,2)*Da(2,3)-Da(1,1)*Da(3,2)*Da(2,3)- Da(3,1)*Da(2&
       !    &,2)*Da(1,3)-Da(2,1)*Da(1,2)*Da(3,3)
@@ -686,7 +686,7 @@ contains
     Db(4,1)=-Da(2,1)*W(4)+Da(2,2)*W(2)-Da(2,3)*W(1)
     daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
             +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1))
-    if (abs(daux) .ge. SYS_EPSREAL) then
+    if (daux .ne. 0.0_DP) then
       ! calculate determinant of A
       det = 1.0_DP / daux
       ! update first column of inverse
@@ -860,7 +860,7 @@ contains
     Db(5,1) = Da(2,1)*W( 7)-Da(2,2)*W( 4)+Da(2,3)*W( 2)-Da(2,4)*W( 1)
     daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)&
             +Da(1,3)*Db(3,1)+Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1))
-    if (abs(daux) .ge. SYS_EPSREAL) then
+    if (daux .ne. 0.0_DP) then
       ! calculate determinant of A
       det = 1.0_DP / daux
       ! update first column of inverse
@@ -1034,7 +1034,7 @@ contains
     daux = (Da(1,1)*Db(1,1)+Da(1,2)*Db(2,1)+Da(1,3)*Db(3,1)+&
             Da(1,4)*Db(4,1)+Da(1,5)*Db(5,1)+Da(1,6)*Db(6,1))
 
-    if (abs(daux) .ge. SYS_EPSREAL) then
+    if (daux .ne. 0.0_DP) then
 
       ! calculate determinant of A
       det = 1.0_DP / daux
@@ -1240,7 +1240,7 @@ contains
       end do
 
       ! Return if pivotal element is zero
-      if (abs(dpivot) .le. SYS_EPSREAL) return
+      if (dpivot .eq. 0.0_DP) return
 
       Kindx(indx)=indy;  Kindy(indy)=indx;  Da(indx,indy)=1._DP&
           &/dpivot
@@ -1381,7 +1381,7 @@ contains
         end do
 
         ! Return if pivotal element is zero
-        if (abs(fpivot) .le. SYS_EPSREAL) return
+        if (fpivot .eq. 0.0_DP) return
 
         Kindx(indx)=indy;  Kindy(indy)=indx;  Fa(indx,indy)=1._SP&
             &/fpivot
@@ -1457,7 +1457,7 @@ contains
         Fb(2,2)= Fa(1,1)
         faux=Fa(1,1)*Fa(2,2)-Fa(1,2)*Fa(2,1)
             
-        if (faux .le. SYS_EPSREAL) return    
+        if (faux .eq. 0.0_SP) return    
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1476,7 +1476,7 @@ contains
             &*Fa(1,2)*Fa(2,3)-Fa(1,1)*Fa(3,2)*Fa(2,3)- Fa(3,1)*Fa(2&
             &,2)*Fa(1,3)-Fa(2,1)*Fa(1,2)*Fa(3,3)
             
-        if (faux .le. SYS_EPSREAL) return    
+        if (faux .eq. 0.0_SP) return    
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1546,7 +1546,7 @@ contains
             &,3)-Fa(1,4)*Fa(2,2)*Fa(3,3)*Fa(4,1)-Fa(1,4)*Fa(2,3)*Fa(3&
             &,1)*Fa(4,2)
             
-        if (faux .le. SYS_EPSREAL) return    
+        if (faux .eq. 0.0_SP) return    
         
         Fx=matmul(Fb,Ff)/faux
 
@@ -1774,7 +1774,7 @@ contains
         
         if (i .le. m) then
           scale = sum(abs(Da(i,i:m)))
-          if (scale .gt. SYS_EPSREAL) then
+          if (scale .ne. 0.0_DP) then
             Da(i,i:m) = Da(i,i:m)/scale
             s = 0.0_DP
             do idot = i, m
@@ -2018,7 +2018,7 @@ contains
         
         if (i .le. m) then
           scale = sum(abs(Da(i:m,i)))
-          if (scale .gt. SYS_EPSREAL) then
+          if (scale .ne. 0.0_DP) then
             Da(i:m,i) = Da(i:m,i)/scale
             s = 0.0_DP
             do idot = i, m
@@ -2320,7 +2320,7 @@ contains
     end if
 
     do i =1, size(Dd)
-      if (abs(Dd(i)) .gt. SYS_EPSREAL) then
+      if (Dd(i) .ne. 0.0_DP) then
         Daux(i) = Daux(i)/Dd(i)
       else
         Daux(i) = 0.0_DP
@@ -2407,7 +2407,7 @@ contains
     end if
 
     do i =1, size(Dd)
-      if (abs(Dd(i)) .gt. SYS_EPSREAL) then
+      if (Dd(i) .ne. 0.0_DP) then
         Daux(i) = Daux(i)/Dd(i)
       else
         Daux(i) = 0.0_DP
