@@ -173,6 +173,8 @@ module euler_basic
   real(DP), parameter, public :: G12 = (GAMMA-1.0)/(GAMMA+1.0)
   real(DP), parameter, public :: G13 = 3.0-GAMMA
   real(DP), parameter, public :: G14 = (GAMMA-3.0)/2.0
+  real(DP), parameter, public :: G15 = (GAMMA-1.0)*GAMMA
+  real(DP), parameter, public :: G16 = 3.0*(GAMMA-1.0)/2.0
 
 !</constantblock>
 
@@ -426,6 +428,36 @@ contains
         Dvalue(ieq) = Ddata(nvar, ieq)
       end do
       !$omp end parallel do
+
+    case ('INTERNAL_ENERGY')
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
+              -0.5_DP * (Ddata(2, ieq)/Ddata(1, ieq))**2
+        end do
+        !$omp end parallel do
+
+      case (NVAR2D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
+              -0.5_DP * ((Ddata(2, ieq)/Ddata(1, ieq))**2 +&
+                         (Ddata(3, ieq)/Ddata(1, ieq))**2)
+        end do
+        !$omp end parallel do
+
+      case (NVAR3D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)&
+              -0.5_DP * ((Ddata(2, ieq)/Ddata(1, ieq))**2 +&
+                         (Ddata(3, ieq)/Ddata(1, ieq))**2 +&
+                         (Ddata(4, ieq)/Ddata(1, ieq))**2)
+        end do
+        !$omp end parallel do
+      end select
       
     case ('PRESSURE')
       select case (nvar)
@@ -504,6 +536,45 @@ contains
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq),&
               Ddata(4, ieq)/Ddata(1, ieq))
+        end do
+        !$omp end parallel do
+      end select
+
+    case ('SPEEDOFSOUND')
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq))
+          
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
+        end do
+        !$omp end parallel do
+        
+      case (NVAR2D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq))
+
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
+        end do
+        !$omp end parallel do
+        
+        case (NVAR3D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
+              Ddata(2, ieq)/Ddata(1, ieq),&
+              Ddata(3, ieq)/Ddata(1, ieq),&
+              Ddata(4, ieq)/Ddata(1, ieq))
+
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
         end do
         !$omp end parallel do
       end select
@@ -644,6 +715,36 @@ contains
         Dvalue(ieq) = Ddata(ieq, nvar)
       end do
       !$omp end parallel do
+
+    case ('INTERNAL_ENERGY')
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
+              -0.5_DP * Ddata(ieq, 2)**2/Ddata(ieq,1)**2
+        end do
+        !$omp end parallel do
+
+      case (NVAR2D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
+              -0.5_DP *(Ddata(ieq, 2)**2+&
+                        Ddata(ieq, 3)**2)/Ddata(ieq, 1)**2
+        end do
+        !$omp end parallel do
+
+      case (NVAR3D)
+        !$omp parallel do
+        do ieq = 1, neq
+          Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)&
+              -0.5_DP *(Ddata(ieq, 2)**2+&
+                        Ddata(ieq, 3)**2+&
+                        Ddata(ieq, 4)**2)/Ddata(ieq, 1)**2
+        end do
+        !$omp end parallel do
+      end select
       
     case ('PRESSURE')
       select case (nvar)
@@ -722,6 +823,45 @@ contains
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1),&
               Ddata(ieq, 4)/Ddata(ieq, 1))
+        end do
+        !$omp end parallel do
+      end select
+
+    case ('SPEEDOFSOUND')
+      select case (nvar)
+      case (NVAR1D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1))
+
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
+        end do
+        !$omp end parallel do
+        
+      case (NVAR2D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1))
+
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
+        end do
+        !$omp end parallel do
+
+      case (NVAR3D)
+        !$omp parallel do private(p)
+        do ieq = 1, neq
+          p = thdyn_pressure(GAMMA,&
+              Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
+              Ddata(ieq, 2)/Ddata(ieq, 1),&
+              Ddata(ieq, 3)/Ddata(ieq, 1),&
+              Ddata(ieq, 4)/Ddata(ieq, 1))
+
+          Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
         end do
         !$omp end parallel do
       end select

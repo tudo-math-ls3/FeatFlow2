@@ -682,6 +682,7 @@ contains
               %RspatialDiscr(1), EL_E001_1D, SPDISC_CUB_AUTOMATIC,&
               p_rtriangulation, p_rboundary)
 
+        case (-2,2,12)
           ! P2=Q2 finite elements
           call spdiscr_initDiscr_simple(p_rdiscretisation&
               %RspatialDiscr(1), EL_E002_1D, SPDISC_CUB_AUTOMATIC,&
@@ -1388,6 +1389,11 @@ contains
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
           
+          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
+              UCD_VAR_STANDARD, p_Ddata1)
+
           
         case (NDIM2D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
@@ -1417,6 +1423,11 @@ contains
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
           
+          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
+              UCD_VAR_STANDARD, p_Ddata1)
+
         case (NDIM3D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'velocity_x', p_Dsolution, p_Ddata1)
@@ -1447,6 +1458,11 @@ contains
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
           
+          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
+              UCD_VAR_STANDARD, p_Ddata1)
+
         end select
         
         
@@ -1477,6 +1493,11 @@ contains
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
+
+          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
+              UCD_VAR_STANDARD, p_Ddata1)
           
           
         case (NDIM2D)
@@ -1505,6 +1526,11 @@ contains
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
+              UCD_VAR_STANDARD, p_Ddata1)
+
+          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
               UCD_VAR_STANDARD, p_Ddata1)
           
         case (NDIM3D)
@@ -1535,6 +1561,11 @@ contains
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
+              UCD_VAR_STANDARD, p_Ddata1)
+
+          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+              'internal_energy', p_Dsolution, p_Ddata1)
+          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
               UCD_VAR_STANDARD, p_Ddata1)
           
         end select
@@ -2175,7 +2206,7 @@ contains
       isize = rsolution%NEQ*euler_getNVAR(p_rproblemLevel)
       call lsysbl_resizeVectorBlock(rsolution, isize, .false., .false.)
     end if
-    
+
     ! Initialize the solution vector and impose boundary conditions
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)

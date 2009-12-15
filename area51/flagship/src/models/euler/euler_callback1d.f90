@@ -155,6 +155,70 @@ contains
     real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
+
+    ! local variables
+#ifdef USE_EULER_IBP
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
+#endif
+    real(DP) :: ui,uj,ru2i,ru2j
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin flux
+    !
+    !     / rho*u       \
+    ! F = | rho*u*u + p |
+    !     \ rho*u*H     /
+    !
+    ! Here, we do not compute the pressure p and the enthalpy H but we
+    ! calculate the flux from the conservative variables as follows:
+    !
+    !     / U2                      \
+    ! F = | G1*U3-G14*ru2i          |
+    !     \ (gamma*U3-G2*ru2i)*ui /
+    !
+    ! where the auxiliary values for node i are defined as follows:
+    !
+    ! ru2i = U2*U2/U1 = ui*U2
+    ! ui = U2/U1
+    !
+    ! and the predefined constants are given by:
+    !
+    ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+    !
+    ! The auxiliary values for node j are defined accordingly.
+    ! ---------------------------------------------------------------------------
+
+    ! Compute velocities
+    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+
+#ifdef USE_EULER_IBP
+    ! Compute fluxes for x-direction
+    dF_i(1) = U_i(2)
+    dF_i(2) = G1*U_i(3)-G14*ru2i
+    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
+    
+    dF_j(1) = U_j(2)
+    dF_j(2) = G1*U_j(3)-G14*ru2j
+    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
+    dF_ij(1) = U_i(2)                    - U_j(2)
+    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
+    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij =   dscale * C_ij(1)*dF_ij
+    F_ji = - dscale * C_ji(1)*dF_ij
+#endif    
     
   end subroutine euler_calcFluxGalerkin1d
 
@@ -193,6 +257,35 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+    real(DP), dimension(NVAR1D) :: dF_ij
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,ru2i,ru2j
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+    !---------------------------------------------------------------------------
+
+    ! Compute velocities
+    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+
+    ! Compute flux difference for x-direction
+    dF_ij(1) = U_i(2)                    - U_j(2)
+    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
+    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Compute skew-symmetric coefficient
+    a = dscale * 0.5_DP*(C_ij-C_ji)
+
+    ! Assembly fluxes
+    F_ij = dscale * a(1)*dF_ij
+    F_ji = F_ij
+
   end subroutine euler_calcFluxGalerkinNoBdr1d
 
   !*****************************************************************************
@@ -226,6 +319,83 @@ contains
     real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
+
+    ! local variables
+#ifdef USE_EULER_IBP
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
+#endif
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,ru2i,ru2j
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,aux,vel,cs
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+    !---------------------------------------------------------------------------
+
+    ! Compute velocities
+    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+
+#ifdef USE_EULER_IBP
+    ! Compute fluxes for x-direction
+    dF_i(1) = U_i(2)
+    dF_i(2) = G1*U_i(3)-G14*ru2i
+    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
+    
+    dF_j(1) = U_j(2)
+    dF_j(2) = G1*U_j(3)-G14*ru2j
+    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
+    dF_ij(1) = U_i(2)                    - U_j(2)
+    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
+    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij =   dscale * C_ij(1)*dF_ij
+    F_ji = - dscale * C_ji(1)*dF_ij
+#endif    
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation 
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+
+    ! Compute Roe mean values
+    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+    u_ij = (aux*ui+uj)/(aux+1.0_DP)
+    hi   = GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
+    hj   = GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
+    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+    ! Compute auxiliary variables
+    aux  = abs(a(1)) ! = sqrt(a(1)*a(1))
+    vel  = u_ij*a(1)
+    q_ij = 0.5_DP*(u_ij*u_ij)
+    cs   = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+
+    ! Scalar dissipation
+    d_ij = dscale * (abs(vel) + aux*cs)
+
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = d_ij*(U_j-U_i)
+
+    ! Add the artificial diffusion to the fluxes
+    F_ij = F_ij+Diff
+    F_ji = F_ji-Diff
 
   end subroutine euler_calcFluxScalarDiss1d
 
@@ -261,6 +431,107 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+#ifdef USE_EULER_IBP
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
+#endif
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,ru2i,ru2j,b1,b2
+    real(DP) :: aux,uPow2,hi,hj,H_ij,q_ij,u_ij
+    real(DP) :: anorm,l1,l2,l3,w1,w2,w3,cPow2,cs
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+    !---------------------------------------------------------------------------
+
+    ! Compute velocities
+    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+
+#ifdef USE_EULER_IBP
+    ! Compute fluxes for x-direction
+    dF_i(1) = U_i(2)
+    dF_i(2) = G1*U_i(3)-G14*ru2i
+    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
+    
+    dF_j(1) = U_j(2)
+    dF_j(2) = G1*U_j(3)-G14*ru2j
+    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
+    dF_ij(1) = U_i(2)                    - U_j(2)
+    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
+    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij =   dscale * C_ij(1)*dF_ij
+    F_ji = - dscale * C_ji(1)*dF_ij
+#endif    
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+    
+    ! Compute the skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji); anorm = abs(a(1))
+
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary variables
+      uPow2 = u_ij*u_ij
+      q_ij  = 0.5_DP*uPow2
+      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cs    = sqrt(cPow2)
+      
+      ! Compute eigenvalues
+      l1 = abs(u_ij-cs)
+      l2 = abs(u_ij)
+      l3 = abs(u_ij+cs)
+      
+      ! Compute solution difference U_i-U_j
+      Diff = U_j-U_i
+      
+      ! Compute auxiliary quantities for characteristic variables
+      b2 = G1/cPow2; b1 = b2*q_ij
+
+      ! Compute characteristic variables multiplied by the
+      !  corresponding eigenvalue
+      w1 = l1 * 0.5_DP * ( (b1+u_ij/cs)*Diff(1) - (b2*u_ij+1.0_DP/cs)*Diff(2) + b2*Diff(3) )
+      w2 = l2 *          ( (1-b1)*Diff(1)       +  b2*u_ij*Diff(2)            - b2*Diff(3) )
+      w3 = l3 * 0.5_DP * ( (b1-u_ij/cs)*Diff(1) - (b2*u_ij-1.0_DP/cs)*Diff(2) + b2*Diff(3) )
+
+      ! Compute "anorm * dscale"
+      anorm = anorm*dscale
+
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = anorm * ( w1 + w2 + w3 )
+      Diff(2) = anorm * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
+      Diff(3) = anorm * ( (H_ij-u_ij*cs)*w1 + q_ij*w2 + (H_ij+u_ij*cs)*w3 )
+      
+      ! Add the artificial diffusion to the fluxes
+      F_ij = F_ij+Diff
+      F_ji = F_ji-Diff
+
+    end if
+
   end subroutine euler_calcFluxTensorDiss1d
 
   !*****************************************************************************
@@ -295,6 +566,72 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variables
+#ifdef USE_EULER_IBP
+    real(DP), dimension(NVAR1D) :: dF_i, dF_j
+#else
+    real(DP), dimension(NVAR1D) :: dF_ij
+#endif
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP) :: ui,uj,ru2i,ru2j
+    real(DP) :: d_ij,ci,cj,Ei,Ej
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the Galerkin fluxes
+    ! For a detailed description of algorithm and the definition of auxiliary
+    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+    !---------------------------------------------------------------------------
+
+    ! Compute velocities and energy
+    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+    Ei = U_i(3)/U_i(1); Ej = U_j(3)/U_j(1)
+
+    ! Compute auxiliary variables
+    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+
+#ifdef USE_EULER_IBP
+    ! Compute fluxes for x-direction
+    dF_i(1) = U_i(2)
+    dF_i(2) = G1*U_i(3)-G14*ru2i
+    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
+    
+    dF_j(1) = U_j(2)
+    dF_j(2) = G1*U_j(3)-G14*ru2j
+    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
+    F_ji = -F_ij
+#else
+    ! Compute flux difference for x-direction
+    dF_ij(1) = U_i(2)                    - U_j(2)
+    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
+    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+
+    ! Assembly fluxes
+    F_ij =   dscale * C_ij(1)*dF_ij
+    F_ji = - dscale * C_ji(1)*dF_ij
+#endif    
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+    
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+    
+    ! Scalar dissipation
+    d_ij = max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
+
+    ! Multiply the solution difference by the artificial diffusion factor
+    Diff = dscale * d_ij*(U_j-U_i)
+
+    ! Add the artificial diffusion to the fluxes
+    F_ij = F_ij+Diff
+    F_ji = F_ji-Diff
+
   end subroutine euler_calcFluxRusanov1d
 
   !*****************************************************************************
@@ -327,6 +664,17 @@ contains
     real(DP), dimension(:), intent(out) :: K_ii
 !</output>
 !</subroutine>
+    
+    ! local variable
+    real(DP) :: ui
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1)
+    
+    ! Compute Galerkin coefficient K_ii
+    K_ii(1) = 0.0_DP
+    K_ii(2) = dscale * G13*ui*C_ii(1)
+    K_ii(3) = dscale * GAMMA*ui*C_ii(1)
 
   end subroutine euler_calcMatrixDiagonalDiag1d
 
@@ -361,6 +709,25 @@ contains
 !</output>
 !</subroutine>
 
+    ! local variable
+    real(DP) :: ui,Ei,uPow2i
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
+
+    ! Compute Galerkin coefficient K_ii
+    K_ii(1) = 0.0_DP
+    K_ii(2) = dscale * G14*uPow2i*C_ii(1)
+    K_ii(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ii(1)
+
+    K_ii(4) = dscale * C_ii(1)
+    K_ii(5) = dscale * G13*ui*C_ii(1)
+    K_ii(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ii(1)
+
+    K_ii(7) = 0.0_DP
+    K_ii(8) = dscale * G1*C_ii(1)
+    K_ii(9) = dscale * GAMMA*ui*C_ii(1)
+
   end subroutine euler_calcMatrixDiagonal1d
 
   !*****************************************************************************
@@ -389,10 +756,29 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G13*uj*C_ij(1)
+    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G13*ui*C_ji(1)
+    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
+
+    ! Nullify dissipation tensor
+    D_ij = 0.0_DP
 
   end subroutine euler_calcMatrixGalerkinDiag1d
 
@@ -422,10 +808,46 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj,Ei,Ej,uPow2i,uPow2j
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
+    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
+    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+
+    K_ij(4) = dscale * C_ij(1)
+    K_ij(5) = dscale * G13*uj*C_ij(1)
+    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+
+    K_ij(7) = 0.0_DP
+    K_ij(8) = dscale * G1*C_ij(1)
+    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
+    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
+
+    K_ji(4) = dscale * C_ji(1)
+    K_ji(5) = dscale * G13*ui*C_ji(1)
+    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
+
+    K_ji(7) = 0.0_DP
+    K_ji(8) = dscale * G1*C_ji(1)
+    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
+
+    ! Nullify dissipation tensor
+    D_ij = 0.0_DP
 
   end subroutine euler_calcMatrixGalerkin1d
 
@@ -456,11 +878,56 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
 
+    ! local variable
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,ui,uj,u_ij
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G13*uj*C_ij(1)
+    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G13*ui*C_ji(1)
+    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient and its norm
+    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
+
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary values
+      q_ij = 0.5_DP*u_ij*u_ij
+
+      ! Compute scalar dissipation
+      D_ij = dscale * (abs(a(1)*u_ij) +&
+                       anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+    else
+      
+      ! Nullify dissipation tensor
+      D_ij = 0.0_DP
+
+    end if
     
   end subroutine euler_calcMatrixScalarDissDiag1d
 
@@ -491,10 +958,79 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: anorm,aux,hi,hj,Ei,Ej,H_ij,q_ij,ui,uj,u_ij,uPow2i,uPow2j
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
+    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
+    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+
+    K_ij(4) = dscale * C_ij(1)
+    K_ij(5) = dscale * G13*uj*C_ij(1)
+    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+
+    K_ij(7) = 0.0_DP
+    K_ij(8) = dscale * G1*C_ij(1)
+    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
+    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
+
+    K_ji(4) = dscale * C_ji(1)
+    K_ji(5) = dscale * G13*ui*C_ji(1)
+    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
+
+    K_ji(7) = 0.0_DP
+    K_ji(8) = dscale * G1*C_ji(1)
+    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
+    
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary values
+      q_ij = 0.5_DP*u_ij*u_ij
+
+      ! Compute scalar dissipation
+      aux = dscale * (abs(a(1)*u_ij) +&
+                      anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+
+      D_ij    = 0.0_DP
+      D_ij(1) = aux
+      D_ij(5) = aux
+      D_ij(9) = aux
+
+    else
+      
+      ! Nullify dissipation tensor
+      D_ij = 0.0_DP
+
+    end if
 
   end subroutine euler_calcMatrixScalarDiss1d
 
@@ -525,10 +1061,102 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP), dimension(NVAR1D,NVAR1D) :: R_ij,L_ij
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij
+    real(DP) :: l1,l2,l3,anorm,cs,cPow2,b1,b2
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G13*uj*C_ij(1)
+    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G13*ui*C_ji(1)
+    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute skew-symmetric coefficient and its norm
+    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
+
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary values
+      q_ij  = 0.5_DP*u_ij*u_ij
+      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cs    = sqrt(cPow2)
+
+      b2    = G1/cPow2
+      b1    = b2*q_ij
+
+      ! Diagonal matrix of eigenvalues
+      l1 = abs(u_ij-cs)
+      l2 = abs(u_ij)
+      l3 = abs(u_ij+cs)
+      
+      ! Matrix of right eigenvectors
+      R_ij(1,1) =  l1
+      R_ij(2,1) =  l1*(u_ij-cs)
+      R_ij(3,1) =  l1*(H_ij-cs*u_ij)
+      
+      R_ij(1,2) =  l2
+      R_ij(2,2) =  l2*u_ij
+      R_ij(3,2) =  l2*q_ij
+      
+      R_ij(1,3) =  l3
+      R_ij(2,3) =  l3*(u_ij+cs)
+      R_ij(3,3) =  l3*(H_ij+cs*u_ij)
+
+      ! Matrix of left eigenvectors
+      L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
+      L_ij(2,1) = 1.0_DP-b1
+      L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
+      
+      L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
+      L_ij(2,2) =  b2*u_ij
+      L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
+      
+      L_ij(1,3) = 0.5_DP*b2
+      L_ij(2,3) = -b2
+      L_ij(3,3) = 0.5_DP*b2
+
+      ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
+      D_ij    = 0.0_DP
+      D_ij(1) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+                        R_ij(1,2)*L_ij(2,1)+&
+                        R_ij(1,3)*L_ij(3,1)  )
+      D_ij(2) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+                        R_ij(2,2)*L_ij(2,2)+&
+                        R_ij(2,3)*L_ij(3,2)  )
+      D_ij(3) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+                        R_ij(3,2)*L_ij(2,3)+&
+                        R_ij(3,3)*L_ij(3,3)  )
+    else
+      
+      ! Nullify dissipation tensor
+      D_ij = 0.0_DP
+
+    end if
 
   end subroutine euler_calcMatrixTensorDissDiag1d
 
@@ -536,7 +1164,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixTensorDiss1d(&
+  subroutine euler_calcMatrixTensorDiss1d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
 
 !<description>
@@ -559,10 +1187,111 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP), dimension(NVAR1D,NVAR1D) :: R_ij,L_ij
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: aux,Ei,Ej,hi,hj,H_ij,q_ij,ui,uj,u_ij
+    real(DP) :: l1,l2,l3,anorm,cs,cPow2,b1,b2,uPow2i,uPow2j
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
+    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
+    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+
+    K_ij(4) = dscale * C_ij(1)
+    K_ij(5) = dscale * G13*uj*C_ij(1)
+    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+
+    K_ij(7) = 0.0_DP
+    K_ij(8) = dscale * G1*C_ij(1)
+    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
+    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
+
+    K_ji(4) = dscale * C_ji(1)
+    K_ji(5) = dscale * G13*ui*C_ji(1)
+    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
+
+    K_ji(7) = 0.0_DP
+    K_ji(8) = dscale * G1*C_ji(1)
+    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute coefficients
+    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
+    
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary values
+      q_ij  = 0.5_DP*u_ij*u_ij
+      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cs    = sqrt(cPow2)
+      b2    = G1/cPow2
+      b1    = b2*q_ij
+
+      ! Diagonal matrix of eigenvalues
+      l1 = abs(u_ij-cs)
+      l2 = abs(u_ij)
+      l3 = abs(u_ij+cs)
+      
+      ! Matrix of right eigenvectors
+      R_ij(1,1) =  l1
+      R_ij(2,1) =  l1*(u_ij-cs)
+      R_ij(3,1) =  l1*(H_ij-cs*u_ij)
+      
+      R_ij(1,2) =  l2
+      R_ij(2,2) =  l2*u_ij
+      R_ij(3,2) =  l2*q_ij
+      
+      R_ij(1,3) =  l3
+      R_ij(2,3) =  l3*(u_ij+cs)
+      R_ij(3,3) =  l3*(H_ij+cs*u_ij)
+
+      ! Matrix of left eigenvectors
+      L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
+      L_ij(2,1) = 1.0_DP-b1
+      L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
+      
+      L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
+      L_ij(2,2) =  b2*u_ij
+      L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
+      
+      L_ij(1,3) = 0.5_DP*b2
+      L_ij(2,3) = -b2
+      L_ij(3,3) = 0.5_DP*b2
+
+      ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
+      call DGEMM('n', 'n', NVAR1D, NVAR1D, NVAR1D, anorm,&
+                 R_ij, NVAR1D, L_ij, NVAR1D, 0.0_DP, D_ij, NVAR1D)
+
+    else
+      
+      ! Nullify dissipation tensor
+      D_ij = 0.0_DP
+
+    end if
 
   end subroutine euler_calcMatrixTensorDiss1d
 
@@ -593,10 +1322,39 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj,ci,cj,Ei,Ej
+    
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    Ei = U_i(3)/U_i(1);   Ej = U_j(3)/U_j(1)
+    
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G13*uj*C_ij(1)
+    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G13*ui*C_ji(1)
+    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+
+    ! Compute dissipation tensor D_ij
+    D_ij = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                         abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
 
   end subroutine euler_calcMatrixRusanovDiag1d
 
@@ -627,10 +1385,55 @@ contains
 !</input>
 
 !<output>
-    ! local Roe matrices
+    ! local matrices
     real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
 !</output>
 !</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj,ci,cj,Ei,Ej,uPow2i,uPow2j
+
+    ! Compute auxiliary variables
+    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
+    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+
+    ! Compute Galerkin coefficient K_ij
+    K_ij(1) = 0.0_DP
+    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
+    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+
+    K_ij(4) = dscale * C_ij(1)
+    K_ij(5) = dscale * G13*uj*C_ij(1)
+    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+
+    K_ij(7) = 0.0_DP
+    K_ij(8) = dscale * G1*C_ij(1)
+    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+
+    ! Compute Galerkin coefficient K_ji
+    K_ji(1) = 0.0_DP
+    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
+    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
+
+    K_ji(4) = dscale * C_ji(1)
+    K_ji(5) = dscale * G13*ui*C_ji(1)
+    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
+
+    K_ji(7) = 0.0_DP
+    K_ji(8) = dscale * G1*C_ji(1)
+    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
+
+    !---------------------------------------------------------------------------
+    ! Evaluate the dissipation
+    !---------------------------------------------------------------------------
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+
+    ! Compute dissipation tensor D_ij
+    D_ij = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                         abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
 
   end subroutine euler_calcMatrixRusanov1d
 
@@ -667,7 +1470,7 @@ contains
     real(DP), dimension(:), intent(out), optional :: L_ij
 !</output>
 !</subroutine>
-
+    
   end subroutine euler_calcCharacteristics1d
 
   !*****************************************************************************
