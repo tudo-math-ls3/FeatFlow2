@@ -1,0 +1,146 @@
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+# This definition file collects a couple of flow calculations
+# for flows which are used as target flows for distributed
+# optimal control.
+
+appl = cc2d
+class = DEFAULT
+
+# Default settings, all defined parameters.
+
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_RE = 1000
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
+TIMEDISCRETISATION_NITERATIONS = 10000
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 1.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+NONLINEAR_ITYPEPRECONDITIONING = 1
+NONLINEAR_DEPSD=1E-12
+NONLINEAR_DEPSDIV=1E-12
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+SMOOTHER_DOMEGA = 1.0
+POSTPROCESSING_IOUTPUTUCD = 1
+POSTPROCESSING_SFILENAMEUCD = '%{spostdirectory}/u_lv%{CC-DISCRETISATION.NLMAX}.gmv'
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.0
+POSTPROCESSING_IWRITEBODYFORCES = 1
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.004
+BDR_PARPROFILEMAX = 0.3
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+DISCRETISATION_CWRITEFINALSOLUTION=1
+POSTPROCESSING_SWRITESOLUTIONFILENAME = '%{spostdirectory}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+POSTPROCESSING_IBODYFORCESFORMULATION=-1
+POSTPROCESSING_ICALCBODYFORCES=2
+POSTPROCESSING_IWRITEPOINTVALUES=1
+POSTPROCESSING_SFILENAMEPOINTVALUES = '%{spostdirectory}/pointvalues_lv%{CC-DISCRETISATION.NLMAX}'
+
+##########
+# Test 362
+# Reference calculation
+#
+# Nonstationary Navier-Stokes on level 2,3,4,5.
+# Q2 element
+# 6 seconds, Crank-Nicolson, SD(0.0)
+# Simulation starts at a fully developed solution from Test 30x
+# Body force evaluation using line integration
+##########
+
+testid   = CC2D_TARGET2_362_3
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_362_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+# Modify the smoother damping parameter, otherwise EOJ will not work!
+LINEARSOLVER_ISMOOTHERTYPE = 3
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 1
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+mglevels = 3
+
+##########
+
+testid   = CC2D_TARGET2_362_4
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 4
+
+testid   = CC2D_TARGET2_362_5
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 5
+
+testid   = CC2D_TARGET2_362_6
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 6
+
+
+testid   = CC2D_TARGET2_362_7
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 8 seconds CN, lv 7.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 7
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 6
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_362_6/solution_lv6'
+TIMEDISCRETISATION_DTIMEMAX = 8.0
+
+##########
+
+testid   = CC2D_TARGET2_362_3_STRONGSM
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 3
+LINEARSOLVER_ISMOOTHERTYPE = 6
+LINEARSOLVER_ISMOOTHERTYPE = 5
+TIMEDISCRETISATION_DTIMEMAX = 6.0
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_362_%{CC-DISCRETISATION.NLMAX}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+NONLINEAR_ITYPEPRECONDITIONING = 2
+SMOOTHER_DOMEGA = 0.5
+
+testid   = CC2D_TARGET2_362_4_STRONGSM
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 4
+
+testid   = CC2D_TARGET2_362_5_STRONGSM
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 5
+
+testid   = CC2D_TARGET2_362_6_STRONGSM
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 6 seconds CN, lv 2-6.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 6
+
+testid   = CC2D_TARGET2_362_7_STRONGSM
+descr    = standard DFG benchmark, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), 8 seconds CN, lv 7.
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 7
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 6
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_362_6/solution_lv6'
+TIMEDISCRETISATION_DTIMEMAX = 8.0
