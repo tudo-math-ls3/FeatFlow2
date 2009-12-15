@@ -207,7 +207,7 @@ dinitialTime = 0.0
 dfinalTime = 0.231
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 0.0001
 
 # lower bound for the admissible time step
 dminStep = 0.001
@@ -255,10 +255,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 9
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 9
 
 # type of multigrid cycle
 # 0 = F-cylce
