@@ -450,7 +450,6 @@ contains
       type(t_collection), intent(in), optional :: rcollection
     end subroutine
   end interface
-  external :: fcalcTimestep
   optional :: fcalcTimestep
   
   ! OPTIONAL: Collection structure. Passed to the callback routine.
