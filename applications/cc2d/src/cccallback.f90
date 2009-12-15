@@ -96,6 +96,9 @@
 !#      -> If nonconstant viscosity is activated, this routine calculates
 !#         the viscosity.
 !#
+!# 16.) calcAdaptiveTimestep
+!#      -> Calculate a user defined timestep length.
+!#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
 !# framework calls cc_initCollectForAssembly to stores the current point 
