@@ -704,7 +704,7 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
-!-----------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
@@ -1025,6 +1025,30 @@ contains
           ! What type of dissipation is applied?
           select case(idissipationtype)
             
+          case (DISSIPATION_ZERO)
+
+            ! Assemble divergence operator without dissipation
+            
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsys_buildResidual(rproblemLevel&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin1d, dscale, .true., rrhs)
+              
+            case (NDIM2D)
+              call gfsys_buildResidual(rproblemLevel&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin2d, dscale, .true., rrhs)
+              
+            case (NDIM3D)
+              call gfsys_buildResidual(rproblemLevel&
+                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin3d, dscale, .true., rrhs)
+            end select
+            
           case (DISSIPATION_SCALAR)
             
             ! Assemble divergence operator with scalar dissipation
@@ -1216,7 +1240,7 @@ contains
         end select
 
         !-----------------------------------------------------------------------
-        ! Compute the transernt term
+        ! Compute the transient term
         !
         !   $$ rhs := M*U^n + rhs $$
         !-----------------------------------------------------------------------
@@ -1441,11 +1465,34 @@ contains
       !   $$ res := res + dt*theta*L(U^{(m)})*U^(m) $$
       !-------------------------------------------------------------------------
       
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
+      call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
           'idissipationtype', idissipationtype)
       
       ! What type of dissipation is applied?
       select case(idissipationtype)
+        
+      case (DISSIPATION_ZERO)
+
+        ! Assemble divergence operator without dissipation
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin1d, dscale, .false., rres)
+          
+        case (NDIM2D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin2d, dscale, .false., rres)
+          
+        case (NDIM3D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin3d, dscale, .false., rres)
+        end select
         
       case (DISSIPATION_SCALAR)
         
@@ -1750,8 +1797,9 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
-
+          rcollection%SquickAccess(1), 'consistentmassmatrix',&
+          consistentMassMatrix)
+      
       do iblock = 1, rsolution%nblocks
         call lsyssc_scalarMatVec(rproblemLevel&
             %Rmatrix(consistentMassMatrix), rsolution&
@@ -1808,7 +1856,6 @@ contains
             %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
             %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rrhs)
-
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -1825,6 +1872,30 @@ contains
           rcollection%SquickAccess(1), 'idissipationtype', idissipationtype)
 
       select case(idissipationtype)
+        
+      case (DISSIPATION_ZERO)
+
+        ! Assemble divergence operator without dissipation
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin1d, dscale, .false., rrhs)
+          
+        case (NDIM2D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin2d, dscale, .false., rrhs)
+          
+        case (NDIM3D)
+          call gfsys_buildResidual(rproblemLevel&
+              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
+              %Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin3d, dscale, .false., rrhs)
+        end select
         
       case (DISSIPATION_SCALAR)
 
