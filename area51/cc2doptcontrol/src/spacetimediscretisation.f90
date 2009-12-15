@@ -153,15 +153,14 @@ contains
     ! Initialise the time discretisation
     select case (rproblem%rtimedependence%ctimeStepScheme)
     case (0) 
-      call tdiscr_initTheta(&
+      call tdiscr_initOneStepTheta(rspaceTimeDiscr%rtimeDiscr,&
           rproblem%rtimedependence%dtimeInit,&
           rproblem%rtimedependence%dtimeMax,&
-          niterations,rproblem%rtimedependence%dtimeStepTheta,&
-          rspaceTimeDiscr%rtimeDiscr)
+          niterations,rproblem%rtimedependence%dtimeStepTheta)
     case (2)
-      call tdiscr_initdG0(rproblem%rtimedependence%dtimeInit,&
-          rproblem%rtimedependence%dtimeMax,&
-          niterations, rspaceTimeDiscr%rtimeDiscr)
+      call tdiscr_initdG0(rspaceTimeDiscr%rtimeDiscr,&
+          rproblem%rtimedependence%dtimeInit,&
+          rproblem%rtimedependence%dtimeMax,niterations)
     case DEFAULT
       print *,'cc_initParamsSupersystem: Unsupported time discretisation.'
       call sys_halt()

@@ -118,7 +118,7 @@ contains
     ! we have to call the corresponding RHS calculation routine.
     
     select case (rspaceTimeDiscr%rtimeDiscr%ctype)
-    case (TDISCR_THETA)
+    case (TDISCR_ONESTEPTHETA)
       call trhsevl_assembleThetaRHS (rproblem, rspaceTimeDiscr, rb, bimplementBC)
     case (TDISCR_DG0)
       call trhsevl_assembledG0RHS (rproblem, rspaceTimeDiscr, rb, bimplementBC)

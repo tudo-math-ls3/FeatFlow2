@@ -1108,7 +1108,7 @@ contains
       
       ! Depending on the time step scheme, initialise the current time.
       select case (p_rspaceTimeDiscr%rtimeDiscr%ctype)
-      case (TDISCR_THETA)
+      case (TDISCR_ONESTEPTHETA)
         dtime = rproblem%rtimedependence%dtimeInit + ieqTime*dtstep
       case (TDISCR_DG0)
         dtime = rproblem%rtimedependence%dtimeInit + (real(ieqTime,DP)+0.5_DP)*dtstep

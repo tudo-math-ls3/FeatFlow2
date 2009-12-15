@@ -35,7 +35,7 @@ module timediscretisation
 !<constantblock description="Time discretisation type identifiers">
 
   ! Theta-scheme (implicit/explicit Euler, Crank Nicolson)
-  integer, parameter :: TDISCR_THETA           = 0
+  integer, parameter :: TDISCR_ONESTEPTHETA           = 0
   
   ! The dG(0) scheme.
   integer, parameter :: TDISCR_DG0             = 1
@@ -53,7 +53,7 @@ module timediscretisation
   type t_timeDiscretisation
   
     ! A TDISCR_xxxx-Flag that identifies the time discretisation scheme.
-    integer :: ctype = TDISCR_THETA
+    integer :: ctype = TDISCR_ONESTEPTHETA
     
     ! Number of time intervals
     integer :: nintervals          = 0
@@ -67,7 +67,7 @@ module timediscretisation
     ! Time step length of the time discretisation
     real(DP) :: dtstep             = 0.0_DP
 
-    ! If ctype=TDISCR_THETA: theta parameter that identifies the Theta scheme.
+    ! If ctype=TDISCR_ONESTEPTHETA: theta parameter that identifies the Theta scheme.
     !  =0.0: Forward Euler,
     !  =1.0: Backward Euler (Standard),
     !  =0.5: Crank Nicolson.
@@ -121,7 +121,7 @@ contains
     !END IF
 
     ! Initialise the parameters of the structure.
-    rtimediscr%ctype = TDISCR_THETA
+    rtimediscr%ctype = TDISCR_ONESTEPTHETA
     rtimediscr%dtimeInit = dstart
     rtimediscr%dtimeMax = dend
     rtimediscr%nintervals = nintervals
@@ -194,7 +194,7 @@ contains
     if (rtimediscr%nintervals .eq. 0) return
 
     select case(rtimediscr%ctype)
-    case (TDISCR_THETA)
+    case (TDISCR_ONESTEPTHETA)
       ! One step scheme. We have as many DOF's as intervals + 1.
       tdiscr_igetNDofGlob = rtimediscr%nintervals + 1
       return

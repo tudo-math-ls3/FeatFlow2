@@ -1875,8 +1875,8 @@ contains
       ! create the target flow vector. We assume the target flow to be given
       ! in the endpoints of the subintervals -- which corresponds to the
       ! implicit Euler scheme.
-      call tdiscr_initTheta (dstartTime, dendTime, nacttimesteps, 1.0_DP, &
-          rproblem%roptcontrol%rtargetTimeDiscr)
+      call tdiscr_initOneStepTheta (rproblem%roptcontrol%rtargetTimeDiscr,&
+          dstartTime, dendTime, nacttimesteps, 1.0_DP)
           
       call sptivec_initVectorDiscr (rproblem%roptcontrol%rtargetFlowNonstat,&
           rproblem%roptcontrol%rtargetTimeDiscr,&

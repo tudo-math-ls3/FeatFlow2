@@ -84,7 +84,7 @@ contains
     ! Now we have to take a look on the time discretisation.
     ! Depending on that, we choose the best suitable evaluation
     ! method.
-    if (rspaceTimeVector%p_rtimeDiscretisation%ctype .eq. TDISCR_THETA) then
+    if (rspaceTimeVector%p_rtimeDiscretisation%ctype .eq. TDISCR_ONESTEPTHETA) then
       
       ! Get the time step which is closest to the time stamp.
       itimestep = int(dabstime + 0.5_DP)

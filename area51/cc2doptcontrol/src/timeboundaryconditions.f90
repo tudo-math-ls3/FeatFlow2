@@ -158,7 +158,7 @@ contains
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
     select case (rspaceTimeDiscr%rtimeDiscr%ctype)
-    case (TDISCR_THETA)
+    case (TDISCR_ONESTEPTHETA)
 
       ! Implement the bondary conditions into all initial solution vectors
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
@@ -300,7 +300,7 @@ contains
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
     select case (rspaceTimeDiscr%rtimeDiscr%ctype)
-    case (TDISCR_THETA)
+    case (TDISCR_ONESTEPTHETA)
 
       ! Implement the bondary conditions into all initial solution vectors
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
@@ -438,7 +438,7 @@ contains
     ! The implementation of the boundary conditions depends on the type
     ! of the time discretisation...
     select case (rspaceTimeDiscr%rtimeDiscr%ctype)
-    case (TDISCR_THETA)
+    case (TDISCR_ONESTEPTHETA)
 
       ! Implement the bondary conditions into all initial solution vectors
       do isubstep = 0,rspaceTimeDiscr%NEQtime-1
