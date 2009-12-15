@@ -2,33 +2,33 @@
 Calculating anisotropic diffusion problem with method 1
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441368E-01
-UMFPACK: !!solution!!    = 5.232664176453899E-01 Status = 0
+UMFPACK: !!solution!!    = 5.232664176453885E-01 Status = 0
 Min: -4.9959770653E-02
 Max: 2.0000000000E+00
 
 Calculating anisotropic diffusion problem with method 2
 -------------------------------------------------------
 UMFPACK: !!Initial RES!! = 1.198577803441368E-01
-UMFPACK: !!solution!!    = 5.232664176453899E-01 Status = 0
-!!gradient error!! = 9.1432960432E-01
+UMFPACK: !!solution!!    = 5.232664176453885E-01 Status = 0
+!!gradient error!! = 9.1657736585E-01
 UMFPACK: !!Initial RES!! = 9.199295443090619E-02
-UMFPACK: !!solution!!    = 5.877810225553443E-01 Status = 0
-!!gradient error!! = 7.4242021784E-01
-UMFPACK: !!Initial RES!! = 7.736907586773385E-02
-UMFPACK: !!solution!!    = 7.074146263972246E-01 Status = 0
-!!gradient error!! = 6.0791764199E-01
-UMFPACK: !!Initial RES!! = 6.150752225773758E-02
-UMFPACK: !!solution!!    = 7.580264920048719E-01 Status = 0
-!!gradient error!! = 4.8903706857E-01
-UMFPACK: !!Initial RES!! = 5.127088108220467E-02
-UMFPACK: !!solution!!    = 7.976388507424890E-01 Status = 0
-!!gradient error!! = 3.8398700337E-01
-UMFPACK: !!Initial RES!! = 4.437282778500504E-02
-UMFPACK: !!solution!!    = 8.704101270952765E-01 Status = 0
-!!gradient error!! = 3.0141719516E-01
-UMFPACK: !!Initial RES!! = 4.305986011466484E-02
-UMFPACK: !!solution!!    = 8.570008841682200E-01 Status = 0
-Min: -1.9758032977E-04
+UMFPACK: !!solution!!    = 5.877810225553355E-01 Status = 0
+!!gradient error!! = 7.4378460808E-01
+UMFPACK: !!Initial RES!! = 7.732888065719283E-02
+UMFPACK: !!solution!!    = 7.070471207538473E-01 Status = 0
+!!gradient error!! = 6.0869111906E-01
+UMFPACK: !!Initial RES!! = 6.143635585217140E-02
+UMFPACK: !!solution!!    = 7.590947612478810E-01 Status = 0
+!!gradient error!! = 4.8949447878E-01
+UMFPACK: !!Initial RES!! = 5.152772040634369E-02
+UMFPACK: !!solution!!    = 7.981398911139854E-01 Status = 0
+!!gradient error!! = 3.8430920047E-01
+UMFPACK: !!Initial RES!! = 4.436141502046828E-02
+UMFPACK: !!solution!!    = 8.703557157021987E-01 Status = 0
+!!gradient error!! = 3.0169838578E-01
+UMFPACK: !!Initial RES!! = 4.309680007589013E-02
+UMFPACK: !!solution!!    = 8.573256639308980E-01 Status = 0
+Min: -1.7928530437E-04
 Max: 2.0000000000E+00
 
 Heap statistics:
@@ -37,4 +37,4 @@ Number of handles in use:        0
 Memory in use:                   0 Bytes
 Current total number of handles: 999
 Maximum number of handles used:  85
-Maximum used memory:             64.29 MB
+Maximum used memory:             64.21 MB

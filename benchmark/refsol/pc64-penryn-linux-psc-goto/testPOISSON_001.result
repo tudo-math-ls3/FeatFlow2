@@ -184,6 +184,68 @@ UMFPACK: !!solution!!    = 5.182340172412554E-01 Status = 0
 L2-error: 1.8029470064E-03
 H1-error: 1.9708230651E-01
 
+Calculating Poisson-2D-Problem with method 1 - Robin BC
+-------------------------------------------------------
+BiCGStab: Iteration 0,  !!RES!! = 1.557757976461184E-01
+BiCGStab: Iteration 1,  !!RES!! = 3.362909565705415E-02
+BiCGStab: Iteration 2,  !!RES!! = 1.537276547803549E-02
+BiCGStab: Iteration 3,  !!RES!! = 9.554297588233876E-03
+BiCGStab: Iteration 4,  !!RES!! = 6.848348704391132E-03
+BiCGStab: Iteration 5,  !!RES!! = 5.208266592331708E-03
+BiCGStab: Iteration 6,  !!RES!! = 4.108852047503606E-03
+BiCGStab: Iteration 7,  !!RES!! = 3.352137335333482E-03
+BiCGStab: Iteration 8,  !!RES!! = 2.779663676020548E-03
+BiCGStab: Iteration 9,  !!RES!! = 2.342784111893611E-03
+BiCGStab: Iteration 10,  !!RES!! = 1.999344120789693E-03
+BiCGStab: Iteration 11,  !!RES!! = 1.731405351829369E-03
+BiCGStab: Iteration 12,  !!RES!! = 1.525888494148493E-03
+BiCGStab: Iteration 13,  !!RES!! = 1.350864854058940E-03
+BiCGStab: Iteration 14,  !!RES!! = 1.202620704072888E-03
+BiCGStab: Iteration 15,  !!RES!! = 1.068741843482759E-03
+BiCGStab: Iteration 16,  !!RES!! = 9.419148068194601E-04
+BiCGStab: Iteration 17,  !!RES!! = 8.227436818477999E-04
+BiCGStab: Iteration 18,  !!RES!! = 7.311384819817870E-04
+BiCGStab: Iteration 19,  !!RES!! = 6.622223467366973E-04
+BiCGStab: Iteration 20,  !!RES!! = 6.001701533319016E-04
+BiCGStab: Iteration 21,  !!RES!! = 5.472766527955695E-04
+BiCGStab: Iteration 22,  !!RES!! = 4.980235311379931E-04
+BiCGStab: Iteration 23,  !!RES!! = 4.564638859569528E-04
+BiCGStab: Iteration 24,  !!RES!! = 4.166487645110245E-04
+BiCGStab: Iteration 25,  !!RES!! = 3.814942956133391E-04
+BiCGStab: Iteration 26,  !!RES!! = 3.454930860226722E-04
+BiCGStab: Iteration 27,  !!RES!! = 3.109151219959303E-04
+BiCGStab: Iteration 28,  !!RES!! = 2.761114899496749E-04
+BiCGStab: Iteration 29,  !!RES!! = 2.403018768556146E-04
+BiCGStab: Iteration 30,  !!RES!! = 2.046495188676836E-04
+BiCGStab: Iteration 31,  !!RES!! = 1.702836319758755E-04
+BiCGStab: Iteration 32,  !!RES!! = 1.374077108265990E-04
+BiCGStab: Iteration 33,  !!RES!! = 1.100486808055883E-04
+BiCGStab: Iteration 34,  !!RES!! = 8.869534423335961E-05
+BiCGStab: Iteration 35,  !!RES!! = 7.309233888576653E-05
+BiCGStab: Iteration 36,  !!RES!! = 6.070053027392268E-05
+BiCGStab: Iteration 37,  !!RES!! = 5.094196237614564E-05
+BiCGStab: Iteration 38,  !!RES!! = 4.239987209366380E-05
+BiCGStab: Iteration 39,  !!RES!! = 3.553255196118122E-05
+BiCGStab: Iteration 40,  !!RES!! = 2.723946101406606E-05
+BiCGStab: Iteration 41,  !!RES!! = 8.991723614443147E-06
+BiCGStab: Iteration 42,  !!RES!! = 8.214099403545663E-06
+BiCGStab: Iteration 43,  !!RES!! = 6.244309234330085E-06
+BiCGStab: Iteration 44,  !!RES!! = 2.924054664447507E-06
+BiCGStab: Iteration 45,  !!RES!! = 3.043250776248756E-06
+BiCGStab: Iteration 46,  !!RES!! = 2.038799229010223E-06
+BiCGStab: Iteration 47,  !!RES!! = 1.291093755439365E-06
+
+BiCGStab statistics:
+
+Iterations              : 47
+!!INITIAL RES!!         : 1.557757976461184E-01
+!!RES!!                 : 1.291093755439365E-06
+!!RES!!/!!INITIAL RES!! : 8.288153711607950E-06
+
+Rate of convergence     : 7.796184005529093E-01
+L2-error: 3.6878692553E-04
+H1-error: 7.5993408129E-01
+
 Calculating Poisson-2D-Problem with method 1 - FBC
 --------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 2.132664092880507E-03
