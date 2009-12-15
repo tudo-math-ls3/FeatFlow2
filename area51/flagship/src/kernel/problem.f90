@@ -475,7 +475,6 @@ contains
     
     ! local variables
     type(t_problemLevel), pointer :: p_rproblemLevel
-    integer :: i
     
     ! Initialization
     p_rproblemLevel => rproblem%p_rproblemLevelMax
