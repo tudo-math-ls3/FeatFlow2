@@ -92,6 +92,9 @@ module euler_basic
 
 !<constantblock description="Global type of dissipation">
 
+  ! Zero dissipation
+  integer, parameter, public :: DISSIPATION_ZERO = 0
+
   ! Scalar dissipation
   integer, parameter, public :: DISSIPATION_SCALAR = 1
 
