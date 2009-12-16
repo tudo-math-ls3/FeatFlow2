@@ -755,7 +755,7 @@ contains
       l3 = abs(aux+cs)
       l4 = abs(aux)
 
-      ! Compute solution difference U_i-U_j
+      ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
       
       ! Compute auxiliary quantities for characteristic variables
@@ -927,7 +927,7 @@ contains
       l3 = abs(u_ij+cs)
       l4 = abs(u_ij)
 
-      ! Compute solution difference U_i-U_j
+      ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
       
       ! Compute auxiliary quantities for characteristic variables
@@ -960,7 +960,7 @@ contains
       l3 = abs(v_ij+cs)
       l4 = abs(v_ij)
 
-      ! Compute solution difference U_i-U_j
+      ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
       
       ! Compute auxiliary quantities for characteristic variables
@@ -2359,7 +2359,7 @@ contains
 
       ! Compute characteristic solution difference
       if (present(W_ij)) then
-        ! Compute solution difference U_i-U_j
+        ! Compute solution difference U_j-U_i
         Diff = U_j-U_i
         
         ! Compute auxiliary quantities for characteristic variables

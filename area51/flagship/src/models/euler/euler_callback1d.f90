@@ -506,7 +506,7 @@ contains
       l2 = abs(u_ij)
       l3 = abs(u_ij+cs)
       
-      ! Compute solution difference U_i-U_j
+      ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
       
       ! Compute auxiliary quantities for characteristic variables
