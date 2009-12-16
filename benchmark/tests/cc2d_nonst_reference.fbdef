@@ -1,0 +1,279 @@
+#####################################################################
+#
+# This file defines a set of configurations to obtain reference
+# results for the nonstationary case of the CFD benchmark
+# problem "Flow Around Cylinder" in 2D.
+#
+# TEST CASE 1: RE100, stationary inflow
+#
+# In this test case, a stationary inflow with maximum inflow
+# velocity 1.5 is set up. The inflow is stationary. After 3.5
+# seconds, vortex shedding starts to develop in the flow. After 25-30
+# seconds, the flow is fully developed. At that time, the drag
+# coefficient, lift coefficient, pressure difference at the
+# cylinder and the length of one period in the lift is measured.
+#
+# Problems CC2D_NONST1REF1_INIT till CC2D_NONST1REF3_INIT_6 must
+# be sequentially computed as these configurations compute proper
+# starting solutions on all the levels.
+#
+# The configuration sets CC2D_NONST1REF4_INIT_x and
+# CC2D_NONST1REF5_INIT_y can be computed in parallel, where all
+# tests from CC2D_NONST1REF4_INIT_x must be calculated before
+# CC2D_NONST1REF5_INIT_x; again, CC2D_NONST1REF4_INIT_x computes
+# starting solutions for CC2D_NONST1REF5_INIT_x.
+#
+# After all computations are done, CC2D_NONST1REF5_INIT_x provides
+# reference results for drag/lift/pressure at time 5..6 seconds.
+#
+#
+# TEST CASE 2: pulsing inflow
+#
+# In this case the inflow is prescribed as sinus wave according
+# to the formula:
+#
+#   U_max = 1.5 * sin(t*Pi/8)
+#
+# The outflow profile matches the inflow profile, there is no
+# Neumann boundary present here.
+# This test case does not need a proper starting solution as it
+# directly starts with u(t=0)=0. The simulation is carried out
+# in a time cylinder up to Tmax=8.
+#####################################################################
+
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+
+appl = cc2d
+class = DEFAULT
+
+##########
+# Standard variable settings; all variables
+##########
+
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_RE = 1000
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
+TIMEDISCRETISATION_NITERATIONS = 10000
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 1.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+NONLINEAR_ITYPEPRECONDITIONING = 1
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+SMOOTHER_DOMEGA = 1.0
+POSTPROCESSING_IOUTPUTUCD = 3
+POSTPROCESSING_SFILENAMEUCD = '%{spostdirectory}/u_lv%{CC-DISCRETISATION.NLMAX}.vtk'
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.0
+POSTPROCESSING_IWRITEBODYFORCES = 1
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.004
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+DISCRETISATION_CWRITEFINALSOLUTION=1
+POSTPROCESSING_SWRITESOLUTIONFILENAME = '%{spostdirectory}/solution'
+POSTPROCESSING_IBODYFORCESFORMULATION=-1
+POSTPROCESSING_ICALCBODYFORCES=2
+POSTPROCESSING_IWRITEPOINTVALUES=1
+POSTPROCESSING_SFILENAMEPOINTVALUES = '%{spostdirectory}/pointvalues'
+
+################
+# Test NONST1REF1
+# Reference calculation. Test case 2-
+#
+# Nonstationary Navier-Stokes. Q2 element.
+#
+# The reference calculation is done in multiple steps.
+# In the first step, we start from an initial solution (zero) and
+# calculate 5 seconds on level 2 to get an initial solution
+# for higher levels and smaller timesteps.
+#
+# For this introductory phase, we use SD(1.0) stabilisation.
+################
+
+testid   = CC2D_NONST1REF1_INIT
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 1
+datfile  = ./data/apps_cc2d/master_bench.dat
+mglevels = 2
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+TIMEDISCRETISATION_DTIMEMAX = 3.5
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.25
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.1
+POSTPROCESSING_ICALCBODYFORCES = 2
+BDR_PARPROFILEMAX = 1.5
+LINEARSOLVER_ISMOOTHERTYPE = 4
+SMOOTHER_DOMEGA = 0.5
+NONLINEAR_ITYPEPRECONDITIONING = 2
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 0
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+NONLINEAR_DEPSD=1E-12
+NONLINEAR_DEPSDIV=1E-12
+
+################
+# Here, the oscillation starts.
+# We go on simulating 20 seconds with a smaller timestep size on the same level.
+# This gives us a moderately oscillating solution.
+# Here, we switch off the stabililsation.
+################
+
+testid   = CC2D_NONST1REF2_INIT
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 2
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.025
+TIMEDISCRETISATION_DTIMEMAX = 20.0
+DISCRETISATION_DUPSAM = 0.0
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF1_INIT/solution'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+
+################
+# In a 3rd step, we simulate 5 seconds on this level with an even smaller timestep
+# size and then increase the level.
+# On the next level, we as well calculate 10 seconds.
+# This gives us initial solutions on all levels.
+################
+
+testid   = CC2D_NONST1REF3_INIT_2
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 3
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMEMAX = 5
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF2_INIT/solution'
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+
+testid   = CC2D_NONST1REF3_INIT_3
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 3
+mglevels = 3
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_2/solution'
+DISCRETISATION_IINITIALSOLUTIONLEVEL = -1
+
+testid   = CC2D_NONST1REF3_INIT_4
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 3
+mglevels = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_3/solution'
+
+testid   = CC2D_NONST1REF3_INIT_5
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 3
+mglevels = 5
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_4/solution'
+
+testid   = CC2D_NONST1REF3_INIT_6
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 3
+mglevels = 6
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_5/solution'
+
+################
+# Step 4.
+# From now on, we can calculate in parallel. The solutions must nicely oscillate.
+# Simulate 15 seconds with an even smaller timestep size of 1/400.
+################
+
+testid   = CC2D_NONST1REF4_INIT_2
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 4
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.0025
+TIMEDISCRETISATION_DTIMEMAX = 15
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_2/solution'
+
+testid   = CC2D_NONST1REF4_INIT_3
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 4
+mglevels = 3
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_3/solution'
+
+testid   = CC2D_NONST1REF4_INIT_4
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 4
+mglevels = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_4/solution'
+
+testid   = CC2D_NONST1REF4_INIT_5
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 4
+mglevels = 5
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_5/solution'
+
+testid   = CC2D_NONST1REF4_INIT_6
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 4
+mglevels = 6
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF3_INIT_6/solution'
+
+################
+# Step 5. Final step.
+# We finally compute 6 seconds on each level with timestep size 1/1600.
+# This gives us the reference result.
+################
+
+testid   = CC2D_NONST1REF5_INIT_2
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 2
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+TIMEDISCRETISATION_DTIMEMAX = 6
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_2/solution'
+
+testid   = CC2D_NONST1REF5_INIT_3
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 3
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_3/solution'
+
+testid   = CC2D_NONST1REF5_INIT_4
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_4/solution'
+
+testid   = CC2D_NONST1REF5_INIT_5
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 5
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_5/solution'
+
+testid   = CC2D_NONST1REF5_INIT_6
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 6
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_6/solution'
+
+################
+# Test NONST2REF
+# Reference calculation. Test case 2.
+#
+# Nonstationary Navier-Stokes. Q2 element.
+################
+
+testid   = CC2D_NONST2REF1_2
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+datfile  = ./data/apps_cc2d/master_bench_sin.dat
+mglevels = 2
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.0
+TIMEDISCRETISATION_DTIMESTEP = 0.000625
+TIMEDISCRETISATION_DTIMEMAX = 8
+
+testid   = CC2D_NONST2REF1_3
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 3
+
+testid   = CC2D_NONST2REF1_4
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 4
+
+testid   = CC2D_NONST2REF1_5
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 5
+
+testid   = CC2D_NONST2REF1_6
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 6
