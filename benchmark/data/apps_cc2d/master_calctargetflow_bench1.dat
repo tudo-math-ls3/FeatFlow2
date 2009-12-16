@@ -1,3 +1,9 @@
+######################################################################
+#
+# MASTER.DAT file for tests with the default benchmark configuration
+#
+######################################################################
+
 # -------------------------------------------------------------------
 # This optional master file is the entry point for all data
 # which is processed by the software. The simportdatafiles(.) parameter
@@ -58,7 +64,6 @@ sbenchLog = ''
 smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}.log'
 
 [CC-DISCRETISATION]
-NLMIN = $MINLEVEL
 NLMAX = $MGLEVEL
 iequation = $DISCRETISATION_IEQUATION
 RE = $DISCRETISATION_RE
@@ -67,45 +72,51 @@ iUpwind = $DISCRETISATION_IUPWIND
 dUpsam = $DISCRETISATION_DUPSAM
 
 ctypeInitialSolution = $DISCRETISATION_CTYPEINITIALSOLUTION
+iinitialSolutionlevel = $DISCRETISATION_IINITIALSOLUTIONLEVEL
 sinitialSolutionFilename = '$DISCRETISATION_SINITIALSOLUTIONFILENAME'
+ielementTypeInitialSolution = $DISCRETISATION_IELEMENTTYPEINITIALSOLUTION
 cwriteFinalSolution = $DISCRETISATION_CWRITEFINALSOLUTION
 swriteSolutionFilename = '$POSTPROCESSING_SWRITESOLUTIONFILENAME'
 
 [TIME-DISCRETISATION]
 itimedependence = $TIMEDISCRETISATION_ITIMEDEPENDENCE
+niterations = $TIMEDISCRETISATION_NITERATIONS
 dtimeMax = $TIMEDISCRETISATION_DTIMEMAX
-dtimeInit = $TIMEDISCRETISATION_DTIMEMIN
 dtimeStep = $TIMEDISCRETISATION_DTIMESTEP
 dtimeStepTheta = $TIMEDISCRETISATION_DTIMESTEPTHETA
 
 [CC-POSTPROCESSING]
 ioutputUCD = $POSTPROCESSING_IOUTPUTUCD
 sfilenameUCD = '$POSTPROCESSING_SFILENAMEUCD'
-istartSuffixUCD = $POSTPROCESSING_ISTARTSUFFIXUCD
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_lv%{CC-DISCRETISATION.NLMAX}'
 dtimeDifferenceUCD = $POSTPROCESSING_DTIMEDIFFERENCEUCD
+icalcBodyForces = $POSTPROCESSING_ICALCBODYFORCES
 ioutputFilm = $POSTPROCESSING_IOUTPUTFILM
 sfilenameFilm = '$POSTPROCESSING_SFILENAMEFILM'
-istartSuffixFilm = $POSTPROCESSING_ISTARTSUFFIXFILM
 iwriteBodyForces = $POSTPROCESSING_IWRITEBODYFORCES
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_lv%{CC-DISCRETISATION.NLMAX}'
 dbdForcesCoeff1 = $POSTPROCESSING_DBDFORCESCOEFF1
 dbdForcesCoeff2 = $POSTPROCESSING_DBDFORCESCOEFF2
-
-[PARAMTRIANG]
-sParametrisation = '%{spredirectory}/bench1.prm'
-sMesh = '%{spredirectory}/bench1.tri'
-
-[CC-LINEARSOLVER]
-icoarseGridSolverType = 0
+ibodyForcesFormulation = $POSTPROCESSING_IBODYFORCESFORMULATION
+cevaluatePointValues(2) =
+  0.15 0.2 3 0
+  0.25 0.2 3 0
+iwritePointValues = $POSTPROCESSING_IWRITEPOINTVALUES
+sfilenamePointValues = '$POSTPROCESSING_SFILENAMEPOINTVALUES'
 
 [BDEXPRESSIONS]
-bdExpressions(2) =
+bdExpressions(3) =
   'Dirichlet0'     0    0.0
-  'ParProfile'     2    $BDC_UMAX
+  'Dirichlet1'     0    1.0
+  'ParProfile'     2    $BDR_PARPROFILEMAX
 
-[BDCONDITIONS]
-bdComponent1(4)=
-   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[0.0,1.0] : Dirichlet-0 boundary
-   2.0  0  0                               # param=]1.0,2.0[ : Neumann boundary = do-nothing
-   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
-   4.0  3  1  'ParProfile'  'Dirichlet0'   # param=[3.0,4.0] : parabolic profile in X, 0.0 in Y
+[CC2D-NONLINEAR]
+itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
+depsD              = $NONLINEAR_DEPSD
+depsDiv            = $NONLINEAR_DEPSDIV
+
+[CC-LINEARSOLVER]
+ismootherType = $LINEARSOLVER_ISMOOTHERTYPE
+icoarseGridSolverType = $LINEARSOLVER_ICOARSEGRIDSOLVERTYPE
+
+[CC-SMOOTHER]
+domega             = $SMOOTHER_DOMEGA
