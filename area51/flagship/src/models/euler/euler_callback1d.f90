@@ -1509,6 +1509,335 @@ contains
     integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
+    
+    ! local variables
+    real(DP), dimension(NVAR1D) :: W,Wu,Winf    ! Riemann invariants, eigenvalues, etc.
+    real(DP) :: rho,v1,p,E,c                    ! primitive variables
+    real(DP) :: vn_b,vn,pstar,ps                ! velocities and boundary values
+    real(DP) :: cup,f,fd,ge,qrt                 ! auxiliary variables ...
+    real(DP) :: pold,ppv,prat,ptl,ptr,vdiff,vm  ! ... for the Riemann solver
+    real(DP) :: auxA,auxB,aux
+    integer:: ite
+    
+    ! What type of boundary condition is given?
+    select case(ibdrCondType)
+    case(BDR_EULERWALL,&
+         BDR_RLXEULERWALL)
+      !-------------------------------------------------------------------------
+
+      ! The wall boundary conditions follow algorithm II from the paper
+      !
+      !    `High-order accurate implementation of solid wall
+      !     boundary conditions in curved geometries`
+      !     L. Krivodonova and M. Berger, J. Comput. Physics 211, (2006) 492-512
+      !
+      ! See the 2D-version of this routine for details.
+
+      ! Compute primitive variables
+      rho = Du(1)
+      v1  = Du(2)/rho
+      E   = Du(3)/rho
+      p   = thdyn_pressure(GAMMA, E, rho, v1)
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+
+      ! Compute normal velocities at the boundary and the ghost state
+      ! w.r.t. the numerical/approximate  outward unit normal vector
+      vn   =  DbdrNormal(1)*v1
+      vn_b = -DbdrNormal(1)*v1
+
+      !-------------------------------------------------------------------------
+      ! Calculate the pressure in the star region
+      !
+      ! Note that the pressure equation can only be solved if the pressure
+      ! positivity condition is satisfied, that is
+      !
+      !     $$\frac{2}{\gamma-1}(c+c_b)>v_b-v$$
+      !
+      ! Otherwise, the Riemann problem gives rise to vacuum so that the 
+      ! "star region" does no longer exist and the standard procedure fails.
+      !
+      ! Here and below, the left state corresponds to the interior value
+      ! and the right state corresponds to the ghost values since the unit
+      ! normal vector is directed outward to the boundary.
+      !-------------------------------------------------------------------------
+      
+      ! Check the pressure positivity condition
+      if (2.0_DP*G9*c .le. vn_b-vn) then
+        if (present(istatus)) then
+          istatus = -ibdrCondType
+          return
+        else
+          call output_line('Riemann solver failed due to vacuum',&
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
+          call sys_halt()
+        end if
+      end if
+
+      ! Provide a guess value for pressure in the "star region"
+      ! by using the PVRS Riemann solver as suggested by Toro
+
+      cup  = rho*c
+      ppv  = p+0.5_DP*(vn-vn_b)*cup
+      ppv  = max(0.0_DP, ppv)
+
+      if (ppv .eq. p) then
+
+        ! Select guessed pressure from PVRS Riemann solver
+        pstar = ppv
+      else
+        if (ppv .lt. p) then
+
+          ! Guess pressure from the Two-Rarefaction Riemann solver
+          vm    = 0.5_DP*(vn+vn_b)
+          ptl   = 1.0_DP + G2*(vn-vm)/c
+          ptr   = 1.0_DP + G2*(vm-vn_b)/c
+          pstar = 0.5_DP*(p*ptl + p*ptr)**G11
+        else
+
+          ! Guess pressure from the Two-Shock Riemann solver 
+          ! with PVRS as estimated pressure value
+          ge    = sqrt((G10/rho)/(G12*p+ppv))
+          pstar = p - 0.5_DP*(vn_b-vn)/ge
+        end if
+      end if
+
+      ! Initialize solution difference and pressure
+      vdiff = (vn_b-vn)/2.0_DP
+      pold  = pstar
+
+      newton: do ite = 1, 100
+        
+        ! Compute pressure function f(pold) and its derivative f1(pold)
+        if (pold .le. p) then
+
+          ! Rarefaction wave
+          prat = pold/p
+          
+          f  = G9*c*(prat**G7 - 1.0_DP)
+          fd = (1.0_DP/(rho*c))*prat**(-G8)
+        else
+
+          ! Shock wave
+          auxA = G10/rho
+          auxB = G12*p
+          qrt  = sqrt(auxA/(auxB + pold))
+
+          f  = (pold-p)*qrt
+          fd = (1.0_DP - 0.5_DP*(pold - p)/(auxB + pold))*qrt
+        end if
+
+        pstar = pold - (f+vdiff)/fd
+        if (pstar .lt. 0.0_DP) then
+          pold = 1.0E-6
+          cycle newton
+        end if
+
+        aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
+        if (aux .le. 1.0E-6)  exit newton
+        
+        pold = pstar
+
+      end do newton
+
+      ! Check if Newton`s method converged
+      if (ite .ge. 100) then
+        if (present(istatus)) then
+          istatus = -ibdrCondType
+          return
+        else
+          call output_line('Riemann solver failed due to divergence in' // &
+              ' Newton-Raphson iteration',&
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
+          call sys_halt()
+        end if
+      end if
+
+      !-------------------------------------------------------------------------
+      ! Calculate the velocity in the star region
+      !-------------------------------------------------------------------------
+
+      ! Note that the contribution fR-fL vanishes due to constant states
+      vn = 0.5_DP*(vn+vn_b)
+      
+      
+      !-------------------------------------------------------------------------
+      ! Calculate the density in the star region
+      !-------------------------------------------------------------------------
+
+      if (pstar .le. p) then
+        
+        ! Rarefaction wave
+        rho = rho*(pstar/p)**G4
+      else
+        
+        ! Shock wave
+        rho = rho*(pstar/p+G12)/(G12*(pstar/p)+1.0_DP)
+      end if
+      
+      ! Update the solution vector
+      Du(1) = rho
+      Du(2) = rho*DpointNormal(1)*vn
+      Du(3) = pstar/G1+0.5_DP*rho*(vn*vn)
+
+    case(BDR_VISCOUSWALL)
+      !-------------------------------------------------------------------------
+      
+      ! Compute primitive variables
+      rho = Du(1)
+      v1  = Du(2)/rho
+      E   = Du(3)/rho
+      p   = thdyn_pressure(GAMMA, E, rho, v1)
+
+      ! Update the solution vector and let vn:=0
+      Du(2) = 0.0_DP
+      Du(3) = p/G1
+
+    case(BDR_SUPERINLET)
+      !-------------------------------------------------------------------------
+
+      ! The free stream primitive variables are Deval=[rho,v1,p]
+      rho = DbdrValue(1)
+      p   = DbdrValue(3)
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      vn  = DbdrNormal(1)*DbdrValue(2)
+      
+      ! Compute Riemann invariants based on the free stream values
+      W(1) = vn-2*c/G1
+      W(2) = vn+2*c/G1
+      W(3) = p/(rho**GAMMA)
+
+      ! Transform back into conservative variables
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*G1*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**G3
+      p    = rho*c*c/GAMMA
+
+      ! Update the solution vector
+      Du(1) = rho
+      Du(2) = rho*DbdrNormal(1)*vn
+      Du(3) = p/G1+0.5_DP*rho*(vn*vn)
+
+      
+    case(BDR_FARFIELD)
+      !-------------------------------------------------------------------------
+
+      ! The free stream primitive variables are Deval=[rho,v1,p]
+      rho = DbdrValue(1)
+      p   = DbdrValue(3)
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      vn  = DbdrNormal(1)*DbdrValue(2)
+      
+      ! Compute Riemann invariants based on the free stream values
+      Winf(1) = vn-2.0_DP*c/G1
+      Winf(2) = vn+2.0_DP*c/G1
+      Winf(3) = p/(rho**GAMMA)
+
+      ! Compute primitive variables
+      rho = Du(1)
+      v1  = Du(2)/rho
+      E   = Du(3)/rho
+      p   = thdyn_pressure(GAMMA, E, rho, v1)
+      
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      vn  = DbdrNormal(1)*v1
+      
+      ! Compute Riemann invariants based on the solution values
+      Wu(1) = vn-2.0_DP*c/G1
+      Wu(2) = vn+2.0_DP*c/G1
+      Wu(3) = p/(rho**GAMMA)
+
+      ! Adopt free stream/computed values depending on the sign of the eigenvalue
+      W(1) = merge(Winf(1), Wu(1), vn <  c)
+      W(2) = merge(Winf(2), Wu(2), vn < -c)
+      W(3) = merge(Winf(3), Wu(3), vn <  SYS_EPSREAL)
+
+      ! Transform back into conservative variables
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*G1*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**G3
+      p    = rho*c*c/GAMMA
+
+      ! Update the solution vector
+      Du(1) = rho
+      Du(2) = rho*DbdrNormal(1)*vn
+      Du(3) = p/G1+0.5_DP*rho*(vn*vn)
+
+
+    case(BDR_SUBINLET)
+      !-------------------------------------------------------------------------
+     
+      ! Compute primitive variables
+      rho = Du(1)
+      v1  = Du(2)/rho
+      E   = Du(3)/rho
+      p   = thdyn_pressure(GAMMA, E, rho, v1)
+      
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      vn  = DbdrNormal(1)*v1
+      
+      ! The specified density and pressure is Deval=[rho,p]
+      rho = DbdrValue(1)
+      p   = DbdrValue(2)
+
+      ! Compute Riemann invariants
+      W(1) = vn-2.0_DP*c/G1
+      W(2) = vn+2.0_DP*c/G1
+      W(3) = p/(rho**GAMMA)
+
+      ! Transform back into conservative variables
+      vn   = 0.5_DP*(W(1)+W(2))
+      c    = 0.25_DP*G1*(W(2)-W(1))
+      rho  = (c*c/GAMMA/W(3))**G3
+      p    = rho*c*c/GAMMA
+
+      ! Update the solution vector
+      Du(1) = rho
+      Du(2) = rho*DbdrNormal(1)*vn
+      Du(3) = p/G1+0.5_DP*rho*(vn*vn)
+
+
+    case(BDR_SUBOUTLET)
+      !-------------------------------------------------------------------------
+
+      ! The subsonic outlet conditions follow the thesis
+      !
+      ! `Adaptive Finite Element Solution Algorithm
+      !  for the Euler Equations`, R.A. Shapiro
+
+      ! The specified exit static/pressure is Deval=[ps]
+      ps = DbdrValue(1)
+
+      ! Compute primitive variables
+      rho = Du(1)
+      v1  = Du(2)/rho
+      E   = Du(3)/rho
+      p   = thdyn_pressure(GAMMA, E, rho, v1)
+
+      vn  = DbdrNormal(1)*v1
+      c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
+      
+      ! Compute Riemann invariants based on the solution values and prescribed exit pressure
+      W(2) = 2*c/G1-vn
+      W(3) = p/(rho**GAMMA)
+      W(1) = 4/G1*sqrt(max(GAMMA*ps/rho*(p/ps)**G4, SYS_EPSREAL))-W(2)
+
+      ! Transform back into conservative variables
+      vn  = 0.5_DP*(W(1)-W(2))
+      c   = 0.25_DP*G1*(W(1)+W(2))
+      rho = (c*c/GAMMA/W(3))**G3
+      p   = rho*c*c/GAMMA
+
+      ! Update the solution vector
+      Du(1) = rho
+      Du(2) = rho*DbdrNormal(1)*vn
+      Du(3) = p/G1+0.5_DP*rho*(vn*vn)
+
+
+    case DEFAULT
+      call output_line('Unsupported type of boundary condition!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
+      call sys_halt()
+    end select
 
   end subroutine euler_calcBoundaryvalues1d
 
