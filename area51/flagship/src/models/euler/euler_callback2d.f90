@@ -2501,7 +2501,7 @@ contains
         v2_b = (dnx2-dny2)*v2-2.0_DP*dnxy*v1 + 2*DbdrValue(1)*(v2_0*dny2+v1_0*dnxy)
       end if
 
-      ! Compute normal elocities at the boundary and the ghost state
+      ! Compute normal velocities at the boundary and the ghost state
       ! w.r.t. the numerical/approximate  outward unit normal vector
       vn   = DpointNormal(1)*v1   + DpointNormal(2)*v2
       vn_b = DpointNormal(1)*v1_b + DpointNormal(2)*v2_b
@@ -2537,7 +2537,7 @@ contains
           return
         else
           call output_line('Riemann solver failed due to vacuum',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
           call sys_halt()
         end if
       end if
@@ -2615,8 +2615,8 @@ contains
           return
         else
           call output_line('Riemann solver failed due to divergence in' // &
-                           ' Newton-Raphson iteration',&
-                           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
+              ' Newton-Raphson iteration',&
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
           call sys_halt()
         end if
       end if
@@ -2626,7 +2626,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Note that the contribution fR-fL vanishes due to constant states
-      vn = 0.5_DP*(vn+vn_b)   
+      vn = 0.5_DP*(vn+vn_b)
       
 
       !-------------------------------------------------------------------------
@@ -2671,7 +2671,7 @@ contains
 
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
       rho = DbdrValue(1)
-      p   = DbdrValue(4); 
+      p   = DbdrValue(4)
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
@@ -2701,7 +2701,7 @@ contains
 
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
       rho = DbdrValue(1)
-      p   = DbdrValue(4); 
+      p   = DbdrValue(4)
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
@@ -2828,9 +2828,10 @@ contains
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
       Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
 
+
     case DEFAULT
       call output_line('Unsupported type of boundary condition!',&
-                       OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
       call sys_halt()
     end select
 
