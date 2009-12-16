@@ -107,7 +107,7 @@ sfilenamePointValues = '$POSTPROCESSING_SFILENAMEPOINTVALUES'
 bdExpressions(3) =
   'Dirichlet0'     0    0.0
   'Dirichlet1'     0    1.0
-  'ParProfile'    -1    '$BDR_PARPROFILEMAX*sin(_PI*TIME/8.0)*4.0*L*(0.41-L)/(0.41^2)'
+  'ParProfile'    -1    '$BDR_PARPROFILEMAX*sin(_PI*TIME/8.0)*4.0*Y*(0.41-Y)/(0.41^2)'
 
 [BDCONDITIONS]
 bdComponent1(4)=
