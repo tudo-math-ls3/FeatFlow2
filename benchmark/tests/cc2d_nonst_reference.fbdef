@@ -142,7 +142,7 @@ DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
 ################
 # In a 3rd step, we simulate 5 seconds on this level with an even smaller timestep
 # size and then increase the level.
-# On the next level, we as well calculate 10 seconds.
+# On the next level, we as well calculate 5 seconds.
 # This gives us initial solutions on all levels.
 ################
 
@@ -261,6 +261,7 @@ DISCRETISATION_IUPWIND = 0
 DISCRETISATION_DUPSAM = 0.0
 TIMEDISCRETISATION_DTIMESTEP = 0.000625
 TIMEDISCRETISATION_DTIMEMAX = 8
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
 
 testid   = CC2D_NONST2REF1_3
 descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
