@@ -195,7 +195,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1.0
 
 # number of steps for multisteps scheme
 multisteps = 2
@@ -204,10 +204,10 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.231
+dfinalTime = 0.15
 
 # initial time step size
-dinitialStep = 0.0001
+dinitialStep = 0.001
 
 # lower bound for the admissible time step
 dminStep = 0.001
@@ -255,10 +255,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 9
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 9
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
