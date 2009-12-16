@@ -64,7 +64,7 @@ POSTPROCESSING_SFILENAMEFILM=''
 testid   = CC2D_TARGETFLOW_100_3
 descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
 datfile  = ./data/apps_cc2d/master_calctargetflow_bench1.dat
-mglevels = 2
+mglevels = 3
 
 DISCRETISATION_RE = 1000
 DISCRETISATION_IELEMENTTYPE = 4
