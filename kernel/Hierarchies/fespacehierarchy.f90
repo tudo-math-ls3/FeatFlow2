@@ -367,8 +367,8 @@ contains
 
 !<subroutine>
 
-  subroutine fesph_createFEspaceTria (rfeSpace,ilevel,&
-      rtriangulation,ilevelTri,fgetDiscr,rcollection,rboundary)
+  subroutine fesph_createFEspaceTria (rfeSpace,ilevelTri,&
+      rtriangulation,ilevel,fgetDiscr,rcollection,rboundary)
   
 !<description>
   ! Creates a FE space based on a triangulation.
@@ -384,13 +384,13 @@ contains
   ! A basic triangulation corresponding to level ilevelTri.
   type(t_triangulation), intent(in), target :: rtriangulation
   
-  ! A level identifier that specifies the refinement level of rtriangulation.
-  integer, intent(in) :: ilevelTri
-  
   ! Refinement level. Must be >= ilevelTri.
   ! If ilevel > ilevelTri, the mesh is automatically refined up to this level.
   integer, intent(in) :: ilevel
 
+  ! A level identifier that specifies the refinement level of rtriangulation.
+  integer, intent(in) :: ilevelTri
+  
   ! A callback routine that creates a discretisation based on
   ! a triangulation.
   interface
