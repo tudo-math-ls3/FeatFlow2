@@ -139,7 +139,10 @@ contains
     rdiscrData%p_rtimeDiscr => p_rtimeDiscr
     rdiscrData%p_rspaceDiscr => rdiscrData%p_rdiscrPrimalDual
     
-    rdiscrData%p_rstaticSpaceAsmTempl => rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel)
+    rdiscrData%p_rstaticSpaceAsmTempl => &
+        rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel)
+    rdiscrData%p_rstaticSpaceAsmTemplOptC => &
+        rsettings%rspaceAsmHierarchyOptC%p_RasmTemplList(ispaceLevel)
     
     rdiscrData%p_rsettingsOptControl => rsettings%rsettingsOptControl
   

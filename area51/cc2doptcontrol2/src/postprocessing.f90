@@ -598,7 +598,7 @@ contains
     do istep = 1,rvector%NEQtime
       call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtime)
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
-      call optcpp_postprocessSingleSol (rpostproc,istep,dtime,rvecTemp,&
+      call optcpp_postprocessSingleSol (rpostproc,istep-1,dtime,rvecTemp,&
           roptControl,rsettings,istep .eq. 1)
     end do
     

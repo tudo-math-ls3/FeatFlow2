@@ -179,6 +179,7 @@ module spacetimelinearsystem
     
   use constantsoptc
   use assemblytemplates
+  use assemblytemplatesoptc
   use structuresoptc
 
   use spatialbcdef
@@ -273,6 +274,9 @@ module spacetimelinearsystem
     
     ! Pointer to the static assembly data on the corresponding space level.
     type(t_staticSpaceAsmTemplates), pointer :: p_rstaticSpaceAsmTempl => null()
+
+    ! Pointer to the static optimal control assembly data on the corresponding space level.
+    type(t_staticSpaceAsmTemplatesOptC), pointer :: p_rstaticSpaceAsmTemplOptC => null()
     
   end type
 
@@ -372,6 +376,7 @@ contains
     rspaceDiscr%p_rdiscrPrimalDual => rspaceTimeDiscr%p_rdiscrPrimalDual
     
     rspaceDiscr%p_rstaticAsmTemplates => rspaceTimeDiscr%p_rstaticSpaceAsmTempl
+    rspaceDiscr%p_rstaticAsmTemplatesOptC => rspaceTimeDiscr%p_rstaticSpaceAsmTemplOptC
 
   end subroutine
 

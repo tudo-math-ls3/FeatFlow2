@@ -999,6 +999,9 @@ contains
 
     ! We want primal+dual space.
     rcollection%IquickAccess(2) = 6
+    
+    ! Element type
+    rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
 
     ! Create an FE space hierarchy based on the existing mesh hierarchy.
     call fesph_createHierarchy (rsettings%rfeHierPrimalDual,&
@@ -1734,7 +1737,7 @@ contains
 
       call ansol_configNonstationaryFile (rflow, &
           dstartTime,dtimeMax,ntimesteps,&
-          '(""'//trim(sflowfile)//'."",I5.5)',&
+          "("""//trim(sflowfile)//"."",I5.5)",&
           0,idelta,.true.)
           
     end select

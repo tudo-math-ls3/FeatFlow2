@@ -191,16 +191,16 @@ contains
     ! Create the matrix structure
     call bilf_createMatrixStructure (&
         rstaticAsmTemplates%p_rdiscrVelocity,LSYSSC_MATRIX9,&
-        rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=BILF_MATC_ELEMENTBASED)
+        rstaticAsmTemplates%rmatrixTemplateFEM,cconstrType=cmatBuildType)
 
     ! In case the element-based routine is used to create the matrices,
     ! the 'offdiagonal' matrices have the same structure. If we used
     ! the edge-based construction routine, the 'offdiagonal' matrices
     ! can still be constructed with a smaller stencil.
-    if (cmatBuildType .eq. BILF_MATC_EDGEBASED) then
+    if (cmatBuildType .ne. BILF_MATC_ELEMENTBASED) then
       call bilf_createMatrixStructure (&
           rstaticAsmTemplates%p_rdiscrVelocity,LSYSSC_MATRIX9,&
-          rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,cconstrType=cmatBuildType)
+          rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,cconstrType=BILF_MATC_ELEMENTBASED)
     else
       call lsyssc_duplicateMatrix (rstaticAsmTemplates%rmatrixTemplateFEM,&
           rstaticAsmTemplates%rmatrixTemplateFEMOffdiag,LSYSSC_DUP_SHARE,LSYSSC_DUP_IGNORE)
