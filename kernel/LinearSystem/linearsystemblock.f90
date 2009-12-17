@@ -3617,13 +3617,13 @@ contains
           (rdestMatrix%nblocksPerRow <= 0)) return
       allocate(rdestMatrix%RmatrixBlock(rdestMatrix%nblocksPerCol,rdestMatrix%nblocksPerRow))
     end if
-    rdestMatrix%RmatrixBlock = rsourceMatrix%RmatrixBlock
     
     ! For every submatrix in the source matrix, call the 'scalar' variant
     ! of duplicateMatrix. Dismiss all old information and replace it by
     ! the new one.
     do j=1,rsourceMatrix%nblocksPerRow
       do i=1,rsourceMatrix%nblocksPerCol
+        rdestMatrix%RmatrixBlock(i,j) = rsourceMatrix%RmatrixBlock(i,j)
         if (rdestMatrix%RmatrixBlock(i,j)%cmatrixFormat .ne. LSYSSC_MATRIXUNDEFINED) then
         
           ! Set the specification flags to "matrix is copy", so the releaseMatrix
