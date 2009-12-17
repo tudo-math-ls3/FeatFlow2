@@ -1,0 +1,60 @@
+################
+[OPTIMALCONTROL]
+################
+
+# Section defining the boundary expressions
+ssectionBoundaryExpressions = BDEXPRESSIONS
+
+# Section defining the boundary conditions of the optimal control problem
+ssectionBoundaryConditions = BDCONDITIONS
+
+# Name of the section that defines the target flow.
+stargetFlow = OPTCTARGETFLOW
+
+# Name of the section that defines the initial condition.
+sinitialCondition = INITIALCONDITION
+
+# Name of the section that defines the RHS of the (Navier-)Stokes equation
+srhs = RIGHTHANDSIDE
+
+# Name of the section defining the physics
+ssectionPhysics = "CC-PHYSICSPRIMAL"
+
+# Penalty parameter ALPHA for the ||u||-term in the optimal-control problem.
+dalphaC = 0.01 # 1.0
+
+# Penalty parameter for the terminal condition ||y(T)-z(T)|| in the
+# nonstationary optimal control problem.
+dgammaC = 0.0  # 1.0
+
+# Formulation of the Space-time problem.
+# =0: usual formulation as specified in the DFG applicance
+# =1: Formulation for the generation of reference results from papers
+# The two formulations differ in a "-"-sign in front of the dual velocity.
+ispaceTimeFormulation = 0
+
+# Whether to treat the convection explicitly or implicitly.
+# =0: Treat the convection implicitely.
+# =1: Treat the convection explicitely. (This is the formulation of the paper
+#     of Baerwolff and Hinze!)
+iconvectionExplicit = 0
+
+# Type of constraints to apply to the control u.
+# =0: No constraints.
+# =1: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by DOF.
+# =2: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by cubature point (more exact). Analytic Newton matrix.
+# =3: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by DOF. Newton matrix is approximative.
+# =4: Constant constraints on u active: dumin1 <= u_1 <= dumax1, dumin2 <= u_2 <= dumax2.
+#     Implemented by cubature point (more exact). Adaptive integration.
+ccontrolConstraints = 0
+
+# Constraints on u_1
+dumin1 = -0.5 #5 #-1E10 #-0.01
+dumax1 = 0.5 #2 #1E10 #0.01
+
+# Constraints in u_2
+dumin2 = -0.5 #2 #-1E10 #-0.01
+dumax2 = 0.5 #5 #1E10 #0.01
