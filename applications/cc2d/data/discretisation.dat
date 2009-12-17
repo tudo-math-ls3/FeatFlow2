@@ -61,9 +61,11 @@ ielementTypeInitialSolution = -1
 #     For a nonstationary simulation: Write out the solution after the last 
 #     timestep.
 # =3: write on level specified by iwriteSolutionLevel, use formatted output.
-#     For a nonstationary simulation: Write out the solution in every timestep.
+#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps 
+#     timesteps or every dwriteSolDeltaTime interval of simulation time.
 # =4: write on level specified by iwriteSolutionLevel, use unformatted output.
-#     For a nonstationary simulation: Write out the solution in every timestep.
+#     For a nonstationary simulation: Write out the solution every iwriteSolDeltaSteps 
+#     timesteps or every dwriteSolDeltaTime interval of simulation time.
 #
 # To write out raw solution data during a nonstationary simulation,
 # it's also possible to use the 'film output' feature in the postprocessing.
@@ -88,6 +90,25 @@ iwriteSolutionLevel = 0
 # Name/path of file for writing the final solution
 
 swriteSolutionFilename = ''
+
+# Timestep counter for writing out solutions if cwriteFinalSolution=3/4.
+# The solution will be written out every iwriteSolDeltaSteps timesteps.
+# =1: write out every timestep.
+# This switch works cumulative to iwriteSolDeltaSteps, so the solution is
+# written out if either the condition given by iwriteSolDeltaSteps or 
+# dwriteSolDeltaTime is reached.
+
+iwriteSolDeltaSteps = 1
+
+# Timestep interval for writing out solutions if cwriteFinalSolution=3/4.
+# The solution will be written out after each time interval of length
+# dwriteSolDeltaTime. 
+# =0.0: write out every timestep.
+# This switch works cumulative to iwriteSolDeltaSteps, so the solution is
+# written out if either the condition given by iwriteSolDeltaSteps or 
+# dwriteSolDeltaTime is reached.
+
+dwriteSolDeltaTime = 0.0
 
 # ------------------------------------------------------------------------
 

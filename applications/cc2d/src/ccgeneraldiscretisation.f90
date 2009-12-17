@@ -2127,6 +2127,9 @@ contains
       
     end do
 
+    call output_lbrk ()
+    call output_line ('Writing RAW solution file: '//sfile)
+
     ! Write out the solution.
     if (bformatted) then
       if (.not. present(dtime)) then

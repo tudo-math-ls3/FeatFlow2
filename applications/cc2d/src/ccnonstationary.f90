@@ -593,7 +593,7 @@ contains
     call output_line ('Starting postprocessing of initial solution...')
     call cc_postprocessingNonstat (rproblem,&
         rvector,rproblem%rtimedependence%dtimeInit,&
-        rvector,rproblem%rtimedependence%dtimeInit,rpostprocessing)
+        rvector,rproblem%rtimedependence%dtimeInit,0,rpostprocessing)
 
     ! First time step
     rproblem%rtimedependence%itimeStep = 1
@@ -1109,7 +1109,7 @@ contains
         call cc_postprocessingNonstat (rproblem,&
             roldSolution,doldtime,&
             rvector,rproblem%rtimedependence%dtime,&
-            rpostprocessing)
+            rproblem%rtimedependence%itimeStep,rpostprocessing)
         
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Analysing time derivative...',&

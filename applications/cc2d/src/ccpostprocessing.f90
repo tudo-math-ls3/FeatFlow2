@@ -209,7 +209,7 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
-      dtimePrev,rvector,dtime,rpostprocessing)
+      dtimePrev,rvector,dtime,istep,rpostprocessing)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -238,6 +238,9 @@ contains
 
   ! Time of the current timestep.
   real(dp), intent(in) :: dtime
+  
+  ! Number of the timestep. =0: initial solution
+  integer, intent(in) :: istep
 !</input>
 
 !</subroutine>
@@ -247,14 +250,42 @@ contains
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     real(DP) :: dtimeDifferenceFilm, dpptime
     integer :: itime1,itime2,iinterpolateSolutionUCD,iinterpolateSolutionFilm
+    integer :: iwriteSolDeltaSteps
     type(t_vectorBlock) :: rintVector
-    real(dp) :: dweight
+    real(dp) :: dweight,dwriteSolDeltaTime
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    ! Write the raw solution
-    call cc_writeSolution (rproblem,rvector,dtime)
+    ! Think about writing out the solution...
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'dwriteSolDeltaTime', dwriteSolDeltaTime, 0.0_DP)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'iwriteSolDeltaSteps', iwriteSolDeltaSteps, 1)
+    if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
+    
+    ! Figure out if we have to write the solution. This is the case if
+    ! 1.) Precious and current time is the same or
+    ! 2.) The solution crossed the next timestep.
+  
+    if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+      itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+      itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+    else
+      itime1 = 0
+      itime2 = 1
+    end if
+  
+    if (itime1 .ne. itime2) then
+      ! Write the raw solution
+      call cc_writeSolution (rproblem,rvector,dtime)
+    else
+      ! The second option is that the timestep matches.
+      if (mod(istep,iwriteSolDeltaSteps) .eq. 0) then
+        ! Write the raw solution
+        call cc_writeSolution (rproblem,rvector,dtime)
+      end if
+    end if    
     
     ! Calculate body forces.
     call cc_calculateBodyForces (rvector,rproblem)
@@ -274,17 +305,17 @@ contains
     ! to write something.
 
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMINTIMEUCD', dminTime, -1.E100_DP)
+        'DMINTIMEUCD', dminTime, -1.E100_DP)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMAXTIMEUCD', dmaxTime, 1.E100_DP)
+        'DMAXTIMEUCD', dmaxTime, 1.E100_DP)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
+        'DTIMEDIFFERENCEUCD', dtimeDifferenceUCD, 0.0_DP)
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL)) then
     
       ! Figure out if we have to write the solution. This is the case if
-      ! 1.) Precious and current time is the same ot
+      ! 1.) Precious and current time is the same or
       ! 2.) The solution crossed the next ucd timestep.
     
       if ((dtimeDifferenceUCD .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
@@ -320,11 +351,11 @@ contains
     !
     ! First check if we are allowed to write something.
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMINTIMEFILM', dminTime, -1.E100_DP)
+        'DMINTIMEFILM', dminTime, -1.E100_DP)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
+        'DMAXTIMEFILM', dmaxTime, 1.E100_DP)
     call parlst_getvalue_double (rproblem%rparamList, 'CC-POSTPROCESSING', &
-                                    'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
+        'DTIMEDIFFERENCEFILM', dtimeDifferenceFilm, 0.0_DP)
                                     
     if ((dtime .ge. dminTime-1000.0*SYS_EPSREAL) .and. &
         (dtime .le. dmaxTime+1000.0*SYS_EPSREAL)) then
