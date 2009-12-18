@@ -281,3 +281,15 @@ mglevels = 5
 testid   = CC2D_NONST2REF1_6
 descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
 mglevels = 6
+
+testid   = CC2D_NONST2REF1_2_TARGET
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 2
+POSTPROCESSING_IOUTPUTFILM=1
+POSTPROCESSING_SFILENAMEFILM='./ns/cc2d_nonst2ref1_%{CC-DISCRETISATION.NLMAX}_target/solution'
+TIMEDISCRETISATION_DTIMESTEP = 0.00625
+POSTPROCESSING_DTIMEDIFFERENCEFILM = 0.0
+
+testid   = CC2D_NONST2REF1_3_TARGET
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 3
