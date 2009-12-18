@@ -324,7 +324,20 @@ EOF
 	exit 7
     fi
 
-
+		# Evaluate command line parameter options
+		#
+    # Send mail on job begin, abort and end?
+    pbsOptionMail=""
+    if [ "$DOSENDMAIL" -eq "1" ]; then
+      pbsOptionMail="#PBS -m bae"
+    fi
+    
+    # Let the job depend on another job?
+    pbsOptionAfter=""
+    if [ "$AFTERJOB" != "" ]; then
+      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
+    fi
+		
     # Now, create the jobfile.
     cat <<EOF > $file
 #!/bin/sh
@@ -564,12 +577,6 @@ EOF
 	    fi
 	    pbsOptionNodes="#PBS -l nodes=$nodes$PPN"
 	
-	    # Send mail on job begin, abort and end?
-	    pbsOptionMail=""
-	    if [ "$DOSENDMAIL" -eq "1" ]; then
-	      pbsOptionMail="#PBS -m bae"
-	    fi
-
 	    # Support for 
 	    # * OpenMPI + {Infiniband, GigabitEthernet},
 	    # * LAM/MPI + GigabitEthernet,
@@ -615,11 +622,25 @@ EOF
 		    ;;
 	    esac
 
+    # Send mail on job begin, abort and end?
+    pbsOptionMail=""
+    if [ "$DOSENDMAIL" -eq "1" ]; then
+      pbsOptionMail="#PBS -m bae"
+    fi
+    
+    # Let the job depend on another job?
+    pbsOptionAfter=""
+    if [ "$AFTERJOB" != "" ]; then
+      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
+    fi
+
 	    # Check whether we got a valid queue
 	    if test -z "${pbsOptionQueue}"; then
+		
 		if test -z "${interconnect}"; then
 		    interconnect=">>!!>> (none set) <<!!<<"
 		fi
+		
 		cat <<EOF 1>&2
 $0: Error: No queue available that satisfied the node, wallclock and 
 $0: interconnect requirements:
