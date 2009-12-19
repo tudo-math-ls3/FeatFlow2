@@ -1661,7 +1661,7 @@ contains
             %Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
             euler_calcCharacteristics1d, dscale, .false., rres)
-        
+
       case (NDIM2D)
         call gfsys_buildResidualTVD(rproblemLevel&
             %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
