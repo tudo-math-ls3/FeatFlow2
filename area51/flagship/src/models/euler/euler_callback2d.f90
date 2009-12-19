@@ -339,7 +339,7 @@ contains
     dF2_ij(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi - (GAMMA*U_j(4)-G2*(ru2j+rv2j))*vj
 
     ! Compute skew-symmetric coefficient
-    a = dscale * 0.5_DP*(C_ij-C_ji)
+    a = 0.5_DP*(C_ij-C_ji)
 
     ! Assembly fluxes and exploit skew-symmetry of a_ij and F_ij
     F_ij = dscale * (a(1)*dF1_ij + a(2)*dF2_ij)
@@ -991,7 +991,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcFluxRusanov2d(&
+  pure subroutine euler_calcFluxRusanov2d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
@@ -2275,8 +2275,10 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
-    real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm    
+    real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm
     
+    real(DP) :: d_ij,ci,cj,Ei,Ej,ui,uj,vi,vj
+
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
     
@@ -2305,10 +2307,27 @@ contains
 
       ! Compute diagonal matrix of eigenvalues (if present)
       if (present(Lbd_ij)) then
-        Lbd_ij(1) = aux-cs
-        Lbd_ij(2) = aux
-        Lbd_ij(3) = aux+cs
-        Lbd_ij(4) = aux
+
+        ! Compute velocities and energy
+        ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
+        uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
+
+        ! Compute the speed of sound
+        ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+        cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+        
+        ! Scalar dissipation for the Rusanov flux
+        d_ij = max( abs(a1*uj+a2*vj) +&
+                    sqrt(a1*a1+a2*a2)*cj,&
+                    abs(a1*ui+a2*vi) +&
+                    sqrt(a1*a1+a2*a2)*ci )
+        
+        Lbd_ij = d_ij
+
+!!$        Lbd_ij(1) = aux-cs
+!!$        Lbd_ij(2) = aux
+!!$        Lbd_ij(3) = aux+cs
+!!$        Lbd_ij(4) = aux
       end if
 
       ! Compute matrix of right eigenvectors
@@ -2327,8 +2346,8 @@ contains
         R_ij(10) =  u_ij+cs*a1
         R_ij(11) =  v_ij+cs*a2
         R_ij(12) =  H_ij+cs*aux
-        R_ij(13) =  0.0_DP
 
+        R_ij(13) =  0.0_DP
         R_ij(14) =  a2
         R_ij(15) = -a1
         R_ij(16) =  u_ij*a2-v_ij*a1
