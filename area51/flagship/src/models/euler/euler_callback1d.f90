@@ -280,7 +280,7 @@ contains
     dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
 
     ! Compute skew-symmetric coefficient
-    a = dscale * 0.5_DP*(C_ij-C_ji)
+    a = 0.5_DP*(C_ij-C_ji)
 
     ! Assembly fluxes
     F_ij = dscale * a(1)*dF_ij
@@ -513,10 +513,16 @@ contains
       b2 = G1/cPow2; b1 = b2*q_ij
 
       ! Compute characteristic variables multiplied by the
-      !  corresponding eigenvalue
-      w1 = l1 * 0.5_DP * ( (b1+u_ij/cs)*Diff(1) - (b2*u_ij+1.0_DP/cs)*Diff(2) + b2*Diff(3) )
-      w2 = l2 *          ( (1-b1)*Diff(1)       +  b2*u_ij*Diff(2)            - b2*Diff(3) )
-      w3 = l3 * 0.5_DP * ( (b1-u_ij/cs)*Diff(1) - (b2*u_ij-1.0_DP/cs)*Diff(2) + b2*Diff(3) )
+      ! corresponding eigenvalue
+      w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
+                          (b2*u_ij+1.0_DP/cs)*Diff(2) +&
+                                           b2*Diff(3) )
+      w2 = l2 *          ( (1-b1)*Diff(1) +&
+                          b2*u_ij*Diff(2) -&
+                               b2*Diff(3) )
+      w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
+                          (b2*u_ij-1.0_DP/cs)*Diff(2) +&
+                                           b2*Diff(3) )
 
       ! Compute "anorm * dscale"
       anorm = anorm*dscale
@@ -1470,6 +1476,98 @@ contains
     real(DP), dimension(:), intent(out), optional :: L_ij
 !</output>
 !</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP) :: u_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
+    real(DP) :: cPow2,uPow2,a1,anorm,b1,b2
+
+    ! Compute norm of weighting coefficient
+    anorm = abs(Dweight(1))
+
+    ! Check if weighting coefficient is zero
+    if (anorm .gt. SYS_EPSREAL) then
+
+      ! Compute normalized weighting coefficient
+      a1  = Dweight(1)/anorm
+
+      ! Compute Roe mean values
+      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
+      u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
+      hi   = GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
+      hj   = GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary variables
+      uPow2 = u_ij*u_ij
+      q_ij  = 0.5_DP*(uPow2)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+      cs    = sqrt(cPow2)  
+      b2    = G1/cPow2
+      b1    = b2*q_ij
+
+      ! Compute diagonal matrix of eigenvalues (if present)
+      if (present(Lbd_ij)) then
+        Lbd_ij(1) = u_ij-cs
+        Lbd_ij(2) = u_ij
+        Lbd_ij(3) = u_ij+cs
+      end if
+
+      ! Compute matrix of right eigenvectors
+      if (present(R_ij)) then
+        R_ij(1) =  1.0_DP
+        R_ij(2) =  u_ij-cs
+        R_ij(3) =  H_ij-u_ij*cs
+
+        R_ij(4) =  1.0_DP
+        R_ij(5) =  u_ij
+        R_ij(6) =  q_ij
+
+        R_ij(7) =  1.0_DP
+        R_ij(8) =  u_ij+cs
+        R_ij(9) =  H_ij+u_ij*cs
+      end if
+
+      ! Compute matrix of left eigenvectors
+      if (present(L_ij)) then
+        L_ij(1) = 0.5_DP * (b1+u_ij/cs)
+        L_ij(2) =          (1-b1)
+        L_ij(3) = 0.5_DP * (b1-u_ij/cs)
+
+        L_ij(4) =-0.5_DP * (b2*u_ij+1.0_DP/cs)
+        L_ij(5) =          (b2*u_ij)
+        L_ij(6) =-0.5_DP * (b2*u_ij-1.0_DP/cs)
+
+        L_ij(7) = 0.5_DP*b2
+        L_ij(8) =       -b2
+        L_ij(9) = 0.5_DP*b2
+      end if
+
+      ! Compute characteristic solution difference
+      if (present(W_ij)) then
+        ! Compute solution difference U_j-U_i
+        Diff = U_j-U_i
+        
+        ! Compute characteristic variables
+        W_ij(1) = anorm * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
+                                    (b2*u_ij+1.0_DP/cs)*Diff(2) +&
+                                                     b2*Diff(3) )
+        W_ij(2) = anorm * ( (1-b1)*Diff(1) +&
+                           b2*u_ij*Diff(2) -&
+                                b2*Diff(3) )
+        W_ij(3) = anorm * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
+                                    (b2*u_ij-1.0_DP/cs)*Diff(2) +&
+                                                     b2*Diff(3) )
+      end if
+
+    else   ! |dweight| = 0
+      
+      if (present(Lbd_ij)) Lbd_ij = 0.0_DP
+      if (present(R_ij))   R_ij   = 0.0_DP
+      if (present(L_ij))   L_ij   = 0.0_DP
+      if (present(W_ij))   W_ij   = 0.0_DP
+      
+    end if
     
   end subroutine euler_calcCharacteristics1d
 
