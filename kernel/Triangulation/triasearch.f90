@@ -86,7 +86,7 @@ contains
 
 !<subroutine>
 
- pure subroutine tsrch_getElem_BruteForce_dir (&
+ subroutine tsrch_getElem_BruteForce_dir (&
       Dpoint,DvertexCoords,IverticesAtElement,iel)
   
 !<description>
@@ -115,7 +115,11 @@ contains
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dcorners
+    !
+    ! WARNING: Use different dimensions for 2D and 3D for more performance
+    ! since the brute force search methods expect arrays in a definite shape!
+    real(DP), dimension(NDIM2D,TRIA_MAXNVE2D) :: Dcorners2D
+    real(DP), dimension(NDIM3D,TRIA_MAXNVE3D) :: Dcorners3D
     logical :: binside
   
     select case (ubound(Dpoint,1))
@@ -128,17 +132,17 @@ contains
         ! Triangular or quad element?
         if (IverticesAtElement(4,iel) .ne. 0) then
           ! Fetch the coordinates of the element
-          Dcorners(1:2,1:4) = DvertexCoords(1:2,IverticesAtElement(1:4,iel))
+          Dcorners2D(1:2,1:4) = DvertexCoords(1:2,IverticesAtElement(1:4,iel))
           
           ! Check if the point is inside. If yes, quit.
-          call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners,binside)
+          call gaux_isInElement_quad2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
           if (binside) return
         else
           ! Fetch the coordinates of the element
-          Dcorners(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
+          Dcorners2D(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
           
           ! Check if the point is inside. If yes, quit.
-          call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners,binside)
+          call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
           if (binside) return
         end if
       
@@ -149,16 +153,16 @@ contains
       ! If yes, quit.
       do iel=1,ubound(IverticesAtElement,2)
         ! Fetch the coordinates of the element
-        Dcorners(1:3,1) = DvertexCoords(1:3,IverticesAtElement(1,iel))
-        Dcorners(1:3,2) = DvertexCoords(1:3,IverticesAtElement(2,iel))
-        Dcorners(1:3,3) = DvertexCoords(1:3,IverticesAtElement(3,iel))
-        Dcorners(1:3,4) = DvertexCoords(1:3,IverticesAtElement(4,iel))
-        Dcorners(1:3,5) = DvertexCoords(1:3,IverticesAtElement(5,iel))
-        Dcorners(1:3,6) = DvertexCoords(1:3,IverticesAtElement(6,iel))
-        Dcorners(1:3,7) = DvertexCoords(1:3,IverticesAtElement(7,iel))
-        Dcorners(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
+        Dcorners3D(1:3,1) = DvertexCoords(1:3,IverticesAtElement(1,iel))
+        Dcorners3D(1:3,2) = DvertexCoords(1:3,IverticesAtElement(2,iel))
+        Dcorners3D(1:3,3) = DvertexCoords(1:3,IverticesAtElement(3,iel))
+        Dcorners3D(1:3,4) = DvertexCoords(1:3,IverticesAtElement(4,iel))
+        Dcorners3D(1:3,5) = DvertexCoords(1:3,IverticesAtElement(5,iel))
+        Dcorners3D(1:3,6) = DvertexCoords(1:3,IverticesAtElement(6,iel))
+        Dcorners3D(1:3,7) = DvertexCoords(1:3,IverticesAtElement(7,iel))
+        Dcorners3D(1:3,8) = DvertexCoords(1:3,IverticesAtElement(8,iel))
 
-        call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners,binside)
+        call gaux_isInElement_hexa(Dpoint(1),Dpoint(2),Dpoint(3),Dcorners3D,binside)
         if (binside) return
       
       end do
