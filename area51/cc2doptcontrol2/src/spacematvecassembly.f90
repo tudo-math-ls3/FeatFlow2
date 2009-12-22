@@ -2165,10 +2165,10 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rstabilisation%dupsam
+          rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -2211,10 +2211,10 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rstabilisation%dupsam
+          rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dgamma
+          rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -2288,10 +2288,10 @@ contains
             rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
             
             ! Set stabilisation parameter
-            rjumpStabil%dgamma = rstabilisation%dupsam
+            rjumpStabil%dgamma = abs(rstabilisation%dupsam)
             
             ! Matrix weight
-            rjumpStabil%dtheta = dgamma
+            rjumpStabil%dtheta = dgamma * mprim_signum(rstabilisation%dupsam)
 
             ! Call the jump stabilisation technique to stabilise that stuff.   
             ! We can assemble the jump part any time as it's independent of any
@@ -3450,10 +3450,10 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rstabilisation%dupsam
+          rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dcx*dgamma
+          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -3499,10 +3499,10 @@ contains
           rjumpStabil%dnu = rstreamlineDiffusion%dnu
           
           ! Set stabilisation parameter
-          rjumpStabil%dgamma = rstabilisation%dupsam
+          rjumpStabil%dgamma = abs(rstabilisation%dupsam)
           
           ! Matrix weight
-          rjumpStabil%dtheta = dcx*dgamma
+          rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
 
           ! Call the jump stabilisation technique to stabilise that stuff.   
           ! We can assemble the jump part any time as it's independent of any
@@ -3571,10 +3571,10 @@ contains
             rjumpStabil%dnu = rnonlinearSpatialMatrix%rdiscrData%rphysicsPrimal%dnu
             
             ! Set stabilisation parameter
-            rjumpStabil%dgamma = rstabilisation%dupsam
+            rjumpStabil%dgamma = abs(rstabilisation%dupsam)
             
             ! Matrix weight
-            rjumpStabil%dtheta = dcx*dgamma
+            rjumpStabil%dtheta = dcx*dgamma*mprim_signum(rstabilisation%dupsam)
 
             ! Call the jump stabilisation technique to stabilise that stuff.   
             ! We can assemble the jump part any time as it's independent of any
