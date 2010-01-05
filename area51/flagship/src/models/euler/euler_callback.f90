@@ -1089,13 +1089,13 @@ contains
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitScalarDiss2d, dscale, .true., rrhs)
+                  euler_calcFluxScalarDissDiSp2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitScalarDiss3d, dscale, .true., rrhs)
+                  euler_calcFluxScalarDissDiSp3d, dscale, .true., rrhs)
             end select
             
           case (DISSIPATION_TENSOR)
@@ -1138,13 +1138,13 @@ contains
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitTensorDiss2d, dscale, .true., rrhs)
+                  euler_calcFluxTensorDissDiSp2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitTensorDiss3d, dscale, .true., rrhs)
+                  euler_calcFluxTensorDissDiSp3d, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV)
@@ -1187,13 +1187,13 @@ contains
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitRusanov2d, dscale, .true., rrhs)
+                  euler_calcFluxRusanovDiSp2d, dscale, .true., rrhs)
               
             case (NDIM3D)
               call gfsys_buildResidual(rproblemLevel&
                   %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitRusanov3d, dscale, .true., rrhs)
+                  euler_calcFluxRusanovDiSp3d, dscale, .true., rrhs)
             end select
 
           case DEFAULT
@@ -1534,13 +1534,13 @@ contains
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitScalarDiss2d, dscale, .false., rres)
+              euler_calcFluxScalarDissDiSp2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitScalarDiss3d, dscale, .false., rres)
+              euler_calcFluxScalarDissDiSp3d, dscale, .false., rres)
         end select
         
       case (DISSIPATION_TENSOR)
@@ -1583,13 +1583,13 @@ contains
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitTensorDiss2d, dscale, .false., rres)
+              euler_calcFluxTensorDissDiSp2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitTensorDiss3d, dscale, .false., rres)
+              euler_calcFluxTensorDissDiSp3d, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -1632,13 +1632,13 @@ contains
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitRusanov2d, dscale, .false., rres)
+              euler_calcFluxRusanovDiSp2d, dscale, .false., rres)
           
         case (NDIM3D)
           call gfsys_buildResidual(rproblemLevel&
               %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
               %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitRusanov3d, dscale, .false., rres)
+              euler_calcFluxRusanovDiSp3d, dscale, .false., rres)
         end select
 
       case DEFAULT

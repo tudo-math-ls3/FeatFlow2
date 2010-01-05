@@ -20,7 +20,7 @@
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxDSplitScalarDiss3d
+!# 4.) euler_calcFluxScalarDissDiSp3d
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting scalar artificial viscosities based on
 !#        dimensional splitting approach
@@ -29,7 +29,7 @@
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting tensorial artificial viscosities
 !#
-!# 6.) euler_calcFluxDSplitTensorDiss3d
+!# 6.) euler_calcFluxTensorDissDiSp3d
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting tensorial artificial viscosities based on
 !#        dimensional splitting approach
@@ -38,7 +38,7 @@
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 8.) euler_calcFluxDSplitRusanov3d
+!# 8.) euler_calcFluxRusanovDiSp3d
 !#     -> Computes inviscid fluxes for low-order discretization
 !#        adopting the Rusanov artificial diffusion
 !#
@@ -119,11 +119,11 @@ module euler_callback3d
   public :: euler_calcFluxGalerkin3d
   public :: euler_calcFluxGalerkinNoBdr3d
   public :: euler_calcFluxScalarDiss3d
-  public :: euler_calcFluxDSplitScalarDiss3d
+  public :: euler_calcFluxScalarDissDiSp3d
   public :: euler_calcFluxTensorDiss3d
-  public :: euler_calcFluxDSplitTensorDiss3d
+  public :: euler_calcFluxTensorDissDiSp3d
   public :: euler_calcFluxRusanov3d
-  public :: euler_calcFluxDSplitRusanov3d
+  public :: euler_calcFluxRusanovDiSp3d
   public :: euler_calcMatrixDiagonalDiag3d
   public :: euler_calcMatrixDiagonal3d
   public :: euler_calcMatrixGalerkinDiag3d
@@ -250,7 +250,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxDSplitScalarDiss3d(&
+  pure subroutine euler_calcFluxScalarDissDiSp3d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
@@ -279,7 +279,7 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxDSplitScalarDiss3d
+  end subroutine euler_calcFluxScalarDissDiSp3d
 
   !*****************************************************************************
 
@@ -319,7 +319,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxDSplitTensorDiss3d(&
+  pure subroutine euler_calcFluxTensorDissDiSp3d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
@@ -348,7 +348,7 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxDSplitTensorDiss3d
+  end subroutine euler_calcFluxTensorDissDiSp3d
 
   !*****************************************************************************
 
@@ -388,7 +388,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxDSplitRusanov3d(&
+  pure subroutine euler_calcFluxRusanovDiSp3d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
@@ -417,7 +417,7 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcFluxDSplitRusanov3d
+  end subroutine euler_calcFluxRusanovDiSp3d
 
   !*****************************************************************************
 
