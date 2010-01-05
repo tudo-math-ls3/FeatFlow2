@@ -44,14 +44,14 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 1
+imassantidiffusiontype = 0
 
 # type of dissipation
 # 0 = no dissipation
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 3
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -63,7 +63,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 3
+isystemPrecond = 1
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -146,7 +146,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 11
 
 
 ################################################################################
@@ -200,13 +200,13 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 1
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.15
+dfinalTime = 0.231
 
 # initial time step size
 dinitialStep = 0.001
@@ -591,7 +591,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25

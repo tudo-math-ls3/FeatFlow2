@@ -13,13 +13,13 @@
 ################################################################################
 
 # Specify the initial solution
-#deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,y,z,t
-#deffunc: @initsol_vel = 0.0 ; x,y,z,t
-#deffunc: @initsol_Etot = if(x < 0.5, 2.5, 0.25) ; x,y,z,t
+deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = if(x < 0.5, 2.5, 0.25) ; x,y,z,t
 
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
-deffunc: @initsol_vel = if(x < 0.5, -2.0, 2.0) ; x,y,z,t
-deffunc: @initsol_Etot = 3.0 ; x,y,z,t
+#deffunc: @initsol_rho = 1.0 ; x,y,z,t
+#deffunc: @initsol_vel = if(x < 0.5, -2.0, 2.0) ; x,y,z,t
+#deffunc: @initsol_Etot = 3.0 ; x,y,z,t
 
 # Specify the boundary conditions
 [boundary_conditions_primal]
@@ -36,5 +36,5 @@ IBCT
 NCOMP
 1
 PARAMETERS
-0.0 T  4  1.0 -2.0 0.4
-0.0 T  4  1.0  2.0 0.4
+0.0 T  2  1.0 -2.0 0.4
+0.0 T  2  1.0  2.0 0.4
