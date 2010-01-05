@@ -9858,10 +9858,11 @@ contains
   call lsyssc_isMatrixCompatible (rvectorSrc,rmatrix,.false.)
 
   if (rvectorSrc%cdataType .ne. rvectorDst%cdataType) then
-    print *,'lsyssc_invertedDiagMatVec: Vectors have different precisions!'
+    call output_line('Vectors have different precisions!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
     call sys_halt()
   end if
-
+  
   ! Which matrix structure do we have?
   select case (rmatrix%cmatrixFormat)
   case (LSYSSC_MATRIX9,LSYSSC_MATRIX7)
@@ -9885,28 +9886,57 @@ contains
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(p_Kdiag(i))
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(p_Kdiag(i))
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(p_Kdiag(i))
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(p_Kdiag(i))
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
       
@@ -9920,37 +9950,77 @@ contains
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(p_Kdiag(i))
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)*&
+                  fmyscale/p_Fa(p_Kdiag(i))
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(p_Kdiag(i))
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)*&
+                  fmyscale/p_Fa(p_Kdiag(i))
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
     case DEFAULT
-      print *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      call output_line('Unsupported matrix precision!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end select
 
   case (LSYSSC_MATRIX9INTL,LSYSSC_MATRIX7INTL)
+
+    if (rmatrix%NVAR .ne. rvectorSrc%NVAR) then
+      call output_line('Matrix/vectors have different interleaved format!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
+      call sys_halt()
+    end if
+    
+    ! Number of interleaved variables
+    NVAR = rmatrix%NVAR
+
     ! Get a pointer to the diagonal - either h_KLD or h_Kdiagonal
     if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
       h_Idiag = rmatrix%h_Kdiagonal
@@ -9958,8 +10028,6 @@ contains
       h_Idiag = rmatrix%h_Kld
     end if
     call storage_getbase_int(h_Idiag,p_Kdiag)
-    
-    NVAR=rmatrix%NVAR
 
     ! Data type?
     select case (rmatrix%cdataType)
@@ -9999,8 +10067,8 @@ contains
 !%OMP end parallel do
 
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
-                   'matrix format!'
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
         
@@ -10034,13 +10102,14 @@ contains
 !%OMP end parallel do
 
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
-                   'matrix format!'
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
         
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
       
@@ -10080,8 +10149,8 @@ contains
 !%OMP end parallel do
         
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
-                   'matrix format!'
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
         
@@ -10115,18 +10184,20 @@ contains
 !%OMP end parallel do
         
         case DEFAULT
-          print *, 'lsyssc_invertedDiagMatVec: unsupported interleave ' // &
-                   'matrix format!'
+          call output_line('Unsupported interleaved matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
           call sys_halt()
         end select
 
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
     case DEFAULT
-      print *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      call output_line('Unsupported matrix precision!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end select
     
@@ -10144,28 +10215,57 @@ contains
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Dvec2(i) = p_Dvec(i)*dmyscale/p_Da(i)
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(i)
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Fvec2(i) = p_Fvec(i)*dmyscale/p_Da(i)
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *dmyscale/p_Da(i)
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
       
@@ -10179,38 +10279,69 @@ contains
         call lsyssc_getbase_double (rvectorSrc,p_Dvec)
         call lsyssc_getbase_double (rvectorDst,p_Dvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Dvec2(i) = p_Dvec(i)*fmyscale/p_Fa(i)
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i),ivar
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(i)
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case (ST_SINGLE)
         call lsyssc_getbase_single (rvectorSrc,p_Fvec)
         call lsyssc_getbase_single (rvectorDst,p_Fvec2)
         ! Let us go...
+        if (rvectorSrc%NVAR .eq. 1) then
 !%OMP parallel do&
 !%OMP&default(shared) &
 !%OMP&private(i)
-        do i=1,rvectorSrc%NEQ
-          p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
-        end do
+          do i=1,rvectorSrc%NEQ
+            p_Fvec2(i) = p_Fvec(i)*fmyscale/p_Fa(i)
+          end do
 !%OMP end parallel do
+        else
+          NVAR = rvectorSrc%NVAR
+!%OMP parallel do&
+!%OMP&default(shared) &
+!%OMP&private(i,ivar)
+          do i=1,rvectorSrc%NEQ
+            do ivar=1,NVAR
+              p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
+                  *fmyscale/p_Fa(i)
+            end do
+          end do
+!%OMP end parallel do
+        end if
         
       case DEFAULT
-        print *,'lsyssc_invertedDiagMatVec: unsupported vector precision!'
+        call output_line('Unsupported vector precision!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
         call sys_halt()
       end select
 
     case DEFAULT
-      print *,'lsyssc_invertedDiagMatVec: unsupported matrix precision!'
+      call output_line('Unsupported matrix precision!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
       call sys_halt()
     end select
 
   case DEFAULT
-    print *,'lsyssc_invertedDiagMatVec: unsupported matrix format!'
+    call output_line('Unsupported matrix format!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_invertedDiagMatVec')
     call sys_halt()
   end select
     
