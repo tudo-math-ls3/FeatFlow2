@@ -23,13 +23,13 @@
 
   !<input>
     ! Number of current iteration. 0=build initial defect
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
   
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
                
   !<inputoutput>
@@ -39,7 +39,7 @@
 
     ! Defect vector b-A(x)x. This must be filled by the callback routine
     ! with data.
-    type(t_vectorBlock), intent(INOUT), target    :: rd
+    type(t_vectorBlock), intent(inout), target    :: rd
   !</inputoutput>
   
     end subroutine
@@ -66,10 +66,10 @@
 
   !<inputoutput>
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
 
     ! Defect vector b-A(x)x. This must be replaced by J^{-1} rd by a preconditioner.
-    type(t_vectorBlock), intent(INOUT), target    :: rd
+    type(t_vectorBlock), intent(inout), target    :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -82,21 +82,21 @@
     ! will then use this for adding rd to the solution vector:
     ! $$ x_{n+1} = x_n + domega*rd $$
     ! domega will stay at this value until it is changed again.
-    real(DP), intent(INOUT)                       :: domega
+    real(DP), intent(inout)                       :: domega
     
     ! If the preconditioning was a success. Is normally automatically set to
     ! TRUE. If there is an error in the preconditioner, this flag can be
     ! set to FALSE. In this case, the nonlinear solver breaks down with
     ! the error flag set to 'preconditioner broke down'.
-    logical, intent(INOUT)                        :: bsuccess
+    logical, intent(inout)                        :: bsuccess
   !</inputoutput>
   
   !<input>
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Current right hand side of the nonlinear system
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
   !</input>
 
     end subroutine
@@ -121,16 +121,16 @@
 
   !<inputoutput>
     ! Number of current iteration. 
-    integer, intent(IN)                           :: ite
+    integer, intent(in)                           :: ite
   
     ! Current iteration vector
-    type(t_vectorBlock), intent(IN), target       :: rx
+    type(t_vectorBlock), intent(in), target       :: rx
 
     ! Right hand side vector of the equation.
-    type(t_vectorBlock), intent(IN), target       :: rb
+    type(t_vectorBlock), intent(in), target       :: rb
 
     ! Defect vector b-A(x)x.
-    type(t_vectorBlock), intent(IN), target       :: rd
+    type(t_vectorBlock), intent(in), target       :: rd
 
     ! Pointer to collection structure of the application. Points to NULL()
     ! if there is none.
@@ -141,12 +141,12 @@
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is within a desired tolerance, so that the solver should treat
     ! the iteration as 'converged'.
-    logical, intent(OUT)                        :: bconvergence
+    logical, intent(out)                        :: bconvergence
   
     ! Must be set to TRUE by the callback routine if the residuum rd
     ! is out of a desired tolerance, so that the solver should treat
     ! the iteration as 'diverged'.
-    logical, intent(OUT)                        :: bdivergence
+    logical, intent(out)                        :: bdivergence
   !</output>
   
     end subroutine

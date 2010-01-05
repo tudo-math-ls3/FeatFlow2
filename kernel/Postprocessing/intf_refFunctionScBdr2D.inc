@@ -35,46 +35,46 @@
     ! This is a DER_xxxx derivative identifier (from derivative.f90) that
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
-    integer, intent(IN) :: cderivative
+    integer, intent(in) :: cderivative
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(IN) :: ibct
+    integer, intent(in) :: ibct
 
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(in) :: DpointPar
     
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
   !</input>
   
   !<output>
@@ -82,7 +82,7 @@
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT) :: Dvalues
+    real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>
@@ -124,41 +124,41 @@
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: DpointsRef
+    real(DP), dimension(:,:,:), intent(in) :: DpointsRef
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(IN) :: ibct
+    integer, intent(in) :: ibct
 
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(in) :: DpointPar
 
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
-    integer, dimension(:), intent(IN) :: Ielements
+    integer, dimension(:), intent(in) :: Ielements
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
   !</input>
   
   !<output>
@@ -166,7 +166,7 @@
     ! points specified in Dpoints, or the appropriate derivative of
     ! the function, respectively, according to cderivative.
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(OUT) :: Dvalues
+    real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>

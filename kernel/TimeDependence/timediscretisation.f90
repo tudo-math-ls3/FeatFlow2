@@ -179,7 +179,7 @@ contains
 
 !<output>
   ! The time discrtisation structure to be initialised.
-  type(t_timeDiscretisation), intent(OUT) :: rtimediscr
+  type(t_timeDiscretisation), intent(out) :: rtimediscr
 !</output>
 
     ! Initialise the parameters of the structure.
@@ -205,18 +205,18 @@ contains
 
 !<input>
   ! Start point of the time interval.
-  real(DP), intent(IN) :: dstart
+  real(DP), intent(in) :: dstart
   
   ! End point of the time interval
-  real(DP), intent(IN) :: dend
+  real(DP), intent(in) :: dend
   
   ! Number of subintervals; is rounded up to a multiple of 3.
-  integer, intent(IN) :: nintervals
+  integer, intent(in) :: nintervals
 !</input>
 
 !<output>
   ! The time discrtisation structure to be initialised.
-  type(t_timeDiscretisation), intent(OUT) :: rtimediscr
+  type(t_timeDiscretisation), intent(out) :: rtimediscr
 !</output>
 
     ! Initialise the parameters of the structure.
@@ -242,18 +242,18 @@ contains
 
 !<input>
   ! Start point of the time interval.
-  real(DP), intent(IN) :: dstart
+  real(DP), intent(in) :: dstart
   
   ! End point of the time interval
-  real(DP), intent(IN) :: dend
+  real(DP), intent(in) :: dend
   
   ! Number of subintervals
-  integer, intent(IN) :: nintervals
+  integer, intent(in) :: nintervals
 !</input>
 
 !<output>
   ! The time discrtisation structure to be initialised.
-  type(t_timeDiscretisation), intent(OUT) :: rtimediscr
+  type(t_timeDiscretisation), intent(out) :: rtimediscr
 !</output>
 
     ! Initialise the parameters of the structure.
@@ -329,7 +329,7 @@ contains
 
 !<input>    
   ! The tiome discretisation structure that specifies the time discretisation.
-  type(t_timeDiscretisation), intent(IN) :: rtimediscr
+  type(t_timeDiscretisation), intent(in) :: rtimediscr
 !</input>
 
 !<result>

@@ -33,20 +33,20 @@
     !   3=3rd solution component, e.g. pressure)
     ! For pressure drop boundary / normal stress:
     !   Velocity components that are affected by the normal stress
-    integer, dimension(:), intent(IN)                           :: Icomponents
+    integer, dimension(:), intent(in)                           :: Icomponents
 
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
     
     ! Mesh region that is currently being processed.
-    type(t_meshRegion), intent(IN)                              :: rmeshRegion
+    type(t_meshRegion), intent(in)                              :: rmeshRegion
 
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
-    integer, intent(IN)                                         :: cinfoNeeded
+    integer, intent(in)                                         :: cinfoNeeded
     
     ! An array holding information about what type of DOF is currently processed.
     ! The information is build up as follows:
@@ -55,7 +55,7 @@
     ! Iwhere(3) = face number of the DOF, if the DOF is face-based, otherwise 0
     ! Iwhere(4) = currently processed element number.
     ! If Iwhere(1) = Iwhere(2) = Iwhere(3) = 0, then the DOF is element based.
-    integer, dimension(4), intent(IN)                           :: Iwhere
+    integer, dimension(4), intent(in)                           :: Iwhere
     
     ! The coordinates of the point which is currently processed, given in
     ! reference coordinates of the currently processed cell type (edge,face,element).
@@ -63,15 +63,15 @@
     ! If the DOF is edge-based or element-based in 1D, then Dwhere has dimension 1.
     ! If the DOF is face-based or element-based in 2D, then Dwhere has dimension 2.
     ! IF the DOF is element-based in 3D, then Dwhere has dimension 3.
-    real(DP), dimension(:), intent(IN)                          :: Dwhere
+    real(DP), dimension(:), intent(in)                          :: Dwhere
     
     ! The coordinates of the point for which the boundary values are to be
     ! calculated.
-    real(DP), dimension(:), intent(IN)                          :: Dcoords
+    real(DP), dimension(:), intent(in)                          :: Dcoords
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. May point to NULL() if not defined.
-    type(t_collection), intent(INOUT), optional                 :: rcollection
+    type(t_collection), intent(inout), optional                 :: rcollection
 
   !</input>
   
@@ -84,7 +84,7 @@
     ! The function may return SYS_INFINITY as a value. This indicates the
     ! framework to ignore the node and treat it as 'natural boundary condition'
     ! node.
-    real(DP), dimension(:), intent(OUT)                         :: Dvalues
+    real(DP), dimension(:), intent(out)                         :: Dvalues
   !</output>
     
   !</subroutine>

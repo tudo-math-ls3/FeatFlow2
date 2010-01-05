@@ -35,54 +35,54 @@
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisationTrial
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
     
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(IN) :: rdiscretisationTest
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
 
     ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(IN) :: rform
+    type(t_bilinearForm), intent(in) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN) :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN) :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(IN) :: ibct
+    integer, intent(in) :: ibct
 
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(IN) :: DpointPar
+    real(DP), dimension(:,:), intent(in) :: DpointPar
 
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
-    integer, dimension(:,:), intent(IN) :: IdofsTrial
+    integer, dimension(:,:), intent(in) :: IdofsTrial
     
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    integer, dimension(:,:), intent(in) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
   !</input>
   
@@ -91,7 +91,7 @@
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>

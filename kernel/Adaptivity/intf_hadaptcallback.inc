@@ -15,12 +15,12 @@
       
 !<input>
       ! Identifier for the grid modification operation
-      integer, intent(IN) :: iOperation
+      integer, intent(in) :: iOperation
 !</input>
 
 !<inputoutput>
       ! OPTIONAL: Collection
-      type(t_collection), intent(INOUT) :: rcollection
+      type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
 
