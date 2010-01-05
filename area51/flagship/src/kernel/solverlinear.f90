@@ -1110,7 +1110,7 @@ contains
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
       call output_line('(S)SOR solution            '//solver_getstatus(rsolver))
-      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Number of (S)SOR steps:    '//trim(sys_siL(rsolver%iiterations,5)))
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
@@ -1386,7 +1386,7 @@ contains
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
       call output_line('BiCGSTAB solution          '//solver_getstatus(rsolver))
-      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Number of BiCGSTAB steps:  '//trim(sys_siL(rsolver%iiterations,5)))
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
@@ -1663,7 +1663,7 @@ contains
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
       call output_line('FGMRES solution            '//solver_getstatus(rsolver))
-      call output_line('Number of Jacobi steps:    '//trim(sys_siL(rsolver%iiterations,5)))
+      call output_line('Number of FGMRES steps:    '//trim(sys_siL(rsolver%iiterations,5)))
       call output_line('Norm of final residual:    '//trim(sys_sdEL(rsolver%dfinalDefect,5)))
       call output_line('Norm of initial residual:  '//trim(sys_sdEL(rsolver%dinitialDefect,5)))
       call output_line('Improvement of residual:   '//trim(sys_sdEL(&
