@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #$Id: guess_id,v 1.2 2006/02/27 10:33:57 mkoester Exp $
 #
 # inspired by
@@ -66,7 +66,12 @@ case ${id} in
     vendor=`awk '/^vendor_id/ { print $3; exit;}' /proc/cpuinfo`
     family=`awk '/^cpu family/ { print $4; exit;}' /proc/cpuinfo`
     model=`awk '/^model/ { print $3; exit;}' /proc/cpuinfo`
-    let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
+    # The following syntax
+    #   let nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`+1
+    # is nicer, but only available in bash. For maximum portability use a syntax
+    # only using POSIX complaint Unix shell commands.
+    nproc=`awk '/^processor/ { print $3; }' /proc/cpuinfo | tail -n 1`
+    nproc=`expr $nproc + 1`
 
     case "$vendor" in
 	# Intel
