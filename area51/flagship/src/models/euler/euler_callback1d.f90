@@ -517,9 +517,9 @@ contains
       w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
                           (b2*u_ij+1.0_DP/cs)*Diff(2) +&
                                            b2*Diff(3) )
-      w2 = l2 *          ( (1-b1)*Diff(1) +&
-                          b2*u_ij*Diff(2) -&
-                               b2*Diff(3) )
+      w2 = l2 *          (             (1-b1)*Diff(1) +&
+                                      b2*u_ij*Diff(2) -&
+                                           b2*Diff(3) )
       w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
                           (b2*u_ij-1.0_DP/cs)*Diff(2) +&
                                            b2*Diff(3) )
@@ -927,7 +927,7 @@ contains
 
       ! Compute scalar dissipation
       D_ij = dscale * (abs(a(1)*u_ij) +&
-                       anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
     else
       
       ! Nullify dissipation tensor
@@ -1024,7 +1024,7 @@ contains
 
       ! Compute scalar dissipation
       aux = dscale * (abs(a(1)*u_ij) +&
-                      anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+                      anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
 
       D_ij    = 0.0_DP
       D_ij(1) = aux
@@ -1290,7 +1290,7 @@ contains
 
       ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
       call DGEMM('n', 'n', NVAR1D, NVAR1D, NVAR1D, anorm,&
-                 R_ij, NVAR1D, L_ij, NVAR1D, 0.0_DP, D_ij, NVAR1D)
+          R_ij, NVAR1D, L_ij, NVAR1D, 0.0_DP, D_ij, NVAR1D)
 
     else
       
@@ -1397,7 +1397,7 @@ contains
 !</subroutine>
 
     ! local variable
-    real(DP) :: ui,uj,ci,cj,Ei,Ej,uPow2i,uPow2j
+    real(DP) :: ui,uj,ci,cj,Ei,Ej,uPow2i,uPow2j,aux
 
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
@@ -1438,8 +1438,13 @@ contains
     cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
 
     ! Compute dissipation tensor D_ij
-    D_ij = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
-                         abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
+    aux = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                        abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
+
+    D_ij = 0.0_DP
+    D_ij(1) = aux
+    D_ij(5) = aux
+    D_ij(9) = aux
 
   end subroutine euler_calcMatrixRusanov1d
 
@@ -1552,9 +1557,9 @@ contains
         W_ij(1) = anorm * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
                                     (b2*u_ij+1.0_DP/cs)*Diff(2) +&
                                                      b2*Diff(3) )
-        W_ij(2) = anorm * ( (1-b1)*Diff(1) +&
-                           b2*u_ij*Diff(2) -&
-                                b2*Diff(3) )
+        W_ij(2) = anorm * (                      (1-b1)*Diff(1) +&
+                                                b2*u_ij*Diff(2) -&
+                                                     b2*Diff(3) )
         W_ij(3) = anorm * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
                                     (b2*u_ij-1.0_DP/cs)*Diff(2) +&
                                                      b2*Diff(3) )
