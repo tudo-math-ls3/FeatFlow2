@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #$Id: guess_id,v 1.2 2006/02/27 10:33:57 mkoester Exp $
 #
 # inspired by
