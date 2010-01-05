@@ -84,69 +84,109 @@ module afcstabilisation
 !<constantblock description="Global format flags for AFC stabilisation">
 
   ! No stabilisation: use standard high-order Galerkin discretisation
-  integer, parameter, public :: AFCSTAB_GALERKIN          = 0
+  integer, parameter, public :: AFCSTAB_GALERKIN              = 0
   
   ! Stabilisation of discrete upwind type for convection operators
-  integer, parameter, public :: AFCSTAB_UPWIND            = 1
+  integer, parameter, public :: AFCSTAB_UPWIND                = 1
 
   ! Stabilisation of discrete maximum principle preserving 
   ! type for anisotropic diffusion operators
-  integer, parameter, public :: AFCSTAB_DMP               = 2
+  integer, parameter, public :: AFCSTAB_DMP                   = 2
 
-  ! Stabilisation of semi-implicit FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_IMPLICIT   = 10
+  ! Stabilisation of semi-implicit FEM-FCT type
+  integer, parameter, public :: AFCSTAB_FEMFCT_IMPLICIT       = 10
 
-  ! Stabilisation of semi-explicit (classical) FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_CLASSICAL  = 11
+  ! Stabilisation of semi-explicit (classical) FEM-FCT type
+  integer, parameter, public :: AFCSTAB_FEMFCT_CLASSICAL      = 11
 
-  ! Stabilisation of linearised FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_LINEARIZED = 12
+  ! Stabilisation of linearised FEM-FCT type
+  integer, parameter, public :: AFCSTAB_FEMFCT_LINEARISED     = 12
   
-  ! Stabilisation of iterative FEM-FCT type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMFCT_ITERATIVE = 13
+  ! Stabilisation of iterative FEM-FCT type
+  integer, parameter, public :: AFCSTAB_FEMFCT_ITERATIVE      = 13
   
+  ! Stabilisation of characteristic FEM-FCT type
+  integer, parameter, public :: AFCSTAB_FEMFCT_CHARACTERISTIC = 14
+
   ! Stabilisation of FEM-TVD type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMTVD           = 20
+  integer, parameter, public :: AFCSTAB_FEMTVD                = 20
 
   ! Stabilisation of general purpose type for convection operators
-  integer, parameter, public :: AFCSTAB_FEMGP            = 21
+  integer, parameter, public :: AFCSTAB_FEMGP                 = 21
   
   ! Stabilisation of symmetric type for diffusion operators
-  integer, parameter, public :: AFCSTAB_SYMMETRIC        = 30
+  integer, parameter, public :: AFCSTAB_SYMMETRIC             = 30
   
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for state of stabilisation">
   
   ! Stabilisation is undefined
-  integer, parameter, public :: AFCSTAB_UNDEFINED        = 2**0
+  integer(I32), parameter, public :: AFCSTAB_UNDEFINED        = 2_I32**0
 
   ! Stabilisation has been initialised
-  integer, parameter, public :: AFCSTAB_INITIALISED      = 2**1
+  integer(I32), parameter, public :: AFCSTAB_INITIALISED      = 2_I32**1
 
   ! Edge-based structure generated: IverticesAtEdge
-  integer, parameter, public :: AFCSTAB_EDGESTRUCTURE    = 2**2
+  integer(I32), parameter, public :: AFCSTAB_EDGESTRUCTURE    = 2_I32**2
 
   ! Edge-based structure oriented: IverticesAtEdge
-  integer, parameter, public :: AFCSTAB_EDGEORIENTATION  = 2**3
+  integer(I32), parameter, public :: AFCSTAB_EDGEORIENTATION  = 2_I32**3
 
   ! Edge-based values computed from matrix: DcoefficientsAtEdge
-  integer, parameter, public :: AFCSTAB_EDGEVALUES       = 2**4
+  integer(I32), parameter, public :: AFCSTAB_EDGEVALUES       = 2_I32**4
 
   ! Nodal antidiffusion: PP,PM
-  integer, parameter, public :: AFCSTAB_ANTIDIFFUSION    = 2**5
+  integer(I32), parameter, public :: AFCSTAB_ANTIDIFFUSION    = 2_I32**5
 
   ! Nodal upper/lower bounds: QP,QM
-  integer, parameter, public :: AFCSTAB_BOUNDS           = 2**6
+  integer(I32), parameter, public :: AFCSTAB_BOUNDS           = 2_I32**6
   
   ! Nodal correction factors computed: RP,RM
-  integer, parameter, public :: AFCSTAB_LIMITER          = 2**7
+  integer(I32), parameter, public :: AFCSTAB_NODALFACTOR      = 2_I32**7
 
   ! Antidiffusive fluxes precomputed
-  integer, parameter, public :: AFCSTAB_FLUXES           = 2**8
+  integer(I32), parameter, public :: AFCSTAB_FLUXES           = 2_I32**8
   
   ! Subdiagonal edge-based structure generated
-  integer, parameter, public :: AFCSTAB_OFFDIAGONALEDGES = 2**9
+  integer(I32), parameter, public :: AFCSTAB_OFFDIAGONALEDGES = 2_I32**9
+
+  ! Approximation to time derivative
+  integer(I32), parameter, public :: AFCSTAB_TIMEDER          = 2_I32**10
+
+  ! Edgewise correction factors computed: ALPHA
+  integer(I32), parameter, public :: AFCSTAB_EDGEFACTOR       = 2_I32**11
+!</constantblock>
+
+!<constantblock description="Bitfield identifiers for FCT-algorithm">
+
+  ! Initialize the edgewise correction factors by unity
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITALPHA     = 2_I32**0
+  
+  ! Compute the sums of antidiffusive increments and the local bounds
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITPQ        = 2_I32**1
+
+  ! Compute approximation to the time derivative
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_TIMEDER       = 2_I32**2
+  
+  ! Compute the nodal correction factors
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMIT         = 2_I32**3
+
+  ! Apply limited antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT_APPLY = 2_I32**4
+
+  ! Compute edgewise correction factors without limiting the antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT       = 2_I32**5
+
+  ! Apply limited antidiffusive fluxes without computing edgewise correction factors
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_APPLY         = 2_I32**6
+
+  ! Standard FCT-algorithm
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD  = AFCSTAB_FCTALGO_INITALPHA +&
+                                                                 AFCSTAB_FCTALGO_INITPQ +&
+                                                                 AFCSTAB_FCTALGO_TIMEDER +&
+                                                                 AFCSTAB_FCTALGO_LIMIT +&
+                                                                 AFCSTAB_FCTALGO_CORRECT_APPLY
 !</constantblock>
 
 !</constants>
@@ -311,7 +351,7 @@ contains
     elseif ((istabilisation .ne. AFCSTAB_UPWIND)            .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_CLASSICAL)  .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and. &
-        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARIZED) .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARISED) .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and. &
         (    istabilisation .ne. AFCSTAB_FEMTVD)            .and. &
         (    istabilisation .ne. AFCSTAB_FEMGP)             .and. &

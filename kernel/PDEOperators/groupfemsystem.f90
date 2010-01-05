@@ -83,6 +83,8 @@
 !#                              gfsys_buildResBlockTVD
 !#     -> assemble the residual for FEM-TVD stabilisation
 !#
+!# 7.) gfsys_buildResidualFCT = gfsys_buildResScalarFCT /
+!#                              gfsys_buildResBlockFCT
 !#
 !# The following internal routines are available:
 !#
@@ -120,6 +122,7 @@ module groupfemsystem
   public :: gfsys_buildDivOperator
   public :: gfsys_buildResidual
   public :: gfsys_buildResidualTVD
+  public :: gfsys_buildResidualFCT
 
   ! *****************************************************************************
   ! *****************************************************************************
@@ -208,6 +211,11 @@ module groupfemsystem
     module procedure gfsys_buildResBlockTVD
   end interface
 
+  interface gfsys_buildResidualFCT
+    module procedure gfsys_buildResScalarFCT
+    module procedure gfsys_buildResBlockFCT
+  end interface
+
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
@@ -218,7 +226,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_initStabilisationBlock(rmatrixBlockTemplate, rafcstab)
+  subroutine gfsys_initStabilisationBlock(rmatrixBlockTemplate, rafcstab, nvar)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -233,6 +241,11 @@ contains
 !<input>
     ! template block matrix
     type(t_matrixBlock), intent(in) :: rmatrixBlockTemplate
+
+    ! OPTIONAL: number of variables
+    ! If not present, then the number of variables
+    ! NVAR is taken from the template matrix
+    integer, intent(in), optional :: nvar
 !</input>
 
 !<inputoutput>
@@ -250,7 +263,7 @@ contains
     if ((rmatrixBlockTemplate%nblocksPerCol .eq. 1) .and. &
         (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
       call gfsys_initStabilisationScalar(&
-          rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab)
+          rmatrixBlockTemplate%RmatrixBlock(1,1), rafcstab, nvar)
 
       ! That is it
       return
@@ -272,10 +285,15 @@ contains
     end if
     
     ! Set atomic data from first block
-    rafcstab%NVAR  = rmatrixBlockTemplate%nblocksPerCol
+    if (present(nvar)) then
+      rafcstab%NVAR = nvar
+    else
+      rafcstab%NVAR = rmatrixBlockTemplate%nblocksPerCol
+    end if
     rafcstab%NEQ   = rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ
     rafcstab%NEDGE = int(0.5*(rmatrixBlockTemplate%RmatrixBlock(1,1)%NA-&
                               rmatrixBlockTemplate%RmatrixBlock(1,1)%NEQ))
+
 
     ! What kind of stabilisation are we?
     select case(rafcstab%ctypeAFCstabilisation)
@@ -283,7 +301,7 @@ contains
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -293,7 +311,7 @@ contains
 
     case (AFCSTAB_FEMTVD)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -309,10 +327,9 @@ contains
       
 
     case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_IMPLICIT,&
-          AFCSTAB_FEMFCT_LINEARIZED)
+          AFCSTAB_FEMFCT_IMPLICIT)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -326,12 +343,36 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
-      ! We need 3 edgewise vectors for the fluxes
-      allocate(rafcstab%RedgeVectors(3))
-      do i = 1, 3
-        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+!!$      ! We need 3 edgewise vectors for the fluxes
+!!$      allocate(rafcstab%RedgeVectors(3))
+!!$      do i = 1, 3
+!!$        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
+!!$            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+!!$      end do
+
+
+    case (AFCSTAB_FEMFCT_LINEARISED)
+
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
+      Isize = (/4, rafcstab%NEDGE/)
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
+          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+
+      ! We need 7 nodal vectors for P's, Q's and R's and for the time derivative
+      allocate(rafcstab%RnodalVectors(7))
+      do i = 1, 7
+        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
+            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
+
+      ! We need 2 edgewise vectors for the correction factors and the fluxes
+      allocate(rafcstab%RedgeVectors(2))
+      call lsyssc_createVector(rafcstab%RedgeVectors(1),&
+          rafcstab%NEDGE, 1, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%RedgeVectors(2),&
+          2*rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
 
 
     case DEFAULT
@@ -347,7 +388,7 @@ contains
 
   ! *****************************************************************************
 
-  subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab)
+  subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab, nvar)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -361,6 +402,11 @@ contains
 !<input>
     ! template matrix
     type(t_matrixScalar), intent(in) :: rmatrixTemplate
+
+    ! OPTIONAL: number of variables
+    ! If not present, then the number of variables
+    ! NVAR is taken from the template matrix
+    integer, intent(in), optional :: nvar
 !</input>
 
 !<inputoutput>
@@ -375,7 +421,11 @@ contains
 
   
     ! Set atomic data
-    rafcstab%NVAR  = rmatrixTemplate%NVAR
+    if (present(nvar)) then
+      rafcstab%NVAR = nvar
+    else
+      rafcstab%NVAR = rmatrixTemplate%NVAR
+    end if
     rafcstab%NEQ   = rmatrixTemplate%NEQ
     rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
 
@@ -386,16 +436,17 @@ contains
     case (AFCSTAB_GALERKIN,&
           AFCSTAB_UPWIND)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
       
+
     case (AFCSTAB_FEMTVD)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -411,10 +462,9 @@ contains
 
 
     case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_IMPLICIT,&
-          AFCSTAB_FEMFCT_LINEARIZED)
+          AFCSTAB_FEMFCT_IMPLICIT)
 
-      ! Handle for IverticesAtEdge
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
       if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
           call storage_free(rafcstab%h_IverticesAtEdge)
@@ -427,14 +477,38 @@ contains
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
+      
+!!$      ! We need 3 edgewise vectors for the fluxes
+!!$      allocate(rafcstab%RedgeVectors(3))
+!!$      do i = 1, 3
+!!$        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
+!!$            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+!!$      end do
 
-      ! We need 3 edgewise vectors for the fluxes
-      allocate(rafcstab%RedgeVectors(3))
-      do i = 1, 3
-        call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+
+    case (AFCSTAB_FEMFCT_LINEARISED)
+
+      ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
+      Isize = (/4, rafcstab%NEDGE/)
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
+          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+
+      ! We need 7 nodal vectors for P's, Q's and R's and for the time derivative
+      allocate(rafcstab%RnodalVectors(7))
+      do i = 1, 7
+        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
+            rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
+      ! We need 2 edgewise vectors for the correction factors and the fluxes
+      allocate(rafcstab%RedgeVectors(2))
+      call lsyssc_createVector(rafcstab%RedgeVectors(1),&
+          rafcstab%NEDGE, 1, .false., ST_DOUBLE)
+      call lsyssc_createVector(rafcstab%RedgeVectors(2),&
+          2*rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      
 
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
@@ -2611,8 +2685,7 @@ contains
 
     ! Check if stabilisation provides edge-based structure
     ! Let us check if the edge-based data structure has been generated
-    if((iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if(iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
     
@@ -2685,7 +2758,7 @@ contains
     end select
     
     ! Set specifiers for Ps, Qs and Rs
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
 
   contains
 
@@ -3463,8 +3536,7 @@ contains
 
     ! Check if stabilisation provides edge-based structure
     ! Let us check if the edge-based data structure has been generated
-    if((iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if(iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -3536,7 +3608,7 @@ contains
     end select
     
     ! Set specifiers for Ps, Qs and Rs
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
     
   contains
 
@@ -4230,6 +4302,1419 @@ contains
     end subroutine doLimitTVDMat79_3D
 
   end subroutine gfsys_buildResScalarTVD
+
+  ! *****************************************************************************
+  
+!<subroutine>
+  
+  subroutine gfsys_buildResBlockFCT(rlumpedMassMatrix, RcoeffMatrices,&
+      rafcstab, ru, theta, tstep, fcb_calcFlux, fcb_calcFluxFCT,&
+      bclear, rres, ioperationSpec, rconsistentMassMatrix)
+
+!<description>
+    ! This subroutine assembles the residual vector for FEM-FCT schemes.
+    ! If the vectors contain only one block, then the scalar counterpart
+    ! of this routine is called with the scalar subvectors.
+!</description>
+
+!<input>
+    ! lumped mass matrix
+    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
+
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
+
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: ru
+
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
+
+    ! time step size
+    real(DP), intent(in) :: tstep
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! callback functions to compute local matrices
+    include 'intf_gfsyscallback.inc'
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+
+    ! residual vector
+    type(t_vectorBlock), intent(inout) :: rres
+!</inputoutput>
+!</subroutine>
+    
+    ! Check if block vectors contain only one block.
+    if ((ru%nblocks .eq. 1) .and. (rres%nblocks .eq. 1) ) then
+      call gfsys_buildResScalarFCT(rlumpedMassMatrix,&
+          RcoeffMatrices, rafcstab, ru%RvectorBlock(1),&
+          theta, tstep, fcb_calcFlux, fcb_calcFluxFCT,&
+          bclear, rres%RvectorBlock(1), ioperationSpec,&
+          rconsistentMassMatrix)
+      return
+    end if
+
+  end subroutine gfsys_buildResBlockFCT
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine gfsys_buildResScalarFCT(rlumpedMassMatrix, RcoeffMatrices,&
+      rafcstab, ru, theta, tstep, fcb_calcFlux, fcb_calcFluxFCT,&
+      bclear, rres, ioperationSpec, rconsistentMassMatrix)
+    
+!<description>
+    ! This subroutine assembles the residual vector and applies
+    ! stabilisation of FEM-FCT type. The idea of flux corrected
+    ! transport can be traced back to the early SHASTA algorithm by
+    ! Boris and Bock in the early 1970s. Zalesak suggested a fully
+    ! multi-dimensional generalisation of this approach and paved the
+    ! way for a large family of FCT algorithms.
+    !
+    ! This subroutine provides different algorithms:
+    !
+    ! Nonlinear FEM-FCT
+    ! ~~~~~~~~~~~~~~~~~
+    ! 1. Semi-explicit FEM-FCT algorithm
+    !
+    !    This is the classical algorithm which makes use of Zalesak's
+    !    flux limiter and recomputes and auxiliary positivity-
+    !    preserving solution in each iteration step. 
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
+    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    University of Dortmund, 2004.
+    !
+    ! 2. Iterative FEM-FCT algorithm
+    !
+    !    This is an extension of the classical algorithm which makes
+    !    use of Zalesak's flux limiter and tries to include the
+    !    amount of rejected antidiffusion in subsequent iteration
+    !    steps. The details of this method can be found in:
+    !
+    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
+    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    University of Dortmund, 2004.
+    !
+    ! 3. Semi-implicit FEM-FCT algorithm
+    !
+    !    This is the FCT algorithm that should be used by default. It
+    !    is quite efficient since the nodal correction factors are
+    !    only computed in the first iteration and used to limit the
+    !    antidiffusive flux from the first iteration. This explicit
+    !    predictor is used in all subsequent iterations to constrain
+    !    the actual target flux.
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin and D. Kourounis, "A semi-implicit FEM-FCT
+    !    algorithm for efficient treatment of time-dependent
+    !    problems", Ergebnisberichte Angew. Math. 302, University of
+    !    Dortmund, 2005.
+    !
+    ! Linearised FEM-FCT
+    ! ~~~~~~~~~~~~~~~~~~
+    !
+    ! 3. Linearised FEM-FCT algorithm
+    !
+    !    A new trend in the development of FCT algorithms is to
+    !    linearise the raw antidiffusive fluxes about an intermediate
+    !    solution computed by a positivity-preserving low-order
+    !    scheme. By virtue of this linearisation, the costly
+    !    evaluation of correction factors needs to be performed just
+    !    once per time step. Furthermore, no questionable
+    !    `prelimiting' of antidiffusive fluxes is required, which
+    !    eliminates the danger of artificial steepening.
+    !    The details of this method can be found in:
+    !
+    !    D. Kuzmin, "Explicit and implicit FEM-FCT algorithms with
+    !    flux linearization", Ergebnisberichte Angew. Math. 358,
+    !    University of Dortmund, 2008.
+!</description>
+
+!<input>
+    ! lumped mass matrix
+    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
+
+    ! array of coefficient matrices C = (phi_i,D phi_j)
+    type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
+
+    ! solution vector
+    type(t_vectorScalar), intent(in) :: ru
+
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
+
+    ! time step size
+    real(DP), intent(in) :: tstep
+    
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+
+    ! callback functions to compute local matrices
+    include 'intf_gfsyscallback.inc'
+
+    ! OPTIONAL: consistent mass matrix
+    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
+!</input>
+
+!<inputoutput>
+    ! stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstab
+    
+    ! residual vector
+    type(t_vectorScalar), intent(inout) :: rres
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_ML,p_MC,p_Cx,p_Cy,p_Cz
+    real(DP), dimension(:), pointer :: p_u,p_res,p_udot,p_alpha,p_flux
+    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer :: ndim
+
+    
+    ! Check if stabilisation is prepeared
+    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+      call sys_halt()
+    end if
+
+    ! Check if stabilisation provides edge-based structure
+    ! Let us check if the edge-based data structure has been generated
+    if(iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) then
+      call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
+    end if
+
+    ! Clear vector?
+    if (bclear) call lsyssc_clearVector(rres)
+    
+    ! Set pointers
+    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(rres, p_res)
+    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+    ! How many dimensions do we have?
+    ndim = size(RcoeffMatrices,1)
+    select case(ndim)
+    case (NDIM1D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+
+    case (NDIM2D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+
+    case (NDIM3D)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+
+    case DEFAULT
+      call output_line('Unsupported spatial dimension!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+      call sys_halt()
+    end select
+    
+    ! What kind of stabilisation are we?
+    select case(rafcstab%ctypeAFCstabilisation)
+
+    case (AFCSTAB_FEMFCT_IMPLICIT)
+      !-------------------------------------------------------------------------
+      ! Semi-implicit FEM-FCT algorithm
+      !-------------------------------------------------------------------------
+      
+      print *, "Implicit FCT algorithm not yet implemented"
+      stop
+
+    case (AFCSTAB_FEMFCT_CLASSICAL)
+      !-------------------------------------------------------------------------
+      ! Classical nonlinear FEM-FCT algorithm
+      !-------------------------------------------------------------------------
+
+      print *, "Classical FCT algorithm not yet implemented"
+      stop
+
+    case (AFCSTAB_FEMFCT_LINEARISED)
+      !-------------------------------------------------------------------------
+      ! Linearised FEM-FCT algorithm
+      !
+      ! The linearised FEM-FCT algorithm is split into the following steps
+      ! which can be skipped and performed externally by the user:
+      !
+      ! 1) Initialise the edgewise correction factors:
+      !
+      ! 2) Compute the antidiffusive increments and the local solution
+      !    bounds and precompute the raw antidiffusive fluxes
+      !
+      ! 3) Compute the nodal correction factors
+      !
+      ! 4) Apply the limited antidiffusive fluxes
+      !
+      ! Step 4) can be split into the following substeps
+      !
+      ! 4.1) Compute the edgewise correction factors
+      !
+      ! 4.2) Limit the antidiffusive fluxes by the precomputed correction
+      !      factors and apply them
+      !-------------------------------------------------------------------------
+
+      ! Set pointers
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+
+
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Initialise the edgewise correction factors by unity
+        !-----------------------------------------------------------------------
+        
+        call lalg_setVector(p_alpha, 1.0_DP, rafcstab%NEDGE)
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITPQ) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Compute antidiffusive increments and local solution bounds
+        !-----------------------------------------------------------------------
+
+        ! Do we have to use the consistent mass matrix?
+        if (present(rconsistentMassMatrix)) then
+          
+          ! Do we have to compute an approximation to the time derivative?
+          if (iand(ioperationSpec, AFCSTAB_FCTALGO_TIMEDER) .ne. 0) then
+            
+            ! Compute approximation of the time derivative
+            call gfsys_buildResidual(RcoeffMatrices, rafcstab, ru,&
+                fcb_calcFlux, 1.0_DP, .true., rafcstab%RnodalVectors(7))
+            call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
+                rafcstab%RnodalVectors(7), 1.0_DP, rafcstab%RnodalVectors(7))
+
+            ! Set specifier
+            rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_TIMEDER)
+          end if
+
+
+          ! Set pointers
+          call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_udot)
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          
+          ! What kind of matrix are we?
+          select case(RcoeffMatrices(1)%cmatrixFormat)
+          case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+            !-------------------------------------------------------------------
+            ! Matrix format 7 and 9
+            !-------------------------------------------------------------------
+            
+            ! How many dimensions do we have?
+            select case(ndim)
+            case (NDIM1D)
+              call doBoundsMat79ConsMass_1D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_u, p_udot, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            case (NDIM2D)
+              call doBoundsMat79ConsMass_2D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_Cy, p_u, p_udot, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            case (NDIM3D)
+              call doBoundsMat79ConsMass_3D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_Cy, p_Cz, p_u, p_udot, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            end select
+            
+          case DEFAULT
+            call output_line('Unsupported matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+            call sys_halt()
+          end select
+          
+        else
+          
+          ! What kind of matrix are we?
+          select case(RcoeffMatrices(1)%cmatrixFormat)
+          case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+            !-------------------------------------------------------------------
+            ! Matrix format 7 and 9
+            !-------------------------------------------------------------------
+            
+            ! How many dimensions do we have?
+            select case(ndim)
+            case (NDIM1D)
+              call doBoundsMat79NoMass_1D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_u, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            case (NDIM2D)
+              call doBoundsMat79NoMass_2D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_u, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            case (NDIM3D)
+              call doBoundsMat79NoMass_3D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_Cz, p_u, p_alpha, p_flux,&
+                  p_pp, p_pm, p_qp, p_qm)
+            end select
+            
+          case DEFAULT
+            call output_line('Unsupported matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+            call sys_halt()
+          end select
+        end if
+        
+        ! Set specifiers
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMIT) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Compute nodal correction factors
+        !-----------------------------------------------------------------------
+        
+        if ((iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION) .eq. 0) .or.&
+            (iand(rafcstab%iSpec, AFCSTAB_BOUNDS) .eq. 0)) then
+          call output_line('Antidiffusion and/or bounds have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+        
+        ! Compute nodal correction factors
+        call doLimitNodal(rafcstab%NEQ, rafcstab%NVAR, p_ML,&
+            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+
+        ! Set specifier
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
+      end if
+
+
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_CORRECT_APPLY) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Compute edgewise correction factor and 
+        ! apply limited antidiffusive fluxes
+        !-----------------------------------------------------------------------
+        
+        if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0) then
+          call output_line('Nodal correction factors have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+
+        if (iand(rafcstab%iSpec, AFCSTAB_FLUXES) .eq. 0) then
+          call output_line('Raw antidiffusive fluxes have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+
+        ! Apply the limited precomputed antidiffusive fluxes
+        call doLimitAndApplyEdge(p_IverticesAtEdge, rafcstab%NEDGE,&
+            rafcstab%NEQ, rafcstab%NVAR, p_flux, p_rp, p_rm, p_alpha, p_res)
+
+        ! Set specifier
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEFACTOR)
+      end if
+
+      
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_CORRECT) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Compute edgewise correction factor but
+        ! do not apply limited antidiffusive fluxes
+        !-----------------------------------------------------------------------
+        
+        if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0) then
+          call output_line('Nodal correction factors have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+
+        if (iand(rafcstab%iSpec, AFCSTAB_FLUXES) .eq. 0) then
+          call output_line('Raw antidiffusive fluxes have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+
+        ! Compute edgewise correction factors based on precomputed fluxes
+        call doLimitEdge(p_IverticesAtEdge, rafcstab%NEDGE,&
+            rafcstab%NEQ, rafcstab%NVAR, p_flux, p_rp, p_rm, p_alpha)
+
+        ! Set specifier
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEFACTOR)
+      end if
+      
+      
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_APPLY) .ne. 0) then
+        !-----------------------------------------------------------------------
+        ! Limit antidiffusive fluxes by precomputed correction factors
+        !-----------------------------------------------------------------------
+        
+        if (iand(rafcstab%iSpec, AFCSTAB_EDGEFACTOR) .eq. 0) then
+          call output_line('Edgewise correction factors have not been computed',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+          call sys_halt()
+        end if
+        
+        ! Do we have to use the consistent mass matrix?
+        if (present(rconsistentMassMatrix)) then
+          
+          ! Do we have to compute an approximation to the time derivative?
+          if ((iand(ioperationSpec, AFCSTAB_FCTALGO_TIMEDER) .ne. 0) .and.&
+              (iand(rafcstab%iSpec, AFCSTAB_TIMEDER) .eq. 0)) then
+            
+            ! Compute approximate time derivative
+            call gfsys_buildResidual(RcoeffMatrices, rafcstab, ru,&
+                fcb_calcFlux, 1.0_DP, .true., rafcstab%RnodalVectors(7))
+            call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
+                rafcstab%RnodalVectors(7), 1.0_DP, rafcstab%RnodalVectors(7))
+            
+            ! Set specifier
+            rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_TIMEDER)
+          end if
+          
+          ! Set pointers
+          call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_udot)         
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          
+          ! What kind of matrix are we?
+          select case(RcoeffMatrices(1)%cmatrixFormat)
+          case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+            !-------------------------------------------------------------------
+            ! Matrix format 7 and 9
+            !-------------------------------------------------------------------
+            
+            ! How many dimensions do we have?
+            select case(ndim)
+            case (NDIM1D)
+              call doLimitEdgeMat79ConsMass_1D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_u, p_udot, p_alpha, p_res)
+            case (NDIM2D)
+              call doLimitEdgeMat79ConsMass_2D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_Cy, p_u, p_udot, p_alpha, p_res)
+            case (NDIM3D)
+              call doLimitEdgeMat79ConsMass_3D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_MC, p_Cx, p_Cy, p_Cz, p_u, p_udot, p_alpha, p_res)
+            end select
+            
+          case DEFAULT
+            call output_line('Unsupported matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+            call sys_halt()
+          end select
+          
+        else
+          
+          ! What kind of matrix are we?
+          select case(RcoeffMatrices(1)%cmatrixFormat)
+          case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+            !-------------------------------------------------------------------
+            ! Matrix format 7 and 9
+            !-------------------------------------------------------------------
+            
+            ! How many dimensions do we have?
+            select case(ndim)
+            case (NDIM1D)
+              call doLimitEdgeMat79NoMass_1D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_u, p_alpha, p_res)
+            case (NDIM2D)
+              call doLimitEdgeMat79NoMass_2D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_u, p_alpha, p_res)
+            case (NDIM3D)
+              call doLimitEdgeMat79NoMass_3D(p_IverticesAtEdge,&
+                  rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+                  p_Cx, p_Cy, p_Cz, p_u, p_alpha, p_res)
+            end select
+            
+          case DEFAULT
+            call output_line('Unsupported matrix format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+            call sys_halt()
+          end select
+        end if
+      end if
+      
+      
+    case (AFCSTAB_FEMFCT_ITERATIVE)
+      !-------------------------------------------------------------------------
+      ! Iterative FEM-FCT algorithm
+      !-------------------------------------------------------------------------
+      
+      print *, "Iterative FCT algorithm not yet implemented"
+      stop
+
+    case (AFCSTAB_FEMFCT_CHARACTERISTIC)
+      !-------------------------------------------------------------------------
+      ! Characteristic FEM-FCT algorithm
+      !-------------------------------------------------------------------------
+      
+      print *, "Characteristic FCT algorithm not yet implemented"
+      stop
+
+    case DEFAULT
+      call output_line('Invalid type of AFC stabilisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalarFCT')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the working routines follow
+    
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 1D
+    ! The raw antidiffusive fluxes are assembled with
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79ConsMass_1D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, u, udot,&
+        alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79ConsMass_1D
+
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 2D
+    ! The raw antidiffusive fluxes are assembled with
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79ConsMass_2D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, Cy, u, udot,&
+        alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+        
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79ConsMass_2D
+
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 3D
+    ! The raw antidiffusive fluxes are assembled with
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79ConsMass_3D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, Cy, Cz, u, udot,&
+        alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,Cz,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local variables
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+        
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79ConsMass_3D
+
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 1D
+    ! The raw antidiffusive fluxes are assembled without
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79NoMass_1D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, u, alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79NoMass_1D
+
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 2D
+    ! The raw antidiffusive fluxes are assembled with
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79NoMass_2D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, Cy, u, alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79NoMass_2D
+
+    !**************************************************************
+    ! Assemble antidiffusive increments and local bounds in 3D
+    ! The raw antidiffusive fluxes are assembled with
+    ! contribution of the consistent mass matrix.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doBoundsMat79NoMass_3D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, alpha, flux, pp, pm, qp, qm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,2*NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Clear P's and Q's
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      call lalg_clearVector(qp)
+      call lalg_clearVector(qm)
+
+      ! Clear fluxes
+      call lalg_clearVector(flux)
+
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+      
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+        ! Store fluxes for future use
+        flux(:,2*(iedge-1)+1) = F_ij
+        flux(:,2*(iedge-1)+2) = F_ji
+        
+        ! Apply multiplicative correction factor
+        F_ij = alpha(iedge)*F_ij
+        F_ji = alpha(iedge)*F_ji
+        
+        ! Compute the sums of positive/negative antidiffusive increments
+        pp(:,i) = pp(:,i)+max(0.0_DP, F_ij); pp(:,j) = pp(:,j)+max(0.0_DP, F_ji)
+        pm(:,i) = pm(:,i)+min(0.0_DP, F_ij); pm(:,j) = pm(:,j)+min(0.0_DP, F_ji)
+        
+        ! Compute the distance to a local extremum of the low-order predictor
+        qp(:,i) = max(qp(:,i), U_ij); qp(:,j) = max(qp(:,j), U_ji)
+        qm(:,i) = min(qm(:,i), U_ij); qm(:,j) = min(qm(:,j), U_ji)
+      end do
+    end subroutine doBoundsMat79NoMass_3D
+
+    !**************************************************************
+    ! Compute nodal correction factors
+
+    subroutine doLimitNodal(NEQ, NVAR, ML, pp, pm, qp, qm, rp, rm)
+      
+      real(DP), dimension(NVAR,NEQ), intent(in) :: pp,pm,qp,qm
+      real(DP), dimension(:), intent(in) :: ML
+      integer, intent(in) :: NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: rp,rm
+
+      ! local variables
+      integer :: ieq
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        rp(:,ieq) = min(1.0_DP, ML(ieq)*qp(:,ieq)/(pp(:,ieq)+SYS_EPSREAL))
+      end do
+      !$omp end parallel do
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        rm(:,ieq) = min(1.0_DP, ML(ieq)*qm(:,ieq)/(pm(:,ieq)-SYS_EPSREAL))
+      end do
+      !$omp end parallel do
+    end subroutine doLimitNodal
+
+    !**************************************************************
+    ! Compute edgewise correction factors and apply the limited
+    ! antidiffusive fluxes to the residual vector
+
+    subroutine doLimitAndApplyEdge(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, flux, rp, rm, alpha, res)
+      
+      real(DP), dimension(NVAR,2*NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: rp,rm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(:), intent(inout) :: alpha
+      
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij,F_ji,R_ij,R_ji
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Get precomputed raw antidiffusive fluxes
+        F_ij = flux(:,2*(iedge-1)+1)
+        F_ji = flux(:,2*(iedge-1)+2)
+
+        ! Compute nodal correction factors
+        R_ij = merge(rp(:,i), rm(:,i), F_ij .ge. 0)
+        R_ji = merge(rp(:,j), rm(:,j), F_ji .ge. 0)
+
+        ! Compute multiplicative correction factor
+        alpha(iedge) = alpha(iedge) * minval(min(R_ij,R_ji))
+
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitAndApplyEdge
+
+    !**************************************************************
+    ! Compute edgewise correction factors
+    
+    subroutine doLimitEdge(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, flux, rp, rm, alpha)
+      
+      real(DP), dimension(NVAR,2*NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: rp,rm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      
+      real(DP), dimension(:), intent(inout) :: alpha
+      
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij,F_ji,R_ij,R_ji
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Get precomputed raw antidiffusive fluxes
+        F_ij = flux(:,2*(iedge-1)+1)
+        F_ji = flux(:,2*(iedge-1)+2)
+
+        ! Compute nodal correction factors
+        R_ij = merge(rp(:,i), rm(:,i), F_ij .ge. 0)
+        R_ji = merge(rp(:,j), rm(:,j), F_ji .ge. 0)
+
+        ! Compute multiplicative correction factor
+        alpha(iedge) = alpha(iedge) * minval(min(R_ij,R_ji))
+      end do
+    end subroutine doLimitEdge
+
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 1D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79ConsMass_1D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, u, udot, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79ConsMass_1D
+
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 2D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79ConsMass_2D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, Cy, u, udot, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79ConsMass_2D
+
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 3D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79ConsMass_3D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Cx, Cy, Cz, u, udot, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u,udot
+      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,Cz,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local variables
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), udot(:,i), udot(:,j), MC(ij),&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79ConsMass_3D
+    
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 1D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79NoMass_1D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, u, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM1D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79NoMass_1D
+
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 2D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79NoMass_2D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, Cy, u, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM2D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79NoMass_2D
+
+    !**************************************************************
+    ! Limit antidiffusive fluxes by the precomputed
+    ! edgewise correction factors and apply them in 3D
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doLimitEdgeMat79NoMass_3D(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, alpha, res)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz,alpha
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      
+      ! local parameters
+      real(DP), dimension(NVAR) :: dzero
+
+      ! local variables
+      real(DP), dimension(NDIM3D) :: C_ij,C_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji,U_ij,U_ji,R_ij,R_ji
+      integer :: iedge,ij,ji,i,j
+      
+      ! Initialize parameters
+      dzero = 0.0_DP
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+        ji = IverticesAtEdge(4, iedge)
+        
+        ! Compute coefficients
+        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        
+        ! Compute the raw antidiffusives fluxes
+        call fcb_calcFluxFCT(&
+            u(:,i), u(:,j), dzero, dzero, 0.0_DP,&
+            C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+        
+        ! Apply limited antidiffusive fluxes
+        res(:,i) = res(:,i) + alpha(iedge) * F_ij
+        res(:,j) = res(:,j) + alpha(iedge) * F_ji
+      end do
+    end subroutine doLimitEdgeMat79NoMass_3D
+    
+  end subroutine gfsys_buildResScalarFCT
 
   !*****************************************************************************
   !*****************************************************************************

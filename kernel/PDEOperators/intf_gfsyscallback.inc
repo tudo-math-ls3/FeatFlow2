@@ -93,6 +93,46 @@
 
 !<subroutine>
 
+  subroutine fcb_calcFluxFCT(U_i, U_j, Udot_i, Udot_j,&
+      M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes for the FCT algorithm.
+    ! Given the variables at the two states $i$ and $j$ this routine computes:
+    !
+    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
+    !
+    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
+    !
+    ! 3.) The solution difference: $U_{ij}$ and $U_{ji}$
+    !
+    ! If the fluxes and the solution differences are computed in terms of
+    ! conservative variables then $F_{ji}=-F_{ij}$ and $U_{ji}=-U_{ij}$.
+!</description>
+
+    !<input>
+  real(DP), dimension(:), intent(IN)  :: U_i,U_j
+  real(DP), dimension(:), intent(IN)  :: Udot_i,Udot_j
+  real(DP), intent(IN)                :: M_ij
+  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
+  integer, intent(IN)                 :: i,j
+!</input>
+
+!<output>
+  real(DP), dimension(:), intent(OUT) :: F_ij,F_ji
+  real(DP), dimension(:), intent(OUT) :: U_ij,U_ji
+!</output>
+
+!</subroutine>
+
+end subroutine fcb_calcFluxFCT
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine fcb_calcMatrixDiagonal(U_i, C_ii, i, dscale, K_ii)
 
     use fsystem

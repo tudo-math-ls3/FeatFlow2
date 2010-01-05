@@ -321,7 +321,7 @@ contains
       end do
 
 
-    case (AFCSTAB_FEMFCT_LINEARIZED)
+    case (AFCSTAB_FEMFCT_LINEARISED)
       
       ! Handle for IverticesAtEdge
       Isize = (/4, rafcstab%NEDGE/)
@@ -2376,7 +2376,6 @@ contains
                                     rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
-
     ! This subroutine assembles the residual vector and applies
     ! stabilisation of FEM-FCT type. The idea of flux corrected
     ! transport can be traced back to the early SHASTA algorithm by
@@ -2425,10 +2424,10 @@ contains
     !    problems", Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
     !
-    ! Linearized FEM-FCT
+    ! Linearised FEM-FCT
     ! ~~~~~~~~~~~~~~~~~~
     !
-    ! 3. Linearized FEM-FCT algorithm
+    ! 3. Linearised FEM-FCT algorithm
     !
     !    A new trend in the development of FCT algorithms is to
     !    linearise the raw antidiffusive fluxes about an intermediate
@@ -2570,14 +2569,14 @@ contains
         end if   ! theta < 1
         
         ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)        
 
       end if   ! binit
       
 
       ! Check if correction factors and fluxes are available
-      if (iand(rafcstab%iSpec, AFCSTAB_LIMITER) .eq. 0 .or.&
+      if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0 .or.&
           iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
                          &and/or nodal correction factors',&
@@ -2616,13 +2615,13 @@ contains
         end if
 
         ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
         rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES) 
 
       end if   ! binit
 
       ! Check if correction factors and fluxes are available
-      if (iand(rafcstab%iSpec, AFCSTAB_LIMITER) .eq. 0 .or.&
+      if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0 .or.&
           iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
                          &and/or nodal correction factors',&
@@ -2683,8 +2682,8 @@ contains
       end if   ! theta < 1
 
 
-    case (AFCSTAB_FEMFCT_LINEARIZED)
-      call output_line('The linearized FEM-FCT algorithm is not implemented yet!',&
+    case (AFCSTAB_FEMFCT_LINEARISED)
+      call output_line('The linearised FEM-FCT algorithm is not implemented yet!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       call sys_halt()
       
@@ -3365,7 +3364,7 @@ contains
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
     
   contains
@@ -3598,7 +3597,7 @@ contains
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
     
   contains
@@ -3829,7 +3828,7 @@ contains
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_LIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
     
   contains
