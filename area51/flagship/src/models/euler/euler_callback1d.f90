@@ -118,6 +118,7 @@ module euler_callback1d
   public :: euler_calcMatrixRusanovDiag1d
   public :: euler_calcMatrixRusanov1d
   public :: euler_calcCharacteristics1d
+  public :: euler_calcFluxFCTScalarDiss1d
   public :: euler_calcBoundaryvalues1d
   public :: euler_hadaptCallbackScalar1d
   public :: euler_hadaptCallbackBlock1d
@@ -1575,6 +1576,48 @@ contains
     end if
     
   end subroutine euler_calcCharacteristics1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTScalarDiss1d(U_i, U_j, Udot_i, Udot_j,&
+      M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+    
+    use fsystem
+
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 1D using scalar dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! time derivative of local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: Udot_i,Udot_j
+
+    ! coefficient from consistent mass matrix
+    real(DP), intent(in) :: M_ij
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive fluxes
+    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+
+    ! solution differences
+    real(DP), dimension(:), intent(out) :: U_ij, U_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcFluxFCTScalarDiss1d
 
   !*****************************************************************************
 

@@ -2408,15 +2408,15 @@ contains
       end select
       
       !-------------------------------------------------------------------------
-      ! Compute linearized FCT correction for Euler and transport model
+      ! Compute linearised FCT correction for Euler and transport model
       !-------------------------------------------------------------------------
       
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = ssectionNameEuler
       rcollection%SquickAccess(2) = ssectionNameTransport
       
-      ! Apply linearized FCT correction for Euler model
-      call zpinch_calcLinearizedFCT(rbdrCondEuler, rbdrCondTransport,&
+      ! Apply linearised FCT correction for Euler model
+      call zpinch_calcLinearisedFCT(rbdrCondEuler, rbdrCondTransport,&
           p_rproblemLevel, rtimestep, p_rsolutionEuler,&
           p_rsolutionTransport, rcollection)
       

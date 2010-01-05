@@ -21,8 +21,8 @@
 !# 4.) zpinch_initLorentzforceTerm
 !#     -> Initializes the Lorentz force term for given solutions
 !#
-!# 5.) zpinch_calcLinearizedFCT
-!#     -> Calculates the linearized FCT correction
+!# 5.) zpinch_calcLinearisedFCT
+!#     -> Calculates the linearised FCT correction
 !#
 !# </purpose>
 !##############################################################################
@@ -62,7 +62,7 @@ module zpinch_callback
   public :: zpinch_initVelocityField
   public :: zpinch_initDensityAveraging
   public :: zpinch_initLorentzforceTerm
-  public :: zpinch_calcLinearizedFCT
+  public :: zpinch_calcLinearisedFCT
   public :: zpinch_checkPressure
   
 contains
@@ -851,12 +851,12 @@ contains
   
   !<subroutine>
 
-  subroutine zpinch_calcLinearizedFCT(rbdrCondEuler,&
+  subroutine zpinch_calcLinearisedFCT(rbdrCondEuler,&
       rbdrcondTransport, rproblemLevel, rtimestep,&
       rsolutionEuler, rsolutionTransport, rcollection)
 
 !<description>
-    ! This subroutine calculates the linearized FCT correction
+    ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
@@ -931,11 +931,11 @@ contains
     p_rafcstabTransport => rproblemLevel%Rafcstab(convectionAFC)
     p_rafcstabEuler => rproblemLevel%Rafcstab(inviscidAFC)
 
-    ! Let us check if the linearized FCT algorithm needs to be applied
+    ! Let us check if the linearised FCT algorithm needs to be applied
     if ((p_rafcstabTransport%ctypeAFCstabilisation .ne.&
-        AFCSTAB_FEMFCT_LINEARIZED) .or.&
+        AFCSTAB_FEMFCT_LINEARISED) .or.&
         (p_rafcstabEuler%ctypeAFCstabilisation .ne.&
-        AFCSTAB_FEMFCT_LINEARIZED)) return
+        AFCSTAB_FEMFCT_LINEARISED)) return
     
     ! Let us check if the edge-based data structure has been generated
     if((iand(p_rafcstabEuler%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
@@ -1389,7 +1389,7 @@ contains
       
     end subroutine applyCorrection
     
-  end subroutine zpinch_calcLinearizedFCT
+  end subroutine zpinch_calcLinearisedFCT
 
   !*****************************************************************************
 

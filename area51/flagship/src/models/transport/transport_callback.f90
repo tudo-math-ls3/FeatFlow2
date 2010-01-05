@@ -55,8 +55,8 @@
 !# 10.) transp_setVelocityField
 !#      -> Sets the velocity field internally
 !#
-!# 11.) transp_calcLinearizedFCT
-!#      -> Calculates the linearized FCT correction
+!# 11.) transp_calcLinearisedFCT
+!#      -> Calculates the linearised FCT correction
 !#
 !# 12.) transp_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
@@ -135,7 +135,7 @@ module transport_callback
   private
   public :: transp_calcLinfBoundaryConditions
   public :: transp_calcJacobianThetaScheme
-  public :: transp_calcLinearizedFCT
+  public :: transp_calcLinearisedFCT
   public :: transp_calcPrecondThetaScheme
   public :: transp_calcRhsRungeKuttaScheme
   public :: transp_calcRhsThetaScheme
@@ -3721,11 +3721,11 @@ contains
 
 !<subroutine>
 
-  subroutine transp_calcLinearizedFCT(rbdrCond, rproblemLevel,&
+  subroutine transp_calcLinearisedFCT(rbdrCond, rproblemLevel,&
       rtimestep, rsolution, rcollection)
 
 !<description>
-    ! This subroutine calculates the linearized FCT correction
+    ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
@@ -4060,7 +4060,7 @@ contains
       end if
     end function minmod
     
-  end subroutine transp_calcLinearizedFCT
+  end subroutine transp_calcLinearisedFCT
 
   ! ***************************************************************************
 
