@@ -133,7 +133,8 @@
 !# 37.) lsysbl_vectorNormBlock
 !#      -> Calculates the norm of all subvectors in a given block vector.
 !#
-!# 38.) lsysbl_invertedDiagMatVec
+!# 38.) lsysbl_invertedDiagMatVec = lsysbl_invertedDiagBlockMatVec /
+!#                                  lsysbl_invertedDiagScalarMatVec
 !#      -> Multiply a vector with the inverse of the diagonal of a matrix
 !#
 !# 39.) lsysbl_swapVectors
@@ -446,20 +447,31 @@ module linearsystemblock
     module procedure lsysbl_resizeVecBlockIndirect
   end interface
   
+  public :: lsysbl_resizeVectorBlock
+  public :: lsysbl_resizeVecBlockIndMat
+  public :: lsysbl_resizeVecBlockDirectDims
+  public :: lsysbl_resizeVecBlockIndirect
+
   interface lsysbl_assignDiscreteBC
     module procedure lsysbl_assignDiscreteBCMat
     module procedure lsysbl_assignDiscreteBCVec
   end interface
+
+  public :: lsysbl_assignDiscreteBC
 
   interface lsysbl_assignDiscreteFBC
     module procedure lsysbl_assignDiscreteFBCMat
     module procedure lsysbl_assignDiscreteFBCVec
   end interface
 
-  public :: lsysbl_resizeVectorBlock
-  public :: lsysbl_resizeVecBlockIndMat
-  public :: lsysbl_resizeVecBlockDirectDims
-  public :: lsysbl_resizeVecBlockIndirect
+  public :: lsysbl_assignDiscreteFBC
+
+  interface lsysbl_invertedDiagMatVec
+    module procedure lsysbl_invertedDiagScalarMatVec
+    module procedure lsysbl_invertedDiagBlockMatVec
+  end interface
+
+  public :: lsysbl_invertedDiagMatVec
   
   public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createMatFromScalar
@@ -495,7 +507,6 @@ module linearsystemblock
   public :: lsysbl_getbase_single
   public :: lsysbl_vectorNorm
   public :: lsysbl_vectorNormBlock
-  public :: lsysbl_invertedDiagMatVec
   public :: lsysbl_swapVectors
   public :: lsysbl_swapMatrices
   public :: lsysbl_deriveSubvector
@@ -522,9 +533,7 @@ module linearsystemblock
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
   public :: lsysbl_createscalarfromvec
-  public :: lsysbl_assignDiscreteBC
-  public :: lsysbl_assignDiscreteFBC
-  
+    
 contains
 
   ! ***************************************************************************
@@ -2258,7 +2267,7 @@ contains
 
 !<subroutine>
 
-  subroutine lsysbl_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  subroutine lsysbl_invertedDiagBlockMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
   ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
@@ -2301,6 +2310,57 @@ contains
     do iblock = 1,rvectorSrc%nblocks
       ! Multiply with the inverted diagonal of the submatrix.
       call lsyssc_invertedDiagMatVec (rmatrix%RmatrixBlock(iblock,iblock),&
+            rvectorSrc%RvectorBlock(iblock),dscale,&
+            rvectorDst%RvectorBlock(iblock))
+    end do
+
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_invertedDiagScalarMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
+  
+!<description>
+  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
+  ! of matrix rmatrix with the vector rvectorSrc and  stores the result
+  ! into the vector rvectorDst:
+  !   $$rvectorDst_i = dscale * D^{-1} * rvectorSrc_i  , i=1..nblocks$$
+  ! Both, rvectorSrc and rvectorDst may coincide.
+!</description>
+  
+!<input>
+  ! The matrix. 
+  type(t_matrixScalar), intent(in) :: rmatrix
+
+  ! The source vector.
+  type(t_vectorBlock), intent(in) :: rvectorSrc
+
+  ! A multiplication factor. Standard value is 1.0_DP
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+  ! The destination vector which receives the result.
+  type(t_vectorBlock), intent(inout) :: rvectorDst
+!</inputoutput>
+
+!</subroutine>
+
+  ! local variables
+  integer :: iblock
+  
+    ! Vectors and matrix must be compatible
+    call lsysbl_isVectorCompatible (rvectorSrc,rvectorDst)
+    
+    ! As both vectors are compatible to each other and compatible to the
+    ! matrix, the matrix must be a square matrix!
+  
+    ! Loop over the blocks
+    do iblock = 1,rvectorSrc%nblocks
+      ! Multiply with the inverted diagonal of the matrix.
+      call lsyssc_invertedDiagMatVec (rmatrix,&
             rvectorSrc%RvectorBlock(iblock),dscale,&
             rvectorDst%RvectorBlock(iblock))
     end do
