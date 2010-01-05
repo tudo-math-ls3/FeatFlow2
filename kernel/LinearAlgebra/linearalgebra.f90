@@ -493,6 +493,24 @@ module linearalgebra
   public :: lalg_vectorAddScalarI32
   public :: lalg_vectorAddScalarI64
 
+  interface lalg_vectorCompMult
+    module procedure lalg_vectorCompMultSngl
+    module procedure lalg_vectorCompMultDble
+    module procedure lalg_vectorCompMultQuad
+    module procedure lalg_vectorCompMultDbleSngl
+#ifdef ENABLE_QUADPREC
+    module procedure lalg_vectorCompMultQuadSngl
+    module procedure lalg_vectorCompMultQuadDble
+#endif
+  end interface
+
+  public :: lalg_vectorCompMult
+  public :: lalg_vectorCompMultSngl
+  public :: lalg_vectorCompMultDble
+  public :: lalg_vectorCompMultQuad
+  public :: lalg_vectorCompMultDbleSngl
+  public :: lalg_vectorCompMultQuadSngl
+  public :: lalg_vectorCompMultQuadDble
 
 !<constants>
 
