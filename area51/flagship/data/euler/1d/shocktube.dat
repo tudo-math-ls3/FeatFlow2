@@ -230,7 +230,7 @@ ddecreaseFactor = 0.1
 dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.8
+dstepReductionFactor = 0.5
 
 # target tolerace for relative changes
 depsRel = 0.0
@@ -257,10 +257,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -391,7 +391,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 20
+nmaxIterations = 100
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -430,7 +430,7 @@ nmaxBacktrackingSteps = 5
 iupdateFrequency = 0
 
 # nonlinear relaxation parameter
-domega = 1.0
+domega = 0.8
 
 # absolute tolerance for residual
 depsAbs = 1e-12
