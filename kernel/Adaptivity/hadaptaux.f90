@@ -108,73 +108,73 @@ module hadaptaux
 !<constantblock description="Bitfield identifiers for state of adaptation">
 
   ! Adaptation is undefined
-  integer, parameter, public :: HADAPT_UNDEFINED        = 2**0
+  integer(I32), parameter, public :: HADAPT_UNDEFINED        = 2**0
   
   ! Parameters of adaptivity structure are initialized
-  integer, parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
+  integer(I32), parameter, public :: HADAPT_HAS_PARAMETERS   = 2**1
 
   ! Btree/quadtree/octree for vertex coordinates is generated
-  integer, parameter, public :: HADAPT_HAS_COORDS       = 2**2
+  integer(I32), parameter, public :: HADAPT_HAS_COORDS       = 2**2
 
   ! Array for IverticesAtElement is generated
-  integer, parameter, public :: HADAPT_HAS_VERTATELEM   = 2**3
+  integer(I32), parameter, public :: HADAPT_HAS_VERTATELEM   = 2**3
 
   ! Array for IneighboursAtElement is generated
-  integer, parameter, public :: HADAPT_HAS_NEIGHATELEM  = 2**4
+  integer(I32), parameter, public :: HADAPT_HAS_NEIGHATELEM  = 2**4
 
   ! Array for ImidneighboursAtElement is generated
-  integer, parameter, public :: HADAPT_HAS_MIDNEIGH     = 2**5
+  integer(I32), parameter, public :: HADAPT_HAS_MIDNEIGH     = 2**5
 
   ! Boundary data is generated
-  integer, parameter, public :: HADAPT_HAS_BOUNDARY     = 2**6
+  integer(I32), parameter, public :: HADAPT_HAS_BOUNDARY     = 2**6
 
   ! Nodal property is generated
-  integer, parameter, public :: HADAPT_HAS_NODALPROP    = 2**7
+  integer(I32), parameter, public :: HADAPT_HAS_NODALPROP    = 2**7
 
   ! Number of elements for predefined type
-  integer, parameter, public :: HADAPT_HAS_NELOFTYPE    = 2**8
+  integer(I32), parameter, public :: HADAPT_HAS_NELOFTYPE    = 2**8
 
   ! Array for IelementsAtVertex is generated
-  integer, parameter, public :: HADAPT_HAS_ELEMATVERTEX = 2**9
+  integer(I32), parameter, public :: HADAPT_HAS_ELEMATVERTEX = 2**9
 
   ! Dynamic data structures in 1D are all generated
-  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
-                                                            HADAPT_HAS_COORDS+&
-                                                            HADAPT_HAS_VERTATELEM+&
-                                                            HADAPT_HAS_NEIGHATELEM+&
-                                                            HADAPT_HAS_NODALPROP+&
-                                                            HADAPT_HAS_NELOFTYPE+&
-                                                            HADAPT_HAS_ELEMATVERTEX
+  integer(I32), parameter, public :: HADAPT_HAS_DYNAMICDATA1D  = HADAPT_HAS_PARAMETERS+&
+                                                                 HADAPT_HAS_COORDS+&
+                                                                 HADAPT_HAS_VERTATELEM+&
+                                                                 HADAPT_HAS_NEIGHATELEM+&
+                                                                 HADAPT_HAS_NODALPROP+&
+                                                                 HADAPT_HAS_NELOFTYPE+&
+                                                                 HADAPT_HAS_ELEMATVERTEX
 
   ! Dynamic data structures in 2D are all generated
-  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA2D  = HADAPT_HAS_PARAMETERS+&
-                                                            HADAPT_HAS_COORDS+&
-                                                            HADAPT_HAS_VERTATELEM+&
-                                                            HADAPT_HAS_NEIGHATELEM+&
-                                                            HADAPT_HAS_MIDNEIGH+&
-                                                            HADAPT_HAS_BOUNDARY+&
-                                                            HADAPT_HAS_NODALPROP+&
-                                                            HADAPT_HAS_NELOFTYPE+&
-                                                            HADAPT_HAS_ELEMATVERTEX
-
+  integer(I32), parameter, public :: HADAPT_HAS_DYNAMICDATA2D  = HADAPT_HAS_PARAMETERS+&
+                                                                 HADAPT_HAS_COORDS+&
+                                                                 HADAPT_HAS_VERTATELEM+&
+                                                                 HADAPT_HAS_NEIGHATELEM+&
+                                                                 HADAPT_HAS_MIDNEIGH+&
+                                                                 HADAPT_HAS_BOUNDARY+&
+                                                                 HADAPT_HAS_NODALPROP+&
+                                                                 HADAPT_HAS_NELOFTYPE+&
+                                                                 HADAPT_HAS_ELEMATVERTEX
+  
   ! Dynamic data structures in 3D are all generated
-  integer, parameter, public :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
-                                                            HADAPT_HAS_COORDS+&
-                                                            HADAPT_HAS_VERTATELEM+&
-                                                            HADAPT_HAS_NEIGHATELEM+&
-                                                            HADAPT_HAS_NODALPROP+&
-                                                            HADAPT_HAS_NELOFTYPE+&
-                                                            HADAPT_HAS_ELEMATVERTEX
-
+  integer(I32), parameter, public :: HADAPT_HAS_DYNAMICDATA3D  = HADAPT_HAS_PARAMETERS+&
+                                                                 HADAPT_HAS_COORDS+&
+                                                                 HADAPT_HAS_VERTATELEM+&
+                                                                 HADAPT_HAS_NEIGHATELEM+&
+                                                                 HADAPT_HAS_NODALPROP+&
+                                                                 HADAPT_HAS_NELOFTYPE+&
+                                                                 HADAPT_HAS_ELEMATVERTEX
+  
   ! Cells are marked for refinement
-  integer, parameter, public :: HADAPT_MARKEDREFINE     = 2**10
+  integer(I32), parameter, public :: HADAPT_MARKEDREFINE     = 2**10
 
   ! Cells are marked for coarsening
-  integer, parameter, public :: HADAPT_MARKEDCOARSEN    = 2**11
+  integer(I32), parameter, public :: HADAPT_MARKEDCOARSEN    = 2**11
 
   ! Cells are marked
-  integer, parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
-                                                          HADAPT_MARKEDCOARSEN
+  integer(I32), parameter, public :: HADAPT_MARKED           = HADAPT_MARKEDREFINE+&
+                                                               HADAPT_MARKEDCOARSEN
   
 !</constantblock>
 
@@ -323,7 +323,7 @@ module hadaptaux
   ! adaptive grid refinement and grid coarsening.
   type :: t_hadapt
     ! Format Tag: Specifies the state of adaptation
-    integer :: iSpec = HADAPT_UNDEFINED
+    integer(I32) :: iSpec = HADAPT_UNDEFINED
 
     ! Duplication flag. Bitfield that indicates which information is
     ! shared with another adaptivity structure.
