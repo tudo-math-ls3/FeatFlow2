@@ -2277,8 +2277,6 @@ contains
     real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
     real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm
     
-    real(DP) :: d_ij,ci,cj,Ei,Ej,ui,uj,vi,vj
-
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
     
@@ -2307,27 +2305,10 @@ contains
 
       ! Compute diagonal matrix of eigenvalues (if present)
       if (present(Lbd_ij)) then
-
-        ! Compute velocities and energy
-        ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
-        uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
-
-        ! Compute the speed of sound
-        ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
-        cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-        
-        ! Scalar dissipation for the Rusanov flux
-        d_ij = max( abs(a1*uj+a2*vj) +&
-                    sqrt(a1*a1+a2*a2)*cj,&
-                    abs(a1*ui+a2*vi) +&
-                    sqrt(a1*a1+a2*a2)*ci )
-        
-        Lbd_ij = d_ij
-
-!!$        Lbd_ij(1) = aux-cs
-!!$        Lbd_ij(2) = aux
-!!$        Lbd_ij(3) = aux+cs
-!!$        Lbd_ij(4) = aux
+        Lbd_ij(1) = aux-cs
+        Lbd_ij(2) = aux
+        Lbd_ij(3) = aux+cs
+        Lbd_ij(4) = aux
       end if
 
       ! Compute matrix of right eigenvectors
@@ -2382,8 +2363,13 @@ contains
         Diff = U_j-U_i
         
         ! Compute auxiliary quantities for characteristic variables
-        aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3))/cs
+        aux1 = G2/cPow2*(q_ij*Diff(1)-&
+                         u_ij*Diff(2)-&
+                         v_ij*Diff(3)+&
+                              Diff(4) )
+        aux2 = 0.5_DP*(aux*Diff(1)-&
+                        a1*Diff(2)-&
+                        a2*Diff(3) )/cs
         
         ! Compute characteristic variables
         W_ij(1) = anorm * (aux1 + aux2)
