@@ -11,7 +11,297 @@
 
 !<subroutine>
 
-    subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  subroutine fcb_calcMatrixDiagonal(U_i, C_ii, i, dscale, K_ii)
+
+    use fsystem
+
+!<description>
+    ! Given the variables at node $i$ and the weighting coefficient
+    ! $C_{ii}$, this subroutine computes the matrix coefficient
+    ! $K_{ii} which is assembled into the diagonal of the global
+    ! system matrix.
+!</description>
+
+!<input>
+  ! Variable at state $i$
+  real(DP), dimension(:), intent(in) :: U_i
+
+  ! Multi-component weighting coefficient
+  real(DP), dimension(:), intent(in) :: C_ii
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+
+  ! State $i$
+  integer, intent(in) :: i
+!</input>
+
+!<outptu>
+  ! Matrix coefficient
+  real(DP), dimension(:), intent(out) :: K_ii
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcMatrixDiagonal
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcMatrix(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the local matrices for the edge
+    ! $ij$. Given the variables at the two states $i$ and $j$ and the
+    ! multi-component weighting coefficients $C_{ij}$ and $C_{ji}$,
+    ! this subroutine computes the matrix coefficients $K_{ij} and
+    ! $K_{ji} which are assembled into the global system
+    ! matrix. Moreover, the diffusion coefficient $D_{ij}$ is
+    ! computed.
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$
+  real(DP), dimension(:), intent(in) :: U_i, U_j
+
+  ! Multi-component weighting coefficients
+  real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+
+  ! States $i$ and $j$
+  integer, intent(in) :: i,j
+!</input>
+
+!<outptu>
+  ! Matrix coefficients
+  real(DP), dimension(:), intent(out) :: K_ij, K_ji, D_ij
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcMatrix
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcFlux(&
+      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes.  Given the
+    ! variables at the two states $i$ and $j$ and the multi-component
+    ! weighting coefficients, this routine computes:
+    !
+    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
+    !
+    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
+    !
+    ! In some cases it is useful to have skew-symmetry,
+    ! i.e. $F_{ji}=-F_{ij}$ but this is not mandatory, and hence, this
+    ! routine computes both.
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$
+  real(DP), dimension(:), intent(in) :: U_i, U_j
+
+  ! Multi-component weighting coefficients
+  real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+
+  ! States $i$ and $j$
+  integer, intent(in) :: i,j
+!</input>
+
+!<output>
+  ! Fluxes
+  real(DP), dimension(:), intent(out) :: F_ij, F_ji
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcFlux
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcFluxFCT(U1_i, U1_j, U2_i, U2_j,&
+      C_ij, C_ji, i, j, dscale1, dscale2, F_ij)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes for the FCT algorithm.
+    ! Given the variables at the two states $i$ and $j$ this routine computes:
+    !
+    ! The internodal flux from node $j$ into node $i$: $F_{ij}=-F_{ji}$
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$
+  real(DP), dimension(:), intent(in) :: U1_i, U1_j
+  real(DP), dimension(:), intent(in) :: U2_i, U2_j
+
+  ! Multi-component weighting coefficients
+  real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+  ! Scaling parameters
+  real(DP), intent(in) :: dscale1, dscale2
+
+  ! States $i$ and $j$
+  integer, intent(in) :: i,j
+!</input>
+
+!<output>
+  ! raw antidiffusive flux from node $j$ into node $i$
+  real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcFluxFCT
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcTransformation(U_i, U_j, F_ij, G_ij, G_ji)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the transformed fluxes.
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$
+  real(DP), dimension(:), intent(in) :: U_i, U_j
+
+  ! Raw antidiffusive flux from node $j$ into node $i$
+  real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+  ! Transformed raw antidiffusive fluxes
+  real(DP), dimension(:), intent(out) :: G_ij,G_ji
+  !</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcTransformation
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcFluxNonlinearFCT(Ulow_i, Ulow_j, Uhigh_i, Uhigh_j,&
+      Uinit_i, Uinit_j, M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes for the FCT algorithm.
+    ! Given the variables at the two states $i$ and $j$ this routine computes:
+    !
+    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
+    !
+    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
+    !
+    ! 3.) The solution difference: $U_{ij}$ and $U_{ji}$
+    !
+    ! If the fluxes and the solution differences are computed in terms of
+    ! conservative variables then $F_{ji}=-F_{ij}$ and $U_{ji}=-U_{ij}$.
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$: low-order
+  real(DP), dimension(:), intent(in) :: Ulow_i,Ulow_j
+  
+  ! Variables at states $i$ and $j$: high-order
+  real(DP), dimension(:), intent(in) :: Uhigh_i,Uhigh_j
+
+  ! Variables at states $i$ and $j$: initial high-order
+  real(DP), dimension(:), intent(in) :: Uinit_i,Uinit_j
+
+  ! Coefficient of the consistent mass matrix
+  real(DP), intent(in) :: M_ij
+
+  ! Multi-component weighting coefficients
+  real(DP), dimension(:), intent(in) :: C_ij,C_ji
+
+  ! States $i$ and $j$
+  integer, intent(in) :: i,j
+!</input>
+
+!<output>
+  ! Raw antidiffusive fluxes
+  real(DP), dimension(:), intent(out) :: F_ij,F_ji
+
+  ! Solution differences
+  real(DP), dimension(:), intent(out) :: U_ij,U_ji
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcFluxNonlinearFCT
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcFluxFCT1(U_i, U_j, Udot_i, Udot_j,&
+      M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the internodal fluxes for the FCT algorithm.
+    ! Given the variables at the two states $i$ and $j$ this routine computes:
+    !
+    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
+    !
+    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
+    !
+    ! 3.) The solution difference: $U_{ij}$ and $U_{ji}$
+    !
+    ! If the fluxes and the solution differences are computed in terms of
+    ! conservative variables then $F_{ji}=-F_{ij}$ and $U_{ji}=-U_{ij}$.
+!</description>
+
+    !<input>
+  real(DP), dimension(:), intent(in)  :: U_i,U_j
+  real(DP), dimension(:), intent(in)  :: Udot_i,Udot_j
+  real(DP), intent(in)                :: M_ij
+  real(DP), dimension(:), intent(in)  :: C_ij,C_ji
+  integer, intent(in)                 :: i,j
+!</input>
+
+!<output>
+  real(DP), dimension(:), intent(out) :: F_ij,F_ji
+  real(DP), dimension(:), intent(out) :: U_ij,U_ji
+!</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcFluxFCT1
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
 
     use fsystem
 
@@ -37,159 +327,19 @@
 !</description>
 
 !<input>
-  real(DP), dimension(:), intent(IN)  :: U_i,U_j
-  real(DP), dimension(:), intent(IN)  :: Dweight
+  real(DP), dimension(:), intent(in)  :: U_i,U_j
+  real(DP), dimension(:), intent(in)  :: Dweight
 !</input>
 
 !<output>
-  real(DP), dimension(:), intent(OUT), optional :: W_ij
-  real(DP), dimension(:), intent(OUT), optional :: Lbd_ij
-  real(DP), dimension(:), intent(OUT), optional :: R_ij
-  real(DP), dimension(:), intent(OUT), optional :: L_ij
+  real(DP), dimension(:), intent(out), optional :: W_ij
+  real(DP), dimension(:), intent(out), optional :: Lbd_ij
+  real(DP), dimension(:), intent(out), optional :: R_ij
+  real(DP), dimension(:), intent(out), optional :: L_ij
 !</output>
 
 !</subroutine>
 
   end subroutine fcb_calcCharacteristics
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine fcb_calcFlux(U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
-
-    use fsystem
-
-!<description>
-    ! This subroutine computes the internodal fluxes.  Given the
-    ! variables at the two states $i$ and $j$ and the multi-component
-    ! weighting coefficients, this routine computes:
-    !
-    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
-    !
-    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
-    !
-    ! In some cases it is useful to have skew-symmetry,
-    ! i.e. $F_{ji}=-F_{ij}$ but this is not mandatory, and hence, this
-    ! routine computes both.
-!</description>
-
-!<input>
-  real(DP), dimension(:), intent(IN)  :: U_i,U_j
-  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
-  real(DP),               intent(IN)  :: dscale
-  integer, intent(IN)                 :: i,j
-!</input>
-
-!<output>
-  real(DP), dimension(:), intent(OUT) :: F_ij,F_ji
-!</output>
-
-!</subroutine>
-
-  end subroutine fcb_calcFlux
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine fcb_calcFluxFCT(U_i, U_j, Udot_i, Udot_j,&
-      M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
-
-    use fsystem
-
-!<description>
-    ! This subroutine computes the internodal fluxes for the FCT algorithm.
-    ! Given the variables at the two states $i$ and $j$ this routine computes:
-    !
-    ! 1.) The internodal flux from node $j$ into node $i$: $F_{ij}$
-    !
-    ! 2.) The internodal flux from node $i$ into node $j$: $F_{ji}$
-    !
-    ! 3.) The solution difference: $U_{ij}$ and $U_{ji}$
-    !
-    ! If the fluxes and the solution differences are computed in terms of
-    ! conservative variables then $F_{ji}=-F_{ij}$ and $U_{ji}=-U_{ij}$.
-!</description>
-
-    !<input>
-  real(DP), dimension(:), intent(IN)  :: U_i,U_j
-  real(DP), dimension(:), intent(IN)  :: Udot_i,Udot_j
-  real(DP), intent(IN)                :: M_ij
-  real(DP), dimension(:), intent(IN)  :: C_ij,C_ji
-  integer, intent(IN)                 :: i,j
-!</input>
-
-!<output>
-  real(DP), dimension(:), intent(OUT) :: F_ij,F_ji
-  real(DP), dimension(:), intent(OUT) :: U_ij,U_ji
-!</output>
-
-!</subroutine>
-
-end subroutine fcb_calcFluxFCT
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine fcb_calcMatrixDiagonal(U_i, C_ii, i, dscale, K_ii)
-
-    use fsystem
-
-!<description>
-    ! Given the variables at node $i$ and the weighting coefficient
-    ! $C_{ii}$, this subroutine computes the matrix coefficient
-    ! $K_{ii} which is assembled into the diagonal of the global
-    ! system matrix.
-!</description>
-
-!<input>
-  real(DP), dimension(:), intent(IN)  :: U_i
-  real(DP), dimension(:), intent(IN)  :: C_ii
-  real(DP), intent(IN)                :: dscale
-  integer, intent(IN)                 :: i
-!</input>
-
-!<outptu>
-  real(DP), dimension(:), intent(OUT) :: K_ii
-!</output>
-
-!</subroutine>
-
-  end subroutine fcb_calcMatrixDiagonal
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine fcb_calcMatrix(U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-
-    use fsystem
-
-!<description>
-    ! This subroutine computes the local matrices for the edge
-    ! $ij$. Given the variables at the two states $i$ and $j$ and the
-    ! multi-component weighting coefficients $C_{ij}$ and $C_{ji}$,
-    ! this subroutine computes the matrix coefficients $K_{ij} and
-    ! $K_{ji} which are assembled into the global system
-    ! matrix. Moreover, the diffusion coefficient $D_{ij}$ is
-    ! computed.
-!</description>
-
-!<input>
-  real(DP), dimension(:), intent(IN)  :: U_i, U_j
-  real(DP), dimension(:), intent(IN)  :: C_ij, C_ji
-  real(DP), intent(IN)                :: dscale
-  integer, intent(IN)                 :: i,j
-!</input>
-
-!<outptu>
-  real(DP), dimension(:), intent(OUT) :: K_ij, K_ji, D_ij
-!</output>
-
-!</subroutine>
-
-  end subroutine fcb_calcMatrix
 
   end interface

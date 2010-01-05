@@ -468,7 +468,7 @@ contains
     aux  = sqrt(a(1)*a(1)+a(2)*a(2))
     vel  = u_ij*a(1) + v_ij*a(2)
     q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-    cs   = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
     d_ij = dscale * (abs(vel) + aux*cs)
@@ -602,7 +602,7 @@ contains
 
     ! Compute auxiliary variable
     q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-    aux  = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    aux  = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
 
     ! Scalar dissipation for x- and y-direction
     d_ij = dscale * ( abs(a(1)*u_ij) + abs(a(1))*aux +&
@@ -746,7 +746,7 @@ contains
       uPow2 = u_ij*u_ij
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
       
       ! Compute eigenvalues
@@ -914,7 +914,7 @@ contains
       uPow2 = u_ij*u_ij
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
 
       !-------------------------------------------------------------------------
@@ -1579,7 +1579,7 @@ contains
          
       ! Compute scalar dissipation
       D_ij = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
-                       anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))     
+                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))     
     else
       
       ! Nullify dissipation tensor
@@ -1700,7 +1700,7 @@ contains
          
       ! Compute scalar dissipation
       aux = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
-                      anorm*sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL)))
+                      anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
       
       D_ij     = 0.0_DP
       D_ij( 1) = aux
@@ -1792,7 +1792,7 @@ contains
       c2    = a(2)/anorm
       vel   = c1*u_ij+c2*v_ij
       q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
       
       ! Diagonal matrix of eigenvalues
@@ -1983,7 +1983,7 @@ contains
       c2    = a(2)/anorm
       vel   = c1*u_ij+c2*v_ij
       q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs    = sqrt(cPow2)
       
       ! Diagonal matrix of eigenvalues
@@ -2299,7 +2299,7 @@ contains
       uPow2 = u_ij*u_ij
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)  
       aux   = a1*u_ij+a2*v_ij
 

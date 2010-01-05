@@ -1070,7 +1070,7 @@ contains
 
         rproblemLevel%Rafcstab(inviscidAFC)%iSpec =&
             iand(rproblemLevel%Rafcstab(inviscidAFC)%iSpec,&
-            not(AFCSTAB_OFFDIAGONALEDGES))
+            not(AFCSTAB_HAS_OFFDIAGONALEDGES))
       end if
     end if
     
@@ -2398,14 +2398,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'euler_solveTransientPrimal')
         call sys_halt()
       end select
-
-      !-------------------------------------------------------------------------
-      ! Compute linearised FCT correction for Euler and transport model
-      !-------------------------------------------------------------------------
       
-      call euler_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
-          rtimestep, rsolution, rcollection)
-
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
       

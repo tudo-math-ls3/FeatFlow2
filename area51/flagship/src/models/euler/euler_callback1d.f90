@@ -118,7 +118,11 @@ module euler_callback1d
   public :: euler_calcMatrixRusanovDiag1d
   public :: euler_calcMatrixRusanov1d
   public :: euler_calcCharacteristics1d
+
+  public :: euler_calcTrafoPrimitive1d
   public :: euler_calcFluxFCTScalarDiss1d
+  public :: euler_calcFluxFCTRusanov1d
+  
   public :: euler_calcBoundaryvalues1d
   public :: euler_hadaptCallbackScalar1d
   public :: euler_hadaptCallbackBlock1d
@@ -386,7 +390,7 @@ contains
     aux  = abs(a(1)) ! = sqrt(a(1)*a(1))
     vel  = u_ij*a(1)
     q_ij = 0.5_DP*(u_ij*u_ij)
-    cs   = sqrt(max(-G1*(q_ij-H_ij), SYS_EPSREAL))
+    cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
 
     ! Scalar dissipation
     d_ij = dscale * (abs(vel) + aux*cs)
@@ -499,7 +503,7 @@ contains
       ! Compute auxiliary variables
       uPow2 = u_ij*u_ij
       q_ij  = 0.5_DP*uPow2
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs    = sqrt(cPow2)
       
       ! Compute eigenvalues
@@ -1110,7 +1114,7 @@ contains
 
       ! Compute auxiliary values
       q_ij  = 0.5_DP*u_ij*u_ij
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs    = sqrt(cPow2)
 
       b2    = G1/cPow2
@@ -1253,7 +1257,7 @@ contains
 
       ! Compute auxiliary values
       q_ij  = 0.5_DP*u_ij*u_ij
-      cPow2 = max(-G1*(q_ij-H_ij), SYS_EPSREAL)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs    = sqrt(cPow2)
       b2    = G1/cPow2
       b1    = b2*q_ij
@@ -1581,43 +1585,163 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxFCTScalarDiss1d(U_i, U_j, Udot_i, Udot_j,&
-      M_ij, C_ij, C_ji, i, j, F_ij, F_ji, U_ij, U_ji)
+  pure subroutine euler_calcTrafoPrimitive1d(U_i, U_j, F_ij, G_ij, G_ji)
     
-    use fsystem
-
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
-    ! FCT algorithms in 1D using scalar dissipation.
+    ! This subroutine computes the transformation 
+    ! of the given flux into primitive variables
 !</description>
 
 !<input>
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! time derivative of local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: Udot_i,Udot_j
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
 
-    ! coefficient from consistent mass matrix
-    real(DP), intent(in) :: M_ij
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj
+    
+    ! velocities
+    ui = U_i(2)/U_i(1)
+    uj = U_j(2)/U_j(1)
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! velocity fluxes
+    G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+
+    ! pressure fluxes
+    G_ij(3) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
+    G_ji(3) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
+
+  end subroutine euler_calcTrafoPrimitive1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTScalarDiss1d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 1D using scalar dissipation dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
 
     ! node numbers
     integer, intent(in) :: i, j
 !</input>
 
 !<output>
-    ! raw antidiffusive fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
-
-    ! solution differences
-    real(DP), dimension(:), intent(out) :: U_ij, U_ji
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
 !</output>
 !</subroutine>
 
+    ! local variables
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,d_ij,hi,hj,H_ij,q_ij,aux,vel,cs
+    
+    ! Compute velocities
+    ui = U2_i(2)/U2_i(1); uj = U2_j(2)/U2_j(1)
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+    
+    ! Compute Roe mean values
+    aux  = sqrt(max(U2_i(1)/U2_j(1), SYS_EPSREAL))
+    hi   = GAMMA*U2_i(3)/U2_i(1)-G2*(U2_i(2)*U2_i(2))/(U2_i(1)*U2_i(1))
+    hj   = GAMMA*U2_j(3)/U2_j(1)-G2*(U2_j(2)*U2_j(2))/(U2_j(1)*U2_j(1))
+    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+    aux  = (aux*ui+uj)/(aux+1.0_DP)
+
+    ! Compute auxiliary variables
+    vel  = aux*a(1)
+    q_ij = 0.5_DP*(aux*aux)
+    cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+
+    ! Scalar dissipation
+    d_ij = abs(vel) + abs(a(1))*cs
+    
+    ! Compute conservative fluxes
+    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
+    
   end subroutine euler_calcFluxFCTScalarDiss1d
+
+    !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTRusanov1d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 1D using the Rusanov dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: d_ij,ui,uj,ci,cj,Ei,Ej
+    
+    ! Compute velocities and energy
+    ui = U2_i(2)/U2_i(1); uj = U2_j(2)/U2_j(1)
+    Ei = U2_i(3)/U2_i(1); Ej = U2_j(3)/U2_j(1)
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+    
+    ! Scalar dissipation
+    d_ij = max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
+                abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
+    
+    ! Compute conservative fluxes
+    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
+    
+  end subroutine euler_calcFluxFCTRusanov1d
 
   !*****************************************************************************
 

@@ -938,14 +938,14 @@ contains
         AFCSTAB_FEMFCT_LINEARISED)) return
     
     ! Let us check if the edge-based data structure has been generated
-    if((iand(p_rafcstabEuler%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(p_rafcstabEuler%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if((iand(p_rafcstabEuler%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+       (iand(p_rafcstabEuler%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(p_rmatrixTransport,&
           p_rafcstabEuler)
     end if
 
-    if((iand(p_rafcstabTransport%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(p_rafcstabTransport%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if((iand(p_rafcstabTransport%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+       (iand(p_rafcstabTransport%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(p_rmatrixTransport,&
           p_rafcstabTransport)
     end if
@@ -1134,6 +1134,7 @@ contains
     end subroutine buildFluxTransport2d
     
     !***************************************************************************
+
 !<subroutine>
 
     subroutine  buildCorrection(IverticesAtEdge, NEQ, NVAR, NEDGE,&

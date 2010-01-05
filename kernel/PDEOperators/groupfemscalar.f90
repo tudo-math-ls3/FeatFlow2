@@ -513,7 +513,7 @@ contains
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for (non-)conservative matrix assembly
@@ -606,7 +606,7 @@ contains
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for (non-)conservative matrix assembly
@@ -645,8 +645,8 @@ contains
 
     ! Check if stabilisation provides edge-based structure
     ! Let us check if the edge-based data structure has been generated
-    if((iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+       (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
 
@@ -757,9 +757,9 @@ contains
           end if
           
           ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION)
 
         else   ! bhasOrientation == no
 
@@ -806,8 +806,8 @@ contains
           end if
           
           ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGEVALUES)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)
+          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
           
         end if   ! bhasOrientation
         
@@ -2134,7 +2134,7 @@ contains
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 !</input>
 
@@ -2163,8 +2163,8 @@ contains
     
     ! Check if stabilisation provides edge-based structure
     ! Let us check if the edge-based data structure has been generated
-    if((iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0)) then
+    if((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+       (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(rcoeffMatrix, rafcstab)
     end if
     
@@ -2485,8 +2485,8 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
       call sys_halt()
@@ -2569,15 +2569,15 @@ contains
         end if   ! theta < 1
         
         ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)        
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)        
 
       end if   ! binit
       
 
       ! Check if correction factors and fluxes are available
-      if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0 .or.&
+          iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
                          &and/or nodal correction factors',&
                          OU_CLASS_ERROR,OU_MODE_STD, 'gfsc_buildResScalarFCT')
@@ -2615,14 +2615,14 @@ contains
         end if
 
         ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES) 
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
 
       end if   ! binit
 
       ! Check if correction factors and fluxes are available
-      if (iand(rafcstab%iSpec, AFCSTAB_NODALFACTOR) .eq. 0 .or.&
-          iand(rafcstab%iSpec, AFCSTAB_FLUXES)  .eq. 0) then
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0 .or.&
+          iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)  .eq. 0) then
         call output_line('Stabilisation does not provide precomputed fluxes &
                          &and/or nodal correction factors',&
                          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarFCT')
@@ -3336,9 +3336,9 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)  .eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)     .eq.0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarTVD')
       call sys_halt()
@@ -3362,10 +3362,10 @@ contains
                      rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
 
     ! Set specifier
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
     
   contains
 
@@ -3564,9 +3564,9 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)  .eq.0 .or. &
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION).eq.0 .or. &
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)     .eq.0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)  .eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0 .or. &
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)     .eq.0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarGP')
       call sys_halt()
@@ -3595,10 +3595,10 @@ contains
                     p_fluxImpl, p_fluxExpl, p_res)
     
     ! Set specifier
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
     
   contains
 
@@ -3801,8 +3801,8 @@ contains
     
     ! Check if stabilisation is prepared
     if (rafcstab%ctypeAFCstabilisation .ne. AFCSTAB_SYMMETRIC .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0    .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0) then
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0    .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResScalarSymm')
       call sys_halt()
@@ -3826,10 +3826,10 @@ contains
                            rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_flux, p_res)
 
     ! Set specifier
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_BOUNDS)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_NODALFACTOR)
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_FLUXES)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
     
   contains
     
@@ -3945,7 +3945,7 @@ contains
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
@@ -4004,7 +4004,7 @@ contains
 
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
@@ -5659,7 +5659,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
@@ -5718,7 +5718,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: consistent mass matrix
@@ -5743,9 +5743,9 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)        .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarFCT')
       call sys_halt()
@@ -6011,7 +6011,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -6068,7 +6068,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -6104,19 +6104,19 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)          .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarTVD')
       call sys_halt()
     end if
       
     ! Check if off-diagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
         call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers
@@ -6659,7 +6659,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -6728,7 +6728,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -6762,19 +6762,19 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)          .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacLinearScalarGP')
       call sys_halt()
     end if
     
     ! Check if off-diagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
         call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers
@@ -7438,7 +7438,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! callback functions to compute velocity
@@ -7508,7 +7508,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
     
     ! callback functions to compute velocity
@@ -7536,9 +7536,9 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)    .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)        .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)        .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarFCT')
       call sys_halt()
@@ -8528,7 +8528,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -8595,7 +8595,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
     
     ! OPTIONAL: Switch for matrix assembly
@@ -8630,12 +8630,12 @@ contains
     
 
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)          .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarTVD')
       call sys_halt()
@@ -8680,7 +8680,7 @@ contains
     end select
 
     ! Check if off-diagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
         call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
@@ -9608,7 +9608,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -9687,7 +9687,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -9722,12 +9722,12 @@ contains
     
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEORIENTATION) .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)          .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                         OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarGP')
       call sys_halt()
@@ -9777,7 +9777,7 @@ contains
     end select
 
     ! Check if off-diagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
         call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Assembled extended Jacobian matrix?
@@ -10847,7 +10847,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -10903,7 +10903,7 @@ contains
     
     ! Switch for matrix assembly
     ! TRUE  : clear matrix before assembly
-    ! FLASE : assemble matrix in an additive way
+    ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
     ! OPTIONAL: Switch for matrix assembly
@@ -10935,11 +10935,11 @@ contains
 
     
     ! Check if stabilisation is prepared
-    if (iand(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_EDGEVALUES)      .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_ANTIDIFFUSION)   .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_BOUNDS)          .eq. 0 .or.&
-        iand(rafcstab%iSpec, AFCSTAB_FLUXES)          .eq. 0) then
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)   .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)          .eq. 0 .or.&
+        iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)          .eq. 0) then
       call output_line('Stabilisation does not provide required structures',&
                        OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildJacobianScalarSymm')
       call sys_halt()
@@ -10949,7 +10949,7 @@ contains
     if (bclear) call lsyssc_clearMatrix(rjacobianMatrix)
     
     ! Check if off-diagonal edges need to be generated
-    if (iand(rafcstab%iSpec, AFCSTAB_OFFDIAGONALEDGES) .eq. 0)&
+    if (iand(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES) .eq. 0)&
         call afcstab_generateOffdiagEdges(rafcstab)
     
     ! Set pointers

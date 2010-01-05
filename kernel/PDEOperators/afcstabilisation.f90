@@ -122,71 +122,83 @@ module afcstabilisation
 !<constantblock description="Bitfield identifiers for state of stabilisation">
   
   ! Stabilisation is undefined
-  integer(I32), parameter, public :: AFCSTAB_UNDEFINED        = 2_I32**0
+  integer(I32), parameter, public :: AFCSTAB_UNDEFINED            = 2_I32**0
 
   ! Stabilisation has been initialised
-  integer(I32), parameter, public :: AFCSTAB_INITIALISED      = 2_I32**1
+  integer(I32), parameter, public :: AFCSTAB_INITIALISED          = 2_I32**1
 
   ! Edge-based structure generated: IverticesAtEdge
-  integer(I32), parameter, public :: AFCSTAB_EDGESTRUCTURE    = 2_I32**2
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGESTRUCTURE    = 2_I32**2
 
   ! Edge-based structure oriented: IverticesAtEdge
-  integer(I32), parameter, public :: AFCSTAB_EDGEORIENTATION  = 2_I32**3
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEORIENTATION  = 2_I32**3
 
   ! Edge-based values computed from matrix: DcoefficientsAtEdge
-  integer(I32), parameter, public :: AFCSTAB_EDGEVALUES       = 2_I32**4
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGEVALUES       = 2_I32**4
 
-  ! Nodal antidiffusion: PP,PM
-  integer(I32), parameter, public :: AFCSTAB_ANTIDIFFUSION    = 2_I32**5
-
-  ! Nodal upper/lower bounds: QP,QM
-  integer(I32), parameter, public :: AFCSTAB_BOUNDS           = 2_I32**6
-  
-  ! Nodal correction factors computed: RP,RM
-  integer(I32), parameter, public :: AFCSTAB_NODALFACTOR      = 2_I32**7
-
-  ! Antidiffusive fluxes precomputed
-  integer(I32), parameter, public :: AFCSTAB_FLUXES           = 2_I32**8
-  
   ! Subdiagonal edge-based structure generated
-  integer(I32), parameter, public :: AFCSTAB_OFFDIAGONALEDGES = 2_I32**9
+  integer(I32), parameter, public :: AFCSTAB_HAS_OFFDIAGONALEDGES = 2_I32**5
+  
+  ! Precomputed antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_HAS_ADFLUXES         = 2_I32**6
+  
+  ! Nodal sums of antidiffusive increments: PP, PM
+  integer(I32), parameter, public :: AFCSTAB_HAS_ADINCREMENTS     = 2_I32**7
 
+  ! Nodal upper/lower bounds: QP, QM
+  integer(I32), parameter, public :: AFCSTAB_HAS_BOUNDS           = 2_I32**8
+  
+  ! Nodal correction factors: RP, RM
+  integer(I32), parameter, public :: AFCSTAB_HAS_NODELIMITER      = 2_I32**9
+  
+  ! Edgewise correction factors: ALPHA
+  integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
+  
   ! Approximation to time derivative
-  integer(I32), parameter, public :: AFCSTAB_TIMEDER          = 2_I32**10
+  integer(I32), parameter, public :: AFCSTAB_TIMEDER          = 2_I32**11
 
-  ! Edgewise correction factors computed: ALPHA
-  integer(I32), parameter, public :: AFCSTAB_EDGEFACTOR       = 2_I32**11
+  
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for FCT-algorithm">
 
   ! Initialize the edgewise correction factors by unity
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITALPHA     = 2_I32**0
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITALPHA    = 2_I32**0
   
-  ! Compute the sums of antidiffusive increments and the local bounds
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_INITPQ        = 2_I32**1
+  ! Compute the sums of antidiffusive increments
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_ADINCREMENTS = 2_I32**1
 
-  ! Compute approximation to the time derivative
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_TIMEDER       = 2_I32**2
-  
+  ! Compute the distances to a local extremum
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_BOUNDS       = 2_I32**2
+
   ! Compute the nodal correction factors
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMIT         = 2_I32**3
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITNODAL   = 2_I32**3
 
-  ! Apply limited antidiffusive fluxes
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT_APPLY = 2_I32**4
+  ! Compute edgewise correction factors
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LIMITEDGE    = 2_I32**4
+  
+  ! Correct raw antidiffusive fluxes and apply them
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT      = 2_I32**5
 
-  ! Compute edgewise correction factors without limiting the antidiffusive fluxes
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CORRECT       = 2_I32**5
+  ! Scale corrected antidiffusive fluxes by the inverse of the
+  ! lumped mass matrix prior to applying it to the residual/solution
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_SCALEBYMASS  = 2_I32**6
 
-  ! Apply limited antidiffusive fluxes without computing edgewise correction factors
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_APPLY         = 2_I32**6
+  ! FEM-FCT algorithm without application of the corrected fluxes
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_PREPARE  = AFCSTAB_FCTALGO_INITALPHA +&
+                                                                AFCSTAB_FCTALGO_ADINCREMENTS +&
+                                                                AFCSTAB_FCTALGO_BOUNDS +&
+                                                                AFCSTAB_FCTALGO_LIMITNODAL +&
+                                                                AFCSTAB_FCTALGO_LIMITEDGE
 
-  ! Standard FCT-algorithm
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD  = AFCSTAB_FCTALGO_INITALPHA +&
-                                                                 AFCSTAB_FCTALGO_INITPQ +&
-                                                                 AFCSTAB_FCTALGO_TIMEDER +&
-                                                                 AFCSTAB_FCTALGO_LIMIT +&
-                                                                 AFCSTAB_FCTALGO_CORRECT_APPLY
+  ! Standard FEM-FCT algorithm
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD  = AFCSTAB_FCTALGO_PREPARE +&
+                                                                 AFCSTAB_FCTALGO_CORRECT
+
+  ! Linearised FEM-FCT algorithm
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LINEARISED = AFCSTAB_FCTALGO_STANDARD +&
+                                                                  AFCSTAB_FCTALGO_SCALEBYMASS
+  
 !</constantblock>
 
 !</constants>
@@ -221,6 +233,15 @@ module afcstabilisation
     ! that the physical length of the vector is NEQ*NVAR.
     integer :: NVAR = 1
 
+    ! Number of local variables after transformation; this variable is
+    ! similar to NVAR except for the fact that it corresponds to the
+    ! transformed variable. Flux correction for systems of equations
+    ! may require some sort of synchronisation which may be performed
+    ! in terms of, e.g., primitive variables whereas the system
+    ! matrices and the residual vector/right-hand side are assembled
+    ! in terms of conservative variables. 
+    integer :: NVARtransformed = 1
+
     ! Number of edges of the sparsity pattern
     integer :: NEDGE = 0
 
@@ -229,57 +250,25 @@ module afcstabilisation
     integer :: NNVEDGE = 0
 
     ! Handle to vertices at edge structure
-    ! integer, DIMENSION(:,:), POINTER :: IverticesAtEdge
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
     ! IverticesAtEdge(3:4,1:NEDGE) : the two matrix position that
     !                                correspond to the edge
     integer :: h_IverticesAtEdge = ST_NOHANDLE
 
     ! Handle to index pointer for superdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsuperdiagEdgesIdx
     ! The numbers IsuperdiagEdgesIdx(i):IsuperdiagEdgesIdx(i+1)-1
     ! denote the edge numbers of the ith vertex which are located in
     ! the upper right triangular matrix.
     integer :: h_IsuperdiagEdgesIdx = ST_NOHANDLE
 
     ! Handle to index pointer for subdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsubdiagEdgesIdx
     integer :: h_IsubdiagEdgesIdx = ST_NOHANDLE
 
     ! Handle to the subdiagonal edge numbers
-    ! integer, DIMENSION(:), POINTER :: IsubdiagEdges
     integer :: h_IsubdiagEdges = ST_NOHANDLE
 
     ! Handle to coefficient at edge structure
     integer :: h_DcoefficientsAtEdge = ST_NOHANDLE
-
-    ! Flag whether or not the matrix is resorted.
-    !  <0: Matrix is unsorted, sorting strategy is prepared in 
-    !      h_IsortPermutation for a possible resorting of the entries.
-    !  =0: Matrix is unsorted, no sorting strategy attached.
-    !  >0: Matrix is sorted according to a sorting strategy.
-    ! If <> 0, the absolute value 
-    !               |isortStrategy| > 0
-    ! indicates the sorting strategy to use, while the sign
-    ! indicates whether the sorting strategy is active on the
-    ! matrix (+) or not (-).
-    ! The value is usually one of the SSTRAT_xxxx constants from
-    ! the module 'sortstrategy'.
-    integer :: isortStrategy = 0
-
-    ! Handle to renumbering strategy for resorting the matrix.
-    ! The renumbering strategy is a vector
-    !   array [1..2*NEQ] of integer
-    ! The first NEQ entries (1..NEQ) represent the permutation how to
-    ! sort an unsorted matrix. The second NEQ entries (NEQ+1..2*NEQ)
-    ! represent the inverse permutation.
-    ! Looking from another viewpoint with the background of how a matrix
-    ! is renumbered, one can say:
-    !  p_IsortPermutation (column in sorted matrix) = column in unsorted matrix.
-    !  p_IsortPermutation (NEQ+column in unsorted matrix) = column in sorted matrix.
-    ! Whether or not the matrix is actually sorted depends on the
-    ! flag isortStrategy!
-    integer :: h_IsortPermutation = ST_NOHANDLE
 
     ! Auxiliary nodal vectors; used internally
     type(t_vectorScalar), dimension(:), pointer :: RnodalVectors => null()
@@ -407,10 +396,9 @@ contains
     rafcstab%iSpec                 = AFCSTAB_UNDEFINED
     rafcstab%NEQ                   = 0
     rafcstab%NVAR                  = 1
+    rafcstab%NVARtransformed       = 1
     rafcstab%NEDGE                 = 0
     rafcstab%NNVEDGE               = 0
-    rafcstab%isortStrategy         = 0
-    rafcstab%h_IsortPermutation    = ST_NOHANDLE
 
     ! Release auxiliary nodal vectors
     if (associated(rafcstab%RnodalVectors)) then
@@ -908,7 +896,7 @@ contains
     end select
 
     ! Set state of stabiliation
-    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_EDGESTRUCTURE)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)
          
   contains
 
@@ -1030,7 +1018,7 @@ contains
     integer :: isize
 
     ! Check if edge-based data structure is prepared
-    if (iand(rafcstab%iSpec,AFCSTAB_EDGESTRUCTURE) .eq. 0) then
+    if (iand(rafcstab%iSpec,AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) then
       call output_line('Discrete operator does not provide required ' // &
           'edge-based data structure',OU_CLASS_ERROR,OU_MODE_STD,&
           'afcstab_generateOffdiagEdge')
@@ -1148,7 +1136,7 @@ contains
     p_IsubdiagEdgesIdx(1) = 1
 
     ! Set specifier for extended edge structure
-    rafcstab%iSpec = ior(rafcstab%iSpec,AFCSTAB_OFFDIAGONALEDGES)
+    rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)
 
   end subroutine afcstab_generateOffdiagEdges
   

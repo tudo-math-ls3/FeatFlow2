@@ -25,13 +25,13 @@
 !</description>
 
 !<input>
-  real(DP), intent(IN) :: u_i, u_j
-  real(DP), dimension(:), intent(IN)  :: C_ij, C_ji
-  integer, intent(IN) :: i,j
+  real(DP), intent(in) :: u_i, u_j
+  real(DP), dimension(:), intent(in)  :: C_ij, C_ji
+  integer, intent(in) :: i,j
 !</input>
 
 !<outptu>
-  real(DP), intent(OUT) :: k_ij, k_ji, d_ij
+  real(DP), intent(out) :: k_ij, k_ji, d_ij
 !</output>
 
 !</subroutine>
