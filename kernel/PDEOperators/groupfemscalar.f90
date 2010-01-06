@@ -237,7 +237,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_initStabilisation(rmatrixTemplate, rafcstab)
+  subroutine gfsc_initStabilisation(rmatrixTemplate, rafcstab, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -258,7 +258,12 @@ contains
 
 !<inputoutput>
     ! The stabilisation structure
-    type(t_afcstab), intent(inout)   :: rafcstab
+    type(t_afcstab), intent(inout) :: rafcstab
+
+    ! OPTIONAL: number of transformed variables
+    ! If not present, then the number of variables
+    ! NVAR is taken from the template matrix
+    integer, intent(in), optional :: NVARtransformed
 !</inputoutput>
 !</subroutine>
 
@@ -268,6 +273,11 @@ contains
 
     
     ! Set atomic data
+    if (present(NVARtransformed)) then
+      rafcstab%NVARtransformed = NVARtransformed
+    else
+      rafcstab%NVARtransformed = rmatrixTemplate%NVAR
+    end if
     rafcstab%NVAR  = rmatrixTemplate%NVAR
     rafcstab%NEQ   = rmatrixTemplate%NEQ
     rafcstab%NEDGE = int(0.5*(rmatrixTemplate%NA-rmatrixTemplate%NEQ))
