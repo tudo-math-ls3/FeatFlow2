@@ -441,8 +441,9 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
-        call transp_outputSolution(rparlist, 'transport', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+        call transp_outputSolution(rparlist, 'transport',&
+            rproblem%p_rproblemLevelMax,&
+            rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
         
@@ -464,8 +465,9 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
-        call transp_outputSolution(rparlist, 'transport', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+        call transp_outputSolution(rparlist, 'transport',&
+            rproblem%p_rproblemLevelMax,&
+            rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
         
         
@@ -483,9 +485,9 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
-        call transp_outputSolution(rparlist, 'transport', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal, rsolutionDual,&
-            rtimestep%dTime)
+        call transp_outputSolution(rparlist, 'transport',&
+            rproblem%p_rproblemLevelMax,&
+            rsolutionPrimal, rsolutionDual, rtimestep%dTime)
         
         
       case ('stationary_primal')
@@ -497,8 +499,9 @@ contains
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
-        call transp_outputSolution(rparlist, 'transport', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal=rsolutionPrimal,&
+        call transp_outputSolution(rparlist, 'transport',&
+            rproblem%p_rproblemLevelMax,&
+            rsolutionPrimal=rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
         
@@ -516,9 +519,9 @@ contains
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
             rsolver, rsolutionPrimal, rsolutionDual, rcollection)
 
-        call transp_outputSolution(rparlist, 'transport', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal, rsolutionDual,&
-            rtimestep%dTime)
+        call transp_outputSolution(rparlist, 'transport',&
+            rproblem%p_rproblemLevelMax,&
+            rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
