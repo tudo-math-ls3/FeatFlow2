@@ -237,7 +237,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_initStabilisationBlock(rmatrixBlockTemplate, rafcstab, NVARtransformed)
+  subroutine gfsys_initStabilisationBlock(rmatrixBlockTemplate,&
+      rafcstab, NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -404,7 +405,8 @@ contains
 
   ! *****************************************************************************
 
-  subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab, NVARtransformed)
+  subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab,&
+      NVARtransformed)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -1476,8 +1478,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, rafcstab,&
-      ru, fcb_calcMatrixDiagonal, fcb_calcMatrix, dscale, bclear, rdivMatrix)
+  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, rafcstab, ru,&
+      fcb_calcMatrixDiagonal, fcb_calcMatrix, dscale, bclear, rdivMatrix)
 
 !<description>
     ! This subroutine assembles the discrete divergence operator.
