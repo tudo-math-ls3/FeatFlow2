@@ -1291,6 +1291,12 @@ contains
     
     ncount = 0
     
+    ! Cancel if this region does not exist.
+    if ((rregion%iboundCompIdx .lt. 1) .or. &
+        (rregion%iboundCompIdx .gt. rtriangulation%nbct)) then
+      return
+    end if
+
     bvertexInside = .false.
     bedgeInside = .false.
     
