@@ -2904,7 +2904,8 @@ contains
     real(DP) :: dscale
     integer :: consistentMassMatrix, lumpedMassMatrix
     integer :: transportMatrix, massMatrix
-    integer :: imasstype, ivelocitytype
+    integer :: imasstype,imassantidiffusiontype
+    integer :: convectionAFC,ivelocitytype
 
 
     !###########################################################################
@@ -2953,6 +2954,9 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'ivelocitytype', ivelocitytype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'convectionAFC', convectionAFC)
     call parlst_getvalue_string(p_rparlist,&
         rcollection%SquickAccess(1),&
         'mode', smode)
@@ -3045,8 +3049,7 @@ contains
             fcb_coeffVecBdrPrimal_sim, fcb_coeffVecBdrDual_sim)
       
     end select
-    
-    
+            
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource))&
         call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
@@ -3115,6 +3118,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_predictor
     real(DP) :: dscale
     integer :: transportMatrix, massMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
@@ -3226,25 +3230,69 @@ contains
             AFCSTAB_FEMFCT_IMPLICIT,&
             AFCSTAB_FEMFCT_ITERATIVE)
         
+        ! Set pointer
+        p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+
+        ! Compute low-order predictor in the zeroth iteration
+        if (ite .eq. 0) then          
+          call lsysbl_invertedDiagMatVec(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rrhs, 1.0_DP, p_predictor)
+        end if
+        
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1),&
             'imassantidiffusiontype', imassantidiffusiontype)
         
+        ! --- NEW IMPLEMENTATION ---
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsc_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              rsolution, rsolution, rtimestep%theta,&
+              rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsc_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              rsolution, rsolution, rtimestep%theta,&
+              rtimestep%dStep, 1.0_DP, (ite .eq. 0))
+        end if
+        
+        ! Apply corrected antidiffusive fluxes
+        if (ite .eq. 0) then
           call gfsc_buildResidualFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rsolution, rtimestep%theta, rtimestep%dStep,&
-              (ite .eq. 0), rres,&
               rproblemLevel%Rafcstab(convectionAFC),&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
+              p_predictor, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_STANDARD, rres)
         else
           call gfsc_buildResidualFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rsolution, rtimestep%theta, rtimestep%dStep,&
-              (ite .eq. 0), rres,&
-              rproblemLevel%Rafcstab(convectionAFC))
+              rproblemLevel%Rafcstab(convectionAFC),&
+              p_predictor, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_STANDARD-&
+              AFCSTAB_FCTALGO_BOUNDS, rres)
         end if
+
+!!$        ! --- OLD IMPLEMENTATION ---
+!!$        ! Should we apply consistent mass antidiffusion?
+!!$        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+!!$          call gfsc_buildResidualFCT(&
+!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$              rsolution, rtimestep%theta, rtimestep%dStep,&
+!!$              (ite .eq. 0), rres,&
+!!$              rproblemLevel%Rafcstab(convectionAFC),&
+!!$              rproblemLevel%Rmatrix(consistentMassMatrix))
+!!$        else
+!!$          call gfsc_buildResidualFCT(&
+!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$              rsolution, rtimestep%theta, rtimestep%dStep,&
+!!$              (ite .eq. 0), rres,&
+!!$              rproblemLevel%Rafcstab(convectionAFC))
+!!$        end if
         
       case (AFCSTAB_FEMTVD)
         call gfsc_buildResidualTVD(&

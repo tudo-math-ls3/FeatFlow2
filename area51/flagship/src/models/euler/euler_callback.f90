@@ -946,7 +946,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
-    integer :: iblock
+    integer :: iblock, imassantidiffusiontype
 
     
     ! Start time measurement for residual/rhs evaluation
@@ -1278,27 +1278,6 @@ contains
         
       end if ! theta
 
-      
-      ! What type if stabilization is applied?
-      select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
-      case (AFCSTAB_FEMFCT_CLASSICAL,&
-            AFCSTAB_FEMFCT_ITERATIVE,&
-            AFCSTAB_FEMFCT_IMPLICIT)
-
-        !-----------------------------------------------------------------------
-        ! Initialise the raw antidiffusive fluxes
-        !-----------------------------------------------------------------------
-        call gfsys_buildFluxFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
-            rtimestep%theta, rtimestep%dStep, .true.,&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
-        
-      end select
-
-
     case DEFAULT
 
       !-------------------------------------------------------------------------
@@ -1311,6 +1290,42 @@ contains
       call lsysbl_clearVector(rrhs)
 
     end select
+
+
+    ! What type if stabilization is applied?
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_ITERATIVE,&
+          AFCSTAB_FEMFCT_IMPLICIT)
+      
+      !-------------------------------------------------------------------------
+      ! Initialise the raw antidiffusive fluxes
+      !-------------------------------------------------------------------------
+
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1),&
+          'imassantidiffusiontype',&
+          imassantidiffusiontype)
+      
+      ! Should we apply consistent mass antidiffusion?
+      if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
+            rtimestep%theta, rtimestep%dStep, .true.,&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+      else
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
+            rtimestep%theta, rtimestep%dStep, .true.)
+      end if
+    end select
+    
 
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource))&
@@ -1384,7 +1399,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
-    integer :: iblock
+    integer :: iblock, imassantidiffusiontype
     
     type(t_vectorBlock) :: rulow
 
@@ -1725,13 +1740,27 @@ contains
       ! Update the raw antidiffusive fluxes and apply them to the residual
       !-------------------------------------------------------------------------
       
-      call gfsys_buildFluxFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-          rproblemLevel%Rafcstab(inviscidAFC),&
-          rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
-          rtimestep%theta, rtimestep%dStep, .false.,&
-          rproblemLevel%Rmatrix(consistentMassMatrix))
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1),&
+          'imassantidiffusiontype', imassantidiffusiontype)
+      
+      ! Should we apply consistent mass antidiffusion?
+      if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
+            rtimestep%theta, rtimestep%dStep, .false.,&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+      else
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, rsolution, euler_calcFluxFCTScalarDiss1d,&
+            rtimestep%theta, rtimestep%dStep, .false.)
+      end if
       
       if (rtimestep%theta .lt. 1.0_DP) then
 
