@@ -295,6 +295,11 @@ module geometry
   
 !</constantblock>
 
+!<constantblock description="various parameters">
+  ! default number of vertices in polygon representation
+  integer, parameter, public :: GEOM_STANDARD_VCOUNT  = 64  
+!</constantblock>
+
 !</constants>
 
 ! *****************************************************************************
@@ -1899,13 +1904,13 @@ end subroutine
   integer, dimension(2) :: Isize
   
     ! Calculate angle step
-    dstep = (SYS_PI * 2.0_DP) / real(ndesiredVerticeCount, DP)
+    dstep = (SYS_PI * 2.0_DP) / real(GEOM_STANDARD_VCOUNT, DP)
     
     ! Get radius
     dradius = rgeomObject%rcircle%dradius
   
     ! Allocate desired number of vertices
-    Isize = (/ 2, ndesiredVerticeCount+2 /)
+    Isize = (/ 2, GEOM_STANDARD_VCOUNT+2 /)
     call storage_new('geom_circle_polygonise', 'hpolyHandle', Isize, &
                        ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
 
@@ -1913,7 +1918,7 @@ end subroutine
     call storage_getbase_double2D(hpolyHandle, p_Dvertices)
     
     ! Set vertices
-    do i=0, ndesiredVerticeCount
+    do i=0, GEOM_STANDARD_VCOUNT
     
       ! Calculate angle
       dangle = dstep * real(i, DP)
