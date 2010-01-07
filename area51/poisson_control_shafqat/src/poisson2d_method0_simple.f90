@@ -136,8 +136,8 @@ contains
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 5
-    Alpha=0.0000000001_DP
+    NLMAX = 7
+    Alpha=1.0E-2_DP
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
@@ -150,7 +150,7 @@ contains
     call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
      
     ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary) 
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
@@ -169,10 +169,10 @@ contains
 !     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
 !                                    EL_E011,CUB_G2X2,rtriangulation, rboundary)
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   EL_Q2,CUB_G3X3,rtriangulation, rboundary)
+                                   EL_Q1,CUB_G2X2,rtriangulation, rboundary)
 
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(2), &
-                                   EL_Q2,CUB_G3X3,rtriangulation, rboundary)
+                                   EL_Q1,CUB_G2X2,rtriangulation, rboundary)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -428,13 +428,16 @@ contains
     ! the vector during the solution process.
     p_RfilterChain => RfilterChain
     nullify(p_rpreconditioner)
-!     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
-    call linsol_initUMFPACK4 (p_rsolverNode)
+! call linsol_initSSOR(p_rpreconditioner,1.3_DP)
+  call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_RfilterChain)
+!     call linsol_initUMFPACK4 (p_rsolverNode)
+
+!      call linsol_initGMRES (p_rsolverNode,10)
 
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
-    p_rsolverNode%nmaxIterations=1000
-    p_rsolverNode%depsRel = 1E-5_DP
+    p_rsolverNode%nmaxIterations=10000
+    p_rsolverNode%depsRel = 1E-10_DP
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
