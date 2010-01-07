@@ -1973,6 +1973,26 @@ ifeq ($(call match,$(ID),pc64-nehalem-linux-.*-.*-ompi),yes)
 include $(TEMPLATESDIR)/openmpi-generic.mk
 endif
 
+######################### Penryn 32 bit #########################
+
+ifeq ($(call match,$(ID),pc-penryn-cygwin_nt.*-g95-.*),yes)
+# invokes the GNU g95 compiler, local umfpack, local metis
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+# g95 is based on gcc 4.0.3. So, it supports less processors
+# than gcc 4.3 and 4.4. For all available options see
+# http://gcc.gnu.org/onlinedocs/gcc-4.0.3/gcc.pdf, page 145.
+ifeq ($(strip $(optimise)), YES)
+CFLAGSF77LIBS := -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -march=nocona $(CFLAGSF90)
+CFLAGSC       := -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -march=nocona $(CFLAGSCXX)
+CFLAGSCOPROC  := -march=nocona $(CFLAGSCOPROC)
+LDFLAGS       := -march=nocona $(LDFLAGS)
+endif
+endif
+
 ######################### Penryn 64 bit (Xeon E5450) #########################
 ######################### Penryn 64 bit (LiDO 2)     #########################
 
