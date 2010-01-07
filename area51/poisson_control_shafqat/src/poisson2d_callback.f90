@@ -18,7 +18,7 @@
 !#        Otherwise the routine is dead.
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
-!#
+!# 
 !# 2.) coeff_RHS_2D
 !#     -> Returns analytical values for the right hand side of the Laplace
 !#        equation. 2D case, Q2 bubble solution.
