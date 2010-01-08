@@ -114,6 +114,13 @@ bdExpressions(4) =
   'ParProfile'     2    $BDR_PARPROFILEMAX
   'Pulse'         -1    '4.0*$BDR_PARPROFILEMAX*L*(1.0-L)*SIN(TIME*_PI)'
 
+[BDCONDITIONS]
+bdComponent1(4)=
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[0.0,1.0] : Dirichlet-0 boundary
+   2.0  3  1  'Pulse'       'Dirichlet0'   # param=[3.0,4.0] : parabolic profile in X, 0.0 in Y
+   3.0  3  1  'Dirichlet0'  'Dirichlet0'   # param=[2.0,3.0] : Dirichlet-0 boundary
+   4.0  3  1  'Pulse'       'Dirichlet0'   # param=[3.0,4.0] : parabolic profile in X, 0.0 in Y
+
 [CC2D-NONLINEAR]
 itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
 depsD              = $NONLINEAR_DEPSD
