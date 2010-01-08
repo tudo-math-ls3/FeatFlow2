@@ -63,6 +63,10 @@ simportdatafiles(8) =
 sbenchLog = ''
 smsgLog = '%{slogdirectory}/output_lv%{CC-DISCRETISATION.NLMAX}.log'
 
+[PARAMTRIANG]
+sParametrisation = '%{spredirectory}/asd.prm'
+sMesh = '%{spredirectory}/asd.tri'
+
 [CC-DISCRETISATION]
 NLMAX = $MGLEVEL
 iequation = $DISCRETISATION_IEQUATION
