@@ -149,40 +149,16 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
 
 ############################
-# Test CC2D_TARGETFLOW_ASD_Q2_003
-#
-# Timestep = 0.005
-############################
-
-testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV1
-descr    = ASD-flow, Level 1
-datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
-mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.005
-
-testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV2
-descr    = ASD-flow, Level 2
-datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
-mglevels = 2
-
-testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV3
-descr    = ASD-flow, Level 3
-datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
-mglevels = 3
-
-############################
 # Test CC2D_TARGETFLOW_ASD_Q2_004
 #
-# Timestep = 0.001
-# No movie output.
+# Timestep = 0.005
 ############################
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.001
-POSTPROCESSING_IOUTPUTFILM=0
+TIMEDISCRETISATION_DTIMESTEP = 0.005
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV2
 descr    = ASD-flow, Level 2
@@ -190,6 +166,30 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 2
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_005
+#
+# Timestep = 0.001
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.001
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV3
 descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
