@@ -111,6 +111,10 @@
 !#      -> Calculates the dimension of the coordinate system on the
 !#         reference element
 !#
+!# 26.) trafo_calcBackTrafo_hexa
+!#      -> Find the coordinates on the reference hexahedron
+!#         for a given point in real world coordinates
+!#
 !#  FAQ - Some explainations
 !# --------------------------
 !# 1.) How is the ID code ctrafoType of the transformation defined?
@@ -3065,7 +3069,7 @@ contains
   ! Coordinates of the four corners of the real hexahedron.
   ! Dcoord(1,.) = x-coordinates, 
   ! Dcoord(2,.) = y-coordinates,
-  ! Dcoord(3,.) = y-coordinates.
+  ! Dcoord(3,.) = z-coordinates.
   ! DIMENSION(#space dimensions,NVE)
   real(DP), dimension(:,:), intent(in) :: Dcoords
 !</input>
@@ -3218,6 +3222,8 @@ contains
   
 !</subroutine>
 
+
+
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
             + DjacPrep(8)*dpary*dparz
@@ -3310,6 +3316,7 @@ contains
   
 !</subroutine>
 
+  
     ! Jacobian matrix of the mapping:
     Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
             + DjacPrep(8)*dpary*dparz
@@ -3820,6 +3827,7 @@ contains
 !</output>
   
 !</subroutine>
+ integer :: iresult
 
     ! What type of transformation do we have? First decide on the dimension,
     ! then on the actual ID.
@@ -3862,7 +3870,12 @@ contains
             Dpoint(1),Dpoint(2),DparPoint(1),DparPoint(2))
         
       end select ! actual ID
-    
+    case (NDIM3D)
+      ! trilinear transformation for hexahedral elements 
+      call trafo_calcBackTrafo_hexa(Dcoord, &
+           Dpoint(1),Dpoint(2),Dpoint(3), &
+           DparPoint(1),DparPoint(2),DparPoint(3),iresult)
+      
     end select ! Dimension
   
   end subroutine
@@ -4313,5 +4326,262 @@ contains
     end do
 
   end subroutine
+  
+!************************************************************************  
+  
+!<subroutine>  
+  pure subroutine trafo_calcBackTrafo_hexa(Dcoord, &
+     dxreal,dyreal,dzreal,dparx,dpary,dparz,iresult)
+!<description>
+  ! This subroutine is to find the coordinates on the reference
+  ! element (dparx,dpary,dparz) for a given point (dxreal,dyreal,dzreal) 
+  ! in real coordinates.
+  !
+!<input>
+  ! Coordinates of the four points forming the element.
+  ! Dcoord(1,.) = x-coordinates,
+  ! Dcoord(2,.) = y-coordinates.
+  ! Dcoord(3,.) = z-coordinates.
+  ! DIMENSION(#space dimensions,NVE)
+  real(DP), dimension(:,:), intent(in) :: Dcoord 
+  
+  ! Coordinates of a point on the real element
+  real(DP), intent(in) :: dxreal,dyreal,dzreal
+!</input>
+  
+!<output>
+  ! Coordinates of a point on the reference element
+  real(DP), intent(out) :: dparx,dpary,dparz
+  integer,intent(out)   :: iresult
+!</output>
+  
+!</subroutine>
+  ! DIMENSION(TRAFO_NAUXJAC3D)
+  real(DP), dimension(TRAFO_NAUXJAC3D) :: DjacPrep
+  real(DP), dimension(9) :: Djac
+  real(DP), dimension(3) :: DPoints
+  real(DP)               :: ddetj,ddetjx,ddetjy,ddetjz
+  real(dp) :: rhsx,rhsy,rhsz,eps
+  real(DP) :: dparx_old,dpary_old,dparz_old,c1,c2,c3
+  integer  :: i
+  ! initialize
+  dparx=0.0_dp
+  dpary=0.0_dp
+  dparz=0.0_dp
+  eps  =1e-6
+  
+  !DEBUG
+  !DPoints(:)=(/-1,-1,-1/)
+  
+  ! a1
+  DjacPrep( 1) = 0.125_DP *&
+               ( DCoord(1,1)+DCoord(1,2)+DCoord(1,3)+DCoord(1,4)&
+                +DCoord(1,5)+DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
+  ! a2                
+  DjacPrep( 2) = 0.125_DP *&
+               (-DCoord(1,1)+DCoord(1,2)+DCoord(1,3)-DCoord(1,4)&
+                -DCoord(1,5)+DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
+  ! a3                
+  DjacPrep( 3) = 0.125_DP *&
+               (-DCoord(1,1)-DCoord(1,2)+DCoord(1,3)+DCoord(1,4)&
+                -DCoord(1,5)-DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
+  ! a4
+  DjacPrep( 4) = 0.125_DP *&
+               (-DCoord(1,1)-DCoord(1,2)-DCoord(1,3)-DCoord(1,4)&
+                +DCoord(1,5)+DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
+  ! a5
+  DjacPrep( 5) = 0.125_DP *&
+               ( DCoord(1,1)-DCoord(1,2)+DCoord(1,3)-DCoord(1,4)&
+                +DCoord(1,5)-DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
+  ! a6                
+  DjacPrep( 6) = 0.125_DP *&
+               ( DCoord(1,1)-DCoord(1,2)-DCoord(1,3)+DCoord(1,4)&
+                -DCoord(1,5)+DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
+  ! a7
+  DjacPrep( 7) = 0.125_DP *&
+               ( DCoord(1,1)+DCoord(1,2)-DCoord(1,3)-DCoord(1,4)&
+                -DCoord(1,5)-DCoord(1,6)+DCoord(1,7)+DCoord(1,8))
+  ! a8
+  DjacPrep( 8) = 0.125_DP *&
+               (-DCoord(1,1)+DCoord(1,2)-DCoord(1,3)+DCoord(1,4)&
+                +DCoord(1,5)-DCoord(1,6)+DCoord(1,7)-DCoord(1,8))
+  DjacPrep( 9) = 0.125_DP *&
+               ( DCoord(2,1)+DCoord(2,2)+DCoord(2,3)+DCoord(2,4)&
+                +DCoord(2,5)+DCoord(2,6)+DCoord(2,7)+DCoord(2,8))
+  DjacPrep(10) = 0.125_DP *&
+               (-DCoord(2,1)+DCoord(2,2)+DCoord(2,3)-DCoord(2,4)&
+                -DCoord(2,5)+DCoord(2,6)+DCoord(2,7)-DCoord(2,8))
+  DjacPrep(11) = 0.125_DP *&
+               (-DCoord(2,1)-DCoord(2,2)+DCoord(2,3)+DCoord(2,4)&
+                -DCoord(2,5)-DCoord(2,6)+DCoord(2,7)+DCoord(2,8))
+  DjacPrep(12) = 0.125_DP *&
+               (-DCoord(2,1)-DCoord(2,2)-DCoord(2,3)-DCoord(2,4)&
+                +DCoord(2,5)+DCoord(2,6)+DCoord(2,7)+DCoord(2,8))
+  DjacPrep(13) = 0.125_DP *&
+               ( DCoord(2,1)-DCoord(2,2)+DCoord(2,3)-DCoord(2,4)&
+                +DCoord(2,5)-DCoord(2,6)+DCoord(2,7)-DCoord(2,8))
+  DjacPrep(14) = 0.125_DP *&
+               ( DCoord(2,1)-DCoord(2,2)-DCoord(2,3)+DCoord(2,4)&
+                -DCoord(2,5)+DCoord(2,6)+DCoord(2,7)-DCoord(2,8))
+  DjacPrep(15) = 0.125_DP *&
+               ( DCoord(2,1)+DCoord(2,2)-DCoord(2,3)-DCoord(2,4)&
+                -DCoord(2,5)-DCoord(2,6)+DCoord(2,7)+DCoord(2,8))
+  DjacPrep(16) = 0.125_DP *&
+               (-DCoord(2,1)+DCoord(2,2)-DCoord(2,3)+DCoord(2,4)&
+                +DCoord(2,5)-DCoord(2,6)+DCoord(2,7)-DCoord(2,8))
+  DjacPrep(17) = 0.125_DP *&
+               ( DCoord(3,1)+DCoord(3,2)+DCoord(3,3)+DCoord(3,4)&
+                +DCoord(3,5)+DCoord(3,6)+DCoord(3,7)+DCoord(3,8))
+  DjacPrep(18) = 0.125_DP *&
+               (-DCoord(3,1)+DCoord(3,2)+DCoord(3,3)-DCoord(3,4)&
+                -DCoord(3,5)+DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
+  DjacPrep(19) = 0.125_DP *&
+               (-DCoord(3,1)-DCoord(3,2)+DCoord(3,3)+DCoord(3,4)&
+                -DCoord(3,5)-DCoord(3,6)+DCoord(3,7)+DCoord(3,8))
+  DjacPrep(20) = 0.125_DP *&
+               (-DCoord(3,1)-DCoord(3,2)-DCoord(3,3)-DCoord(3,4)&
+                +DCoord(3,5)+DCoord(3,6)+DCoord(3,7)+DCoord(3,8))
+  DjacPrep(21) = 0.125_DP *&
+               ( DCoord(3,1)-DCoord(3,2)+DCoord(3,3)-DCoord(3,4)&
+                +DCoord(3,5)-DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
+  DjacPrep(22) = 0.125_DP *&
+               ( DCoord(3,1)-DCoord(3,2)-DCoord(3,3)+DCoord(3,4)&
+                -DCoord(3,5)+DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
+  DjacPrep(23) = 0.125_DP *&
+               ( DCoord(3,1)+DCoord(3,2)-DCoord(3,3)-DCoord(3,4)&
+                -DCoord(3,5)-DCoord(3,6)+DCoord(3,7)+DCoord(3,8))
+  DjacPrep(24) = 0.125_DP *&
+               (-DCoord(3,1)+DCoord(3,2)-DCoord(3,3)+DCoord(3,4)&
+                +DCoord(3,5)-DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
+  
+  
+  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
+              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
+              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)  
+
+  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
+              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
+              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)  
+
+  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
+              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
+              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)  
+  
+  do i=1,20
+  
+    dparx_old=dparx
+    dpary_old=dpary
+    dparz_old=dparz
+    
+    ! Jacobian matrix of the mapping:
+    Djac(1) = DjacPrep(2) + DjacPrep(5)*dpary + DjacPrep(6)*dparz &
+            + DjacPrep(8)*dpary*dparz
+    Djac(2) = DjacPrep(10) + DjacPrep(13)*dpary + DjacPrep(14)*dparz &
+            + DjacPrep(16)*dpary*dparz
+    Djac(3) = DjacPrep(18) + DjacPrep(21)*dpary + DjacPrep(22)*dparz &
+            + DjacPrep(24)*dpary*dparz
+    Djac(4) = DjacPrep(3) + DjacPrep(5)*dparx + DjacPrep(7)*dparz &
+            + DjacPrep(8)*dparx*dparz
+    Djac(5) = DjacPrep(11) + DjacPrep(13)*dparx + DjacPrep(15)*dparz &
+            + DjacPrep(16)*dparx*dparz
+    Djac(6) = DjacPrep(19) + DjacPrep(21)*dparx + DjacPrep(23)*dparz &
+            + DjacPrep(24)*dparx*dparz
+    Djac(7) = DjacPrep(4) + DjacPrep(6)*dparx + DjacPrep(7)*dpary &
+            + DjacPrep(8)*dparx*dpary
+    Djac(8) = DjacPrep(12) + DjacPrep(14)*dparx + DjacPrep(15)*dpary &
+            + DjacPrep(16)*dparx*dpary
+    Djac(9) = DjacPrep(20) + DjacPrep(22)*dparx + DjacPrep(23)*dpary &
+            + DjacPrep(24)*dparx*dpary
+
+    ! build the RHS vector
+    rhsx = DjacPrep(1) + DjacPrep(2)*dparx + DjacPrep(3)*dpary &
+           + DjacPrep(4)*dparz + DjacPrep(5)*dparx*dpary &
+           + DjacPrep(6)*dparx*dparz + DjacPrep(7)*dpary*dparz &
+           + DjacPrep(8)*dparx*dpary*dparz - dxreal
+    rhsy = DjacPrep(9) + DjacPrep(10)*dparx + DjacPrep(11)*dpary &
+           + DjacPrep(12)*dparz + DjacPrep(13)*dparx*dpary &
+           + DjacPrep(14)*dparx*dparz + DjacPrep(15)*dpary*dparz &
+           + DjacPrep(16)*dparx*dpary*dparz - dyreal
+    rhsz = DjacPrep(17) + DjacPrep(18)*dparx + DjacPrep(19)*dpary &
+           + DjacPrep(20)*dparz + DjacPrep(21)*dparx*dpary &
+           + DjacPrep(22)*dparx*dparz + DjacPrep(23)*dpary*dparz &
+           + DjacPrep(24)*dparx*dpary*dparz - dzreal
+    
+    ! We have the rhs, now solve the system using cramer's rule
+    
+           
+    ! determinant 
+    ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+          + Djac(2)*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
+          + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+          
+    ! determinant substituting the 1st-column with the rhs
+    ddetjx = rhsx*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+           + Djac(2)*(Djac(6)*rhsz - rhsy*Djac(9)) &
+           + Djac(3)*(rhsy*Djac(8) - Djac(5)*rhsz)
+           
+    ! determinant substituting the 2nd-column with the rhs
+    ddetjy = Djac(1)*(rhsy*Djac(9) - Djac(6)*rhsz) &
+           + rhsx*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
+           + Djac(3)*(Djac(4)*rhsz - rhsy*Djac(7))
+           
+    ! determinant substituting the 3rd-column with the rhs
+    ddetjz = Djac(1)*(Djac(5)*rhsz - rhsy*Djac(8)) &
+           + Djac(2)*(rhsy*Djac(7) - Djac(4)*rhsz) &
+           + rhsx*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+
+    ! calculate the solution
+    dparx = ddetjx/ddetj
+    dpary = ddetjy/ddetj
+    dparz = ddetjz/ddetj
+    
+    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
+    
+    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
+    
+    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
+    
+    ! compute the correction
+    dparx = dparx_old-dparx
+    dpary = dpary_old-dpary
+    dparz = dparz_old-dparz
+    
+    if((dparx .lt. -1.0_dp) .or. (dparx .gt. 1.0_dp))then
+      dparx_old=dparx
+      dpary_old=dpary
+      dparz_old=dparz
+      return
+    end if
+
+    if((dpary .lt. -1.0_dp) .or. (dpary .gt. 1.0_dp))then
+      dparx_old=dparx
+      dpary_old=dpary
+      dparz_old=dparz
+      return
+    end if
+
+    if((dparz .lt. -1.0_dp) .or. (dparz .gt. 1.0_dp))then
+      dparx_old=dparx
+      dpary_old=dpary
+      dparz_old=dparz
+      return
+    end if
+
+
+    if( (abs(dparx_old-dparx) .le. eps) .and. (abs(dpary_old-dpary) .le. eps) .and. &
+        (abs(dparz_old-dparz) .le. eps) )then
+        return
+    end if
+  
+  end do
+  
+  if(i .gt. 20)then
+    iresult=-1
+  end if
+
+  end subroutine trafo_calcBackTrafo_hexa
+  
+!************************************************************************
+  
 
 end module 
