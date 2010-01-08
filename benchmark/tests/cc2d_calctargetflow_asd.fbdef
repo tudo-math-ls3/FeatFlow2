@@ -1,0 +1,196 @@
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+# This definition file collects a couple of flow calculations
+# for flows which are used as target flows for distributed
+# optimal control.
+
+appl = cc2d
+class = DEFAULT
+
+# Default settings, all defined parameters.
+
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_RE = 1000
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
+TIMEDISCRETISATION_NITERATIONS = 10000
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 1.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+NONLINEAR_ITYPEPRECONDITIONING = 1
+NONLINEAR_DEPSD=1E-12
+NONLINEAR_DEPSDIV=1E-12
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+SMOOTHER_DOMEGA = 1.0
+POSTPROCESSING_IOUTPUTUCD = 1
+POSTPROCESSING_SFILENAMEUCD = '%{spostdirectory}/u_lv%{CC-DISCRETISATION.NLMAX}.gmv'
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.0
+POSTPROCESSING_IWRITEBODYFORCES = 1
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.001
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.004
+BDR_PARPROFILEMAX = 0.3
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+DISCRETISATION_CWRITEFINALSOLUTION=1
+POSTPROCESSING_SWRITESOLUTIONFILENAME = '%{spostdirectory}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+POSTPROCESSING_IBODYFORCESFORMULATION=-1
+POSTPROCESSING_ICALCBODYFORCES=2
+POSTPROCESSING_IWRITEPOINTVALUES=1
+POSTPROCESSING_SFILENAMEPOINTVALUES = '%{spostdirectory}/pointvalues_lv%{CC-DISCRETISATION.NLMAX}'
+
+# Additional parameters:
+
+POSTPROCESSING_IOUTPUTFILM=0
+POSTPROCESSING_SFILENAMEFILM=''
+MULTIGRIDSOLVER_NMAXITERATIONS=20
+MULTIGRIDSOLVER_DEPSREL=1E-2
+MINLEVEL=1
+
+############################
+# Test TARGETFLOW_ASD_Q2
+#
+# A cylinger in the center of a channel.
+# Pulsing inflow from left and right.
+# On different levels and for different FE types,
+# drag and lift are measured.
+#
+# Degree of nonstationarity: Re=5
+############################
+
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+DISCRETISATION_RE = 250
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.0
+POSTPROCESSING_DBDFORCESCOEFF1 = 0.004
+POSTPROCESSING_DBDFORCESCOEFF2 = 0.004
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+NONLINEAR_ITYPEPRECONDITIONING = 2
+SMOOTHER_DOMEGA = 0.7
+BDR_PARPROFILEMAX = 0.3
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+POSTPROCESSING_IOUTPUTFILM=1
+POSTPROCESSING_SFILENAMEFILM='./ns/asd_q2_lv_%{CC-DISCRETISATION.NLMAX}_re250'
+TIMEDISCRETISATION_DTIMEMAX = 2.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_001
+#
+# Timestep = 0.1
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_002
+#
+# Timestep = 0.05
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.05
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_003
+#
+# Timestep = 0.01
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_003
+#
+# Timestep = 0.005
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.005
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_004
+#
+# Timestep = 0.001
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.001
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
