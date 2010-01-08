@@ -187,6 +187,15 @@ contains
       ! DOF`s in the vertices + cells
       NDFG_uniform1D = rtriangulation%NVT + rtriangulation%NEL * &
                        iand(ishft(celement,-16),255_I32)
+    case (EL_DG_T0_1D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform1D = rtriangulation%NEL
+    case (EL_DG_T1_1D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform1D = 2*rtriangulation%NEL
+    case (EL_DG_T2_1D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform1D = 3*rtriangulation%NEL
     end select
     
     end function
@@ -245,6 +254,15 @@ contains
     case (EL_Q2TB)
       ! E037
       NDFG_uniform2D = 2*rtriangulation%NMT + 2*rtriangulation%NEL
+    case (EL_DG_T0_2D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform2D = rtriangulation%NEL
+    case (EL_DG_T1_2D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform2D = 3*rtriangulation%NEL
+    case (EL_DG_T2_2D)
+      ! DOF`s in the cell midpoints
+      NDFG_uniform2D = 6*rtriangulation%NEL
     end select
     
     end function
@@ -544,6 +562,18 @@ contains
         call dof_locGlobUniMult_PN_1D(iand(int(ishft(celement,-16)),255), &
             p_rtriangulation%NVT, p_rtriangulation%NEL, p_2darray, IelIdx, IdofGlob)
         return
+      case (EL_DG_T0_1D)
+        ! DOF`s for DG_T0_1D
+        call dof_locGlobUniMult_DG_T0_1D(IelIdx, IdofGlob)
+        return
+      case (EL_DG_T1_1D)
+        ! DOF`s for DG_T1_1D
+        call dof_locGlobUniMult_DG_T1_1D(IelIdx, IdofGlob)
+        return
+      case (EL_DG_T2_1D)
+        ! DOF`s for DG_T2_1D
+        call dof_locGlobUniMult_DG_T2_1D(IelIdx, IdofGlob)
+        return
       end select
         
     case (NDIM2D)
@@ -618,6 +648,18 @@ contains
           call dof_locGlobUniMult_Q2TB(p_rtriangulation%NMT,p_rtriangulation%NEL,&
                                        p_2darray, IelIdx, IdofGlob)
           return
+        case (EL_DG_T0_2D)
+          ! DOF`s for DG_T0_1D
+          call dof_locGlobUniMult_DG_T0_2D(IelIdx, IdofGlob)
+          return
+        case (EL_DG_T1_2D)
+          ! DOF`s for DG_T1_1D
+          call dof_locGlobUniMult_DG_T1_2D(IelIdx, IdofGlob)
+          return
+        case (EL_DG_T2_2D)
+          ! DOF`s for DG_T2_1D
+          call dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
+          return          
         end select
         
         return
@@ -1135,7 +1177,7 @@ contains
 !</subroutine>
 
   ! local variables 
-  integer :: i,j
+  integer :: i
   
     ! Loop through the elements to handle
     do i=1,size(IelIdx)
@@ -2020,7 +2062,271 @@ contains
     end do
 
   end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
 
+  pure subroutine dof_locGlobUniMult_DG_T0_1D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T0_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = IelIdx(i)
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DG_T1_1D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T1_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = 2*IelIdx(i)-1
+      IdofGlob(2,i) = 2*IelIdx(i)
+    end do
+
+  end subroutine
+  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DG_T2_1D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T2_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = 3*IelIdx(i)-2
+      IdofGlob(2,i) = 3*IelIdx(i)-1
+      IdofGlob(3,i) = 3*IelIdx(i)
+    end do
+
+  end subroutine  
+  
+    ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DG_T0_2D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T0_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = IelIdx(i)
+    end do
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DG_T1_2D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T1_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = 3*IelIdx(i)-2
+      IdofGlob(2,i) = 3*IelIdx(i)-1
+      IdofGlob(3,i) = 3*IelIdx(i)
+    end do
+
+  end subroutine
+  
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  pure subroutine dof_locGlobUniMult_DG_T2_2D(IelIdx, IdofGlob)
+  
+!<description>
+  ! This subroutine calculates the global indices in the array IdofGlob
+  ! of the degrees of freedom of the elements in the list IelIdx.
+  ! All elements in the list are assumed to be DG_T2_1D.
+  ! A uniform grid is assumed, i.e. a grid completely discretised the
+  ! same element.
+!</description>
+
+!<input>
+
+  ! Element indices, where the mapping should be computed.
+  integer, dimension(:), intent(in) :: IelIdx
+
+!</input>
+    
+!<output>
+
+  ! Array of global DOF numbers; for every element in IelIdx there is
+  ! a subarray in this list receiving the corresponding global DOF`s.
+  integer, dimension(:,:), intent(out) :: IdofGlob
+
+!</output>
+
+!</subroutine>
+
+  ! local variables 
+  integer :: i
+  
+    ! Loop through the elements to handle
+    do i=1,size(IelIdx)
+      ! Global DOF = number of the element
+      IdofGlob(1,i) = 6*IelIdx(i)-5
+      IdofGlob(2,i) = 6*IelIdx(i)-4
+      IdofGlob(3,i) = 6*IelIdx(i)-3
+      IdofGlob(4,i) = 6*IelIdx(i)-2
+      IdofGlob(5,i) = 6*IelIdx(i)-1
+      IdofGlob(6,i) = 6*IelIdx(i)
+    end do
+
+  end subroutine  
+ 
   ! ***************************************************************************
   
 !<subroutine>
@@ -2194,7 +2500,7 @@ contains
         end do
       end do
       
-      ! Sum the values up to get the actial index array.
+      ! Sum the values up to get the actual index array.
       p_IelementDofIdx(1) = 1
       do i = 2,p_rtriangulation%NEL+1
         p_IelementDofIdx(i) = p_IelementDofIdx(i) + p_IelementDofIdx(i-1)

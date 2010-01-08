@@ -326,6 +326,15 @@ module element
   ! ID of conforming line FE, Pn, 1 <= n <= 256
   integer(I32), parameter, public :: EL_PN_1D   = EL_1D + 128
   
+  ! Discontinuous Galerkin taylor basis element - constant.
+  integer(I32), parameter, public :: EL_DG_T0_1D   = EL_1D + 30
+  
+  ! Discontinuous Galerkin taylor basis element - linear.
+  integer(I32), parameter, public :: EL_DG_T1_1D   = EL_1D + 31
+
+  ! Discontinuous Galerkin taylor basis element - quadratic.
+  integer(I32), parameter, public :: EL_DG_T2_1D   = EL_1D + 32
+  
 !</constantblock>
   
 !<constantblock description="Element identifiers for 2D elements">
@@ -418,6 +427,15 @@ module element
   ! to the real element. In the property bitfield, one must set the corresponding
   ! bits to identify the edge that should map isoparametric!
   integer(I32), parameter, public :: EL_Q2ISO = EL_2D + 50
+  
+  ! Discontinuous Galerkin taylor basis element - constant.
+  integer(I32), parameter, public :: EL_DG_T0_2D   = EL_2D + 60
+  
+  ! Discontinuous Galerkin taylor basis element - linear.
+  integer(I32), parameter, public :: EL_DG_T1_2D   = EL_2D + 61
+
+  ! Discontinuous Galerkin taylor basis element - quadratic.
+  integer(I32), parameter, public :: EL_DG_T2_2D   = EL_2D + 62
 
 !</constantblock>
 
@@ -601,7 +619,7 @@ module element
   integer, parameter, public :: EL_MAXNDOF_PER_FACE = 3
   
   ! Maximum number of DOFs per element.
-  integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 4
+  integer, parameter, public :: EL_MAXNDOF_PER_ELEM = 6
 
   ! Number of entries in the Jacobian matrix, defining the mapping between
   ! the reference element and the real element. 1x1-matrix=1 elements
@@ -665,6 +683,12 @@ contains
       elem_igetID = EL_P2_1D
     case("EL_S31_1D")
       elem_igetID = EL_S31_1D
+    case("EL_DG_T0_1D")
+      elem_igetID = EL_DG_T0_1D
+    case("EL_DG_T1_1D")
+      elem_igetID = EL_DG_T1_1D
+    case("EL_DG_T2_1D")
+      elem_igetID = EL_DG_T2_1D            
     
     ! -= 2D Triangle Elements =-
     case("EL_P0","EL_P0_2D","EL_E000","EL_E000_2D")
@@ -715,6 +739,12 @@ contains
       elem_igetID = EL_EB50_2D
     case("EL_EM50","EL_EM50_2D")
       elem_igetID = EL_EM50_2D
+    case("EL_DG_T0_2D")
+      elem_igetID = EL_DG_T0_2D
+    case("EL_DG_T1_2D")
+      elem_igetID = EL_DG_T1_2D
+    case("EL_DG_T2_2D")
+      elem_igetID = EL_DG_T2_2D
     
     ! -= 3D Tetrahedron Elements =-
     case("EL_P0_3D","EL_E000_3D")
@@ -808,6 +838,15 @@ contains
     case (EL_PN_1D)
       ! local DOFs for 1D Pn
       elem_igetNDofLoc = 1 + iand(ishft(celement,-16),255_I32)
+    case (EL_DG_T0_1D)
+      ! local DOFs for 1D DG Taylor constant
+      elem_igetNDofLoc = 1
+    case (EL_DG_T1_1D)
+      ! local DOFs for 1D DG Taylor linear
+      elem_igetNDofLoc = 2
+    case (EL_DG_T2_1D)
+      ! local DOFs for 1D DG Taylor quadratic
+      elem_igetNDofLoc = 3
     
     ! -= 2D Triangle Elements =-
     case (EL_P0)
@@ -854,6 +893,15 @@ contains
     case (EL_Q2TB)
       ! local DOFs for EB50 
       elem_igetNDofLoc = 10
+    case (EL_DG_T0_2D)
+      ! local DOFs for 1D DG Taylor constant
+      elem_igetNDofLoc = 1
+    case (EL_DG_T1_2D)
+      ! local DOFs for 1D DG Taylor linear
+      elem_igetNDofLoc = 3
+    case (EL_DG_T2_2D)
+      ! local DOFs for 1D DG Taylor quadratic
+      elem_igetNDofLoc = 6
     
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
@@ -968,6 +1016,15 @@ contains
       ! local DOFs for Pn
       ndofAtVertices = 2
       ndofAtElement = iand(ishft(celement,-16),255_I32)-1
+    case (EL_DG_T0_1D)
+      ! local DOFs for 1D DG Taylor constant
+      ndofAtElement = 1
+    case (EL_DG_T1_1D)
+      ! local DOFs for 1D DG Taylor linear
+      ndofAtElement = 2
+    case (EL_DG_T2_1D)
+      ! local DOFs for 1D DG Taylor quadratic
+      ndofAtElement = 3
     
     ! -= 2D Triangle Elements =-
     case (EL_P0)
@@ -1027,6 +1084,16 @@ contains
       ! local DOFs for EB50
       ndofAtEdges    = 8
       ndofAtElement  = 2
+    case (EL_DG_T0_2D)
+      ! local DOFs for 1D DG Taylor constant
+      ndofAtElement = 1
+    case (EL_DG_T1_2D)
+      ! local DOFs for 1D DG Taylor linear
+      ndofAtElement = 3
+    case (EL_DG_T2_2D)
+      ! local DOFs for 1D DG Taylor quadratic
+      ndofAtElement = 6
+    
       
     ! -= 3D Tetrahedron Elements =-
     case (EL_P0_3D)
@@ -1142,7 +1209,8 @@ contains
 
     select case (iand(celement,EL_ELNRMASK+EL_NONPARAMETRIC))
     ! 1D Element types
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D,&
+          EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
       ! Line elements
       elem_igetCoordSystem = TRAFO_CS_REF1D
     
@@ -1151,7 +1219,8 @@ contains
       ! Triangular elements work in barycentric coordinates
       elem_igetCoordSystem = TRAFO_CS_BARY2DTRI
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
       ! These work on the reference quadrilateral
       elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
     case (EL_Q1 +EL_NONPARAMETRIC, &
@@ -1210,7 +1279,8 @@ contains
 
     select case (elem_getPrimaryElement(celement))
     
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D,&
+          EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
       ! Linear line transformation, 1D
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_1D
     
@@ -1219,7 +1289,8 @@ contains
       elem_igetTrafoType = TRAFO_ID_LINSIMPLEX + TRAFO_DIM_2D
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
       ! Bilinear quadrilateral transformation, 2D.
       elem_igetTrafoType = TRAFO_ID_MLINCUBE + TRAFO_DIM_2D
     
@@ -1319,6 +1390,15 @@ contains
     case (EL_PN_1D)
       ! Function + 1st derivative
       elem_getMaxDerivative = 2
+    case (EL_DG_T0_1D)
+      ! Function 
+      elem_getMaxDerivative = 1
+    case (EL_DG_T1_1D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 2
+    case (EL_DG_T2_1D)
+      ! Function + 1st derivative + 2nd derivative
+      elem_getMaxDerivative = 3
     
     ! -= 2D elements =-
     case (EL_P0, EL_Q0)
@@ -1354,6 +1434,15 @@ contains
     case (EL_Q2T,EL_Q2TB)
       ! Function + 1st derivative
       elem_getMaxDerivative = 3
+    case (EL_DG_T0_2D)
+      ! Function 
+      elem_getMaxDerivative = 1
+    case (EL_DG_T1_2D)
+      ! Function + 1st derivative
+      elem_getMaxDerivative = 3
+    case (EL_DG_T2_2D)
+      ! Function + 1st derivative + 2nd derivative
+      elem_getMaxDerivative = 6
     
     ! -= 3D elements =-
     case (EL_P0_3D, EL_Q0_3D, EL_Y0_3D, EL_R0_3D)
@@ -1551,7 +1640,8 @@ contains
 !</function>
 
     select case (elem_getPrimaryElement(celement))
-    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D)
+    case (EL_P0_1D, EL_P1_1D, EL_P2_1D, EL_S31_1D, EL_PN_1D,&
+          EL_DG_T0_1D, EL_DG_T1_1D, EL_DG_T2_1D)
       ! 1D Line
       ishp = BGEOM_SHAPE_LINE
     
@@ -1560,7 +1650,8 @@ contains
       ishp = BGEOM_SHAPE_TRIA
       
     case (EL_Q0, EL_Q1, EL_Q2, EL_Q3, EL_QP1,&
-          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB)
+          EL_Q1T, EL_Q1TB, EL_Q2T, EL_Q2TB,&
+          EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
       ! 2D Quadrilateral
       ishp = BGEOM_SHAPE_QUAD
     
@@ -1701,6 +1792,12 @@ contains
         call elem_P2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_S31_1D)
         call elem_S31_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T0_1D)
+        call elem_DG_T0_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T1_1D)
+        call elem_DG_T1_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T2_1D)
+        call elem_DG_T2_1D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)        
 
       ! 2D elements
       case (EL_P0)
@@ -1741,6 +1838,12 @@ contains
         call elem_EB50 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM50)
         bwrapSim2 = .true.
+      case (EL_DG_T0_2D)
+        call elem_DG_T0_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T1_2D)
+        call elem_DG_T1_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_DG_T2_2D)
+        call elem_DG_T2_2D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas) 
 
       ! 3D elements
       case (EL_P0_3D)
@@ -1884,6 +1987,15 @@ contains
     case (EL_S31_1D)
       call elem_S31_1D (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T0_1D)
+      call elem_DG_T0_1D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T1_1D)
+      call elem_DG_T1_1D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T2_1D)
+      call elem_DG_T2_1D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     ! 2D elements
     case (EL_P0)
@@ -1931,6 +2043,15 @@ contains
     case (EL_EB50)
       call elem_EB50 (celement, revalElement%Dcoords, revalElement%itwistIndex, &
           revalElement%Djac, revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T0_2D)
+      call elem_DG_T0_2D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T1_2D)
+      call elem_DG_T1_2D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_DG_T2_2D)
+      call elem_DG_T2_2D (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -2062,6 +2183,12 @@ contains
       call elem_P2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
     case (EL_S31_1D)
       call elem_S31_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_DG_T0_1D)
+      call elem_DG_T0_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_DG_T1_1D)
+      call elem_DG_T1_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
+    case (EL_DG_T2_1D)
+      call elem_DG_T2_1D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, npoints, Dpoints)
       
     ! 2D elements
     case (EL_P0)
@@ -2092,6 +2219,15 @@ contains
     case (EL_EB50)
       call elem_EB50_mult (celement, Dcoords, itwistIndex,Djac, Ddetj, Bder, Dbas, &
                            npoints, Dpoints)
+    case (EL_DG_T0_2D)
+      call elem_DG_T0_2D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, &
+                               npoints, Dpoints)
+    case (EL_DG_T1_2D)
+      call elem_DG_T1_2D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, &
+                               npoints, Dpoints)
+    case (EL_DG_T2_2D)
+      call elem_DG_T2_2D_mult (celement, Dcoords, Djac, Ddetj, Bder, Dbas, &
+                               npoints, Dpoints)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -2239,6 +2375,15 @@ contains
     case (EL_S31_1D)
       call elem_S31_1D_sim (celement, Dcoords, Djac, Ddetj, &
                             Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T0_1D)
+      call elem_DG_T0_1D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T1_1D)
+      call elem_DG_T1_1D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T2_1D)
+      call elem_DG_T2_1D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
 
     ! 2D elements
     case (EL_P0)
@@ -2283,6 +2428,15 @@ contains
     case (EL_EB50)
       call elem_EB50_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
                           Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T0_2D)
+      call elem_DG_T0_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T1_2D)
+      call elem_DG_T1_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
+    case (EL_DG_T2_2D)
+      call elem_DG_T2_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                              Bder, Dbas, npoints, nelements, Dpoints)
 
     ! 3D elements
     case (EL_P0_3D)
@@ -2417,6 +2571,24 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+        
+    case (EL_DG_T0_1D)
+      call elem_DG_T0_1D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+                              
+    case (EL_DG_T1_1D)
+      call elem_DG_T1_1D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+                              
+    case (EL_DG_T2_1D)
+      call elem_DG_T2_1D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
     
     ! *****************************************************
     ! 2D triangle elements
@@ -2526,6 +2698,24 @@ contains
     
     case (EL_EM50)
       call elem_eval_EM50_2D(celement, revalElementSet, Bder, Dbas)
+         
+    case (EL_DG_T0_2D)
+      call elem_DG_T0_2D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+                              
+    case (EL_DG_T1_2D)
+      call elem_DG_T1_2D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
+                              
+    case (EL_DG_T2_2D)
+      call elem_DG_T2_2D_sim (celement, revalElementSet%p_Dcoords, &
+        revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
+        Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
+        revalElementSet%p_DpointsRef)
 
     ! *****************************************************
     ! 3D tetrahedron elements
