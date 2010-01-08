@@ -151,6 +151,31 @@ descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
 
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_003
 #
@@ -173,6 +198,31 @@ descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
 
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_004
 #
@@ -194,6 +244,31 @@ testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV3
 descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
 
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_005
@@ -218,4 +293,34 @@ testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV3
 descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
 
