@@ -85,14 +85,14 @@ TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_001
 #
-# Timestep = 0.1
+# Timestep = 0.125
 ############################
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV2
 descr    = ASD-flow, Level 2
@@ -132,14 +132,14 @@ mglevels = 8
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_002
 #
-# Timestep = 0.05
+# Timestep = 0.0625
 ############################
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.05
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_002_LV2
 descr    = ASD-flow, Level 2
@@ -179,14 +179,14 @@ mglevels = 8
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_003
 #
-# Timestep = 0.01
+# Timestep = 0.03125
 ############################
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_003_LV2
 descr    = ASD-flow, Level 2
@@ -226,14 +226,14 @@ mglevels = 8
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_004
 #
-# Timestep = 0.005
+# Timestep = 0.015625
 ############################
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.005
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_004_LV2
 descr    = ASD-flow, Level 2
@@ -273,7 +273,7 @@ mglevels = 8
 ############################
 # Test CC2D_TARGETFLOW_ASD_Q2_005
 #
-# Timestep = 0.001
+# Timestep = 0.0078125
 # No movie output.
 ############################
 
@@ -281,7 +281,7 @@ testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV1
 descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
-TIMEDISCRETISATION_DTIMESTEP = 0.001
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
 POSTPROCESSING_IOUTPUTFILM=0
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV2
