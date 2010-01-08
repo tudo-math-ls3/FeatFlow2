@@ -4159,7 +4159,7 @@ contains
 !<subroutine>
 
   subroutine transp_calcLinearisedFCT(rbdrCond, rproblemLevel,&
-      rtimestep, rsolution, rcollection)
+      rtimestep, rsolver, rsolution, rcollection, rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
@@ -4169,14 +4169,20 @@ contains
     ! boundary condition structure
     type(t_boundaryCondition), intent(in) :: rbdrCond
 
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+    
+    ! solver structure
+    type(t_solver), intent(inout) :: rsolver
+    
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
@@ -4186,321 +4192,79 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_timestep) :: rtimestepAux
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorScalar) :: rflux0, rflux
-    type(t_vectorBlock) :: rdata
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
-    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_data
-    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal, p_Ksep
-    integer :: h_Ksep, templatematrix, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, nedge
+    type(t_vectorBlock), pointer :: p_predictor
+    integer :: convectionAFC,lumpedMassMatrix,consistentMassMatrix
+    integer :: imassantidiffusiontype
 
-    ! Get parameters from parameter list which are required unconditionally
+    ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'templatematrix', templateMatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
-
-    ! Set pointers to template matrix
-    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-    call lsyssc_getbase_Kld(p_rmatrix, p_Kld)
-    call lsyssc_getbase_Kcol(p_rmatrix, p_Kcol)
-    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
     
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
-
-    ! Create diagonal separator
-    h_Ksep = ST_NOHANDLE
-    call storage_copy(p_rmatrix%h_Kld, h_Ksep)
-    call storage_getbase_int(h_Ksep, p_Ksep, p_rmatrix%NEQ+1)
-
-    ! Compute number of edges
-    nedge = int(0.5*(p_rmatrix%NA-p_rmatrix%NEQ))
-
-    ! Create auxiliary vectors
-    call lsyssc_createVector(rflux0, nedge, .true., ST_DOUBLE)
-    call lsyssc_createVector(rflux,  nedge, .true., ST_DOUBLE)
-    call lsysbl_createVectorBlock(rsolution, rdata, .false.)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'convectionAFC', convectionAFC)
     
-    ! Set pointers
-    call lsysbl_getbase_double(rsolution, p_u)
-    call lsysbl_getbase_double(rdata, p_data)
-    call lsyssc_getbase_double(rflux, p_flux)
-    call lsyssc_getbase_double(rflux0, p_flux0)
-
-    ! Build the flux
-    call buildFlux2d(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_u, rtimestep%dStep, p_MC, p_ML,&
-        p_Cx, p_Cy, p_data, p_flux, p_flux0)
-   
-    ! Build the correction and apply it directly
-    call buildCorrection(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-        p_rmatrix%NEQ, nedge, p_ML, p_flux, p_flux0, p_data, p_u)
+    ! Do we have to apply linearised FEM-FCT?
+    if (convectionAFC .le. 0) return
+    if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+        .ne. AFCSTAB_FEMFCT_LINEARISED) return
     
-    ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep%dTime)
-
-    ! Release flux vectors
-    call storage_free(h_Ksep)
-    call lsyssc_releaseVector(rflux0)
-    call lsyssc_releaseVector(rflux)
-    call lsysbl_releaseVector(rdata)
-
-  contains
-
-    !***************************************************************************
-
-    subroutine buildFlux2d(Kld, Kcol, Kdiagonal, Ksep, NEQ, NEDGE, u,&
-        dscale, MC, ML, Cx, Cy, troc, flux0, flux)
-
-      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy,u
-      real(DP), intent(in) :: dscale
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ,NEDGE
-      
-      integer, dimension(:), intent(inout) :: Ksep
-      real(DP), dimension(:), intent(inout) :: flux0,flux
-      
-      real(DP), dimension(:), intent(out) :: troc     
-
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ii,C_ij, C_ji
-      real(DP) :: k_ii,k_ij,k_ji,d_ij,aux,f_ij,f_ji
-      integer :: ii,ij,ji,i,j,iedge
-
-      ! Initialize time rate of change
-      call lalg_clearVector(troc)
-
-      ! Initialize edge counter
-      iedge = 0
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Compute coefficient
-        C_ii(1) = Cx(ii);   C_ii(2) = Cy(ii)
-
-        ! Compute convection coefficients
-        call transp_calcMatGalConvectionP2d(u(i), u(i),&
-            C_ii, C_ii, i, i, k_ii, k_ii, d_ij)
-
-        ! Update the time rate of change vector
-        troc(i) = troc(i) + dscale*k_ii*u(i)
-
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)+1; iedge = iedge+1
-          
-          ! Compute coefficients
-          C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-          C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-
-          ! Compute convection coefficients
-          call transp_calcMatUpwConvectionP2d(u(i), u(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-          
-          ! Artificial diffusion coefficient
-          d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-          ! Compute auxiliary value
-          aux = d_ij*(u(j)-u(i))
-          
-          ! Update the time rate of change vector
-          troc(i) = troc(i) + dscale * (k_ij*u(j) + aux)
-          troc(j) = troc(j) + dscale * (k_ji*u(i) - aux)
-
-          ! Compute raw antidiffusive flux
-          flux0(iedge) = -aux
-
-        end do
-      end do
-
-
-      ! Scale the time rate of change by the lumped mass matrix
-      do i = 1, NEQ
-        troc(i) = troc(i)/ML(i)
-      end do
-
-
-      ! Loop over all rows (backward)
-      do i = NEQ, 1, -1
-
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        do ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-          
-          ! Apply mass antidiffusion
-          flux(iedge) = flux0(iedge) + MC(ij)*(troc(i)-troc(j))
-          
-          ! Update edge counter
-          iedge = iedge-1
-          
-        end do
-      end do
-
-    end subroutine buildFlux2d
-
-    !***************************************************************************
+    ! Get more parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'consistentmassmatrix', consistentmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'imassantidiffusiontype', imassantidiffusiontype)
     
-    subroutine buildCorrection(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        NEDGE, ML, flux, flux0, data, u)
 
-      
-      real(DP), dimension(:), intent(in) :: ML,flux0
-      integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
-      integer, intent(in) :: NEQ,NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: data,u,flux
-      integer, dimension(:), intent(inout) :: Ksep
-      
-      ! local variables
-      real(DP), dimension(:), allocatable :: pp,pm,qp,qm,rp,rm
-      real(DP) :: f_ij,diff
-      integer :: ij,ji,i,j,iedge,ivar
+    ! Initialize dummy timestep
+    rtimestepAux%dStep = 1.0_DP
+    rtimestepAux%theta = 0.0_DP
 
-      ! Allocate temporal memory
-      allocate(pp(neq), pm(neq), qp(neq), qm(neq), rp(neq), rm(neq))
-      
-      ! Initialize vectors
-      call lalg_clearVector(pp)
-      call lalg_clearVector(pm)
-      call lalg_clearVector(qp)
-      call lalg_clearVector(qm)
-      call lalg_setVector(rp, 1.0_DP)
-      call lalg_setVector(rm, 1.0_DP)
-      
-      ! Initialize edge counter
-      iedge = 0
-      
-      ! Loop over all rows
-      do i = 1, NEQ
-        
-        ! Loop over all off-diagonal matrix entries IJ which are
-        ! adjacent to node J such that I < J. That is, explore the
-        ! upper triangular matrix
-        do ij = Kdiagonal(i)+1, Kld(i+1)-1
-          
-          ! Get node number J, the corresponding matrix positions JI,
-          ! and let the separator point to the next entry
-          j = Kcol(ij); Ksep(j) = Ksep(j)+1; iedge = iedge+1
+    ! Set pointer to low-order predictor
+    p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+    
+    ! Compute the preconditioner
+    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+        rsolver, rsolution, rcollection)
+    
+    ! Compute low-order "right-hand side" without theta parameter
+    call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+        rsolver, rsolution, p_predictor, rcollection, rsource)
+    
+    ! Compute low-order predictor
+    call lsysbl_invertedDiagMatVec(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        p_predictor, 1.0_DP, p_predictor)
+    
+    ! Should we apply consistent mass antidiffusion?
+    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          p_predictor, rsolution, rtimestepAux%theta,&
+          rtimestepAux%dStep, 1.0_DP, .true.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix))
+    else
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          p_predictor, rsolution, rtimestepAux%theta,&
+          rtimestepAux%dStep, 1.0_DP, .true.)
+    end if
 
-          ! Apply minmod prelimiter ...
-          f_ij = minmod(flux(iedge), flux0(iedge))
-          
-          ! ... and store prelimited flux
-          flux(iedge) = f_ij
-          diff        = u(j)-u(i)
-
-          ! Sums of raw antidiffusive fluxes
-          pp(i) = pp(i) + max(0.0_DP,  f_ij)
-          pp(j) = pp(j) + max(0.0_DP, -f_ij)
-          pm(i) = pm(i) + min(0.0_DP,  f_ij)
-          pm(j) = pm(j) + min(0.0_DP, -f_ij)
-
-          ! Sums of admissible edge contributions
-          qp(i) = max(qp(i),  diff)
-          qp(j) = max(qp(j), -diff)
-          qm(i) = min(qm(i),  diff)
-          qm(j) = min(qm(j), -diff)
-
-        end do
-      end do
-
-
-      ! Compute nodal correction factors
-      do i = 1, NEQ
-        qp(i) = qp(i)*ML(i)
-        qm(i) = qm(i)*ML(i)
-        
-        if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
-        if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
-      end do
-
-
-      ! Initialize correction
-      call lalg_clearVector(data)
-
-      ! Loop over all rows (backward)
-      do i = NEQ, 1, -1
-        
-        ! Loop over all off-diagonal matrix entries IJ which are adjacent to
-        ! node J such that I < J. That is, explore the upper triangular matrix.
-        do ij = Kld(i+1)-1, Ksep(i)+1, -1
-          
-          ! Get node number J, the corresponding matrix position JI,
-          ! and let the separator point to the preceeding entry.
-          j = Kcol(ij); ji = Ksep(j); Ksep(j) = Ksep(j)-1
-
-          ! Limit conservative fluxes
-          f_ij = flux(iedge)
-          if (f_ij > 0.0_DP) then
-            f_ij = min(rp(i), rm(j))*f_ij
-          else
-            f_ij = min(rm(i), rp(j))*f_ij
-          end if
-          
-          ! Apply correction
-          data(i) = data(i) + f_ij
-          data(j) = data(j) - f_ij
-
-          ! Update edge counter
-          iedge = iedge-1
-          
-        end do
-      end do
-
-
-      do i = 1, NEQ
-        u(i) = u(i) + data(i)/ML(i)
-      end do
-
-      ! Deallocate temporal memory
-      deallocate(pp,pm,qp,qm,rp,rm)
-
-    end subroutine buildCorrection
-
-    !***************************************************************************
-
-    pure elemental function minmod(a,b)
-      real(DP), intent(in) :: a,b
-      real(DP) :: minmod
-
-      if (a > 0 .and. b > 0) then
-        minmod = min(a,b)
-      elseif (a < 0 .and. b < 0) then
-        minmod = max(a,b)
-      else
-        minmod = 0
-      end if
-    end function minmod
+    ! Apply linearised FEM-FCT algorithm
+    call gfsc_buildResidualFCT(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        rproblemLevel%Rafcstab(convectionAFC),&
+        rsolution, rtimestep%dStep, .false.,&
+        AFCSTAB_FCTALGO_STANDARD+&
+        AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)
     
   end subroutine transp_calcLinearisedFCT
 

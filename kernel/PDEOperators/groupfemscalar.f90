@@ -318,8 +318,8 @@ contains
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! We need 6 nodal vectors for P's, Q's and R's
-      allocate(rafcstab%RnodalVectors(10))
-      do i = 1, 10 !!! @TODO !!!
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
@@ -410,6 +410,12 @@ contains
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
+
+      ! We need 1 nodal vector for the predictor
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsysbl_createVectorBlock(&
+          rafcstab%RnodalBlockVectors(1),&
+          rafcstab%NEQ, 1, .false., ST_DOUBLE)
 
 
     case (AFCSTAB_SYMMETRIC)
@@ -6626,7 +6632,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl,p_fluxConstraint
+    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
     real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u
     
     
@@ -12692,12 +12698,21 @@ contains
         
         ! Set pointer for consistent mass matrix
         call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+        
+        ! There are only "initial" fluxes
+        call doFluxesConsMass(p_IverticesAtEdge,&
+            p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_u1, p_u2,&
+            dscale, dscale, p_flux)
 
       else
         
         !-----------------------------------------------------------------------
         ! Do not include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
+
+        ! There are only "initial" fluxes
+        call doFluxesNoMass(p_IverticesAtEdge,&
+            p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_flux)
 
       end if
       

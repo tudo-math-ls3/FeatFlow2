@@ -3330,6 +3330,10 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'transp_solveTransientPrimal')
         call sys_halt()
       end select
+
+      ! Perform linearised FEM-FCT post-processing
+      call transp_calcLinearisedFCT(rbdrCond, p_rproblemLevel,&
+          rtimestep, rsolver, rsolution, rcollection)
       
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
