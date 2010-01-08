@@ -297,12 +297,11 @@ contains
           call storage_free(rafcstab%h_IverticesAtEdge)
       call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+
       
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_IMPLICIT,&
-          AFCSTAB_FEMFCT_ITERATIVE,&
-          AFCSTAB_FEMGP,&
-          AFCSTAB_FEMTVD)
+          AFCSTAB_FEMFCT_ITERATIVE)
       
       ! Handle for IverticesAtEdge
       Isize = (/4, rafcstab%NEDGE/)
@@ -320,7 +319,7 @@ contains
 
       ! We need 6 nodal vectors for P's, Q's and R's
       allocate(rafcstab%RnodalVectors(10))
-      do i = 1, 10
+      do i = 1, 10 !!! @TODO !!!
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
@@ -330,7 +329,49 @@ contains
       call lsysbl_createVectorBlock(&
           rafcstab%RnodalBlockVectors(1),&
           rafcstab%NEQ, 1, .false., ST_DOUBLE)
+      
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        ! We need 4 edgewise vectors for the correction factors and
+        ! for the raw antidiffusive fluxes and the constraints
+        allocate(rafcstab%RedgeVectors(4))
+        do i = 1, 4
+          call lsyssc_createVector(rafcstab%RedgeVectors(i),&
+              rafcstab%NEDGE, .false., ST_DOUBLE)
+        end do
+      else
+        ! We need 3 edgewise vectors for the correction factors
+        ! and for the raw antidiffusive fluxes
+        allocate(rafcstab%RedgeVectors(3))
+        do i = 1, 3
+          call lsyssc_createVector(rafcstab%RedgeVectors(i),&
+              rafcstab%NEDGE, .false., ST_DOUBLE)
+        end do
+      end if
+      
+    case (AFCSTAB_FEMTVD,&
+          AFCSTAB_FEMGP)
+      
+      ! Handle for IverticesAtEdge
+      Isize = (/4, rafcstab%NEDGE/)
+      if (rafcstab%h_IverticesAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_IverticesAtEdge)
+      call storage_new('gfsc_initStabilisation', 'IverticesAtEdge',&
+          Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
+      
+      ! Handle for DcoefficientsAtEdge
+      Isize = (/3, rafcstab%NEDGE/)
+      if (rafcstab%h_DcoefficientsAtEdge .ne. ST_NOHANDLE)&
+          call storage_free(rafcstab%h_DcoefficientsAtEdge)
+      call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
+          Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
+      ! We need 6 nodal vectors for P's, Q's and R's
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
+        call lsyssc_createVector(rafcstab%RnodalVectors(i),&
+            rafcstab%NEQ, .false., ST_DOUBLE)
+      end do
+      
       ! We need 3 edgewise vectors for the correction factors
       ! and for the raw antidiffusive fluxes
       allocate(rafcstab%RedgeVectors(3))
@@ -338,7 +379,7 @@ contains
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
-
+      
 
     case (AFCSTAB_FEMFCT_LINEARISED)
       
@@ -360,14 +401,14 @@ contains
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-                                 rafcstab%NEQ, .false., ST_DOUBLE)
+            rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
       ! We need 3 edgewise vectors for the explicit and implicit fluxes
       allocate(rafcstab%RedgeVectors(3))
       do i = 1, 3
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
-                                 rafcstab%NEDGE, .false., ST_DOUBLE)
+            rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
 
 
@@ -391,13 +432,13 @@ contains
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
-                                 rafcstab%NEQ, .false., ST_DOUBLE)
+            rafcstab%NEQ, .false., ST_DOUBLE)
       end do
       
       ! We need 1 edgewise vector for the fluxes
       allocate(rafcstab%RedgeVectors(1))
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
-                               rafcstab%NEDGE, .false., ST_DOUBLE)
+          rafcstab%NEDGE, .false., ST_DOUBLE)
 
 
     case DEFAULT
@@ -2506,7 +2547,7 @@ contains
     ! local variables
     real(DP), dimension(:), pointer :: p_ML,p_u,p_res
     real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_alpha,p_flux
+    real(DP), dimension(:), pointer :: p_alpha,p_flux,p_flux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
 
     ! Check if stabilisation is prepeared
@@ -2575,10 +2616,16 @@ contains
       ! Set pointers
       call lsyssc_getbase_double(ru, p_u)
       call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
       call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
       call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+      ! Special treatment for semi-implicit FEM-FCT algorithm
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux)
+      else
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      end if
 
       ! Compute sums of antidiffusive increments
       call doADIncrements(p_IverticesAtEdge,&
@@ -2636,17 +2683,20 @@ contains
       call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
       call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
       call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      ! R's and P's may use the same memory since P's are no longer needed
       call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
       call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
 
       ! Compute nodal correction factors
-      call doLimitNodal(rafcstab%NEQ, dscale,&
-          p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        call doLimitNodal(rafcstab%NEQ, dscale,&
+            p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+      else
+        call doLimitNodalConstrained(rafcstab%NEQ, dscale,&
+            p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+      end if
       
       ! Set specifier
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
-!      rafcstab%iSpec = iand(rafcstab%iSpec, not(AFCSTAB_HAS_ADINCREMENTS))
     end if
 
 
@@ -2678,8 +2728,15 @@ contains
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
-      call doLimitEdgewise(p_IverticesAtEdge,&
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        ! Special treatment for semi-implicit FEM-FCT algorithm
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
+        call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_flux0, p_flux, p_rp, p_rm, p_alpha)
+      else
+        call doLimitEdgewise(p_IverticesAtEdge,&
             rafcstab%NEDGE, p_flux, p_rp, p_rm, p_alpha)
+      end if
 
       ! Set specifier
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
@@ -2820,9 +2877,41 @@ contains
     end subroutine doBounds
 
     !**************************************************************
-    ! Compute nodal correction factors
+    ! Compute nodal correction factors without constraints
     
-    subroutine doLimitNodal(NEQ, dscale, ML, pp, pm, qp, qm, rp, rm)
+    subroutine doLimitNodal(NEQ, dscale,&
+        ML, pp, pm, qp, qm, rp, rm)
+      
+      real(DP), dimension(:), intent(in) :: pp,pm,qp,qm
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEQ
+      
+      real(DP), dimension(:), intent(inout) :: rp,rm
+      
+      ! local variables
+      integer :: ieq
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        rp(ieq) = ML(ieq)*qp(ieq)/(dscale*pp(ieq)+SYS_EPSREAL)
+      end do
+      !$omp end parallel do
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        rm(ieq) = ML(ieq)*qm(ieq)/(dscale*pm(ieq)-SYS_EPSREAL)
+      end do
+      !$omp end parallel do
+    end subroutine doLimitNodal
+
+    !**************************************************************
+    ! Compute nodal correction factors with constraints
+    
+    subroutine doLimitNodalConstrained(NEQ, dscale,&
+        ML, pp, pm, qp, qm, rp, rm)
       
       real(DP), dimension(:), intent(in) :: pp,pm,qp,qm
       real(DP), dimension(:), intent(in) :: ML
@@ -2847,10 +2936,11 @@ contains
         rm(ieq) = min(1.0_DP, ML(ieq)*qm(ieq)/(dscale*pm(ieq)-SYS_EPSREAL))
       end do
       !$omp end parallel do
-    end subroutine doLimitNodal
+    end subroutine doLimitNodalConstrained    
 
     !**************************************************************
-    ! Compute edgewise correction factors
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of antidiffusive fluxes
     
     subroutine doLimitEdgewise(IverticesAtEdge,&
         NEDGE, flux, rp, rm, alpha)
@@ -2878,14 +2968,65 @@ contains
         f_ij = flux(iedge)
  
         ! Compute nodal correction factors
-        r_ij = merge(min(rp(i),rm(j)),&
-                     min(rp(j),rm(i)), f_ij .ge. 0.0_DP)
+        if (f_ij .ge. 0.0_DP) then
+          r_ij = min(rp(i),rm(j))
+        else
+          r_ij = min(rp(j),rm(i))
+        end if
 
         ! Compute multiplicative correction factor
         alpha(iedge) = alpha(iedge) * r_ij
       end do
       !$omp end parallel do
     end subroutine doLimitEdgewise
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of a pair of explicit
+    ! and implicit raw antidiffusive fluxes
+    
+    subroutine doLimitEdgewiseConstrained(IverticesAtEdge,&
+        NEDGE, flux1, flux2, rp, rm, alpha)
+      
+      real(DP), dimension(:), intent(in) :: flux1,flux2
+      real(DP), dimension(:), intent(in) :: rp,rm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: alpha
+
+      ! local variables
+      real(DP) :: f1_ij,f2_ij,r_ij
+      integer :: iedge,i,j
+      
+      ! Loop over all edges
+      !$omp parallel do private(i,j,f_ij,r_ij)
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Get precomputed raw antidiffusive fluxes
+        f1_ij = flux1(iedge)
+        f2_ij = flux2(iedge)
+ 
+        ! Compute nodal correction factors
+        if (f1_ij*f2_ij .le. 0) then
+          r_ij = 0.0_DP
+        else
+          if (f1_ij .ge. 0.0_DP) then
+            r_ij = min(1.0_DP, f1_ij/f2_ij*min(rp(i),rm(j)))
+          else
+            r_ij = min(1.0_DP, f1_ij/f2_ij*min(rp(j),rm(i)))
+          end if
+        end if
+
+        ! Compute multiplicative correction factor
+        alpha(iedge) = alpha(iedge) * r_ij
+      end do
+      !$omp end parallel do
+    end subroutine doLimitEdgewiseConstrained
 
     !**************************************************************
     ! Correct the antidiffusive fluxes and apply them
@@ -3250,89 +3391,92 @@ contains
 
     case (AFCSTAB_FEMFCT_CLASSICAL)
 
-      ! Should we build up the initial residual?
-      if (binit) then
-        
-        ! Initialise the flux limiter
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doInit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
-              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-        else
-          call doInit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-        end if
-
-        ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
-
-      end if   ! binit
-
-      ! Check if correction factors and fluxes are available
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
-        call output_line('Stabilisation does not provide precomputed fluxes &
-            &and/or nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
-        call sys_halt()
-      end if
-
-      ! Do we have a fully implicit time discretisation?
-      if (theta < 1.0_DP) then
-        
-        ! Compute the low-order predictor
-        !
-        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
-        ! 
-        ! whereby the residual of the 0-th iteration is assumed to be
-        !
-        !   $ r^{(0)}=\Delta tLu^n $
-
-        if (binit) then
-          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
-              rres, 1.0_DP-theta, rafcstab%RnodalVectors(10))
-          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(10), 1.0_DP, 1.0_DP)
-        end if
-        call lsyssc_getbase_double(rafcstab%RnodalVectors(10), p_uPredictor)
-        
-        ! Apply the flux limiter
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doLimit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        else
-          call doLimit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        end if
-        
-      else   ! theta < 1
-        
-        ! The low-order predictor is simply given by
-        !
-        !   $ \tilde u=u^n $
-        
-        ! Apply the flux limiter with u in leu of ulow
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doLimit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        else
-          call doLimit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        end if
-
-      end if   ! theta < 1
+!!$      ! Should we build up the initial residual?
+!!$      if (binit) then
+!!$        
+!!$        ! Initialise the flux limiter
+!!$        if (present(rconsistentMassMatrix)) then
+!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+!!$          call doInit_explFCTconsMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
+!!$              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+!!$        else
+!!$          call doInit_explFCTnoMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
+!!$              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+!!$        end if
+!!$
+!!$        ! Set specifier
+!!$        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+!!$        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
+!!$
+!!$      end if   ! binit
+!!$
+!!$      ! Check if correction factors and fluxes are available
+!!$      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
+!!$          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
+!!$        call output_line('Stabilisation does not provide precomputed fluxes &
+!!$            &and/or nodal correction factors',&
+!!$            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+!!$        call sys_halt()
+!!$      end if
+!!$
+!!$      ! Do we have a fully implicit time discretisation?
+!!$      if (theta < 1.0_DP) then
+!!$        
+!!$        ! Compute the low-order predictor
+!!$        !
+!!$        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
+!!$        ! 
+!!$        ! whereby the residual of the 0-th iteration is assumed to be
+!!$        !
+!!$        !   $ r^{(0)}=\Delta tLu^n $
+!!$
+!!$        if (binit) then
+!!$          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
+!!$              rres, 1.0_DP-theta, rafcstab%RnodalVectors(10))
+!!$          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(10), 1.0_DP, 1.0_DP)
+!!$        end if
+!!$        call lsyssc_getbase_double(rafcstab%RnodalVectors(10), p_uPredictor)
+!!$        
+!!$        ! Apply the flux limiter
+!!$        if (present(rconsistentMassMatrix)) then
+!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+!!$          call doLimit_explFCTconsMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+!!$              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+!!$        else
+!!$          call doLimit_explFCTnoMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+!!$              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+!!$        end if
+!!$        
+!!$      else   ! theta < 1
+!!$        
+!!$        ! The low-order predictor is simply given by
+!!$        !
+!!$        !   $ \tilde u=u^n $
+!!$        
+!!$        ! Apply the flux limiter with u in leu of ulow
+!!$        if (present(rconsistentMassMatrix)) then
+!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+!!$          call doLimit_explFCTconsMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+!!$              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+!!$        else
+!!$          call doLimit_explFCTnoMass(&
+!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+!!$              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+!!$        end if
+!!$
+!!$      end if   ! theta < 1
+      call output_line('The classical FEM-FCT algorithm is not implemented yet!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+      call sys_halt()
 
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -3479,18 +3623,18 @@ contains
         ij = IverticesAtEdge(3,iedge)
         
         ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
         
         ! Determine fluxes
-        diff = u(i)-u(j); f_ij = tstep*d_ij*diff
+        diff = u(i)-u(j); f_ij = d_ij*diff
         fluxImpl(iedge) = f_ij; fluxExpl(iedge) = -m_ij*diff
-        
+
         ! Sum of positive/negative fluxes
         pp(i) = pp(i)+max(0.0_DP, f_ij)
         pp(j) = pp(j)+max(0.0_DP,-f_ij)
         pm(i) = pm(i)+min(0.0_DP, f_ij)
         pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
+
         ! Upper/lower bounds
         diff = ulow(j)-ulow(i)
         qp(i) = max(qp(i), diff)
@@ -3505,8 +3649,8 @@ contains
       end if
       
       ! Apply the nodal limiter
-      rp = ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = ML*qm; rm = afcstab_limit( pm, rm, 0.0_DP)
+      rp = ML*qp/tstep; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = ML*qm/tstep; rm = afcstab_limit( pm, rm, 0.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -3514,6 +3658,7 @@ contains
         ! Determine indices
         i = IverticesAtEdge(1,iedge)
         j = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
         
         if (fluxImpl(iedge) > 0.0_DP) then
           fluxImpl(iedge) = min(rp(i), rm(j))*fluxImpl(iedge)
@@ -3591,7 +3736,7 @@ contains
       real(DP), dimension(:), intent(inout) :: res
       
       ! local variables
-      real(DP) :: d_ij,f_ij,m_ij
+      real(DP) :: d_ij,f_ij,m_ij,alpha_ij
       integer :: iedge,ij,i,j
       
       
@@ -3604,16 +3749,24 @@ contains
         ij = IverticesAtEdge(3,iedge)
         
         ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
         
         ! Determine fluxes
-        f_ij = (m_ij+theta*tstep*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
+        f_ij = (m_ij+theta*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
         
-        if (f_ij > 0.0_DP) then
-          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
+        if (abs(f_ij) .gt. SYS_EPSREAL) then
+          alpha_ij = min(1.0_DP, max(0.0_DP, fluxImpl(iedge)/f_ij))
         else
-          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
+          alpha_ij = 1.0_DP
         end if
+
+        f_ij = tstep*f_ij*alpha_ij
+
+!!$        if (f_ij > 0.0_DP) then
+!!$          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
+!!$        else
+!!$          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
+!!$        end if
         
         ! Update the defect vector
         res(i) = res(i)+f_ij
@@ -3627,286 +3780,284 @@ contains
     ! Initialisation of the semi-explicit FEM-FCT procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doInit_explFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, u, theta, tstep, NEDGE, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: u
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: fluxExpl
-      
-      ! local variables
-      real(DP) :: d_ij,diff
-      integer :: iedge,ij,i,j
-      
-      
-      ! Should we use semi-implicit scheme?
-      if (theta < 1.0_DP) then
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = (1-theta)*d_ij*diff
-        end do
-        
-      else
-        
-        ! Initialise explicit fluxes by zero
-        call lalg_clearVectorDble(fluxExpl)
-        
-      end if
-      
-    end subroutine doInit_explFCTnoMass
+!!$    subroutine doInit_explFCTnoMass(IverticesAtEdge,&
+!!$        DcoefficientsAtEdge, u, theta, tstep, NEDGE, fluxExpl)
+!!$      
+!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+!!$      real(DP), dimension(:), intent(in) :: u
+!!$      real(DP), intent(in) :: theta,tstep
+!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+!!$      integer, intent(in) :: NEDGE
+!!$      
+!!$      real(DP), dimension(:), intent(inout) :: fluxExpl
+!!$      
+!!$      ! local variables
+!!$      real(DP) :: d_ij,diff
+!!$      integer :: iedge,ij,i,j
+!!$      
+!!$      
+!!$      ! Should we use semi-implicit scheme?
+!!$      if (theta < 1.0_DP) then
+!!$        
+!!$        ! Loop over edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Determine indices
+!!$          i  = IverticesAtEdge(1,iedge)
+!!$          j  = IverticesAtEdge(2,iedge)
+!!$          
+!!$          ! Determine coefficients
+!!$          d_ij = DcoefficientsAtEdge(1,iedge)
+!!$          
+!!$          ! Determine solution difference
+!!$          diff = u(i)-u(j)
+!!$          
+!!$          ! Determine explicit antidiffusive flux
+!!$          fluxExpl(iedge) = (1-theta)*d_ij*diff
+!!$        end do
+!!$        
+!!$      else
+!!$        
+!!$        ! Initialise explicit fluxes by zero
+!!$        call lalg_clearVectorDble(fluxExpl)
+!!$        
+!!$      end if
+!!$      
+!!$    end subroutine doInit_explFCTnoMass
 
 
     !**************************************************************
     ! Initialisation of the semi-explicit FEM-FCT procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doInit_explFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, u, theta, tstep, NEDGE, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,u
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: fluxExpl
-      
-      ! local variables
-      real(DP) :: d_ij,m_ij,diff
-      integer :: iedge,ij,i,j
-      
-      
-      ! Should we use semi-implicit scheme?
-      if (theta < 1.0_DP) then
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = -m_ij*diff+(1-theta)*d_ij*diff
-        end do
-        
-      else
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          m_ij = MC(ij)/tstep
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = -m_ij*diff
-        end do
-        
-      end if
-      
-    end subroutine doInit_explFCTconsMass
+!!$    subroutine doInit_explFCTconsMass(IverticesAtEdge,&
+!!$        DcoefficientsAtEdge, MC, u, theta, tstep, NEDGE, fluxExpl)
+!!$      
+!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+!!$      real(DP), dimension(:), intent(in) :: MC,u
+!!$      real(DP), intent(in) :: theta,tstep
+!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+!!$      integer, intent(in) :: NEDGE
+!!$      
+!!$      real(DP), dimension(:), intent(inout) :: fluxExpl
+!!$      
+!!$      ! local variables
+!!$      real(DP) :: d_ij,m_ij,diff
+!!$      integer :: iedge,ij,i,j
+!!$      
+!!$      
+!!$      ! Should we use semi-implicit scheme?
+!!$      if (theta < 1.0_DP) then
+!!$        
+!!$        ! Loop over edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Determine indices
+!!$          i  = IverticesAtEdge(1,iedge)
+!!$          j  = IverticesAtEdge(2,iedge)
+!!$          ij = IverticesAtEdge(3,iedge)
+!!$          
+!!$          ! Determine coefficients
+!!$          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
+!!$          
+!!$          ! Determine solution difference
+!!$          diff = u(i)-u(j)
+!!$          
+!!$          ! Determine explicit antidiffusive flux
+!!$          fluxExpl(iedge) = -m_ij*diff+(1-theta)*d_ij*diff
+!!$        end do
+!!$        
+!!$      else
+!!$        
+!!$        ! Loop over edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Determine indices
+!!$          i  = IverticesAtEdge(1,iedge)
+!!$          j  = IverticesAtEdge(2,iedge)
+!!$          ij = IverticesAtEdge(3,iedge)
+!!$          
+!!$          ! Determine coefficients
+!!$          m_ij = MC(ij)/tstep
+!!$          
+!!$          ! Determine solution difference
+!!$          diff = u(i)-u(j)
+!!$          
+!!$          ! Determine explicit antidiffusive flux
+!!$          fluxExpl(iedge) = -m_ij*diff
+!!$        end do
+!!$        
+!!$      end if
+!!$      
+!!$    end subroutine doInit_explFCTconsMass
 
     !**************************************************************
     ! The semi-explicit FEM-FCT limiting procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-    subroutine doLimit_explFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, ML, u, ulow, fluxExpl, theta, tstep,&
-        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-
-      ! local variables
-      real(DP) :: diff,d_ij,f_ij
-      integer :: iedge,ij,i,j
-      
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
-        
-        ! Determine antidiffusive flux
-        f_ij = fluxExpl(iedge)+theta*d_ij*diff
-!!$        f_ij = fluxImpl(iedge)
-        
-        ! Determine low-order solution difference
-        diff = ulow(j)-ulow(i)
-        
-        ! Perform prelimiting
-        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-        fluxImpl(iedge) = f_ij
-        
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
-        ! Upper/lower bounds
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-        
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-
-    end subroutine doLimit_explFCTnoMass
+!!$    subroutine doLimit_explFCTnoMass(IverticesAtEdge,&
+!!$        DcoefficientsAtEdge, ML, u, ulow, fluxExpl, theta, tstep,&
+!!$        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
+!!$
+!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+!!$      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
+!!$      real(DP), intent(in) :: theta,tstep
+!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+!!$      integer, intent(in) :: NEDGE
+!!$
+!!$      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+!!$
+!!$      ! local variables
+!!$      real(DP) :: diff,d_ij,f_ij
+!!$      integer :: iedge,ij,i,j
+!!$      
+!!$      ! Clear nodal vectors
+!!$      call lalg_clearVectorDble(pp)
+!!$      call lalg_clearVectorDble(pm)
+!!$      call lalg_clearVectorDble(qp)
+!!$      call lalg_clearVectorDble(qm)
+!!$
+!!$      ! Loop over edges
+!!$      do iedge = 1, NEDGE
+!!$        
+!!$        ! Determine indices
+!!$        i  = IverticesAtEdge(1,iedge)
+!!$        j  = IverticesAtEdge(2,iedge)
+!!$        
+!!$        ! Determine coefficients
+!!$        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
+!!$        
+!!$        ! Determine antidiffusive flux
+!!$        f_ij = fluxExpl(iedge)+theta*d_ij*diff
+!!$        
+!!$        ! Determine low-order solution difference
+!!$        diff = ulow(j)-ulow(i)
+!!$        
+!!$        ! Perform prelimiting
+!!$        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+!!$        fluxImpl(iedge) = f_ij
+!!$        
+!!$        ! Sum of positive/negative fluxes
+!!$        pp(i) = pp(i)+max(0.0_DP, f_ij)
+!!$        pp(j) = pp(j)+max(0.0_DP,-f_ij)
+!!$        pm(i) = pm(i)+min(0.0_DP, f_ij)
+!!$        pm(j) = pm(j)+min(0.0_DP,-f_ij)
+!!$        
+!!$        ! Upper/lower bounds
+!!$        qp(i) = max(qp(i), diff)
+!!$        qp(j) = max(qp(j),-diff)
+!!$        qm(i) = min(qm(i), diff)
+!!$        qm(j) = min(qm(j),-diff)
+!!$      end do
+!!$        
+!!$      
+!!$      ! Apply the nodal limiter
+!!$      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+!!$      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
+!!$      
+!!$      ! Limiting procedure
+!!$      do iedge = 1, NEDGE
+!!$        
+!!$        ! Determine indices
+!!$        i = IverticesAtEdge(1,iedge)
+!!$        j = IverticesAtEdge(2,iedge)
+!!$        
+!!$        if (fluxImpl(iedge) > 0.0_DP) then
+!!$          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
+!!$        else
+!!$          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
+!!$        end if
+!!$
+!!$        ! Update the defect vector
+!!$        res(i) = res(i)+tstep*f_ij
+!!$        res(j) = res(j)-tstep*f_ij
+!!$      end do
+!!$
+!!$    end subroutine doLimit_explFCTnoMass
 
 
     !**************************************************************
     ! The semi-explicit FEM-FCT limiting procedure,
     ! whereby consistent mass antidiffusion is built into the residual
     
-    subroutine doLimit_explFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, ML, u, ulow, fluxExpl, theta, tstep,&
-        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-
-      ! local variables
-      real(DP) :: diff,d_ij,f_ij,m_ij
-      integer :: iedge,ij,i,j
-      
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients and solution difference
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep; diff=u(i)-u(j)
-        
-        ! Determine antidiffusive flux
-        f_ij = fluxExpl(iedge)+m_ij*diff+theta*d_ij*diff
-!!$        f_ij = fluxImpl(iedge)
-        
-        ! Determine low-order solution difference
-        diff = ulow(j)-ulow(i)
-        
-        ! Perform prelimiting
-        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-        fluxImpl(iedge) = f_ij
-        
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
-        ! Upper/lower bounds
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-    end subroutine doLimit_explFCTconsMass
+!!$    subroutine doLimit_explFCTconsMass(IverticesAtEdge,&
+!!$        DcoefficientsAtEdge, MC, ML, u, ulow, fluxExpl, theta, tstep,&
+!!$        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
+!!$
+!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+!!$      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
+!!$      real(DP), intent(in) :: theta,tstep
+!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+!!$      integer, intent(in) :: NEDGE
+!!$
+!!$      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+!!$
+!!$      ! local variables
+!!$      real(DP) :: diff,d_ij,f_ij,m_ij
+!!$      integer :: iedge,ij,i,j
+!!$      
+!!$      ! Clear nodal vectors
+!!$      call lalg_clearVectorDble(pp)
+!!$      call lalg_clearVectorDble(pm)
+!!$      call lalg_clearVectorDble(qp)
+!!$      call lalg_clearVectorDble(qm)
+!!$
+!!$      ! Loop over edges
+!!$      do iedge = 1, NEDGE
+!!$        
+!!$        ! Determine indices
+!!$        i  = IverticesAtEdge(1,iedge)
+!!$        j  = IverticesAtEdge(2,iedge)
+!!$        ij = IverticesAtEdge(3,iedge)
+!!$        
+!!$        ! Determine coefficients and solution difference
+!!$        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep; diff=u(i)-u(j)
+!!$        
+!!$        ! Determine antidiffusive flux
+!!$        f_ij = fluxExpl(iedge)+m_ij*diff+theta*d_ij*diff
+!!$        
+!!$        ! Determine low-order solution difference
+!!$        diff = ulow(j)-ulow(i)
+!!$        
+!!$        ! Perform prelimiting
+!!$        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+!!$        fluxImpl(iedge) = f_ij
+!!$        
+!!$        ! Sum of positive/negative fluxes
+!!$        pp(i) = pp(i)+max(0.0_DP, f_ij)
+!!$        pp(j) = pp(j)+max(0.0_DP,-f_ij)
+!!$        pm(i) = pm(i)+min(0.0_DP, f_ij)
+!!$        pm(j) = pm(j)+min(0.0_DP,-f_ij)
+!!$        
+!!$        ! Upper/lower bounds
+!!$        qp(i) = max(qp(i), diff)
+!!$        qp(j) = max(qp(j),-diff)
+!!$        qm(i) = min(qm(i), diff)
+!!$        qm(j) = min(qm(j),-diff)
+!!$      end do
+!!$      
+!!$      ! Apply the nodal limiter
+!!$      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+!!$      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
+!!$      
+!!$      ! Limiting procedure
+!!$      do iedge = 1, NEDGE
+!!$        
+!!$        ! Determine indices
+!!$        i = IverticesAtEdge(1,iedge)
+!!$        j = IverticesAtEdge(2,iedge)
+!!$        
+!!$        if (fluxImpl(iedge) > 0.0_DP) then
+!!$          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
+!!$        else
+!!$          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
+!!$        end if
+!!$
+!!$        ! Update the defect vector
+!!$        res(i) = res(i)+tstep*f_ij
+!!$        res(j) = res(j)-tstep*f_ij
+!!$      end do
+!!$    end subroutine doLimit_explFCTconsMass
 
   end subroutine gfsc_buildResFCTScalarOLD
 
@@ -6475,7 +6626,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
+    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl,p_fluxConstraint
     real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u
     
     
@@ -6600,7 +6751,7 @@ contains
         
         ! Determine coefficients
         d_ij = DcoefficientsAtEdge(1,iedge)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute solution difference
         diff = u(i)-u(j)
@@ -6626,7 +6777,7 @@ contains
         end if
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -6678,7 +6829,7 @@ contains
         
         ! Determine coefficients
         d_ij = DcoefficientsAtEdge(1,iedge)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute solution difference
         diff = u(i)-u(j)
@@ -6704,7 +6855,7 @@ contains
         end if
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -8488,7 +8639,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -8504,7 +8655,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -8516,7 +8667,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -8531,7 +8682,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -8547,7 +8698,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -8559,7 +8710,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -8625,7 +8776,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -8641,7 +8792,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -8653,7 +8804,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -8668,7 +8819,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -8684,7 +8835,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -8696,7 +8847,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -8764,7 +8915,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -8780,7 +8931,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -8792,7 +8943,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -8807,7 +8958,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -8823,7 +8974,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -8835,7 +8986,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -8901,7 +9052,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -8917,7 +9068,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -8929,7 +9080,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -8944,7 +9095,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -8960,7 +9111,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -8972,7 +9123,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -9041,7 +9192,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -9057,7 +9208,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
 
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -9069,7 +9220,7 @@ contains
 
 
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
 
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -9084,7 +9235,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = theta*tstep*d_ij
+        a_ij = theta*d_ij
 
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j)
         f_i = a_ij*diff_j+flux0(iedge)
@@ -9100,7 +9251,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = theta*tstep*d_ij
+        b_ij = theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -9112,7 +9263,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -9180,7 +9331,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_i)
         f_i = a_ij*diff_i+flux0(iedge)
@@ -9196,7 +9347,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_j+flux0(iedge)
@@ -9208,7 +9359,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply i-th column
         Jac(ii) = Jac(ii)-f_ij
@@ -9223,7 +9374,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
-        a_ij = MC(ij)+theta*tstep*d_ij
+        a_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij+h*e_j) 
         f_i = a_ij*diff_j+flux0(iedge)
@@ -9239,7 +9390,7 @@ contains
             C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
-        b_ij = MC(ij)+theta*tstep*d_ij
+        b_ij = MC(ij)/tstep+theta*d_ij
         
         ! Compute and limit raw antidiffusive flux f(u_ij-h*e_j)
         f_j = b_ij*diff_i+flux0(iedge)
@@ -9251,7 +9402,7 @@ contains
         
         
         ! Compute divided differences of fluxes
-        f_ij = 0.5_DP*(f_i-f_j)/hstep
+        f_ij = 0.5_DP*tstep*(f_i-f_j)/hstep
         
         ! Apply j-th column
         Jac(ij) = Jac(ij)-f_ij
@@ -12439,14 +12590,18 @@ contains
     select case(rafcstab%ctypeAFCstabilisation)
       
     case (AFCSTAB_FEMFCT_CLASSICAL,&
-          AFCSTAB_FEMFCT_ITERATIVE)
+          AFCSTAB_FEMFCT_ITERATIVE,&
+          AFCSTAB_FEMFCT_IMPLICIT)
     
       !-------------------------------------------------------------------------
-      ! Classical and iterative nonlinear FEM-FCT algorithm
-      ! The raw antidiffusive flux for both algorithms can be assembled 
+      ! Classical, iterative and semi-implicit nonlinear FEM-FCT algorithm
+      ! The raw antidiffusive flux for all algorithms can be assembled 
       ! in the same way. The only difference is that the amount of rejected 
       ! antidiffusion is subtracted from the initial fluxes in subsequent
-      ! iterations of the iterative algorithm.
+      ! iterations if the iterative FEM-FCT algorithm is applied.
+      ! Moreover the initial flux is without mass contribution is stored
+      ! separately for the semi-implicit FEM-FCT algorithm since it is
+      ! used to constrain the raw antidiffusive fluxes in each iteration.
       !-------------------------------------------------------------------------
       
       ! The current flux is stored at position 2
@@ -12504,22 +12659,21 @@ contains
         
       end if
       
+      
+      ! Do we have to store the initial fluxes separately?
+      if (binit .and. (rafcstab%ctypeAFCstabilisation &
+                       .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
+        ! The initial flux without contribution of the 
+        ! consistent mass matrix is stored at position 4
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
+        call lalg_copyVector(p_flux, p_flux0)
+      end if
+
+
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
-
-    case (AFCSTAB_FEMFCT_IMPLICIT)
-
-      !-------------------------------------------------------------------------
-      ! Semi-implicit nonlinear FEM-FCT algorithm
-      !-------------------------------------------------------------------------
       
-      print *, "Assembly of the antidiffusive flux for semi-implicit algorithm"
-      print *, "is not yet implemented"
-      stop
-      
-      ! Set specifiers for raw antidiffusive fluxes
-      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
-
     case (AFCSTAB_FEMFCT_LINEARISED)
       
       !-------------------------------------------------------------------------

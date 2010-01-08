@@ -3226,25 +3226,28 @@ contains
     if (convectionAFC > 0) then
       
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+
       case (AFCSTAB_FEMFCT_CLASSICAL,&
-            AFCSTAB_FEMFCT_IMPLICIT,&
             AFCSTAB_FEMFCT_ITERATIVE)
         
-        ! Set pointer
+        ! Set pointer to low-order predictor
         p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
-
-        ! Compute low-order predictor in the zeroth iteration
-        if (ite .eq. 0) then          
-          call lsysbl_invertedDiagMatVec(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rrhs, 1.0_DP, p_predictor)
-        end if
         
+        ! Compute low-order predictor in the zeroth iteration
+        if (ite .eq. 0) then
+          if (rtimestep%theta .ne. 1) then
+            call lsysbl_invertedDiagMatVec(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rrhs, 1.0_DP, p_predictor)
+          else
+            call lsysbl_copyVector(rsolution, p_predictor)
+          end if
+        end if
+
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1),&
             'imassantidiffusiontype', imassantidiffusiontype)
         
-        ! --- NEW IMPLEMENTATION ---
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildFluxFCT(&
@@ -3260,7 +3263,7 @@ contains
               rsolution, rsolution, rtimestep%theta,&
               rtimestep%dStep, 1.0_DP, (ite .eq. 0))
         end if
-        
+
         ! Apply corrected antidiffusive fluxes
         if (ite .eq. 0) then
           call gfsc_buildResidualFCT(&
@@ -3277,7 +3280,68 @@ contains
               AFCSTAB_FCTALGO_BOUNDS, rres)
         end if
 
-!!$        ! --- OLD IMPLEMENTATION ---
+      case (AFCSTAB_FEMFCT_IMPLICIT)
+
+        ! Set pointer for low-order predictor
+        p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+        
+        ! Compute low-order predictor in the zeroth iteration
+        if (ite .eq. 0) then
+          if (rtimestep%theta .ne. 1) then
+            call lsysbl_invertedDiagMatVec(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rrhs, 1.0_DP, p_predictor)
+          else
+            call lsysbl_copyVector(rsolution, p_predictor)
+          end if
+        end if
+        
+        call parlst_getvalue_int(p_rparlist,&
+            rcollection%SquickAccess(1),&
+            'imassantidiffusiontype', imassantidiffusiontype)
+
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsc_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              rsolution, rsolution, rtimestep%theta,&
+              rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsc_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              rsolution, rsolution, rtimestep%theta,&
+              rtimestep%dStep, 1.0_DP, (ite .eq. 0))
+        end if
+
+        ! Apply corrected antidiffusive fluxes
+        if (ite .eq. 0) then
+          call gfsc_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              p_predictor, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_STANDARD, rres)
+        else
+          call gfsc_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(convectionAFC),&
+              p_predictor, rtimestep%dStep, .false.,&
+              AFCSTAB_FCTALGO_INITALPHA+&
+              AFCSTAB_FCTALGO_LIMITEDGE+&
+              AFCSTAB_FCTALGO_CORRECT+&
+              AFCSTAB_FCTALGO_CONSTRAIN, rres)
+        end if
+        
+
+!!$      ! OLD IMPLEMENTATION
+!!$      case (AFCSTAB_FEMFCT_IMPLICIT)
+!!$        
+!!$        call parlst_getvalue_int(p_rparlist,&
+!!$            rcollection%SquickAccess(1),&
+!!$            'imassantidiffusiontype', imassantidiffusiontype)
+!!$
 !!$        ! Should we apply consistent mass antidiffusion?
 !!$        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
 !!$          call gfsc_buildResidualFCT(&
@@ -3294,10 +3358,12 @@ contains
 !!$              rproblemLevel%Rafcstab(convectionAFC))
 !!$        end if
         
+
       case (AFCSTAB_FEMTVD)
         call gfsc_buildResidualTVD(&
             rsolution, rtimestep%dStep, rres,&
             rproblemLevel%Rafcstab(convectionAFC))
+
         
       case (AFCSTAB_FEMGP)
 

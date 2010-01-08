@@ -184,6 +184,12 @@ module afcstabilisation
   ! lumped mass matrix prior to applying it to the residual/solution
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_SCALEBYMASS  = 2_I32**6
 
+  ! Constrain the raw antidiffusive fluxes by the size of limited
+  ! limited rather than by the correction factors directly
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_CONSTRAIN    = 2_I32**7
+
+  
+  
   ! FEM-FCT algorithm without application of the corrected fluxes
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_PREPARE  = AFCSTAB_FCTALGO_INITALPHA +&
                                                                 AFCSTAB_FCTALGO_ADINCREMENTS +&
@@ -192,12 +198,8 @@ module afcstabilisation
                                                                 AFCSTAB_FCTALGO_LIMITEDGE
 
   ! Standard FEM-FCT algorithm
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD  = AFCSTAB_FCTALGO_PREPARE +&
-                                                                 AFCSTAB_FCTALGO_CORRECT
-
-  ! Linearised FEM-FCT algorithm
-  integer(I32), parameter, public :: AFCSTAB_FCTALGO_LINEARISED = AFCSTAB_FCTALGO_STANDARD +&
-                                                                  AFCSTAB_FCTALGO_SCALEBYMASS
+  integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD = AFCSTAB_FCTALGO_PREPARE +&
+                                                                AFCSTAB_FCTALGO_CORRECT
   
 !</constantblock>
 

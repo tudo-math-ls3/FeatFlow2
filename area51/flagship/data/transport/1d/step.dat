@@ -57,7 +57,7 @@ svelocityname = @velocity_x
 # 1 = isotropic diffusion
 # 2 = anisotropic diffusion
 # 3 = variable diffusion
-idiffusiontype = 1
+idiffusiontype = 0
 
 # section name of diffusion tensor
 sdiffusionname = @diffusion
@@ -131,7 +131,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -171,7 +171,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 10
 
 
 ################################################################################
@@ -197,7 +197,7 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 ucdsolution = out/step
@@ -236,13 +236,13 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 0.2
 
 # initial time step size
 dinitialStep = 0.001
@@ -293,10 +293,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 1
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 1
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -433,7 +433,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -452,12 +452,12 @@ dperturbationStrategy = 2
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
 # 1 = check sufficient decrease condition and perform backtracking if required
-icheckSufficientDecrease = 0
+icheckSufficientDecrease = 1
 
 # maximum number of backtracking steps
 nmaxBacktrackingSteps = 5
@@ -575,7 +575,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 5
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -675,7 +675,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 5
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -684,10 +684,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.001
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 5
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
