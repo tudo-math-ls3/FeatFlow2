@@ -843,6 +843,18 @@ contains
       !call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
       !    p_rsolver,p_rprecond)
 
+    case (6)
+      ! Pure UMFPACK preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initUMFPACK4 (rsettings,ispaceTimeLevel,p_rsolver)
+      
+      ! Set up some debug settings.
+      p_rsolver%p_rsubnodeUMFPACK4%cwriteMatrix = &
+          rsettings%rdebugFlags%cumfpackWriteMatrix
+      p_rsolver%p_rsubnodeUMFPACK4%sfilename = &
+          rsettings%rdebugFlags%sumfpackMatrixFilename
+      
     case (8)
       ! Simple defect correction with UMFPACK preconditioning.
       !

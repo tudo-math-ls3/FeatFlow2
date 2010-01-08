@@ -301,6 +301,9 @@ contains
             rpostproc%ibodyForcesBdComponent) .and.&
         (rpostproc%icalcForces .ne. 0)) then
 
+      call output_lbrk()
+      call output_line ('Body forces real bd., bdc/horiz/vert')
+
       ! Calculate drag-/lift coefficients on the 2nd boundary component.
       ! This is for the benchmark channel!
       call boundary_createRegion (rvector%p_rblockDiscr%p_rboundary, &
@@ -309,8 +312,6 @@ contains
       call ppns2D_bdforces_uniform (rvector,rregion,Dforces,CUB_G1_1D,&
           rpostproc%dbdForcesCoeff1,rpostproc%dbdForcesCoeff2)
       
-      call output_lbrk()
-      call output_line ('Body forces real bd., bdc/horiz/vert')
       call output_line (' 2 / ' &
           //trim(sys_sdEP(Dforces(1),15,6)) // ' / '&
           //trim(sys_sdEP(Dforces(2),15,6)) )

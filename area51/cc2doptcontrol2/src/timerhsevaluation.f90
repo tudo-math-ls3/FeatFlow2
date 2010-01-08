@@ -502,6 +502,68 @@ contains
 
   end subroutine
   
+!  ! ***************************************************************************
+!
+!  subroutine trhsevl_evalTargetFlow (rdiscretisation, rform, &
+!      nelements, npointsPerElement, Dpoints, &
+!      IdofsTest, rdomainIntSubset, &
+!      Dcoefficients, rcollection)
+!  
+!  ! Standard evaluation routine. Evaluates component rcollection%Icollection(1)
+!  ! of the analytical solution identified by the name "RHS" in the collection.
+!  
+!  use fsystem
+!  use basicgeometry
+!  use triangulation
+!  use scalarpde
+!  use domainintegration
+!  use spatialdiscretisation
+!  use collection
+!  
+!  type(t_spatialDiscretisation), intent(IN) :: rdiscretisation
+!  type(t_linearForm), intent(IN) :: rform
+!  integer, intent(IN) :: nelements
+!  integer, intent(IN) :: npointsPerElement
+!  real(DP), dimension(:,:,:), intent(IN) :: Dpoints
+!  integer, dimension(:,:), intent(IN) :: IdofsTest
+!  type(t_domainIntSubset), intent(IN) :: rdomainIntSubset
+!  type(t_collection), intent(INOUT), optional :: rcollection
+!  real(DP), dimension(:,:,:), intent(OUT) :: Dcoefficients
+!  
+!  integer :: ierror,i,j
+!  integer, dimension(3) :: Ibounds
+!  real(dp), dimension(:,:), allocatable :: Dvalues
+!
+!    ! Prepare a target array.
+!    Ibounds = ubound(Dcoefficients)
+!    allocate(Dvalues(Ibounds(2),Ibounds(3)))
+!
+!    ! Evaluate
+!    call ansol_evaluate (rcollection,"RHS",rcollection%IquickAccess(1),&
+!        Dvalues,npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements,ierror)
+!    
+!    do i=1,nelements
+!      do j=1,npointsPerElement
+!        if ( (Dpoints(1,j,i)-0.5_DP)**2 + (Dpoints(2,j,i)-0.2_DP)**2 .le. 0.05**2) then
+!          Dvalues(j,i) = Dvalues(j,i)*max(0.0_DP,1.0_DP-rcollection%DquickAccess(1))
+!        end if
+!      end do
+!    end do
+!    
+!    ! Check that this was ok. If yes, copy the data to the destination.
+!    if (ierror .eq. 0) then
+!      Dcoefficients(1,:,:) = Dvalues(:,:)
+!    else
+!      call output_line ('Error evaluating RHS function.', &
+!                        OU_CLASS_ERROR,OU_MODE_STD,'trhsevl_evalFunction')
+!      call sys_halt()
+!    end if
+!        
+!    ! Clean up
+!    deallocate(Dvalues)
+!
+!  end subroutine
+  
   ! ***************************************************************************
   
 !<subroutine>

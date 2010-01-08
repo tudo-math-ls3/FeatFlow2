@@ -1521,7 +1521,7 @@ contains
           
           ! And now create the basic flow. Only in case ilevel>NLMAX,
           ! new levels are generated.
-          call ansol_init (rflow,ilevel,&
+          call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisation,rcollection)
           
@@ -1537,7 +1537,7 @@ contains
           
           ! And now create the basic flow. Only in case ilevel>NLMAX,
           ! new levels are generated.
-          call ansol_init (rflow,ilevel,&
+          call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisation,rcollection)
           
@@ -1562,7 +1562,7 @@ contains
       end if
       
       ! Create the basic analytic solution: Mesh, discretisation structure,...
-      call ansol_init (rflow,ilevel,&
+      call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
           NDIM2D,smesh,rcollection%IquickAccess(1),&
           fget1LevelDiscretisation,rcollection,rboundary)
     
