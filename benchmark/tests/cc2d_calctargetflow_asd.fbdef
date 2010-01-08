@@ -294,11 +294,6 @@ descr    = ASD-flow, Level 3
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 3
 
-testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV3
-descr    = ASD-flow, Level 3
-datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
-mglevels = 3
-
 testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV4
 descr    = ASD-flow, Level 4
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
