@@ -1,3 +1,9 @@
+######################################################################
+#
+# MASTER.DAT file for tests with the default benchmark configuration
+#
+######################################################################
+
 # -------------------------------------------------------------------
 # This optional master file is the entry point for all data
 # which is processed by the software. The simportdatafiles(.) parameter
@@ -67,24 +73,28 @@ iUpwind = $DISCRETISATION_IUPWIND
 dUpsam = $DISCRETISATION_DUPSAM
 
 ctypeInitialSolution = $DISCRETISATION_CTYPEINITIALSOLUTION
+iinitialSolutionlevel = $DISCRETISATION_IINITIALSOLUTIONLEVEL
 sinitialSolutionFilename = '$DISCRETISATION_SINITIALSOLUTIONFILENAME'
+ielementTypeInitialSolution = $DISCRETISATION_IELEMENTTYPEINITIALSOLUTION
 cwriteFinalSolution = $DISCRETISATION_CWRITEFINALSOLUTION
-swriteSolutionFilename = '$POSTPROCESSING_SFILENAMEFILM'
+swriteSolutionFilename = '$POSTPROCESSING_SWRITESOLUTIONFILENAME'
 
 [TIME-DISCRETISATION]
 itimedependence = $TIMEDISCRETISATION_ITIMEDEPENDENCE
+niterations = $TIMEDISCRETISATION_NITERATIONS
 dtimeMax = $TIMEDISCRETISATION_DTIMEMAX
 dtimeStep = $TIMEDISCRETISATION_DTIMESTEP
 dtimeStepTheta = $TIMEDISCRETISATION_DTIMESTEPTHETA
 
 [CC-POSTPROCESSING]
 ioutputUCD = $POSTPROCESSING_IOUTPUTUCD
+sfilenameUCD = '$POSTPROCESSING_SFILENAMEUCD'
+sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_lv%{CC-DISCRETISATION.NLMAX}'
 dtimeDifferenceUCD = $POSTPROCESSING_DTIMEDIFFERENCEUCD
+icalcBodyForces = $POSTPROCESSING_ICALCBODYFORCES
 ioutputFilm = $POSTPROCESSING_IOUTPUTFILM
 sfilenameFilm = '$POSTPROCESSING_SFILENAMEFILM'
-sfilenameUCD = '$POSTPROCESSING_SFILENAMEUCD'
 iwriteBodyForces = $POSTPROCESSING_IWRITEBODYFORCES
-sfilenameBodyForces = '%{ssolutiondirectory}/bdforces_lv%{CC-DISCRETISATION.NLMAX}'
 dbdForcesCoeff1 = $POSTPROCESSING_DBDFORCESCOEFF1
 dbdForcesCoeff2 = $POSTPROCESSING_DBDFORCESCOEFF2
 
@@ -93,9 +103,9 @@ sParametrisation = '%{spredirectory}/QUAD.prm'
 sMesh = '%{spredirectory}/QUAD.tri'
 
 [CC2D-NONLINEAR]
-nmaxIterations     = $NONLINEAR_NMAXITERATIONS
-dDampingD          = $NONLINEAR_DDAMPINGD
 itypePreconditioning = $NONLINEAR_ITYPEPRECONDITIONING
+depsD              = $NONLINEAR_DEPSD
+depsDiv            = $NONLINEAR_DEPSDIV
 
 [CC-LINEARSOLVER]
 ismootherType = $LINEARSOLVER_ISMOOTHERTYPE
@@ -104,6 +114,10 @@ icoarseGridSolverType = $LINEARSOLVER_ICOARSEGRIDSOLVERTYPE
 [CC-MULTIGRIDSOLVER]
 nmaxIterations     = $MULTIGRIDSOLVER_NMAXITERATIONS
 depsRel            = $MULTIGRIDSOLVER_DEPSREL
+
+[CC-SMOOTHER]
+domega             = $SMOOTHER_DOMEGA
+
 
 [BDCONDITIONS]
 bdComponent1(4)=
