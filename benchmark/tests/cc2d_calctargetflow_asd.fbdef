@@ -95,6 +95,7 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 4
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_001_LV2
 descr    = ASD-flow, Level 2
@@ -349,6 +350,8 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.125
 TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+DISCRETISATION_IELEMENTTYPE = 4
+
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV2
 descr    = ASD-flow, Level 2
@@ -538,7 +541,6 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.0078125
-POSTPROCESSING_IOUTPUTFILM=0
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV2
 descr    = ASD-flow, Level 2
@@ -603,6 +605,7 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
 TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
 
 testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV2
@@ -793,7 +796,6 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.0078125
-POSTPROCESSING_IOUTPUTFILM=0
 
 testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV2
 descr    = ASD-flow, Level 2
@@ -858,6 +860,7 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
 TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
 
 testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV2
@@ -1048,7 +1051,6 @@ descr    = ASD-flow, Level 1
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 1
 TIMEDISCRETISATION_DTIMESTEP = 0.0078125
-POSTPROCESSING_IOUTPUTFILM=0
 
 testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV2
 descr    = ASD-flow, Level 2
