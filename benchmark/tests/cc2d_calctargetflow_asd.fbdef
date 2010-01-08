@@ -61,6 +61,8 @@ MINLEVEL=1
 # drag and lift are measured.
 #
 # Degree of nonstationarity: Re=5
+#
+# Time discretisation: CN
 ############################
 
 TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
@@ -315,6 +317,770 @@ datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 7
 
 testid   = CC2D_TARGETFLOW_ASD_Q2_005_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+
+
+############################
+# Test TARGETFLOW_ASD_Q2
+#
+# A cylinger in the center of a channel.
+# Pulsing inflow from left and right.
+# On different levels and for different FE types,
+# drag and lift are measured.
+#
+# Degree of nonstationarity: Re=5
+#
+# Time discretisation: Impl. Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_101_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_102_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_103_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_104_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q2_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q2_105_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_ASD_Q1T
+#
+# A cylinger in the center of a channel.
+# Pulsing inflow from left and right.
+# On different levels and for different FE types,
+# drag and lift are measured.
+#
+# Degree of nonstationarity: Re=5
+#
+# Time discretisation: CN
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_001
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_001_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_002
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_002_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_003
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_003_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_004
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_004_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_005
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_005_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_ASD_Q1T
+#
+# A cylinger in the center of a channel.
+# Pulsing inflow from left and right.
+# On different levels and for different FE types,
+# drag and lift are measured.
+#
+# Degree of nonstationarity: Re=5
+#
+# Time discretisation: Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_101_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_102_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_103_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_104_LV8
+descr    = ASD-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_ASD_Q1T_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV1
+descr    = ASD-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV2
+descr    = ASD-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV3
+descr    = ASD-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV4
+descr    = ASD-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV5
+descr    = ASD-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV6
+descr    = ASD-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV7
+descr    = ASD-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_ASD_Q1T_105_LV8
 descr    = ASD-flow, Level 8
 datfile  = ./data/apps_cc2d/master_calctargetflow_asd.dat
 mglevels = 8
