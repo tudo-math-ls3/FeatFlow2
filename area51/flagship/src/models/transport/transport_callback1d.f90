@@ -123,8 +123,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvectionP1d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -162,8 +162,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvectionP1d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwConvectionP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -202,8 +202,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvectionD1d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionD1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -241,8 +241,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvectionD1d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwConvectionD1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -281,8 +281,8 @@ contains
     
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBurgersP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalBurgersP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -319,8 +319,8 @@ contains
     
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBurgersP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwBurgersP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -358,8 +358,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBuckLevP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalBuckLevP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
                                                 
 !<description>
     ! This subroutine computes the convective matrix coefficients
@@ -401,8 +401,8 @@ contains
   
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBuckLevP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwBuckLevP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
                                                 
 !<description>
     ! This subroutine computes the convective matrix coefficients

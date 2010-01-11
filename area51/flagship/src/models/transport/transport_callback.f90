@@ -3872,8 +3872,6 @@ contains
         ! nonlinear Burgers` equation in 1D
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
         
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
@@ -3886,8 +3884,7 @@ contains
         ! nonlinear Buckley-Leverett equation in 1D
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop     
+
       end select
       
       
@@ -3928,40 +3925,31 @@ contains
         ! nonlinear Burgers` equation in space-time
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
 
         
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
 
         
       case (VELOCITY_BURGERS1D)
         ! nonlinear Burgers` equation in 1D
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
         
 
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
 
         
       case (VELOCITY_BUCKLEV1D)
         ! nonlinear Buckley-Leverett equation in 1D
         
         ! @TODO: Implement weak boundary conditions
-        print *, "Weak boundary conditions are not available!"
-        stop
+
       end select
 
       
