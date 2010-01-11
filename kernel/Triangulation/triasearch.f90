@@ -129,6 +129,17 @@ contains
       ! If yes, quit.
       do iel=1,ubound(IverticesAtElement,2)
       
+      ! Check if pure triangle grid
+        if (size(IverticesAtElement(:,1)) .eq. 3) then
+       
+            Dcorners2D(1:2,1:3) = DvertexCoords(1:2,IverticesAtElement(1:3,iel))
+
+            ! Check if the point is inside. If yes, quit.
+            call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
+            if (binside) return
+
+        else
+      
         ! Triangular or quad element?
         if (IverticesAtElement(4,iel) .ne. 0) then
           ! Fetch the coordinates of the element
@@ -145,6 +156,8 @@ contains
           call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),Dcorners2D,binside)
           if (binside) return
         end if
+      
+      end if
       
       end do
     case (NDIM3D)
