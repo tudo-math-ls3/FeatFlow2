@@ -3734,8 +3734,8 @@ contains
     real(DP), dimension(:,:), pointer :: p_Ddata2D
     character(LEN=SYS_STRLEN) :: sdl
     character(LEN=SYS_STRLEN) :: sfilepoly
-    integer, dimension(64) :: iconnect    
-      
+    integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect    
+    integer :: ioffset1,ioffset2,ilengthPolylist
     ! Get file name
     sfilepoly = rexport%sfilepolyvtk
     
@@ -3769,15 +3769,14 @@ contains
     ! we write polydata
     write(rexport%iunit, '(A)') "DATASET POLYDATA"
     ! calculate the number of points
-    
     ipoints = GEOM_STANDARD_VCOUNT * rexport%npolygons
     write(rexport%iunit, '(A,I10,A)') "POINTS", ipoints, " double"
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write vertices
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    do ipart=1, rexport%npolygons
+    do ipart=1,rexport%npolygons
       call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
-      do j=1,ipoints
+      do j=1,GEOM_STANDARD_VCOUNT
          write(rexport%iunit, '(3E15.7)') p_Ddata2D(1, j),p_Ddata2D(2, j), 0.0_DP
       end do    
     end do
@@ -3786,23 +3785,31 @@ contains
       iconnect(j)=j-1
     end do
     
-    write(rexport%iunit, '(A,2I10)') "POLYGONS", 2*rexport%npolygons,&
-                                     2*rexport%npolygons*((GEOM_STANDARD_VCOUNT/2)+2)
     
-    write(rexport%iunit, '(34I10)') GEOM_STANDARD_VCOUNT+1,&
-                                    iconnect(1:(GEOM_STANDARD_VCOUNT/2)+1)
+    ilengthPolylist=rexport%npolygons*GEOM_STANDARD_VCOUNT+rexport%npolygons
     
-    write(rexport%iunit, '(34I10)') GEOM_STANDARD_VCOUNT+1,&
-                        iconnect((GEOM_STANDARD_VCOUNT/2)+1:GEOM_STANDARD_VCOUNT),iconnect(1) 
+    write(rexport%iunit, '(A,2I10)') "POLYGONS", rexport%npolygons, ilengthPolylist
+    do ipart=1,rexport%npolygons
+        write(rexport%iunit, '(65I10)') GEOM_STANDARD_VCOUNT, iconnect(:)
+        do j=1,GEOM_STANDARD_VCOUNT
+          iconnect(j)=iconnect(j)+GEOM_STANDARD_VCOUNT
+        end do
+    end do
+    
+    write(rexport%iunit,'(A,2I10)')"LINES",rexport%npolygons,rexport%npolygons*2+rexport%npolygons
+    do ipart=1,rexport%npolygons
+        ioffset1=(ipart-1)*GEOM_STANDARD_VCOUNT
+        ioffset2=ioffset1+GEOM_STANDARD_VCOUNT/2 
+        write(rexport%iunit, '(3I10)') 2, ioffset1, ioffset2
+    end do
     
     if (sfilepoly .ne. '') then
       ! Close the file if it was opened previously.
       close (rexport%iunit)
       rexport%iunit = 0
     end if
-      
-    
-    
+
+
     end subroutine
     
     !****************************************************************    
