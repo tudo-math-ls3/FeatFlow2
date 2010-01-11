@@ -781,7 +781,7 @@ contains
     ! Read the vector from the file.
     call sptivec_loadFromFileSequence (&
         rsolution%rnonstationary,&
-        sfilename,istart,istart+ntimesteps*idelta,idelta,bformatted,.true.)
+        sfilename,istart,istart+ntimesteps,idelta,bformatted,.true.)
 
     rsolution%ctype = ANSOL_TP_MBNONSTATIONARYFILE
 

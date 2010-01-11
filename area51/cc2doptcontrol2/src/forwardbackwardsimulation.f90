@@ -3141,7 +3141,8 @@ contains
 !<subroutine>
 
   subroutine fbsim_simulate (rsimsolver, rsolvector, rrhsvector, &
-      rboundaryConditions, ifirstinterval, ilastinterval, roseenSolution, bsuccess)
+      rboundaryConditions, ifirstinterval, ilastinterval, roseenSolution, &
+      domega,bsuccess)
   
 !<description>
   ! Performs a forward simulation through the primal solution or a
@@ -3169,6 +3170,9 @@ contains
   ! Last time interval to simulate
   ! ifirstinterval=1 and ilastinterval=0 simulates the initial condition.
   integer, intent(in) :: ilastinterval
+  
+  ! Damping parameter. Standard = 1.0.
+  real(dp), intent(in) :: domega
 !</input>
 
 !<inputoutput>
@@ -3735,11 +3739,11 @@ contains
         if (blocalsuccess) then
           ! Combine to get the new solution vector.
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(1),rcurrentsol%RvectorBlock(1),1.0_DP,1.0_DP)
+              rdefectPrimal%RvectorBlock(1),rcurrentsol%RvectorBlock(1),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(2),rcurrentsol%RvectorBlock(2),1.0_DP,1.0_DP)
+              rdefectPrimal%RvectorBlock(2),rcurrentsol%RvectorBlock(2),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(3),rcurrentsol%RvectorBlock(3),1.0_DP,1.0_DP)
+              rdefectPrimal%RvectorBlock(3),rcurrentsol%RvectorBlock(3),domega,1.0_DP)
           call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
         else
           exit
@@ -3860,11 +3864,11 @@ contains
         if (blocalsuccess) then
           ! Combine to get the new solution vector.
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(1),rcurrentsol%RvectorBlock(4),1.0_DP,1.0_DP)
+              rdefectDual%RvectorBlock(1),rcurrentsol%RvectorBlock(4),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(2),rcurrentsol%RvectorBlock(5),1.0_DP,1.0_DP)
+              rdefectDual%RvectorBlock(2),rcurrentsol%RvectorBlock(5),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(3),rcurrentsol%RvectorBlock(6),1.0_DP,1.0_DP)
+              rdefectDual%RvectorBlock(3),rcurrentsol%RvectorBlock(6),domega,1.0_DP)
           call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
         else
           exit

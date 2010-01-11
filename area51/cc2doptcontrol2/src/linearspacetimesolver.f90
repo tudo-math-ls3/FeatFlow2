@@ -679,6 +679,9 @@ module linearspacetimesolver
 
     ! A temporary space-time vector.
     type(t_spacetimeVector) :: rtempVector
+    
+    ! Damping parameter during the simulation.
+    real(dp) :: drelax
 
   end type
   
@@ -1924,9 +1927,6 @@ contains
   type(t_spacetimeVector), pointer :: p_rx,p_rdef
   type(t_sptilsNode), pointer :: p_rprecSubnode
   
-  ! Damping parameter
-  real(DP) :: domega
-
   ! The system matrix
   type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
   
@@ -1960,9 +1960,6 @@ contains
  
     nminIterations = max(rsolverNode%nminIterations,0)
     
-    ! Damping parameter
-    domega = rsolverNode%domega
-      
     ! Use preconditioning? 
     bprec = associated(rsolverNode%p_rsubnodeDefCorr%p_rpreconditioner)
     
@@ -2043,7 +2040,7 @@ contains
         ! Add it (damped) to the current iterate p_x to get
         !   $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$
 
-        call sptivec_vectorLinearComb (p_rdef,p_rx,domega,1.0_DP)
+        call sptivec_vectorLinearComb (p_rdef,p_rx,rsolverNode%drelax,1.0_DP)
 
         ! Calculate the residuum for the next step : (b-Ax).
         ! Dimultaneously filter the defect for bondary conditions.
@@ -7610,7 +7607,7 @@ contains
 !<subroutine>
   
   recursive subroutine sptils_initFBsim (rsettings,ispaceTimeLevel,&
-      rparlist,ssection,p_rsolverNode)
+      rparlist,ssection,drelax,p_rsolverNode)
   
 !<description>
   ! Creates a t_sptilsNode solver structure for the forward-backward preconditioner.
@@ -7630,6 +7627,9 @@ contains
   
   ! Name of a section in the parameter list configuring the forward-backward solver.
   character(len=*), intent(in) :: ssection
+  
+  ! Relaxation parameter to damp solutions during the simulation. Standard = 1.0.
+  real(dp), intent(in) :: drelax
 !</input>
   
 !<output>
@@ -7658,6 +7658,7 @@ contains
     ! THe initialisation of the solvers is done in initStructure.
     p_rsolverNode%p_rsubnodeFBsim%p_rparlist => rparlist
     p_rsolverNode%p_rsubnodeFBsim%ssection = ssection
+    p_rsolverNode%p_rsubnodeFBsim%drelax = drelax
     
   end subroutine
 
@@ -7902,7 +7903,7 @@ contains
       call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rbackwardsolver, &
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
-          rsolverNode%rmatrix%p_rsolution, bsuccess)
+          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
       
       if (.not. bsuccess) then
         call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -7915,7 +7916,7 @@ contains
       call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rforwardsolver, &
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
-          rsolverNode%rmatrix%p_rsolution, bsuccess)
+          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
       if (.not. bsuccess) then
         call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
@@ -7930,6 +7931,7 @@ contains
     
     ! Replace rd
     call sptivec_copyVector (rsolverNode%p_rsubnodeFBsim%rtempVector,rd)
+    call sptivec_scaleVector (rd,rsolverNode%domega)
 
   end subroutine
 

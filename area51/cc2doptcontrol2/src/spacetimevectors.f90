@@ -1511,17 +1511,23 @@ contains
     character(SYS_STRLEN) :: sfile,sarray
     integer :: i,ilast
     logical :: bexists,brepeat
+    integer :: hdata
+    real(dp), dimension(:), pointer :: p_Ddata,p_Ddata2
     
     brepeat = .false.
     if (present(brepeatLast)) brepeat = brepeatLast
     
+    call storage_new ("sptivec_loadFromFileSequence", "hdata", &
+        rx%NEQ,ST_DOUBLE, hdata, ST_NEWBLOCK_NOINIT)
+    call storage_getbase_double (hdata,p_Ddata)
+    
     ilast = 0
 
     ! Loop over the files
-    do i=istart,iend
+    do i=istart,iend,max(1,idelta)
     
       ! Form the filename
-      write(sfile,sfilename) i*idelta
+      write(sfile,sfilename) i
       
       ! Is the file there?
       inquire(file=trim(sfile), exist=bexists)
@@ -1539,10 +1545,21 @@ contains
           if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
             call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart+1)
+          end if
+          
+          if (i .eq. istart) then
+            call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata2)
           end if         
 
           ! Save the data
-          call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
+          if (size(p_Ddata2) .ne. size(p_Ddata)) then
+            call output_line('Input vector has incorrect length; truncating.',&
+                OU_CLASS_WARNING,ssubroutine='sptivec_loadFromFileSequence')
+            call lalg_copyVector(p_Ddata2,p_Ddata,min(size(p_Ddata2),size(p_Ddata)))
+            call exstor_setdata_storage (rx%p_IdataHandleList(1+i),hdata)
+          else
+            call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
+          end if
     
         else
   
@@ -1584,6 +1601,8 @@ contains
       end if
     
     end do
+    
+    call storage_free(hdata)
     
     ! The vector is scaled by 1.0.
     ! rx%p_Dscale(:) = 1.0_DP

@@ -1383,13 +1383,13 @@ contains
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: sstr
+    character(len=SYS_STRLEN) :: stargetFlow
     integer :: isuccess
     
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        'stargetFlow',sstr,bdequote=.true.)
-    call init_initFlow (rparlist,sstr,roptcontrol%rtargetFlow,&
+        'stargetFlow',stargetFlow,bdequote=.true.)
+    call init_initFlow (rparlist,stargetFlow,roptcontrol%rtargetFlow,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
@@ -1630,6 +1630,15 @@ contains
     character(len=SYS_STRLEN) :: smesh,sflowFile
     integer :: ilevel,ielementType,idelta
     integer :: ntimesteps
+    type(t_parlstSection), pointer :: p_rsection
+    
+    ! Is the section available?
+    call parlst_querysection(rparlist, ssectionFlow, p_rsection) 
+    if (.not. associated(p_rsection)) then
+      call output_line ('Flow section does not exist: '//trim(ssectionFlow), &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initFlow')
+      call sys_halt()
+    end if
     
     ! Type of the flow?    
     call parlst_getvalue_int (rparlist,ssectionFlow,'ctype',ctype,-1)
@@ -2737,7 +2746,7 @@ contains
       
       ! Simulate...
       call fbsim_simulate (rsimsolver, rvector, rrhs, &
-          rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,bsuccess)
+          rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
           
       ! Clean up
       call fbsim_done (rsimsolver)

@@ -666,7 +666,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond)
+          rprecsettings%drelax,p_rprecond)
           
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
@@ -702,7 +702,7 @@ contains
       ! Create a forward-backward solver.
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rsolver)
+          rprecsettings%drelax,p_rsolver)
           
     end select
 
@@ -830,7 +830,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond)
+          rprecsettings%drelax,p_rprecond)
           
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
@@ -878,7 +878,7 @@ contains
       ! Create a forward-backward solver.
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond)
+          rprecsettings%drelax,p_rprecond)
           
       p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
@@ -889,6 +889,14 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
+    case (10)
+      ! Simple forward-backward preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rsolversettings%drelax,p_rsolver)
+          
     end select
 
     ! Transfer all parameters
