@@ -422,7 +422,7 @@ contains
       ! not called if nu is constant.
       Dcoefficients(:,:) = dnu
       
-    case (1)
+    case (1,2)
     
       ! Allocate memory do calculate D(u) in all points
       Ibounds = ubound(Dcoefficients)
@@ -465,7 +465,9 @@ contains
         
       end select
       
-      ! Calculate the viscosity
+      ! Calculate the viscosity.
+      ! (WARNING: This inner select-case builds upon the outer select case above.
+      !  Be careful that all cviscoModel cases here also appear above!!!)
       select case (cviscoModel)
       case (1)
         ! Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
