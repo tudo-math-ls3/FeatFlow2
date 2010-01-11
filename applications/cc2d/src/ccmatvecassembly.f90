@@ -422,7 +422,7 @@ contains
       ! not called if nu is constant.
       Dcoefficients(:,:) = dnu
       
-    case (1,2)
+    case (1,2,3)
     
       ! Allocate memory do calculate D(u) in all points
       Ibounds = ubound(Dcoefficients)
@@ -470,12 +470,26 @@ contains
       !  Be careful that all cviscoModel cases here also appear above!!!)
       select case (cviscoModel)
       case (1)
-        ! Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+        ! Power law: 
+        !   nu = nu_0 * z^(dviscoexponent/2 - 1), 
+        !   nu_0 = 1/RE, 
+        !   z = ||D(u)||^2+dviscoEps
         Dcoefficients(:,:) = dnu * (Ddata(:,:,1)+dviscoEps)**(0.5_DP*dviscoexponent-1.0_DP)
 
       case (2)
-        ! Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
-        Dcoefficients(:,:) = dnu + dviscoyield / sqrt(Ddata(:,:,1)+dviscoEps**2)
+        ! Bingham fluid: 
+        !   nu = nu_0 + sqrt(2)/2 * dviscoyield / sqrt(|D(u)||^2+dviscoEps^2),
+        !   nu_0 = 1/RE
+        Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
+            dviscoyield / sqrt(Ddata(:,:,1) + dviscoEps**2)
+        
+      case (3)
+        ! General viscoplastic fluid: 
+        !   nu = nu_0 +  + sqrt(2)/2 * dviscoyield * z^(dviscoexponent/2 - 1), 
+        !   nu_0 = 1/RE,
+        !   z = ||D(u)||^2 + dviscoEps^2
+        Dcoefficients(:,:) = dnu + 0.5_DP * sqrt(2.0_DP) * &
+            dviscoyield * ( Ddata(:,:,1) + dviscoEps**2 )**( 0.5_DP * dviscoexponent - 1.0_DP)
 
       end select
       
