@@ -3090,9 +3090,6 @@ contains
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
 
-    ! right-hand side vector
-    type(t_vectorBlock), intent(in) :: rrhs
-
     ! iteration number
     integer, intent(in) :: ite
 
@@ -3106,6 +3103,9 @@ contains
 
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
+
+    ! right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rrhs
 
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
@@ -3228,13 +3228,15 @@ contains
       select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
 
       case (AFCSTAB_FEMFCT_CLASSICAL,&
-            AFCSTAB_FEMFCT_ITERATIVE)
-        
+            AFCSTAB_FEMFCT_ITERATIVE,&
+            AFCSTAB_FEMFCT_IMPLICIT)
+                
         ! Set pointer to low-order predictor
         p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
         
-        ! Compute low-order predictor in the zeroth iteration
+        ! Compute low-order predictor ...
         if (ite .eq. 0) then
+          ! ... only in the zeroth iteration
           if (rtimestep%theta .ne. 1) then
             call lsysbl_invertedDiagMatVec(&
                 rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -3242,8 +3244,14 @@ contains
           else
             call lsysbl_copyVector(rsolution, p_predictor)
           end if
+        elseif (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+                .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+          ! ... in each iteration for iterative limiting
+          call lsysbl_invertedDiagMatVec(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rrhs, 1.0_DP, p_predictor)
         end if
-
+        
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1),&
             'imassantidiffusiontype', imassantidiffusiontype)
@@ -3264,80 +3272,61 @@ contains
               rtimestep%dStep, 1.0_DP, (ite .eq. 0))
         end if
 
-        ! Apply corrected antidiffusive fluxes
         if (ite .eq. 0) then
+          ! Apply corrected antidiffusive fluxes in zeroth iteration
           call gfsc_buildResidualFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               p_predictor, rtimestep%dStep, .false.,&
               AFCSTAB_FCTALGO_STANDARD, rres)
-        else
-          call gfsc_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC),&
-              p_predictor, rtimestep%dStep, .false.,&
-              AFCSTAB_FCTALGO_STANDARD-&
-              AFCSTAB_FCTALGO_BOUNDS, rres)
-        end if
 
-      case (AFCSTAB_FEMFCT_IMPLICIT)
-
-        ! Set pointer for low-order predictor
-        p_predictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
-        
-        ! Compute low-order predictor in the zeroth iteration
-        if (ite .eq. 0) then
-          if (rtimestep%theta .ne. 1) then
-            call lsysbl_invertedDiagMatVec(&
+          if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+              .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+            ! Subtract corrected antidiffusion from right-hand side
+            call gfsc_buildResidualFCT(&
                 rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rrhs, 1.0_DP, p_predictor)
-          else
-            call lsysbl_copyVector(rsolution, p_predictor)
+                rproblemLevel%Rafcstab(convectionAFC),&
+                p_predictor, rtimestep%dStep, .false.,&
+                AFCSTAB_FCTALGO_CORRECT, rrhs)
           end if
-        end if
-        
-        call parlst_getvalue_int(p_rparlist,&
-            rcollection%SquickAccess(1),&
-            'imassantidiffusiontype', imassantidiffusiontype)
-
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rsolution, rtimestep%theta,&
-              rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC),&
-              rsolution, rsolution, rtimestep%theta,&
-              rtimestep%dStep, 1.0_DP, (ite .eq. 0))
+          ! Apply corrected antidiffusive fluxes in subsequent iteration
+          select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
+          case (AFCSTAB_FEMFCT_CLASSICAL)
+            call gfsc_buildResidualFCT(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%Rafcstab(convectionAFC),&
+                p_predictor, rtimestep%dStep, .false.,&
+                AFCSTAB_FCTALGO_STANDARD-&
+                AFCSTAB_FCTALGO_BOUNDS, rres)
+            
+          case (AFCSTAB_FEMFCT_IMPLICIT)
+            call gfsc_buildResidualFCT(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%Rafcstab(convectionAFC),&
+                p_predictor, rtimestep%dStep, .false.,&
+                AFCSTAB_FCTALGO_INITALPHA+&
+                AFCSTAB_FCTALGO_LIMITEDGE+&
+                AFCSTAB_FCTALGO_CORRECT+&
+                AFCSTAB_FCTALGO_CONSTRAIN, rres)
+
+          case (AFCSTAB_FEMFCT_ITERATIVE)
+            call gfsc_buildResidualFCT(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%Rafcstab(convectionAFC),&
+                p_predictor, rtimestep%dStep, .false.,&
+                AFCSTAB_FCTALGO_STANDARD, rres)
+            
+            ! Subtract corrected antidiffusion from right-hand side
+            call gfsc_buildResidualFCT(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix),&
+                rproblemLevel%Rafcstab(convectionAFC),&
+                p_predictor, rtimestep%dStep, .false.,&
+                AFCSTAB_FCTALGO_CORRECT, rrhs)
+          end select
         end if
 
-        ! Apply corrected antidiffusive fluxes
-        if (ite .eq. 0) then
-          call gfsc_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC),&
-              p_predictor, rtimestep%dStep, .false.,&
-              AFCSTAB_FCTALGO_STANDARD, rres)
-        else
-          call gfsc_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(convectionAFC),&
-              p_predictor, rtimestep%dStep, .false.,&
-              AFCSTAB_FCTALGO_INITALPHA+&
-              AFCSTAB_FCTALGO_LIMITEDGE+&
-              AFCSTAB_FCTALGO_CORRECT+&
-              AFCSTAB_FCTALGO_CONSTRAIN, rres)
-        end if
-        
-
-!!$      ! OLD IMPLEMENTATION
-!!$      case (AFCSTAB_FEMFCT_IMPLICIT)
-!!$        
+!!$        ! LEGACY IMPLEMENTATION
 !!$        call parlst_getvalue_int(p_rparlist,&
 !!$            rcollection%SquickAccess(1),&
 !!$            'imassantidiffusiontype', imassantidiffusiontype)
@@ -3358,7 +3347,7 @@ contains
 !!$              rproblemLevel%Rafcstab(convectionAFC))
 !!$        end if
         
-
+        
       case (AFCSTAB_FEMTVD)
         call gfsc_buildResidualTVD(&
             rsolution, rtimestep%dStep, rres,&

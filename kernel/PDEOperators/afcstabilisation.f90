@@ -198,6 +198,7 @@ module afcstabilisation
                                                                 AFCSTAB_FCTALGO_LIMITEDGE
 
   ! Standard FEM-FCT algorithm
+  ! (also used in the very first iteration of all other variants)
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_STANDARD = AFCSTAB_FCTALGO_PREPARE +&
                                                                 AFCSTAB_FCTALGO_CORRECT
   

@@ -183,8 +183,8 @@ module groupfemscalar
   interface gfsc_buildResidualFCT
     module procedure gfsc_buildResFCTScalar
     module procedure gfsc_buildResFCTBlock
-    module procedure gfsc_buildResFCTScalarOLD
-    module procedure gfsc_buildResFCTBlockOLD
+    module procedure gfsc_buildResFCTScalar_legacy
+    module procedure gfsc_buildResFCTBlock_legacy
   end interface
 
   interface gfsc_buildResidualTVD
@@ -318,8 +318,8 @@ contains
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! We need 6 nodal vectors for P's, Q's and R's
-      allocate(rafcstab%RnodalVectors(6))
-      do i = 1, 6
+      allocate(rafcstab%RnodalVectors(7))
+      do i = 1, 7
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
@@ -2713,7 +2713,7 @@ contains
 
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides nodal correction factors',&
+        call output_line('Stabilisation does not provide nodal correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
         call sys_halt()
       end if
@@ -2756,7 +2756,7 @@ contains
 
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
-        call output_line('Stabilisation does not provides edgewise correction factors',&
+        call output_line('Stabilisation does not provide edgewise correction factors',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
         call sys_halt()
       end if
@@ -2807,7 +2807,7 @@ contains
     subroutine doADIncrements(IverticesAtEdge,&
         NEDGE, u, flux, alpha, pp, pm)
       
-      real(DP), dimension(:), intent(in) :: u,flux
+      real(DP), dimension(:), intent(inout) :: u,flux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE
 
@@ -3107,7 +3107,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildResFCTBlockOLD(rlumpedMassMatrix,&
+  subroutine gfsc_buildResFCTBlock_legacy(rlumpedMassMatrix,&
       ru, theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
@@ -3116,6 +3116,9 @@ contains
     ! a wrapper for block vectors. If there is only one block, then
     ! the corresponding scalar routine is called.  Otherwise, an error
     ! is thrown.
+    !
+    ! THIS IS THE OLD IMPLEMENTATION WHICH WILL BE REMOVED SOON
+    ! USE THE NEW MORE FLEXIBLE IMPLEMENTATION AS REPLACEMENT
 !</description>
 
 !<input>
@@ -3153,24 +3156,24 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTBlock_legacy')
       call sys_halt()
 
     else
 
-      call gfsc_buildResFCTScalarOLD(rlumpedMassMatrix,&
+      call gfsc_buildResFCTScalar_legacy(rlumpedMassMatrix,&
           ru%RvectorBlock(1), theta, tstep, binit,&
           rres%RvectorBlock(1), rafcstab, rconsistentMassMatrix)
 
     end if
 
-  end subroutine gfsc_buildResFCTBlockOLD
+  end subroutine gfsc_buildResFCTBlock_legacy
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResFCTScalarOLD(rlumpedMassMatrix, ru,&
+  subroutine gfsc_buildResFCTScalar_legacy(rlumpedMassMatrix, ru,&
       theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
@@ -3180,6 +3183,9 @@ contains
     ! Boris and Bock in the early 1970s. Zalesak suggested a fully
     ! multi-dimensional generalisation of this approach and paved the
     ! way for a large family of FCT algorithms.
+    !
+    ! THIS IS THE OLD IMPLEMENTATION WHICH WILL BE REMOVED SOON
+    ! USE THE NEW MORE FLEXIBLE IMPLEMENTATION AS REPLACEMENT
     !
     ! This subroutine provides different algorithms:
     !
@@ -3326,9 +3332,9 @@ contains
           !  $ r^{(0)}=\Delta t Lu^n $
 
           call lsyssc_invertedDiagMatVec(rlumpedMassMatrix, rres, 1.0_DP-theta,&
-                                         rafcstab%RnodalVectors(10))
-          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(10), 1.0_DP, 1.0_DP)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(10), p_uPredictor)
+                                         rafcstab%RnodalVectors(7))
+          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(7), 1.0_DP, 1.0_DP)
+          call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredictor)
           
           ! Initialise the flux limiter
           if (present(rconsistentMassMatrix)) then
@@ -3397,92 +3403,89 @@ contains
 
     case (AFCSTAB_FEMFCT_CLASSICAL)
 
-!!$      ! Should we build up the initial residual?
-!!$      if (binit) then
-!!$        
-!!$        ! Initialise the flux limiter
-!!$        if (present(rconsistentMassMatrix)) then
-!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-!!$          call doInit_explFCTconsMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
-!!$              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-!!$        else
-!!$          call doInit_explFCTnoMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-!!$              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-!!$        end if
-!!$
-!!$        ! Set specifier
-!!$        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
-!!$        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
-!!$
-!!$      end if   ! binit
-!!$
-!!$      ! Check if correction factors and fluxes are available
-!!$      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
-!!$          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
-!!$        call output_line('Stabilisation does not provide precomputed fluxes &
-!!$            &and/or nodal correction factors',&
-!!$            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
-!!$        call sys_halt()
-!!$      end if
-!!$
-!!$      ! Do we have a fully implicit time discretisation?
-!!$      if (theta < 1.0_DP) then
-!!$        
-!!$        ! Compute the low-order predictor
-!!$        !
-!!$        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
-!!$        ! 
-!!$        ! whereby the residual of the 0-th iteration is assumed to be
-!!$        !
-!!$        !   $ r^{(0)}=\Delta tLu^n $
-!!$
-!!$        if (binit) then
-!!$          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
-!!$              rres, 1.0_DP-theta, rafcstab%RnodalVectors(10))
-!!$          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(10), 1.0_DP, 1.0_DP)
-!!$        end if
-!!$        call lsyssc_getbase_double(rafcstab%RnodalVectors(10), p_uPredictor)
-!!$        
-!!$        ! Apply the flux limiter
-!!$        if (present(rconsistentMassMatrix)) then
-!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-!!$          call doLimit_explFCTconsMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-!!$              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-!!$        else
-!!$          call doLimit_explFCTnoMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-!!$              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-!!$        end if
-!!$        
-!!$      else   ! theta < 1
-!!$        
-!!$        ! The low-order predictor is simply given by
-!!$        !
-!!$        !   $ \tilde u=u^n $
-!!$        
-!!$        ! Apply the flux limiter with u in leu of ulow
-!!$        if (present(rconsistentMassMatrix)) then
-!!$          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-!!$          call doLimit_explFCTconsMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-!!$              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-!!$        else
-!!$          call doLimit_explFCTnoMass(&
-!!$              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-!!$              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-!!$              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-!!$        end if
-!!$
-!!$      end if   ! theta < 1
-      call output_line('The classical FEM-FCT algorithm is not implemented yet!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
-      call sys_halt()
+      ! Should we build up the initial residual?
+      if (binit) then
+        
+        ! Initialise the flux limiter
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doInit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
+              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+        else
+          call doInit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
+              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
+        end if
+
+        ! Set specifier
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
+
+      end if   ! binit
+
+      ! Check if correction factors and fluxes are available
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
+        call output_line('Stabilisation does not provide precomputed fluxes &
+            &and/or nodal correction factors',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Do we have a fully implicit time discretisation?
+      if (theta < 1.0_DP) then
+        
+        ! Compute the low-order predictor
+        !
+        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
+        ! 
+        ! whereby the residual of the 0-th iteration is assumed to be
+        !
+        !   $ r^{(0)}=\Delta tLu^n $
+
+        if (binit) then
+          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
+              rres, 1.0_DP-theta, rafcstab%RnodalVectors(7))
+          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(7), 1.0_DP, 1.0_DP)
+        end if
+        call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredictor)
+        
+        ! Apply the flux limiter
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doLimit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        else
+          call doLimit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        end if
+        
+      else   ! theta < 1
+        
+        ! The low-order predictor is simply given by
+        !
+        !   $ \tilde u=u^n $
+        
+        ! Apply the flux limiter with u in leu of ulow
+        if (present(rconsistentMassMatrix)) then
+          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+          call doLimit_explFCTconsMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
+              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        else
+          call doLimit_explFCTnoMass(&
+              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
+              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
+              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
+        end if
+
+      end if   ! theta < 1
 
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -3547,7 +3550,7 @@ contains
         d_ij = DcoefficientsAtEdge(1,iedge)
         
         ! Determine fluxes
-        diff = u(i)-u(j); f_ij = tstep*d_ij*diff
+        diff = u(i)-u(j); f_ij = d_ij*diff
         fluxImpl(iedge) = f_ij
           
         ! Sum of positive/negative fluxes
@@ -3573,8 +3576,8 @@ contains
       end if
       
       ! Apply the nodal limiter
-      rp = ML*qp; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = ML*qm; rm = afcstab_limit( pm, rm, 0.0_DP)
+      rp = ML*qp/tstep; rp = afcstab_limit( pp, rp, 0.0_DP)
+      rm = ML*qm/tstep; rm = afcstab_limit( pm, rm, 0.0_DP)
       
       ! Limiting procedure
       do iedge = 1, NEDGE
@@ -3709,7 +3712,7 @@ contains
         d_ij = DcoefficientsAtEdge(1,iedge)
         
         ! Determine fluxes
-        f_ij = (theta*tstep*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
+        f_ij = (theta*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
         
         if (f_ij > 0.0_DP) then
           f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
@@ -3718,8 +3721,8 @@ contains
         end if
         
         ! Update the defect vector
-        res(i) = res(i)+f_ij
-        res(j) = res(j)-f_ij
+        res(i) = res(i)+tstep*f_ij
+        res(j) = res(j)-tstep*f_ij
       end do
       
     end subroutine doLimit_implFCTnoMass
@@ -3760,23 +3763,15 @@ contains
         ! Determine fluxes
         f_ij = (m_ij+theta*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
         
-        if (abs(f_ij) .gt. SYS_EPSREAL) then
-          alpha_ij = min(1.0_DP, max(0.0_DP, fluxImpl(iedge)/f_ij))
+        if (f_ij > 0.0_DP) then
+          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
         else
-          alpha_ij = 1.0_DP
+          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
         end if
-
-        f_ij = tstep*f_ij*alpha_ij
-
-!!$        if (f_ij > 0.0_DP) then
-!!$          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
-!!$        else
-!!$          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
-!!$        end if
         
         ! Update the defect vector
-        res(i) = res(i)+f_ij
-        res(j) = res(j)-f_ij
+        res(i) = res(i)+tstep*f_ij
+        res(j) = res(j)-tstep*f_ij
       end do
       
     end subroutine doLimit_implFCTconsMass
@@ -3786,286 +3781,286 @@ contains
     ! Initialisation of the semi-explicit FEM-FCT procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-!!$    subroutine doInit_explFCTnoMass(IverticesAtEdge,&
-!!$        DcoefficientsAtEdge, u, theta, tstep, NEDGE, fluxExpl)
-!!$      
-!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-!!$      real(DP), dimension(:), intent(in) :: u
-!!$      real(DP), intent(in) :: theta,tstep
-!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-!!$      integer, intent(in) :: NEDGE
-!!$      
-!!$      real(DP), dimension(:), intent(inout) :: fluxExpl
-!!$      
-!!$      ! local variables
-!!$      real(DP) :: d_ij,diff
-!!$      integer :: iedge,ij,i,j
-!!$      
-!!$      
-!!$      ! Should we use semi-implicit scheme?
-!!$      if (theta < 1.0_DP) then
-!!$        
-!!$        ! Loop over edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Determine indices
-!!$          i  = IverticesAtEdge(1,iedge)
-!!$          j  = IverticesAtEdge(2,iedge)
-!!$          
-!!$          ! Determine coefficients
-!!$          d_ij = DcoefficientsAtEdge(1,iedge)
-!!$          
-!!$          ! Determine solution difference
-!!$          diff = u(i)-u(j)
-!!$          
-!!$          ! Determine explicit antidiffusive flux
-!!$          fluxExpl(iedge) = (1-theta)*d_ij*diff
-!!$        end do
-!!$        
-!!$      else
-!!$        
-!!$        ! Initialise explicit fluxes by zero
-!!$        call lalg_clearVectorDble(fluxExpl)
-!!$        
-!!$      end if
-!!$      
-!!$    end subroutine doInit_explFCTnoMass
+    subroutine doInit_explFCTnoMass(IverticesAtEdge,&
+        DcoefficientsAtEdge, u, theta, tstep, NEDGE, fluxExpl)
+      
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: u
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: fluxExpl
+      
+      ! local variables
+      real(DP) :: d_ij,diff
+      integer :: iedge,ij,i,j
+      
+      
+      ! Should we use semi-implicit scheme?
+      if (theta < 1.0_DP) then
+        
+        ! Loop over edges
+        do iedge = 1, NEDGE
+          
+          ! Determine indices
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          
+          ! Determine coefficients
+          d_ij = DcoefficientsAtEdge(1,iedge)
+          
+          ! Determine solution difference
+          diff = u(i)-u(j)
+          
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = (1-theta)*d_ij*diff
+        end do
+        
+      else
+        
+        ! Initialise explicit fluxes by zero
+        call lalg_clearVectorDble(fluxExpl)
+        
+      end if
+      
+    end subroutine doInit_explFCTnoMass
 
 
     !**************************************************************
     ! Initialisation of the semi-explicit FEM-FCT procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-!!$    subroutine doInit_explFCTconsMass(IverticesAtEdge,&
-!!$        DcoefficientsAtEdge, MC, u, theta, tstep, NEDGE, fluxExpl)
-!!$      
-!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-!!$      real(DP), dimension(:), intent(in) :: MC,u
-!!$      real(DP), intent(in) :: theta,tstep
-!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-!!$      integer, intent(in) :: NEDGE
-!!$      
-!!$      real(DP), dimension(:), intent(inout) :: fluxExpl
-!!$      
-!!$      ! local variables
-!!$      real(DP) :: d_ij,m_ij,diff
-!!$      integer :: iedge,ij,i,j
-!!$      
-!!$      
-!!$      ! Should we use semi-implicit scheme?
-!!$      if (theta < 1.0_DP) then
-!!$        
-!!$        ! Loop over edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Determine indices
-!!$          i  = IverticesAtEdge(1,iedge)
-!!$          j  = IverticesAtEdge(2,iedge)
-!!$          ij = IverticesAtEdge(3,iedge)
-!!$          
-!!$          ! Determine coefficients
-!!$          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
-!!$          
-!!$          ! Determine solution difference
-!!$          diff = u(i)-u(j)
-!!$          
-!!$          ! Determine explicit antidiffusive flux
-!!$          fluxExpl(iedge) = -m_ij*diff+(1-theta)*d_ij*diff
-!!$        end do
-!!$        
-!!$      else
-!!$        
-!!$        ! Loop over edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Determine indices
-!!$          i  = IverticesAtEdge(1,iedge)
-!!$          j  = IverticesAtEdge(2,iedge)
-!!$          ij = IverticesAtEdge(3,iedge)
-!!$          
-!!$          ! Determine coefficients
-!!$          m_ij = MC(ij)/tstep
-!!$          
-!!$          ! Determine solution difference
-!!$          diff = u(i)-u(j)
-!!$          
-!!$          ! Determine explicit antidiffusive flux
-!!$          fluxExpl(iedge) = -m_ij*diff
-!!$        end do
-!!$        
-!!$      end if
-!!$      
-!!$    end subroutine doInit_explFCTconsMass
+    subroutine doInit_explFCTconsMass(IverticesAtEdge,&
+        DcoefficientsAtEdge, MC, u, theta, tstep, NEDGE, fluxExpl)
+      
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,u
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+      
+      real(DP), dimension(:), intent(inout) :: fluxExpl
+      
+      ! local variables
+      real(DP) :: d_ij,m_ij,diff
+      integer :: iedge,ij,i,j
+      
+      
+      ! Should we use semi-implicit scheme?
+      if (theta < 1.0_DP) then
+        
+        ! Loop over edges
+        do iedge = 1, NEDGE
+          
+          ! Determine indices
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          ij = IverticesAtEdge(3,iedge)
+          
+          ! Determine coefficients
+          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
+          
+          ! Determine solution difference
+          diff = u(i)-u(j)
+          
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = -m_ij*diff+(1-theta)*d_ij*diff
+        end do
+        
+      else
+        
+        ! Loop over edges
+        do iedge = 1, NEDGE
+          
+          ! Determine indices
+          i  = IverticesAtEdge(1,iedge)
+          j  = IverticesAtEdge(2,iedge)
+          ij = IverticesAtEdge(3,iedge)
+          
+          ! Determine coefficients
+          m_ij = MC(ij)/tstep
+          
+          ! Determine solution difference
+          diff = u(i)-u(j)
+          
+          ! Determine explicit antidiffusive flux
+          fluxExpl(iedge) = -m_ij*diff
+        end do
+        
+      end if
+      
+    end subroutine doInit_explFCTconsMass
 
     !**************************************************************
     ! The semi-explicit FEM-FCT limiting procedure,
     ! whereby no mass antidiffusion is built into the residual
     
-!!$    subroutine doLimit_explFCTnoMass(IverticesAtEdge,&
-!!$        DcoefficientsAtEdge, ML, u, ulow, fluxExpl, theta, tstep,&
-!!$        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-!!$
-!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-!!$      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
-!!$      real(DP), intent(in) :: theta,tstep
-!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-!!$      integer, intent(in) :: NEDGE
-!!$
-!!$      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-!!$
-!!$      ! local variables
-!!$      real(DP) :: diff,d_ij,f_ij
-!!$      integer :: iedge,ij,i,j
-!!$      
-!!$      ! Clear nodal vectors
-!!$      call lalg_clearVectorDble(pp)
-!!$      call lalg_clearVectorDble(pm)
-!!$      call lalg_clearVectorDble(qp)
-!!$      call lalg_clearVectorDble(qm)
-!!$
-!!$      ! Loop over edges
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Determine indices
-!!$        i  = IverticesAtEdge(1,iedge)
-!!$        j  = IverticesAtEdge(2,iedge)
-!!$        
-!!$        ! Determine coefficients
-!!$        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
-!!$        
-!!$        ! Determine antidiffusive flux
-!!$        f_ij = fluxExpl(iedge)+theta*d_ij*diff
-!!$        
-!!$        ! Determine low-order solution difference
-!!$        diff = ulow(j)-ulow(i)
-!!$        
-!!$        ! Perform prelimiting
-!!$        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-!!$        fluxImpl(iedge) = f_ij
-!!$        
-!!$        ! Sum of positive/negative fluxes
-!!$        pp(i) = pp(i)+max(0.0_DP, f_ij)
-!!$        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-!!$        pm(i) = pm(i)+min(0.0_DP, f_ij)
-!!$        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-!!$        
-!!$        ! Upper/lower bounds
-!!$        qp(i) = max(qp(i), diff)
-!!$        qp(j) = max(qp(j),-diff)
-!!$        qm(i) = min(qm(i), diff)
-!!$        qm(j) = min(qm(j),-diff)
-!!$      end do
-!!$        
-!!$      
-!!$      ! Apply the nodal limiter
-!!$      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-!!$      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-!!$      
-!!$      ! Limiting procedure
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Determine indices
-!!$        i = IverticesAtEdge(1,iedge)
-!!$        j = IverticesAtEdge(2,iedge)
-!!$        
-!!$        if (fluxImpl(iedge) > 0.0_DP) then
-!!$          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-!!$        else
-!!$          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-!!$        end if
-!!$
-!!$        ! Update the defect vector
-!!$        res(i) = res(i)+tstep*f_ij
-!!$        res(j) = res(j)-tstep*f_ij
-!!$      end do
-!!$
-!!$    end subroutine doLimit_explFCTnoMass
+    subroutine doLimit_explFCTnoMass(IverticesAtEdge,&
+        DcoefficientsAtEdge, ML, u, ulow, fluxExpl, theta, tstep,&
+        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
+
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+
+      ! local variables
+      real(DP) :: diff,d_ij,f_ij
+      integer :: iedge,ij,i,j
+      
+      ! Clear nodal vectors
+      call lalg_clearVectorDble(pp)
+      call lalg_clearVectorDble(pm)
+      call lalg_clearVectorDble(qp)
+      call lalg_clearVectorDble(qm)
+
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        
+        ! Determine coefficients
+        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
+        
+        ! Determine antidiffusive flux
+        f_ij = fluxExpl(iedge)+theta*d_ij*diff
+        
+        ! Determine low-order solution difference
+        diff = ulow(j)-ulow(i)
+        
+        ! Perform prelimiting
+        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+        fluxImpl(iedge) = f_ij
+        
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP, f_ij)
+        pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP, f_ij)
+        pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        qp(i) = max(qp(i), diff)
+        qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i), diff)
+        qm(j) = min(qm(j),-diff)
+      end do
+        
+      
+      ! Apply the nodal limiter
+      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
+      
+      ! Limiting procedure
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        if (fluxImpl(iedge) > 0.0_DP) then
+          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
+        else
+          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
+        end if
+
+        ! Update the defect vector
+        res(i) = res(i)+tstep*f_ij
+        res(j) = res(j)-tstep*f_ij
+      end do
+
+    end subroutine doLimit_explFCTnoMass
 
 
     !**************************************************************
     ! The semi-explicit FEM-FCT limiting procedure,
     ! whereby consistent mass antidiffusion is built into the residual
     
-!!$    subroutine doLimit_explFCTconsMass(IverticesAtEdge,&
-!!$        DcoefficientsAtEdge, MC, ML, u, ulow, fluxExpl, theta, tstep,&
-!!$        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-!!$
-!!$      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-!!$      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
-!!$      real(DP), intent(in) :: theta,tstep
-!!$      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-!!$      integer, intent(in) :: NEDGE
-!!$
-!!$      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-!!$
-!!$      ! local variables
-!!$      real(DP) :: diff,d_ij,f_ij,m_ij
-!!$      integer :: iedge,ij,i,j
-!!$      
-!!$      ! Clear nodal vectors
-!!$      call lalg_clearVectorDble(pp)
-!!$      call lalg_clearVectorDble(pm)
-!!$      call lalg_clearVectorDble(qp)
-!!$      call lalg_clearVectorDble(qm)
-!!$
-!!$      ! Loop over edges
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Determine indices
-!!$        i  = IverticesAtEdge(1,iedge)
-!!$        j  = IverticesAtEdge(2,iedge)
-!!$        ij = IverticesAtEdge(3,iedge)
-!!$        
-!!$        ! Determine coefficients and solution difference
-!!$        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep; diff=u(i)-u(j)
-!!$        
-!!$        ! Determine antidiffusive flux
-!!$        f_ij = fluxExpl(iedge)+m_ij*diff+theta*d_ij*diff
-!!$        
-!!$        ! Determine low-order solution difference
-!!$        diff = ulow(j)-ulow(i)
-!!$        
-!!$        ! Perform prelimiting
-!!$        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-!!$        fluxImpl(iedge) = f_ij
-!!$        
-!!$        ! Sum of positive/negative fluxes
-!!$        pp(i) = pp(i)+max(0.0_DP, f_ij)
-!!$        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-!!$        pm(i) = pm(i)+min(0.0_DP, f_ij)
-!!$        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-!!$        
-!!$        ! Upper/lower bounds
-!!$        qp(i) = max(qp(i), diff)
-!!$        qp(j) = max(qp(j),-diff)
-!!$        qm(i) = min(qm(i), diff)
-!!$        qm(j) = min(qm(j),-diff)
-!!$      end do
-!!$      
-!!$      ! Apply the nodal limiter
-!!$      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-!!$      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-!!$      
-!!$      ! Limiting procedure
-!!$      do iedge = 1, NEDGE
-!!$        
-!!$        ! Determine indices
-!!$        i = IverticesAtEdge(1,iedge)
-!!$        j = IverticesAtEdge(2,iedge)
-!!$        
-!!$        if (fluxImpl(iedge) > 0.0_DP) then
-!!$          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-!!$        else
-!!$          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-!!$        end if
-!!$
-!!$        ! Update the defect vector
-!!$        res(i) = res(i)+tstep*f_ij
-!!$        res(j) = res(j)-tstep*f_ij
-!!$      end do
-!!$    end subroutine doLimit_explFCTconsMass
+    subroutine doLimit_explFCTconsMass(IverticesAtEdge,&
+        DcoefficientsAtEdge, MC, ML, u, ulow, fluxExpl, theta, tstep,&
+        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
 
-  end subroutine gfsc_buildResFCTScalarOLD
+      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
+      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
+      real(DP), intent(in) :: theta,tstep
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+
+      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
+
+      ! local variables
+      real(DP) :: diff,d_ij,f_ij,m_ij
+      integer :: iedge,ij,i,j
+      
+      ! Clear nodal vectors
+      call lalg_clearVectorDble(pp)
+      call lalg_clearVectorDble(pm)
+      call lalg_clearVectorDble(qp)
+      call lalg_clearVectorDble(qm)
+
+      ! Loop over edges
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i  = IverticesAtEdge(1,iedge)
+        j  = IverticesAtEdge(2,iedge)
+        ij = IverticesAtEdge(3,iedge)
+        
+        ! Determine coefficients and solution difference
+        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep; diff=u(i)-u(j)
+        
+        ! Determine antidiffusive flux
+        f_ij = fluxExpl(iedge)+m_ij*diff+theta*d_ij*diff
+        
+        ! Determine low-order solution difference
+        diff = ulow(j)-ulow(i)
+        
+        ! Perform prelimiting
+        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
+        fluxImpl(iedge) = f_ij
+        
+        ! Sum of positive/negative fluxes
+        pp(i) = pp(i)+max(0.0_DP, f_ij)
+        pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP, f_ij)
+        pm(j) = pm(j)+min(0.0_DP,-f_ij)
+        
+        ! Upper/lower bounds
+        qp(i) = max(qp(i), diff)
+        qp(j) = max(qp(j),-diff)
+        qm(i) = min(qm(i), diff)
+        qm(j) = min(qm(j),-diff)
+      end do
+      
+      ! Apply the nodal limiter
+      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
+      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
+      
+      ! Limiting procedure
+      do iedge = 1, NEDGE
+        
+        ! Determine indices
+        i = IverticesAtEdge(1,iedge)
+        j = IverticesAtEdge(2,iedge)
+        
+        if (fluxImpl(iedge) > 0.0_DP) then
+          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
+        else
+          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
+        end if
+
+        ! Update the defect vector
+        res(i) = res(i)+tstep*f_ij
+        res(j) = res(j)-tstep*f_ij
+      end do
+    end subroutine doLimit_explFCTconsMass
+
+  end subroutine gfsc_buildResFCTScalar_legacy
 
   !*****************************************************************************
 
@@ -12565,7 +12560,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_u1,p_u2,p_flux0,p_flux
+    real(DP), dimension(:), pointer :: p_ML,p_MC,p_u1,p_u2
+    real(DP), dimension(:), pointer :: p_alpha,p_flux0,p_flux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
 
     ! Check if stabilisation is prepared
@@ -12617,6 +12613,32 @@ contains
       ! the iterative FEM-FCT algorithm) is stored at position 3
       call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
       
+      ! Check if the amount of rejected antidiffusion should be
+      ! included in the initial raw antidiffusive fluxes
+      if (.not.binit .and.&
+          rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+        
+        ! Check if stabilisation provides raw antidiffusive fluxes
+        if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+          call output_line('Stabilisation does not provide correction factors',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+
+        ! Check if stabilisation provides raw antidiffusive fluxes
+        if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+          call output_line('Stabilisation does not provide antidiffusive fluxes',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+          call sys_halt()
+        end if
+
+        ! Set pointer
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+
+        ! Subtract amount of rejected antidiffusion
+        p_flux0 = p_flux0-p_alpha*p_flux
+      end if
+
       ! Do we have to use the consistent mass matrix?
       if (present(rconsistentMassMatrix)) then
 
@@ -12654,9 +12676,9 @@ contains
         ! Combine explicit and implicit fluxes
         if (binit) then
           call lalg_copyVector(p_flux, p_flux0)
-        elseif ((1-theta)*dscale .gt. SYS_EPSREAL) then
+        elseif (1-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_flux0, p_flux, (1-theta)*dscale, theta)
+              p_flux0, p_flux, 1-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
           call lalg_scaleVector(p_flux, theta)
         else
