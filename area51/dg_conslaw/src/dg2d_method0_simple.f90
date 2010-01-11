@@ -33,6 +33,8 @@ module dg2d_method0_simple
   use ucd
   use pprocerror
   use genoutput
+  use cubature
+  use dg2d_routines
     
   use poisson2d_callback
   
@@ -127,7 +129,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 1
+    NLMAX = 2
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -195,21 +197,54 @@ contains
     
     call lsyssc_getbase_double (rmatrix,p_Ddata)
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     write(*,*) p_Ddata
     
+    if (rdiscretisation%RspatialDiscr(1)%ccomplexity .eq. SPDISC_UNIFORM) then
+    write(*,*) 'uniform'
+    endif
+    
+    if  (rdiscretisation%RspatialDiscr(1)%ccomplexity .eq. SPDISC_CONFORMAL) then
+    write(*,*) 'konform'
+    endif
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
-!    ! The same has to be done for the right hand side of the problem.
-!    ! At first set up the corresponding linear form (f,Phi_j):
-!    rlinform%itermCount = 1
-!    rlinform%Idescriptors(1) = DER_FUNC2D
-!    
-!    ! ... and then discretise the RHS to get a discrete version of it.
-!    ! Again we simply create a scalar vector based on the one and only
-!    ! discretisation structure.
-!    ! This scalar vector will later be used as the one and only first
-!    ! component in a block vector.
-!    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
-!                                 rlinform,.true.,rrhs,coeff_RHS_2D)
+    ! The same has to be done for the right hand side of the problem.
+    ! At first set up the corresponding linear form (f,Phi_j):
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC2D
+    
+    ! ... and then discretise the RHS to get a discrete version of it.
+    ! Again we simply create a scalar vector based on the one and only
+    ! discretisation structure.
+    ! This scalar vector will later be used as the one and only first
+    ! component in a block vector.
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+                                 rlinform,.true.,rrhs,coeff_RHS_2D)
+                                 
+                                 
+                                 
+    ! Test the new DG edgebased routine                                 
+    call linf_dg_buildVectorScalarEdge2d (rlinform, CUB_G3_1D, .true.,&
+                                              rrhs)
+                                 
 !    
 !    ! The linear solver only works for block matrices/vectors - but above,
 !    ! we created scalar ones. So the next step is to make a 1x1 block
