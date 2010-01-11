@@ -404,9 +404,10 @@ contains
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
-      ! We need 3 edgewise vectors for the explicit and implicit fluxes
-      allocate(rafcstab%RedgeVectors(3))
-      do i = 1, 3
+      ! We need 2 edgewise vectors for the edgewise correction
+      ! factors and the raw antidiffusive fluxes
+      allocate(rafcstab%RedgeVectors(2))
+      do i = 1, 2
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
