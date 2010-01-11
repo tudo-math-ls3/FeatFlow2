@@ -1004,12 +1004,12 @@ module triangulation
     !       p_IedgesAtElement = array [1..NVE,1..NEL] of integer
     ! For each element the node numbers of the edges following the
     ! corner vertices in mathematically positive sense.
-    ! This is the old KMID array.
+    ! This is similar to the old KMID array (but it is not exactly
+    ! the old KMID of FEAT1 as KMID started the edge numbers at NVT+1
+    ! while IedgesAtElement starts the edge numbering with 1).
     ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
     ! meshes, there is NVE=4. In this case, there is 
     ! IedgesAtElement(4,.)=0 for a triangle in a quad mesh.
-    ! To be able to distinguish a number of an edge from a vertex number, 
-    ! edges are numbered in the range NVT+1..NVT+NMT. 
     integer        :: h_IedgesAtElement = ST_NOHANDLE
     
     ! Neighbour Elements Adjacent to an Element.
