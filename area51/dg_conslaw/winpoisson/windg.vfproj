@@ -52,7 +52,10 @@
 				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\src\dg2d_method0_simple.f90">
 			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File></Filter>
+				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File>
+		<File RelativePath="..\src\dg2d_routines.f90"/>
+		<File RelativePath="..\src\intf_flux_dg_buildVectorScEdge2D.inc">
+			<FileConfiguration Name="Debug|Win32" ExcludedFromBuild="true"/></File></Filter>
 		<Filter Name="3D"/>
 		<Filter Name="main">
 		<File RelativePath="..\src\dg.f90"/></Filter></Filter></Files>

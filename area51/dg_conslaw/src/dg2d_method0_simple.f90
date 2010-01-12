@@ -243,7 +243,7 @@ contains
                                  
     ! Test the new DG edgebased routine                                 
     call linf_dg_buildVectorScalarEdge2d (rlinform, CUB_G3_1D, .true.,&
-                                              rrhs)
+                                              rrhs,rrhs)
                                  
 !    
 !    ! The linear solver only works for block matrices/vectors - but above,
