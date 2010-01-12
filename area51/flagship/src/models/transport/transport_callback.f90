@@ -4242,6 +4242,10 @@ contains
         rsolution, rtimestep%dStep, .false.,&
         AFCSTAB_FCTALGO_STANDARD+&
         AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)
+
+    ! Impose boundary conditions for the solution vector
+    call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+        rtimestep%dTime)
     
   end subroutine transp_calcLinearisedFCT
 

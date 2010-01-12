@@ -412,7 +412,8 @@ contains
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
 
-      ! We need 1 nodal vector for the predictor
+      ! We need 1 nodal block-vector for the 
+      ! approximation to the time derivative
       allocate(rafcstab%RnodalBlockVectors(1))
       call lsysbl_createVectorBlock(&
           rafcstab%RnodalBlockVectors(1),&
