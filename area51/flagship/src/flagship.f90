@@ -18,11 +18,8 @@
 !#     name and user-defined parameters are supplied via parameter list.
 !#
 !# TODO
-!# ----
 !#
-!# 1.) Implement the linearised FCT algorithm in a general version
-!#
-!# 2.) Remove the old splib (ILU-k) from the solver module and replace it
+!# 1.) Remove the old splib (ILU-k) from the solver module and replace it
 !#     by the routines from the iluk.f90 module.
 !#
 !# </purpose>

@@ -351,8 +351,8 @@ contains
 
       ! We need 4 nodal vectors for P's, Q's and R's,
       ! whereby the same memory is used for R's and P's
-      allocate(rafcstab%RnodalVectors(4))
-      do i = 1, 4
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
@@ -366,6 +366,12 @@ contains
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       call lsyssc_createVector(rafcstab%RedgeVectors(3),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      
+       ! We need 1 nodal block-vector for the approximation to the time
+      ! derivative. For block-systems this vector is truely created
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsysbl_createVectorBlock(rafcstab%RnodalBlockVectors(1),&
+          rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -502,8 +508,8 @@ contains
 
       ! We need 4 nodal vectors for P's, Q's and R's,
       ! whereby the same memory is used for R's and P's
-      allocate(rafcstab%RnodalVectors(4))
-      do i = 1, 4
+      allocate(rafcstab%RnodalVectors(7))
+      do i = 1, 7
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
@@ -518,6 +524,12 @@ contains
       call lsyssc_createVector(rafcstab%RedgeVectors(3),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       
+      ! We need 1 nodal block-vector for the approximation to the time
+      ! derivative. This vector is a wrapper of the fifth scalar one.
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(7),&
+          rafcstab%RnodalBlockVectors(1))
+
 
     case (AFCSTAB_FEMFCT_LINEARISED)
 

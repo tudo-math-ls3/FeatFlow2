@@ -71,7 +71,7 @@ isystemPrecond = 1
 # 2 = density, energy
 # 3 = density, pressure, velocity
 # 4 = density, pressure
-itransformationtype = 3
+itransformationtype = 1
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -205,7 +205,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0
