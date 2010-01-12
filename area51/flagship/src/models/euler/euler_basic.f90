@@ -9,22 +9,25 @@
 !#
 !# The following routines are available:
 !#
-!#  1.) euler_getNVAR
-!#      Returns the number of variables depending on the spatial dimension
+!# 1.) euler_getNVAR
+!#     -> Returns the number of variables depending on the spatial dimension
 !#
-!# 2.) euler_getVariable
+!# 2.) euler_getNVARtransformed
+!#     -> Returns the number of variables after transformation
+!#
+!# 3.) euler_getVariable
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in interleave or block format
 !#
-!# 3.) euler_getVarInterleaveFormat
+!# 4.) euler_getVarInterleaveFormat
 !#     -> Extracts a single variable from the scalar vector of 
 !#        conservative variables stored in interleave format
 !#
-!# 4.) euler_getVarBlockFormat
+!# 5.) euler_getVarBlockFormat
 !#     -> Extracts a single variable from the vector of conservative
 !#        variables stored in block format
 !#
-!# 5.) euler_setVariables
+!# 6.) euler_setVariables
 !#     -> Sets the conservative variables from an UCD import
 !#
 !# </purpose>
@@ -47,6 +50,7 @@ module euler_basic
 
   private
   public :: euler_getNVAR
+  public :: euler_getNVARtransformed
   public :: euler_getVariable
   public :: euler_getVarInterleaveFormat
   public :: euler_getVarBlockFormat
@@ -115,6 +119,24 @@ module euler_basic
 
 !</constantblock>
 
+!<constantblock description="Global type of flux transformation">
+
+  ! Full conservative fluxes (=no transformation)
+  integer, parameter, public :: TRANSFORM_DENSITY_ENERGY_MOMENTUM   = 0
+
+  ! Reduced conservative fluxes (density)
+  integer, parameter, public :: TRANSFORM_DENSITY                   = 1
+
+  ! Reduced conservative fluxes (density, energy)
+  integer, parameter, public :: TRANSFORM_DENSITY_ENERGY            = 2
+
+  ! Full primitive fluxes (density, velocity, pressure)
+  integer, parameter, public :: TRANSFORM_DENSITY_PRESSURE_VELOCITY = 3
+
+  ! Reduced primitive fluxes (density, pressure)
+  integer, parameter, public :: TRANSFORM_DENSITY_PRESSURE          = 4
+
+!</constantblock>
 
 !<constantblock description="Global type of recovery-based error estimation">
 
@@ -220,6 +242,50 @@ contains
     NVAR = rproblemLevel%rtriangulation%ndim + 2
     
   end function euler_getNVAR
+
+  !*****************************************************************************
+
+!<function>
+
+  pure function euler_getNVARtransformed(rproblemLevel,&
+      itransformationtype) result(NVARtransformed)
+
+!<description>
+    ! This function returns the number of variables after transformation
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! type of transformation
+    integer, intent(in) :: itransformationtype
+!</input>
+
+!<result>
+    ! number of transformed variables
+    integer :: NVARtransformed
+!</result>
+!</function>
+
+    select case(itransformationtype)
+      
+    case (TRANSFORM_DENSITY_ENERGY_MOMENTUM,&
+          TRANSFORM_DENSITY_PRESSURE_VELOCITY)
+      NVARtransformed = euler_getNVAR(rproblemLevel)
+      
+    case (TRANSFORM_DENSITY)
+      NVARtransformed = 1
+      
+    case (TRANSFORM_DENSITY_ENERGY,&
+          TRANSFORM_DENSITY_PRESSURE)
+      NVARtransformed = 2
+
+    case DEFAULT
+      NVARtransformed = 0
+    end select
+    
+  end function euler_getNVARtransformed
 
   !*****************************************************************************
 

@@ -80,16 +80,44 @@
 !#         adopting the Rusanov flux artificial viscosities
 !#
 !# 19.) euler_calcCharacteristics2d
-!#      -> Computes characteristic variables in 2D
+!#      -> Computes characteristic variables
 !#
-!# 20.) euler_calcBoundaryvalues2d
+!# 20.) euler_calcFluxFCTScalarDiss2d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting scalar artificial viscosities
+!#
+!# 21.) euler_calcFluxFCTTensorDiss2d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting tensorial artificial viscosities
+!#
+!# 22.) euler_calcFluxFCTRusanov2d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting the Rusanov artificial viscosities
+!#
+!# 23.) euler_calcTrafoDensity2d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density
+!#
+!# 24.) euler_calcTrafoDensityEnergy2d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density and energy
+!#
+!# 25.) euler_calcTrafoDensityPress2d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density and the pessure
+!#
+!# 26.) euler_calcTrafoDensityPressVel2d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density, the pressure and the velocity
+!#
+!# 27.) euler_calcBoundaryvalues2d
 !#      -> Computes the boundary values for a given node
 !#
-!# 21.) euler_hadaptCallbackScalar2d
+!# 28.) euler_hadaptCallbackScalar2d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in interleave format
 !#
-!# 22.) euler_hadaptCallbackBlock2d
+!# 29.) euler_hadaptCallbackBlock2d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
@@ -136,6 +164,13 @@ module euler_callback2d
   public :: euler_calcMatrixRusanovDiag2d
   public :: euler_calcMatrixRusanov2d
   public :: euler_calcCharacteristics2d
+  public :: euler_calcFluxFCTScalarDiss2d
+  public :: euler_calcFluxFCTTensorDiss2d
+  public :: euler_calcFluxFCTRusanov2d
+  public :: euler_calcTrafoDensity2d
+  public :: euler_calcTrafoDensityEnergy2d
+  public :: euler_calcTrafoDensityPress2d
+  public :: euler_calcTrafoDensityPressVel2d
   public :: euler_calcBoundaryvalues2d
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
@@ -2388,6 +2423,391 @@ contains
     end if
     
   end subroutine euler_calcCharacteristics2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTScalarDiss2d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 2D using scalar dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: ui,vi,uj,vj
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux,vel,cs
+
+    ! Compute velocities
+    ui = U2_i(2)/U2_i(1); vi = U2_i(3)/U2_i(1)
+    uj = U2_j(2)/U2_j(1); vj = U2_j(3)/U2_j(1)
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji)
+
+    ! Compute Roe mean values
+    aux  = sqrt(max(U2_i(1)/U2_j(1), SYS_EPSREAL))
+    u_ij = (aux*ui+uj)/(aux+1.0_DP)
+    v_ij = (aux*vi+vj)/(aux+1.0_DP)
+    hi   = GAMMA*U2_i(4)/U2_i(1)-G2*(U2_i(2)*U2_i(2)+U2_i(3)*U2_i(3))/(U2_i(1)*U2_i(1))
+    hj   = GAMMA*U2_j(4)/U2_j(1)-G2*(U2_j(2)*U2_j(2)+U2_j(3)*U2_j(3))/(U2_j(1)*U2_j(1))
+    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+    ! Compute auxiliary variables
+    aux  = sqrt(a(1)*a(1)+a(2)*a(2))
+    vel  = u_ij*a(1) + v_ij*a(2)
+    q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+    cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+
+    ! Scalar dissipation
+    d_ij = abs(vel) + aux*cs
+
+    ! Compute conservative fluxes
+    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
+
+  end subroutine euler_calcFluxFCTScalarDiss2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTTensorDiss2d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 2D using tensodial dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR2D) :: Diff
+    real(DP), dimension(NDIM2D) :: a
+    real(DP) :: ui,vi,uj,vj
+    real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
+
+    ! Compute velocities
+    ui = U2_i(2)/U2_i(1); vi = U2_i(3)/U2_i(1)
+    uj = U2_j(2)/U2_j(1); vj = U2_j(3)/U2_j(1)
+
+    ! Compute the skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
+
+    if (anorm .gt. SYS_EPSREAL) then
+      
+      ! Normalize the skew-symmetric coefficient
+      a = a/anorm
+
+      ! Compute Roe mean values
+      aux  = sqrt(max(U2_i(1)/U2_j(1), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      v_ij = (aux*vi+vj)/(aux+1.0_DP)
+      hi   = GAMMA*U2_i(4)/U2_i(1)-G2*(U2_i(2)*U2_i(2)+U2_i(3)*U2_i(3))/(U2_i(1)*U2_i(1))
+      hj   = GAMMA*U2_j(4)/U2_j(1)-G2*(U2_j(2)*U2_j(2)+U2_j(3)*U2_j(3))/(U2_j(1)*U2_j(1))
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+      ! Compute auxiliary variables
+      aux   = u_ij*a(1) + v_ij*a(2)
+      uPow2 = u_ij*u_ij
+      vPow2 = v_ij*v_ij
+      q_ij  = 0.5_DP*(uPow2+vPow2)
+      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+      cs = sqrt(cPow2)
+
+      ! Compute eigenvalues
+      l1 = abs(aux-cs)
+      l2 = abs(aux)
+      l3 = abs(aux+cs)
+      l4 = abs(aux)
+
+      ! Compute solution difference U2_i-U2_j
+      Diff = U2_i-U2_j
+
+      ! Compute auxiliary quantities for characteristic variables
+      aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
+      aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/cs
+
+      ! Compute characteristic variables multiplied by the corresponding eigenvalue
+      w1 = l1 * (aux1 + aux2)
+      w2 = l2 * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
+      w3 = l3 * (aux1 - aux2)
+      w4 = l4 * ((a(1)*v_ij-a(2)*u_ij)*Diff(1)+a(2)*Diff(2)-a(1)*Diff(3))
+
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = w1 + w2 + w3
+      Diff(2) = (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4
+      Diff(3) = (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4
+      Diff(4) = (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4
+
+      ! Compute conservative flux
+      F_ij = dscale1*(U1_i-U1_j) + dscale2*anorm*Diff
+
+    else
+
+      ! Compute conservative flux without spatial contribution
+      F_ij = dscale1*(U1_i-U1_j)
+
+    end if
+  end subroutine euler_calcFluxFCTTensorDiss2d
+ 
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTRusanov2d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 2D using the Rusanov dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui,vi,uj,vj
+    real(DP) :: d_ij,ci,cj,Ei,Ej
+
+    ! Compute velocities and energy
+    ui = U2_i(2)/U2_i(1); vi = U2_i(3)/U2_i(1); Ei = U2_i(4)/U2_i(1)
+    uj = U2_j(2)/U2_j(1); vj = U2_j(3)/U2_j(1); Ej = U2_j(4)/U2_j(1)
+
+    ! Compute the speed of sound
+    ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+    
+    ! Scalar dissipation for the Rusanov flux
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) +&
+                sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) +&
+                sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
+
+    ! Compute conservative fluxes
+    F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
+
+  end subroutine euler_calcFluxFCTRusanov2d
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensity2d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density in 2D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+    
+  end subroutine euler_calcTrafoDensity2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityEnergy2d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density and energy in 2D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! energy fluxes
+    G_ij(2) =  F_ij(4)
+    G_ji(2) = -F_ij(4)
+
+  end subroutine euler_calcTrafoDensityEnergy2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityPress2d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density and energy in 2D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj, vi, vj
+    
+    ! velocities
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+    
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! pressure fluxes
+    G_ij(2) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
+    G_ji(2) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
+    
+  end subroutine euler_calcTrafoDensityPress2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityPressVel2d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation 
+    ! of the given flux into primitive variables in 2D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj, vi, vj
+    
+    ! velocities
+    ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
+    uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! velocity fluxes in x-direction
+    G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+
+    ! velocity fluxes in y-direction
+    G_ij(3) =  (F_ij(3)-vi*F_ij(1))/U_i(1)
+    G_ji(3) = -(F_ij(3)-vj*F_ij(1))/U_j(1)
+
+    ! pressure fluxes
+    G_ij(4) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
+    G_ji(4) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
+
+  end subroutine euler_calcTrafoDensityPressVel2d
 
   !*****************************************************************************
 

@@ -44,7 +44,7 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
@@ -64,6 +64,14 @@ isystemcoupling = 0
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 1
+
+# type of transformation for antidiffusive fluxes
+# 0 = no transformation (density, momentum, energy)
+# 1 = density
+# 2 = density, energy
+# 3 = density, pressure, velocity
+# 4 = density, pressure
+itransformationtype = 3
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -146,7 +154,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 11
+istabilisation = 12
 
 
 ################################################################################
@@ -200,7 +208,7 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 1
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
@@ -236,7 +244,7 @@ dstepReductionFactor = 0.5
 depsRel = 0.0
 
 # absolute tolerance for relative changes
-depsAbs = 1e-12
+depsAbs = 0.0
 
 # tolerance for steady state convergence
 depsSteady = 0.0
@@ -257,10 +265,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -316,7 +324,7 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 1
+ilmax = 100
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -430,10 +438,10 @@ nmaxBacktrackingSteps = 5
 iupdateFrequency = 0
 
 # nonlinear relaxation parameter
-domega = 0.8
+domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-10
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -539,7 +547,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 4
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15
@@ -603,7 +611,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-1
 
 # relative tolerance for stagnation
 depsStag = 0.0

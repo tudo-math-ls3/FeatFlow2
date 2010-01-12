@@ -65,16 +65,44 @@
 !#         adopting the Rusanov flux artificial viscosities
 !#
 !# 16.) euler_calcCharacteristics1d
-!#      -> Computes characteristic variables in 1D
+!#      -> Computes characteristic variables
 !#
-!# 17.) euler_calcBoundaryvalues1d
+!# 17.) euler_calcFluxFCTScalarDiss1d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting scalar artificial viscosities
+!#
+!# 18.) euler_calcFluxFCTTensorDiss1d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting tensorial artificial viscosities
+!#
+!# 19.) euler_calcFluxFCTRusanov1d
+!#      -> Computes inviscid fluxes for FCT algorithm
+!#         adopting the Rusanov artificial viscosities
+!#
+!# 20.) euler_calcTrafoDensity1d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density
+!#
+!# 21.) euler_calcTrafoDensityEnergy1d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density and energy
+!#
+!# 22.) euler_calcTrafoDensityPress1d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density and the pessure
+!#
+!# 23.) euler_calcTrafoDensityPressVel1d
+!#      -> Computes the transformation from conservative fluxes 
+!#         to fluxes for the density, the pressure and the velocity
+!#
+!# 24.) euler_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 18.) euler_hadaptCallbackScalar1d
+!# 25.) euler_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 19.) euler_hadaptCallbackBlock1d
+!# 26.) euler_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
@@ -118,11 +146,13 @@ module euler_callback1d
   public :: euler_calcMatrixRusanovDiag1d
   public :: euler_calcMatrixRusanov1d
   public :: euler_calcCharacteristics1d
-
-  public :: euler_calcTrafoPrimitive1d
   public :: euler_calcFluxFCTScalarDiss1d
+  public :: euler_calcFluxFCTTensorDiss1d
   public :: euler_calcFluxFCTRusanov1d
-  
+  public :: euler_calcTrafoDensity1d
+  public :: euler_calcTrafoDensityEnergy1d
+  public :: euler_calcTrafoDensityPress1d
+  public :: euler_calcTrafoDensityPressVel1d
   public :: euler_calcBoundaryvalues1d
   public :: euler_hadaptCallbackScalar1d
   public :: euler_hadaptCallbackBlock1d
@@ -1585,59 +1615,13 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoPrimitive1d(U_i, U_j, F_ij, G_ij, G_ji)
-    
-!<description>
-    ! This subroutine computes the transformation 
-    ! of the given flux into primitive variables
-!</description>
-
-!<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
-!</input>
-
-!<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: ui, uj
-    
-    ! velocities
-    ui = U_i(2)/U_i(1)
-    uj = U_j(2)/U_j(1)
-
-    ! density fluxes
-    G_ij(1) =  F_ij(1)
-    G_ji(1) = -F_ij(1)
-
-    ! velocity fluxes
-    G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
-    G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
-
-    ! pressure fluxes
-    G_ij(3) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
-    G_ji(3) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
-
-  end subroutine euler_calcTrafoPrimitive1d
-
-  !*****************************************************************************
-
-!<subroutine>
-
   pure subroutine euler_calcFluxFCTScalarDiss1d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
     
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for 
-    ! FCT algorithms in 1D using scalar dissipation dissipation.
+    ! FCT algorithms in 1D using scalar dissipation.
 !</description>
 
 !<input>
@@ -1690,7 +1674,99 @@ contains
     
   end subroutine euler_calcFluxFCTScalarDiss1d
 
-    !*****************************************************************************
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcFluxFCTTensorDiss1d(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+    
+!<description>
+    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! FCT algorithms in 1D using tensodial dissipation.
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+    
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVAR1D) :: Diff
+    real(DP), dimension(NDIM1D) :: a
+    real(DP) :: ui,uj,b1,b2
+    real(DP) :: aux,uPow2,hi,hj,H_ij,q_ij,u_ij
+    real(DP) :: anorm,l1,l2,l3,w1,w2,w3,cPow2,cs
+    
+    ! Compute velocities
+    ui = U2_i(2)/U2_i(1); uj = U2_j(2)/U2_j(1)
+
+    ! Compute skew-symmetric coefficient
+    a = 0.5_DP*(C_ij-C_ji); anorm = abs(a(1))
+    
+    ! Compute Roe mean values
+    aux  = sqrt(max(U2_i(1)/U2_j(1), SYS_EPSREAL))
+    u_ij = (aux*ui+uj)/(aux+1.0_DP)
+    hi   = GAMMA*U2_i(3)/U2_i(1)-G2*(U2_i(2)*U2_i(2))/(U2_i(1)*U2_i(1))
+    hj   = GAMMA*U2_j(3)/U2_j(1)-G2*(U2_j(2)*U2_j(2))/(U2_j(1)*U2_j(1))
+    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+    
+    ! Compute auxiliary variables
+    uPow2 = u_ij*u_ij
+    q_ij  = 0.5_DP*uPow2
+    cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+    cs    = sqrt(cPow2)
+    
+    ! Compute eigenvalues
+    l1 = abs(u_ij-cs)
+    l2 = abs(u_ij)
+    l3 = abs(u_ij+cs)
+
+    ! Compute solution difference U2_i-U2_j
+    Diff = U2_i-U2_j
+    
+    ! Compute auxiliary quantities for characteristic variables
+    b2 = G1/cPow2; b1 = b2*q_ij
+
+    ! Compute characteristic variables multiplied by the
+    ! corresponding eigenvalue
+    w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
+                        (b2*u_ij+1.0_DP/cs)*Diff(2) +&
+                                         b2*Diff(3) )
+    w2 = l2 *          (             (1-b1)*Diff(1) +&
+                                    b2*u_ij*Diff(2) -&
+                                         b2*Diff(3) )
+    w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
+                        (b2*u_ij-1.0_DP/cs)*Diff(2) +&
+                                         b2*Diff(3) )
+    
+    ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+    Diff(1) = w1 + w2 + w3
+    Diff(2) = (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3
+    Diff(3) = (H_ij-u_ij*cs)*w1 + q_ij*w2 + (H_ij+u_ij*cs)*w3
+    
+    ! Compute conservative fluxes
+    F_ij = dscale1*(U1_i-U1_j) + dscale2*anorm*Diff
+    
+  end subroutine euler_calcFluxFCTTensorDiss1d
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -1742,6 +1818,160 @@ contains
     F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
     
   end subroutine euler_calcFluxFCTRusanov1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensity1d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+    
+  end subroutine euler_calcTrafoDensity1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density and energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! energy fluxes
+    G_ij(2) =  F_ij(3)
+    G_ji(2) = -F_ij(3)
+
+  end subroutine euler_calcTrafoDensityEnergy1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityPress1d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density and energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj
+    
+    ! velocities
+    ui = U_i(2)/U_i(1)
+    uj = U_j(2)/U_j(1)
+    
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! pressure fluxes
+    G_ij(2) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
+    G_ji(2) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
+    
+  end subroutine euler_calcTrafoDensityPress1d
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoDensityPressVel1d(U_i, U_j, F_ij, G_ij, G_ji)
+    
+!<description>
+    ! This subroutine computes the transformation 
+    ! of the given flux into primitive variables in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj
+    
+    ! velocities
+    ui = U_i(2)/U_i(1)
+    uj = U_j(2)/U_j(1)
+
+    ! density fluxes
+    G_ij(1) =  F_ij(1)
+    G_ji(1) = -F_ij(1)
+
+    ! velocity fluxes
+    G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+
+    ! pressure fluxes
+    G_ij(3) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
+    G_ji(3) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
+
+  end subroutine euler_calcTrafoDensityPressVel1d
 
   !*****************************************************************************
 
