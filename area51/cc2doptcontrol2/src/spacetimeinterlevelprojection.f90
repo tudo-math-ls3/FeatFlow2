@@ -446,6 +446,13 @@ contains
       call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
       call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar2)
       
+      ! DEBUG!!!
+      call lsysbl_getbase_double (rx1,p_Dx1)
+      call lsysbl_getbase_double (rx3,p_Dx3)
+      call lsysbl_getbase_double (rtempVecCoarse,p_DtempVecCoarse)
+      call lsysbl_getbase_double (rtempVecFine,p_DtempVecFine)
+      call lsyssc_getbase_double (rtempVecFineScalar,p_DtempVecFineSca)
+
       ! Load timestep 0 into the temp vector and interpolate to the current level.
       ! Put the result to rx3.
       if (ispacelevelcoarse .ne. ispacelevelfine) then
@@ -514,7 +521,7 @@ contains
 
           call lsysbl_copyVector (rx2,rtempVecFine)
           call lsysbl_vectorLinearComb (rx1,rtempVecFine,-0.125_DP,0.75_DP)
-          call lsysbl_vectorLinearComb (rx3,rtempVecFine,0.325_DP,1.0_DP)
+          call lsysbl_vectorLinearComb (rx3,rtempVecFine,0.375_DP,1.0_DP)
           call sptivec_setTimestepData (rfineVector, 1+2*istep+1, rtempVecFine)
         
         end do

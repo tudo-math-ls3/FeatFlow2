@@ -188,6 +188,7 @@ module linearspacetimesolver
   public :: t_sptilsSubnodeBlockJacobi
   public :: t_sptilsSubnodeBlockFBSOR
   public :: t_sptilsSubnodeBlockFBsim
+  public :: t_sptilsSubnodeTimeVanka
   public :: t_sptilsMGLevelInfo
   public :: t_sptilsSubnodeMultigrid
   public :: t_sptilsSubnodeUMFPACK4
@@ -205,6 +206,7 @@ module linearspacetimesolver
   public :: sptils_initBiCGStab
   public :: sptils_initDefCorr
   public :: sptils_initFBsim
+  public :: sptils_initTimeVanka
   public :: sptils_initMultigrid
   public :: sptils_initUmfpack4
   public :: sptils_convertToSmoother
@@ -242,6 +244,9 @@ module linearspacetimesolver
   
   ! Forward-backward simulation
   integer, parameter :: SPTILS_ALG_FBSIM         = 13
+
+  ! Time-VANKA with forward-backward simulation for subblocks
+  integer, parameter :: SPTILS_ALG_TIMEVANKA     = 14
 
 !</constantblock>
 
@@ -520,6 +525,9 @@ module linearspacetimesolver
     ! Pointer to a structure for the FB-Sim preconditioner
     type(t_sptilsSubnodeBlockFBsim), pointer      :: p_rsubnodeFBsim => null()
 
+    ! Pointer to a structure for the time-VANKA preconditioner
+    type(t_sptilsSubnodeTimeVanka), pointer      :: p_rsubnodeTimeVanka => null()
+
   end type
   
 !</typeblock>
@@ -682,6 +690,42 @@ module linearspacetimesolver
     
     ! Damping parameter during the simulation.
     real(dp) :: drelax
+
+  end type
+  
+!</typeblock>
+
+! *****************************************************************************
+
+!<typeblock>
+  
+  ! This structure realises the subnode for the time-VANKA solver.
+  
+  type t_sptilsSubnodeTimeVanka
+
+    ! Parameter list containing the configuration of the forward-backward solvers.
+    type(t_parlist), pointer :: p_rparlist
+    
+    ! Name of a section in the parameter list configuring the forward-backward solver.
+    character(len=SYS_STRLEN) :: ssection
+
+    ! The forward solver
+    type(t_simSolver) :: rforwardsolver
+
+    ! The backward solver
+    type(t_simSolver) :: rbackwardsolver
+
+    ! A temporary space-time vector.
+    type(t_spacetimeVector) :: rtempVector
+    
+    ! Damping parameter during the simulation.
+    real(dp) :: drelax
+    
+    ! Size of the subblocks = number of timesteps per time-block.
+    integer :: iblockSize
+    
+    ! Number of forward-backward sweeps per block
+    integer :: niterPerBlock
 
   end type
   
@@ -987,6 +1031,8 @@ contains
     call sptils_setMatrixMultigrid (rsolverNode,rmatrix)
   case (SPTILS_ALG_FBSIM)
     call sptils_setMatrixFBsim (rsolverNode,rmatrix)
+  case (SPTILS_ALG_TIMEVANKA)
+    call sptils_setMatrixTimeVanka (rsolverNode,rmatrix)
   case default
   end select
 
@@ -1041,6 +1087,8 @@ contains
       call sptils_initStructureMultigrid (rsolverNode,ierror)
     case (SPTILS_ALG_FBSIM)
       call sptils_initStructureFBsim (rsolverNode,ierror)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_initStructureTimeVanka (rsolverNode,ierror)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_initStructureUMFPACK4 (rsolverNode,ierror)
     end select
@@ -1098,6 +1146,8 @@ contains
       call sptils_initDataMultigrid (rsolverNode,ierror)
     case (SPTILS_ALG_FBSIM)
       call sptils_initDataFBsim (rsolverNode,ierror)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_initDataTimeVanka (rsolverNode,ierror)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_initDataUMFPACK4 (rsolverNode,ierror)
     end select
@@ -1212,6 +1262,8 @@ contains
       call sptils_doneDataMultigrid (rsolverNode)
     case (SPTILS_ALG_FBSIM)
       call sptils_doneDataFBsim (rsolverNode)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_doneDataTimeVanka (rsolverNode)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_doneDataUMFPACK4 (rsolverNode)
     end select
@@ -1254,6 +1306,8 @@ contains
       call sptils_doneStructureMultigrid (rsolverNode)
     case (SPTILS_ALG_FBSIM)
       call sptils_doneStructureFBsim (rsolverNode)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_doneStructureTimeVanka (rsolverNode)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_doneStructureUMFPACK4 (rsolverNode)
     end select
@@ -1313,6 +1367,8 @@ contains
       call sptils_doneMultigrid (p_rsolverNode)
     case (SPTILS_ALG_FBSIM)
       call sptils_doneFBsim (p_rsolverNode)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_doneTimeVanka (p_rsolverNode)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_doneUMFPACK4 (p_rsolverNode)
     case default
@@ -1566,6 +1622,8 @@ contains
       call sptils_precMultigrid (rsolverNode,rd)
     case (SPTILS_ALG_FBSIM)
       call sptils_precFBsim (rsolverNode,rd)
+    case (SPTILS_ALG_TIMEVANKA)
+      call sptils_precTimeVanka (rsolverNode,rd)
     case (SPTILS_ALG_UMFPACK4)
       call sptils_precUMFPACK4 (rsolverNode,rd)
     case default
@@ -5686,7 +5744,6 @@ contains
         rsolverNode%dfinalDefect = dfr
 
         ! Test if the iteration is diverged
-        dfr = dfr*dresscale
         if (sptils_testDivergence(rsolverNode,dfr)) then
           call output_line ('Space-Time-BiCGStab: Solution diverging!')
           rsolverNode%iresult = 1
@@ -5748,6 +5805,7 @@ contains
     ! Overwrite our previous RHS by the new correction vector p_rx.
     ! This completes the preconditioning.
     call sptivec_copyVector (p_rx,rd)
+    call sptivec_scaleVector (rd,rsolverNode%domega)
       
     ! Don't calculate anything if the final residuum is out of bounds -
     ! would result in NaN's,...
@@ -7931,6 +7989,409 @@ contains
     
     ! Replace rd
     call sptivec_copyVector (rsolverNode%p_rsubnodeFBsim%rtempVector,rd)
+    call sptivec_scaleVector (rd,rsolverNode%domega)
+
+  end subroutine
+
+! *****************************************************************************
+! Time-Vanka with Block forward-backward preconditioner
+! *****************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_initTimeVanka (rsettings,ispaceTimeLevel,&
+      rparlist,ssection,drelax,iblocksize,niterPerBlock,p_rsolverNode)
+  
+!<description>
+  ! Creates a t_sptilsNode solver structure for the time-VANKA preconditioner
+  ! with forward-backward subpreconditioner. this preconditioner decomposes
+  ! the time scale into blocks of size iblocksize and applies a forward-
+  ! backward solver niterPerBlock times on each block.
+!</description>
+  
+!<input>
+  ! The problem structure that defines the problem.
+  ! A pointer to this is saved in the solver node, so the problem structure
+  ! must not be released before the solver node is released.
+  type(t_settings_optflow), target :: rsettings
+  
+  ! Id of the space-time level, this solver is based on.
+  integer, intent(in) :: ispaceTimeLevel
+
+  ! Parameter list containing the configuration of the forward-backward solvers.
+  type(t_parlist), intent(in), target :: rparlist
+  
+  ! Name of a section in the parameter list configuring the forward-backward solver.
+  character(len=*), intent(in) :: ssection
+  
+  ! Relaxation parameter to damp solutions during the simulation. Standard = 1.0.
+  real(dp), intent(in) :: drelax
+  
+  ! Size of the time-blocks
+  integer, intent(in) :: iblocksize
+  
+  ! Number of forward-backward sweeps to do in each block.
+  integer, intent(in) :: niterPerBlock
+!</input>
+  
+!<output>
+  ! A pointer to a t_sptilsNode structure. Is set by the routine, any previous
+  ! value of the pointer is destroyed.
+  type(t_sptilsNode), pointer         :: p_rsolverNode
+!</output>
+  
+!</subroutine>
+  
+    ! Create a default solver structure
+    call sptils_initSolverGeneral(rsettings,ispaceTimeLevel,p_rsolverNode)
+    
+    ! Initialise the type of the solver
+    p_rsolverNode%calgorithm = SPTILS_ALG_TIMEVANKA
+    
+    ! Initialise the ability bitfield with the ability of this solver:
+    p_rsolverNode%ccapability = 0
+
+    p_rsolverNode%nmaxiterations = p_rsolverNode%nminiterations
+    
+    ! Allocate a subnode for our solver.
+    allocate(p_rsolverNode%p_rsubnodeTimeVanka)
+    
+    ! Remember the parameter list and the section name.
+    ! THe initialisation of the solvers is done in initStructure.
+    p_rsolverNode%p_rsubnodeTimeVanka%p_rparlist => rparlist
+    p_rsolverNode%p_rsubnodeTimeVanka%ssection = ssection
+    p_rsolverNode%p_rsubnodeTimeVanka%drelax = drelax
+    p_rsolverNode%p_rsubnodeTimeVanka%niterPerBlock = niterPerBlock
+    p_rsolverNode%p_rsubnodeTimeVanka%iblocksize = iblocksize
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_doneTimeVanka (rsolverNode)
+  
+!<description>
+  ! This routine releases all temporary memory for the efect correction solver 
+  ! from the heap.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure which is to be cleaned up.
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+  
+    ! Release the subnode structure
+    deallocate(rsolverNode%p_rsubnodeTimeVanka)
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_setMatrixTimeVanka (rsolverNode,rmatrix)
+  
+!<description>
+  ! This routine is called if the system matrix changes.
+  ! The routine calls sptils_setMatrix for the preconditioner
+  ! to inform also that one about the change of the matrix pointer.
+!</description>
+  
+!<input>
+  ! An array of system matrices which is simply passed to the initialisation 
+  ! routine of the preconditioner.
+  type(t_ccoptSpaceTimeMatrix), intent(in) :: rmatrix
+!</input>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the solver
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+    ! Nothing special, default initialisation.
+
+  end subroutine
+
+! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_initStructureTimeVanka (rsolverNode,ierror)
+  
+!<description>
+  ! Solver preparation. Perform symbolic factorisation (not of the defect
+  ! correcion solver, but of subsolvers). Allocate temporary memory.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure 
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! SPTILS_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(OUT) :: ierror
+!</output>
+  
+!</subroutine>
+
+    integer :: ispaceLevel
+    
+    ! A-priori we have no error...
+    ierror = SPTILS_ERR_NOERROR
+    
+    ! Get the space level.
+    call sth_getLevel (rsolverNode%p_rspaceTimeHierarchy,&
+        rsolverNode%ispaceTimeLevel,ispaceLevel=ispaceLevel)
+    
+    ! Initialise the forward and backward solver.
+    call fbsim_init (rsolverNode%p_rsettings, rsolverNode%p_rsubnodeTimeVanka%p_rparlist, &
+        rsolverNode%p_rsubnodeTimeVanka%ssection, 1,&
+        ispaceLevel,FBSIM_SOLVER_LINFORWARD,&
+        rsolverNode%p_rsubnodeTimeVanka%rforwardsolver)
+
+    call fbsim_init (rsolverNode%p_rsettings, rsolverNode%p_rsubnodeTimeVanka%p_rparlist, &
+        rsolverNode%p_rsubnodeTimeVanka%ssection, 1,&
+        ispaceLevel,FBSIM_SOLVER_LINBACKWARD,&
+        rsolverNode%p_rsubnodeTimeVanka%rbackwardsolver)
+
+    ! Allocate memory for a temp vector.
+    call sptivec_initVector (rsolverNode%p_rsubnodeTimeVanka%rtempVector,&
+        rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
+        rsolverNode%rmatrix%rdiscrData%p_rdiscrPrimalDual)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_initDataTimeVanka (rsolverNode, ierror)
+  
+!<description>
+  ! Calls the initData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with sptils_initData.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure 
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!<output>
+  ! One of the SPTILS_ERR_XXXX constants. A value different to 
+  ! SPTILS_ERR_NOERROR indicates that an error happened during the
+  ! initialisation phase.
+  integer, intent(OUT) :: ierror
+!</output>
+
+!</subroutine>
+
+    ! A-priori we have no error...
+    ierror = SPTILS_ERR_NOERROR
+
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rforwardSolver,rsolverNode%rmatrix)
+    call fbsim_setMatrix (rsolverNode%p_rsubnodeTimeVanka%rbackwardSolver,rsolverNode%rmatrix)
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_doneDataTimeVanka (rsolverNode)
+  
+!<description>
+  ! Calls the doneData subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with sptils_doneData.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure 
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+  end subroutine
+  
+  ! ***************************************************************************
+
+!<subroutine>
+  
+  recursive subroutine sptils_doneStructureTimeVanka (rsolverNode)
+  
+!<description>
+  ! Calls the doneStructure subroutine of the subsolver.
+  ! Maybe the subsolver needs that...
+  ! The routine is declared RECURSIVE to get a clean interaction
+  ! with sptils_doneStructure.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure 
+  type(t_sptilsNode), intent(inout)         :: rsolverNode
+!</inputoutput>
+  
+!</subroutine>
+
+    call fbsim_done (rsolverNode%p_rsubnodeTimeVanka%rbackwardSolver)
+    call fbsim_done (rsolverNode%p_rsubnodeTimeVanka%rforwardSolver)
+
+    if (rsolverNode%p_rsubnodeTimeVanka%rtempVector%NEQtime .ne. 0) &
+      call sptivec_releaseVector(rsolverNode%p_rsubnodeTimeVanka%rtempVector)
+
+  end subroutine
+  
+  ! ***************************************************************************
+  
+!<subroutine>
+  
+  recursive subroutine sptils_precTimeVanka (rsolverNode,rd)
+  
+!<description>
+  ! Applies the forward-backward solver to a defect vector rd and 
+  ! solves $Pd_{new} = d$.
+  ! rd will be overwritten by the preconditioned defect.
+  !
+  ! The matrix must have been attached to the system before calling
+  ! this routine, and the initStructure/initData routines
+  ! must have been called to prepare the solver for solving
+  ! the problem.
+!</description>
+  
+!<inputoutput>
+  ! The t_sptilsNode structure of the solver
+  type(t_sptilsNode), intent(inout), target :: rsolverNode
+
+  ! On call to this routine: The defect vector to be preconditioned.
+  ! Will be overwritten by the preconditioned defect.
+  type(t_spacetimeVector), intent(inout)    :: rd
+!</inputoutput>
+  
+!</subroutine>
+
+    ! local variables
+    logical :: bsuccess
+    integer :: ite,ilocalite
+    integer :: iblock,nintervals,nblocks,iblocksize
+    real(dp) :: dres
+
+    call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+
+    ! We iterate once forward in time and once backward in time using
+    ! the simulation solvers. Clear the temp vector at first, which
+    ! receives the preconditioned defect. rd is our RHS.
+    call sptivec_clearVector(rsolverNode%p_rsubnodeTimeVanka%rtempVector)
+
+    ! Transfer the output level to the subsolver.
+    rsolverNode%p_rsubnodeTimeVanka%rforwardsolver%ioutputLevel = rsolverNode%ioutputLevel
+    rsolverNode%p_rsubnodeTimeVanka%rbackwardsolver%ioutputLevel = rsolverNode%ioutputLevel
+    
+    ! Repeat nmaxIterations times the forward-backward sweep
+    call stat_startTimer (rsolverNode%rtimeSpacePrecond)
+
+    nintervals = rd%p_rtimeDiscr%nintervals
+    iblocksize = rsolverNode%p_rsubnodeTimeVanka%iblocksize
+    nblocks = (rd%p_rtimeDiscr%nintervals + iblocksize-1) / iblocksize
+
+    do ite = 1,max(rsolverNode%nminIterations,rsolverNode%nmaxIterations)
+    
+      ! First loop through all blocks 0,2,4,..., then through all blocks 1,3,5,...
+      ! In each block perform niterPerBlock forward-backward sweeps.
+      do iblock = 0,nblocks-2,2
+      
+        do ilocalite = 1,rsolverNode%p_rsubnodeTimeVanka%niterPerBlock
+        
+          call fbsim_simulate (rsolverNode%p_rsubnodeTimeVanka%rbackwardsolver, &
+              rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
+              rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
+              min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
+              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+          
+          if (.not. bsuccess) then
+            call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            call output_line("Solution ignored.",&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            return
+          end if
+          
+          call fbsim_simulate (rsolverNode%p_rsubnodeTimeVanka%rforwardsolver, &
+              rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
+              rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
+              min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
+              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+
+          if (.not. bsuccess) then
+            call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            call output_line("Solution ignored.",&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            return
+          end if
+        
+        end do
+        
+      end do
+
+      ! #####
+
+      do iblock = 1,nblocks-1,2
+      
+        do ilocalite = 1,rsolverNode%p_rsubnodeTimeVanka%niterPerBlock
+        
+          call fbsim_simulate (rsolverNode%p_rsubnodeTimeVanka%rbackwardsolver, &
+              rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
+              rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
+              min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
+              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+          
+          if (.not. bsuccess) then
+            call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            call output_line("Solution ignored.",&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            return
+          end if
+          
+          call fbsim_simulate (rsolverNode%p_rsubnodeTimeVanka%rforwardsolver, &
+              rsolverNode%p_rsubnodeTimeVanka%rtempVector, rd, &
+              rsolverNode%p_rsettings%roptcBDC, 1+iblock*iblocksize, &
+              min((1+iblock)*iblocksize,rd%p_rtimeDiscr%nintervals), &
+              rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeTimeVanka%drelax, bsuccess)
+
+          if (.not. bsuccess) then
+            call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            call output_line("Solution ignored.",&
+                OU_CLASS_WARNING,OU_MODE_STD,'sptils_precTimeVanka')
+            return
+          end if
+        
+        end do
+        
+      end do
+
+        
+    end do
+
+    call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
+    
+    ! Replace rd
+    call sptivec_copyVector (rsolverNode%p_rsubnodeTimeVanka%rtempVector,rd)
     call sptivec_scaleVector (rd,rsolverNode%domega)
 
   end subroutine

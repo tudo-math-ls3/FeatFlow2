@@ -26,6 +26,7 @@ module structuresspacetimelinsol
 
   use fsystem
   use storage
+  use genoutput
   use boundary
   use triangulation
   use paramlist
@@ -704,6 +705,12 @@ contains
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
           rprecsettings%drelax,p_rsolver)
           
+    case default
+
+      call output_line('Invalid smoother!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'stlsinit_getSingleGridSmoother')
+      call sys_halt()
+          
     end select
 
     ! Transfer all parameters
@@ -890,13 +897,45 @@ contains
           p_rsolver,p_rprecond)
 
     case (10)
-      ! Simple forward-backward preconditioning.
+      ! Simple defect correction with time-VANKA and forward-backward preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initTimeVanka (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rprecsettings%drelax,4,8,p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
+    case (11)
+      ! BiCGStab with forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
       call sptils_initFBsim (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          rsolversettings%drelax,p_rsolver)
+          rprecsettings%drelax,p_rprecond)
           
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+          
+    case default
+
+      call output_line('Invalid single grid solver!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'stlsinit_getSingleGridSolver')
+      call sys_halt()
+
     end select
 
     ! Transfer all parameters

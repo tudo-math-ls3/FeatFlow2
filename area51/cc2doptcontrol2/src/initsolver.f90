@@ -2414,6 +2414,9 @@ contains
 
     call parlst_getvalue_double (rparlist, ssection, &
         'domega', rparams%domega, 1.0_DP)
+
+    call parlst_getvalue_double (rparlist, ssection, &
+        'drelax', rparams%drelax, 1.0_DP)
         
     call parlst_getvalue_int (rparlist, ssection, &
         'nsmpre', rparams%nsmpre, 0)
