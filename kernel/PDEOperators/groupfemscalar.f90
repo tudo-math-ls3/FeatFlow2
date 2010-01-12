@@ -2678,7 +2678,7 @@ contains
 
       ! Check if stabilisation provides antidiffusive increments and local bounds
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS) .eq. 0)) then
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
             OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
         call sys_halt()
@@ -2808,7 +2808,7 @@ contains
     subroutine doADIncrements(IverticesAtEdge,&
         NEDGE, u, flux, alpha, pp, pm)
       
-      real(DP), dimension(:), intent(inout) :: u,flux
+      real(DP), dimension(:), intent(in) :: u,flux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE
 
@@ -3019,7 +3019,7 @@ contains
         f2_ij = flux2(iedge)
  
         ! Compute nodal correction factors
-        if (f1_ij*f2_ij .le. 0) then
+        if (f1_ij*f2_ij .le. 0.0_DP) then
           r_ij = 0.0_DP
         else
           if (f1_ij .ge. 0.0_DP) then
@@ -12573,9 +12573,9 @@ contains
     end if
     
     ! Check if stabilisation is prepared
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
+    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0)) then
+        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0)) then
       call output_line('Stabilisation does not provide required structures',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
       call sys_halt()
