@@ -583,10 +583,17 @@ contains
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .false.)
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
 
+    ! First time step
+    rproblem%rtimedependence%itimeStep = 1
+    rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
+    dtimederivative = rproblem%rtimedependence%dminTimeDerivative
+    
+    ! Discretise the boundary conditions at the initial time.
+    call cc_updateDiscreteBC (rproblem)
+
     ! Implement the initial boundary conditions into the solution vector.
     ! Do not implement anything to matrices or RHS vector as these are
     ! maintained in the timeloop.
-    ! Afterwards, we can start the timeloop.
     call cc_implementBC (rproblem,rvector,rrhs,.true.,.false.)
 
     ! Postprocessing. Write out the initial solution.
@@ -595,11 +602,6 @@ contains
         rvector,rproblem%rtimedependence%dtimeInit,&
         rvector,rproblem%rtimedependence%dtimeInit,0,rpostprocessing)
 
-    ! First time step
-    rproblem%rtimedependence%itimeStep = 1
-    rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
-    dtimederivative = rproblem%rtimedependence%dminTimeDerivative
-    
     ! Reset counter of current macro step repetitions.
     irepetition = 0
     
