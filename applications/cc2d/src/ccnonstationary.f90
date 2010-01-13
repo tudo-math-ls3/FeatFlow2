@@ -614,7 +614,7 @@ contains
     do while ((rproblem%rtimedependence%itimeStep .le. &
                rproblem%rtimedependence%niterations) .and. &
               (rproblem%rtimedependence%dtime .lt. &
-               rproblem%rtimedependence%dtimemax) .and. &
+               rproblem%rtimedependence%dtimemax-100.0_DP*SYS_EPSREAL) .and. &
               (dtimederivative .ge. &
                rproblem%rtimedependence%dminTimeDerivative))
 
