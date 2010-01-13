@@ -56,12 +56,12 @@
 !#
 !# The subvariables feature
 !# ========================
-!# The parameter list alwo allows to specify variables as subvariables
+!# The parameter list also allows to specify variables as subvariables
 !# of other variables. Take a look at the following example:
 !# 
 !# -------------------------snip------------------------------
 !# NLMIN=1
-!# ACOMPLEXXTRING=! %{NLMIN} ! %{imainelement} ! %{SECTION1.ilist:3}
+!# ACOMPLEXSTRING=! %{NLMIN} ! %{imainelement} ! %{SECTION1.ilist:3}
 !# imainelement=%{SECTION1.ielement}
 !# 
 !# [SECTION1]
@@ -73,7 +73,7 @@
 !#   ghi
 !#   jkl
 !# -------------------------snip------------------------------
-!# When reading the file, the parameter "ACOMPLEXXTRING" is automatically
+!# When reading the file, the parameter "ACOMPLEXSTRING" is automatically
 !# expanded to the value "! 1 ! 5 ! ghi" by using other variables from
 !# the parameter file. The following syntax is allowed here to refer
 !# to other parameters:
