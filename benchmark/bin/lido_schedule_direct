@@ -107,7 +107,7 @@ EOF
 		# Suppress offline nodes
 		sed -f ${sedFileSuppressOfflineNodes} | \
 		# Extract current queue
-		grep ${queue}
+		grep -w ${queue}
     }
 
     # eth queue
