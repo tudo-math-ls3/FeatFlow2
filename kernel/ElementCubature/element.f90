@@ -673,126 +673,144 @@ contains
   
 !</function>
 
-    select case(trim(sys_upcase(selemName)))
+    character(len=len(selemName)+1) :: selem
+    
+    ! SELECT CASE is not allowed for strings (although supported by a majority
+    ! of compilers), therefore we have to use a couple of IF-commands :(
+    ! select case(trim(sys_upcase(scubName)))
+
+    selem = trim(sys_upcase(selemName))
+
     ! -= 1D Line Elements =-
-    case("EL_P0_1D","EL_E000_1D")
+    if (selem .eq. "EL_P0_1D" .or. selem .eq. "EL_E000_1D") then
       elem_igetID = EL_P0_1D
-    case("EL_P1_1D","EL_E001_1D")
+    else if (selem .eq. "EL_P1_1D" .or. selem .eq. "EL_E001_1D") then
       elem_igetID = EL_P1_1D
-    case("EL_P2_1D","EL_E002_1D")
+    else if (selem .eq. "EL_P2_1D" .or. selem .eq. "EL_E002_1D") then
       elem_igetID = EL_P2_1D
-    case("EL_S31_1D")
+    else if (selem .eq. "EL_S31_1D") then
       elem_igetID = EL_S31_1D
-    case("EL_DG_T0_1D")
+    else if (selem .eq. "EL_DG_T0_1D") then
       elem_igetID = EL_DG_T0_1D
-    case("EL_DG_T1_1D")
+    else if (selem .eq. "EL_DG_T1_1D") then
       elem_igetID = EL_DG_T1_1D
-    case("EL_DG_T2_1D")
+    else if (selem .eq. "EL_DG_T2_1D") then
       elem_igetID = EL_DG_T2_1D            
     
     ! -= 2D Triangle Elements =-
-    case("EL_P0","EL_P0_2D","EL_E000","EL_E000_2D")
+    else if (selem .eq. "EL_P0" .or. selem .eq. "EL_P0_2D" .or. &
+             selem .eq. "EL_E000" .or. selem .eq. "EL_E000_2D") then
       elem_igetID = EL_P0_2D
-    case("EL_P1","EL_P1_2D","EL_E001","EL_E001_2D")
+    else if (selem .eq. "EL_P1" .or. selem .eq. "EL_P1_2D" .or. &
+             selem .eq. "EL_E001" .or. selem .eq. "EL_E001_2D") then
       elem_igetID = EL_P1_2D
-    case("EL_P2","EL_P2_2D","EL_E002","EL_E002_2D")
+    else if (selem .eq. "EL_P2" .or. selem .eq. "EL_P2_2D" .or. &
+             selem .eq. "EL_E002" .or. selem .eq. "EL_E002_2D") then
       elem_igetID = EL_P2_2D
-    case("EL_P3","EL_P3_2D","EL_E003","EL_E003_2D")
+    else if (selem .eq. "EL_P3" .or. selem .eq. "EL_P3_2D" .or. &
+             selem .eq. "EL_E003" .or. selem .eq. "EL_E003_2D") then
       elem_igetID = EL_P3_2D
-    case("EL_P1T","EL_P1T_2D","EL_E020","EL_E020_2D")
+    else if (selem .eq. "EL_P1T" .or. selem .eq. "EL_P1T_2D" .or. &
+             selem .eq. "EL_E020" .or. selem .eq. "EL_E020_2D") then
       elem_igetID = EL_P1T_2D
     
     ! -= 2D Quadrilateral Elements =-
-    case("EL_Q0","EL_Q0_2D","EL_E010","EL_E010_2D")
+    else if (selem .eq. "EL_Q0" .or. selem .eq. "EL_Q0_2D" .or. &
+             selem .eq. "EL_E010" .or. selem .eq. "EL_E010_2D") then
       elem_igetID = EL_Q0_2D
-    case("EL_Q1","EL_Q1_2D","EL_E011","EL_E011_2D")
+    else if (selem .eq. "EL_Q1" .or. selem .eq. "EL_Q1_2D" .or. &
+             selem .eq. "EL_E011" .or. selem .eq. "EL_E011_2D") then
       elem_igetID = EL_Q1_2D
-    case("EL_EM11","EL_EM11_2D")
+    else if (selem .eq. "EL_EM11" .or. selem .eq. "EL_EM11_2D") then
       elem_igetID = EL_EM11_2D
-    case("EL_Q2","EL_Q2_2D")
+    else if (selem .eq. "EL_Q2" .or. selem .eq. "EL_Q2_2D") then
       elem_igetID = EL_Q2_2D
-    case("EL_Q2H_2D")
+    else if (selem .eq. "EL_Q2H_2D") then
       elem_igetID = EL_Q2H_2D
-    case("EL_Q3","EL_Q3_2D")
+    else if (selem .eq. "EL_Q3" .or. selem .eq. "EL_Q3_2D") then
       elem_igetID = EL_Q3_2D
-    case("EL_QP1","EL_QP1_2D")
+    else if (selem .eq. "EL_QP1" .or. selem .eq. "EL_QP1_2D") then
       elem_igetID = EL_QP1_2D
-    case("EL_Q1T","EL_Q1T_2D","EL_E030","EL_E030_2D")
+    else if (selem .eq. "EL_Q1T" .or. selem .eq. "EL_Q1T_2D" .or. &
+             selem .eq. "EL_E030" .or. selem .eq. "EL_E030_2D") then
       elem_igetID = EL_E030_2D
-    case("EL_EM30","EL_EM30_2D")
+    else if (selem .eq. "EL_EM30" .or. selem .eq. "EL_EM30_2D") then
       elem_igetID = EL_EM30_2D
-    case("EL_E031","EL_E031_2D")
+    else if (selem .eq. "EL_E031" .or. selem .eq. "EL_E031_2D") then
       elem_igetID = EL_E031_2D
-    case("EL_EM31","EL_EM31_2D")
+    else if (selem .eq. "EL_EM31" .or. selem .eq. "EL_EM31_2D") then
       elem_igetID = EL_EM31_2D
-    case("EL_EM30_UNPIVOTED")
+    else if (selem .eq. "EL_EM30_UNPIVOTED") then
       elem_igetID = EL_EM30_UNPIVOTED
-    case("EL_EM30_UNSCALED")
+    else if (selem .eq. "EL_EM30_UNSCALED") then
       elem_igetID = EL_EM30_UNSCALED
-    case("EL_EM30_NEW")
+    else if (selem .eq. "EL_EM30_NEW") then
       elem_igetID = EL_EM30_NEW
-    case("EL_Q1TB","EL_Q1TB_2D","EL_EB30","EL_EB30_2D")
+    else if (selem .eq. "EL_Q1TB" .or. selem .eq. "EL_Q1TB_2D" .or. &
+             selem .eq. "EL_EB30" .or. selem .eq. "EL_EB30_2D") then
       elem_igetID = EL_Q1TB_2D
-    case("EL_Q2T","EL_Q2T_2D","EL_E050","EL_E050_2D")
+    else if (selem .eq. "EL_Q2T" .or. selem .eq. "EL_Q2T_2D" .or. &
+             selem .eq. "EL_E050" .or. selem .eq. "EL_E050_2D") then
       elem_igetID = EL_E050_2D
-    case("EL_Q2TB","EL_Q2TB_2D","EL_EB50","EL_EB50_2D")
+    else if (selem .eq. "EL_Q2TB" .or. selem .eq. "EL_Q2TB_2D" .or. &
+             selem .eq. "EL_EB50" .or. selem .eq. "EL_EB50_2D") then
       elem_igetID = EL_EB50_2D
-    case("EL_EM50","EL_EM50_2D")
+    else if (selem .eq. "EL_EM50" .or. selem .eq. "EL_EM50_2D") then
       elem_igetID = EL_EM50_2D
-    case("EL_DG_T0_2D")
+    else if (selem .eq. "EL_DG_T0_2D") then
       elem_igetID = EL_DG_T0_2D
-    case("EL_DG_T1_2D")
+    else if (selem .eq. "EL_DG_T1_2D") then
       elem_igetID = EL_DG_T1_2D
-    case("EL_DG_T2_2D")
+    else if (selem .eq. "EL_DG_T2_2D") then
       elem_igetID = EL_DG_T2_2D
     
     ! -= 3D Tetrahedron Elements =-
-    case("EL_P0_3D","EL_E000_3D")
+    else if (selem .eq. "EL_P0_3D" .or. selem .eq. "EL_E000_3D") then
       elem_igetID = EL_P0_3D
-    case("EL_P1_3D","EL_E001_3D")
+    else if (selem .eq. "EL_P1_3D" .or. selem .eq. "EL_E001_3D") then
       elem_igetID = EL_P1_3D
     
     ! -= 3D Hexahedron Elements =-
-    case("EL_Q0_3D","EL_E010_3D")
+    else if (selem .eq. "EL_Q0_3D" .or. selem .eq. "EL_E010_3D") then
       elem_igetID = EL_Q0_3D
-    case("EL_Q1_3D","EL_E011_3D")
+    else if (selem .eq. "EL_Q1_3D" .or. selem .eq. "EL_E011_3D") then
       elem_igetID = EL_Q1_3D
-    case("EL_Q2_3D","EL_E013_3D")
+    else if (selem .eq. "EL_Q2_3D" .or. selem .eq. "EL_E013_3D") then
       elem_igetID = EL_Q2_3D
-    case("EL_QP1_3D")
+    else if (selem .eq. "EL_QP1_3D") then
       elem_igetID = EL_QP1_3D
-    case("EL_Q1T_3D","EL_E031_3D")
+    else if (selem .eq. "EL_Q1T_3D" .or. selem .eq. "EL_E031_3D") then
       elem_igetID = EL_E031_3D
-    case("EL_E030_3D")
+    else if (selem .eq. "EL_E030_3D") then
       elem_igetID = EL_E030_3D
-    case("EL_EM30_3D")
+    else if (selem .eq. "EL_EM30_3D") then
       elem_igetID = EL_EM30_3D
-    case("EL_EM30_NEW_3D")
+    else if (selem .eq. "EL_EM30_NEW_3D") then
       elem_igetID = EL_EM30_NEW_3D
-    case("EL_Q2T_3D","EL_E050_3D")
+    else if (selem .eq. "EL_Q2T_3D" .or. selem .eq. "EL_E050_3D") then
       elem_igetID = EL_E050_3D
-    case("EL_EM50_3D")
+    else if (selem .eq. "EL_EM50_3D") then
       elem_igetID = EL_EM50_3D
     
     ! -= 3D Pyramid Elements =-
-    case("EL_Y0_3D")
+    else if (selem .eq. "EL_Y0_3D") then
       elem_igetID = EL_Y0_3D
-    case("EL_Y1_3D")
+    else if (selem .eq. "EL_Y1_3D") then
       elem_igetID = EL_Y1_3D
     
     ! -= 3D Prism Elements =-
-    case("EL_R0_3D")
+    else if (selem .eq. "EL_R0_3D") then
       elem_igetID = EL_R0_3D
-    case("EL_R1_3D")
+    else if (selem .eq. "EL_R1_3D") then
       elem_igetID = EL_R1_3D
 
     ! Unknown element
-    case default
+    else
       call output_line('Error: Unknown element: ' // selemName, &
                        OU_CLASS_ERROR,OU_MODE_STD,'elem_igetID')
       call sys_halt()
       
-    end select
+    end if
   
   end function
   

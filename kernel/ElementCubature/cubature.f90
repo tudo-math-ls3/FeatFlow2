@@ -404,123 +404,129 @@ contains
   
 !</function>
 
-  select case(trim(sys_upcase(scubName)))
+  character(len=len(scubName)+1) :: scub
+  
+  ! SELECT CASE is not allowed for strings (although supported by a majority
+  ! of compilers), therefore we have to use a couple of IF-commands :(
+  ! select case(trim(sys_upcase(scubName)))
+
+  scub = trim(sys_upcase(scubName))
 
   ! 1D-formulas
-  case("G1_1D")
+  if (scub .eq. "G1_1D") then
     cub_igetID=CUB_G1_1D
-  case("TRZ_1D")
+  else if (scub .eq. "TRZ_1D") then
     cub_igetID =CUB_TRZ_1D
-  case("G2_1D")
+  else if (scub .eq. "G2_1D") then
     cub_igetID=CUB_G2_1D
-  case("G3_1D")
+  else if (scub .eq. "G3_1D") then
     cub_igetID=CUB_G3_1D
-  case("G4_1D")
+  else if (scub .eq. "G4_1D") then
     cub_igetID=CUB_G4_1D
-  case("G5_1D")
+  else if (scub .eq. "G5_1D") then
     cub_igetID=CUB_G5_1D
-  case("SIMPSON_1D")
+  else if (scub .eq. "SIMPSON_1D") then
     cub_igetID=CUB_SIMPSON_1D
-  case("G6_1D")
+  else if (scub .eq. "G6_1D") then
     cub_igetID=CUB_G6_1D
 
   ! 2D-fomulas, quadrilateral
-  case ("G1X1","G1_2D")
+  else if (scub .eq. "G1X1" .or. scub .eq. "G1_2D") then
     cub_igetID=CUB_G1_2D
-  case ("TRZ","TRZ_2D")
+  else if (scub .eq. "TRZ" .or. scub .eq. "TRZ_2D") then
     cub_igetID=CUB_TRZ_2D
-  case ("MID","MID_2D")
+  else if (scub .eq. "MID" .or. scub .eq. "MID_2D") then
     cub_igetID=CUB_MID_2D
-  case("SIMPSON","SIMPSON_2D")
+  else if (scub .eq. "SIMPSON" .or. scub .eq. "SIMPSON_2D") then
     cub_igetID=CUB_SIMPSON_2D
-  case ("G2X2","G2_2D")
+  else if (scub .eq. "G2X2" .or. scub .eq. "G2_2D") then
     cub_igetID=CUB_G2_2D
-  case ("NS1")
+  else if (scub .eq. "NS1") then
     cub_igetID=CUB_NS1
-  case ("NS2")
+  else if (scub .eq. "NS2") then
     cub_igetID=CUB_NS2
-  case ("NS3")
+  else if (scub .eq. "NS3") then
     cub_igetID=CUB_NS3
-  case ("G3X3","G3_2D")
+  else if (scub .eq. "G3X3" .or. scub .eq. "G3_2D") then
     cub_igetID=CUB_G3_2D
-  case ("G")
+  else if (scub .eq. "G") then
     cub_igetID=CUB_G
-  case ("G4X4","G4_2D")
+  else if (scub .eq. "G4X4" .or. scub .eq. "G4_2D") then
     cub_igetID=CUB_G4_2D
-  case ("G5X5","G5_2D")
+  else if (scub .eq. "G5X5" .or. scub .eq. "G5_2D") then
     cub_igetID=CUB_G5_2D
-  case ("PG1X1")
+  else if (scub .eq. "PG1X1") then
     cub_igetID=CUB_PG1X1
-  case ("PTRZ")
+  else if (scub .eq. "PTRZ") then
     cub_igetID=CUB_PTRZ
-  case ("PG2X2")
+  else if (scub .eq. "PG2X2") then
     cub_igetID=CUB_PG2X2
-  case ("PG3X3")
+  else if (scub .eq. "PG3X3") then
     cub_igetID=CUB_PG3X3
-  case ("G6_2D")
+  else if (scub .eq. "G6_2D") then
     cub_igetID=CUB_G6_2D
     
   ! 2D-formulas, triangle
-  case ("G1_T")
+  else if (scub .eq. "G1_T") then
     cub_igetID=CUB_G1_T
-  case ("TRZ_T")
+  else if (scub .eq. "TRZ_T") then
     cub_igetID=CUB_TRZ_T
-  case ("G3_T")
+  else if (scub .eq. "G3_T") then
     cub_igetID=CUB_G3_T
-  case ("COLLATZ")
+  else if (scub .eq. "COLLATZ") then
     cub_igetID=CUB_COLLATZ
-  case ("VMC")
+  else if (scub .eq. "VMC") then
     cub_igetID=CUB_VMC
 
   ! 3D-formulas, hexahedron
-  case("G1_3D")
+  else if (scub .eq. "G1_3D") then
     cub_igetID=CUB_G1_3D
-  case("MIDAREA_3D")
+  else if (scub .eq. "MIDAREA_3D") then
     cub_igetID =CUB_MIDAREA_3D
-  case("TRZ_3D")
+  else if (scub .eq. "TRZ_3D") then
     cub_igetID=CUB_TRZ_3D
-  case("G2_3D")
+  else if (scub .eq. "G2_3D") then
     cub_igetID=CUB_G2_3D
-  case("G3_3D")
+  else if (scub .eq. "G3_3D") then
     cub_igetID=CUB_G3_3D
-  case("G4_3D")
+  else if (scub .eq. "G4_3D") then
     cub_igetID=CUB_G4_3D
-  case("G5_3D")
+  else if (scub .eq. "G5_3D") then
     cub_igetID=CUB_G5_3D
-  case("G6_3D")
+  else if (scub .eq. "G6_3D") then
     cub_igetID=CUB_G6_3D
   
   ! 3D-formulas, tetrahedron
-  case("G1_3D_T")
+  else if (scub .eq. "G1_3D_T") then
     cub_igetID=CUB_G1_3D_T
-  case("TRZ_3D_T")
+  else if (scub .eq. "TRZ_3D_T") then
     cub_igetID=CUB_TRZ_3D_T
-  case("S2_3D_T")
+  else if (scub .eq. "S2_3D_T") then
     cub_igetID=CUB_S2_3D_T
-  case("S3_3D_T")
+  else if (scub .eq. "S3_3D_T") then
     cub_igetID=CUB_S3_3D_T
-  case("S5_3D_T")
+  else if (scub .eq. "S5_3D_T") then
     cub_igetID=CUB_S5_3D_T
   
   ! 3D-formulas, pyramid
-  case("G1_3D_Y")
+  else if (scub .eq. "G1_3D_Y") then
     cub_igetID=CUB_G1_3D_Y
-  case("TRZ_3D_Y")
+  else if (scub .eq. "TRZ_3D_Y") then
     cub_igetID=CUB_TRZ_3D_Y
   
   ! 3D-formulas, prism
-  case("G1_3D_R")
+  else if (scub .eq. "G1_3D_R") then
     cub_igetID=CUB_G1_3D_R
-  case("TRZ_3D_R")
+  else if (scub .eq. "TRZ_3D_R") then
     cub_igetID=CUB_TRZ_3D_R
-  case("G2_3D_R")
+  else if (scub .eq. "G2_3D_R") then
     cub_igetID=CUB_G2_3D_R
 
-  case default
+  else
     call output_line('Unknown cubature formula: '//scubname,&
                      OU_CLASS_ERROR,OU_MODE_STD,'cub_igetID')
     call sys_halt()
-  end select
+  end if
     
   end function cub_igetID
 
