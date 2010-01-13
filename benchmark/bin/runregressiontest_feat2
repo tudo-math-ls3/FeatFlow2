@@ -372,23 +372,23 @@ fb_customise() {
 		    modules="$modules gotoblas/shared/64"
 		    modules="$modules pathscale"
 		    LIDOJOBNAMEPREFIX=fb-psc
-		    COMPILERNAME="Pathscale 3.2"
+		    COMPILERNAME="Pathscale 3.2.99"
 		    ;;
 
 		# PGI compiler suite
 		pc64-penryn-linux-pgi-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules pgi/9.0-4"
+		    modules="$modules pgi/10.1-0"
 		    LIDOJOBNAMEPREFIX=fb-pgi
-		    COMPILERNAME="PGI 9.0"
+		    COMPILERNAME="PGI 10.1"
 		    ;;
 
 		# Sun Studio compiler suite
 		pc64-penryn-linux-sunstudio-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules sunstudio"
+		    modules="$modules sunstudio/12.1_update_1"
 		    LIDOJOBNAMEPREFIX=fb-sun
 		    COMPILERNAME="SunStudio 12"
 		    ;;
