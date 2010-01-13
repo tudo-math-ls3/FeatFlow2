@@ -44,6 +44,13 @@
 !# 7.) euler_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
+!# 8.) euler_calcFluxFCT
+!#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
+!#
+!# 9.) euler_calcResidualFCT
+!#     -> Calculates the contribution of the antidiffusive fluxes
+!#        limited by the FCT algorithm and applies them to the residual
+!#
 !# Frequently asked questions?
 !#
 !# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
@@ -98,6 +105,8 @@ module euler_callback
   public :: euler_nlsolverCallback
   public :: euler_setBoundaryConditions
   public :: euler_calcLinearisedFCT
+  public :: euler_calcFluxFCT
+  public :: euler_calcResidualFCT
 
 contains
 
@@ -1369,7 +1378,7 @@ contains
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
-    integer :: iblock, imassantidiffusiontype, itransformationtype
+    integer :: iblock
 
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
@@ -1718,7 +1727,7 @@ contains
       ! Compute low-order predictor ...
       if (ite .eq. 0) then
         ! ... only in the zeroth iteration
-        if (rtimestep%theta .ne. 1) then
+        if (rtimestep%theta .ne. 1.0_DP) then
           call lsysbl_invertedDiagMatVec(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rrhs, 1.0_DP, p_rpredictor)
@@ -1726,223 +1735,17 @@ contains
           call lsysbl_copyVector(rsolution, p_rpredictor)
         end if
       elseif (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
-          .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+              .eq. AFCSTAB_FEMFCT_ITERATIVE) then
         ! ... in each iteration for iterative limiting
         call lsysbl_invertedDiagMatVec(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rrhs, 1.0_DP, p_rpredictor)
       end if
       
-      call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'imassantidiffusiontype', imassantidiffusiontype)
+      ! Assemble the raw antidiffusive fluxes
+      call euler_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
+          rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0), rcollection)
       
-      call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1),&
-          'itransformationtype', itransformationtype)
-
-      !-------------------------------------------------------------------------
-      ! Assemble the raw antidiffusive fluxes in conservative variables
-      !-------------------------------------------------------------------------
-
-      ! What type of dissipation is applied?
-      select case(idissipationtype)
-        
-      case (DISSIPATION_SCALAR)
-        
-        ! Assemble raw antidiffusive fluxes using scalar dissipation
-        
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM2D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM3D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-        end select
-        
-      case (DISSIPATION_TENSOR)
-        
-        ! Assemble raw antidiffusive fluxes using tensorial dissipation
-        
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM2D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM3D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-        end select
-        
-      case (DISSIPATION_RUSANOV)
-        
-        ! Assemble raw antidiffusive fluxes using th Rusanov dissipation
-        
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov1d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM2D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov2d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-          
-        case (NDIM3D)
-          ! Should we apply consistent mass antidiffusion?
-          if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
-                rproblemLevel%Rmatrix(consistentMassMatrix))
-          else
-            call gfsys_buildFluxFCT(&
-                rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rproblemLevel%Rafcstab(inviscidAFC),&
-                p_rpredictor, rsolution, euler_calcFluxFCTRusanov3d,&
-                rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0))
-          end if
-        end select
-        
-      case DEFAULT
-        call output_line('Invalid type of dissipation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
-        call sys_halt()
-      end select
-
       !-------------------------------------------------------------------------
       ! Set operation specifier
       !-------------------------------------------------------------------------
@@ -1970,143 +1773,9 @@ contains
         end select
       end if
       
-      !-------------------------------------------------------------------------
-      ! Perform flux correction of FCT-type
-      !-------------------------------------------------------------------------
-      
-      ! What type of flux transformation is applied?
-      select case(itransformationtype)
-        
-      case (TRANSFORM_DENSITY_ENERGY_MOMENTUM)
-        
-        ! Apply linearised FEM-FCT algorithm for full conservative fluxes
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            p_rpredictor, rtimestep%dStep, .false.,&
-            ioperationSpec, rres)
-        
-      case (TRANSFORM_DENSITY)
-        
-        ! Apply linearised FEM-FCT algorithm for density fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres, euler_calcTrafoDensity1d)
-          
-        case (NDIM2D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres, euler_calcTrafoDensity2d)
-          
-        case (NDIM3D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres, euler_calcTrafoDensity3d)
-        end select
-        
-      case (TRANSFORM_DENSITY_ENERGY)
-        
-        ! Apply linearised FEM-FCT algorithm for density and energy fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityEnergy1d)
-          
-        case (NDIM2D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityEnergy2d)
-          
-        case (NDIM3D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityEnergy3d)
-          
-        end select
-        
-      case (TRANSFORM_DENSITY_PRESSURE_VELOCITY)
-        
-        ! Apply linearised FEM-FCT algorithm for density, velocity and pressure fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPressVel1d)
-          
-        case (NDIM2D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPressVel2d)
-          
-        case (NDIM3D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPressVel3d)
-          
-        end select
-        
-      case (TRANSFORM_DENSITY_PRESSURE)
-        
-        ! Apply linearised FEM-FCT algorithm for density and pressure fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPress1d)
-          
-        case (NDIM2D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPress2d)
-          
-        case (NDIM3D)
-          call gfsys_buildResidualFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rtimestep%dStep, .false.,&
-              ioperationSpec, rres,&
-              euler_calcTrafoDensityPress3d)
-          
-        end select
-        
-      case DEFAULT
-        call output_line('Invalid type of flux transformation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
-        call sys_halt()
-      end select
+      ! Apply FEM-FCT algorithm
+      call euler_calcResidualFCT(rproblemLevel, p_rpredictor,&
+          rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
       
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
@@ -2600,13 +2269,12 @@ contains
     type(t_timestep) :: rtimestepAux
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rpredictor
-    integer :: inviscidAFC, lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
-    integer :: itransformationtype, idissipationtype, imassantidiffusiontype
+    integer :: inviscidAFC, lumpedMassMatrix, itransformationtype
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
+    ! Get more parameter from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
@@ -2618,25 +2286,7 @@ contains
     ! Get more parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'coeffMatrix_CZ', coeffMatrix_CZ)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'imassantidiffusiontype', imassantidiffusiontype)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'idissipationtype', idissipationtype)
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'itransformationtype', itransformationtype)
@@ -2658,354 +2308,17 @@ contains
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         p_rpredictor, 1.0_DP, p_rpredictor)
 
-    ! What type of dissipation is applied?
-    select case(idissipationtype)
+    ! Compute the raw antidiffusive fluxes
+    call euler_calcFluxFCT(rproblemLevel,&
+        p_rpredictor, rsolution, rtimestepAux%theta,&
+        rtimestepAux%dStep, 1.0_DP, .true., rcollection)
 
-    case (DISSIPATION_SCALAR)
-
-      ! Assemble raw antidiffusive fluxes using scalar dissipation
-
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM2D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM3D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTScalarDiss3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-      end select
-
-    case (DISSIPATION_TENSOR)
-
-      ! Assemble raw antidiffusive fluxes using tensorial dissipation
-
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM2D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM3D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTTensorDiss3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-      end select
-
-    case (DISSIPATION_RUSANOV)
-
-      ! Assemble raw antidiffusive fluxes using th Rusanov dissipation
-
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov1d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM2D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov2d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-
-      case (NDIM3D)
-        ! Should we apply consistent mass antidiffusion?
-        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
-              rproblemLevel%Rmatrix(consistentMassMatrix))
-        else
-          call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              p_rpredictor, rsolution, euler_calcFluxFCTRusanov3d,&
-              rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
-        end if
-      end select
-
-    case DEFAULT
-      call output_line('Invalid type of dissipation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcLinearisedFCT')
-      call sys_halt()
-    end select
-
-
-    ! What type of flux transformation is applied?
-    select case(itransformationtype)
-
-    case (TRANSFORM_DENSITY_ENERGY_MOMENTUM)
-
-      ! Apply linearised FEM-FCT algorithm for full conservative fluxes
-      call gfsys_buildResidualFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(inviscidAFC),&
-          rsolution, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolution)
-
-    case (TRANSFORM_DENSITY)
-
-      ! Apply linearised FEM-FCT algorithm for density fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensity1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensity2d)
-        
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensity3d)
-      end select
-
-    case (TRANSFORM_DENSITY_ENERGY)
-
-      ! Apply linearised FEM-FCT algorithm for density and energy fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityEnergy1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityEnergy2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityEnergy3d)
-
-      end select
-
-    case (TRANSFORM_DENSITY_PRESSURE_VELOCITY)
-
-      ! Apply linearised FEM-FCT algorithm for density, velocity and pressure fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPressVel1d)
-        
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPressVel2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPressVel3d)
-
-      end select
-
-    case (TRANSFORM_DENSITY_PRESSURE)
-
-      ! Apply linearised FEM-FCT algorithm for density and pressure fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPress1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPress2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, rtimestep%dStep, .false.,&
-            AFCSTAB_FCTALGO_STANDARD+&
-            AFCSTAB_FCTALGO_SCALEBYMASS, rsolution,&
-            euler_calcTrafoDensityPress3d)
-
-      end select
-
-    case DEFAULT
-      call output_line('Invalid type of flux transformation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcLinearisedFCT')
-      call sys_halt()
-    end select
+    ! Apply linearised FEM-FCT algorithm
+    call euler_calcResidualFCT(rproblemLevel,&
+        rsolution, rtimestep%dStep, .false.,&
+        AFCSTAB_FCTALGO_STANDARD+&
+        AFCSTAB_FCTALGO_SCALEBYMASS,&
+        rsolution, rcollection)
 
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
@@ -3023,5 +2336,485 @@ contains
     end select
 
   end subroutine euler_calcLinearisedFCT
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcFluxFCT(rproblemLevel, rsolution1, rsolution2,&
+      theta, tstep, dscale, binit, rcollection)
+
+!<description>
+    ! This subroutine calculates the raw antidiffusive fluxes for
+    ! the different FCT algorithms
+!</description>
+
+!<input>
+    ! solution vectors
+    type(t_vectorBlock), intent(in) :: rsolution1, rsolution2
+
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
+
+    ! time step size
+    real(DP), intent(in) :: tstep
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Switch for flux assembly
+    ! TRUE  : assemble the initial antidiffusive flux
+    ! FALSE : assemble the antidiffusive flux using some initial values
+    logical, intent(in) :: binit
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    integer :: inviscidAFC, lumpedMassMatrix, consistentMassMatrix
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
+    integer :: idissipationtype, imassantidiffusiontype
+
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'consistentmassmatrix', consistentmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'idissipationtype', idissipationtype)
+
+
+    ! What type of dissipation is applied?
+    select case(idissipationtype)
+      
+    case (DISSIPATION_SCALAR)
+      
+      ! Assemble raw antidiffusive fluxes using scalar dissipation
+      
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
+
+
+    case (DISSIPATION_TENSOR)
+
+      ! Assemble raw antidiffusive fluxes using tensorial dissipation
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
+
+
+    case (DISSIPATION_RUSANOV)
+
+      ! Assemble raw antidiffusive fluxes using th Rusanov dissipation
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
+
+
+    case DEFAULT
+      call output_line('Invalid type of dissipation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcFluxFCT')
+      call sys_halt()
+    end select
+    
+  end subroutine euler_calcFluxFCT
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcResidualFCT(rproblemLevel, rsolution, &
+      dscale, bclear, ioperationSpec, rresidual, rcollection)
+
+!<description>
+    ! This subroutine calculates the raw antidiffusive fluxes for
+    ! the different FCT algorithms
+!</description>  
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! residual vector
+    type(t_vectorBlock), intent(inout) :: rresidual
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    integer :: inviscidAFC, lumpedMassMatrix, itransformationtype
+
+
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+    
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'itransformationtype', itransformationtype)
+
+
+    ! What type of flux transformation is applied?
+    select case(itransformationtype)
+
+    case (TRANSFORM_DENSITY_ENERGY_MOMENTUM)
+      
+      ! Apply FEM-FCT algorithm for full conservative fluxes
+      call gfsys_buildResidualFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rsolution, dscale, bclear,&
+          ioperationSpec, rresidual)
+
+    case (TRANSFORM_DENSITY)
+
+      ! Apply FEM-FCT algorithm for density fluxes
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensity1d)
+
+      case (NDIM2D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensity2d)
+        
+      case (NDIM3D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensity3d)
+      end select
+
+    case (TRANSFORM_DENSITY_ENERGY)
+
+      ! Apply FEM-FCT algorithm for density and energy fluxes
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityEnergy1d)
+
+      case (NDIM2D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityEnergy2d)
+
+      case (NDIM3D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityEnergy3d)
+
+      end select
+
+    case (TRANSFORM_DENSITY_PRESSURE_VELOCITY)
+
+      ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPressVel1d)
+        
+      case (NDIM2D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPressVel2d)
+
+      case (NDIM3D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPressVel3d)
+
+      end select
+
+    case (TRANSFORM_DENSITY_PRESSURE)
+
+      ! Apply FEM-FCT algorithm for density and pressure fluxes
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPress1d)
+
+      case (NDIM2D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPress2d)
+
+      case (NDIM3D)
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear,&
+            ioperationSpec, rresidual,&
+            euler_calcTrafoDensityPress3d)
+
+      end select
+
+    case DEFAULT
+      call output_line('Invalid type of flux transformation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualFCT')
+      call sys_halt()
+    end select
+    
+  end subroutine euler_calcResidualFCT
 
 end module euler_callback
