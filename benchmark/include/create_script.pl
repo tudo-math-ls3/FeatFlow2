@@ -75,6 +75,7 @@
 #
 
 
+
 # Allow proper programming only
 # (a bit like Fortran90's "implicit none")
 use strict;
@@ -85,6 +86,12 @@ use Env qw(MPI ID);
 
 # handling of command line options
 use Getopt::Long 2.33 qw(:config prefix_pattern=--);
+
+# Portably create directories recursively
+use File::Path qw(mkpath);
+
+# Portably rename/move directories
+use File::Copy qw(move);
 
 # Portably try every conceivable way to determine
 # the current hostname
@@ -125,6 +132,7 @@ my $unknownoption=0;
 my %cl = ();
 GetOptions (
             "append-to-files=s"             => \$cl{'append-to-files'},
+            "overwrite-log-directory"       => \$cl{'overwrite-log-directory'},
             "help"                          => \$cl{'help'},
             "version"                       => \$cl{'version'},
             ) || ($unknownoption=1);
@@ -145,6 +153,11 @@ if ($#ARGV < 0) {
 
 # Set default execution mode
 $ENV{"MPI"} = "NO" unless ($ENV{"MPI"});
+
+# --overwrite-log-directory can also be given via env variable OVERWRITE_LOG_DIRECTORY=1
+if ($ENV{"OVERWRITE_LOG_DIRECTORY"} && ! $cl{'overwrite-log-directory'}) {
+    $cl{'overwrite-log-directory'} = $ENV{"OVERWRITE_LOG_DIRECTORY"};
+}
 
 # Set build ID
 my $buildID = $ENV{"ID"} || "";
@@ -225,6 +238,29 @@ foreach my $testfile (@defaultSettingsFiles) {
 
 		# Store it (keyword in uppercase).
 		if ($value ne "") {
+		    # Special handling of ALLOW*, DENY*
+		    # Because having inherited a setting of
+		    #   denyhosts = all
+		    #   allowhosts = jerusalem, jericho
+		    # and reading a setting of
+		    #   denyhosts = jerusalem
+		    # should not overwrite, but append the denyhosts setting.
+		    # But avoid a new setting like
+		    #   denyhosts = none,jerusalem
+		    # The removal of jerusalem from the allowhosts setting will be done
+		    # in update_allowdeny_settings().
+		    if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i &&
+			$value !~ m/\b(all|any|none)\b/i) {
+			# allowhosts = all|any   =>   append (possibly leads to removal from denylist)
+			# allowhosts = none      =>   overwrite
+			# denyhosts  = none      =>   overwrite
+			# denyhosts  = all|any   =>   append (possibly leads to removal from allowlist)
+			if ($default{uc($keyword)} !~ m/\bnone\b/i) {
+			    $value = $default{uc($keyword)} . "," . $value;
+			}
+
+		    }
+
 		    printf STDERR
 			"Storing as new default value: '" .
 			uc($keyword) . "' => '" .
@@ -273,7 +309,7 @@ foreach my $testfile (@testfiles) {
     my %inherited;
 
     # For backwards compatibility, all tests are supposed to be suitable for
-    # parallel execution.
+    # MPI execution.
     $inherited{EXECMODE} = "serial";
 
     # Copy defaults to inherited
@@ -337,6 +373,28 @@ foreach my $testfile (@testfiles) {
 
 		if ($testid ne "") {
 		    if ($value ne "") {
+			# Special handling of ALLOW*, DENY*
+			# Because having inherited a setting of
+			#   denyhosts = all
+			#   allowhosts = jerusalem, jericho
+			# and reading a setting of
+			#   denyhosts = jerusalem
+			# should not overwrite, but append the denyhosts setting.
+			# But avoid a new setting like
+			#   denyhosts = none,jerusalem
+			# The removal of jerusalem from the allowhosts setting will be done
+			# in update_allowdeny_settings().
+			if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i &&
+			    $value !~ m/\b(all|any|none)\b/i) {
+			    # allowhosts = all|any   =>   append (possibly leads to removal from denylist)
+			    # allowhosts = none      =>   overwrite
+			    # denyhosts  = none      =>   overwrite
+			    # denyhosts  = all|any   =>   append (possibly leads to removal from allowlist)
+			    if ($test{$testid}{uc($keyword)} !~ m/\bnone\b/i) {
+				$value = $test{$testid}{uc($keyword)} . "," . $value;
+			    }
+			}
+
 			# Store it for current ID (keyword in uppercase).
 			print STDERR "Storing in test{$testid}{$keyword}: $value\n" if ($debugScript);
 			$test{$testid}{uc($keyword)} = $value;
@@ -420,6 +478,7 @@ foreach my $file (@ARGV) {
 	$_ =~ s/\#.+$//;
 
 	# Remove white spaces (trim)
+	chomp($_);
 	$_ =~ s/^\s*(\S+)\s*$/$1/;
 
 	print STDERR "Found ID <" . $_ . ">.\n" if ($debugScript);
@@ -462,10 +521,11 @@ ID: foreach my $testid (@idsToCode) {
 	# * all hosts are on whitelist
 	# * current host is on whitelist
 	# and
-	# * no host is blacklisted or
+	# * not all hosts are blacklisted or
 	# * current host is not on the blacklist.
-	unless (($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i) &&
-		($test{$testid}{DENYHOSTS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYHOSTS} !~ m/\b$host\b/i )) {
+#	unless (($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i) &&
+#		($test{$testid}{DENYHOSTS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYHOSTS} !~ m/\b$host\b/i )) {
+	if ($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i && $test{$testid}{DENYHOSTS} =~ m/\b$host\b/i ) {
 	    warn "$progname: WARNING:\n" .
 		"  Test case with ID <$testid> is coded not to be run on current host, <$host>:\n" .
 		"  list of allowed hosts: " . join(', ', $test{$testid}{ALLOWHOSTS}) . "\n" .
@@ -496,10 +556,11 @@ ID: foreach my $testid (@idsToCode) {
 	# * all build IDs are on whitelist
 	# * current build IDs is on whitelist
 	# and
-	# * no build IDs is blacklisted or
+	# * not all build IDs are blacklisted or
 	# * current build IDs is not on the blacklist.
-	unless (($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i) &&
-		($test{$testid}{DENYBUILDIDS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYBUILDIDS} !~ m/\b$buildID\b/i )) {
+#	unless (($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i) &&
+#		($test{$testid}{DENYBUILDIDS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYBUILDIDS} !~ m/\b$buildID\b/i )) {
+	if ($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i && $test{$testid}{DENYBUILDIDS} =~ m/\b$buildID\b/i ) {
 	    warn "$progname: WARNING:\n" .
 		"  Test case with ID <$testid> is coded not to be run for current build ID, <$buildID>:\n" .
 		"  list of allowed build IDs: " . join(', ', $test{$testid}{ALLOWBUILDIDS}) . "\n" .
@@ -521,6 +582,10 @@ ID: foreach my $testid (@idsToCode) {
 	}
     }
 
+    # For backwards compatibility, still support EXECMODE=PARALLEL
+    # but translate it silently to EXECMODE=MPI
+    $test{$testid}{EXECMODE} =~ s/\bparallel\b/mpi/gi;
+
 
     # Check whether definition of requested ID has an execmode
     # that matches current one.
@@ -541,7 +606,7 @@ ID: foreach my $testid (@idsToCode) {
 	    "  Requested, however, is for execmode <$requestedExecmode>. Test will be skipped.\n";
 	next ID;
     } else {
-	# A single runtests script can only do either parallel or serial tests
+	# A single runtests script can only do either MPI or serial tests
 	# So, if multiple execmodes are given, override value with the currently active one.
 	$test{$testid}{EXECMODE} = $requestedExecmode;
     }
@@ -571,7 +636,23 @@ ID: foreach my $testid (@idsToCode) {
 
     # Create the log directory FEAT2 will use for this test ID -
     # if the directory does not already exist
-    unless ( -d $test{$testid}{LOGDIR} ) {
+    if ( -d $test{$testid}{LOGDIR} ) {
+	# Directory does already exist.
+	# Rename or overwrite?
+	unless ($cl{'overwrite-log-directory'}) {
+	    # rename existing (clobbering any existing *.prev directory) and create a new one.
+	    move("$test{$testid}{LOGDIR}", "$test{$testid}{LOGDIR}.prev") ||
+		die "\n$progname: ERROR:\n" .
+		    "  This script tried to rename a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
+		    "  but an error occured: $?\n\n";
+	    mkpath($test{$testid}{LOGDIR}) ||
+		die "\n$progname: ERROR:\n" .
+		    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
+		    "  but an error occured: $?\n\n";
+	}
+    } else {
+	# Directory did not yet exist.
+
 	if ( -e $test{$testid}{LOGDIR} ) {
 	    # some file system object with the desired name
 	    # already exists and it is not a directory. Issue an error.
@@ -579,8 +660,7 @@ ID: foreach my $testid (@idsToCode) {
 		"  This script was about to create a directory named <" . $test{$testid}{LOGDIR} . ">.\n" .
 		"  But there exists already such a file system object and it is no directory. Please check.\n\n";
 	} else {
-	    mkdir "logs";
-	    mkdir $test{$testid}{LOGDIR} ||
+	    mkpath($test{$testid}{LOGDIR}) ||
 		die "\n$progname: ERROR:\n" .
 		    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
 		    "  but an error occured: $?\n\n";
@@ -615,8 +695,8 @@ ID: foreach my $testid (@idsToCode) {
     # use 'sed' regular expression substitutions to dynamically set/override the
     # EXECMODE value when creating the batch script.
     # Whenever changing the syntax here, do not forget to adapt them!
-    if ($test{$testid}{EXECMODE} =~ m/\bparallel\b/i) {
-	# parallel case
+    if ($test{$testid}{EXECMODE} =~ m/\bmpi\b/i) {
+	# MPI case
 	&formatted_print_env_variable("EXECMODE", $test{$testid}{EXECMODE}, $fieldlength);
     } elsif ($test{$testid}{EXECMODE} =~ m/\bserial\b/i) {
 	# serial case
@@ -753,7 +833,7 @@ sub max {
 # On the other hand, values that contain commas, but no colons should not
 # be split up. Think about cases like:
 #     descr         = fictitious boundary tests, NCC (4 processes, 4 macros), low mg level
-#     execmode      = parallel, serial
+#     execmode      = mpi, serial    # deprecated: parallel, serial
 sub splitup {
     my ($keyword, $value) = (@_);
     my %hash = ();
@@ -919,7 +999,7 @@ sub update_allowdeny_settings {
     }
 
     # 'DENYBUILDIDS=...' given. Remove items from whitelist if necessary
-    elsif ($keyword =~ m/^\bdenyhosts\b$/i) {
+    elsif ($keyword =~ m/^\bdenybuildIDs\b$/i) {
 	# Deal with special values 'all' / 'any'
 	if ($value =~ m/\b(all|any)\b/i) {
 	    # DenyHosts: all => AllowHosts: none
@@ -960,6 +1040,27 @@ sub update_allowdeny_settings {
 	    # Remove duplicate or orphaned commas
 	    ${ $hashref }{ALLOWBUILDIDS} =~ s/[,]+/,/g;
 	    ${ $hashref }{ALLOWBUILDIDS} =~ s/^,$//g;
+	}
+    }
+
+
+    # Because allow/deny values are simply appended to the allow/deny list
+    # there may very well be duplicates in those lists. Remove these duplicates.
+    foreach my $token ("ALLOWHOSTS", "DENYHOSTS", "ALLOWBUILDIDS", "DENYBUILDIDS") {
+	if (exists(${ $hashref }{$token})) {
+	    my %hash = ();
+	    foreach my $entry (split(/,/, ${ $hashref }{$token})) {
+		if (exists($hash{$entry})) {
+		    # remove it
+		    ${ $hashref }{$token} =~ s/$entry//;
+		} else {
+		    # set flag
+		    $hash{$entry} = 1;
+		}
+		${ $hashref }{$token} =~ s/,\s*,/,/g;
+		${ $hashref }{$token} =~ s/^\s*,\s*//g;
+		${ $hashref }{$token} =~ s/,\s*$//g;
+	    }
 	}
     }
 
@@ -1026,6 +1127,13 @@ sub show_help {
 	"                    file, one per test ID. File names are constructed\n" .
 	"                    according to\n" .
 	"                        <string>.<test ID>\n" .
+        "--overwrite-log-directory\n" .
+        "                    Every test ID writes its logs to separate directory.\n" .
+	"                    By default, if such a directory does already exist,\n" .
+	"                    the existing one is renamed to \"<test ID>.prev\".\n" .
+	"                    Specifying this option this behaviour can be turned off\n" .
+	"                    Alternatively, the flag can be set by means of the\n" .
+	"                    environment variable OVERWRITE_LOG_DIRECTORY=1.\n" .
         "--help              Print this message\n" .
         "--version           Show version information\n" .
     exit 0;
