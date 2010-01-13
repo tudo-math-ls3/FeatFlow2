@@ -23,43 +23,6 @@
 ## Type:	boolean integer
 ## Default:     <SET_VIA_MAKEFILE>, therein set to 0
 #
-# Quiet or verbose benchmark execution mode.
-#
-# Possible values are:
-#  * 1|yes  (default value)
-#        redirect standard output and error to a file (see
-#        declaration of RUNLOGFILE). Display its content in case of error.
-#  * <SET_VIA_MAKEFILE>
-#        the value is set when invoking 'make *test'. The default value (1)
-#        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command line,
-#        e.g.:         make singletests SUPPRESSOUTPUT=0
-#  * anything else
-#        don't redirect standard output and error. No RUNLOGFILE will be
-#        created. Useful for debugging.
-SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>
-
-
-## Type:	string
-#
-# Name of file to redirect standard output and standard error of a benchmark
-# run to. In case of error, the file will be renamed by appending benchmark ID
-# and multigrid level.
-RUNLOGFILE=runlog
-
-
-## Type:	string
-#
-# Name of file a benchmark application is supposed to create when it is run
-# with relevant data in it that can be compared to previous runs in order to
-# validate a program run.
-RESULTFILE=benchmarkresultfile
-
-export RESULTFILE
-
-
-## Type:	boolean integer
-## Default:     <SET_VIA_MAKEFILE>, therein set to 0
-#
 # Whether or not to execute benchmark within a debugger
 # (the particular debugger is hard-coded in fb_runAndEvalBenchmarkTest)
 #
@@ -77,47 +40,29 @@ export RESULTFILE
 DEBUGGER=<SET_VIA_MAKEFILE>
 
 
-## Type:	string
-## Default:     empty
+## Type:	boolean
+## Default:     0/false
 #
-# Command line arguments when running valgrind.
-VALGRIND_ARGS=""
-#VALGRIND_ARGS="${VALGRIND_ARGS} -v"
-#VALGRIND_ARGS="${VALGRIND_ARGS} --leak-check=full"
-#VALGRIND_ARGS="${VALGRIND_ARGS} --gen-suppressions=all"
-#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
-#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-intel-blas-ompi.supp"
-#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-opteronx2-linux64-gcc-blas-ompi.supp"
+# Whether or not to use a hostfile to e.g. put the master process on a separate node
+GENERATE_AND_USE_HOSTFILE=0
 
 
-## Type:	string
-## Default:     empty
+## Type:        boolean integer
+## Default:     <SET_VIA_MAKEFILE>, therein set to 0
 #
-# Command line arguments when running totalview.
-TOTALVIEW_ARGS=
-
-
-## Type:	string
-## Default:     empty (the appropriate value will be determined automatically)
-#
-# Type of batch system, if any.
+# Whether or not to execute subsequently configured refinement levels
+# if a test fails on a given refinement level.
 #
 # Possible values are:
-#  * <none>
-#          Don't use a queueing system
-#  * LIDO
-#          OpenPBS jobs, enqueued on LiDO
-#  * JUMP
-#          LoadLeveler jobs, enqueued on JUMP Juelich (p690 system)
-#  * NEC_intranode
-#          NEC SX jobs entailing not more than 8 cpus
-#  * NEC_internode
-#          NEC SX jobs entailing more than 8 cpus
-#
-# The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
-# may set/overwrite this value dynamically when creating the batch script.
-# Whenever changing the syntax here, do not forget to adapt them!
-QUEUEINGSYSTEM=
+#  * 0
+#        skip subsequently configured refinement levels on error
+#  * 1
+#        try to run all configured refinement levels and any post-run operation
+#  * <SET_VIA_MAKEFILE>
+#        the value is set when invoking 'make *test'. The default value (0)
+#        may be overwritten by adding "KEEPGOING=<value>" on the command line,
+#        e.g.:         make singletests KEEPGOING=1
+KEEPGOING=<SET_VIA_MAKEFILE>
 
 
 ## Type:	string
@@ -155,12 +100,85 @@ QUEUEINGSYSTEM=
 MPIENV=<SET_VIA_MAKEFILE>
 
 
-
-## Type:	boolean
-## Default:     0/false
+## Type:	string
+## Default:     empty (the appropriate value will be determined automatically)
 #
-# Whether or not to use a hostfile to e.g. put the master process on a separate node
-GENERATE_AND_USE_HOSTFILE=0
+# Type of batch system, if any.
+#
+# Possible values are:
+#  * <none>
+#          Don't use a queueing system
+#  * LIDO
+#          OpenPBS jobs, enqueued on LiDO
+#  * JUMP
+#          LoadLeveler jobs, enqueued on JUMP Juelich (p690 system)
+#  * NEC_intranode
+#          NEC SX jobs entailing not more than 8 cpus
+#  * NEC_internode
+#          NEC SX jobs entailing more than 8 cpus
+#
+# The scripts used to set up and start batch job scripts (bin/*schedule_*tests)
+# may set/overwrite this value dynamically when creating the batch script.
+# Whenever changing the syntax here, do not forget to adapt them!
+QUEUEINGSYSTEM=
+
+
+## Type:	string
+#
+# Name of file a benchmark application is supposed to create when it is run
+# with relevant data in it that can be compared to previous runs in order to
+# validate a program run.
+RESULTFILE=benchmarkresultfile
+export RESULTFILE
+
+
+## Type:	string
+#
+# Name of file to redirect standard output and standard error of a benchmark
+# run to. In case of error, the file will be renamed by appending benchmark ID
+# and multigrid level.
+RUNLOGFILE=runlog
+
+
+## Type:	boolean integer
+## Default:     <SET_VIA_MAKEFILE>, therein set to 0
+#
+# Quiet or verbose benchmark execution mode.
+#
+# Possible values are:
+#  * 1|yes  (default value)
+#        redirect standard output and error to a file (see
+#        declaration of RUNLOGFILE). Display its content in case of error.
+#  * <SET_VIA_MAKEFILE>
+#        the value is set when invoking 'make *test'. The default value (1)
+#        may be overwritten by adding "SUPPRESSOUTPUT=<value>" on the command line,
+#        e.g.:         make singletests SUPPRESSOUTPUT=0
+#  * anything else
+#        don't redirect standard output and error. No RUNLOGFILE will be
+#        created. Useful for debugging.
+SUPPRESSOUTPUT=<SET_VIA_MAKEFILE>
+
+
+## Type:	string
+## Default:     empty
+#
+# Command line arguments when running totalview.
+TOTALVIEW_ARGS=
+
+
+## Type:	string
+## Default:     empty
+#
+# Command line arguments when running valgrind.
+VALGRIND_ARGS=""
+#VALGRIND_ARGS="${VALGRIND_ARGS} -v"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --leak-check=full"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --gen-suppressions=all"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-gcc-blas-ompi.supp"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-athlon64-linux32-intel-blas-ompi.supp"
+#VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-opteronx2-linux64-gcc-blas-ompi.supp"
+
+
 
 
 # ===================================================================
@@ -802,7 +820,7 @@ fb_runAndEvalBenchmarkTest() {
 	    for currentmglevel in `echo ${MGLEVELS} | sed 's/,/ /g'`; do
 		# If execution failed in a previous loop, exit the loop. Why?
 		# Well, after all: Failed is failed.
-		if test ${execfailed} -eq 1; then
+		if test "${KEEPGOING}" = "0" -a ${execfailed} -eq 1; then
 		    break
 		fi
 		MGLEVEL=${currentmglevel}
@@ -1148,19 +1166,17 @@ fb_runAndEvalBenchmarkTest() {
 		    echo
 		fi
 
-		# For some applications a couple of postprocessing steps,
-		# after having done all the refinement levels, is wanted. E.g.
-		# to compute L2 error reduction rates
-		case "${APPL}" in
-		    matmod)
-			grep "FBMARK" ${LOGDIR}/feastlog.001
-			;;
-
-		    navsto|stokes)
-			echo "error reduction rates"
-			perl include/comparenavstokes.pl results/${BUILDID}/${FILENAME}
-			;;
-		esac
+		if test ${execfailed} -eq 0 -o "${KEEPGOING}" != "0"; then
+		    # For some applications a couple of postprocessing steps,
+		    # after having done all the refinement levels, is wanted. E.g.
+		    # to compute L2 error reduction rates
+		    case "${APPL}" in
+			# example code from FEAST as no FEAT2 app uses this feature so far
+			matmod)
+			    grep "FBMARK" ${LOGDIR}/feastlog.001
+			    ;;
+		    esac
+		fi
     	    fi
 
 	    # Clean up
