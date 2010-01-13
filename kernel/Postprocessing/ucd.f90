@@ -5485,7 +5485,7 @@ contains
         ! GMV finish
         ios = 1
         
-      end select
+      end if
     end do
     
     ! Close the file, finish.
