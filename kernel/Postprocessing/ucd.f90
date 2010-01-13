@@ -5415,15 +5415,16 @@ contains
       ! Get the key word from the line
       call sys_tolower (sline)
       read(sline,*) skey
+      
+      skey = trim(adjustl(skey))
 
-      select case(trim(adjustl(skey)))
-      case ('probtime')
+      if (skey .eq. "probtime") then
         
         !----------------------------------------------------
         ! Read the simulation time
         read(sline,*) sdummy,rexport%dsimulationTime
         
-      case ('comments')
+      else if (skey .eq. "comments") then
       
         !----------------------------------------------------
         ! Read comments
@@ -5439,7 +5440,7 @@ contains
           end if
         end do
         
-      case ('nodes')
+      else if (skey .eq. "nodes") then
         
         !----------------------------------------------------
         ! Read triangulation (or ignore it if alread given in rtriangulation)
@@ -5449,37 +5450,37 @@ contains
         rexport%nvertices = rtriangulation%NVT
         rexport%ncells = rtriangulation%NEL
         
-      case ('material')
+      else if (skey .eq. "material") then
       
         !----------------------------------------------------
         ! Read materials
         call read_materials (mfile,sline,rexport)
         
-      case ('velocity')
+      else if (skey .eq. "velocity") then
 
         !----------------------------------------------------
         ! Read velocity data
         call read_velocity (mfile,sline,rexport)
         
-      case ('variable')
+      else if (skey .eq. "variable") then
       
         !----------------------------------------------------
         ! Read general variable data
         call read_variables (mfile,sline,rexport)
         
-      case ('polygons')
+      else if (skey .eq. "polygons") then
       
         !----------------------------------------------------
         ! Read polygon data
         call read_polygondata (mfile,sline,rexport)
         
-      case ('tracers')
+      else if (skey .eq. "tracers") then
       
         !----------------------------------------------------
         ! Read tracer data
         call read_tracerdata (mfile,sline,rexport)
         
-      case ('endgmv')
+      else if (skey .eq. "endgmv") then
         
         ! GMV finish
         ios = 1
