@@ -359,19 +359,6 @@ fb_getNTASKS() {
 }
 
 
-#  Function: Create log directory if necessary
-fb_createLogDir() {
-    directory="$1"  # IN
-
-    if [ -r $directory ]; then
-	echo $0": Log directory exists."
-    else
-	echo $0": Creating log directory."
-	mkdir $directory
-    fi
-}
-
-
 # Function: Try hard to submit a jobfile
 fb_submitJobfile() {
     jobfile="$1"           # IN
