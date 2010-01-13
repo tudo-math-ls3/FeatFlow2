@@ -305,7 +305,7 @@ module geometry
 ! *****************************************************************************
 ! *****************************************************************************
 ! *****************************************************************************
-
+!
 !<types>
 
 
@@ -550,7 +550,13 @@ module geometry
     real(dp) :: dtransVelX     = 0.0_dp  
 
     ! the translational y-velocity of the particle
-    real(dp) :: dtransVelY     = 0.0_dp  
+    real(dp) :: dtransVelY     = 0.0_dp
+    
+    ! the old translational x-velocity of the particle
+    real(dp) :: dtransVelXold     = 0.0_dp
+
+    ! the old translational y-velocity of the particle
+    real(dp) :: dtransVelYold     = 0.0_dp
     
     ! the angular of the particle
     real(dp) :: dangVelocity   = 0.0_dp  
