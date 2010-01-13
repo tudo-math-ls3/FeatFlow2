@@ -78,6 +78,7 @@ module geometryaux
   public :: gaux_isFlipped_hexa3D
   public :: gaux_isInElement_tetra
   public :: gaux_isInElement_hexa
+  public :: gaux_calcDistPEdg2D
 contains
 
   ! ***************************************************************************
@@ -1185,5 +1186,62 @@ contains
   end if
   
   end subroutine  
+  
+  ! ***************************************************************************
+
+!<function>
+  
+  pure subroutine gaux_calcDistPEdg2D(DpointA,Dedge1,Dedge2,dist,t)
+
+!<description>
+    ! Calculated the distance between a point and an edge in 2d
+!</description>
+
+!<input>
+  ! 
+  ! The coordinates of the point
+  ! DpointA(1) = x-coordinates,
+  ! DpointA(2) = y-coordinates
+  real(DP), dimension(2), intent(in) :: DpointA
+  ! the first vertex of the edge in real coordinates
+  real(DP), dimension(2), intent(in) :: Dedge1
+  ! the 2nd vertex of the edge in real coordinates
+  real(DP), dimension(2), intent(in) :: Dedge2        
+!</input>
+  real(dp), intent(out)              :: dist
+  real(dp), intent(out)              :: t
+!<result>
+  ! The distance
+!</result>
+!</function>
+  ! parameter in the edge equation: edge=Dedge1+t*(Dedge2-Dedge1), t in [0,1]
+  real(dp) :: r2
+  real(DP), dimension(2) :: r,YP
+  
+  r(:)=Dedge2(:)-Dedge1(:)
+  
+  r2=r(1)**2+r(2)**2
+  YP(:)=DpointA(:)-Dedge1(:)
+  t=r(1)*YP(1)+r(2)*YP(2)
+  t=t/r2
+  
+  if(t .le. 0.0_dp)then
+    dist = sqrt(YP(1)**2 + YP(2)**2)
+    return
+  else if(t .ge. 1.0_dp)then
+    YP(:)=DpointA(:)-Dedge2(:)
+    dist = sqrt(YP(1)**2 + YP(2)**2)
+  return
+  else
+    r(:)=r(:)*t
+    r(:)=r(:)+Dedge1(:)
+    YP(:)=DpointA(:)-r(:)
+    dist = sqrt(YP(1)**2 + YP(2)**2)
+    return    
+  end if
+
+  end subroutine gaux_calcDistPEdg2D
+
+  ! ***************************************************************************
 
 end module
