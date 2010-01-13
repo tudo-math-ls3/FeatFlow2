@@ -805,7 +805,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivOperatorBlock(RcoeffMatrices, rafcstab, ru,&
+  subroutine gfsys_buildDivOperatorBlock(RcoeffMatrices, rafcstab, rx,&
       fcb_calcMatrixDiagonal, fcb_calcMatrix, dscale, bclear, rdivMatrix)
 
 !<description>
@@ -822,7 +822,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(in) :: ru
+    type(t_vectorBlock), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -846,8 +846,8 @@ contains
 !</subroutine>
     
     ! local variables
-    type(t_array), dimension(ru%nblocks,ru%nblocks)  :: rarray
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_u
+    type(t_array), dimension(rx%nblocks,rx%nblocks)  :: rarray
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Dx
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kdiagonal
     integer :: ndim
@@ -856,11 +856,11 @@ contains
 
     ! Check if block vector contains only one block and if
     ! global operator is stored in interleave format.
-    if ((ru%nblocks .eq. 1) .and.&
+    if ((rx%nblocks .eq. 1) .and.&
         (rdivMatrix%nblocksPerCol .eq. 1) .and. &
         (rdivMatrix%nblocksPerRow .eq. 1)) then
       call gfsys_buildDivOperatorScalar(RcoeffMatrices, rafcstab,&
-          ru%RvectorBlock(1), fcb_calcMatrixDiagonal, fcb_calcMatrix,&
+          rx%RvectorBlock(1), fcb_calcMatrixDiagonal, fcb_calcMatrix,&
           dscale, bclear, rdivMatrix%RmatrixBlock(1,1))
       return       
     end if
@@ -891,22 +891,22 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call gfsys_getbase_double(rdivMatrix, rarray, bisFullMatrix)
-    call lsysbl_getbase_double(ru, p_u)
+    call lsysbl_getbase_double(rx, p_Dx)
     
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -930,16 +930,16 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doOperatorMat79_1D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_Dx, dscale, rarray)
         case (NDIM2D)
           call doOperatorMat79_2D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, rarray)
         case (NDIM3D)
           call doOperatorMat79_3D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, rarray)
         end select
         
       else   ! bisFullMatrix == no
@@ -947,16 +947,16 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doOperatorMat79Diag_1D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_Dx, dscale, rarray)
         case (NDIM2D)
           call doOperatorMat79Diag_2D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, rarray)
         case (NDIM3D)
           call doOperatorMat79Diag_3D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, rarray)
         end select
 
       end if   ! bisFullMatrix
@@ -976,16 +976,16 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doOperatorMat79_1D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_Dx, dscale, rarray)
         case (NDIM2D)
           call doOperatorMat79_2D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, rarray)
         case (NDIM3D)
           call doOperatorMat79_3D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, rarray)
         end select
         
       else   ! bisFullMatrix == no
@@ -993,16 +993,16 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doOperatorMat79Diag_1D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_Dx, dscale, rarray)
         case (NDIM2D)
           call doOperatorMat79Diag_2D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, rarray)
         case (NDIM3D)
           call doOperatorMat79Diag_3D(p_Kdiagonal, p_IverticesAtEdge,&
-              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, rarray)
+              rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, rarray)
         end select
         
       end if   ! bisFullMatrix
@@ -1023,10 +1023,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1036,25 +1036,25 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar
 
       
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii)
+        C_ij(1) = DcoeffX(ii)
         
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
         
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
         
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1075,13 +1075,13 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Assemble the global operator
@@ -1100,10 +1100,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1113,25 +1113,25 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar
 
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii)
         
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
         
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
         
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1152,14 +1152,14 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Assemble the global operator
@@ -1178,10 +1178,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1191,25 +1191,25 @@ contains
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,u_i,u_j
+      real(DP), dimension(NVAR) :: D_ij,K_ij,K_ji,Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar
       
       
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii); C_ij(3) = DcoeffZ(ii)
         
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1229,15 +1229,15 @@ contains
         jj = Kdiagonal(j)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Assemble the global operator
@@ -1256,10 +1256,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1270,25 +1270,25 @@ contains
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
-      real(DP), dimension(NVAR) :: u_i,u_j
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar,jvar,idx
 
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii)
+        C_ij(1) = DcoeffX(ii)
 
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1312,13 +1312,13 @@ contains
         jj = Kdiagonal(j)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1340,10 +1340,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1354,25 +1354,25 @@ contains
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
-      real(DP), dimension(NVAR) :: u_i,u_j
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar,jvar,idx
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ij)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ij)
         
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
         
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1396,14 +1396,14 @@ contains
         jj = Kdiagonal(j)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1425,10 +1425,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, K)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1439,25 +1439,25 @@ contains
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: D_ij,K_ij,K_ji
-      real(DP), dimension(NVAR) :: u_i,u_j
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j
       integer :: iedge,ii,ij,ji,jj,i,j,ivar,jvar,idx
       
 
       ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,K_ij,u_i,ivar)
+      !$omp parallel do private(ii,C_ij,K_ij,Dx_i,ivar)
       do i = 1, NEQ
         
         ! Get position of diagonal entry
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii); C_ij(3) = DcoeffZ(ii)
 
         ! Get solution values at node
-        u_i = u(i,:)
+        Dx_i = Dx(i,:)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u_i, C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx_i, C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         do ivar = 1, NVAR
@@ -1481,15 +1481,15 @@ contains
         jj = Kdiagonal(j)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Get solution values at node
-        u_j = u(j,:)
+        Dx_j = Dx(j,:)
         
         ! Compute matrices
-        call fcb_calcMatrix(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcMatrix(Dx_i, Dx_j, C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1511,7 +1511,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, rafcstab, ru,&
+  subroutine gfsys_buildDivOperatorScalar(RcoeffMatrices, rafcstab, rx,&
       fcb_calcMatrixDiagonal, fcb_calcMatrix, dscale, bclear, rdivMatrix)
 
 !<description>
@@ -1525,7 +1525,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
     
     ! scalar solution vector
-    type(t_vectorScalar), intent(in) :: ru
+    type(t_vectorScalar), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -1549,7 +1549,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_DivOp,p_u
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_DivOp,p_Dx
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kdiagonal
     integer :: ndim
@@ -1574,22 +1574,22 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_double(rdivMatrix, p_DivOp)
-    call lsyssc_getbase_double(ru, p_u)
+    call lsyssc_getbase_double(rx, p_Dx)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -1616,18 +1616,18 @@ contains
         case (NDIM1D)
           call doOperatorMat79_1D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_Dx, dscale, p_DivOp)
         case (NDIM2D)
           call doOperatorMat79_2D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_DivOp)
         case (NDIM3D)
           call doOperatorMat79_3D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_DivOp)
         end select
         
 
@@ -1637,18 +1637,18 @@ contains
         case (NDIM1D)
           call doOperatorMat79Diag_1D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_Dx, dscale, p_DivOp)
         case (NDIM2D)
           call doOperatorMat79Diag_2D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_DivOp)
         case (NDIM3D)
           call doOperatorMat79Diag_3D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_DivOp)
         end select
 
         
@@ -1676,18 +1676,18 @@ contains
         case (NDIM1D)
           call doOperatorMat79_1D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_Dx, dscale, p_DivOp)
         case (NDIM2D)
           call doOperatorMat79_2D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_DivOp)
         case (NDIM3D)
           call doOperatorMat79_3D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_DivOp)
         end select
 
         
@@ -1697,18 +1697,18 @@ contains
         case (NDIM1D)
           call doOperatorMat79Diag_1D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_Dx, dscale, p_DivOp)
         case (NDIM2D)
           call doOperatorMat79Diag_2D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_DivOp)
         case (NDIM3D)
           call doOperatorMat79Diag_3D(p_Kdiagonal, p_IverticesAtEdge,&
               rafcstab%NEDGE, RcoeffMatrices(1)%NEQ,&
-              RcoeffMatrices(1)%NA, ru%NVAR,&
-              p_Cx, p_Cy, p_Cz, p_u, dscale, p_DivOp)
+              RcoeffMatrices(1)%NA, rx%NVAR,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_DivOp)
         end select
         
 
@@ -1734,10 +1734,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1759,10 +1759,10 @@ contains
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii)
+        C_ij(1) = DcoeffX(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -1781,10 +1781,10 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1801,10 +1801,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, Cy, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, DcoeffY, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1826,10 +1826,10 @@ contains
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -1848,11 +1848,11 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1869,10 +1869,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79Diag_3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, Cy, Cz, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1894,10 +1894,10 @@ contains
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii); C_ij(3) = DcoeffZ(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -1917,12 +1917,12 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -1939,10 +1939,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -1964,10 +1964,10 @@ contains
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii)
+        C_ij(1) = DcoeffX(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -1986,10 +1986,10 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -2006,10 +2006,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, Cy, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, DcoeffY, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -2031,10 +2031,10 @@ contains
         ii = Kdiagonal(i)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2053,11 +2053,11 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -2074,10 +2074,10 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doOperatorMat79_3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, NA, NVAR, Cx, Cy, Cz, u, dscale, K)
+        NEDGE, NEQ, NA, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -2099,10 +2099,10 @@ contains
         ii = Kdiagonal(i)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ii); C_ij(2) = Cy(ii); C_ij(3) = Cz(ii)
+        C_ij(1) = DcoeffX(ii); C_ij(2) = DcoeffY(ii); C_ij(3) = DcoeffZ(ii)
 
         ! Compute matrix
-        call fcb_calcMatrixDiagonal(u(:,i), C_ij, i, dscale, K_ij)
+        call fcb_calcMatrixDiagonal(Dx(:,i), C_ij, i, dscale, K_ij)
 
         ! Apply matrix to the diagonal entry of the global operator
         K(:,ii) = K(:,ii) + K_ij
@@ -2121,12 +2121,12 @@ contains
         jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute matrices
-        call fcb_calcMatrix(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcMatrix(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                             i, j, dscale, K_ij, K_ji, D_ij)
         
         ! Apply matrices to the global operator
@@ -2143,8 +2143,8 @@ contains
 
 !<subroutine>
   
-  subroutine gfsys_buildResBlock(RcoeffMatrices, rafcstab, ru,&
-      fcb_calcFlux, dscale, bclear, rres)
+  subroutine gfsys_buildResBlock(RcoeffMatrices, rafcstab, rx,&
+      fcb_calcFlux, dscale, bclear, ry)
 
 !<description>
     ! This subroutine assembles the residual vector for block vectors.
@@ -2157,7 +2157,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(in) :: ru
+    type(t_vectorBlock), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -2176,21 +2176,21 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! residual vector
-    type(t_vectorBlock), intent(inout) :: rres
+    type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Dx,p_Dy
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
     
     ! Check if block vectors contain only one block.
-    if ((ru%nblocks .eq. 1) .and. (rres%nblocks .eq. 1) ) then
+    if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call gfsys_buildResScalar(RcoeffMatrices, rafcstab,&
-          ru%RvectorBlock(1), fcb_calcFlux, dscale, bclear,&
-          rres%RvectorBlock(1))
+          rx%RvectorBlock(1), fcb_calcFlux, dscale, bclear,&
+          ry%RvectorBlock(1))
       return       
     end if
     
@@ -2208,27 +2208,27 @@ contains
     end if
 
     ! Clear vector?
-    if (bclear) call lsysbl_clearVector(rres)
+    if (bclear) call lsysbl_clearVector(ry)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call lsysbl_getbase_double(ru, p_u)
-    call lsysbl_getbase_double(rres, p_res)
+    call lsysbl_getbase_double(rx, p_Dx)
+    call lsysbl_getbase_double(ry, p_Dy)
     
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -2247,16 +2247,16 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doResidualMat79_1D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_Dx, dscale, p_Dy)
       case (NDIM2D)
         call doResidualMat79_2D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_Cy, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_Dy)
       case (NDIM3D)
         call doResidualMat79_3D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_Dy)
       end select
 
     case DEFAULT
@@ -2274,19 +2274,19 @@ contains
     ! All matrices are stored in matrix format 7 and 9
     
     subroutine doResidualMat79_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dy)
 
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale     
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: u_i,u_j,F_ij,F_ji
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j,F_ij,F_ji
       integer :: iedge,ij,ji,i,j
       
       
@@ -2300,18 +2300,18 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
       end do
     end subroutine doResidualMat79_1D
 
@@ -2321,19 +2321,19 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doResidualMat79_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dy)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: u_i,u_j,F_ij,F_ji
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j,F_ij,F_ji
       integer :: iedge,ij,ji,i,j
    
 
@@ -2347,19 +2347,19 @@ contains
         ji = IverticesAtEdge(4, iedge)
 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
       end do
     end subroutine doResidualMat79_2D
 
@@ -2369,19 +2369,19 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doResidualMat79_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dy)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP), dimension(NVAR) :: u_i,u_j,F_ij,F_ji
+      real(DP), dimension(NVAR) :: Dx_i,Dx_j,F_ij,F_ji
       integer :: iedge,ij,ji,i,j
    
       
@@ -2395,20 +2395,20 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
       end do
     end subroutine doResidualMat79_3D
   end subroutine gfsys_buildResBlock
@@ -2417,8 +2417,8 @@ contains
 
 !<subroutine>
   
-  subroutine gfsys_buildResScalar(RcoeffMatrices, rafcstab, ru,&
-      fcb_calcFlux, dscale, bclear, rres)
+  subroutine gfsys_buildResScalar(RcoeffMatrices, rafcstab, rx,&
+      fcb_calcFlux, dscale, bclear, ry)
 
 !<description>
     ! This subroutine assembles the residual vector. Note that the
@@ -2431,7 +2431,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(in) :: ru
+    type(t_vectorScalar), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -2450,12 +2450,12 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! residual vector
-    type(t_vectorScalar), intent(inout) :: rres
+    type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
   
     ! local variables
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_u,p_res
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Dx,p_Dy
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
@@ -2474,27 +2474,27 @@ contains
     end if
 
     ! Clear vector?
-    if (bclear) call lsyssc_clearVector(rres)
+    if (bclear) call lsyssc_clearVector(ry)
     
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call lsyssc_getbase_double(ru, p_u)
-    call lsyssc_getbase_double(rres, p_res)
+    call lsyssc_getbase_double(rx, p_Dx)
+    call lsyssc_getbase_double(ry, p_Dy)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -2513,16 +2513,16 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doResidualMat79_1D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_Dx, dscale, p_Dy)
       case (NDIM2D)
         call doResidualMat79_2D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_Cy, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_Dy)
       case (NDIM3D)
         call doResidualMat79_3D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_Cy, p_Cz, p_u, dscale, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_Dy)
       end select
       
     case DEFAULT
@@ -2540,15 +2540,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doResidualMat79_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dy)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -2566,15 +2566,15 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
       end do
     end subroutine doResidualMat79_1D
 
@@ -2584,15 +2584,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doResidualMat79_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dy)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -2610,16 +2610,16 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
       end do
     end subroutine doResidualMat79_2D
 
@@ -2629,15 +2629,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doResidualMat79_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dy)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -2655,17 +2655,17 @@ contains
         ji = IverticesAtEdge(4, iedge)
                 
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
       end do
     end subroutine doResidualMat79_3D
   
@@ -2675,8 +2675,8 @@ contains
   
 !<subroutine>
   
-  subroutine gfsys_buildResTVDBlock(RcoeffMatrices, rafcstab, ru,&
-      fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, rres)
+  subroutine gfsys_buildResTVDBlock(RcoeffMatrices, rafcstab, rx,&
+      fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, ry)
 
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes.
@@ -2689,7 +2689,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorBlock), intent(in) :: ru
+    type(t_vectorBlock), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -2708,22 +2708,22 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
 
     ! residual vector
-    type(t_vectorBlock), intent(inout) :: rres
+    type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
     
     ! local variables
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_u,p_res
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
     
     ! Check if block vectors contain only one block.
-    if ((ru%nblocks .eq. 1) .and. (rres%nblocks .eq. 1) ) then
+    if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
       call gfsys_buildResTVDScalar(RcoeffMatrices, rafcstab,&
-          ru%RvectorBlock(1), fcb_calcFlux, fcb_calcCharacteristics,&
-          dscale, bclear, rres%RvectorBlock(1))
+          rx%RvectorBlock(1), fcb_calcFlux, fcb_calcCharacteristics,&
+          dscale, bclear, ry%RvectorBlock(1))
       return
     end if
     
@@ -2742,34 +2742,34 @@ contains
     end if
 
     ! Clear vector?
-    if (bclear) call lsysbl_clearVector(rres)
+    if (bclear) call lsysbl_clearVector(ry)
     
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call lsysbl_getbase_double(ru, p_u)
-    call lsysbl_getbase_double(rres, p_res)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsysbl_getbase_double(rx, p_Dx)
+    call lsysbl_getbase_double(ry, p_Dy)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -2788,19 +2788,19 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doLimitTVDMat79_1D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       case (NDIM2D)
         call doLimitTVDMat79_2D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_Cy, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_DcoeffY, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       case (NDIM3D)
         call doLimitTVDMat79_3D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%nblocks,&
-            p_Cx, p_Cy, p_Cz, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       end select
       
     case DEFAULT
@@ -2822,22 +2822,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
 
       
@@ -2857,25 +2857,25 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir1D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -2919,14 +2919,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
 
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir1D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir1D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -2954,8 +2954,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
       end do
     end subroutine doLimitTVDMat79_1D
 
@@ -2966,22 +2966,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
 
       
@@ -3001,26 +3001,26 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir2D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3070,14 +3070,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir2D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir2D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij  =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij  =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij   = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij   =  abs(ka_ij)*W_ij
         
@@ -3105,15 +3105,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, YDir2D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3157,14 +3157,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u_i, u_j, YDir2D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, YDir2D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -3192,8 +3192,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_2D
@@ -3205,22 +3205,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: res
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
 
       
@@ -3240,27 +3240,27 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u_i, u_j, C_ij, C_ji,&
+        call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)+F_ji
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3310,14 +3310,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
 
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u_i, u_j, XDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, XDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij  =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij  =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij   = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij   =  abs(ka_ij)*W_ij
         
@@ -3345,15 +3345,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, YDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3403,14 +3403,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u_i, u_j, YDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, YDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -3438,15 +3438,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
         
         ! Compute characteristic fluxes in Z-direction
-        call fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, ZDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffZ(ji)-DcoeffZ(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffZ(ij)+DcoeffZ(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3490,14 +3490,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Get solution values at nodes
-        u_i = u(i,:); u_j = u(j,:)
+        Dx_i = Dx(i,:); Dx_j = Dx(j,:)
         
         ! Compute characteristic fluxes in Z-direction
-        call fcb_calcCharacteristics(u_i, u_j, ZDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx_i, Dx_j, ZDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffZ(ji)-DcoeffZ(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffZ(ji)-DcoeffZ(ij))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -3525,8 +3525,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(i,:) = res(i,:)+F_ij
-        res(j,:) = res(j,:)-F_ij
+        Dy(i,:) = Dy(i,:)+F_ij
+        Dy(j,:) = Dy(j,:)-F_ij
       end do
       
     end subroutine doLimitTVDMat79_3D
@@ -3537,8 +3537,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildResTVDScalar(RcoeffMatrices, rafcstab, ru,&
-      fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, rres)
+  subroutine gfsys_buildResTVDScalar(RcoeffMatrices, rafcstab, rx,&
+      fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, ry)
     
 !<description>
     ! This subroutine assembles the residual vector for FEM-TVD schemes
@@ -3549,7 +3549,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(in) :: ru
+    type(t_vectorScalar), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -3568,13 +3568,13 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
     
     ! residual vector
-    type(t_vectorScalar), intent(inout) :: rres
+    type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_u,p_res
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
@@ -3593,33 +3593,33 @@ contains
     end if
 
     ! Clear vector?
-    if (bclear) call lsyssc_clearVector(rres)
+    if (bclear) call lsyssc_clearVector(ry)
 
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call lsyssc_getbase_double(ru, p_u)
-    call lsyssc_getbase_double(rres, p_res)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+    call lsyssc_getbase_double(rx, p_Dx)
+    call lsyssc_getbase_double(ry, p_Dy)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -3638,19 +3638,19 @@ contains
       select case(ndim)
       case (NDIM1D)
         call doLimitTVDMat79_1D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       case (NDIM2D)
         call doLimitTVDMat79_2D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_Cy, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_DcoeffY, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       case (NDIM3D)
         call doLimitTVDMat79_3D(p_IverticesAtEdge,&
-            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, ru%NVAR,&
-            p_Cx, p_Cy, p_Cz, p_u, dscale,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_res)
+            rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, p_Dy)
       end select
       
     case DEFAULT
@@ -3672,22 +3672,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
       
       
@@ -3707,22 +3707,22 @@ contains
         ji = IverticesAtEdge(4, iedge)
       
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir1D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3766,11 +3766,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
           
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir1D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij  =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij  =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij   = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij   =  abs(ka_ij)*W_ij
         
@@ -3798,8 +3798,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
           
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_1D
@@ -3811,22 +3811,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
       
 
@@ -3846,23 +3846,23 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir2D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3912,11 +3912,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir2D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij  =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij  =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij   = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij   =  abs(ka_ij)*W_ij
         
@@ -3944,15 +3944,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), YDir2D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -3996,11 +3996,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), YDir2D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -4028,8 +4028,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_2D
@@ -4041,22 +4041,22 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doLimitTVDMat79_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale,&
-        pp, pm, qp, qm, rp, rm, res)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale,&
+        pp, pm, qp, qm, rp, rm, Dy)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(inout) :: pp,pm,qp,qm,rp,rm
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
       real(DP), dimension(NVAR*NVAR) :: R_ij,L_ij
-      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,u_i,u_j
+      real(DP), dimension(NVAR) :: F_ij,F_ji,W_ij,Lbd_ij,ka_ij,ks_ij,Dx_i,Dx_j
       integer :: iedge,ij,ji,i,j,iloc,jloc,ivar
       
 
@@ -4076,24 +4076,24 @@ contains
         ji = IverticesAtEdge(4, iedge)
       
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the fluxes
-        call fcb_calcFlux(u(:,i), u(:,j), C_ij, C_ji,&
+        call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
         
         ! Assemble high-order residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)+F_ji
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)+F_ji
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -4142,11 +4142,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute characteristic fluxes in X-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), XDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij  =  0.5_DP*(Cx(ji)-Cx(ij))*Lbd_ij
-        ks_ij  =  0.5_DP*(Cx(ij)+Cx(ji))*Lbd_ij
+        ka_ij  =  0.5_DP*(DcoeffX(ji)-DcoeffX(ij))*Lbd_ij
+        ks_ij  =  0.5_DP*(DcoeffX(ij)+DcoeffX(ji))*Lbd_ij
         F_ij   = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij   =  abs(ka_ij)*W_ij
         
@@ -4174,15 +4174,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), YDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -4231,11 +4231,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute characteristic fluxes in Y-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), YDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cy(ji)-Cy(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cy(ij)+Cy(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffY(ji)-DcoeffY(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffY(ij)+DcoeffY(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -4263,15 +4263,15 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
           
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
         
         ! Compute characteristic fluxes in Z-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), ZDir3D, W_ij, Lbd_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffZ(ji)-DcoeffZ(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffZ(ij)+DcoeffZ(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         
         ! Update sums of downstream/upstream edge contributions
@@ -4315,11 +4315,11 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute characteristic fluxes in Z-direction
-        call fcb_calcCharacteristics(u(:,i), u(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
+        call fcb_calcCharacteristics(Dx(:,i), Dx(:,j), ZDir3D, W_ij, Lbd_ij, R_ij)
         
         ! Compute antidiffusive fluxes
-        ka_ij =  0.5_DP*(Cz(ji)-Cz(ij))*Lbd_ij
-        ks_ij =  0.5_DP*(Cz(ij)+Cz(ji))*Lbd_ij
+        ka_ij =  0.5_DP*(DcoeffZ(ji)-DcoeffZ(ij))*Lbd_ij
+        ks_ij =  0.5_DP*(DcoeffZ(ij)+DcoeffZ(ji))*Lbd_ij
         F_ij  = -max(0.0_DP, min(abs(ka_ij)-ks_ij, 2.0_DP*abs(ka_ij)))*W_ij
         W_ij  =  abs(ka_ij)*W_ij
         
@@ -4347,8 +4347,8 @@ contains
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
         
         ! Assemble high-resolution residual vector
-        res(:,i) = res(:,i)+F_ij
-        res(:,j) = res(:,j)-F_ij
+        Dy(:,i) = Dy(:,i)+F_ij
+        Dy(:,j) = Dy(:,j)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_3D
@@ -4360,7 +4360,7 @@ contains
 !<subroutine>
   
   subroutine gfsys_buildResFCTBlock(rlumpedMassMatrix,&
-      rafcstab, ru, dscale, bclear, ioperationSpec, rres,&
+      rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
       fcb_calcTransformation)
     
 !<description>
@@ -4374,7 +4374,7 @@ contains
     type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorBlock), intent(in) :: ru
+    type(t_vectorBlock), intent(in) :: rx
     
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -4399,15 +4399,15 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
     
     ! residual vector
-    type(t_vectorBlock), intent(inout) :: rres
+    type(t_vectorBlock), intent(inout) :: ry
     !</inputoutput>
 !</subroutine>
 
     ! Check if block vectors contain only one block.
-    if ((ru%nblocks .eq. 1) .and. (rres%nblocks .eq. 1)) then
+    if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
       call gfsys_buildResFCTScalar(rlumpedMassMatrix,&
-          rafcstab, ru%RvectorBlock(1), dscale, bclear,&
-          ioperationSpec, rres%RvectorBlock(1),&
+          rafcstab, rx%RvectorBlock(1), dscale, bclear,&
+          ioperationSpec, ry%RvectorBlock(1),&
           fcb_calcTransformation)
       return
     end if
@@ -4422,7 +4422,7 @@ contains
 !<subroutine>
   
   subroutine gfsys_buildResFCTScalar(rlumpedMassMatrix,&
-      rafcstab, ru, dscale, bclear, ioperationSpec, rres,&
+      rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
       fcb_calcTransformation)
 
 !<description>
@@ -4479,7 +4479,7 @@ contains
     type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
 
     ! solution vector
-    type(t_vectorScalar), intent(in) :: ru
+    type(t_vectorScalar), intent(in) :: rx
 
     ! scaling factor
     real(DP), intent(in) :: dscale
@@ -4504,14 +4504,14 @@ contains
     type(t_afcstab), intent(inout) :: rafcstab
     
     ! residual vector
-    type(t_vectorScalar), intent(inout) :: rres
+    type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_u,p_res
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_alpha,p_flux,p_flux0
+    real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
     ! Check if stabilisation is prepeared
@@ -4551,10 +4551,10 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
       
       ! Initialise alpha by unity
-      call lalg_setVector(p_alpha, 1.0_DP)
+      call lalg_setVector(p_Dalpha, 1.0_DP)
     end if
     
     
@@ -4579,29 +4579,29 @@ contains
       end if
       
       ! Set pointers
-      call lsyssc_getbase_double(ru, p_u)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+      call lsyssc_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
       
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux)
       else
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (present(fcb_calcTransformation)) then
         call doADIncrementsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            rafcstab%NVARtransformed, p_u,&
-            p_flux, p_alpha, p_pp, p_pm)
+            rafcstab%NVARtransformed, p_Dx,&
+            p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
       else
         call doADIncrements(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_u, p_flux, p_alpha, p_pp, p_pm)
+            p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
       end if
       
       ! Set specifiers
@@ -4623,20 +4623,20 @@ contains
       end if
       
       ! Set pointers
-      call lsyssc_getbase_double(ru, p_u)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+      call lsyssc_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
       
       ! Compute bounds
       if (present(fcb_calcTransformation)) then
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            rafcstab%NVARtransformed, p_u, p_qp, p_qm)
+            rafcstab%NVARtransformed, p_Dx, p_Dqp, p_Dqm)
       else
         call doBounds(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_u, p_qp, p_qm)
+            p_Dx, p_Dqp, p_Dqm)
       end if
       
       ! Set specifiers
@@ -4659,20 +4659,20 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
       
       ! Compute nodal correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         call doLimitNodal(rafcstab%NEQ, rafcstab%NVARtransformed,&
-            dscale, p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+            dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVARtransformed,&
-            dscale, p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+            dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
       
       ! Set specifier
@@ -4701,28 +4701,28 @@ contains
       end if
 
       ! Set pointers
-      call lsyssc_getbase_double(ru, p_u)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
         
         if (present(fcb_calcTransformation)) then
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_u,&
-              p_flux0, p_flux, p_rp, p_rm, p_alpha)
+              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_flux0, p_flux, p_rp, p_rm, p_alpha)
+              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
 
       else
@@ -4730,12 +4730,12 @@ contains
         if (present(fcb_calcTransformation)) then
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_u,&
-              p_flux, p_rp, p_rm, p_alpha)
+              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
           call doLimitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_flux, p_rp, p_rm, p_alpha)
+              p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
         
       end if
@@ -4773,24 +4773,24 @@ contains
       end if
 
       ! Set pointers
-      call lsyssc_getbase_double(rres, p_res)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(ry, p_Dy)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
       
       ! Clear residual vector?
-      if (bclear) call lsyssc_clearVector(rres)
+      if (bclear) call lsyssc_clearVector(ry)
       
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
         call doCorrectScaleByMass(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_ML, p_alpha, p_flux, p_res)
+            dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
       else
         call doCorrect(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_alpha, p_flux, p_res)
+            dscale, p_Dalpha, p_Dflux, p_Dy)
       end if
     end if
       
@@ -4803,14 +4803,14 @@ contains
     ! antidiffusive fluxes without transformation
     
     subroutine doADIncrements(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, u, flux, alpha, pp, pm)
+        NEDGE, NEQ, NVAR, Dx, Dflux, Dalpha, pp, pm)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       real(DP), dimension(NVAR,NEQ), intent(out) :: pp,pm
       
       ! local variables
@@ -4829,11 +4829,11 @@ contains
         j  = IverticesAtEdge(2, iedge)
         
         ! Prelimiting of antidiffusive fluxes
-        if (any(flux(:,iedge)*(u(:,j)-u(:,i)) .ge. 0.0_DP))&
-            alpha(iedge) = 0.0_DP
+        if (any(Dflux(:,iedge)*(Dx(:,j)-Dx(:,i)) .ge. 0.0_DP))&
+            Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
-        F_ij = alpha(iedge)*flux(:,iedge)
+        F_ij = Dalpha(iedge) * Dflux(:,iedge)
         
         ! Compute the sums of antidiffusive increments
         pp(:,i) = pp(:,i)+max(0.0_DP, F_ij)
@@ -4849,18 +4849,18 @@ contains
     ! defined set of variables prior to computing the sums
     
     subroutine doADIncrementsTransformed(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, NVARtransformed, u, flux, alpha, pp, pm)
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, pp, pm)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
       
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       real(DP), dimension(NVARtransformed,NEQ), intent(out) :: pp,pm
       
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,U_ij,U_ji
+      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Dx_ij,Dx_ji
       real(DP), dimension(NVAR) :: diff
       integer :: iedge,i,j
 
@@ -4877,21 +4877,21 @@ contains
         
         ! Compute transformed fluxes
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), flux(:,iedge), F_ij, F_ji)
+            Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
         
         ! Compute transformed solution difference
-        diff = u(:,j)-u(:,i)
+        diff = Dx(:,j)-Dx(:,i)
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), diff, U_ij, U_ji)
+            Dx(:,i), Dx(:,j), diff, Dx_ij, Dx_ji)
 
         ! Prelimiting of antidiffusive fluxes
-        if (any(F_ij*U_ij .ge. 0.0_DP) .or.&
-            any(F_ji*U_ji .ge. 0.0_DP))&
-            alpha(iedge) = 0.0_DP
+        if (any(F_ij*Dx_ij .ge. 0.0_DP) .or.&
+            any(F_ji*Dx_ji .ge. 0.0_DP))&
+            Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
-        F_ij = alpha(iedge)*F_ij
-        F_ji = alpha(iedge)*F_ji
+        F_ij = Dalpha(iedge)*F_ij
+        F_ji = Dalpha(iedge)*F_ji
         
         ! Compute the sums of positive/negative antidiffusive increments
         pp(:,i) = pp(:,i)+max(0.0_DP, F_ij)
@@ -4906,16 +4906,16 @@ contains
     ! without transformation 
     
     subroutine doBounds(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, u, qp, qm)
+        NEDGE, NEQ, NVAR, Dx, qp, qm)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
       real(DP), dimension(NVAR,NEQ), intent(out) :: qp,qm
       
       ! local variables
-      real(DP), dimension(NVAR) :: U_ij
+      real(DP), dimension(NVAR) :: Dx_ij
       integer :: iedge,i,j
 
       ! Clear Q's
@@ -4930,14 +4930,14 @@ contains
         j  = IverticesAtEdge(2, iedge)
               
         ! Compute solution difference
-        U_ij = u(:,j)-u(:,i)
+        Dx_ij = Dx(:,j)-Dx(:,i)
         
         ! Compute the distance to a local extremum
         ! of the predicted solution
-        qp(:,i) = max(qp(:,i), U_ij)
-        qp(:,j) = max(qp(:,j),-U_ij)
-        qm(:,i) = min(qm(:,i), U_ij)
-        qm(:,j) = min(qm(:,j),-U_ij)
+        qp(:,i) = max(qp(:,i), Dx_ij)
+        qp(:,j) = max(qp(:,j),-Dx_ij)
+        qm(:,i) = min(qm(:,i), Dx_ij)
+        qm(:,j) = min(qm(:,j),-Dx_ij)
       end do
     end subroutine doBounds
 
@@ -4946,9 +4946,9 @@ contains
     ! which is transformed to a user-defined set of variables
     
     subroutine doBoundsTransformed(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, NVARtransformed, u, qp, qm)
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, qp, qm)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
       
@@ -4956,7 +4956,7 @@ contains
       
       ! local variables
       real(DP), dimension(NVAR) :: diff
-      real(DP), dimension(NVARtransformed) :: U_ij,U_ji
+      real(DP), dimension(NVARtransformed) :: Dx_ij,Dx_ji
       integer :: iedge,i,j
 
       ! Clear Q's
@@ -4971,18 +4971,18 @@ contains
         j  = IverticesAtEdge(2, iedge)
               
         ! Compute solution difference
-        diff = u(:,j)-u(:,i)
+        diff = Dx(:,j)-Dx(:,i)
         
         ! Compute transformed solution difference
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), diff, U_ij, U_ji)
+            Dx(:,i), Dx(:,j), diff, Dx_ij, Dx_ji)
         
         ! Compute the distance to a local extremum
         ! of the predicted solution
-        qp(:,i) = max(qp(:,i), U_ij)
-        qp(:,j) = max(qp(:,j), U_ji)
-        qm(:,i) = min(qm(:,i), U_ij)
-        qm(:,j) = min(qm(:,j), U_ji)
+        qp(:,i) = max(qp(:,i), Dx_ij)
+        qp(:,j) = max(qp(:,j), Dx_ji)
+        qm(:,i) = min(qm(:,i), Dx_ij)
+        qm(:,j) = min(qm(:,j), Dx_ji)
       end do
     end subroutine doBoundsTransformed
 
@@ -5053,14 +5053,14 @@ contains
     ! nodal correction factors and the sign of antidiffusive fluxes
     
     subroutine doLimitEdgewise(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, flux, rp, rm, alpha)
+        NEDGE, NEQ, NVAR, Dflux, rp, rm, Dalpha)
       
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVAR,NEQ), intent(in) :: rp,rm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
       real(DP), dimension(NVAR) :: F_ij,R_ij
@@ -5074,7 +5074,7 @@ contains
         j  = IverticesAtEdge(2, iedge)
         
         ! Get precomputed raw antidiffusive fluxes
-        F_ij = flux(:,iedge)
+        F_ij = Dflux(:,iedge)
  
         ! Compute nodal correction factors
         where (F_ij .ge. 0.0_DP)
@@ -5084,7 +5084,7 @@ contains
         end where
 
         ! Compute multiplicative correction factor
-        alpha(iedge) = alpha(iedge) * minval(R_ij)
+        Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
     end subroutine doLimitEdgewise
 
@@ -5095,15 +5095,15 @@ contains
     ! priori to computing the correction factors
     
     subroutine doLimitEdgewiseTransformed(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, NVARtransformed, u, flux, rp, rm, alpha)
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, rp, rm, Dalpha)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: rp,rm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
       
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
       real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji
@@ -5118,14 +5118,14 @@ contains
         
         ! Compute transformed fluxes
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), flux(:,iedge), F_ij, F_ji)
+            Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
         
         ! Compute nodal correction factors
         R_ij = merge(rp(:,i), rm(:,i), F_ij .ge. 0.0_DP)
         R_ji = merge(rp(:,j), rm(:,j), F_ji .ge. 0.0_DP)
         
         ! Compute multiplicative correction factor
-        alpha(iedge) = alpha(iedge) * minval(min(R_ij, R_ji))
+        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
       end do
     end subroutine doLimitEdgewiseTransformed
 
@@ -5135,14 +5135,14 @@ contains
     ! and implicit raw antidiffusive fluxes
     
     subroutine doLimitEdgewiseConstrained(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, flux1, flux2, rp, rm, alpha)
+        NEDGE, NEQ, NVAR, Dflux1, Dflux2, rp, rm, Dalpha)
       
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux1,flux2
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVAR,NEQ), intent(in) :: rp,rm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
       real(DP), dimension(NVAR) :: F1_ij,F2_ij,R_ij
@@ -5156,8 +5156,8 @@ contains
         j  = IverticesAtEdge(2, iedge)
         
         ! Get precomputed raw antidiffusive fluxes
-        F1_ij = flux1(:,iedge)
-        F2_ij = flux2(:,iedge)
+        F1_ij = Dflux1(:,iedge)
+        F2_ij = Dflux2(:,iedge)
  
         ! Compute nodal correction factors
         where (F1_ij*F2_ij .le. 0.0_DP)
@@ -5171,7 +5171,7 @@ contains
         end where
 
         ! Compute multiplicative correction factor
-        alpha(iedge) = alpha(iedge) * minval(R_ij)
+        Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
     end subroutine doLimitEdgewiseConstrained
 
@@ -5183,15 +5183,15 @@ contains
     ! correction factors
     
     subroutine doLimitEdgewiseConstrainedTransformed(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, NVARtransformed, u, flux1, flux2, rp, rm, alpha)
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, rp, rm, Dalpha)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux1,flux2
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: rp,rm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
       
-      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(inout) :: Dalpha
       
       ! local variables
       real(DP), dimension(NVARtransformed) :: F1_ij,F1_ji,F2_ij,F2_ji,R_ij,R_ji
@@ -5206,9 +5206,9 @@ contains
         
         ! Compute transformed fluxes
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), flux1(:,iedge), F1_ij, F1_ji)
+            Dx(:,i), Dx(:,j), Dflux1(:,iedge), F1_ij, F1_ji)
         call fcb_calcTransformation(&
-            u(:,i), u(:,j), flux2(:,iedge), F2_ij, F2_ji)
+            Dx(:,i), Dx(:,j), Dflux2(:,iedge), F2_ij, F2_ji)
         
         ! Compute nodal correction factors
         where (F1_ij*F2_ij .le. 0.0_DP)
@@ -5224,7 +5224,7 @@ contains
         end where
         
         ! Compute multiplicative correction factor
-        alpha(iedge) = alpha(iedge) * minval(min(R_ij, R_ji))
+        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
       end do
     end subroutine doLimitEdgewiseConstrainedTransformed
 
@@ -5232,15 +5232,15 @@ contains
     ! Correct the antidiffusive fluxes and apply them
     
     subroutine doCorrect(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, dscale, alpha, flux, res)
+        NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
       
-      real(DP), dimension(:), intent(in) :: alpha
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(:), intent(in) :: Dalpha
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
@@ -5254,11 +5254,11 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Correct antidiffusive flux
-        F_ij = dscale * alpha(iedge) * flux(:,iedge)
+        F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
         
         ! Apply limited antidiffusive fluxes
-        res(:,i) = res(:,i) + F_ij
-        res(:,j) = res(:,j) - F_ij
+        Dy(:,i) = Dy(:,i) + F_ij
+        Dy(:,j) = Dy(:,j) - F_ij
       end do
     end subroutine doCorrect
 
@@ -5267,15 +5267,15 @@ contains
     ! scaled by the inverse of the lumped mass matrix
     
     subroutine doCorrectScaleByMass(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, dscale, ML, alpha, flux, res)
+        NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
       
-      real(DP), dimension(:), intent(in) :: alpha,ML
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(:), intent(in) :: Dalpha,ML
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: res
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
       
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
@@ -5289,11 +5289,11 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Correct antidiffusive flux
-        F_ij = dscale * alpha(iedge) * flux(:,iedge)
+        F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
         
         ! Apply limited antidiffusive fluxes
-        res(:,i) = res(:,i) + F_ij/ML(i)
-        res(:,j) = res(:,j) - F_ij/ML(j)
+        Dy(:,i) = Dy(:,i) + F_ij/ML(i)
+        Dy(:,j) = Dy(:,j) - F_ij/ML(j)
       end do
     end subroutine doCorrectScaleByMass
     
@@ -5304,7 +5304,7 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildFluxFCTBlock(rlumpedMassMatrix,&
-      RcoeffMatrices, rafcstab, ru1, ru2, fcb_calcFluxFCT,&
+      RcoeffMatrices, rafcstab, rx1, rx2, fcb_calcFluxFCT,&
       theta, tstep, dscale, binit, rconsistentMassMatrix)
 
 !<description>
@@ -5321,7 +5321,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vectors
-    type(t_vectorBlock), intent(in) :: ru1, ru2
+    type(t_vectorBlock), intent(in) :: rx1, rx2
 
     ! implicitness parameter
     real(DP), intent(in) :: theta
@@ -5351,16 +5351,16 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_Cx,p_Cy,p_Cz
-    real(DP), dimension(:), pointer :: p_u1,p_u2,p_flux0,p_flux,p_alpha
+    real(DP), dimension(:), pointer :: p_ML,p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
+    real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dflux0,p_Dflux,p_Dalpha
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
     ! Check if block vector contains only one block
-    if ((ru1%nblocks .eq. 1) .and. (ru2%nblocks .eq. 1)) then
+    if ((rx1%nblocks .eq. 1) .and. (rx2%nblocks .eq. 1)) then
       call gfsys_buildFluxFCTScalar(rlumpedMassMatrix,&
-          RcoeffMatrices, rafcstab, ru1%RvectorBlock(1),&
-          ru2%RvectorBlock(1), fcb_calcFluxFCT,&
+          RcoeffMatrices, rafcstab, rx1%RvectorBlock(1),&
+          rx2%RvectorBlock(1), fcb_calcFluxFCT,&
           theta, tstep, dscale, binit, rconsistentMassMatrix)
       return
     end if
@@ -5379,8 +5379,8 @@ contains
     end if
     
     ! Set pointers
-    call lsysbl_getbase_double(ru1, p_u1)
-    call lsysbl_getbase_double(ru2, p_u2)
+    call lsysbl_getbase_double(rx1, p_Dx1)
+    call lsysbl_getbase_double(rx2, p_Dx2)
     call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     
@@ -5388,16 +5388,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
       
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
       
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -5425,11 +5425,11 @@ contains
       !-------------------------------------------------------------------------
       
       ! The current flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
 
       ! The initial flux (including the iterative correction for
       ! the iterative FEM-FCT algorithm) is stored at position 3
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_Dflux0)
       
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
@@ -5451,11 +5451,11 @@ contains
         end if
 
         ! Set pointer
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
 
         ! Subtract amount of rejected antidiffusion
         call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE,&
-            -1.0_DP, p_alpha, p_flux, p_flux0)
+            -1.0_DP, p_Dalpha, p_Dflux, p_Dflux0)
       end if
  
       ! Do we have to use the consistent mass matrix?
@@ -5481,51 +5481,51 @@ contains
             if (binit) then
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
             
           case (NDIM2D)
             if (binit) then
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
             
           case (NDIM3D)
             if (binit) then
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
           end select
           
@@ -5553,17 +5553,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_u2, dscale, p_flux)
+                p_DcoeffX, p_Dx2, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             
           case (NDIM3D)
             call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
           end select
 
         case DEFAULT
@@ -5574,14 +5574,14 @@ contains
         
         ! Combine explicit and implicit fluxes
         if (binit) then
-          call lalg_copyVector(p_flux, p_flux0)
+          call lalg_copyVector(p_Dflux, p_Dflux0)
         elseif (1-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_flux0, p_flux, 1-theta, theta)
+              p_Dflux0, p_Dflux, 1-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
-          call lalg_scaleVector(p_flux, theta)
+          call lalg_scaleVector(p_Dflux, theta)
         else
-          call lalg_clearVector(p_flux)
+          call lalg_clearVector(p_Dflux)
         end if
 
       end if
@@ -5591,9 +5591,9 @@ contains
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
         ! The initial flux without contribution of the 
         ! consistent mass matrix is stored at position 4
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
-        call lalg_copyVector(p_flux, p_flux0)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
@@ -5607,7 +5607,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! The linearised flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       
       ! Do we have to use the consistent mass matrix?
       if (present(rconsistentMassMatrix)) then
@@ -5631,17 +5631,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_Cy, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
 
           case (NDIM3D)
             call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
           end select
           
         case DEFAULT
@@ -5668,17 +5668,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_u2, dscale, p_flux)
+                p_DcoeffX, p_Dx2, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             
           case (NDIM3D)
             call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
           end select
           
         case DEFAULT
@@ -5706,21 +5706,22 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, alpha, flux1, flux2)
+    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux1
-      real(DP), dimension(:), intent(in) :: alpha
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
+      real(DP), dimension(:), intent(in) :: Dalpha
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NVAR, NEDGE
 
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux2
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux2
 
       ! local variables
       integer :: iedge
 
       !$omp parallel do
       do iedge = 1, NEDGE
-        flux2(:,iedge) = flux2(:,iedge) + dscale*alpha(iedge)*flux1(:,iedge)
+        Dflux2(:,iedge) = Dflux2(:,iedge) +&
+            dscale * Dalpha(iedge) * Dflux1(:,iedge)
       end do
       !$omp end parallel do
 
@@ -5732,15 +5733,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -5757,12 +5758,12 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(i,:), u1(j,:), u2(i,:), u2(j,:), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(i,:), Dx1(j,:), Dx2(i,:), Dx2(j,:), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_1D
 
@@ -5772,15 +5773,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, Cy, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, DcoeffY, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -5797,13 +5798,13 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(i,:), u1(j,:), u2(i,:), u2(j,:), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(i,:), Dx1(j,:), Dx2(i,:), Dx2(j,:), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_2D
     
@@ -5813,15 +5814,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, Cy, Cz, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, DcoeffY, DcoeffZ, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -5838,14 +5839,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(i,:), u1(j,:), u2(i,:), u2(j,:), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(i,:), Dx1(j,:), Dx2(i,:), Dx2(j,:), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_3D
 
@@ -5855,15 +5856,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -5880,12 +5881,12 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(i,:), u(j,:), u(i,:), u(j,:), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(i,:), Dx(j,:), Dx(i,:), Dx(j,:), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_1D
 
@@ -5895,15 +5896,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -5920,13 +5921,13 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(i,:), u(j,:), u(i,:), u(j,:), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(i,:), Dx(j,:), Dx(i,:), Dx(j,:), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_2D
 
@@ -5936,15 +5937,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dflux)
       
-      real(DP), dimension(NEQ,NVAR), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -5961,14 +5962,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(i,:), u(j,:), u(i,:), u(j,:), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(i,:), Dx(j,:), Dx(i,:), Dx(j,:), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_3D
     
@@ -5979,7 +5980,7 @@ contains
 !<subroutine>
   
   subroutine gfsys_buildFluxFCTScalar(rlumpedMassMatrix,&
-      RcoeffMatrices, rafcstab, ru1, ru2, fcb_calcFluxFCT,&
+      RcoeffMatrices, rafcstab, rx1, rx2, fcb_calcFluxFCT,&
       theta, tstep, dscale, binit, rconsistentMassMatrix)
 
 !<description>
@@ -5997,7 +5998,7 @@ contains
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
     ! solution vector
-    type(t_vectorScalar), intent(in) :: ru1, ru2
+    type(t_vectorScalar), intent(in) :: rx1, rx2
 
     ! implicitness parameter
     real(DP), intent(in) :: theta
@@ -6027,8 +6028,8 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_Cx,p_Cy,p_Cz
-    real(DP), dimension(:), pointer :: p_u1,p_u2,p_flux0,p_flux,p_alpha
+    real(DP), dimension(:), pointer :: p_ML,p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
+    real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dflux0,p_Dflux,p_Dalpha
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
@@ -6046,8 +6047,8 @@ contains
     end if
 
     ! Set pointers
-    call lsyssc_getbase_double(ru1, p_u1)
-    call lsyssc_getbase_double(ru2, p_u2)
+    call lsyssc_getbase_double(rx1, p_Dx1)
+    call lsyssc_getbase_double(rx2, p_Dx2)
     call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
@@ -6055,16 +6056,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
       
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_Cx)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_Cy)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_Cz)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
       
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -6092,11 +6093,11 @@ contains
       !-------------------------------------------------------------------------
       
       ! The current flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
 
       ! The initial flux (including the iterative correction for
       ! the iterative FEM-FCT algorithm) is stored at position 3
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_Dflux0)
   
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
@@ -6118,11 +6119,11 @@ contains
         end if
 
         ! Set pointer
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
 
         ! Subtract amount of rejected antidiffusion
         call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE,&
-            -1.0_DP, p_alpha, p_flux, p_flux0)
+            -1.0_DP, p_Dalpha, p_Dflux, p_Dflux0)
       end if
       
       ! Do we have to use the consistent mass matrix?
@@ -6148,51 +6149,51 @@ contains
             if (binit) then
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
             
           case (NDIM2D)
             if (binit) then
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
             
           case (NDIM3D)
             if (binit) then
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2,&
-                  -dscale/tstep, (1-theta)*dscale, p_flux0)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
+                  -dscale/tstep, (1-theta)*dscale, p_Dflux0)
               call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                  p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
             else
               call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                   rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                  p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2,&
-                  dscale/tstep, theta*dscale, p_flux)
-              call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+                  p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2,&
+                  dscale/tstep, theta*dscale, p_Dflux)
+              call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
             end if
           end select
           
@@ -6220,17 +6221,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_u2, dscale, p_flux)
+                p_DcoeffX, p_Dx2, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             
           case (NDIM3D)
             call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
           end select
           
         case DEFAULT
@@ -6241,14 +6242,14 @@ contains
 
         ! Combine explicit and implicit fluxes
         if (binit) then
-          call lalg_copyVector(p_flux, p_flux0)
+          call lalg_copyVector(p_Dflux, p_Dflux0)
         elseif (1-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_flux0, p_flux, 1-theta, theta)
+              p_Dflux0, p_Dflux, 1-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
-          call lalg_scaleVector(p_flux, theta)
+          call lalg_scaleVector(p_Dflux, theta)
         else
-          call lalg_clearVector(p_flux)
+          call lalg_clearVector(p_Dflux)
         end if
         
       end if
@@ -6258,9 +6259,9 @@ contains
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
         ! The initial flux without contribution of the 
         ! consistent mass matrix is stored at position 4
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
-        call lalg_copyVector(p_flux, p_flux0)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
       ! Set specifiers for raw antidiffusive fluxes
@@ -6274,7 +6275,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! The linearised flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       
       ! Do we have to use the consistent mass matrix?
       if (present(rconsistentMassMatrix)) then
@@ -6298,17 +6299,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79ConsMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79ConsMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_Cy, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_DcoeffY, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
 
           case (NDIM3D)
             call doFluxesMat79ConsMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_MC, p_Cx, p_Cy, p_Cz, p_u1, p_u2, dscale, dscale, p_flux)
+                p_MC, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx1, p_Dx2, dscale, dscale, p_Dflux)
           end select
           
         case DEFAULT
@@ -6335,17 +6336,17 @@ contains
           case (NDIM1D)
             call doFluxesMat79NoMass_1D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_u2, dscale, p_flux)
+                p_DcoeffX, p_Dx2, dscale, p_Dflux)
             
           case (NDIM2D)
             call doFluxesMat79NoMass_2D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_Dx2, dscale, p_Dflux)
             
           case (NDIM3D)
             call doFluxesMat79NoMass_3D(p_IverticesAtEdge,&
                 rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-                p_Cx, p_Cy, p_Cz, p_u2, dscale, p_flux)
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx2, dscale, p_Dflux)
           end select
           
         case DEFAULT
@@ -6373,21 +6374,22 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, alpha, flux1, flux2)
+    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux1
-      real(DP), dimension(:), intent(in) :: alpha
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
+      real(DP), dimension(:), intent(in) :: Dalpha
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NVAR, NEDGE
 
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux2
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux2
 
       ! local variables
       integer :: iedge
 
       !$omp parallel do
       do iedge = 1, NEDGE
-        flux2(:,iedge) = flux2(:,iedge) + dscale*alpha(iedge)*flux1(:,iedge)
+        Dflux2(:,iedge) = Dflux2(:,iedge) +&
+            dscale * Dalpha(iedge) * Dflux1(:,iedge)
       end do
       !$omp end parallel do
 
@@ -6399,15 +6401,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -6424,12 +6426,12 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(:,i), u1(:,j), u2(:,i), u2(:,j), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(:,i), Dx1(:,j), Dx2(:,i), Dx2(:,j), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_1D
 
@@ -6439,15 +6441,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, Cy, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, DcoeffY, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -6464,13 +6466,13 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(:,i), u1(:,j), u2(:,i), u2(:,j), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(:,i), Dx1(:,j), Dx2(:,i), Dx2(:,j), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_2D
     
@@ -6480,15 +6482,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79ConsMass_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, MC, Cx, Cy, Cz, u1, u2, dscale1, dscale2, flux)
+        NEDGE, NEQ, NVAR, MC, DcoeffX, DcoeffY, DcoeffZ, Dx1, Dx2, dscale1, dscale2, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u1,u2
-      real(DP), dimension(:), intent(in) :: MC,Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx1,Dx2
+      real(DP), dimension(:), intent(in) :: MC,DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale1,dscale2
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -6505,14 +6507,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u1(:,i), u1(:,j), u2(:,i), u2(:,j), C_ij, C_ji,&
-            i, j, dscale1*MC(ij), dscale2, flux(:,iedge))
+            Dx1(:,i), Dx1(:,j), Dx2(:,i), Dx2(:,j), C_ij, C_ji,&
+            i, j, dscale1*MC(ij), dscale2, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79ConsMass_3D
 
@@ -6522,15 +6524,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_1D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM1D) :: C_ij,C_ji
@@ -6547,12 +6549,12 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(:,i), u(:,j), u(:,i), u(:,j), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(:,i), Dx(:,j), Dx(:,i), Dx(:,j), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_1D
 
@@ -6562,15 +6564,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_2D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM2D) :: C_ij,C_ji
@@ -6587,13 +6589,13 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(:,i), u(:,j), u(:,i), u(:,j), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(:,i), Dx(:,j), Dx(:,i), Dx(:,j), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_2D
 
@@ -6603,15 +6605,15 @@ contains
     ! All matrices are stored in matrix format 7 and 9
 
     subroutine doFluxesMat79NoMass_3D(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Cx, Cy, Cz, u, dscale, flux)
+        NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dflux)
       
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(:), intent(in) :: Cx,Cy,Cz
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEDGE), intent(out) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
 
       ! local variables
       real(DP), dimension(NDIM3D) :: C_ij,C_ji
@@ -6628,14 +6630,14 @@ contains
         ji = IverticesAtEdge(4, iedge)
         
         ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        C_ij(3) = Cz(ij); C_ji(3) = Cz(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute the raw antidiffusives fluxes
         call fcb_calcFluxFCT(&
-            u(:,i), u(:,j), u(:,i), u(:,j), C_ij, C_ji,&
-            i, j, 0.0_DP, dscale, flux(:,iedge))
+            Dx(:,i), Dx(:,j), Dx(:,i), Dx(:,j), C_ij, C_ji,&
+            i, j, 0.0_DP, dscale, Dflux(:,iedge))
       end do
     end subroutine doFluxesMat79NoMass_3D
 
