@@ -56,7 +56,7 @@ idissipationtype = 1
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 0
+isystemcoupling = 1
 
 # type of preconditioner
 # 0 = Galerkin scheme
@@ -71,7 +71,7 @@ isystemPrecond = 1
 # 2 = density, energy
 # 3 = density, pressure, velocity
 # 4 = density, pressure
-itransformationtype = 1
+itransformationtype = 0
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -154,7 +154,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 11
 
 
 ################################################################################
@@ -265,10 +265,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -599,7 +599,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 5
+isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
