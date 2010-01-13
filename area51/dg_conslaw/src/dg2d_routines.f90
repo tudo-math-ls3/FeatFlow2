@@ -20,6 +20,7 @@ module dg2d_routines
     use collection
     use linearformevaluation
     use domainintegration
+    use linearsystemscalar
     
 
     implicit none
@@ -176,7 +177,7 @@ contains
       call linf_initAssembly(rvectorAssembly(2), rform,&
             rvectorScalar%p_rspatialDiscr%RelementDistr(1)%celement,&
             ccubType, LINF_NELEMSIM)
-       
+            
       ! Assemble the data for all elements in this element distribution
       call linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
             rvectorScalar, rvectorScalarSol,&
@@ -328,7 +329,7 @@ contains
 
     ! A small vector holding only the additive contributions of
     ! one element
-    real(DP), dimension(EL_MAXNBAS) :: DlocalData
+    real(DP), dimension(2,EL_MAXNBAS) :: DlocalData
   
     ! Arrays for cubature points 1D->2D
     real(DP), dimension(CUB_MAXCUBP, NDIM3D) :: Dxi1D
@@ -350,6 +351,12 @@ contains
     
     ! Array for the solution values in the cubature points
     real(DP), dimension(:,:,:), allocatable :: DsolVals
+    
+    ! Array for the length of the edges
+    real(DP), dimension(:), allocatable :: edgelength
+         
+    ! Array for the normal vectors
+    real(DP), dimension(:,:), allocatable :: normal
   
   
     ! Get pointers to elements at edge
@@ -373,8 +380,14 @@ contains
     ncubp = rvectorAssembly(1)%ncubp
     
     ! Allocate space for the solution values in the cubature points
-    allocate(DsolVals(ncubp,2,size(IedgeList)))
+    allocate(DsolVals(ncubp,2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
 
+    ! Allocate space for normal vectors
+    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+    
+    ! Allocate space for edge length
+    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+    
     ! Copy the assembly data to the local assembly data,
     ! where we can allocate memory.
     ! For single processor machines, this is actually boring and nonsense.
@@ -384,6 +397,7 @@ contains
     ! stucture or disturbing the data of the other processors.
     rlocalVectorAssembly(1) = rvectorAssembly(1)
     rlocalVectorAssembly(2) = rvectorAssembly(2)
+    
     call linf_allocAssemblyData(rlocalVectorAssembly(1))
     call linf_allocAssemblyData(rlocalVectorAssembly(2))
     
@@ -403,7 +417,7 @@ contains
         Dxi1D(icubp,k) = rlocalVectorAssembly(1)%p_DcubPtsRef(k,icubp)
       end do
     end do
-
+ 
     ! Allocate memory for the cubature points in 2D.
     allocate(Dxi2D(ncubp,NDIM2D+1,2,rlocalVectorAssembly(1)%nelementsPerBlock))
 
@@ -437,14 +451,14 @@ contains
         call trafo_mapCubPts1Dto2D(icoordSystem, IlocalEdgeNumber(2,IELset+iel-1), &
             ncubp, Dxi1D, Dxi2D(:,:,2,iel))    
       end do
-      
+     
       ! Transpose the coordinate array such that we get coordinates we
       ! can work with.
       do iel = 1,IELmax-IELset+1
         do iside = 1,2
           do icubp = 1,ncubp
             do k = 1,ubound(DpointsRef,1)
-              DpointsRef(k,icubp,1,iel) = Dxi2D(icubp,k,iside,iel)
+              DpointsRef(k,icubp,iside,iel) = Dxi2D(icubp,k,iside,iel)
             end do
           end do
         end do
@@ -479,7 +493,7 @@ contains
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
           IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%p_Idofs)
       call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
-          IelementList(2,IELset:IELmax), rlocalVectorAssembly(2)%p_Idofs)
+          IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%p_Idofs)
                                    
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
       
@@ -520,37 +534,31 @@ contains
           rlocalVectorAssembly(2)%p_Dbas)
           
           
-          
-          
-          
-          
+         
       ! ********** Get solution values in the cubature points *************
       call lsyssc_getbase_double(rvectorSol,p_DdataSol)
     
       ! Now that we have the basis functions, we want to have the function values.
       ! We get them by multiplying the FE-coefficients with the values of the
       ! basis functions and summing up.
-      do iel = 1,IELmax-IELset+1
+      do iel = 1,IELmax-IELset+1      
         do icubp = 1,ncubp
           ! Calculate the value in the point
           dval1 = 0.0_DP
           dval2 = 0.0_DP
           do idofe = 1,indof
             dval1 = dval1 + &
-                   p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,IELset+iel-1)) &
-                   * rlocalVectorAssembly(1)%p_Dbas(idofe,DER_FUNC,icubp,IELset+iel-1)
+                   p_DdataSol(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) &
+                   * rlocalVectorAssembly(1)%p_Dbas(idofe,DER_FUNC,icubp,iel)
             dval2 = dval2 + &
-                   p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,IELset+iel-1)) &
-                   * rlocalVectorAssembly(2)%p_Dbas(idofe,DER_FUNC,icubp,IELset+iel-1)
+                   p_DdataSol(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) &
+                   * rlocalVectorAssembly(2)%p_Dbas(idofe,DER_FUNC,icubp,iel)
           end do
           ! Save the value in the point
           DsolVals(icubp,1,iel) = dval1
           DsolVals(icubp,2,iel) = dval2
         end do
       end do
-      
-      
-      write(*,*) DsolVals(:,1,1)
       
 
 
@@ -574,99 +582,143 @@ contains
 !!      else
 !!        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
 !!      end if
-!      
-!      
-!      ! --------------------- DOF COMBINATION PHASE ------------------------
-!      
-!      ! Values of all basis functions calculated. Now we can start 
-!      ! to integrate!
-!      !
-!      ! Loop through elements in the set and for each element,
-!      ! loop through the DOF`s and cubature points to calculate the
-!      ! integral:
-!
-!      do iel = 1,IELmax-IELset+1
-!        
-!        ! We make a 'local' approach, i.e. we calculate the values of the
-!        ! integral into the vector DlocalData and add them later into
-!        ! the large solution vector.
-!        
-!        ! Clear the output vector.
-!        DlocalData(1:indof) = 0.0_DP
-!
-!        ! Get the length of the edge. Let us use the parameter values
-!        ! on the boundary for that purpose; this is a more general
-!        ! implementation than using simple lines as it will later 
-!        ! support isoparametric elements.
-!        !
-!        ! The length of the current edge serves as a "determinant"
-!        ! in the cubature, so we have to divide it by 2 as an edge on 
-!        ! the unit interval [-1,1] has length 2.
-!        dlen = 0.5_DP*(DedgePosition(2,IELset+iel-1)-DedgePosition(1,IELset+iel-1))
-!
-!        ! Loop over all cubature points on the current element
-!        do icubp = 1, ncubp
-!
-!          ! Calculate the current weighting factor in the cubature
-!          ! formula in that cubature point.
-!
-!          domega = dlen * p_Domega(icubp)
-!          
-!          ! Loop over the additive factors in the bilinear form.
-!          do ialbet = 1,rlocalVectorAssembly%rform%itermcount
-!          
-!            ! Get from Idescriptors the type of the derivatives for the 
-!            ! test and trial functions. The summand we calculate
-!            ! here will be:
-!            !
-!            ! int_...  f * ( phi_i )_IA
-!            !
-!            ! -> IA=0: function value, 
-!            !      =1: first derivative, 
-!            !      =2: 2nd derivative,...
-!            !    as defined in the module 'derivative'.
-!            
-!            ia = p_Idescriptors(ialbet)
-!            
-!            ! Multiply domega with the coefficient of the form.
-!            ! This gives the actual value to multiply the
-!            ! function value with before summing up to the integral.
-!            ! Get the precalculated coefficient from the coefficient array.
-!            daux = domega * p_Dcoefficients(ialbet,icubp,iel)
-!          
-!            ! Now loop through all possible combinations of DOF`s
-!            ! in the current cubature point. 
-!
-!            do idofe = 1,indof
-!              
-!              ! Get the value of the basis function 
-!              ! phi_o in the cubature point. 
-!              ! Them multiply:
-!              !    DBAS(..) * AUX
-!              ! ~= phi_i * coefficient * cub.weight
-!              ! Summing this up gives the integral, so the contribution
-!              ! to the vector. 
-!              !
-!              ! Simply summing up DBAS(..) * AUX would give
-!              ! the additive contribution for the vector. We save this
-!              ! contribution in the local array.
-!              
-!              DlocalData(idofe) = DlocalData(idofe)+p_Dbas(idofe,ia,icubp,iel)*daux
-!              
-!            end do ! idofe
-!            
-!          end do ! ialbet
-!
-!        end do ! icubp 
-!        
-!        ! Incorporate the local vector into the global one.
-!        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
-!        ! the IdofsTest array.
-!        do idofe = 1,indof
-!          p_Ddata(p_Idofs(idofe,iel)) = p_Ddata(p_Idofs(idofe,iel)) + DlocalData(idofe)
-!        end do
-!
-!      end do ! iel
+      
+      
+      
+      
+     ! --------------------- Get normal vectors ---------------------------
+     
+     do iel = 1,IELmax-IELset+1    
+       ! Calculate the length of the edge 
+       dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
+       dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
+       dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
+       dyl2=p_DvertexCoords(2,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
+       edgelength(iel)=sqrt((dxl1-dxl2)*(dxl1-dxl2)+(dyl1-dyl2)*(dyl1-dyl2))
+         
+       ! Calculate the normal vector to the element at this edge
+       normal(1,iel) = (dyl2-dyl1)/edgelength(iel)
+       normal(2,iel) = (dxl1-dxl2)/edgelength(iel)
+     end do
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      ! --------------------- DOF COMBINATION PHASE ------------------------
+      
+      ! Values of all basis functions calculated. Now we can start 
+      ! to integrate!
+      !
+      ! Loop through elements in the set and for each element,
+      ! loop through the DOF`s and cubature points to calculate the
+      ! integral:
+
+      do iel = 1,IELmax-IELset+1
+        
+        ! We make a 'local' approach, i.e. we calculate the values of the
+        ! integral into the vector DlocalData and add them later into
+        ! the large solution vector.
+        
+        ! Clear the output vector.
+        DlocalData(1:2,1:indof) = 0.0_DP
+
+        ! Get the length of the edge. Let us use the parameter values
+        ! on the boundary for that purpose; this is a more general
+        ! implementation than using simple lines as it will later 
+        ! support isoparametric elements.
+        !
+        ! The length of the current edge serves as a "determinant"
+        ! in the cubature, so we have to divide it by 2 as an edge on 
+        ! the unit interval [-1,1] has length 2.
+        dlen = 0.5_DP*edgelength(iel)
+
+        ! Loop over all cubature points on the current element
+        do icubp = 1, ncubp
+
+          ! Calculate the current weighting factor in the cubature
+          ! formula in that cubature point.
+
+          domega = dlen * p_Domega(icubp)
+          
+          ! Loop over the additive factors in the bilinear form.
+          do ialbet = 1,rlocalVectorAssembly%rform%itermcount
+          
+            ! Get from Idescriptors the type of the derivatives for the 
+            ! test and trial functions. The summand we calculate
+            ! here will be:
+            !
+            ! int_...  f * ( phi_i )_IA
+            !
+            ! -> IA=0: function value, 
+            !      =1: first derivative, 
+            !      =2: 2nd derivative,...
+            !    as defined in the module 'derivative'.
+            
+            ia = p_Idescriptors(ialbet)
+            
+            ! Multiply domega with the coefficient of the form.
+            ! This gives the actual value to multiply the
+            ! function value with before summing up to the integral.
+            ! Get the precalculated coefficient from the coefficient array.
+            daux1 = domega * p_Dcoefficients(ialbet,icubp,iel)
+            daux2 = domega * p_Dcoefficients(ialbet,ncubp-icubp+1,iel)
+          
+            ! Now loop through all possible combinations of DOF`s
+            ! in the current cubature point. 
+
+            do idofe = 1,indof
+              
+              ! Get the value of the basis function 
+              ! phi_o in the cubature point. 
+              ! Them multiply:
+              !    DBAS(..) * AUX
+              ! ~= phi_i * coefficient * cub.weight
+              ! Summing this up gives the integral, so the contribution
+              ! to the vector. 
+              !
+              ! Simply summing up DBAS(..) * AUX would give
+              ! the additive contribution for the vector. We save this
+              ! contribution in the local array.
+              
+              DlocalData(1,idofe) = DlocalData(1,idofe)+&
+                                    rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux1
+              DlocalData(2,idofe) = DlocalData(2,idofe)+&
+                                    rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
+              
+            end do ! idofe
+            
+          end do ! ialbet
+
+        end do ! icubp 
+        
+        ! Incorporate the local vector into the global one.
+        ! The 'local' DOF 1..indofTest is mapped to the global DOF using
+        ! the IdofsTest array.
+        do idofe = 1,indof
+          p_Ddata(rlocalVectorAssembly(1)%p_Dbas(idofe,iel)) =&
+                       p_Ddata(rlocalVectorAssembly(1)%p_Dbas(idofe,iel)) +&
+                       DlocalData(1,idofe)
+          p_Ddata(rlocalVectorAssembly(2)%p_Dbas(idofe,iel)) =&
+                       p_Ddata(rlocalVectorAssembly(2)%p_Dbas(idofe,iel)) +&
+                       DlocalData(2,idofe)
+        end do
+
+      end do ! iel
+
+
+
+
+
+
+
+
+
+
 
     end do ! IELset
     
@@ -675,7 +727,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly(2))
 
     ! Deallocate memory
-    deallocate(Dxi2D, DpointsRef,IelementList,DsolVals)
+    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal)
 
   end subroutine
 

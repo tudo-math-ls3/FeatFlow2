@@ -89,7 +89,7 @@ contains
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
     type(t_matrixScalar) :: rmatrix
-    type(t_vectorScalar) :: rrhs
+    type(t_vectorScalar) :: rrhs,rsol
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
@@ -129,7 +129,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 2
+    NLMAX = 1
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -160,7 +160,7 @@ contains
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   EL_DG_T1_2D,CUB_G3X3,rtriangulation, rboundary)
+                                   EL_DG_T2_2D,CUB_G3X3,rtriangulation, rboundary)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -239,11 +239,24 @@ contains
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                  rlinform,.true.,rrhs,coeff_RHS_2D)
                                  
+
+    ! component in a block vector.
+    call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
+                                 rlinform,.true.,rsol,coeff_RHS_2D)
                                  
+    
+    ! ********** Get solution values in the cubature points *************
+    call lsyssc_getbase_double(rsol,p_Ddata)
+    p_Ddata(1)=1.0_DP
+    p_Ddata(2)=0.0_DP
+    p_Ddata(3)=0.0_DP
+    p_Ddata(4)=0.0_DP
+    p_Ddata(5)=0.0_DP
+    p_Ddata(6)=0.0_DP
                                  
     ! Test the new DG edgebased routine                                 
     call linf_dg_buildVectorScalarEdge2d (rlinform, CUB_G3_1D, .true.,&
-                                              rrhs,rrhs)
+                                              rrhs,rsol)
                                  
 !    
 !    ! The linear solver only works for block matrices/vectors - but above,
