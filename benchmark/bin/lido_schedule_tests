@@ -12,6 +12,7 @@ EMAILADDRESS=
 GNUMAKE=
 JOBFILEPREFIX="feat2job"
 MODULESLOADED=
+OVERWRITE_LOG_DIRECTORY=
 NTASKS=
 WALLCLOCKLIMIT="00:40:00"
 case "`hostname -f`" in
@@ -525,7 +526,7 @@ EOF
     # a given test, but unlike in the GNUmakefile call it with additional command
     # line parameters instructing it to not write to screen, but to append
     # directly to the temporary files just created.
-    export MPI ID;
+    export ID MPI OVERWRITE_LOG_DIRECTORY;
     include/create_script.pl --append-to-files "_tmp_.$BENCHMARKRUNSCRIPT." $tmpfile
     rm $tmpfile
     trap "rm -f _tmp_.$BENCHMARKRUNSCRIPT.*; exit 15" 2 3 9

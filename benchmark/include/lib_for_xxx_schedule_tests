@@ -37,28 +37,32 @@ job file for every test ID, takes care of including instructions to
 load the very same modules at run time as are currently loaded and 
 submits the job file to the scheduler.
 
+  --afterjob <jobid>, -a <jobid>
+      Optional parameter. If specified, the new job(s) is/are executed
+      after the job <jobid> is finished. This allows sequential execution
+      of jobs that are manually added to the queue system.
+  --email <email address>, -m <email address>
+      Optional parameter that allows to specify an email address where
+      a notification email is sent after completition of the job.
+      Default: $EMAILADDRESS
+  --help, -h
+      prints this usage statement
+  --overwrite-log-directory, -o
+      In case a benchmark test ID's log directory does already exist, don't
+      rename it to save its content, but re-use it. Potentially overwrites
+      previously calculated data.
   --prefix <jobfile prefix>, -p <jobfile prefix>
       Optional prefix for job files. In particular used by nightly
       regression test to identify jobs compiled with different compilers.
       Based on this prefix, it can be automatically detected from 'qsub'
       output when all benchmark jobs (using the same compiler) are finished.
       Default: $JOBFILEPREFIX
-  --email <email address>, -m <email address>
-      Optional parameter that allows to specify an email address where
-      a notification email is sent after completition of the job.
-      Default: $EMAILADDRESS
   --wallclocklimit <email address>, -w <email address>
       Optional parameter that allows to specify the maximum allowed
       wallclock time the job may use; the cluster environment usually
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
-  --afterjob <jobid>, -a <jobid>
-      Optional parameter. If specified, the new job(s) is/are executed
-      after the job <jobid> is finished. This allows sequential execution
-      of jobs that are manually added to the queue system.
-  --help, -h
-      prints this usage statement
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -86,14 +90,8 @@ fb_readargs() {
     while test -n "$*"
     do
       case "$1" in
-	  --help|-h*)    # help screen
-	      fb_usage
-	      exit
-	      ;;
-
-
-	  --prefix|-p*)  # jobfile prefix
-	      JOBFILEPREFIX="$2"
+	  --afterjob|-a*)  # job after completition of another job
+	      AFTERJOB="$2"
 	      shift
 	      shift
 	      ;;
@@ -104,14 +102,24 @@ fb_readargs() {
 	      shift
 	      ;;
 
-	  --wallclocklimit|-w*)  # wallclock time address
-	      WALLCLOCKLIMIT="$2"
+	  --help|-h*)    # help screen
+	      fb_usage
+	      exit
+	      ;;
+
+	  --overwrite-log-director*|-o)    # help screen
+	      OVERWRITE_LOG_DIRECTORY=1
+	      shift
+	      ;;
+
+	  --prefix|-p*)  # jobfile prefix
+	      JOBFILEPREFIX="$2"
 	      shift
 	      shift
 	      ;;
 
-	  --afterjob|-a*)  # job after completition of another job
-	      AFTERJOB="$2"
+	  --wallclocklimit|-w*)  # wallclock time address
+	      WALLCLOCKLIMIT="$2"
 	      shift
 	      shift
 	      ;;
