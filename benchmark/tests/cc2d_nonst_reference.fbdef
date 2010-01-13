@@ -283,9 +283,23 @@ testid   = CC2D_NONST2REF1_6
 descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
 mglevels = 6
 
+
+# This test continues CC2D_NONST2REF1_6 in case the test stopped due to
+# an overlong calculation
+testid   = CC2D_NONST2REF1_6_CONT
+descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
+mglevels = 6
+DISCRETISATION_CTYPEINITIALSOLUTION = 1
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST2REF1_6/solution'
+TIMEDISCRETISATION_DTIMEMIN = 7.3
+
+
 testid   = CC2D_NONST2REF1_2_TARGET
 descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
 mglevels = 2
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+TIMEDISCRETISATION_DTIMEMIN = 0.0
 POSTPROCESSING_IOUTPUTFILM=1
 POSTPROCESSING_SFILENAMEFILM='./ns/cc2d_nonst2ref1_%{CC-DISCRETISATION.NLMAX}_target/solution'
 TIMEDISCRETISATION_DTIMESTEP = 0.00625

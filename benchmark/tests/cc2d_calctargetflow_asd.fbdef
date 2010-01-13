@@ -62,6 +62,7 @@ MINLEVEL=1
 #
 # Degree of nonstationarity: Re=5
 #
+# Space discretisation: Q2
 # Time discretisation: CN
 ############################
 
@@ -334,6 +335,7 @@ mglevels = 8
 #
 # Degree of nonstationarity: Re=5
 #
+# Space discretisation: Q2
 # Time discretisation: Impl. Euler
 ############################
 
@@ -590,6 +592,7 @@ mglevels = 8
 #
 # Degree of nonstationarity: Re=5
 #
+# Space discretisation: Q1~
 # Time discretisation: CN
 ############################
 
@@ -845,6 +848,7 @@ mglevels = 8
 #
 # Degree of nonstationarity: Re=5
 #
+# Space discretisation: Q1~
 # Time discretisation: Euler
 ############################
 

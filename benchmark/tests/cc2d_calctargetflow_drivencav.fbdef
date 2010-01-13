@@ -1,0 +1,2115 @@
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+# This definition file collects a couple of flow calculations
+# for flows which are used as target flows for distributed
+# optimal control.
+#
+# The following test sets are realised:
+#
+######################################
+# Driven Cavity.
+#
+# TARGETFLOW_DC_Q2_ST_0
+# -> Stokes, Q2, CN
+#
+# TARGETFLOW_DC_Q2_ST_1
+# -> Stokes, Q2, Euler
+#
+# TARGETFLOW_DC_Q1T_ST_0
+# -> Stokes, Q1~, CN
+#
+# TARGETFLOW_DC_Q1T_ST_1
+# -> Stokes, Q1~, Euler
+#
+# TARGETFLOW_DC_Q2_NST_0
+# -> Navier-Stokes, Q2, CN
+#
+# TARGETFLOW_DC_Q2_NST_1
+# -> Navier-Stokes, Q2, Euler
+#
+# TARGETFLOW_DC_Q1T_NST_0
+# -> Navier-Stokes, Q1~, CN
+#
+# TARGETFLOW_DC_Q1T_NST_1
+# -> Navier-Stokes, Q1~, Euler
+######################################
+#
+# These flows define target flows for optimal control
+# tests.
+#
+# The target flows are generated according to:
+#
+# [Hinze, Kunisch; Second Order Methods for Optimal Control
+#  of Time-Dependent Fluid Flow]
+#
+######################################
+
+appl = cc2d
+class = DEFAULT
+
+# Default settings, all defined parameters.
+
+DISCRETISATION_IEQUATION = 0
+DISCRETISATION_RE = 1000
+DISCRETISATION_IELEMENTTYPE = 3
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 1.0
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 0
+TIMEDISCRETISATION_NITERATIONS = 10000
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 1.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+NONLINEAR_ITYPEPRECONDITIONING = 1
+NONLINEAR_DEPSD=1E-12
+NONLINEAR_DEPSDIV=1E-12
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+SMOOTHER_DOMEGA = 1.0
+POSTPROCESSING_IOUTPUTUCD = 3
+POSTPROCESSING_SFILENAMEUCD = '%{spostdirectory}/u_lv%{CC-DISCRETISATION.NLMAX}.vtk'
+POSTPROCESSING_DTIMEDIFFERENCEUCD = 0.0
+POSTPROCESSING_IWRITEBODYFORCES = 0
+POSTPROCESSING_DBDFORCESCOEFF1 = 1.0
+POSTPROCESSING_DBDFORCESCOEFF2 = 1.0
+BDR_PARPROFILEMAX = 0.3
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_IINITIALSOLUTIONLEVEL = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = ''
+DISCRETISATION_IELEMENTTYPEINITIALSOLUTION = -1
+DISCRETISATION_CWRITEFINALSOLUTION=1
+POSTPROCESSING_SWRITESOLUTIONFILENAME = '%{spostdirectory}/solution_lv%{CC-DISCRETISATION.NLMAX}'
+POSTPROCESSING_IBODYFORCESFORMULATION=-1
+POSTPROCESSING_ICALCBODYFORCES=2
+POSTPROCESSING_IWRITEPOINTVALUES=1
+POSTPROCESSING_SFILENAMEPOINTVALUES = '%{spostdirectory}/pointvalues_lv%{CC-DISCRETISATION.NLMAX}'
+
+# Additional parameters:
+
+POSTPROCESSING_IOUTPUTFILM=0
+POSTPROCESSING_SFILENAMEFILM=''
+MULTIGRIDSOLVER_NMAXITERATIONS=20
+MULTIGRIDSOLVER_DEPSREL=1E-2
+MINLEVEL=1
+
+############################
+# Test TARGETFLOW_DC_Q2_ST_0
+#
+# A nonstationary Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q2
+# Time discretisation: CN
+############################
+
+TIMEDISCRETISATION_ITIMEDEPENDENCE = 1
+DISCRETISATION_RE = 0.0025
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.0
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+NONLINEAR_ITYPEPRECONDITIONING = 2
+SMOOTHER_DOMEGA = 0.7
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+POSTPROCESSING_IOUTPUTFILM=1
+POSTPROCESSING_SFILENAMEFILM='%{spostdirectory}/dc_stokes_q2_lv_%{CC-DISCRETISATION.NLMAX}_re250'
+TIMEDISCRETISATION_DTIMEMAX = 1.0
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_001
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+DISCRETISATION_IEQUATION = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_001_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_002
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_002_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_003
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_003_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_004
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_004_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_005
+#
+# Timestep = 0.0078125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_005_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+############################
+# Test TARGETFLOW_DC_Q2_ST_1
+#
+# A nonstationary Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q2
+# Time discretisation: Impl. Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+DISCRETISATION_IELEMENTTYPE = 4
+
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_101_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_102_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_103_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_104_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_ST_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_ST_105_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_DC_Q1T_ST_0
+#
+# A nonstationary Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q1~
+# Time discretisation: CN
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_001
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_001_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_002
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_002_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_003
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_003_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_004
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_004_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_005
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_005_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_DC_Q1T_ST_1
+#
+# A nonstationary Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q1~
+# Time discretisation: Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_101_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_102_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_103_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_104_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_ST_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_ST_105_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test TARGETFLOW_DC_Q2_NST_0
+#
+# A nonstationary Navier-Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q2
+# Time discretisation: CN
+############################
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_001
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+DISCRETISATION_IEQUATION = 0
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_001_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_002
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_002_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_003
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_003_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_004
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_004_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_005
+#
+# Timestep = 0.0078125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_005_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+############################
+# Test TARGETFLOW_DC_Q2_NST_1
+#
+# A nonstationary Navier-Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q2
+# Time discretisation: Impl. Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+DISCRETISATION_IELEMENTTYPE = 4
+
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_101_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_102_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_103_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_104_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q2_NST_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q2_NST_105_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_DC_Q1T_NST_0
+#
+# A nonstationary Navier-Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q1~
+# Time discretisation: CN
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_001
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
+TIMEDISCRETISATION_DTIMESTEPTHETA = 0.5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_001_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_002
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_002_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_003
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_003_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_004
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_004_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_005
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_005_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+
+
+
+############################
+# Test TARGETFLOW_DC_Q1T_NST_1
+#
+# A nonstationary Navier-Stokes flow in the Driven-Cavity
+# setting.
+#
+# Space discretisation: Q1~
+# Time discretisation: Euler
+############################
+
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_101
+#
+# Timestep = 0.125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.125
+DISCRETISATION_IELEMENTTYPE = 3
+TIMEDISCRETISATION_DTIMESTEPTHETA = 1.0
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_101_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_102
+#
+# Timestep = 0.0625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_102_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_103
+#
+# Timestep = 0.03125
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.03125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_103_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_104
+#
+# Timestep = 0.015625
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.015625
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_104_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
+
+############################
+# Test CC2D_TARGETFLOW_DC_Q1T_NST_105
+#
+# Timestep = 0.0078125
+# No movie output.
+############################
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV1
+descr    = DC-flow, Level 1
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.0078125
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV2
+descr    = DC-flow, Level 2
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 2
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV3
+descr    = DC-flow, Level 3
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 3
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV4
+descr    = DC-flow, Level 4
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 4
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV5
+descr    = DC-flow, Level 5
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 5
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV6
+descr    = DC-flow, Level 6
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 6
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV7
+descr    = DC-flow, Level 7
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 7
+
+testid   = CC2D_TARGETFLOW_DC_Q1T_NST_105_LV8
+descr    = DC-flow, Level 8
+datfile  = ./data/apps_cc2d/master_calctargetflow_dc.dat
+mglevels = 8
