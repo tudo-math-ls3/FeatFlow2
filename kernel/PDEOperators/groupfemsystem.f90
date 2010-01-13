@@ -4806,7 +4806,7 @@ contains
         NEDGE, NEQ, NVAR, u, flux, alpha, pp, pm)
       
       real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
@@ -4829,7 +4829,7 @@ contains
         j  = IverticesAtEdge(2, iedge)
         
         ! Prelimiting of antidiffusive fluxes
-        if (any(flux(:,iedge)*(u(:,j)-u(:,i)) .gt. SYS_EPSREAL))&
+        if (any(flux(:,iedge)*(u(:,j)-u(:,i)) .ge. 0.0_DP))&
             alpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
@@ -4885,8 +4885,8 @@ contains
             u(:,i), u(:,j), diff, U_ij, U_ji)
 
         ! Prelimiting of antidiffusive fluxes
-        if (any(F_ij*U_ij .gt. SYS_EPSREAL) .or.&
-            any(F_ji*U_ji .gt. SYS_EPSREAL))&
+        if (any(F_ij*U_ij .ge. 0.0_DP) .or.&
+            any(F_ji*U_ji .ge. 0.0_DP))&
             alpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
