@@ -65,6 +65,22 @@ isystemcoupling = 0
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 1
 
+# variables for flux correction
+# (i)  for synchronized flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+#slimitingvariable = density,pressure,velocity
+slimitingvariable = density,energy,momentum
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution

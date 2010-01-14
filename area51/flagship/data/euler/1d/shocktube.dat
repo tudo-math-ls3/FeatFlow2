@@ -65,13 +65,21 @@ isystemcoupling = 1
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 1
 
-# type of transformation for antidiffusive fluxes
-# 0 = no transformation (density, momentum, energy)
-# 1 = density
-# 2 = density, energy
-# 3 = density, pressure, velocity
-# 4 = density, pressure
-itransformationtype = 0
+# variables for flux correction
+# (i)  for synchronized flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+#slimitingvariable = density,pressure,velocity
+slimitingvariable = density,pressure,velocity
 
 # type of initial solution profile
 # 0 = zero initial solution
