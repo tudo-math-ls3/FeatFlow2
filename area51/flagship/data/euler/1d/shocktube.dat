@@ -154,7 +154,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 11
+istabilisation = 12
 
 
 ################################################################################
@@ -177,6 +177,12 @@ ucdsolution = out/shocktube
 # file for UCD output of error
 ucderror = out/shocktube_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
 
 ################################################################################
 [Timestepping]

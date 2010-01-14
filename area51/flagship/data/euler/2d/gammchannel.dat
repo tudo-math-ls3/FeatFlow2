@@ -177,6 +177,13 @@ ucdsolution = out/gammchannel
 # file for UCD output of error
 ucderror = out/gammchannel_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

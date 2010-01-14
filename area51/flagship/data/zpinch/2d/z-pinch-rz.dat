@@ -354,6 +354,13 @@ ucdsolution = out/zpinch_CN
 # file for UCD output of error
 ucderror = out/
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

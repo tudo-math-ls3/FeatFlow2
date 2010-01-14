@@ -178,6 +178,13 @@ ucdsolution = out/backward
 # file for UCD output of error
 ucderror = out/backward_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

@@ -173,6 +173,13 @@ ucdsolution = out/shockbubble
 # file for UCD output of error
 ucderror = out/shockbubble_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

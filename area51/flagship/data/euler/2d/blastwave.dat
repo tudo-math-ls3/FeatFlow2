@@ -175,6 +175,13 @@ ucdsolution = out/blastwave
 # file for UCD output of error
 ucderror = out/blastwave_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

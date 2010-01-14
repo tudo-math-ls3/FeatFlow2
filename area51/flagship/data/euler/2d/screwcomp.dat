@@ -173,6 +173,13 @@ ucdsolution = out/screwcomp
 # file for UCD output of error
 ucderror = out/screwcomp_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]

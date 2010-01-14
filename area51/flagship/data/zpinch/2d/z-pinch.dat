@@ -123,6 +123,14 @@ isystemcoupling = 0
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 3
 
+# type of transformation for antidiffusive fluxes
+# 0 = no transformation (density, momentum, energy)
+# 1 = density
+# 2 = density, energy
+# 3 = density, pressure, velocity
+# 4 = density, pressure
+itransformationtype = 0
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution
@@ -357,6 +365,13 @@ ucdimport =
 
 # file for UCD output of error
 ucderror = out/
+
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
 
 
 ################################################################################

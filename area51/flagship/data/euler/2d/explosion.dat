@@ -176,6 +176,13 @@ ucdsolution = out/explosion
 # file for UCD output of error
 ucderror = out/explosion_error
 
+# variables for ucd output
+ucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
+
 
 ################################################################################
 [Timestepping]
