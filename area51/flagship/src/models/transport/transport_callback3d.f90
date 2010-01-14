@@ -100,11 +100,11 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable3d')
       call sys_halt()
     end select
-    
+
   end subroutine transp_setVariable3d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvectionP3d(&
@@ -112,10 +112,10 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -143,7 +143,7 @@ contains
   end subroutine transp_calcMatGalConvectionP3d
 
     !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvectionP3d(&
@@ -151,11 +151,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -191,11 +191,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -219,7 +219,7 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-    
+
   end subroutine transp_calcMatGalConvectionD3d
 
   !*****************************************************************************
@@ -231,11 +231,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -259,7 +259,7 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-    
+
   end subroutine transp_calcMatUpwConvectionD3d
 
   !*****************************************************************************
@@ -305,11 +305,11 @@ contains
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback1d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. rcollection%IquickAccess(1)) then
@@ -327,7 +327,7 @@ contains
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       p_Dsolution(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&    
+          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&
                   p_Dsolution(rcollection%IquickAccess(3)))
 
       ! Call the general callback function
@@ -350,7 +350,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
-    
+
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from solution
       if (rcollection%IquickAccess(2) .ne. 0) then
@@ -368,7 +368,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
     end select
-    
+
   end subroutine transp_hadaptCallback3d
 
 end module transport_callback3d

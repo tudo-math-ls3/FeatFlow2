@@ -1,8 +1,8 @@
 ! -*- mode: f90; -*-
 
   ! This file describes the interfaces of the callback routines of the
-  ! boundary treatment routines.  
-  
+  ! boundary treatment routines.
+
   ! ***************************************************************************
 
   interface

@@ -94,19 +94,19 @@
 !#         adopting the Rusanov artificial viscosities
 !#
 !# 23.) euler_calcTrafoDensity3d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
 !# 24.) euler_calcTrafoDensityEnergy3d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
 !# 25.) euler_calcTrafoDensityPress3d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
 !# 26.) euler_calcTrafoDensityPressVel3d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
 !# 27.) euler_calcBoundaryvalues3d
@@ -173,18 +173,18 @@ module euler_callback3d
   public :: euler_calcBoundaryvalues3d
   public :: euler_hadaptCallbackScalar3d
   public :: euler_hadaptCallbackBlock3d
-  
+
 contains
-  
+
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine euler_calcFluxGalerkin3d(&
       U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
 
 !<description>
-    ! This subroutine computes the inviscid fluxes for the standard Galerkin 
+    ! This subroutine computes the inviscid fluxes for the standard Galerkin
     ! discretization in 3D.
 !</description>
 
@@ -604,7 +604,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling parameter
     real(DP), intent(in) :: dscale
 
@@ -833,9 +833,9 @@ contains
   pure subroutine euler_calcFluxFCTScalarDiss3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 3D using scalar dissipation.
 !</description>
 
@@ -845,7 +845,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -868,9 +868,9 @@ contains
   pure subroutine euler_calcFluxFCTTensorDiss3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 3D using tensodial dissipation.
 !</description>
 
@@ -880,7 +880,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -903,9 +903,9 @@ contains
   pure subroutine euler_calcFluxFCTRusanov3d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 3D using the Rusanov dissipation.
 !</description>
 
@@ -915,7 +915,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -936,7 +936,7 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensity3d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density in 3D
@@ -963,7 +963,7 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityEnergy3d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density and energy in 3D
@@ -990,7 +990,7 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityPress3d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density and energy in 3D
@@ -1017,9 +1017,9 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityPressVel3d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
-    ! This subroutine computes the transformation 
+    ! This subroutine computes the transformation
     ! of the given flux into primitive variables in 3D
 !</description>
 
@@ -1124,18 +1124,18 @@ contains
 
       ! Set pointer
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
@@ -1194,7 +1194,7 @@ contains
           p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR3D+ivar) = 0.0_DP
         end do
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
@@ -1204,7 +1204,7 @@ contains
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine euler_hadaptCallbackScalar3d
 
   !*****************************************************************************
@@ -1253,18 +1253,18 @@ contains
 
       ! Set pointer
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
@@ -1292,7 +1292,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
-      
+
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR3D*rcollection%IquickAccess(1)) then
@@ -1327,7 +1327,7 @@ contains
           p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
@@ -1337,7 +1337,7 @@ contains
       call flagship_hadaptCallback3d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine euler_hadaptCallbackBlock3d
-  
+
 end module euler_callback3d

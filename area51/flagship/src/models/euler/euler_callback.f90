@@ -1723,7 +1723,7 @@ contains
 
       ! Set pointer to low-order predictor
       p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
-      
+
       ! Compute low-order predictor ...
       if (ite .eq. 0) then
         ! ... only in the zeroth iteration
@@ -1741,15 +1741,15 @@ contains
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rrhs, 1.0_DP, p_rpredictor)
       end if
-      
+
       ! Assemble the raw antidiffusive fluxes
       call euler_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
           rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0), rcollection)
-      
+
       !-------------------------------------------------------------------------
       ! Set operation specifier
       !-------------------------------------------------------------------------
-      
+
       if (ite .eq. 0) then
         ! Perform standard flux correction in zeroth iteration
         ioperationSpec = AFCSTAB_FCTALGO_STANDARD
@@ -1759,24 +1759,24 @@ contains
           ! Perform standard flux correction without recomputing bounds
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
                            AFCSTAB_FCTALGO_BOUNDS
-        
+
         case (AFCSTAB_FEMFCT_IMPLICIT)
           ! Perform semi-implicit flux correction
           ioperationSpec = AFCSTAB_FCTALGO_INITALPHA+&
                            AFCSTAB_FCTALGO_LIMITEDGE+&
                            AFCSTAB_FCTALGO_CORRECT+&
                            AFCSTAB_FCTALGO_CONSTRAIN
-          
+
         case (AFCSTAB_FEMFCT_ITERATIVE)
           ! Perform standard flux correction
           ioperationSpec = AFCSTAB_FCTALGO_STANDARD
         end select
       end if
-      
+
       ! Apply FEM-FCT algorithm
       call euler_calcResidualFCT(rproblemLevel, p_rpredictor,&
           rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
-      
+
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
@@ -1792,10 +1792,10 @@ contains
     if (present(rsource)) then
       call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     end if
-    
+
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
-    
+
   end subroutine euler_calcResidualThetaScheme
 
   !*****************************************************************************
@@ -2385,7 +2385,7 @@ contains
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    
+
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
@@ -2415,11 +2415,11 @@ contains
 
     ! What type of dissipation is applied?
     select case(idissipationtype)
-      
+
     case (DISSIPATION_SCALAR)
-      
+
       ! Assemble raw antidiffusive fluxes using scalar dissipation
-      
+
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
         ! Should we apply consistent mass antidiffusion?
@@ -2613,7 +2613,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcFluxFCT')
       call sys_halt()
     end select
-    
+
   end subroutine euler_calcFluxFCT
 
   !*****************************************************************************
@@ -2626,7 +2626,7 @@ contains
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
     ! the different FCT algorithms
-!</description>  
+!</description>
 
 !<input>
     ! solution vector
@@ -2665,7 +2665,7 @@ contains
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    
+
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
@@ -2682,7 +2682,7 @@ contains
     select case(itransformationtype)
 
     case (TRANSFORM_DENSITY_ENERGY_MOMENTUM)
-      
+
       ! Apply FEM-FCT algorithm for full conservative fluxes
       call gfsys_buildResidualFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2709,7 +2709,7 @@ contains
             rsolution, dscale, bclear,&
             ioperationSpec, rresidual,&
             euler_calcTrafoDensity2d)
-        
+
       case (NDIM3D)
         call gfsys_buildResidualFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2760,7 +2760,7 @@ contains
             rsolution, dscale, bclear,&
             ioperationSpec, rresidual,&
             euler_calcTrafoDensityPressVel1d)
-        
+
       case (NDIM2D)
         call gfsys_buildResidualFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2814,7 +2814,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualFCT')
       call sys_halt()
     end select
-    
+
   end subroutine euler_calcResidualFCT
 
 end module euler_callback

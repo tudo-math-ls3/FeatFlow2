@@ -4,12 +4,12 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module provides basic routines for solving linear system of the form 
+!# This module provides basic routines for solving linear system of the form
 !#
 !#   $$Au=f$$
 !#
 !# where $A$ is a block matrix and $f$ denotes a block vector. In addition,
-!# a wrapper-routine for scalar equations is provided. On the highest level 
+!# a wrapper-routine for scalar equations is provided. On the highest level
 !# of the linear solver hierarchy, this problem is solved by means of a
 !# geometric multigrid approach. If only one multigrid-level is available than
 !# the coarse grid solver is directly employed.
@@ -95,25 +95,25 @@ module solverlinear
   end interface
 
 contains
-  
+
 !<subroutine>
 
   subroutine linsol_solveMultigridScalar(rproblemLevel, rsolver, ru, rf)
 
 !<description>
-    ! This subroutine solves the linear system 
-    !   $$Au=f$$ 
-    ! for a scalar matrix $A$ and a scalar right-hand side vector $f$ 
+    ! This subroutine solves the linear system
+    !   $$Au=f$$
+    ! for a scalar matrix $A$ and a scalar right-hand side vector $f$
     ! by means of the geometric multigrid method.
     ! NOTE: This subroutine serves as a wrapper for scalar equations.
-    ! The scalar quantities are converted to their 1-block counterparts 
+    ! The scalar quantities are converted to their 1-block counterparts
     ! and the block version of the geometric multigrid method is called.
 !</description>
 
 !<input>
     ! Multigrid structure
     type(t_problemLevel), intent(in) :: rproblemLevel
-    
+
     ! right-hand side vector
     type(t_vectorScalar), intent(in) :: rf
 !</input>
@@ -147,12 +147,12 @@ contains
 !<subroutine>
 
   subroutine linsol_solveMultigridBlock(rproblemLevel, rsolver, ru, rf)
-    
+
 !<description>
-    ! This subroutine solves the linear system 
+    ! This subroutine solves the linear system
     !   $$Au=f$$
-    ! by means of the geometric multigrid method. If only one multigrid-level 
-    ! is available the coarse grid solver is directly employed. 
+    ! by means of the geometric multigrid method. If only one multigrid-level
+    ! is available the coarse grid solver is directly employed.
     ! Otherwise, the the linear two-grid solver is called recursively starting
     ! at the highest multigrid level.
 !</description>
@@ -181,7 +181,7 @@ contains
     type(t_vectorBlock), pointer :: p_rres
     real(DP) :: doldDefect
     integer :: imgstep,mgcycle
-    
+
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
 
@@ -204,7 +204,7 @@ contains
         return
       end if
     end if
-    
+
     ! What kind of solver are we?
     select case(rsolver%csolverType)
     case (SV_LINEAR)
@@ -212,7 +212,7 @@ contains
       ! Single grid solver: Au=b
 
       call linsol_solveSinglegrid(rsolver, ru, rf)
-      
+
     case (SV_LINEARMG)
 
       ! Check if multigrid solver exists
@@ -221,13 +221,13 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
         call sys_halt()
       end if
-      
+
       ! Set pointer
       p_solverMultigrid => rsolver%p_solverMultigrid
 
       ! Check if multigrid solver is called for only one grid level
-      if (p_solverMultigrid%nlmin .eq. p_solverMultigrid%nlmax) then   
-        
+      if (p_solverMultigrid%nlmin .eq. p_solverMultigrid%nlmax) then
+
         !-----------------------------------------------------------------------
         ! Single grid solver: Au=b
 
@@ -240,15 +240,15 @@ contains
 
         ! Set pointer
         p_solverSinglegrid => p_solverMultigrid%p_solverCoarsegrid
-        
-        ! The outer nonlinear solver may have modified the linear multigrid 
+
+        ! The outer nonlinear solver may have modified the linear multigrid
         ! solver, e.g., Newton`s method may have defined an absolute tolerance
         ! for the linear solver to satisfy some sufficient decrease condition.
         ! Hence, copy the original input parameters of the linear single grid
         ! solver to the temporal structure rsolverTemp and impose the new values.
         call solver_copySolver(p_solverSinglegrid, rsolverTemp, .true., .false.)
         call solver_copySolver(rsolver, p_solverSinglegrid, .true., .false.)
-        
+
         ! Perform single-grid solution
         call linsol_solveSinglegrid(p_solverSinglegrid, ru, rf)
 
@@ -261,7 +261,7 @@ contains
         call solver_copySolver(rsolverTemp, p_solverSinglegrid, .true., .false.)
         call solver_copySolver(p_solverSinglegrid, rsolver, .false., .true.)
 
-        
+
         select case(p_solverSinglegrid%isolver)
         case(LINSOL_SOLVER_JACOBI,&
              LINSOL_SOLVER_SOR,&
@@ -275,7 +275,7 @@ contains
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
-          
+
         case (LINSOL_SOLVER_BICGSTAB,&
               LINSOL_SOLVER_GMRES,&
               LINSOL_SOLVER_UMFPACK4)
@@ -289,27 +289,27 @@ contains
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
-          
+
         case DEFAULT
           call output_line('Unsupported single-grid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
           call sys_halt()
         end select
-        
+
       else
-        
+
         !-----------------------------------------------------------------------
         ! Multigrid solver: Au=b
-        
+
         ! Set pointer for residual vector
         p_rres => p_solverMultigrid%rtempVectors(3*rproblemLevel%ilev-&
                                                  2*p_solverMultigrid%nlmin)
-        
+
         ! Compute the initial linear residual: res=f-A*u
         call lsysbl_copyVector(rf, p_rres)
         call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
                                 ru, p_rres, -1.0_DP, 1.0_DP)
-        
+
         ! Compute norm of initial defect
         rsolver%dinitialDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
         rsolver%dfinalDefect   = rsolver%dinitialDefect
@@ -321,45 +321,45 @@ contains
             call output_line('!!! Norm of initial residual is too large '//&
                              trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
           end if
-          
+
           ! Clear solution vector and adjust solver status
           call lsysbl_clearVector(ru)
           rsolver%istatus = SV_INF_DEF
-          
+
           ! That is it, return.
           return
-          
+
         elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
           ! ... or if it satisfies the desired tolerance already
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
             call output_line('!!! Zero initial residual '//&
                              trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
           end if
-          
+
           ! Clear solution vector and adjust solver status
           call lsysbl_clearVector(ru)
           rsolver%istatus = SV_ZERO_DEF
-          
+
           ! That is it, return.
           return
         end if
-                
-        
+
+
         ! Perform prescribed number of multigrid steps
         mgstep: do imgstep = 1, p_solverMultigrid%ilmax
-          
+
           ! Perform one linear two-grid step
           mgcycle = merge(1, 2, p_solverMultigrid%icycle .eq. 1)
           call linsol_solveTwogrid(rproblemLevel, rsolver, ru, rf, mgcycle)
-          
+
           ! Compute the new linear defect: res=f-A*u
           call lsysbl_copyVector(rf, p_rres)
           call lsysbl_blockMatVec(p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
                                   ru, p_rres, -1.0_DP, 1.0_DP)
-          
+
           ! Compute norm of new linear defect
           rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
-          
+
           if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
             call output_lbrk()
             call output_separator(OU_SEP_TILDE)
@@ -373,14 +373,14 @@ contains
             call output_separator(OU_SEP_TILDE)
             call output_lbrk()
           end if
-          
+
           ! Check if residual increased too much
           if (solver_testDivergence(rsolver)) then
             if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
               call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                   rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
             end if
-            
+
             ! Clear solution vector and adjust solver status
             call lsysbl_clearVector(ru)
             rsolver%istatus          = SV_INCR_DEF
@@ -389,7 +389,7 @@ contains
             ! That is it, return.
             return
           end if
-          
+
           ! Check convergence criteria
           if (imgstep .ge. p_solverMultigrid%ilmin) then
             if (solver_testConvergence(rsolver)) then
@@ -401,14 +401,14 @@ contains
               exit mgstep
             end if
           end if
-          
+
           ! Save norm of old defect
           doldDefect = rsolver%dfinalDefect
         end do mgstep
-                
+
         ! Multigrid convergence rates
         call solver_statistics(rsolver, imgstep)
-        
+
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
           call output_lbrk()
           call output_separator(OU_SEP_PERC)
@@ -422,10 +422,10 @@ contains
           call output_separator(OU_SEP_PERC)
           call output_lbrk()
         end if
-      
+
       end if
 
-      
+
     case DEFAULT
       call output_line(' Invalid solver!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveMultigridBlock')
@@ -473,14 +473,14 @@ contains
     ! local variables
     type(t_vectorBlock), pointer :: p_raux,p_rresf,p_rresc
     integer :: icycle,ioffset,nsmooth
-    
-    
+
+
     ! Check if current level is already the coarse grid level
     if (rproblemLevel%ilev .eq. rsolver%p_solverMultigrid%nlmin) then
 
       !-------------------------------------------------------------------------
       ! Solve coarse grid problem
-      
+
       ! Set pointers
       p_raux => rsolver%p_solverMultigrid%rtempVectors(rproblemLevel%ilev)
 
@@ -488,22 +488,22 @@ contains
       call lsysbl_clearVector(p_raux)
       call linsol_solveSinglegrid(rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                                   p_raux, rff)
-      
+
       ! Apply increment: u:=u+omega*aux
       if (rsolver%domega < 0.0_DP) then
         call lsysbl_vectorLinearComb(p_raux, ruf, 1.0_DP, 1.0_DP)
       else
         call lsysbl_vectorLinearComb(p_raux, ruf, rsolver%domega, 1.0_DP)
       end if
-      
+
       ! Adjust multigrid cycle
       if (rsolver%p_solverMultigrid%icycle .eq. 0) mgcycle = 1
-            
+
     else
 
       !-------------------------------------------------------------------------
       ! Recursive application of two-grid algorithm
-      
+
       ! Set pointers
       ioffset =  -2*rsolver%p_solverMultigrid%nlmin+3*(rproblemLevel%ilev-1)
       p_raux  => rsolver%p_solverMultigrid%rtempVectors(ioffset+1)
@@ -527,7 +527,7 @@ contains
       call lsysbl_copyVector(rff, p_rresf)
       call lsysbl_blockMatVec(rsolver%p_solverMultigrid%rmatrix(rproblemLevel%ilev),&
                               ruf, p_rresf, -1.0_DP, 1.0_DP)
-      
+
       ! Restrict the residual: resc=R(f-A*u)
       call solver_restrictionBlock(rproblemLevel%rtriangulation,&
                                    rproblemLevel%p_rproblemLevelCoarse%rtriangulation,&
@@ -554,17 +554,17 @@ contains
       call lsysbl_clearVector(p_rresf)
       call solver_prolongationBlock(rproblemLevel%p_rproblemLevelCoarse%rtriangulation,&
                                     rproblemLevel%rtriangulation, p_raux, p_rresf)
-      
+
       ! Filter boundary conditions
       call bdrf_filterVectorByValue(rsolver%rboundaryCondition, p_rresf, 0.0_DP)
-      
+
       ! Update the solution: u:=u+omega*raux
       if (rsolver%domega < 0.0_DP) then
         call lsysbl_vectorLinearComb(p_rresf, ruf, 1.0_DP, 1.0_DP)
       else
         call lsysbl_vectorLinearComb(p_rresf, ruf, rsolver%domega, 1.0_DP)
       end if
-      
+
       ! Apply postsmoothing steps
       if (rsolver%p_solverMultigrid%npostsmooth > 0) then
         nsmooth = rsolver%p_solverMultigrid%npostsmooth *&
@@ -574,17 +574,17 @@ contains
                            rsolver%p_solverMultigrid%p_smoother(rproblemLevel%ilev),&
                            ruf, rff, nsmooth)
       end if
-      
+
       ! Adjust multigrid cycle
       if ((rproblemLevel%ilev .eq. rsolver%p_solverMultigrid%nlmax) .and.&
           (rsolver%p_solverMultigrid%icycle .eq. 0)) mgcycle=2
     end if
   end subroutine linsol_solveTwogrid
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine linsol_solveSinglegrid(rsolver, ru, rf)
 
 !<description>
@@ -606,7 +606,7 @@ contains
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
-    
+
     ! Check if solver is correct
     if (rsolver%csolverType .ne. SV_LINEAR) then
       call output_line('Invalid solver type!',&
@@ -619,7 +619,7 @@ contains
     case(LINSOL_SOLVER_UMFPACK4)
       ! Solve directly: UMFPACK4 (only for scalar problems)
       call linsol_solveUMFPACK(rsolver, ru, rf)
-     
+
 
     case(LINSOL_SOLVER_JACOBI)
       ! Solve iteratively: Jacobi solver
@@ -630,7 +630,7 @@ contains
       ! Solve iteratively: Gauss-Seidel/SOR solver
       call linsol_solveSSOR(rsolver, ru, rf)
 
-      
+
     case(LINSOL_SOLVER_BICGSTAB)
       ! Solve iteratively: BiCGSTAB
       call linsol_solveBicgstab(rsolver, ru, rf)
@@ -649,13 +649,13 @@ contains
   end subroutine linsol_solveSinglegrid
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_solveUMFPACK(rsolver, ru, rf)
 
 !<description>
-    ! This subroutine solves the linear system 
+    ! This subroutine solves the linear system
     !   $$Au=f$$
     ! directly by means of UMFPACK
 !</description>
@@ -684,14 +684,14 @@ contains
 
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
-    
+
     ! Check if vector comes from a scalar one
     if (ru%nblocks .ne. 1 .or. rf%nblocks .ne. 1) then
       call output_line('UMFPACK4 can only be used for scalar equations!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
       call sys_halt()
     end if
-    
+
     ! Check if vector is stored in interleave format
     if ((ru%RvectorBlock(1)%NVAR .ne. 1) .or. &
         (rf%RvectorBlock(1)%NVAR .ne. 1)) then
@@ -699,7 +699,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
       call sys_halt()
     end if
-    
+
     if (rsolver%drhsZero > 0.0_DP) then
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
 
@@ -718,7 +718,7 @@ contains
         return
       end if
     end if
-    
+
     ! Set pointers
     p_solver  => rsolver%p_solverUMFPACK
     p_rmatrix => p_solver%rmatrix
@@ -751,12 +751,12 @@ contains
       call output_line('Internal error!',&
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_solveUMFPACK')
     end select
-    
+
     ! Compute linear residual
     call lsysbl_copyVector(rf, p_rr)
     call lsysbl_blockMatVec(p_rmatrix, ru, p_rr, -1.0_DP, 1.0_DP)
     rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
-    
+
     ! Compute solver statistics
     call solver_statistics(rsolver, 1)
   end subroutine linsol_solveUMFPACK
@@ -766,7 +766,7 @@ contains
 !<subroutine>
 
   subroutine linsol_solveJacobi(rsolver, ru, rf)
-    
+
 !<description>
     ! This subroutine solves the linear system Au=f
     ! by means of Jacobi iterations
@@ -783,7 +783,7 @@ contains
     ! Solution vector
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
-!</subroutine> 
+!</subroutine>
 
     ! local variables
     type(t_matrixBlock),  pointer :: p_rmatrix
@@ -820,7 +820,7 @@ contains
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isVectorCompatible(ru, p_rres)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
-    
+
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
     call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
@@ -829,53 +829,53 @@ contains
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
     rsolver%dfinalDefect     = rsolver%dinitialDefect
     doldDefect               = rsolver%dinitialDefect
-      
+
     ! Check if initial residual is too large ...
     if (solver_testDivergence(rsolver)) then
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Norm of initial residual is too large '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
-      
+
       ! That is it, return.
       return
-      
+
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Zero initial residual '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
-      
+
       ! That is it, return.
       return
     end if
-   
-    
+
+
     ! Iterative correction
     correction: do iiterations = 1, rsolver%nmaxIterations
-      
+
       ! Precondition the linear residual
       call linsol_precondJacobi(rsolver, p_rres)
-      
+
       ! Update solution
       call lsysbl_vectorLinearComb(p_rres, ru, 1.0_DP, 1.0_DP)
-      
+
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
       call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
-      
+
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
-      
+
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
         call output_lbrk()
         call output_separator(OU_SEP_TILDE)
@@ -896,16 +896,16 @@ contains
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
         end if
-        
+
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
-        
+
         ! That is it, return.
         return
       end if
-      
+
       ! Check convergence criteria
       if (iiterations .ge. rsolver%nminIterations) then
         if (solver_testConvergence(rsolver)) then
@@ -917,14 +917,14 @@ contains
           exit correction
         end if
       end if
-      
+
       ! Save norm of old defect
       doldDefect = rsolver%dfinalDefect
     end do correction
-    
+
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
-    
+
     if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
@@ -938,7 +938,7 @@ contains
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
     end if
-    
+
   end subroutine linsol_solveJacobi
 
   ! ***************************************************************************
@@ -946,7 +946,7 @@ contains
 !<subroutine>
 
   subroutine linsol_solveSSOR(rsolver, ru, rf)
-    
+
 !<description>
     ! This subroutine solves the linear system
     !   $$Au=f$$
@@ -964,8 +964,8 @@ contains
     ! Solution vector
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
-!</subroutine> 
-    
+!</subroutine>
+
     ! local variables
     type(t_matrixBlock), pointer :: p_rmatrix
     type(t_vectorBlock),  pointer :: p_rres
@@ -992,16 +992,16 @@ contains
         return
       end if
     end if
-    
+
     ! Set pointers
     p_rmatrix => rsolver%p_solverSSOR%rmatrix
     p_rres    => rsolver%p_solverSSOR%rtempVector
-    
+
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isVectorCompatible(ru, p_rres)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
-    
+
     ! Compute initial residual
     call lsysbl_copyVector(rf, p_rres)
     call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
@@ -1017,46 +1017,46 @@ contains
         call output_line('!!! Norm of initial residual is too large '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
-      
+
       ! That is it, return.
       return
-      
+
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Zero initial residual '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
-      
+
       ! That is it, return.
       return
     end if
-    
+
 
     ! Iterative correction
     correction: do iiterations = 1, rsolver%nmaxIterations
-      
+
       ! Precondition the linear residual
       call linsol_precondSSOR(rsolver, p_rres)
-      
+
       ! Update solution
       call lsysbl_vectorLinearComb(p_rres, ru, 1.0_DP, 1.0_DP)
-      
+
       ! Compute residual
       call lsysbl_copyVector(rf, p_rres)
       call lsysbl_blockMatVec(p_rmatrix, ru, p_rres, -1.0_DP, 1.0_DP)
-      
+
       ! Compute norm of residual
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rres, rsolver%iresNorm)
-      
+
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
         call output_lbrk()
         call output_separator(OU_SEP_TILDE)
@@ -1077,16 +1077,16 @@ contains
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
         end if
-        
+
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
-        
+
         ! That is it, return.
         return
       end if
-      
+
       ! Check convergence criteria
       if (iiterations .ge. rsolver%nminIterations) then
         if (solver_testConvergence(rsolver)) then
@@ -1098,14 +1098,14 @@ contains
           exit correction
         end if
       end if
-      
+
       ! Save norm of old defect
       doldDefect = rsolver%dfinalDefect
     end do correction
-    
+
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
-    
+
     if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
@@ -1119,7 +1119,7 @@ contains
       call output_separator(OU_SEP_PERC)
       call output_lbrk()
     end if
-    
+
   end subroutine linsol_solveSSOR
 
   ! ***************************************************************************
@@ -1129,7 +1129,7 @@ contains
   subroutine linsol_solveBicgstab(rsolver, ru, rf)
 
 !<description>
-    ! This subroutine solves the linear system 
+    ! This subroutine solves the linear system
     !   $$Au=f$ $
     ! by means of the BiCGSTAB method
 !</description>
@@ -1142,7 +1142,7 @@ contains
 !<inputoutput>
     ! Linear solver structure
     type(t_solver) :: rsolver
-    
+
     ! Solution vector
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
@@ -1182,7 +1182,7 @@ contains
         return
       end if
     end if
-   
+
 
     ! Set pointers
     p_solverBiCGSTAB => rsolver%p_solverBiCGSTAB
@@ -1203,7 +1203,7 @@ contains
     else
       bprec = .false.
     end if
-    
+
     ! Check compatibility
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
@@ -1220,7 +1220,7 @@ contains
     rsolver%dinitialDefect   = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
     rsolver%dfinalDefect     = rsolver%dinitialDefect
     doldDefect               = rsolver%dinitialDefect
-    
+
     ! Initialization
 100 rho0  = 1.0_DP
     alpha = 0.0_DP
@@ -1239,39 +1239,39 @@ contains
         call output_line('!!! Norm of initial residual is too large '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
-      
+
       ! That is it, return.
       return
-      
+
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Zero initial residual '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
-      
+
       ! That is it, return.
       return
     end if
 
-    
+
     ! Store initial residual
     call lsysbl_copyVector(p_rr, p_rr0)
     nrm0 = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
-    
+
     ! Iterative correction
     correction: do iiterations = iiterations0, rsolver%nmaxIterations
 
       rho1 = lsysbl_scalarProduct(p_rr, p_rr0)
-      
+
       if (iiterations .eq. 1) then
         ! Set p:=r
         call lsysbl_copyVector(p_rr, p_rp)
@@ -1279,7 +1279,7 @@ contains
         beta = (rho1/rho0)*(alpha/omega)
         rho0 = rho1
 
-        ! Compute p:=r+beta*p-beta*omega*pa        
+        ! Compute p:=r+beta*p-beta*omega*pa
         call lsysbl_vectorLinearComb(p_rr, p_rp, 1.0_DP, beta)
         call lsysbl_vectorLinearComb(p_rpa, p_rp, -beta*omega, 1.0_DP)
       end if
@@ -1303,13 +1303,13 @@ contains
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
         goto 100
       end if
-      
+
       alpha = rho1/alpha
 
       ! Compute r:=r-alpha*pa
       call lsysbl_vectorLinearComb(p_rpa, p_rr, -alpha, 1.0_DP)
       if (bprec) call lsysbl_vectorLinearComb(p_rpa1, p_rr1, -alpha, 1.0_DP)
-      
+
       ! Compute sa:=C(-1)*A*r
       call lsysbl_blockMatVec(p_rmatrix, p_rr, p_rsa, 1.0_DP, 0.0_DP)
       if (bprec) then
@@ -1319,11 +1319,11 @@ contains
 
       ! Compute omega:=(sa,r)/(sa,sa)
       omega = lsysbl_scalarProduct(p_rsa,p_rr)/lsysbl_scalarProduct(p_rsa,p_rsa)
-      
+
       ! Compute u:=u+alpha*p+omega*r
       call lsysbl_vectorLinearComb(p_rp, ru, alpha, 1.0_DP)
       call lsysbl_vectorLinearComb(p_rr, ru, omega, 1.0_DP)
-      
+
       ! Compute r:=r-omega*sa
       call lsysbl_vectorLinearComb(p_rsa, p_rr, -omega, 1.0_DP)
       if (bprec) then
@@ -1332,7 +1332,7 @@ contains
       else
         rsolver%dfinalDefect = lsysbl_vectorNorm(p_rr, rsolver%iresNorm)
       end if
-            
+
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
         call output_lbrk()
         call output_separator(OU_SEP_TILDE)
@@ -1353,12 +1353,12 @@ contains
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
         end if
-        
+
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
-        
+
         ! That is it, return.
         return
       end if
@@ -1374,11 +1374,11 @@ contains
           exit correction
         end if
       end if
-      
+
       ! Save norm of old defect
       doldDefect = rsolver%dfinalDefect
     end do correction
-    
+
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
 
@@ -1405,7 +1405,7 @@ contains
   subroutine linsol_solveFgmres(rsolver, ru, rf)
 
 !<description>
-    ! This subroutine solves the linear system $Au=f$ 
+    ! This subroutine solves the linear system $Au=f$
     ! by means of the flexible GMRES(m) method
 !</description>
 
@@ -1421,7 +1421,7 @@ contains
     ! Solution vector
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
-!</subroutine> 
+!</subroutine>
 
     ! local variables
     type(t_solverGMRES), pointer :: p_solverGMRES
@@ -1435,27 +1435,27 @@ contains
     integer :: neq,i,k,l,iiterations
     logical :: bprec
 
-    
+
     ! Check for zero right-hand side
     if (rsolver%drhsZero > 0.0_DP) then
       rsolver%dinitialRHS = lsysbl_vectorNorm(rf, LINALG_NORMMAX)
-      
+
       if (rsolver%dinitialRHS .le. rsolver%drhsZero) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Zero initial right-hand side '//trim(&
                            sys_sdEL(rsolver%dinitialRHS,5))//' !!!')
         end if
-        
+
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_ZERO_RHS
         rsolver%dconvergenceRate = 0.0_DP
-        
+
         ! That is it, return.
         return
       end if
     end if
-    
+
     ! Set pointers
     p_solverGMRES  => rsolver%p_solverGMRES
     p_rmatrix      => p_solverGMRES%rmatrix
@@ -1480,7 +1480,7 @@ contains
 
     ! Initialization
     neq = ru%NEQ
-            
+
     ! Compute initial residual v(1)=f-A*u
     call lsysbl_copyVector(rf, p_rv(1))
     call lsysbl_blockMatVec(p_rmatrix, ru, p_rv(1), -1.0_DP, 1.0_DP)
@@ -1496,49 +1496,49 @@ contains
         call output_line('!!! Norm of initial residual is too large '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_INF_DEF
-      
+
       ! That is it, return.
       return
-      
+
     elseif (rsolver%dinitialDefect .le. rsolver%ddefZero) then
       ! ... or if it satisfies the desired tolerance already
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
         call output_line('!!! Zero initial residual '//&
                          trim(sys_sdEL(rsolver%dinitialDefect,5))//' !!!')
       end if
-      
+
       ! Clear solution vector and adjust solver status
       call lsysbl_clearVector(ru)
       rsolver%istatus = SV_ZERO_DEF
-      
+
       ! That is it, return.
       return
     end if
-    
+
     iiterations = 0
     outer: do while(iiterations .lt. rsolver%nmaxIterations)
       if (rsolver%dfinalDefect .lt. rsolver%depsAbs) exit outer
-      
+
       ! Construct the elementary vector e1 scaled be residual norm
       call lalg_clearVectorDble(p_Dq)
       p_Dq(1) = rsolver%dfinalDefect
-      
+
       ! Compute the first column of v(1)=r/!!r!!
       dtmp = 1.0_DP/p_Dq(1)
       call lsysbl_scaleVector(p_rv(1), dtmp)
 
       inner: do i = 1, l
-        
+
         ! Increase number of iterations
         iiterations = iiterations+1
 
         ! Compute r=A*z(i) where z(i)=M(-1)*v(i)
         call lsysbl_copyVector(p_rv(i), p_rz(i))
-      
+
         if (bprec) then
           call linsol_precond(p_solverPrecond, p_rz(i))
         end if
@@ -1546,8 +1546,8 @@ contains
         ! Set v(i+1):=A*z(i)
         call lsysbl_copyVector(p_rv(i), p_rv(i+1))
         call lsysbl_blockMatVec(p_rmatrix, p_rz(i), p_rv(i+1), 1.0_DP, 0.0_DP)
-        
-        ! Construct i-th column of orthonormal basis h using 
+
+        ! Construct i-th column of orthonormal basis h using
         ! a modified Gram-Schmidt algorithm
         do k = 1, i
           p_Dh(k,i) = lsysbl_scalarProduct(p_rv(i+1), p_rv(k))
@@ -1567,7 +1567,7 @@ contains
           dtmp = 1.0_DP/p_Dh(i+1,i)
           call lsysbl_scaleVector(p_rv(i+1), dtmp)
         end if
-        
+
         ! Apply Givens rotations to the i-th column of h which
         ! renders the Hessenberg matrix an upper triangular matrix
         do k = 1, i-1
@@ -1575,7 +1575,7 @@ contains
           p_Dh(k,i)   = p_Dc(k)*dtmp - p_Ds(k)*p_Dh(k+1,i)
           p_Dh(k+1,i) = p_Ds(k)*dtmp + p_Dc(k)*p_Dh(k+1,i)
         end do
-        
+
         ! Get next plane rotation
         dtmp = max(sqrt(p_Dh(i,i)**2 + p_Dh(i+1,i)**2), SYS_EPSREAL)
         p_Dc(i) =  p_Dh(i,i)/dtmp
@@ -1593,10 +1593,10 @@ contains
         if (abs(p_Dq(i+1)) .le. rsolver%depsAbs) exit inner
       end do inner
       i = min(i, l)
-      
+
       ! Solve the triangular system q:=h(-1)*q
       call DTRSV('U', 'N', 'N', i, p_Dh, l+1, p_Dq, 1)
-      
+
       ! Update the solution u=u+p*z
       do k = 1, i
         call lsysbl_vectorLinearComb(p_rz(k), ru, p_Dq(k), 1.0_DP)
@@ -1609,7 +1609,7 @@ contains
       ! The norm of the residual is implicitly given by p(i+1) but
       ! may be highly inaccurate. Therefore compute norm explicitly
       rsolver%dfinalDefect = lsysbl_vectorNorm(p_rv(1), rsolver%iresNorm)
-      
+
       if (rsolver%ioutputLevel .ge. SV_IOLEVEL_VERBOSE) then
         call output_lbrk()
         call output_separator(OU_SEP_TILDE)
@@ -1623,23 +1623,23 @@ contains
         call output_separator(OU_SEP_TILDE)
         call output_lbrk()
       end if
-      
+
       ! Check if residual increased too much
       if (solver_testDivergence(rsolver)) then
         if (rsolver%ioutputLevel .ge. SV_IOLEVEL_WARNING) then
           call output_line('!!! Residual increased by factor '//trim(sys_sdEL(&
                            rsolver%dfinalDefect/max(SYS_EPSREAL, rsolver%dinitialDefect),5)))
         end if
-        
+
         ! Clear solution vector and adjust solver status
         call lsysbl_clearVector(ru)
         rsolver%istatus          = SV_INCR_DEF
         rsolver%dconvergenceRate = 1.0_DP
-        
+
         ! That is it, return.
         return
       end if
-      
+
       ! Check convergence criteria
       if (iiterations .ge. rsolver%nminIterations) then
         if (solver_testConvergence(rsolver)) then
@@ -1658,7 +1658,7 @@ contains
 
     ! Compute convergence rate
     call solver_statistics(rsolver, iiterations)
-    
+
     if (rsolver%ioutputLevel .ge. SV_IOLEVEL_INFO) then
       call output_lbrk()
       call output_separator(OU_SEP_PERC)
@@ -1676,7 +1676,7 @@ contains
   end subroutine linsol_solveFgmres
 
   ! *****************************************************************************
-  
+
 !<subroutine>
 
   subroutine linsol_precond(rsolver, ru)
@@ -1703,22 +1703,22 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'linsol_precond')
       call sys_halt()
     end if
-    
+
     ! What kind of solver should be applied?
     select case (rsolver%isolver)
     case(LINSOL_SOLVER_NONE)
       ! do nothing
 
-    case(LINSOL_SOLVER_JACOBI)   
+    case(LINSOL_SOLVER_JACOBI)
       ! Jacobi preconditioner
       call linsol_precondJacobi(rsolver, ru)
-      
-      
-    case(LINSOL_SOLVER_SOR, LINSOL_SOLVER_SSOR)   
+
+
+    case(LINSOL_SOLVER_SOR, LINSOL_SOLVER_SSOR)
       ! (S)SOR preconditioner
       call linsol_precondSSOR(rsolver, ru)
-      
-      
+
+
     case(LINSOL_SOLVER_ILU)
       ! ILU preconditioner
       call linsol_precondILU(rsolver, ru)
@@ -1773,7 +1773,7 @@ contains
 
     ! Loop over all diagonal blocks
     do iblock = 1, ru%nblocks
-      
+
       ! Set pointers
       p_rmatrix => p_rmatrixBlock%RmatrixBlock(iblock,iblock)
       p_rvector => ru%RvectorBlock(iblock)
@@ -1804,7 +1804,7 @@ contains
         call lsyssc_getbase_Kld   (p_rmatrix, p_Kdiagonal)
         call lsyssc_getbase_double(p_rmatrix, p_DA)
         call lsyssc_getbase_double(p_rvector, p_Du)
-        
+
         ! What kind of interleave matrix format are we?
         select case(p_rmatrix%cinterleavematrixFormat)
 
@@ -1826,7 +1826,7 @@ contains
         call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
         call lsyssc_getbase_double(p_rmatrix, p_DA)
         call lsyssc_getbase_double(p_rvector, p_Du)
-        
+
         ! What kind of interleave matrix format are we?
         select case(p_rmatrix%cinterleavematrixFormat)
 
@@ -1900,16 +1900,16 @@ contains
     ! This subroutine performs one Jacobi step for a double
     ! precision scalar interleave matrix which is stored in format
     ! 7 or 9, whereby each interleave matrix is a diagonal one
-    
+
     subroutine jacobi_Mat79IntlD_double(Kdiagonal, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kdiagonal
       real(DP), dimension(nvar,*), intent(in) :: Da
       real(DP), dimension(nvar,*), intent(inout) :: Du
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
-      
+
       integer :: ieq,ivar
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
@@ -1925,16 +1925,16 @@ contains
     ! This subroutine performs one Jacobi step for a double
     ! precision scalar interleave matrix which is stored in format
     ! 7 or 9, whereby each interleave matrix is a full one
-    
+
     subroutine jacobi_Mat79Intl1_double(Kdiagonal,nvar,Da,Du,neq,domega)
-      
+
       integer, dimension(:), intent(in) :: Kdiagonal
       real(DP), dimension(nvar,nvar,*), intent(in) :: Da
       real(DP), dimension(nvar,*), intent(inout) :: Du
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
       real(DP), intent(in) :: domega
-      
+
       integer :: ieq,ivar
 
 !$OMP PARALLEL DO DEFAULT(SHARED) PRIVATE(ieq,ivar)
@@ -1974,23 +1974,23 @@ contains
     type(t_matrixScalar), pointer :: p_rmatrix
     type(t_vectorScalar), pointer :: p_rvector
     real(DP), dimension(:), pointer :: p_DA,p_Du
-    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal    
+    integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer, dimension(:), pointer :: p_Kcol
-    
+
     real(DP) :: domega
     integer :: iblock
     logical :: bsymmetric
 
     ! Initialization
     bsymmetric = (rsolver%isolver .eq. LINSOL_SOLVER_SSOR)
-    
+
     ! Set relaxation parameter
     if (rsolver%domega < 0.0_DP) then
       domega = 1.0_DP
     else
       domega = rsolver%domega
     end if
-    
+
     ! Set pointers
     p_rmatrixBlock => rsolver%p_solverSSOR%rmatrix
 
@@ -2000,7 +2000,7 @@ contains
       ! Set pointers
       p_rmatrix => p_rmatrixBlock%RmatrixBlock(iblock,iblock)
       p_rvector => ru%RvectorBlock(iblock)
-      
+
       ! What kind of matrix are we?
       select case(p_rmatrix%cmatrixFormat)
 
@@ -2050,7 +2050,7 @@ contains
             call sor_Mat7IntlD_double(p_Kld, p_Kcol,&
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
-          
+
         case (LSYSSC_MATRIX1)
           if (bsymmetric) then
             call ssor_Mat7Intl1_double(p_Kld, p_Kcol,&
@@ -2059,7 +2059,7 @@ contains
             call sor_Mat7Intl1_double(p_Kld, p_Kcol,&
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
@@ -2072,10 +2072,10 @@ contains
         call lsyssc_getbase_Kcol  (p_rmatrix, p_Kcol)
         call lsyssc_getbase_double(p_rmatrix, p_DA)
         call lsyssc_getbase_double(p_rvector, p_Du)
-        
+
         ! What kind of interleave matrix are we?
         select case(p_rmatrix%cinterleavematrixFormat)
-          
+
         case (LSYSSC_MATRIXD)
           if (bsymmetric) then
             call ssor_Mat9IntlD_double(p_Kdiagonal, p_Kld, p_Kcol,&
@@ -2084,7 +2084,7 @@ contains
             call sor_Mat9IntlD_double(p_Kdiagonal, p_Kld, p_Kcol,&
                 p_rvector%NVAR, p_DA, p_Du, p_rvector%NEQ, domega)
           end if
-          
+
         case (LSYSSC_MATRIX1)
           if (bsymmetric) then
             call ssor_Mat9Intl1_double(p_Kdiagonal, p_Kld, p_Kcol,&
@@ -2099,7 +2099,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
           call sys_halt()
         end select
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondSSOR')
@@ -2116,7 +2116,7 @@ contains
     ! precision scalar matrix which is stored in format 7
 
     subroutine sor_Mat7_double(Kld, Kcol, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(:), intent(in) :: Da
@@ -2130,7 +2130,7 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2147,7 +2147,7 @@ contains
     ! precision scalar matrix which is stored in format 9
 
     subroutine sor_Mat9_double(Kdiagonal, Kld, Kcol, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
@@ -2162,7 +2162,7 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
@@ -2174,7 +2174,7 @@ contains
           icol = Kcol(ild)
           daux = daux+Da(ild)*Du(icol)
         end do
-        
+
         ! Update solution vector
         Du(ieq)=(Du(ieq)-daux*domega)/Da(Kdiagonal(ieq))
       end do
@@ -2185,7 +2185,7 @@ contains
     ! precision scalar matrix which is stored in format 7
 
     subroutine ssor_Mat7_double(Kld, Kcol, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(:), intent(in) :: Da
@@ -2199,7 +2199,7 @@ contains
       ! Process lower left triangular matrix
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2214,7 +2214,7 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Sum up right part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2247,13 +2247,13 @@ contains
       ! Process lower left triangular matrix
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
           daux = daux+Da(ild)*Du(icol)
         end do
-        
+
         ! Update solution vector
         Du(ieq) = (Du(ieq)-daux*domega)/Da(Kdiagonal(ieq))
       end do
@@ -2261,13 +2261,13 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
           daux = daux+Da(ild)*Du(icol)
         end do
-        
+
         ! Update solution vector
         Du(ieq)=Du(ieq)-daux*domega/Da(Kdiagonal(ieq))
       end do
@@ -2279,7 +2279,7 @@ contains
     ! whereby each intereave matrix is a diagonal one
 
     subroutine sor_Mat7IntlD_double(Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(nvar,*), intent(in) :: Da
@@ -2294,7 +2294,7 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2328,7 +2328,7 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1,neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
@@ -2340,7 +2340,7 @@ contains
           icol = Kcol(ild)
           daux = daux+Da(:,ild)*Du(:,icol)
         end do
-        
+
         ! Update solution vector
         Du(:,ieq)=(Du(:,ieq)-daux*domega)/Da(:,Kdiagonal(ieq))
       end do
@@ -2352,7 +2352,7 @@ contains
     ! whereby each interleave matrix is a diagonal one
 
     subroutine ssor_Mat7IntlD_double(Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(nvar,*), intent(in) :: Da
@@ -2367,7 +2367,7 @@ contains
       ! Process lower left triangular matrix
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2382,7 +2382,7 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Sum up right part of row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2401,7 +2401,7 @@ contains
     ! whereby each interleave matrix is a diagonal one
 
     subroutine ssor_Mat9IntlD_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
@@ -2417,7 +2417,7 @@ contains
       ! Process lower left triangular matrix
       do ieq = 1,neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
@@ -2431,7 +2431,7 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Sum up right part of row
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2449,7 +2449,7 @@ contains
     ! whereby each intereave matrix is a full one
 
     subroutine sor_Mat7Intl1_double(Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(nvar,nvar,*), intent(in) :: Da
@@ -2464,11 +2464,11 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up row
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
-          
+
           do ivar = 1, nvar
             do jvar = 1, nvar
               daux(ivar) = daux(ivar)+Da(ivar,jvar,ild)*Du(jvar,icol)
@@ -2505,7 +2505,7 @@ contains
       ! Process complete matrix from top-left to bottom-right
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Sum up left part of row
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
@@ -2541,7 +2541,7 @@ contains
     ! whereby each interleave matrix is a full one
 
     subroutine ssor_Mat7Intl1_double(Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
       real(DP), dimension(nvar,nvar,*), intent(in) :: Da
@@ -2552,16 +2552,16 @@ contains
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
-      
+
       ! Process lower left triangular matrix
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
           if (icol .ge. ieq) exit
-          
+
           do ivar = 1, nvar
             daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
@@ -2570,7 +2570,7 @@ contains
         ! Phase 2: Include sum of lower-left blocks
         do ild = Kld(ieq), Kld(ieq+1)-1
            icol = Kcol(ild)
-           
+
           ! Loop over all row-blocks
           do ivar = 2, nvar
 
@@ -2580,7 +2580,7 @@ contains
             end do
           end do
         end do
-        
+
         ! Update solution vector
         do ivar = 1, nvar
           Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kld(ieq))
@@ -2590,7 +2590,7 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2604,7 +2604,7 @@ contains
         ! Phase 2: Include sum of upper-right blocks
         do ild = Kld(ieq),Kld(ieq+1)-1
           icol = Kcol(ieq)
-          
+
           ! Loop over all row-blocks
           do ivar = 1, nvar
 
@@ -2628,7 +2628,7 @@ contains
     ! whereby each interleave matrix is a full one
 
     subroutine ssor_Mat9Intl1_double(Kdiagonal, Kld, Kcol, nvar, Da, Du, neq, domega)
-      
+
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, dimension(:), intent(in) :: Kld
       integer, dimension(:), intent(in) :: Kcol
@@ -2640,15 +2640,15 @@ contains
 
       real(DP), dimension(nvar) :: daux
       integer :: ieq,icol,ild,ivar,jvar
-      
+
       ! Process lower left triangular matrix
       do ieq = 1, neq
         daux = 0.0_DP
-        
+
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ild)
-          
+
           do ivar = 1,nvar
             daux(ivar) = daux(ivar)+Da(ivar,ivar,ild)*Du(ivar,icol)
           end do
@@ -2657,7 +2657,7 @@ contains
         ! Phase 2: Include sum of lower-left blocks
         do ild = Kld(ieq), Kld(ieq+1)-1
            icol = Kcol(ild)
-           
+
           ! Loop over all row-blocks
           do ivar = 2, nvar
 
@@ -2667,7 +2667,7 @@ contains
             end do
           end do
         end do
-        
+
         ! Update solution vector
         do ivar = 1, nvar
           Du(ivar,ieq) = (Du(ivar,ieq)-daux(ivar)*domega)/Da(ivar,ivar,Kdiagonal(ieq))
@@ -2677,7 +2677,7 @@ contains
       ! Process upper right triangular matrix
       do ieq = neq-1, 1, -1
         daux = 0.0_DP
-        
+
         ! Phase 1: Process diagonal blocks as in the scalar case
         do ild = Kdiagonal(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ild)
@@ -2690,7 +2690,7 @@ contains
         ! Phase 2: Include sum of upper-right blocks
         do ild = Kld(ieq), Kld(ieq+1)-1
           icol = Kcol(ieq)
-          
+
           ! Loop over all row-blocks
           do ivar = 1, nvar
 
@@ -2712,7 +2712,7 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   recursive subroutine linsol_precondILU(rsolver, ru)
 
 !<description>
@@ -2738,7 +2738,7 @@ contains
 
         integer(I32) jlu(*),uptr(*),n
         real(DP)     x(n)
-        
+
         ! Note that we changed the interface here in contrast to the original
         ! LUSOLT routine - to make it possible to pass an integer array as
         ! double precision array. Bad practise, but SPLIB is set up this way.
@@ -2768,16 +2768,16 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
         call sys_halt()
       end if
-      
+
       ! Loop over all blocks
       do iblock = 1, ru%nblocks
         call do_scalarILU(p_solver%p_rsolverBlockILU(iblock), ru%RvectorBlock(iblock))
       end do
 
     else
-      
+
       call do_scalarILU(p_solver, ru%RvectorBlock(1))
-      
+
     end if
 
   contains
@@ -2797,14 +2797,14 @@ contains
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol,p_Kdiagonal
       integer(I32), dimension(:), pointer :: p_Idata,p_lu,p_jlu,p_ilup
-      
+
 
       ! What kind of ILU algorithm should be used?
       if (rsolver%ifill .le. 0) then
-        
+
         ! Set pointer to scalar matrix
         p_rmatrix  => rsolver%rmatrix%RmatrixBlock(1,1)
-        
+
         ! What kind of matrix are we?
         select case(p_rmatrix%cmatrixFormat)
         case (LSYSSC_MATRIX7)
@@ -2812,21 +2812,21 @@ contains
           call lsyssc_getbase_Kcol   (p_rmatrix, p_Kcol)
           call lsyssc_getbase_double (ru, p_Du)
           call storage_getbase_double(rsolver%h_Ddata, p_Ddata)
-          
+
           call do_Mat7MILU0(p_Ddata, p_Kld, p_Kcol,&
                             p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
-          
-          
+
+
         case (LSYSSC_MATRIX9)
           call lsyssc_getbase_Kld      (p_rmatrix, p_Kld)
           call lsyssc_getbase_Kcol     (p_rmatrix, p_Kcol)
           call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
           call lsyssc_getbase_double   (ru, p_Du)
           call storage_getbase_double  (rsolver%h_Ddata, p_Ddata)
-          
+
           call do_Mat9MILU0(p_Ddata, p_Kld, p_Kcol, p_Kdiagonal,&
                             p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
-          
+
 
         case (LSYSSC_MATRIX7INTL)
 
@@ -2838,7 +2838,7 @@ contains
             call lsyssc_getbase_Kcol   (p_rmatrix, p_Kcol)
             call lsyssc_getbase_double (ru, p_Du)
             call storage_getbase_double(rsolver%h_Ddata, p_Ddata)
-            
+
             call do_Mat7MILU0(p_Ddata, p_Kld, p_Kcol,&
                               p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
@@ -2848,7 +2848,7 @@ contains
             call lsyssc_getbase_double (p_rmatrix, p_Da)
             call lsyssc_getbase_double (ru, p_Du)
             call storage_getbase_double(rsolver%h_Ddata, p_Ddata)
-            
+
             call do_Mat7Intl1BILU0(p_Da, p_Ddata, p_Kld, p_Kcol,&
                                    p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
@@ -2859,7 +2859,7 @@ contains
             call sys_halt()
           end select
 
-          
+
         case (LSYSSC_MATRIX9INTL)
 
           ! What kind of interleave format are we?
@@ -2871,7 +2871,7 @@ contains
             call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
             call lsyssc_getbase_double   (ru, p_Du)
             call storage_getbase_double  (rsolver%h_Ddata, p_Ddata)
-            
+
             call do_Mat9MILU0(p_Ddata, p_Kld, p_Kcol, p_Kdiagonal,&
                               p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
@@ -2883,18 +2883,18 @@ contains
             call lsyssc_getbase_double   (p_rmatrix, p_Da)
             call lsyssc_getbase_double   (ru, p_Du)
             call storage_getbase_double  (rsolver%h_Ddata, p_Ddata)
-            
+
             call do_Mat9Intl1BILU0(p_Da, p_Ddata, p_Kld, p_Kcol,&
                                    p_Kdiagonal, p_rmatrix%NEQ, p_rmatrix%NVAR, p_Du)
 
-            
+
           case DEFAULT
             call output_line('Unsupported interleave matrix format!',&
                 OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
             call sys_halt()
           end select
-          
-          
+
+
         case DEFAULT
           call output_line('Unsupported matrix format!',&
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
@@ -2902,17 +2902,17 @@ contains
         end select
 
       else
-        
+
         ! Set pointers
         call lsyssc_getbase_double(ru, p_Du)
         call storage_getbase_int(rsolver%h_Idata, p_Idata)
         p_lu   => p_Idata(rsolver%lu:)
         p_jlu  => p_Idata(rsolver%jlu:)
         p_ilup => p_Idata(rsolver%ilup:)
-        
+
         ! Solve the system by calling SPLIB
         call LUSOLT(int(size(p_Du), I32), p_Du, p_lu, p_jlu, p_ilup)
-        
+
       end if
     end subroutine do_scalarILU
 
@@ -2927,35 +2927,35 @@ contains
       integer, dimension(:), intent(in) :: Kcol
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
-      
+
       real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: Daux
       integer :: ia,ild,ieq,icol
 
-      
+
       ! Forward substitution: L*y = b
       forward: do ieq = 1, neq
-        
+
         Daux = 0.0_DP
-        
+
         fwdin: do ia = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ia)
           if (icol .ge. ieq) exit fwdin
           Daux = Daux+Da(:,ia)*Du(:,icol)
         end do fwdin
-        
+
         Du(:,ieq) = Du(:,ieq)-Daux
 
       end do forward
-      
+
       ! Scale last entry by diagonal
       Daux = Da(:,Kld(neq))
       Du(:,neq) = Du(:,neq)/Daux
-      
+
       ! Backward substitution: U*x = y
       backward: do ieq = neq-1, 1, -1
-        
+
         ild = Kld(ieq)
         Daux = 0.0_DP
 
@@ -2964,13 +2964,13 @@ contains
           if (icol .le. ieq) exit bwdin
           Daux = Daux+Da(:,ia)*Du(:,icol)
         end do bwdin
-        
+
         Du(:,ieq)=(Du(:,ieq)-Daux)/Da(:,ild)
-        
+
       end do backward
     end subroutine do_Mat7MILU0
 
-    
+
     !**************************************************************
     ! Perform (M)ILU(0) peconditioning for a matrix in format CSR9
 
@@ -2982,42 +2982,42 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
-      
+
       real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: Daux
       integer :: ia,ild,ieq,icol
 
-      
+
       ! Forward substitution
       forward: do ieq = 1, neq
-        
+
         Daux = 0.0_DP
-        
+
         fwdin: do ia = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ia)
           Daux = Daux+Da(:,ia)*Du(:,icol)
         end do fwdin
-        
+
         Du(:,ieq) = Du(:,ieq)-Daux
 
       end do forward
-      
+
       ! Scale last entry by diagonal
       Daux = Da(:,Kdiagonal(neq))
       Du(:,neq) = Du(:,neq)/Daux
-      
+
       ! Backward substitution
       backward: do ieq = neq-1, 1, -1
-        
+
         ild = Kdiagonal(ieq)
         Daux = 0.0_DP
-        
+
         bwdin: do ia = Kld(ieq+1)-1, Kdiagonal(ieq)+1, -1
           icol = Kcol(ia)
           Daux = Daux+Da(:,ia)*Du(:,icol)
         end do bwdin
-        
+
         Du(:,ieq) = (Du(:,ieq)-Daux)/Da(:,ild)
 
       end do backward
@@ -3036,18 +3036,18 @@ contains
       integer, dimension(:), intent(in) :: Kcol
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
-      
+
       real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
       integer :: ia,ild,ieq,icol,ivar,jvar,ii
-      
+
       ! Forward block-substitution: [D+Lower(A)]*y = b,
       ! whereby D is the LU decomposition of the diagonal blocks
       ! and Lower(A) stands for the lower triangular parts of A
 
-      ! Compute the inverse of the first diagonal block 
+      ! Compute the inverse of the first diagonal block
       ii = 0
       do ivar = 1, nvar
         daux = Du(ivar,1)
@@ -3060,7 +3060,7 @@ contains
         end if
         Du(ivar,1) = daux
       end do
-      
+
       do ivar = nvar, 1, -1
         daux = Du(ivar,1)
         do jvar = ivar+1, nvar
@@ -3071,7 +3071,7 @@ contains
 
       ! Loop over rows 2,3,...,NEQ
       do ieq = 2, neq
-        
+
         DauxBlock = 0.0_DP
         fwdin: do ia = Kld(ieq)+1, Kld(ieq+1)-1
           icol = Kcol(ia)
@@ -3094,7 +3094,7 @@ contains
           end if
           Du(ivar,ieq) = daux
         end do
-        
+
         do ivar = nvar, 1, -1
           daux = Du(ivar,ieq)
           do jvar = ivar+1, nvar
@@ -3118,18 +3118,18 @@ contains
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: neq
       integer, intent(in) :: nvar
-      
+
       real(DP), dimension(nvar,*), intent(inout) :: Du
 
       real(DP), dimension(nvar) :: DauxBlock
       real(DP) :: daux
       integer :: ia,ild,ieq,icol,ivar,jvar,ii
-      
+
       ! Forward block-substitution: [D+Lower(A)]*y = b,
       ! whereby D is the LU decomposition of the diagonal blocks
       ! and Lower(A) stands for the lower triangular parts of A
 
-      ! Compute the inverse of the first diagonal block 
+      ! Compute the inverse of the first diagonal block
       ii = 0
       do ivar = 1, nvar
         daux = Du(ivar,1)
@@ -3142,7 +3142,7 @@ contains
         end if
         Du(ivar,1) = daux
       end do
-      
+
       do ivar = nvar, 1, -1
         daux = Du(ivar,1)
         do jvar = ivar+1, nvar
@@ -3153,7 +3153,7 @@ contains
 
       ! Loop over rows 2,3,...,NEQ
       do ieq = 2, neq
-        
+
         DauxBlock = 0.0_DP
         fwdin: do ia = Kld(ieq), Kdiagonal(ieq)-1
           icol = Kcol(ia)
@@ -3175,7 +3175,7 @@ contains
           end if
           Du(ivar,ieq) = daux
         end do
-        
+
         do ivar = nvar, 1, -1
           daux = Du(ivar,ieq)
           do jvar = ivar+1, nvar
@@ -3188,9 +3188,9 @@ contains
   end subroutine linsol_precondILU
 
   ! ***************************************************************************
-  
+
 !<subroutine>
-  
+
   subroutine linsol_smooth(rproblemLevel, rsolver, ru, rf, nsmooth)
 
 !<description>
@@ -3217,7 +3217,7 @@ contains
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
-    
+
     ! Check if solver is correct
     if (rsolver%csolverType .ne. SV_LINEAR) then
       call output_line('Unsupported solver type!',&
@@ -3304,16 +3304,16 @@ contains
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
     call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
-    
+
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
-      
+
       ! Precondition the linear residual
       call linsol_precondJacobi(rsolver, rres)
-      
+
       ! Update solution
       call lsysbl_vectorLinearComb(rres, ru, 1.0_DP, 1.0_DP)
-      
+
       ! Compute residual
       call lsysbl_copyVector(rf, rres)
       call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
@@ -3344,7 +3344,7 @@ contains
     type(t_vectorBlock), intent(inout) :: ru
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_solverSSOR), pointer :: rsolverSSOR
     type(t_matrixBlock),  pointer :: rmatrix
@@ -3359,16 +3359,16 @@ contains
     ! Compute initial residual
     call lsysbl_copyVector(rf, rres)
     call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
-    
+
     ! Iterative correction
     do iiterations = 1, rsolver%nmaxIterations
-      
+
       ! Precondition the linear residual
       call linsol_precondSSOR(rsolver, rres)
-      
+
       ! Update solution
       call lsysbl_vectorLinearComb(rres, ru, 1.0_DP, 1.0_DP)
-      
+
       ! Compute residual
       call lsysbl_copyVector(rf,rres)
       call lsysbl_blockMatVec(rmatrix, ru, rres, -1.0_DP, 1.0_DP)
@@ -3389,7 +3389,7 @@ contains
 !<input>
     ! solver structure
     type(t_solver), intent(in) :: rsolver
-    
+
     ! r.h.s. vector
     type(t_vectorBlock), intent(in) :: rf
 !</input>
@@ -3405,24 +3405,24 @@ contains
     type(t_matrixBlock), pointer :: rmatrix
     type(t_vectorBlock),  pointer :: raux
     integer :: iiterations
-    
+
     ! Set pointers
     rsolverILU => rsolver%p_solverILU
     rmatrix    => rsolverILU%rmatrix
     raux       => rsolverILU%rtempVector
-    
+
     ! Check compatibility
     call lsysbl_isMatrixCompatible(ru, rmatrix, .false.)
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isVectorCompatible(ru, raux)
-    
+
     do iiterations = 1, rsolver%nmaxIterations
-      
+
       call lsysbl_copyVector (rf, raux)
       call lsysbl_blockMatVec(rmatrix, ru, raux, -1.0_DP, 1.0_DP)
       call linsol_precondILU (rsolver, raux)
       call lsysbl_vectorLinearComb(raux, ru, rsolver%domega, 1.0_DP)
-      
+
     end do
   end subroutine linsol_smoothILU
 end module solverlinear

@@ -1,12 +1,12 @@
   ! -*- mode: f90; -*-
-  
+
   ! This file describes the interfaces of the callback routines
   ! of the discrete operators for scalar conservation laws
-  
+
   ! ***************************************************************************
-  
+
   interface
-  
+
 !<subroutine>
 
     subroutine fcb_calcMatrixPrimal(&
@@ -40,9 +40,9 @@
   end interface
 
   ! ***************************************************************************
-  
+
   interface
-  
+
 !<subroutine>
 
     subroutine fcb_calcMatrixDual(&
@@ -75,4 +75,4 @@
 
   end interface
 
-  
+

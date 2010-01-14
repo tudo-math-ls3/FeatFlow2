@@ -20,7 +20,7 @@
 !#        variables stored in interleave or block format
 !#
 !# 4.) euler_getVarInterleaveFormat
-!#     -> Extracts a single variable from the scalar vector of 
+!#     -> Extracts a single variable from the scalar vector of
 !#        conservative variables stored in interleave format
 !#
 !# 5.) euler_getVarBlockFormat
@@ -62,7 +62,7 @@ module euler_basic
 
   ! no mass matrix, i.e., no time derivative
   integer, parameter, public :: MASS_ZERO       = 0
-  
+
   ! consistent mass matrix
   integer, parameter, public :: MASS_CONSISTENT = 1
 
@@ -151,7 +151,7 @@ module euler_basic
 
   ! Superconvergent patch recovery (face-based)
   integer, parameter, public :: ERREST_SPR_FACE      = 4
- 
+
   ! Limited averaging gradient recovery
   integer, parameter, public :: ERREST_LIMAVR        = 5
 
@@ -240,7 +240,7 @@ contains
 !</function>
 
     NVAR = rproblemLevel%rtriangulation%ndim + 2
-    
+
   end function euler_getNVAR
 
   !*****************************************************************************
@@ -269,14 +269,14 @@ contains
 !</function>
 
     select case(itransformationtype)
-      
+
     case (TRANSFORM_DENSITY_ENERGY_MOMENTUM,&
           TRANSFORM_DENSITY_PRESSURE_VELOCITY)
       NVARtransformed = euler_getNVAR(rproblemLevel)
-      
+
     case (TRANSFORM_DENSITY)
       NVARtransformed = 1
-      
+
     case (TRANSFORM_DENSITY_ENERGY,&
           TRANSFORM_DENSITY_PRESSURE)
       NVARtransformed = 2
@@ -284,7 +284,7 @@ contains
     case DEFAULT
       NVARtransformed = 0
     end select
-    
+
   end function euler_getNVARtransformed
 
   !*****************************************************************************
@@ -316,14 +316,14 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata, p_Dvalue
     integer :: neq, nvar
 
-    
+
     ! Check if we are in interleave of block format
     if (rvectorBlock%nblocks .eq. 1) then
 
       ! Set dimensions
       neq  = rvectorBlock%RvectorBlock(1)%NEQ
       nvar = rvectorBlock%RvectorBlock(1)%NVAR
-      
+
       ! Check if vector is compatible
       if (rvectorScalar%NEQ .eq. 0) then
         call lsyssc_createVector(rvectorScalar, neq, .false.)
@@ -344,7 +344,7 @@ contains
       ! Set dimensions
       neq  = int(rvectorBlock%NEQ/rvectorBlock%nblocks)
       nvar = rvectorBlock%nblocks
-      
+
       ! Check if vector is compatible
       if (rvectorScalar%NEQ .eq. 0) then
         call lsyssc_createVector(rvectorScalar, neq, .false.)
@@ -361,15 +361,15 @@ contains
           p_Ddata, p_Dvalue)
 
     end if
-    
+
     ! Attach spatial discretization from first subvector
     rvectorScalar%p_rspatialDiscr =>&
         rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
-    
+
   end subroutine euler_getVariable
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
@@ -385,10 +385,10 @@ contains
 
     ! Number of variables
     integer, intent(in) :: nvar
-    
+
     ! Identifier for the variable
     character(LEN=*), intent(in) :: cvariable
-    
+
     ! Vector of conservative variables
     real(DP), dimension(nvar,neq), intent(in) :: Ddata
 !</input>
@@ -396,14 +396,14 @@ contains
 !<output>
     ! Extracted single variable
     real(DP), dimension(:), intent(out) :: Dvalue
-!</output>    
+!</output>
 !</subroutine>
-    
+
     ! local variables
     real(DP) :: p
     integer :: ieq
-    
-    
+
+
     select case (trim(adjustl(sys_upcase(cvariable))))
     case ('DENSITY')
       !$omp parallel do
@@ -438,21 +438,21 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('VELOCITY_X')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
-      
+
     case ('VELOCITY_Y')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
-      
+
     case ('VELOCITY_Z')
       !$omp parallel do
       do ieq = 1, neq
@@ -466,21 +466,21 @@ contains
         Dvalue(ieq) = Ddata(2, ieq)
       end do
       !$omp end parallel do
-      
+
     case ('MOMENTUM_Y')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)
       end do
       !$omp end parallel do
-      
+
     case ('MOMENTUM_Z')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)
       end do
       !$omp end parallel do
-      
+
     case ('ENERGY')
       !$omp parallel do
       do ieq = 1, neq
@@ -524,7 +524,7 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('PRESSURE')
       select case (nvar)
       case (NVAR1D)
@@ -535,7 +535,7 @@ contains
               Ddata(2, ieq)/Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
@@ -545,7 +545,7 @@ contains
               Ddata(3, ieq)/Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
@@ -557,7 +557,7 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('MACHNUMBER')
       select case (nvar)
       case (NVAR1D)
@@ -566,13 +566,13 @@ contains
           p = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -580,14 +580,14 @@ contains
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
       case (NVAR3D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -596,7 +596,7 @@ contains
               Ddata(2, ieq)/Ddata(1, ieq),&
               Ddata(3, ieq)/Ddata(1, ieq),&
               Ddata(4, ieq)/Ddata(1, ieq))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq),&
@@ -614,11 +614,11 @@ contains
           p = thdyn_pressure(GAMMA,&
               Ddata(nvar, ieq)/Ddata(1, ieq), Ddata(1, ieq),&
               Ddata(2, ieq)/Ddata(1, ieq))
-          
+
           Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -630,7 +630,7 @@ contains
           Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(1, ieq))
         end do
         !$omp end parallel do
-        
+
         case (NVAR3D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -650,15 +650,15 @@ contains
       do ieq = 1, neq
         Dvalue(ieq) = 0.0_DP
       end do
-      !$omp end parallel do      
+      !$omp end parallel do
     end select
-    
+
   end subroutine euler_getVarInterleaveFormat
-  
+
   !*****************************************************************************
 
 !<subroutine>
-  
+
   pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
@@ -672,10 +672,10 @@ contains
 
     ! Number of variables
     integer, intent(in) :: nvar
-    
+
     ! Identifier for the variable
     character(LEN=*), intent(in) :: cvariable
-    
+
     ! Vector of conservative variables
     real(DP), dimension(neq,nvar), intent(in) :: Ddata
 !</input>
@@ -683,14 +683,14 @@ contains
 !<output>
     ! Extracted single variable
     real(DP), dimension(:), intent(out) :: Dvalue
-!</output>    
+!</output>
 !</subroutine>
-      
+
     ! local variables
     real(DP) :: p
     integer :: ieq
-    
-    
+
+
     select case (trim(adjustl(sys_upcase(cvariable))))
     case ('DENSITY')
       !$omp parallel do
@@ -725,21 +725,21 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('VELOCITY_X')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 2)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
-      
+
     case ('VELOCITY_Y')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
-      
+
     case ('VELOCITY_Z')
       !$omp parallel do
       do ieq = 1, neq
@@ -753,21 +753,21 @@ contains
         Dvalue(ieq) = Ddata(ieq, 2)
       end do
       !$omp end parallel do
-      
+
     case ('MOMENTUM_Y')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)
       end do
       !$omp end parallel do
-      
+
     case ('MOMENTUM_Z')
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)
       end do
       !$omp end parallel do
-      
+
     case ('ENERGY')
       !$omp parallel do
       do ieq = 1, neq
@@ -811,7 +811,7 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('PRESSURE')
       select case (nvar)
       case (NVAR1D)
@@ -822,7 +822,7 @@ contains
               Ddata(ieq, 2)/Ddata(ieq, 1))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do
         do ieq = 1, neq
@@ -832,7 +832,7 @@ contains
               Ddata(ieq, 3)/Ddata(ieq, 1))
         end do
         !$omp end parallel do
-        
+
       case (NVAR3D)
         !$omp parallel do
         do ieq = 1, neq
@@ -844,7 +844,7 @@ contains
         end do
         !$omp end parallel do
       end select
-      
+
     case ('MACHNUMBER')
       select case (nvar)
       case (NVAR1D)
@@ -853,13 +853,13 @@ contains
           p = thdyn_pressure(GAMMA,&
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -867,14 +867,14 @@ contains
               Ddata(ieq, nvar)/Ddata(ieq, 1), Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1))
         end do
         !$omp end parallel do
-        
+
       case (NVAR3D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -883,7 +883,7 @@ contains
               Ddata(ieq, 2)/Ddata(ieq, 1),&
               Ddata(ieq, 3)/Ddata(ieq, 1),&
               Ddata(ieq, 4)/Ddata(ieq, 1))
-          
+
           Dvalue(ieq) = thdyn_Machnumber(GAMMA,&
               p, Ddata(ieq, 1),&
               Ddata(ieq, 2)/Ddata(ieq, 1),&
@@ -905,7 +905,7 @@ contains
           Dvalue(ieq) = thdyn_SpeedOfSound(GAMMA, p, Ddata(ieq, 1))
         end do
         !$omp end parallel do
-        
+
       case (NVAR2D)
         !$omp parallel do private(p)
         do ieq = 1, neq
@@ -940,13 +940,13 @@ contains
       !$omp end parallel do
 
     end select
-    
+
   end subroutine euler_getVarBlockformat
 
   !*****************************************************************************
 
 !<subroutine>
-  
+
   subroutine euler_setVariables(rexport, rvectorBlock)
 
 !<description>
@@ -1016,7 +1016,7 @@ contains
       call setVarInterleaveFormat(neq, nvar, 2,&
           p_Dvelocity_x, p_Ddata)
 
-      
+
       ! Get velocity in y-direction
       call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
       if (nlength .ne. neq) then
@@ -1058,7 +1058,7 @@ contains
 
       ! Deallocate temporal memory
       deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy)
-      
+
     else
 
       ! Set dimensions
@@ -1104,7 +1104,7 @@ contains
       call setVarBlockFormat(neq, nvar, 2,&
           p_Dvelocity_x, p_Ddata)
 
-      
+
       ! Get velocity in y-direction
       call ucd_getVariable(rexport, 'velocity_Y', nlength=nlength)
       if (nlength .ne. neq) then
@@ -1152,7 +1152,7 @@ contains
   contains
 
     ! Here, the working routine follow
-    
+
     !**************************************************************
     ! Set variable stored in interleave format
 
@@ -1160,7 +1160,7 @@ contains
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue
-      
+
       real(DP), dimension(nvar,neq), intent(inout) :: Ddata
 
       ! local variables
@@ -1181,7 +1181,7 @@ contains
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue
-      
+
       real(DP), dimension(neq,nvar), intent(inout) :: Ddata
 
       ! local variables
@@ -1194,7 +1194,7 @@ contains
       !$omp end parallel do
 
     end subroutine setVarBlockformat
-   
+
   end subroutine euler_setVariables
- 
+
 end module euler_basic

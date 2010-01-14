@@ -37,9 +37,9 @@ program flagship
   use euler_application
   use transport_application
   use zpinch_application
-  
+
   implicit none
-  
+
   ! global parameter list
   type(t_parlist) :: rparlist
 
@@ -54,10 +54,10 @@ program flagship
   character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
 
-  
+
   ! Initialize Feat2 subsystem
   call system_init()
-  
+
   ! Set system halt mode
   sys_haltmode = SYS_HALT_THROWFPE
 
@@ -70,7 +70,7 @@ program flagship
 
   ! Initialize function parser
   call fparser_init()
-  
+
   ! Initialize signal handler for SIGINT and SIGQUIT
   call fsignal(SIGINT, signal_SIGINT)
   call fsignal(SIGQUIT, signal_SIGQUIT)
@@ -88,7 +88,7 @@ program flagship
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
   call output_line('            Dortmund University of Technology')
-  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany') 
+  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
   call output_separator(OU_SEP_STAR)
   call getenv('HOST',cbuffer); hostname = adjustl(cbuffer)
   call output_line('  Hostname:        '//trim(hostname))
@@ -104,7 +104,7 @@ program flagship
     call output_lbrk()
     call sys_halt()
   end if
-  
+
   ! Initialize parameter list from file
   call get_command_argument(command_argument_count(), cbuffer)
   sparameterfileName = adjustl(cbuffer)
@@ -137,9 +137,9 @@ program flagship
     call output_line('Invalid application name!',&
                      OU_CLASS_WARNING,OU_MODE_STD,'flagship')
     call sys_halt()
-    
+
   end select
-  
+
   ! Release parameter list
   call parlst_done(rparlist)
 
@@ -153,7 +153,7 @@ program flagship
 
   ! Close logfile
   call output_done()
-  
+
 end program flagship
 
 !*****************************************************************************
@@ -184,16 +184,16 @@ function signal_SIGINT(signum) result(sigcount)
 
   ! local variables
   integer, save :: icount = 0
-  
+
   sigcount = icount
 
   if (signum .eq. -1) then
-    
+
     ! Reset counter
     icount = 0
 
   elseif (signum .eq. SIGINT) then
-    
+
     ! Increase counter
     icount = icount+1
     if (icount .ge. 3) then

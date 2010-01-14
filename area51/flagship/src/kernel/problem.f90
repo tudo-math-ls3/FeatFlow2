@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module provides the basic data structures and subroutines for handling
-!#  the complete problem configuration both in space and time. 
+!#  the complete problem configuration both in space and time.
 !#
 !#
 !# The following routines are available:
@@ -78,7 +78,7 @@ module problem
   use triangulation
 
   implicit none
-  
+
   private
   public :: t_problem
   public :: t_problemLevel
@@ -98,9 +98,9 @@ module problem
   public :: problem_removeLevel
   public :: problem_infoLevel
   public :: problem_getLevel
-  
+
   !*****************************************************************************
-  
+
 !<constants>
 
 !<constantblock description="Flags for the problem descriptor specification bitfield">
@@ -134,7 +134,7 @@ module problem
 !</constantblock>
 
 !</constants>
-  
+
   !*****************************************************************************
 
 !<types>
@@ -190,11 +190,11 @@ module problem
 !</typeblock>
 
   !*****************************************************************************
-  
+
 !<typeblock>
 
   ! This data structure contains the complete problem configuration
-  
+
   type t_problem
 
     ! Boundary parametrization
@@ -217,11 +217,11 @@ module problem
 !</typeblock>
 
   !*****************************************************************************
-  
+
 !<typeblock>
-  
+
   ! This data structure contains all required problem data on one level
-  
+
   type t_problemLevel
 
     ! Problem level specification tag. This is a bitfield coming from
@@ -242,7 +242,7 @@ module problem
 
     ! Array of AFC stabilisations
     type(t_afcstab), dimension(:), pointer :: Rafcstab => null()
- 
+
     ! Array of scalar matrices
     type(t_matrixScalar), dimension(:), pointer :: Rmatrix => null()
 
@@ -263,11 +263,11 @@ module problem
 
     ! Pointer to next finer problem level
     type(t_problemLevel), pointer :: p_rproblemLevelFine => null()
-    
+
   end type t_problemLevel
 
-!</typeblock>  
- 
+!</typeblock>
+
 !</types>
 
 contains
@@ -300,11 +300,11 @@ contains
 
     ! Initialize global problem structure
     call problem_createProblem(rproblem)
-    
+
     ! Initialize coarse level
     nullify(rproblemLevel); allocate(rproblemLevel)
     call problem_createLevel(rproblemLevel, rproblemDescriptor%nlmin)
-    
+
     bnoExtendedRaw = (iand(rproblemDescriptor%iproblemSpec,&
                            PROBDESC_MSPEC_EXTENDEDRAW) .eq. 0)
 
@@ -313,12 +313,12 @@ contains
       ! Read coarse mesh from TRI-file
       call tria_readTriFile1D(rproblemLevel%rtriangulation,&
           rproblemDescriptor%trifile, bnoExtendedRaw)
-      
+
     case (NDIM2D)
       ! Create new boundary and read from PRM-file
       call boundary_read_prm(rproblem%rboundary,&
           rproblemDescriptor%prmfile)
-      
+
       ! Read coarse mesh from TRI-file
       call tria_readTriFile2D(rproblemLevel%rtriangulation,&
           rproblemDescriptor%trifile, rproblem%rboundary,&
@@ -353,7 +353,7 @@ contains
     ! Refine coarse mesh to minimum problem level
     call tria_quickRefine2LevelOrdering(rproblemDescriptor%nlmin-1,&
         rproblemLevel%rtriangulation, rproblem%rboundary)
-    
+
     ! Create standard mesh from raw mesh
     call tria_initStandardMeshFromRaw(rproblemLevel%rtriangulation,&
         rproblem%rboundary)
@@ -385,11 +385,11 @@ contains
     ! Generate fine levels
     do ilev = rproblemDescriptor%nlmin+1,&
               rproblemDescriptor%nlmax
-      
+
       ! Initialize current level
       nullify(rproblemLevel); allocate(rproblemLevel)
       call problem_createLevel(rproblemLevel, ilev)
-      
+
       ! Generate regularly refined mesh
       call tria_refine2LevelOrdering(p_rproblemLevel%rtriangulation,&
           rproblemLevel%rtriangulation, rproblem%rboundary)
@@ -417,12 +417,12 @@ contains
       if (rproblemDescriptor%nafcstab .gt. 0)&
           allocate(rproblemLevel%Rafcstab(&
           rproblemDescriptor%nafcstab))
-      
+
       ! Append current level to global problem
       call problem_appendLevel(rproblem, rproblemLevel)
       p_rproblemLevel => rproblemLevel
     end do
-    
+
     ! Compress triangulation structure
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while (associated(p_rproblemLevel) .and.&
@@ -440,7 +440,7 @@ contains
 !<subroutine>
 
   subroutine problem_createProblem(rproblem)
-    
+
 !<description>
     ! This subroutine creates a new problem structure
 !</description>
@@ -450,7 +450,7 @@ contains
     type(t_problem), intent(out) :: rproblem
 !</inputoutput>
 !</subroutine>
-    
+
     ! Reset data
     nullify(rproblem%p_rproblemPrev, rproblem%p_rproblemNext)
     nullify(rproblem%p_rproblemLevelMin, rproblem%p_rproblemLevelMax)
@@ -472,13 +472,13 @@ contains
     type(t_problem), intent(inout) :: rproblem
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_problemLevel), pointer :: p_rproblemLevel
-    
+
     ! Initialization
     p_rproblemLevel => rproblem%p_rproblemLevelMax
-    
+
     ! Loop over all problem levels and destroy them
     do while(associated(p_rproblemLevel))
       call problem_removeLevel(rproblem, p_rproblemLevel)
@@ -487,10 +487,10 @@ contains
       deallocate(p_rproblemLevel)
       p_rproblemLevel => rproblem%p_rproblemLevelMax
     end do
-    
+
     ! Release boundary
     call boundary_release(rproblem%rboundary)
-        
+
     ! Reset data
     nullify(rproblem%p_rproblemPrev, rproblem%p_rproblemNext)
     nullify(rproblem%p_rproblemLevelMin, rproblem%p_rproblemLevelMax)
@@ -515,11 +515,11 @@ contains
     type(t_problem), pointer :: p_rproblemLast
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     type(t_problem), pointer :: p_rproblem
 
-    
+
     p_rproblem => p_rproblemFirst
     do while(associated(p_rproblem))
 
@@ -546,7 +546,7 @@ contains
     ! rproblemRef. Otherwise, the last problem is used as reference
     ! structure.
 !</description>
-  
+
 !<input>
     ! first problem structure
     type(t_problem), pointer :: p_rproblemFirst
@@ -591,9 +591,9 @@ contains
         p_rproblemLast => rproblem
 
       end if
-      
+
     else
-      
+
       ! List of problem structures is completely empty
       p_rproblemFirst => rproblem
       p_rproblemLast  => rproblem
@@ -618,7 +618,7 @@ contains
     ! rproblemRef. Otherwise, the first problem is used as reference
     ! structure.
 !</description>
-  
+
 !<input>
     ! first problem structure
     type(t_problem), pointer :: p_rproblemFirst
@@ -663,9 +663,9 @@ contains
         p_rproblemFirst => rproblem
 
       end if
-      
+
     else
-      
+
       ! List of problem structures is completely empty
       p_rproblemFirst => rproblem
       p_rproblemLast  => rproblem
@@ -687,7 +687,7 @@ contains
     ! This subroutine removes an existing problem structure
     ! from the linked list of problem structures
 !</description>
-  
+
 !<input>
     ! first problem structure
     type(t_problem), pointer :: p_rproblemFirst
@@ -713,7 +713,7 @@ contains
     else
       rproblem%p_rproblemNext%p_rproblemPrev => rproblem%p_rproblemPrev
     end if
-    
+
   end subroutine problem_removeProblem
 
   !*****************************************************************************
@@ -738,11 +738,11 @@ contains
     ! local variables
     type(t_problem), pointer :: p_rproblem
 
-    
+
     if (present(rproblemLast)) then
-      
+
       p_rproblem => rproblemFirst
-      
+
       do while(associated(p_rproblem))
 
         call doInfo(p_rproblem)
@@ -750,13 +750,13 @@ contains
 
         if (associated(p_rproblem, rproblemLast)) exit
         p_rproblem => p_rproblem%p_rproblemNext
-        
+
       end do
 
     else
 
       call doInfo(rproblemFirst)
-      
+
     end if
 
   contains
@@ -764,45 +764,45 @@ contains
     ! Here, the real info routines follow.
 
     !**************************************************************
-    
+
     subroutine doInfo(rproblem)
 
       type(t_problem), intent(in), target :: rproblem
 
       ! local variables
       type(t_problemLevel), pointer :: p_rproblemLevel
-    
-  
+
+
       call output_line ('Problem:')
       call output_line ('---------')
-      
+
       if (associated(rproblem%p_rproblemLevelMin)) then
         call output_line ('minimum level: '//&
             trim(sys_siL(rproblem%p_rproblemLevelMin%ilev,15)))
       else
         call output_line ('minimum level: not associated')
       end if
-      
+
       if (associated(rproblem%p_rproblemLevelMax)) then
         call output_line ('maximum level: '//&
             trim(sys_siL(rproblem%p_rproblemLevelMax%ilev,15)))
       else
         call output_line ('maximum level: not associated')
       end if
-      
+
       call output_lbrk()
-      
+
       ! Initialization
       p_rproblemLevel => rproblem%p_rproblemLevelMax
-      
+
       ! Loop over all problem levels
       do while(associated(p_rproblemLevel))
         call problem_infoLevel(p_rproblemLevel)
         p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
       end do
-      
+
     end subroutine doInfo
-    
+
   end subroutine problem_infoProblem
 
   !*****************************************************************************
@@ -810,7 +810,7 @@ contains
 !<subroutine>
 
   subroutine problem_createLevel(rproblemLevel, ilev)
-    
+
 !<description>
     ! This subroutine creates a new problem level structure
 !</description>
@@ -824,13 +824,13 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(out) :: rproblemLevel
 !</output>
-!</subroutine>    
-    
+!</subroutine>
+
     ! Set problem level
     rproblemLevel%ilev = ilev
-    
+
   end subroutine problem_createLevel
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -840,8 +840,8 @@ contains
 !<description>
     ! This subroutine releases an existing problem level structure
 !</description>
- 
-!<inputoutput>  
+
+!<inputoutput>
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
 !</inputoutput>
@@ -849,7 +849,7 @@ contains
 
     ! local variables
     integer :: i
-    
+
     ! Release triangulation structure
     call tria_done(rproblemLevel%rtriangulation)
 
@@ -861,7 +861,7 @@ contains
       end do
       deallocate(rproblemLevel%Rdiscretisation)
     end if
-    
+
     ! Release all scalar matrices
     if (associated(rproblemLevel%Rmatrix)) then
       do i = lbound(rproblemLevel%Rmatrix,1),&
@@ -870,7 +870,7 @@ contains
       end do
       deallocate(rproblemLevel%Rmatrix)
     end if
-    
+
     ! Release all block matries
     if (associated(rproblemLevel%RmatrixBlock)) then
       do i = lbound(rproblemLevel%RmatrixBlock,1),&
@@ -879,7 +879,7 @@ contains
       end do
       deallocate(rproblemLevel%RmatrixBlock)
     end if
-    
+
     ! Release all scalar vectors
     if (associated(rproblemLevel%Rvector)) then
       do i = lbound(rproblemLevel%Rvector,1),&
@@ -888,7 +888,7 @@ contains
       end do
       deallocate(rproblemLevel%Rvector)
     end if
-    
+
     ! Release all block vectors
     if (associated(rproblemLevel%RvectorBlock)) then
       do i = lbound(rproblemLevel%RvectorBlock,1),&
@@ -897,7 +897,7 @@ contains
       end do
       deallocate(rproblemLevel%RvectorBlock)
     end if
-    
+
     ! Release stabilization structure
     if (associated(rproblemLevel%Rafcstab)) then
       do i = lbound(rproblemLevel%Rafcstab,1),&
@@ -908,11 +908,11 @@ contains
     end if
 
   end subroutine problem_releaseLevel
-  
+
   !*****************************************************************************
 
 !<subroutine>
-  
+
   subroutine problem_appendLevel(rproblem, rproblemLevel,&
       rproblemLevelRef)
 
@@ -923,7 +923,7 @@ contains
     ! appended to rproblemLevelRef. Otherwise, the maximum problem
     ! level is used as reference structure.
 !</description>
-  
+
 !<inputoutput>
     ! global problem structure
     type(t_problem), intent(inout), target :: rproblem
@@ -935,13 +935,13 @@ contains
     type(t_problemLevel), intent(inout), target, optional :: rproblemLevelRef
 !</inputoutput>
 !</subroutine>
-    
+
     ! Set pointer to global problem structure
     rproblemLevel%p_rproblem => rproblem
 
     if (associated(rproblem%p_rproblemLevelMin) .and.&
         associated(rproblem%p_rproblemLevelMax)) then
-      
+
       if (present(rproblemLevelRef)) then
 
         ! Insert rproblemLevel after rproblemLevelRef
@@ -966,9 +966,9 @@ contains
         rproblem%p_rproblemLevelMax => rproblemLevel
 
       end if
-      
+
     else
-      
+
       ! Problem structure is completely empty
       rproblem%p_rproblemLevelMin => rproblemLevel
       rproblem%p_rproblemLevelMax => rproblemLevel
@@ -992,7 +992,7 @@ contains
     ! prepended to rproblemLevelRef. Otherwise, the minimum problem
     ! level is used as reference structure.
 !</description>
-  
+
 !<inputoutput>
     ! global problem structure
     type(t_problem), intent(inout), target :: rproblem
@@ -1007,10 +1007,10 @@ contains
 
     ! Set pointer to global problem structure
     rproblemLevel%p_rproblem => rproblem
-    
+
     if (associated(rproblem%p_rproblemLevelMin) .and.&
         associated(rproblem%p_rproblemLevelMax)) then
-      
+
       if (present(rproblemLevelRef)) then
 
         ! Insert rproblemLevel before rproblemLevelRef
@@ -1035,9 +1035,9 @@ contains
         rproblem%p_rproblemLevelMin => rproblemLevel
 
       end if
-      
+
     else
-      
+
       ! Problem structure is completely empty
       rproblem%p_rproblemLevelMin => rproblemLevel
       rproblem%p_rproblemLevelMax => rproblemLevel
@@ -1051,7 +1051,7 @@ contains
   !*****************************************************************************
 
 !<subroutine>
-  
+
   subroutine problem_removeLevel(rproblem, rproblemLevel)
 
 !<description>
@@ -1067,7 +1067,7 @@ contains
     type(t_problemLevel), intent(inout) :: rproblemLevel
 !</inputoutput>
 !</subroutine>
-    
+
     if (.not.associated(rproblemLevel%p_rproblem, rproblem)) then
       call output_line('Problem level structure does not belong to problem structure!',&
           OU_CLASS_ERROR,OU_MODE_STD,'problem_removeLevel')
@@ -1160,7 +1160,7 @@ contains
   end subroutine problem_infoLevel
 
   !*****************************************************************************
-  
+
 !<function>
 
   function problem_getLevel(rproblem, ilev, btopdown)&
@@ -1171,7 +1171,7 @@ contains
     ! with specified level number ilve. If such problem level does not
     ! exist p_rproblemLevel points to null().
 !</description>
-    
+
 !<input>
     ! global problem structure
     type(t_problem), intent(in) :: rproblem
@@ -1201,7 +1201,7 @@ contains
     if (present(btopdown)) bisTopdown=btopdown
 
     if (bisTopdown) then
-      
+
       ! Top-down search
       p_rproblemLevel => rproblem%p_rproblemLevelMax
       do while (associated(p_rproblemLevel))

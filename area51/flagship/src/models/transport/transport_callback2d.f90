@@ -57,12 +57,12 @@
 !#
 !# ****************************************************************************
 !#
-!# The following routines for Burgers` equation 
+!# The following routines for Burgers` equation
 !# in space-time are available:
 !#
 !# 1.) transp_calcMatGalSTBurgersP2d
 !#     transp_calcMatUpwSTBurgersP2d
-!#     -> Calculates the transport coefficients for 
+!#     -> Calculates the transport coefficients for
 !#        Burgers` equation in space-time
 !#
 !# 2.) ...
@@ -82,7 +82,7 @@
 !#
 !# 1.) transp_calcMatGalSTBuckLevP2d
 !#     transp_calcMatUpwSTBuckLevP2d
-!#     -> Calculates the transport coefficients for 
+!#     -> Calculates the transport coefficients for
 !#        Buckley-Leverett equation in space-time
 !#
 !# 2.) ...
@@ -101,7 +101,7 @@
 !#
 !# 1.) transp_calcMatGalBurgersP2d
 !#     transp_calcMatUpwBurgersP2d
-!#     -> Calculates the transport coefficients for 
+!#     -> Calculates the transport coefficients for
 !#        Burgers` equation in 2D
 !#
 !# 2.) ...
@@ -213,7 +213,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable2d')
       call sys_halt()
     end select
-    
+
   end subroutine transp_setVariable2d
 
   !*****************************************************************************
@@ -251,7 +251,7 @@ contains
       ! Retrieve solution vector from collection
       rsolution => rcollection%p_rvectorQuickAccess1
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -263,7 +263,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
-      
+
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
       if (rsolution%NEQ .ne. rcollection%IquickAccess(1)) then
@@ -281,7 +281,7 @@ contains
         call lsysbl_getbase_double(rsolution, p_Dsolution)
       end if
       p_Dsolution(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&    
+          0.5_DP*(p_Dsolution(rcollection%IquickAccess(2))+&
                   p_Dsolution(rcollection%IquickAccess(3)))
 
       ! Call the general callback function
@@ -304,7 +304,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
-      
+
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from solution
       if (rcollection%IquickAccess(2) .ne. 0) then
@@ -317,7 +317,7 @@ contains
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
-    
+
     case DEFAULT
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
@@ -325,7 +325,7 @@ contains
     end select
 
   end subroutine transp_hadaptCallback2d
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -340,7 +340,7 @@ contains
     use domainintegration
     use feevaluation
     use fparser
-    use fsystem    
+    use fsystem
     use scalarpde
     use spatialdiscretisation
     use triangulation
@@ -363,47 +363,47 @@ contains
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
     integer, intent(in) :: cderivative
-  
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: DpointsRef
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
-    
+
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
-    
+
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! This array has to receive the values of the (analytical) function
     ! in all the points specified in Dpoints, or the appropriate derivative
@@ -411,9 +411,9 @@ contains
     !   DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
-    
+
 !</subroutine>
-    
+
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:,:), pointer :: Dcoefficients
@@ -426,7 +426,7 @@ contains
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
         trim(rcollection%SquickAccess(1)))
-    
+
     ! This subroutine assumes that the first quick access integer
     ! value holds the number of the reference function.  Moreover,
     ! quick access interger values 3 and 4 hold the numbers of the
@@ -438,7 +438,7 @@ contains
     ! This subroutine also assumes that the first quick access double
     ! value holds the simulation time
     dtime = rcollection%DquickAccess(1)
-    
+
     ! Initialize values
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
@@ -454,7 +454,7 @@ contains
     ! Dcoefficients(:,:,1:3).
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
-        
+
         ! Set values for function parser
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -486,7 +486,7 @@ contains
       do ipoint = 1, ubound(Dpoints,2)
 
         dt = DpointPar(ipoint,iel)
-        
+
         ! Get the normal vector in the point from the boundary.
         ! Note that the parameter value is in length parametrisation!
         ! When we are at the left or right endpoint of the interval, we
@@ -509,7 +509,7 @@ contains
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
               ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
         end if
-        
+
         ! Compute the expression from the data stored in Dcoefficients
         !
         !    u * (v x n)
@@ -521,7 +521,7 @@ contains
                                dny * Dcoefficients(ipoint,iel,3))
       end do
     end do
-    
+
     ! Free temporal memory
     deallocate(Dcoefficients)
 
@@ -541,7 +541,7 @@ contains
     use domainintegration
     use feevaluation
     use fparser
-    use fsystem    
+    use fsystem
     use scalarpde
     use spatialdiscretisation
     use triangulation
@@ -565,47 +565,47 @@ contains
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
     integer, intent(in) :: cderivative
-  
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: DpointsRef
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
-    
+
     ! For every point under consideration, this specifies the parameter
     ! value of the point on the boundary component. The parameter value
     ! is calculated in LENGTH PARAMETRISATION!
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
-    
+
     ! This is a list of elements (corresponding to Dpoints) where information
     ! is needed. To an element iel=Ielements(i), the array Dpoints(:,:,i)
     ! specifies the points where information is needed.
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! This array has to receive the values of the (analytical) function
     ! in all the points specified in Dpoints, or the appropriate derivative
@@ -613,10 +613,10 @@ contains
     !   DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
-    
+
 !</subroutine>
 
-    
+
     ! local variables
     type(t_fparser), pointer :: p_rfparser
     type(t_vectorBlock), pointer :: p_rsolution, p_rvelocity
@@ -636,14 +636,14 @@ contains
     ! vector points to the velocity vector
     p_rsolution => rcollection%p_rvectorQuickAccess1
     p_rvelocity => rcollection%p_rvectorQuickAccess2
-    
+
     ! Evaluate the FE function in the cubature points on the boundary
     call fevl_evaluate_sim1(DER_FUNC, Dvalues, p_rsolution%RvectorBlock(1),&
                             Dpoints, Ielements, DpointsRef)
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
-    
+
     ! Evaluate the velocity field in the cubature points on the boundary
     ! and store the result in Dcoefficients(:,:,1:2)
     call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,1),&
@@ -662,7 +662,7 @@ contains
     ! This subroutine also assumes that the first quick access double
     ! value holds the simulation time
     dtime = rcollection%DquickAccess(1)
-    
+
     ! Initialize values
     Dvalue = 0.0_DP
     Dvalue(NDIM3D+1) = dtime
@@ -675,7 +675,7 @@ contains
     ! Dcoefficients(:,:,3:5).
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
-        
+
         ! Set values for function parser
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
 
@@ -707,7 +707,7 @@ contains
       do ipoint = 1, ubound(Dpoints,2)
 
         dt = DpointPar(ipoint,iel)
-        
+
         ! Get the normal vector in the point from the boundary.
         ! Note that the parameter value is in length parametrisation!
         ! When we are at the left or right endpoint of the interval, we
@@ -730,7 +730,7 @@ contains
           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
               ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
         end if
-        
+
         ! Compute the expression from the data stored in Dcoefficients
         !
         !    u * (v x n) - u_h * (v_h x n)
@@ -762,11 +762,11 @@ contains
     use collection
     use domainintegration
     use fparser
-    use fsystem    
+    use fsystem
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the calculation of errors. It
     ! has to compute the values of a weighting function in a couple of
@@ -778,27 +778,27 @@ contains
     ! According to the terms in the linear form, the routine has to
     ! compute simultaneously for all these points.
 !</description>
-    
-!<input> 
+
+!<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates correspond to the reference
     ! element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: DpointsRef
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed. It specifies the coordinates of the points where
     ! information is needed. These coordinates are world coordinates,
     ! i.e. on the real element.
     ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -815,11 +815,11 @@ contains
     ! DIMENSION(nelements)
     integer, dimension(:), intent(in) :: Ielements
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! This array has to receive the values of the weights in all the
     ! points specified in Dpoints, or the appropriate derivative of
@@ -837,29 +837,29 @@ contains
 
     ! Initialize values
     Dvalue = 0.0_DP
-    
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
                                        trim(rcollection%SquickAccess(1)))
-   
+
     ! Moreover, this subroutine assumes that the second quick access integer
     ! value holds the number of the function to be evaluated
     icomp = rcollection%IquickAccess(2)
-    
+
     ! This subroutine also assumes that the first quick access double
     ! value holds the simulation time
     Dvalue(NDIM3D+1) = rcollection%DquickAccess(1)
-    
+
     ! Set number of spatial dimensions
     ndim = size(Dpoints, 1)
 
     do iel = 1, size(Ielements)
       do ipoint = 1, ubound(Dpoints,2)
-        
+
         ! Set values for function parser
         Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-        
+
         ! Evaluate function parser
         call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
             Dvalues(ipoint,iel))
@@ -869,7 +869,7 @@ contains
   end subroutine transp_weightFuncBdrInt2d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatGalConvectionP2d(&
@@ -877,10 +877,10 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -911,7 +911,7 @@ contains
   end subroutine transp_calcMatGalConvectionP2d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatUpwConvectionP2d(&
@@ -919,11 +919,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -962,10 +962,10 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -989,7 +989,7 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-    
+
   end subroutine transp_calcMatGalConvectionD2d
 
   !*****************************************************************************
@@ -1001,11 +1001,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -1029,7 +1029,7 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-    
+
   end subroutine transp_calcMatUpwConvectionD2d
 
   ! ***************************************************************************
@@ -1050,7 +1050,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -1066,22 +1066,22 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -1109,11 +1109,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -1121,7 +1121,7 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     ! local variables
@@ -1131,12 +1131,12 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
-    
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
         trim(rcollection%SquickAccess(1)))
-    
+
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
     p_rvelocity => rcollection%p_rvectorQuickAccess1
@@ -1153,26 +1153,26 @@ contains
 
     ! What type of boundary conditions are we?
     select case(ibdrtype)
-      
+
     case(BDR_DIRICHLET_WEAK)
-      
+
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
-      
+
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints, rdomainIntSubset&
           %p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-      
+
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
 
@@ -1181,16 +1181,16 @@ contains
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           ! Set values for function parser
           Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-          
+
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
         end do
       end do
-      
+
       ! Get the minimum and maximum parameter value. The point with the minimal
       ! parameter value is the start point of the interval, the point with the
       ! maximum parameter value the endpoint.
@@ -1202,14 +1202,14 @@ contains
           dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
         end do
       end do
-      
+
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           dt = DpointPar(ipoint,iel)
-          
+
           ! Get the normal vector in the point from the boundary.
           ! Note that the parameter value is in length
           ! parametrisation!  When we are at the left or right
@@ -1224,7 +1224,7 @@ contains
             ! Start point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-            
+
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
             ! End point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -1234,10 +1234,10 @@ contains
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
-          
+
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
-          
+
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. -SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
@@ -1246,29 +1246,29 @@ contains
           end if
         end do
       end do
-      
+
       ! Deallocate temporal memory
       deallocate(Daux)
-      
+
 
     case(BDR_INHOMNEUMANN_WEAK)
-      
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-      
+
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
-      
+
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           ! Set values for function parser
           Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-          
+
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Dcoefficients(1,ipoint,iel))
@@ -1277,7 +1277,7 @@ contains
           Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
         end do
       end do
-      
+
     end select
 
   end subroutine transp_coeffVecBdrConvectionP2d
@@ -1300,7 +1300,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -1316,22 +1316,22 @@ contains
     !
     ! This routine handles the constant velocities in the dual problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -1359,11 +1359,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -1371,7 +1371,7 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     ! local variables
@@ -1381,7 +1381,7 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv,dtime,dscale
     integer :: ibdrtype,isegment,iel,ipoint,ndim
-    
+
     ! This subroutine assumes that the first quick access string
     ! value holds the name of the function parser in the collection.
     p_rfparser => collct_getvalue_pars(rcollection,&
@@ -1390,7 +1390,7 @@ contains
     ! This subroutine assumes that the first quick access vector
     ! points to the velocity vector
     p_rvelocity => rcollection%p_rvectorQuickAccess1
-    
+
     ! The first two quick access double values hold the simulation
     ! time and the scaling parameter
     dtime  = rcollection%DquickAccess(1)
@@ -1403,44 +1403,44 @@ contains
 
     ! What type of boundary conditions are we?
     select case(ibdrtype)
-      
+
     case(BDR_DIRICHLET_WEAK)
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
-      
+
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-      
+
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
-      
+
       ! Evaluate the function parser for the Dirichlet values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,3).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           ! Set values for function parser
           Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-          
+
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Daux(ipoint,iel,3))
         end do
       end do
-      
+
       ! Get the minimum and maximum parameter value. The point with the minimal
       ! parameter value is the start point of the interval, the point with the
       ! maximum parameter value the endpoint.
@@ -1452,14 +1452,14 @@ contains
           dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
         end do
       end do
-      
+
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           dt = DpointPar(ipoint,iel)
-          
+
           ! Get the normal vector in the point from the boundary.
           ! Note that the parameter value is in length parametrisation!
           ! When we are at the left or right endpoint of the interval, we
@@ -1473,7 +1473,7 @@ contains
             ! Start point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-            
+
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
             ! End point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
@@ -1483,10 +1483,10 @@ contains
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                 ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
-          
+
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
-          
+
           ! Check if we are at the dual inflow boundary
           if (dnv .gt. SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
@@ -1495,28 +1495,28 @@ contains
           end if
         end do
       end do
-      
+
       ! Deallocate temporal memory
       deallocate(Daux)
 
       case(BDR_INHOMNEUMANN_WEAK)
-      
+
       ! Initialize values
       Dvalue = 0.0_DP
       Dvalue(NDIM3D+1) = dtime
-      
+
       ! Set number of spatial dimensions
       ndim = size(Dpoints, 1)
-      
+
       ! Evaluate the function parser for the Neumann values in the
       ! cubature points on the boundary and store the result in
       ! Dcoefficients(:,:,1).
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           ! Set values for function parser
           Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-          
+
           ! Evaluate function parser
           call fparser_evalFunction(p_rfparser, isegment,&
               Dvalue, Dcoefficients(1,ipoint,iel))
@@ -1528,7 +1528,7 @@ contains
 
     end select
 
-  end subroutine transp_coeffVecBdrConvectionD2d  
+  end subroutine transp_coeffVecBdrConvectionD2d
 
   !*****************************************************************************
 
@@ -1538,7 +1538,7 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use boundary
     use boundaryfilter
@@ -1549,7 +1549,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -1562,13 +1562,13 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
@@ -1576,19 +1576,19 @@ contains
 
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -1602,21 +1602,21 @@ contains
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
-    
+
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
-    
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
@@ -1624,9 +1624,9 @@ contains
     ! with itermCount the number of terms in the bilinear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
-  
+
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
@@ -1653,17 +1653,17 @@ contains
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
-      
+
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       ! Get the minimum and maximum parameter value. The point with the minimal
       ! parameter value is the start point of the interval, the point with the
       ! maximum parameter value the endpoint.
@@ -1680,9 +1680,9 @@ contains
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           dt = DpointPar(ipoint,iel)
-          
+
           ! Get the normal vector in the point from the boundary.
           ! Note that the parameter value is in length parametrisation!
           ! When we are at the left or right endpoint of the interval, we
@@ -1696,7 +1696,7 @@ contains
             ! Start point
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
                 ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-            
+
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
             ! End point
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -1706,10 +1706,10 @@ contains
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
                 ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
-          
+
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
-          
+
           ! Check if we are at the primal inflow boundary
           if (dnv .lt. -SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
@@ -1718,7 +1718,7 @@ contains
           end if
         end do
       end do
-      
+
       ! Free temporal memory
       deallocate(Daux)
 
@@ -1727,7 +1727,7 @@ contains
       ! Do nothing
 
     end select
-    
+
   end subroutine transp_coeffMatBdrConvectionP2d
 
   !*****************************************************************************
@@ -1738,7 +1738,7 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use boundary
     use boundaryfilter
@@ -1749,7 +1749,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -1762,13 +1762,13 @@ contains
     !
     ! This routine handles the constant velocities in the dual problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
@@ -1776,19 +1776,19 @@ contains
 
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -1802,21 +1802,21 @@ contains
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
-    
+
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
-    
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
@@ -1824,9 +1824,9 @@ contains
     ! with itermCount the number of terms in the bilinear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
-  
+
     ! local variables
     type(t_vectorBlock), pointer :: p_rvelocity
     real(DP), dimension(:,:,:), pointer :: Daux
@@ -1851,20 +1851,20 @@ contains
     select case(ibdrtype)
 
     case(BDR_DIRICHLET_WEAK)
-      
+
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
-      
+
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
-      
+
       ! Get the minimum and maximum parameter value. The point with the minimal
       ! parameter value is the start point of the interval, the point with the
       ! maximum parameter value the endpoint.
@@ -1876,14 +1876,14 @@ contains
           dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
         end do
       end do
-      
+
       ! Multiply the velocity vector with the normal in each point
       ! to get the normal velocity.
       do iel = 1, size(rdomainIntSubset%p_Ielements)
         do ipoint = 1, ubound(Dpoints,2)
-          
+
           dt = DpointPar(ipoint,iel)
-          
+
           ! Get the normal vector in the point from the boundary.
           ! Note that the parameter value is in length parametrisation!
           ! When we are at the left or right endpoint of the interval, we
@@ -1897,7 +1897,7 @@ contains
             ! Start point
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
                 ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-            
+
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
             ! End point
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
@@ -1907,10 +1907,10 @@ contains
             call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
                 ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
-          
+
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
-          
+
           ! Check if we are at the dual inflow boundary
           if (dnv .gt. SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
@@ -1919,12 +1919,12 @@ contains
           end if
         end do
       end do
-      
+
       ! Free temporal memory
       deallocate(Daux)
 
     case default
-      
+
       ! Do nothing
 
     end select
@@ -1932,7 +1932,7 @@ contains
   end subroutine transp_coeffMatBdrConvectionD2d
 
   !*****************************************************************************
-    
+
 !<subroutine>
 
   pure subroutine transp_calcMatGalSTBurgersP2d(&
@@ -1940,11 +1940,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
     ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
     ! the flux function is given by $f(u)=0.5*u^2$.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -1972,7 +1972,7 @@ contains
   end subroutine transp_calcMatGalSTBurgersP2d
 
    !*****************************************************************************
-    
+
 !<subroutine>
 
   pure subroutine transp_calcMatUpwSTBurgersP2d(&
@@ -1980,12 +1980,12 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
     ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
     ! the flux function is given by $f(u)=0.5*u^2$.
     ! Moreover, scalar artificial diffusion is applied
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -2029,7 +2029,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -2045,22 +2045,22 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -2088,11 +2088,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -2100,7 +2100,7 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
@@ -2116,7 +2116,7 @@ contains
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use boundary
     use boundaryfilter
@@ -2127,7 +2127,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -2140,13 +2140,13 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
@@ -2154,19 +2154,19 @@ contains
 
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -2180,21 +2180,21 @@ contains
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
-    
+
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
-    
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
@@ -2202,7 +2202,7 @@ contains
     ! with itermCount the number of terms in the bilinear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
@@ -2211,7 +2211,7 @@ contains
   end subroutine transp_coeffMatBdrSTBurgersP2d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatGalSTBuckLevP2d(&
@@ -2219,14 +2219,14 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
     ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
     ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
     !
     ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
     ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -2246,7 +2246,7 @@ contains
 
     ! local variables
     real(DP) :: v_i,v_j
-    
+
     ! Compute velocities
     v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
     v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
@@ -2257,11 +2257,11 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-        
+
   end subroutine transp_calcMatGalSTBuckLevP2d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine transp_calcMatUpwSTBuckLevP2d(&
@@ -2269,7 +2269,7 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the 
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
     ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
     ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
     !
@@ -2277,7 +2277,7 @@ contains
     ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -2297,7 +2297,7 @@ contains
 
     ! local variables
     real(DP) :: v_i,v_j
-    
+
     ! Compute velocities
     v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
     v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
@@ -2308,7 +2308,7 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-        
+
   end subroutine transp_calcMatUpwSTBuckLevP2d
 
   ! ***************************************************************************
@@ -2328,7 +2328,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -2344,22 +2344,22 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -2387,11 +2387,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -2399,7 +2399,7 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
@@ -2415,7 +2415,7 @@ contains
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use boundary
     use boundaryfilter
@@ -2426,7 +2426,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -2439,13 +2439,13 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
@@ -2453,19 +2453,19 @@ contains
 
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -2479,21 +2479,21 @@ contains
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
-    
+
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
-    
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
@@ -2501,7 +2501,7 @@ contains
     ! with itermCount the number of terms in the bilinear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
@@ -2510,7 +2510,7 @@ contains
   end subroutine transp_coeffMatBdrSTBuckLevP2d
 
   !*****************************************************************************
-    
+
 !<subroutine>
 
   pure subroutine transp_calcMatGalBurgersP2d(&
@@ -2520,7 +2520,7 @@ contains
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 2D.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -2544,11 +2544,11 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-    
+
   end subroutine transp_calcMatGalBurgersP2d
 
   !*****************************************************************************
-    
+
 !<subroutine>
 
   pure subroutine transp_calcMatUpwBurgersP2d(&
@@ -2559,7 +2559,7 @@ contains
     ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -2583,7 +2583,7 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-    
+
   end subroutine transp_calcMatUpwBurgersP2d
 
    ! ***************************************************************************
@@ -2603,7 +2603,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the vector assembly. It has to
     ! compute the coefficients in front of the terms of the linear
@@ -2619,22 +2619,22 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
+
     ! The linear form which is currently to be evaluated:
     type(t_linearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
@@ -2662,11 +2662,11 @@ contains
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
@@ -2674,7 +2674,7 @@ contains
     ! with itermCount the number of terms in the linear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
@@ -2690,7 +2690,7 @@ contains
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
-    
+
     use basicgeometry
     use boundary
     use boundaryfilter
@@ -2701,7 +2701,7 @@ contains
     use scalarpde
     use spatialdiscretisation
     use triangulation
-    
+
 !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -2714,13 +2714,13 @@ contains
     !
     ! This routine handles the constant velocities in the primal problem.
 !</description>
-    
+
 !<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
-    
+
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
@@ -2728,19 +2728,19 @@ contains
 
     ! The bilinear form which is currently being evaluated:
     type(t_bilinearForm), intent(in) :: rform
-    
+
     ! Number of elements, where the coefficients must be computed.
     integer, intent(in) :: nelements
-    
+
     ! Number of points per element, where the coefficients must be computed
     integer, intent(in) :: npointsPerElement
-    
+
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
+
     ! This is the number of the boundary component that contains the
     ! points in Dpoint. All points are on the same boundary component.
     integer, intent(in) :: ibct
@@ -2754,21 +2754,21 @@ contains
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in trial space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
-    
+
     ! An array accepting the DOF`s on all elements trial in the trial space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
-    
+
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection   
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
-  
+
 !<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
@@ -2776,12 +2776,12 @@ contains
     ! with itermCount the number of terms in the bilinear form.
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
+
 !</subroutine>
 
     print *, "Weak boundary conditions are not available yet"
     stop
 
   end subroutine transp_coeffMatBdrBurgersP2d
-    
+
 end module transport_callback2d

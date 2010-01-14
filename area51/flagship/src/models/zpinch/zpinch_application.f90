@@ -10,7 +10,7 @@
 !# The spatial discretization is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
 !# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the 
+!# FCT-type are available. For the temporal discretization, the
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
@@ -53,7 +53,7 @@
 !#      -> Performs h-adaptation for the given triangulation
 !#
 !# 8.) zpinch_solveTransientPrimal
-!#     -> Solves the primal formulation of the time-dependent 
+!#     -> Solves the primal formulation of the time-dependent
 !#        simplified MHD equations
 !#
 !#
@@ -130,7 +130,7 @@ contains
 
     !****************************************************************************
     ! Structures required for this application
-    
+
     ! Global collection which is used to pass arguments to callback routines
     type(t_collection) :: rcollection
 
@@ -145,7 +145,7 @@ contains
 
     ! Time-stepping structures
     type(t_timestep) :: rtimestep
-    
+
     ! Global solver structure and points
     type(t_solver) :: rsolver
     type(t_solver), pointer :: p_rsolver => null()
@@ -171,7 +171,7 @@ contains
 
     ! Timer for the assembly of constant coefficient matrices
     type(t_timer) :: rtimerAssemblyCoeff
-    
+
     ! Timer for the assembly of system matrices
     type(t_timer) :: rtimerAssemblyMatrix
 
@@ -194,11 +194,11 @@ contains
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
-    
+
     !---------------------------------------------------------------------------
     ! Pre-processing
     !---------------------------------------------------------------------------
-    
+
     ! Start time measurement
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
@@ -218,11 +218,11 @@ contains
     call euler_adjustParameterlist(rparlist, ssectionNameEuler)
     call transp_adjustParameterlist(rparlist, ssectionNameTransport)
 
-    
+
     ! Initialize global collection structure
     call collct_init(rcollection)
 
-    ! Attach the parameter list and the timers 
+    ! Attach the parameter list and the timers
     ! to the collection for the Euler model
     call collct_setvalue_parlst(rcollection,&
         'rparlist', rparlist, .true.)
@@ -242,7 +242,7 @@ contains
         'rtimerAssemblyVector', rtimerAssemblyVector, .true.)
     call collct_setvalue_timer(rcollection,&
         'rtimerPrePostprocess', rtimerPrePostprocess, .true.)
-    
+
     ! Create function parser
     call fparser_create(rfparser, 100)
 
@@ -278,14 +278,14 @@ contains
     ! Attach the function parser to the collection
     call collct_setvalue_pars(rcollection,&
         'rfparser', rfparser, .true.)
-    
+
     ! Initialize the solver structures
     call zpinch_initSolvers(rparlist, 'zpinch', rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
     nlmin = solver_getMinimumMultigridlevel(rsolver)
     nlmax = solver_getMaximumMultigridlevel(rsolver)
-    
+
     ! Initialize the abstract problem structure
     call zpinch_initProblem(rparlist, 'zpinch',&
         nlmin, nlmax, rproblem, rcollection)
@@ -318,11 +318,11 @@ contains
 
     ! Update complete solver structure
     call solver_updateStructure(rsolver)
-    
+
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
-    
-    
+
+
     !---------------------------------------------------------------------------
     ! Solution algorithm
     !---------------------------------------------------------------------------
@@ -345,7 +345,7 @@ contains
       ! all solution strategies so initialize it from the parameter file
       call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
           '['//trim(sbdrcondName)//']', ndimension)
-      
+
       ! Initialize the boundary condition for the transport model
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
           'sprimalbdrcondname', sbdrcondName)
@@ -359,7 +359,7 @@ contains
 
       ! What solution algorithm should be applied?
       select case(trim(algorithm))
-        
+
       case ('transient_primal')
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
@@ -368,10 +368,10 @@ contains
             ssectionNameEuler, ssectionNameTransport, rbdrCondEuler,&
             rbdrCondTransport, rproblem, rtimestep, rsolver,&
             rsolution, rcollection)
-        
+
         call zpinch_outputSolution(rparlist, 'zpinch',&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
-        
+
       case DEFAULT
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_app')
@@ -389,13 +389,13 @@ contains
     !---------------------------------------------------------------------------
     ! Post-processing
     !---------------------------------------------------------------------------
-    
+
     ! Start time measurement for pre-processing
     call stat_startTimer(rtimerPrepostProcess, STAT_TIMERSHORT)
-    
+
     ! Release time-stepping
     call tstep_releaseTimestep(rtimestep)
-    
+
     ! Release solver
     call solver_releaseSolver(rsolver)
 
@@ -405,7 +405,7 @@ contains
     ! Release boundary conditions
     call bdrf_release(rbdrCondEuler)
     call bdrf_release(rbdrCondTransport)
-    
+
     ! Release vectors
     call lsysbl_releaseVector(p_rsolutionEuler)
     call lsysbl_releaseVector(p_rsolutionTransport)
@@ -421,12 +421,12 @@ contains
 
     ! Output statistics
     call euler_outputStatistics(rtimerTotal, rcollection)
-    
+
     ! Release collection
     call collct_done(rcollection)
-    
+
   end subroutine zpinch_app
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -457,28 +457,28 @@ contains
 
     ! section name for the top-level solver
     character(LEN=SYS_STRLEN) :: ssolverName
-    
+
     ! section name for time-stepping scheme
     character(LEN=SYS_STRLEN) :: stimestepName
-        
-    
+
+
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'timestep', stimestepName)
-    
+
     ! Initialize time-stepping
     call tstep_createTimestep(rparlist, stimestepName, rtimestep, 2)
-    
+
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'solver', ssolverName)
-    
+
     ! Initialize solver structures
     call solver_createSolver(rparlist, ssolverName, rsolver)
     call solver_adjustHierarchy(rsolver)
     call solver_updateStructure(rsolver)
-    
+
   end subroutine zpinch_initSolvers
 
   !*****************************************************************************
@@ -489,7 +489,7 @@ contains
       nlmin, nlmax, rproblem, rcollection)
 
 !<description>
-    ! This subroutine initializes the abstract problem structure 
+    ! This subroutine initializes the abstract problem structure
     ! based on the parameters settings given by the parameter list
 !</description>
 
@@ -531,7 +531,7 @@ contains
     integer :: convectionAFC
     integer :: inviscidAFC
     integer :: iconvToTria
-    
+
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -556,7 +556,7 @@ contains
         ssectionNameEuler, 'inviscid', sinviscid)
     call parlst_getvalue_int(rparlist,&
         ssectionNameEuler, 'inviscidAFC', inviscidAFC)
-    
+
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 2
     rproblemDescriptor%nafcstab        = 2   ! for inviscid and convective stabilization
@@ -570,11 +570,11 @@ contains
     ! Check if quadrilaterals should be converted to triangles
     if (iconvToTria .ne. 0)&
         rproblemDescriptor%iproblemSpec = rproblemDescriptor%iproblemSpec &
-                                        + PROBDESC_MSPEC_CONVTRIANGLES   
+                                        + PROBDESC_MSPEC_CONVTRIANGLES
 
     ! Initialize problem structure
     call problem_initProblem(rproblemDescriptor, rproblem)
-    
+
     ! Loop over all problem levels
     p_rproblemLevel => rproblem%p_rproblemLevelMax
     do while(associated(p_rproblemLevel))
@@ -583,12 +583,12 @@ contains
         call afcstab_initFromParameterlist(rparlist, sconvection,&
             p_rproblemLevel%Rafcstab(convectionAFC))
       end if
-      
+
       if (inviscidAFC > 0) then
         call afcstab_initFromParameterlist(rparlist, sinviscid,&
             p_rproblemLevel%Rafcstab(inviscidAFC))
       end if
-      
+
       ! Switch to next coarser level
       p_rproblemLevel => p_rproblemLevel%p_rproblemLevelCoarse
     end do
@@ -665,14 +665,14 @@ contains
     dmass1 = 0.0_DP
     dmass2 = 0.0_DP
     dmass3 = 0.0_DP
-    
+
     ! Loop over all vertices
     do ivt = 1, p_rtriangulation%NVT
-      
+
       ! Compute distance to origin
       dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
                      p_DvertexCoords(2,ivt)**2)
-      
+
       if (dradius .lt. 1.0_DP) then
         dmass1 = dmass1 + p_ML(ivt)
       elseif (dradius .gt. 1.05_DP) then
@@ -691,7 +691,7 @@ contains
       call doRedistributeInterleaveFormat(rproblemLevel&
           %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
           ddensity2, ddensity3, p_DvertexCoords, p_ML, p_u)
-      
+
     case(SYSTEM_BLOCKFORMAT)
       call doRedistributeBlockFormat(rproblemLevel&
           %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
@@ -706,10 +706,10 @@ contains
   contains
 
     ! Here, the working routine follow
-    
+
     !**************************************************************
     ! Redistribute mass density stored in interleave format
-    
+
     subroutine doRedistributeInterleaveFormat(neq, nvar, ddensity1,&
         ddensity2, ddensity3, DvertexCoords, ML, u)
 
@@ -719,18 +719,18 @@ contains
       integer, intent(in) :: neq, nvar
 
       real(DP), dimension(nvar,neq), intent(inout) :: u
-      
+
       ! local vairables
       integer :: ieq
       real(DP) :: dradius
 
       !$omp parallel do private(dradius)
       do ieq = 1, neq
-        
+
         ! Compute distance to origin
         dradius = sqrt(DvertexCoords(1,ieq)**2 +&
                        DvertexCoords(2,ieq)**2)
-        
+
         if (dradius .lt. 1.0_DP) then
           u(1,ieq) = ddensity1
         elseif (dradius .gt. 1.05_DP) then
@@ -740,12 +740,12 @@ contains
         end if
       end do
       !$omp end parallel do
-      
+
     end subroutine doRedistributeInterleaveFormat
 
     !**************************************************************
     ! Redistribute mass density stored in block format
-    
+
     subroutine doRedistributeBlockFormat(neq, nvar, ddensity1,&
         ddensity2, ddensity3, DvertexCoords, ML, u)
 
@@ -755,18 +755,18 @@ contains
       integer, intent(in) :: neq, nvar
 
       real(DP), dimension(neq,nvar), intent(inout) :: u
-      
+
       ! local vairables
       integer :: ieq
       real(DP) :: dradius
 
       !$omp parallel do private(dradius)
       do ieq = 1, neq
-        
+
         ! Compute distance to origin
         dradius = sqrt(DvertexCoords(1,ieq)**2 +&
                        DvertexCoords(2,ieq)**2)
-        
+
         if (dradius .lt. 1.0_DP) then
           u(ieq,1) = ddensity1
         elseif (dradius .gt. 1.05_DP) then
@@ -776,9 +776,9 @@ contains
         end if
       end do
       !$omp end parallel do
-      
+
     end subroutine doRedistributeBlockFormat
-    
+
   end subroutine zpinch_redistributeMassEuler
 
   !*****************************************************************************
@@ -827,7 +827,7 @@ contains
 
     ! Compute total density
     ddensity = SYS_PI * (1.05_DP**2-1._DP) * 1e6_DP
-    
+
     ! Set pointer to triangulation
     p_rtriangulation => rproblemLevel%rtriangulation
 
@@ -844,20 +844,20 @@ contains
 
     ! Compute total mass
     dmass = 0.0_DP
-    
+
     ! Loop over all vertices
     do ivt = 1, p_rtriangulation%NVT
-      
+
       ! Compute distance to origin
       dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
                      p_DvertexCoords(2,ivt)**2)
-      
+
       if (dradius .ge. 1.0_DP .and.&
           dradius .le. 1.05_DP) then
         dmass = dmass + p_ML(ivt)
       end if
     end do
-    
+
     ddensity = ddensity/dmass
 
     !$omp parallel do private(dradius)
@@ -866,7 +866,7 @@ contains
       ! Compute distance to origin
       dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
                      p_DvertexCoords(2,ivt)**2)
-    
+
       if (dradius .ge. 1.0_DP .and.&
           dradius .le. 1.05_DP) then
         p_u(ivt) = ddensity
@@ -875,7 +875,7 @@ contains
       end if
     end do
     !$omp end parallel do
-    
+
   end subroutine zpinch_redistributeMassTransport
 
   !*****************************************************************************
@@ -907,13 +907,13 @@ contains
 !<inputoutput>
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
-    
+
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
-        
+
     ! solution vector for Euler model
     type(t_vectorBlock), intent(inout) :: rsolutionEuler
-    
+
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -930,7 +930,7 @@ contains
     real(DP) :: dscale
     integer :: isystemFormat, consistentMassMatrix, lumpedMassMatrix
     integer :: neq, nvar, icomp, icoords
-    
+
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'slorentzforcename', slorentzforceName)
@@ -952,15 +952,15 @@ contains
         %Rmatrix(consistentMassMatrix), p_Kld)
     call lsyssc_getbase_Kcol(rproblemLevel&
         %Rmatrix(consistentMassMatrix), p_Kcol)
-    
+
     ! Set pointer to global solution vectors
     call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
     call lsysbl_getbase_double(rsolutionTransport, p_DdataTransport)
-    
+
     ! Set pointer to the vertex coordinates
     call storage_getbase_double2D(rproblemLevel%rtriangulation&
         %h_DvertexCoords, p_DvertexCoords)
-    
+
     ! Set dimensions
     neq  = rsolutionTransport%NEQ
     nvar = euler_getNVAR(rproblemLevel)
@@ -968,13 +968,13 @@ contains
     ! Get function parser from collection structure
     p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
-    ! Get the number of the component used for 
+    ! Get the number of the component used for
     ! evaluating the Lorentz force term
     icomp = fparser_getFunctionNumber(p_rfparser, slorentzforceName)
 
     ! Evaluate the function parser
     call fparser_evalFunction(p_rfparser, icomp, (/rtimestep%dTime/), dscale)
-    
+
     ! Multiply scaling parameter by the time step
     dscale = dscale * rtimestep%dStep
 
@@ -994,7 +994,7 @@ contains
         call calcForceRZInterleaveFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
             p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
-        
+
       case default
         call output_line('Invalid type of coordinate system!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_applyLorentzforceTerm')
@@ -1008,12 +1008,12 @@ contains
         call calcForceXYBlockFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
             p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
-        
+
       case(2)
         call calcForceRZBlockFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
             p_DlumpedMassMatrix, p_DdataTransport, p_DdataEuler)
-        
+
       case default
         call output_line('Invalid type of coordinate system!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_applyLorentzforceTerm')
@@ -1025,15 +1025,15 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_applyLorentzforceTerm')
       call sys_halt()
     end select
-    
+
   contains
-    
+
     ! Here, the real working routines follow
-    
+
     !**************************************************************
     ! Calculate the source term in x-y coordinates.
     ! The system is stored in interleave format.
-    
+
     subroutine calcForceXYInterleaveFormat(dscale, neq, nvar,&
         DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
 
@@ -1042,9 +1042,9 @@ contains
       real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
-      
+
       real(DP), dimension(nvar,neq), intent(inout) :: DdataEuler
-      
+
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
       real(DP) :: drad, dang, daux, x1, x2, p, rq
@@ -1063,15 +1063,15 @@ contains
 
           ! Get columns number
           j = Kcol(ij)
-        
+
           ! Get coordinates at node j
           x1 = DvertexCoords(1, j)
           x2 = DvertexCoords(2, j)
-          
+
           ! Compute polar coordinates
           drad = sqrt(x1*x1 + x2*x2)
           dang = atan2(x2, x1)
-          
+
           ! Compute unit vector into origin
           if (drad .gt. 1e-4) then
             x1 = -cos(dang)
@@ -1079,10 +1079,10 @@ contains
           else
             x1 = 0.0; x2 = 0.0
           end if
-          
+
           ! Compute source term
           daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
-                    
+
           ! Impose source values
           DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
           DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
@@ -1111,7 +1111,7 @@ contains
         DdataEuler(4, i) = p + rq
 
       end do
-      
+
       deallocate(DsourceTerm)
 
     end subroutine calcForceXYInterleaveFormat
@@ -1119,7 +1119,7 @@ contains
     !**************************************************************
     ! Calculate the source term in r-z coordinates.
     ! The system is stored in interleave format.
-    
+
     subroutine calcForceRZInterleaveFormat(dscale, neq, nvar,&
         DvertexCoords, Kld, Kcol, MC, ML, DdataTransport, DdataEuler)
 
@@ -1128,9 +1128,9 @@ contains
       real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
-      
+
       real(DP), dimension(nvar,neq), intent(inout) :: DdataEuler
-      
+
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
       real(DP) :: drad, dang, daux, x1, x2, p, rq
@@ -1149,20 +1149,20 @@ contains
 
           ! Get columns number
           j = Kcol(ij)
-        
+
           ! Get coordinates at node j
           drad = DvertexCoords(1, j)
-          
+
           ! Compute unit vector into origin
           if (drad .gt. 1e-4) then
             x1 = -1.0; x2 = 0.0
           else
             x1 = 0.0; x2 = 0.0
           end if
-          
+
           ! Compute source term
           daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
-                    
+
           ! Impose source values
           DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
           DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
@@ -1191,11 +1191,11 @@ contains
         DdataEuler(4, i) = p + rq
 
       end do
-      
+
       deallocate(DsourceTerm)
 
     end subroutine calcForceRZInterleaveFormat
-    
+
     !**************************************************************
     ! Calculate the source term in x-y coordinates.
     ! The system is stored in block format.
@@ -1208,9 +1208,9 @@ contains
       real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
-      
+
       real(DP), dimension(neq,nvar), intent(inout) :: DdataEuler
-      
+
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
       real(DP) :: drad, dang, daux, x1, x2, p, rq
@@ -1228,15 +1228,15 @@ contains
 
           ! Get columns number
           j = Kcol(ij)
-        
+
           ! Get coordinates at node j
           x1 = DvertexCoords(1, j)
           x2 = DvertexCoords(2, j)
-          
+
           ! Compute polar coordinates
           drad = sqrt(x1*x1 + x2*x2)
           dang = atan2(x2, x1)
-          
+
           ! Compute unit vector into origin
           if (drad .gt. 1e-4) then
             x1 = -cos(dang)
@@ -1244,14 +1244,14 @@ contains
           else
             x1 = 0.0; x2 = 0.0
           end if
-          
+
           ! Compute source term
           if (DdataTransport(j) > SYS_EPSREAL) then
             daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
           else
             daux = 0.0_DP
           end if
-                    
+
           ! Impose source values
           DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
           DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
@@ -1282,7 +1282,7 @@ contains
         DdataEuler(i, 4) = p + rq
 
       end do
-      
+
       deallocate(DsourceTerm)
 
     end subroutine calcForceXYBlockFormat
@@ -1299,9 +1299,9 @@ contains
       real(DP), intent(in) :: dscale
       integer, dimension(:), intent(in) :: Kld, Kcol
       integer, intent(in) :: neq, nvar
-      
+
       real(DP), dimension(neq,nvar), intent(inout) :: DdataEuler
-      
+
       ! local variables
       real(DP), dimension(:,:), allocatable :: DsourceTerm
       real(DP) :: drad, dang, daux, x1, x2, p, rq
@@ -1319,24 +1319,24 @@ contains
 
           ! Get columns number
           j = Kcol(ij)
-        
+
           ! Get coordinates at node j
           drad = DvertexCoords(1, j)
-          
+
           ! Compute unit vector into origin
           if (drad .gt. 1e-4) then
             x1 = -1.0; x2 = 0.0
           else
             x1 = 0.0; x2 = 0.0
           end if
-          
+
           ! Compute source term
           if (DdataTransport(j) > SYS_EPSREAL) then
             daux = dscale * MC(ij) * DdataTransport(j) / max(drad, 1.0e-4_DP)
           else
             daux = 0.0_DP
           end if
-                    
+
           ! Impose source values
           DsourceTerm(1, i) = DsourceTerm(1, i) + daux * x1
           DsourceTerm(2, i) = DsourceTerm(2, i) + daux * x2
@@ -1367,7 +1367,7 @@ contains
         DdataEuler(i, 4) = p + rq
 
       end do
-      
+
       deallocate(DsourceTerm)
 
     end subroutine calcForceRZBlockFormat
@@ -1391,13 +1391,13 @@ contains
     ! solution vectors
     type(t_vectorBlock), intent(in) :: rsolutionEuler, rsolutionTransport
 !</input>
-      
+
 !<inputoutput>
     ! local feature indicator
     type(t_vectorScalar), intent(inout) :: rindicator
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_vectorScalar) :: rdensity, rpressure
     type(t_triangulation), pointer :: p_rtriangulation
@@ -1407,21 +1407,21 @@ contains
     logical, dimension(:), pointer :: p_BisActiveElement
     real(DP) :: dgradient,dlambda_i, dlambda_j
     integer :: iel,jel,ive,nve,i,j,iprotectLayer
-    
+
     real(DP), parameter :: dEpsS = 0.2_DP
     real(DP), parameter :: dEpsC = 0.1_DP
 
 
     ! Set pointer to the underlying triangulation
     p_rtriangulation => rsolutionEuler%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
-    
+
     ! Extract primitive variables from conservative solution values
     call euler_getVariable(rsolutionEuler, 'density', rdensity)
     call euler_getVariable(rsolutionEuler, 'pressure', rpressure)
 
     ! Create element-wise indicator
     call lsyssc_createVector(rindicator, p_rtriangulation%NEL, .true.)
-    
+
     ! Set pointers
     call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
         p_DvertexCoords)
@@ -1433,7 +1433,7 @@ contains
     call lsyssc_getbase_double(rpressure, p_Dpressure)
     call lsyssc_getbase_double(rindicator, p_Dindicator)
     call lsysbl_getbase_double(rsolutionTransport, p_Dtracer)
-    
+
     ! Loop over all elements
     elements: do iel = 1, p_rtriangulation%NEL
 
@@ -1445,7 +1445,7 @@ contains
 
       ! Check element for shocks and contact discontinuities
       vertices: do ive = 1, nve
-        
+
         ! Get global vertex numbers
         i = p_IverticesAtElement(ive, iel)
         j = p_IverticesAtElement(mod(ive,nve)+1, iel)
@@ -1453,7 +1453,7 @@ contains
         ! Compute nodal values of tracer
         dlambda_i = p_Dtracer(i)/p_Ddensity(i)
         dlambda_j = p_Dtracer(j)/p_Ddensity(j)
-        
+
         ! Update maximum gradient function
         dgradient = max(dgradient,&
             abs(abs(p_Ddensity(i))  - abs(p_Ddensity(j)))  /&
@@ -1463,18 +1463,18 @@ contains
             abs(abs(dlambda_i)      - abs(dlambda_j))      /&
               max(1e-2, abs(dlambda_i), abs(dlambda_j))     )
       end do vertices
-      
+
       ! If we end up here, then the maximum gradient function is adopted
       p_Dindicator(iel) = dgradient
     end do elements
-    
+
     ! Release temporal memory
     call lsyssc_releaseVector(rdensity)
     call lsyssc_releaseVector(rpressure)
-    
+
     ! Add protection layers
     allocate(p_BisActiveElement(p_rtriangulation%NEL))
-    
+
     do iprotectLayer = 1, 4
 
       p_BisActiveElement = .false.
@@ -1500,9 +1500,9 @@ contains
     end do
 
     deallocate(p_BisActiveElement)
-    
+
   end subroutine zpinch_calcAdaptationIndicator
- 
+
   !*****************************************************************************
 
 !<subroutine>
@@ -1539,7 +1539,7 @@ contains
 
     ! persistent variable
     integer, save :: ifilenumber = 1
-    
+
     ! local variables
     type(t_ucdExport) :: rexport
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
@@ -1574,24 +1574,24 @@ contains
 
     ! Add solution vectors
     if (present(rsolution)) then
-      
+
       ! Add solution for Euler model
       call lsysbl_getbase_double(rsolution(1), p_Dsolution)
       isize = size(p_Dsolution)/euler_getNVAR(rproblemLevel)
       ndim  = rproblemLevel%rtriangulation%ndim
-      
+
       ! Create auxiliary vectors
       select case(ndim)
       case (NDIM1D)
         call lsyssc_createVector(rvector1, isize, .false.)
         call lsyssc_getbase_double(rvector1, p_Ddata1)
-        
+
       case (NDIM2D)
         call lsyssc_createVector(rvector1, isize, .false.)
         call lsyssc_createVector(rvector2, isize, .false.)
         call lsyssc_getbase_double(rvector1, p_Ddata1)
         call lsyssc_getbase_double(rvector2, p_Ddata2)
-        
+
       case (NDIM3D)
         call lsyssc_createVector(rvector1, isize, .false.)
         call lsyssc_createVector(rvector2, isize, .false.)
@@ -1599,38 +1599,38 @@ contains
         call lsyssc_getbase_double(rvector1, p_Ddata1)
         call lsyssc_getbase_double(rvector2, p_Ddata2)
         call lsyssc_getbase_double(rvector3, p_Ddata3)
-        
+
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
             OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
         call sys_halt()
       end select
-      
-      
+
+
       select case(isystemFormat)
       case(SYSTEM_INTERLEAVEFORMAT)
-        
+
         select case(ndim)
         case (NDIM1D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
               'velocity_x', p_Dsolution, p_Ddata1)
           call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
         case (NDIM2D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
               'velocity_x', p_Dsolution, p_Ddata1)
@@ -1638,22 +1638,22 @@ contains
               'velocity_y', p_Dsolution, p_Ddata2)
           call ucd_addVarVertBasedVec(rexport, 'velocity',&
               p_Ddata1, p_Ddata2)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
         case (NDIM3D)
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'velocity_x', p_Dsolution, p_Ddata1)
@@ -1663,59 +1663,59 @@ contains
               'velocity_z', p_Dsolution, p_Ddata3)
           call ucd_addVarVertBasedVec(rexport, 'velocity',&
               p_Ddata1, p_Ddata2, p_Ddata3)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
         end select
-        
-        
+
+
       case (SYSTEM_BLOCKFORMAT)
-        
+
         select case(ndim)
         case (NDIM1D)
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'velocity_x', p_Dsolution, p_Ddata1)
           call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'effective_energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport,&
               'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
-          
+
+
         case (NDIM2D)
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'velocity_x', p_Dsolution, p_Ddata1)
@@ -1723,32 +1723,32 @@ contains
               'velocity_y', p_Dsolution, p_Ddata2)
           call ucd_addVarVertBasedVec(rexport, 'velocity',&
               p_Ddata1, p_Ddata2)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'effective_energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport,&
               'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
         case (NDIM3D)
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'velocity_x', p_Dsolution, p_Ddata1)
@@ -1758,36 +1758,36 @@ contains
               'velocity_z', p_Dsolution, p_Ddata3)
           call ucd_addVarVertBasedVec(rexport, 'velocity',&
               p_Ddata1, p_Ddata2, p_Ddata3)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'density', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'density',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'energy',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D, 'effectiv' // &
               'e_energy', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport,&
               'effective_energy', UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'pressure', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'pressure',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
           call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
               'machnumber', p_Dsolution, p_Ddata1)
           call ucd_addVariableVertexBased (rexport, 'machnumber',&
               UCD_VAR_STANDARD, p_Ddata1)
-          
+
         end select
-        
+
       end select
-      
+
       ! Release temporal memory
       call lsyssc_releaseVector(rvector1)
       call lsyssc_releaseVector(rvector2)
@@ -1798,7 +1798,7 @@ contains
       call ucd_addVariableVertexBased (rexport, 'advect',&
           UCD_VAR_STANDARD, p_Ddata1)
     end if
-    
+
     ! Write UCD file
     call ucd_write  (rexport)
     call ucd_release(rexport)
@@ -1828,7 +1828,7 @@ contains
 
     ! source triangulation structure
     type(t_triangulation), intent(inout), target :: rtriangulationSrc
-    
+
     ! element-wise indicator
     type(t_vectorScalar), intent(inout) :: rindicator
 
@@ -1842,7 +1842,7 @@ contains
     type(t_triangulation), intent(out), optional, target :: rtriangulationDest
 !</output>
 !</subroutine>
-    
+
 
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
@@ -1851,15 +1851,15 @@ contains
 
     ! Check if adaptation structure has been prepared
     if (rhadapt%iSpec .eq. HADAPT_HAS_PARAMETERS) then
-      
+
       ! Initialize adaptation structure from triangulation
       call hadapt_initFromTriangulation(rhadapt, rtriangulationSrc)
-     
+
     else
-     
+
       ! Refresh adaptation structure
       call hadapt_refreshAdaptation(rhadapt, rtriangulationSrc)
-      
+
     end if
 
     ! Get parameters from parameter list
@@ -1894,7 +1894,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_adaptTriangulation')
         call sys_halt()
       end if
-      
+
     case DEFAULT
 
       call output_line('Invalid type of system format!',&
@@ -1949,7 +1949,7 @@ contains
 
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
-    
+
     ! solver structure
     type(t_solver), intent(inout), target :: rsolver
 
@@ -1963,7 +1963,7 @@ contains
 
     ! Pointer to the current multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
-    
+
     ! Pointer to the discretisation structure
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
 
@@ -1989,7 +1989,7 @@ contains
     type(t_timer), pointer :: p_rtimerAdaptation
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
-    
+
     ! Vector for source term
     type(t_vectorBlock), dimension(2) :: rforce
 
@@ -2009,7 +2009,7 @@ contains
 
     real(DP) :: dmassEuler0, dmassEuler
     real(DP) :: dmassTransport0, dmassTransport
-    
+
     ! Get timer structures
     p_rtimerPrePostprocess =>&
         collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
@@ -2023,11 +2023,11 @@ contains
         collct_getvalue_timer(rcollection, 'rtimerTriangulation')
     p_rtimerAssemblyCoeff =>&
         collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
-    
+
     ! Set pointers to solver structures
     p_rsolverEuler     => solver_getNextSolver(rsolver, 1)
     p_rsolverTransport => solver_getNextSolver(rsolver, 2)
-    
+
     ! Set pointers to solution vectors
     p_rsolutionEuler => rsolution(1)
     p_rsolutionTransport => rsolution(2)
@@ -2038,17 +2038,17 @@ contains
     ! Get global parameters
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'ndimension', ndimension)
-    
+
     ! Set pointer to maximum problem level
     p_rproblemLevel => rproblem%p_rproblemLevelMax
-    
-    
+
+
     !--- compressible Euler model ----------------------------------------------
 
     ! Get position of discretisation structure
     call parlst_getvalue_int(rparlist,&
         ssectionNameEuler, 'discretisation', discretisationEuler)
-    
+
     ! Set pointer to discretisation structure
     p_rdiscretisation =>&
         p_rproblemLevel%Rdiscretisation(discretisationEuler)
@@ -2092,7 +2092,7 @@ contains
 
     ! Set collection to primal problem mode
     call parlst_addvalue(rparlist, ssectionNameEuler, 'mode', 'primal')
-    
+
 
     !--- transport model -------------------------------------------------------
 
@@ -2117,11 +2117,11 @@ contains
     call zpinch_redistributeMassTransport(rparlist,&
         ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
         rcollection)
-    
+
     ! Impose boundary conditions
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
         p_rsolutionTransport, rtimestep%dinitialTime)
-    
+
     ! Attach the boundary condition
     call solver_setBoundaryCondition(p_rsolverTransport,&
         rbdrCondTransport, .true.)
@@ -2129,16 +2129,16 @@ contains
     ! Set collection to primal problem mode
     call parlst_addvalue(rparlist,&
         ssectionNameTransport, 'mode', 'primal')
-       
-    
+
+
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'output', soutputName)
     call parlst_getvalue_double(rparlist,&
         trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
-    
-    
+
+
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
@@ -2146,7 +2146,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'adaptivity', sadaptivityName, '')
     if (trim(adjustl(sadaptivityName)) .ne. '') then
-      
+
       call parlst_getvalue_double(rparlist,&
           trim(sadaptivityName), 'dstepAdapt', dstepAdapt)
       call parlst_getvalue_double(rparlist,&
@@ -2172,13 +2172,13 @@ contains
             %Rmatrix(templateMatrix), rgraph)
         call collct_setvalue_graph(rcollection,&
             'sparsitypattern', rgraph, .true.)
-        
+
         ! Perform pre-adaptation?
         if (npreadapt > 0) then
 
           ! Perform number of pre-adaptation steps
           do ipreadapt = 1, npreadapt
-            
+
             ! Compute the error estimator based on the tracer
             call zpinch_calcAdaptationIndicator(p_rsolutionEuler,&
                 p_rsolutionTransport, relementError)
@@ -2194,14 +2194,14 @@ contains
             call zpinch_adaptTriangulation(rparlist,&
                 ssectionnameEuler, rhadapt, p_rproblemLevel&
                 %rtriangulation, relementError, rcollection)
-            
+
             ! Release element-wise error distribution
             call lsyssc_releaseVector(rElementError)
 
             ! Generate standard mesh from raw mesh
             call tria_initStandardMeshFromRaw(p_rproblemLevel&
                 %rtriangulation, rproblem%rboundary)
-            
+
             ! Update the template matrix according to the sparsity pattern
             call grph_generateMatrix(rgraph, p_rproblemLevel&
                 %Rmatrix(templateMatrix))
@@ -2217,7 +2217,7 @@ contains
                 ssectionNameEuler, 'systemMatrix', systemMatrix)
             call lsysbl_resizeVecBlockIndMat(p_rproblemLevel&
                 %RmatrixBlock(systemMatrix), p_rsolutionEuler, .false., .true.)
-            
+
             ! Resize the solution vector for the transport model accordingly
             call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
                 p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
@@ -2231,14 +2231,14 @@ contains
             call zpinch_redistributeMassEuler(rparlist,&
                 ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler,&
                 rcollection)
-            
+
             ! Impose boundary conditions
             select case(ndimension)
             case (NDIM1D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
                   p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues1d)
-              
+
             case (NDIM2D)
               call bdrf_filterVectorExplicit(rbdrCondEuler,&
                   p_rsolutionEuler, rtimestep%dinitialTime,&
@@ -2273,7 +2273,7 @@ contains
           call flagship_updateSolverMatrix(p_rproblemLevel,&
               p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
           call solver_updateStructure(p_rsolverEuler)
-          
+
           ! Prepare internal data arrays of the solver structure
           call parlst_getvalue_int(rparlist,&
               ssectionNameTransport, 'systemMatrix', systemMatrix)
@@ -2283,13 +2283,13 @@ contains
           call solver_updateStructure(p_rsolverTransport)
 
         end if   ! npreadapt > 0
-        
+
       end if   ! dstepAdapt > 0
-      
+
     else
-      
+
       dstepAdapt = 0.0_DP
-      
+
     end if
 
 
@@ -2317,7 +2317,7 @@ contains
 
     call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
         p_rproblemLevel, p_rsolutionEuler, rcollection)
-    
+
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
 
@@ -2325,7 +2325,7 @@ contains
     ! CHECKS
     dmassEuler0 = zpinch_checkConservation(rparlist,&
         ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
-    
+
     dmassTransport0 = zpinch_checkConservation(rparlist,&
         ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
     ! CHECKS
@@ -2333,9 +2333,9 @@ contains
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
     !---------------------------------------------------------------------------
-    
+
     timeloop: do
-      
+
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call zpinch_outputSolution(rparlist, ssectionName,&
@@ -2348,13 +2348,13 @@ contains
       ! Compute Euler model + scalar tracer in coupled fashion
       ! for full time step: $U^n \to U^{n+1}$ and $u^n \to u^{n+1}$
       !-----------------------------------------------------------------------
-      
+
       ! Start time measurement for solution procedure
       call stat_startTimer(p_rtimerSolution, STAT_TIMERSHORT)
-      
+
       ! Compute scaling for explicit part of the Lorentz force
       dscaleLorentzForceTerm = (1.0_DP-rtimestep%theta) * rtimestep%dStep
-      
+
       ! Calculate explicit part of the Lorentz force term
       if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
         call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
@@ -2362,7 +2362,7 @@ contains
             p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
             dscaleLorentzForceTerm, rforce(1), rcollection)
       end if
-      
+
       ! Prepare quick access arrays/vectors
       rcollection%SquickAccess(1) = 'null'
       rcollection%SquickAccess(2) = ssectionName
@@ -2372,24 +2372,24 @@ contains
       rcollection%p_rvectorQuickAccess2 => rsolution(2)
       rcollection%p_rvectorQuickAccess3 => rtimestep%RtempVectors(1)
       rcollection%p_rvectorQuickAccess4 => rtimestep%RtempVectors(2)
-      
+
       ! What time-stepping scheme should be used?
       select case(rtimestep%ctimestepType)
-        
+
       case (TSTEP_RK_SCHEME)
-        
+
 !!$        ! Adopt explicit Runge-Kutta scheme
 !!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
 !!$            rsolver, rsolution, zpinch_nlsolverCallback,&
 !!$            rcollection, rforce)
         print *, "RK method is not implemented yet"
         stop
-        
+
       case (TSTEP_THETA_SCHEME)
-        
+
         ! Adopt two-level theta-scheme
         if (dscaleLorentzForceTerm .ne. 0.0_DP) then
-          
+
           ! ... with source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
               rsolver, rsolution, zpinch_nlsolverCallback,&
@@ -2400,30 +2400,30 @@ contains
               rsolver, rsolution, zpinch_nlsolverCallback,&
               rcollection)
         end if
-        
+
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'zpinch_solveTransientPrimal')
         call sys_halt()
       end select
-      
+
       !-------------------------------------------------------------------------
       ! Compute linearised FCT correction for Euler and transport model
       !-------------------------------------------------------------------------
-      
+
       ! Prepare quick access arrays
       rcollection%SquickAccess(1) = ssectionNameEuler
       rcollection%SquickAccess(2) = ssectionNameTransport
-      
+
       ! Apply linearised FCT correction for Euler model
       call zpinch_calcLinearisedFCT(rbdrCondEuler, rbdrCondTransport,&
           p_rproblemLevel, rtimestep, p_rsolutionEuler,&
           p_rsolutionTransport, rcollection)
-      
+
       ! Calculate velocity field (\rho v)
       call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
           p_rproblemLevel, p_rsolutionEuler, rcollection)
-      
+
       ! Stop time measurement for solution procedure
       call stat_stopTimer(p_rtimerSolution)
 
@@ -2433,22 +2433,22 @@ contains
 
       call parlst_getvalue_int(rparlist,&
           ssectionName, 'ilorentzForceType', ilorentzForceType)
-      
+
       if (ilorentzForceType .eq. 0) then
         call zpinch_applyLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameEuler, ssectionNameTransport,&
             p_rproblemLevel, rtimestep, p_rsolutionTransport,&
             p_rsolutionEuler, rcollection)
       end if
-      
+
       ! CHECKS
       dmassEuler = zpinch_checkConservation(rparlist,&
           ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
-      
+
       dmassTransport = zpinch_checkConservation(rparlist,&
           ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
       ! CHECKS
-      
+
       print *, "################################################################"
       print *, "MASS CONSERVATION"
       print *, (dmassEuler0-dmassEuler)/dmassEuler0
@@ -2461,16 +2461,16 @@ contains
       !-------------------------------------------------------------------------
       ! Post-process intermediate solution
       !-------------------------------------------------------------------------
-      
+
       if ((dstepUCD .gt. 0.0_DP) .and.&
           (rtimestep%dTime .ge. dtimeUCD)) then
-        
+
         ! Set time for next intermediate solution export
         dtimeUCD = dtimeUCD + dstepUCD
-        
+
         ! Start time measurement for post-processing
         call stat_startTimer(p_rtimerPrepostProcess, STAT_TIMERSHORT)
-        
+
         ! Export the intermediate solution
         call zpinch_outputSolution(rparlist, ssectionName,&
             p_rproblemLevel, rsolution, rtimestep%dTime)
@@ -2487,14 +2487,14 @@ contains
 
       if ((dstepAdapt .gt. 0.0_DP) .and.&
           (rtimestep%dTime .ge. dtimeAdapt)) then
-      
+
         ! Set time for next adaptation step
         dtimeAdapt = dtimeAdapt + dstepAdapt
 
         !-----------------------------------------------------------------------
         ! Perform error indication
         !-----------------------------------------------------------------------
-        
+
         ! Start time measurement for error estimation
         call stat_startTimer(p_rtimerErrorEstimation, STAT_TIMERSHORT)
 
@@ -2509,27 +2509,27 @@ contains
 
         ! Stop time measurement for error estimation
         call stat_stopTimer(p_rtimerErrorEstimation)
-        
-        
+
+
         !-------------------------------------------------------------------------
         ! Perform h-adaptation
         !-------------------------------------------------------------------------
-        
+
         ! Start time measurement for mesh adaptation
         call stat_startTimer(p_rtimerAdaptation, STAT_TIMERSHORT)
-        
+
         ! Set the names of the template matrix
         rcollection%SquickAccess(1) = 'sparsitypattern'
-        
+
         ! Attach the solution vector to the collection structure
         rcollection%p_rvectorQuickAccess1 => rsolution(1)
         rcollection%p_rvectorQuickAccess2 => rsolution(2)
-        
+
         ! Perform h-adaptation and update the triangulation structure
         call zpinch_adaptTriangulation(rparlist, ssectionnameEuler,&
             rhadapt, p_rproblemLevel%rtriangulation, relementError,&
             rcollection)
-        
+
         ! Release element-wise error distribution
         call lsyssc_releaseVector(relementError)
 
@@ -2539,32 +2539,32 @@ contains
 
         ! Stop time measurement for mesh adaptation
         call stat_stopTimer(p_rtimerAdaptation)
-        
-        
+
+
         !-------------------------------------------------------------------------
         ! Re-generate the discretization and coefficient matrices
         !-------------------------------------------------------------------------
-        
+
         ! Start time measurement for generation of the triangulation
         call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
-        
+
         ! Generate standard mesh from raw mesh
         call tria_initStandardMeshFromRaw(p_rproblemLevel&
             %rtriangulation, rproblem%rboundary)
-        
+
         ! Stop time measurement for generation of the triangulation
         call stat_stopTimer(p_rtimerTriangulation)
 
         ! Start time measurement for generation of constant
         ! coefficient matrices
         call stat_startTimer(p_rtimerAssemblyCoeff, STAT_TIMERSHORT)
-        
+
         ! Re-initialize all constant coefficient matrices
         call euler_initProblemLevel(rparlist, ssectionNameEuler,&
             p_rproblemLevel, rcollection)
         call transp_initProblemLevel(rparlist, ssectionNameTransport,&
             p_rproblemLevel, rcollection)
-        
+
         ! Resize the solution vector for the Euler model accordingly
         call parlst_getvalue_int(rparlist,&
             ssectionNameEuler, 'systemmatrix', systemMatrix)
@@ -2574,7 +2574,7 @@ contains
         ! Resize the solution vector for the transport model accordingly
         call lsysbl_resizeVectorBlock(p_rsolutionTransport, &
             p_rproblemLevel%Rmatrix(templateMatrix)%NEQ, .false.)
-        
+
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&
             ssectionNameEuler, 'systemmatrix', systemMatrix)
@@ -2583,7 +2583,7 @@ contains
         call flagship_updateSolverMatrix(p_rproblemLevel,&
             p_rsolverEuler, systemMatrix, isystemFormat, UPDMAT_ALL)
         call solver_updateStructure(p_rsolverEuler)
-        
+
         ! Prepare internal data arrays of the solver structure
         call parlst_getvalue_int(rparlist,&
             ssectionNameTransport, 'systemmatrix', systemMatrix)
@@ -2594,13 +2594,13 @@ contains
         ! Calculate velocity field (\rho v)
         call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
             p_rproblemLevel, p_rsolutionEuler, rcollection)
-        
+
         ! Stop time measurement for generation of constant
         ! coefficient matrices
         call stat_stopTimer(p_rtimerAssemblyCoeff)
-        
+
       end if
-      
+
     end do timeloop
 
     ! Release Lorentz force vector
@@ -2613,7 +2613,7 @@ contains
         call grph_releaseGraph(rgraph)
       end if
     end if
-    
+
   end subroutine zpinch_solveTransientPrimal
 
   !*****************************************************************************
@@ -2638,14 +2638,14 @@ contains
     ! local variables
     character(LEN=SYS_STRLEN) :: cbuffer
     integer :: iarg, narg
-    
+
     iarg = 1; narg = command_argument_count()
-    
+
     cmdarg: do
       ! Retrieve next command line argument
       call get_command_argument(iarg,cbuffer)
       select case(trim(adjustl(cbuffer)))
-        
+
       case ('-A','--adaptivity')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
@@ -2655,12 +2655,12 @@ contains
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
-       
+
       case ('-DC','--dualconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
-        
+
       case ('-DD','--dualdiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
@@ -2670,17 +2670,17 @@ contains
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
-        
+
       case ('-I','--io')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
-        
+
       case ('-PC','--primalconv')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
-        
+
       case ('-PD','--primaldiff')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
@@ -2690,12 +2690,12 @@ contains
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
-        
+
       case ('-T','--timestep')
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
-        
+
       case DEFAULT
         iarg = iarg+1
         if (iarg .ge. narg) exit cmdarg
@@ -2708,7 +2708,7 @@ contains
 
   function zpinch_checkConservation(rparlist, ssectionName,&
       rproblemLevel, rvector, isolution) result(dvalue)
-  
+
     type(t_parlist), intent(in) :: rparlist
     character(LEN=*), intent(in) :: ssectionName
     type(t_problemLevel), intent(in) :: rproblemLevel
@@ -2729,7 +2729,7 @@ contains
     ! Get lumped mass matrix
     call lsyssc_getbase_double(rproblemLevel&
         %Rmatrix(lumpedMassMatrix), p_Dmatrix)
-    
+
     select case(isolution)
 
     case(1)
@@ -2739,15 +2739,15 @@ contains
 
       ! Get density distribution
       call lsyssc_getbase_double(rvectorScalar, p_Dvector)
-      
+
       ! Compute total mass
       dvalue = sum(p_Dmatrix * p_Dvector)
-      
+
       ! Release temporal vector
       call lsyssc_releaseVector(rvectorScalar)
-      
+
     case(2)
-    
+
       ! Get solution vector
       call lsysbl_getbase_double(rvector, p_Dvector)
 

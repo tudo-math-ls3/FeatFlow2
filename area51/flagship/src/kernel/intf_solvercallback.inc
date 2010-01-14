@@ -1,5 +1,5 @@
 ! -*- mode: f90; -*-
-  
+
 !##############################################################################
 !# ****************************************************************************
 !# <name> intf_solvercallback </name>
@@ -13,8 +13,8 @@
 
   interface
 
-    ! *************************************************************************** 
-    
+    ! ***************************************************************************
+
 !<subroutine>
 
     subroutine fcb_nlsolverCallback(rproblemLevel, rtimestep, rsolver,&
@@ -47,7 +47,7 @@
 
       ! time-stepping structure
       type(t_timestep), intent(INOUT) :: rtimestep
-      
+
       ! solver structure
       type(t_solver), intent(INOUT) :: rsolver
 
@@ -71,5 +71,5 @@
 !</subroutine>
 
     end subroutine fcb_nlsolverCallback
-    
+
   end interface

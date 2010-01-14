@@ -95,19 +95,19 @@
 !#         adopting the Rusanov artificial viscosities
 !#
 !# 23.) euler_calcTrafoDensity2d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
 !# 24.) euler_calcTrafoDensityEnergy2d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
 !# 25.) euler_calcTrafoDensityPress2d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
 !# 26.) euler_calcTrafoDensityPressVel2d
-!#      -> Computes the transformation from conservative fluxes 
+!#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
 !# 27.) euler_calcBoundaryvalues2d
@@ -176,9 +176,9 @@ module euler_callback2d
   public :: euler_hadaptCallbackBlock2d
 
 contains
-  
+
   !*****************************************************************************
-  
+
 !<subroutine>
 
   pure subroutine euler_calcFluxGalerkin2d(&
@@ -208,7 +208,7 @@ contains
     real(DP), dimension(:), intent(out) :: F_ij, F_ji
 !</output>
 !</subroutine>
-    
+
     ! local variables
 #ifdef USE_EULER_IBP
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
@@ -259,14 +259,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -277,7 +277,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -352,7 +352,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -360,7 +360,7 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
     ! Compute flux difference for x-direction
     dF1_ij(1) = U_i(2)                           - U_j(2)
     dF1_ij(2) = G1*U_i(4)-G14*ru2i-G2*rv2i       - (G1*U_j(4)-G14*ru2j-G2*rv2j)
@@ -430,7 +430,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -438,14 +438,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -456,7 +456,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -485,7 +485,7 @@ contains
 #endif
 
     !---------------------------------------------------------------------------
-    ! Evaluate the issipation 
+    ! Evaluate the issipation
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient
@@ -566,7 +566,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -574,14 +574,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -592,7 +592,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -618,10 +618,10 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-#endif    
+#endif
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient
@@ -689,7 +689,7 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
-#endif    
+#endif
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
@@ -702,7 +702,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -710,14 +710,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -728,7 +728,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -754,12 +754,12 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-#endif    
-    
+#endif
+
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
-    
+
     ! Compute the skew-symmetric coefficient
     a = 0.5_DP*(C_ij-C_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
@@ -767,7 +767,7 @@ contains
 
       ! Normalize the skew-symmetric coefficient
       a = a/anorm
-      
+
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
@@ -775,7 +775,7 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      
+
       ! Compute auxiliary variables
       aux   = u_ij*a(1) + v_ij*a(2)
       uPow2 = u_ij*u_ij
@@ -783,7 +783,7 @@ contains
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
-      
+
       ! Compute eigenvalues
       l1 = abs(aux-cs)
       l2 = abs(aux)
@@ -792,7 +792,7 @@ contains
 
       ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
-      
+
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
       aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/cs
@@ -811,7 +811,7 @@ contains
       Diff(2) = anorm * ( (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4 )
       Diff(3) = anorm * ( (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4 )
       Diff(4) = anorm * ( (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
-      
+
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
       F_ji = F_ji-Diff
@@ -871,7 +871,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -879,14 +879,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -897,7 +897,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -923,12 +923,12 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-#endif    
-    
+#endif
+
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
-    
+
     ! Compute the skew-symmetric coefficient
     a = 0.5_DP*(C_ij-C_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
@@ -936,7 +936,7 @@ contains
 
       ! Compute the absolute value
       a = abs(a)
-      
+
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
@@ -944,7 +944,7 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      
+
       ! Compute auxiliary variables
       uPow2 = u_ij*u_ij
       vPow2 = v_ij*v_ij
@@ -955,7 +955,7 @@ contains
       !-------------------------------------------------------------------------
       ! Dimensional splitting: x-direction
       !-------------------------------------------------------------------------
-      
+
       ! Compute eigenvalues
       l1 = abs(u_ij-cs)
       l2 = abs(u_ij)
@@ -964,7 +964,7 @@ contains
 
       ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
-      
+
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
       aux2 = 0.5_DP*(u_ij*Diff(1)-Diff(2))/cs
@@ -980,11 +980,11 @@ contains
       Diff(2) = dscale * a(1) * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
       Diff(3) = dscale * a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
       Diff(4) = dscale * a(1) * ( (H_ij-cs*u_ij)*w1  + q_ij*w2 + (H_ij+cs*u_ij)*w3  -v_ij*w4 )
-      
+
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
       F_ji = F_ji-Diff
-      
+
 
       !-------------------------------------------------------------------------
       ! Dimensional splitting: y-direction
@@ -997,7 +997,7 @@ contains
 
       ! Compute solution difference U_j-U_i
       Diff = U_j-U_i
-      
+
       ! Compute auxiliary quantities for characteristic variables
       aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
       aux2 = 0.5_DP*(v_ij*Diff(1)-Diff(3))/cs
@@ -1013,7 +1013,7 @@ contains
       Diff(2) = dscale * a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
       Diff(3) = dscale * a(2) * ( (v_ij-cs)*w1 + v_ij*w2 + (v_ij+cs)*w3 )
       Diff(4) = dscale * a(2) * ( (H_ij-cs*v_ij)*w1  + q_ij*w2 + (H_ij+cs*v_ij)*w3  + u_ij*w4 )
-      
+
       ! Add the artificial diffusion to the fluxes
       F_ij = F_ij+Diff
       F_ji = F_ji-Diff
@@ -1069,7 +1069,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities and energy
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
@@ -1077,14 +1077,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -1095,7 +1095,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -1121,12 +1121,12 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-#endif    
+#endif
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
-    
+
 !!$    ! Compute enthalpy
 !!$    hi = GAMMA*Ei-G2*(ui*ui+vi*vi)
 !!$    hj = GAMMA*Ej-G2*(uj*uj+vj*vj)
@@ -1144,7 +1144,7 @@ contains
                 sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
                 abs(C_ji(1)*ui+C_ji(2)*vi) +&
                 sqrt(C_ji(1)*C_ji(1)+C_ji(2)*C_ji(2))*ci )
-    
+
     ! Multiply the solution difference by the artificial diffusion factor
     Diff = dscale * d_ij*(U_j-U_i)
 
@@ -1202,7 +1202,7 @@ contains
     ! For a detailed description of algorithm and the definition of auxiliary
     ! quantities have a look at the subroutine "euler_calcFluxGalerkin2d".
     !---------------------------------------------------------------------------
-    
+
     ! Compute velocities and energy
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1); Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1); Ej = U_j(4)/U_j(1)
@@ -1210,14 +1210,14 @@ contains
     ! Compute auxiliary variables
     ru2i = ui*U_i(2); rv2i = vi*U_i(3)
     ru2j = uj*U_j(2); rv2j = vj*U_j(3)
-    
+
 #ifdef USE_EULER_IBP
     ! Compute fluxes for x-direction
     dF1_i(1) = U_i(2)
     dF1_i(2) = G1*U_i(4)-G14*ru2i-G2*rv2i
     dF1_i(3) = U_i(3)*ui
     dF1_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*ui
-    
+
     dF1_j(1) = U_j(2)
     dF1_j(2) = G1*U_j(4)-G14*ru2j-G2*rv2j
     dF1_j(3) = U_j(3)*uj
@@ -1228,7 +1228,7 @@ contains
     dF2_i(2) = U_i(3)*ui
     dF2_i(3) = G1*U_i(4)-G14*rv2i-G2*ru2i
     dF2_i(4) = (GAMMA*U_i(4)-G2*(ru2i+rv2i))*vi
-    
+
     dF2_j(1) = U_j(3)
     dF2_j(2) = U_j(3)*uj
     dF2_j(3) = (G1*U_j(4)-G14*rv2j-G2*ru2j)
@@ -1254,10 +1254,10 @@ contains
     ! Assembly fluxes
     F_ij =   dscale * ( C_ij(1)*dF1_ij + C_ij(2)*dF2_ij)
     F_ji = - dscale * ( C_ji(1)*dF1_ij + C_ji(2)*dF2_ij)
-#endif    
+#endif
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
 !!$    ! Compute enthalpy
@@ -1370,7 +1370,7 @@ contains
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uvi = ui*vi;   qi = ui*ui+vi*vi;   uPow2i = ui*ui;   vPow2i = vi*vi
     aux = ui*C_ii(1)+vi*C_ii(2)
-    
+
     ! Compute Galerkin coefficient K_ii
     K_ii( 1) = 0.0_DP
     K_ii( 2) = dscale * ((G2*qi-uPow2i)*C_ii(1)-uvi*C_ii(2))
@@ -1492,7 +1492,7 @@ contains
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
     aux2 = ui*C_ji(1)+vi*C_ji(2)
-    
+
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
     K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
@@ -1593,14 +1593,14 @@ contains
     K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient and its norm
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
     if (anorm .gt. SYS_EPSREAL) then
-      
+
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
@@ -1611,12 +1611,12 @@ contains
 
       ! Compute auxiliary variables
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-         
+
       ! Compute scalar dissipation
       D_ij = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
-                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))     
+                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
     else
-      
+
       ! Nullify dissipation tensor
       D_ij = 0.0_DP
 
@@ -1670,7 +1670,7 @@ contains
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
     aux2 = ui*C_ji(1)+vi*C_ji(2)
-    
+
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
     K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
@@ -1714,14 +1714,14 @@ contains
     K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
     ! Compute coefficients
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
     if (anorm .gt. SYS_EPSREAL) then
-      
+
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
@@ -1729,14 +1729,14 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      
+
       ! Compute auxiliary variables
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-         
+
       ! Compute scalar dissipation
       aux = dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
-      
+
       D_ij     = 0.0_DP
       D_ij( 1) = aux
       D_ij( 6) = aux
@@ -1806,14 +1806,14 @@ contains
     K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
     ! Compute skew-symmetric coefficient and its norm
     a = 0.5_DP*(C_ji-C_ij); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
     if (anorm .gt. SYS_EPSREAL) then
-      
+
       ! Compute Roe mean values
       aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
@@ -1821,7 +1821,7 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(ui*ui+vi*vi)
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      
+
       ! Compute auxiliary values
       c1    = a(1)/anorm
       c2    = a(2)/anorm
@@ -1829,56 +1829,56 @@ contains
       q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
       cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs = sqrt(cPow2)
-      
+
       ! Diagonal matrix of eigenvalues
       l1 = abs(vel-cs)
       l2 = abs(vel)
       l3 = abs(vel+cs)
       l4 = abs(vel)
-      
+
       ! Matrix of right eigenvectors
       R_ij(1,1) =  l1
       R_ij(2,1) =  l1*(u_ij-cs*c1)
       R_ij(3,1) =  l1*(v_ij-cs*c2)
       R_ij(4,1) =  l1*(H_ij-cs*vel)
-      
+
       R_ij(1,2) =  l2
       R_ij(2,2) =  l2*u_ij
       R_ij(3,2) =  l2*v_ij
       R_ij(4,2) =  l2*q_ij
-      
+
       R_ij(1,3) =  l3
       R_ij(2,3) =  l3*(u_ij+cs*c1)
       R_ij(3,3) =  l3*(v_ij+cs*c2)
       R_ij(4,3) =  l3*(H_ij+cs*vel)
-      
+
       R_ij(1,4) =  0.0_DP
       R_ij(2,4) =  l4*c2
       R_ij(3,4) = -l4*c1
       R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
-      
+
       ! Matrix of left eigenvectors
       L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
       L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
       L_ij(3,1) = 0.5_DP*(G1*q_ij-cs*vel)/cPow2
       L_ij(4,1) = v_ij*c1-u_ij*c2
-      
+
       L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs*c1)/cPow2
       L_ij(2,2) = G1*u_ij/cPow2
       L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs*c1)/cPow2
       L_ij(4,2) = c2
-      
+
       L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs*c2)/cPow2
       L_ij(2,3) = G1*v_ij/cPow2
       L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs*c2)/cPow2
       L_ij(4,3) = -c1
-      
+
       L_ij(1,4) =  G2/cPow2
       L_ij(2,4) = -G1/cPow2
       L_ij(3,4) =  G2/cPow2
       L_ij(4,4) =  0.0_DP
 
-      
+
       ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
       D_ij    = 0.0_DP
       D_ij(1) = anorm*( R_ij(1,1)*L_ij(1,1)+&
@@ -1901,7 +1901,7 @@ contains
     else
 
       D_ij = 0.0_DP
-      
+
     end if
 
   end subroutine euler_calcMatrixTensorDissDiag2d
@@ -1943,7 +1943,7 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    
+
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
@@ -1953,7 +1953,7 @@ contains
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
     aux2 = ui*C_ji(1)+vi*C_ji(2)
-    
+
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
     K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
@@ -1997,7 +1997,7 @@ contains
     K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
     ! Compute coefficients
@@ -2020,34 +2020,34 @@ contains
       q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
       cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
       cs    = sqrt(cPow2)
-      
+
       ! Diagonal matrix of eigenvalues
       l1 = abs(vel-cs)
       l2 = abs(vel)
       l3 = abs(vel+cs)
       l4 = abs(vel)
-      
+
       ! Matrix of right eigenvectors
       R_ij(1,1) =  l1
       R_ij(2,1) =  l1*(u_ij-cs*c1)
       R_ij(3,1) =  l1*(v_ij-cs*c2)
       R_ij(4,1) =  l1*(H_ij-cs*vel)
-      
+
       R_ij(1,2) =  l2
       R_ij(2,2) =  l2*u_ij
       R_ij(3,2) =  l2*v_ij
       R_ij(4,2) =  l2*q_ij
-      
+
       R_ij(1,3) =  l3
       R_ij(2,3) =  l3*(u_ij+cs*c1)
       R_ij(3,3) =  l3*(v_ij+cs*c2)
       R_ij(4,3) =  l3*(H_ij+cs*vel)
-      
+
       R_ij(1,4) =  0.0_DP
       R_ij(2,4) =  l4*c2
       R_ij(3,4) = -l4*c1
       R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
-      
+
       ! Matrix of left eigenvectors
       L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
       L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
@@ -2068,7 +2068,7 @@ contains
       L_ij(2,4) = -G1/cPow2
       L_ij(3,4) =  G2/cPow2
       L_ij(4,4) =  0.0_DP
-      
+
       ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
       call DGEMM('n', 'n', NVAR2D, NVAR2D, NVAR2D, anorm,&
                  R_ij, NVAR2D, L_ij, NVAR2D, 0.0_DP, D_ij, NVAR2D)
@@ -2076,7 +2076,7 @@ contains
     else
 
       D_ij = 0.0_DP
-      
+
     end if
 
   end subroutine euler_calcMatrixTensorDiss2d
@@ -2115,8 +2115,8 @@ contains
 
     ! local variable
     real(DP) :: ui,uj,vi,vj,ci,cj,Ei,Ej
-    
-    
+
+
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
@@ -2134,7 +2134,7 @@ contains
     K_ji(4) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
 !!$    ! Compute auxiliary quantities
@@ -2191,7 +2191,7 @@ contains
     ! local variable
     real(DP) :: ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj
     real(DP) :: uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    
+
     ! Compute auxiliary variables
     ui = U_i(2)/U_i(1);   vi = U_i(3)/U_i(1);   Ei = U_i(4)/U_i(1)
     uj = U_j(2)/U_j(1);   vj = U_j(3)/U_j(1);   Ej = U_j(4)/U_j(1)
@@ -2201,7 +2201,7 @@ contains
 
     aux1 = uj*C_ij(1)+vj*C_ij(2)
     aux2 = ui*C_ji(1)+vi*C_ji(2)
-    
+
     ! Compute Galerkin coefficient K_ij
     K_ij( 1) = 0.0_DP
     K_ij( 2) = dscale * ((G2*qj-uPow2j)*C_ij(1)-uvj*C_ij(2))
@@ -2245,7 +2245,7 @@ contains
     K_ji(16) = dscale * (GAMMA*(ui*C_ji(1)+vi*C_ji(2)))
 
     !---------------------------------------------------------------------------
-    ! Evaluate the dissipation 
+    ! Evaluate the dissipation
     !---------------------------------------------------------------------------
 
 !!$    ! Compute auxiliary quantities
@@ -2264,13 +2264,13 @@ contains
                          sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
                          abs(C_ji(1)*ui+C_ji(2)*vi) +&
                          sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-    
+
     D_ij = 0.0_DP
     D_ij( 1) = aux1
     D_ij( 6) = aux1
     D_ij(11) = aux1
     D_ij(16) = aux1
-    
+
   end subroutine euler_calcMatrixRusanov2d
 
   !*****************************************************************************
@@ -2311,10 +2311,10 @@ contains
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
     real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm
-    
+
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
-    
+
     ! Check if weighting coefficient is zero
     if (anorm .gt. SYS_EPSREAL) then
 
@@ -2329,13 +2329,13 @@ contains
       hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
       hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
-      
+
       ! Compute auxiliary variables
       uPow2 = u_ij*u_ij
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs = sqrt(cPow2)  
+      cs = sqrt(cPow2)
       aux   = a1*u_ij+a2*v_ij
 
       ! Compute diagonal matrix of eigenvalues (if present)
@@ -2396,7 +2396,7 @@ contains
       if (present(W_ij)) then
         ! Compute solution difference U_j-U_i
         Diff = U_j-U_i
-        
+
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff(1)-&
                          u_ij*Diff(2)-&
@@ -2405,23 +2405,23 @@ contains
         aux2 = 0.5_DP*(aux*Diff(1)-&
                         a1*Diff(2)-&
                         a2*Diff(3) )/cs
-        
+
         ! Compute characteristic variables
         W_ij(1) = anorm * (aux1 + aux2)
         W_ij(2) = anorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
         W_ij(3) = anorm * (aux1 - aux2)
         W_ij(4) = anorm * ((a1*v_ij-a2*u_ij)*Diff(1)+a2*Diff(2)-a1*Diff(3))
       end if
-      
+
     else   ! |dweight| = 0
-      
+
       if (present(Lbd_ij)) Lbd_ij = 0.0_DP
       if (present(R_ij))   R_ij   = 0.0_DP
       if (present(L_ij))   L_ij   = 0.0_DP
       if (present(W_ij))   W_ij   = 0.0_DP
-      
+
     end if
-    
+
   end subroutine euler_calcCharacteristics2d
 
   !*****************************************************************************
@@ -2431,9 +2431,9 @@ contains
   pure subroutine euler_calcFluxFCTScalarDiss2d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 2D using scalar dissipation.
 !</description>
 
@@ -2443,7 +2443,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -2498,9 +2498,9 @@ contains
   pure subroutine euler_calcFluxFCTTensorDiss2d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 2D using tensodial dissipation.
 !</description>
 
@@ -2510,7 +2510,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -2539,7 +2539,7 @@ contains
     a = 0.5_DP*(C_ij-C_ji); anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
     if (anorm .gt. SYS_EPSREAL) then
-      
+
       ! Normalize the skew-symmetric coefficient
       a = a/anorm
 
@@ -2594,7 +2594,7 @@ contains
 
     end if
   end subroutine euler_calcFluxFCTTensorDiss2d
- 
+
   !*****************************************************************************
 
 !<subroutine>
@@ -2602,9 +2602,9 @@ contains
   pure subroutine euler_calcFluxFCTRusanov2d(&
       U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
       i, j, dscale1, dscale2, F_ij)
-    
+
 !<description>
-    ! This subroutine computes the raw antidiffusive fluxes for 
+    ! This subroutine computes the raw antidiffusive fluxes for
     ! FCT algorithms in 2D using the Rusanov dissipation.
 !</description>
 
@@ -2614,7 +2614,7 @@ contains
 
     ! coefficients from spatial discretization
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
-    
+
     ! scaling coefficients
     real(DP), intent(in) :: dscale1,dscale2
 
@@ -2639,7 +2639,7 @@ contains
     ! Compute the speed of sound
     ci = sqrt(max(G15*(Ei-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
     cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
-    
+
     ! Scalar dissipation for the Rusanov flux
     d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) +&
                 sqrt(C_ij(1)*C_ij(1)+C_ij(2)*C_ij(2))*cj,&
@@ -2650,13 +2650,13 @@ contains
     F_ij = dscale1*(U1_i-U1_j) + dscale2*d_ij*(U2_i-U2_j)
 
   end subroutine euler_calcFluxFCTRusanov2d
-  
+
   !*****************************************************************************
 
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensity2d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density in 2D
@@ -2679,7 +2679,7 @@ contains
     ! density fluxes
     G_ij(1) =  F_ij(1)
     G_ji(1) = -F_ij(1)
-    
+
   end subroutine euler_calcTrafoDensity2d
 
   !*****************************************************************************
@@ -2687,7 +2687,7 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityEnergy2d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density and energy in 2D
@@ -2722,7 +2722,7 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityPress2d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
     ! This subroutine computes the transformation of
     ! conservative to fluxes for the density and energy in 2D
@@ -2744,11 +2744,11 @@ contains
 
     ! local variables
     real(DP) :: ui, uj, vi, vj
-    
+
     ! velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
-    
+
     ! density fluxes
     G_ij(1) =  F_ij(1)
     G_ji(1) = -F_ij(1)
@@ -2756,7 +2756,7 @@ contains
     ! pressure fluxes
     G_ij(2) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
     G_ji(2) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
-    
+
   end subroutine euler_calcTrafoDensityPress2d
 
   !*****************************************************************************
@@ -2764,9 +2764,9 @@ contains
 !<subroutine>
 
   pure subroutine euler_calcTrafoDensityPressVel2d(U_i, U_j, F_ij, G_ij, G_ji)
-    
+
 !<description>
-    ! This subroutine computes the transformation 
+    ! This subroutine computes the transformation
     ! of the given flux into primitive variables in 2D
 !</description>
 
@@ -2786,7 +2786,7 @@ contains
 
     ! local variables
     real(DP) :: ui, uj, vi, vj
-    
+
     ! velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
     uj = U_j(2)/U_j(1); vj = U_j(3)/U_j(1)
@@ -2875,11 +2875,11 @@ contains
       !     $$v2_b   = v_2*(n_x^2-n_y^2)-2*n_x*n_y*v_1$$
       !     $$p_b    = p$
       !
-      ! where $n=[n_x,n_y]$ denotes the physical normal vector which is given 
+      ! where $n=[n_x,n_y]$ denotes the physical normal vector which is given
       ! analytically, i.e. it is more accurate than the finite element normal.
       ! The Riemann problem Riem(U, U_b, N) in the direction of the numerical
       ! normal vector $N=[N_x,N_y]$ is solved exactly. Due to the identical
-      ! pressure and density in the two states, the exact solution consists if 
+      ! pressure and density in the two states, the exact solution consists if
       ! either two shocks or two rarefaction waves.
       !
       ! Note that the relaxed wall boundary conditions is intended to prevent
@@ -2887,7 +2887,7 @@ contains
       ! at startup and the normal velocity is gradually driven to zero as the
       ! flow evolves. This technique is presented and analyzed by Lyra:
       !
-      !    `Unstructured Grid Adaptive Algorithms for 
+      !    `Unstructured Grid Adaptive Algorithms for
       !     Fluid Dynamics and Heat Conduction`
       !     P.R.M. Lyra, PhD thesis, University of Wales, Swansea, 1994.
       !
@@ -2911,7 +2911,7 @@ contains
       dnxy = DbdrNormal(1)*DbdrNormal(2)
       dnx2 = DbdrNormal(1)*DbdrNormal(1)
       dny2 = DbdrNormal(2)*DbdrNormal(2)
-      
+
       if (ibdrCondType .eq. BDR_EULERWALL) then
         ! Compute reflected velocities at the boundary
         v1_b = (dny2-dnx2)*v1 - 2.0_DP*dnxy*v2
@@ -2933,12 +2933,12 @@ contains
 
       ! Compute the tangential velocity depending on the sign of N*v
       if (vn .gt. 0.0_DP) then
-        vt = DpointNormal(2)*v1   - DpointNormal(1)*v2    
+        vt = DpointNormal(2)*v1   - DpointNormal(1)*v2
       else
         vt = DpointNormal(2)*v1_b - DpointNormal(1)*v2_b
       end if
-      
-      
+
+
       !-------------------------------------------------------------------------
       ! Calculate the pressure in the star region
       !
@@ -2947,7 +2947,7 @@ contains
       !
       !     $$\frac{2}{\gamma-1}(c+c_b)>v_b-v$$
       !
-      ! Otherwise, the Riemann problem gives rise to vacuum so that the 
+      ! Otherwise, the Riemann problem gives rise to vacuum so that the
       ! "star region" does no longer exist and the standard procedure fails.
       !
       ! Here and below, the left state corresponds to the interior value
@@ -2966,7 +2966,7 @@ contains
           call sys_halt()
         end if
       end if
-      
+
       ! Provide a guess value for pressure in the "star region"
       ! by using the PVRS Riemann solver as suggested by Toro
 
@@ -2988,7 +2988,7 @@ contains
           pstar = 0.5_DP*(p*ptl + p*ptr)**G11
         else
 
-          ! Guess pressure from the Two-Shock Riemann solver 
+          ! Guess pressure from the Two-Shock Riemann solver
           ! with PVRS as estimated pressure value
           ge    = sqrt((G10/rho)/(G12*p+ppv))
           pstar = p - 0.5_DP*(vn_b-vn)/ge
@@ -3000,13 +3000,13 @@ contains
       pold  = pstar
 
       newton: do ite = 1, 100
-        
+
         ! Compute pressure function f(pold) and its derivative f1(pold)
         if (pold .le. p) then
 
           ! Rarefaction wave
           prat = pold/p
-          
+
           f  = G9*c*(prat**G7 - 1.0_DP)
           fd = (1.0_DP/(rho*c))*prat**(-G8)
         else
@@ -3028,7 +3028,7 @@ contains
 
         aux = 2.0_DP*abs((pstar-pold)/(pstar+pold))
         if (aux .le. 1.0E-6)  exit newton
-        
+
         pold = pstar
 
       end do newton
@@ -3045,14 +3045,14 @@ contains
           call sys_halt()
         end if
       end if
-      
+
       !-------------------------------------------------------------------------
       ! Calculate the velocity in the star region
       !-------------------------------------------------------------------------
 
       ! Note that the contribution fR-fL vanishes due to constant states
       vn = 0.5_DP*(vn+vn_b)
-      
+
 
       !-------------------------------------------------------------------------
       ! Calculate the density in the star region
@@ -3067,7 +3067,7 @@ contains
         ! Shock wave
         rho = rho*(pstar/p+G12)/(G12*(pstar/p)+1.0_DP)
       end if
-      
+
       ! Update the solution vector
       Du(1) = rho
       Du(2) = rho*( DpointNormal(2)*vt+DpointNormal(1)*vn)
@@ -3077,7 +3077,7 @@ contains
 
     case(BDR_VISCOUSWALL)
       !-------------------------------------------------------------------------
-      
+
       ! Compute primitive variables
       rho = Du(1)
       v1  = Du(2)/rho
@@ -3100,7 +3100,7 @@ contains
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
-      
+
       ! Compute Riemann invariants based on the free stream values
       W(1) = vn-2*c/G1
       W(2) = vn+2*c/G1
@@ -3130,7 +3130,7 @@ contains
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*DbdrValue(2)+DbdrNormal(2)*DbdrValue(3)
       vt  = DbdrNormal(2)*DbdrValue(2)-DbdrNormal(1)*DbdrValue(3)
-      
+
       ! Compute Riemann invariants based on the free stream values
       Winf(1) = vn-2.0_DP*c/G1
       Winf(2) = vn+2.0_DP*c/G1
@@ -3143,11 +3143,11 @@ contains
       v2  = Du(3)/rho
       E   = Du(4)/rho
       p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-      
+
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-      
+
       ! Compute Riemann invariants based on the solution values
       Wu(1) = vn-2.0_DP*c/G1
       Wu(2) = vn+2.0_DP*c/G1
@@ -3176,18 +3176,18 @@ contains
 
     case(BDR_SUBINLET)
       !-------------------------------------------------------------------------
-     
+
       ! Compute primitive variables
       rho = Du(1)
       v1  = Du(2)/rho
       v2  = Du(3)/rho
       E   = Du(4)/rho
       p   = thdyn_pressure(GAMMA, E, rho, v1, v2)
-      
+
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
-      
+
       ! The specified density and pressure is Deval=[rho,p]
       rho = DbdrValue(1)
       p   = DbdrValue(2)
@@ -3210,7 +3210,7 @@ contains
       Du(2) = rho*( DbdrNormal(2)*vt+DbdrNormal(1)*vn)
       Du(3) = rho*(-DbdrNormal(1)*vt+DbdrNormal(2)*vn)
       Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
-      
+
 
     case(BDR_SUBOUTLET)
       !-------------------------------------------------------------------------
@@ -3233,7 +3233,7 @@ contains
       vn  = DbdrNormal(1)*v1+DbdrNormal(2)*v2
       vt  = DbdrNormal(2)*v1-DbdrNormal(1)*v2
       c   = sqrt(max(GAMMA*p/rho, SYS_EPSREAL))
-      
+
       ! Compute Riemann invariants based on the solution values and prescribed exit pressure
       W(2) = 2*c/G1-vn
       W(3) = p/(rho**GAMMA)
@@ -3308,18 +3308,18 @@ contains
 
       ! Set pointer
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
@@ -3378,7 +3378,7 @@ contains
           p_Dsolution((rcollection%IquickAccess(1)-1)*NVAR2D+ivar) = 0.0_DP
         end do
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -3388,7 +3388,7 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine euler_hadaptCallbackScalar2d
 
   !*****************************************************************************
@@ -3437,18 +3437,18 @@ contains
 
       ! Set pointer
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
@@ -3475,8 +3475,8 @@ contains
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector
       if (rsolution%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
@@ -3511,7 +3511,7 @@ contains
           p_Dsolution((ivar-1)*neq+rcollection%IquickAccess(1)) = 0.0_DP
         end do
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -3521,7 +3521,7 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine euler_hadaptCallbackBlock2d
- 
+
 end module euler_callback2d

@@ -68,17 +68,17 @@ module flagship_basic
                                                   UPDMAT_LINEARMG_SOLVER +&
                                                   UPDMAT_LINEARMG_SMOOTHER +&
                                                   UPDMAT_LINEARMG_COARSEGRID
-  
+
   ! Update Jacobian matrix for steady-state flows
   integer(I32), parameter, public :: UPDMAT_JAC_STEADY = UPDMAT_LINEAR_SOLVER +&
                                                          UPDMAT_LINEARMG_SOLVER +&
-                                                         UPDMAT_LINEARMG_SMOOTHER 
+                                                         UPDMAT_LINEARMG_SMOOTHER
 
   ! Update Jacobian matrix for transient flows
   integer(I32), parameter, public :: UPDMAT_JAC_TRANSIENT = UPDMAT_LINEAR_SOLVER +&
                                                             UPDMAT_LINEAR_PRECOND +&
                                                             UPDMAT_LINEARMG_SOLVER +&
-                                                            UPDMAT_LINEARMG_SMOOTHER 
+                                                            UPDMAT_LINEARMG_SMOOTHER
 
 !</constantblock>
 
@@ -110,7 +110,7 @@ contains
     ! specified in the parameter file by calling a function parser w.r.t.
     ! the specified variable names
 !</description>
-    
+
 !<input>
     ! name of parameter file
     character(LEN=*), intent(in) :: sfilename
@@ -127,12 +127,12 @@ contains
     type(t_fparser), intent(out) :: rparser
 !</output>
 !</subroutine>
-    
+
     ! local variables
     character(SYS_STRLEN) :: skeyword
     character(1024) :: sdata,sexpression
     integer :: iunit,ios,ipos,idatalen,icomp,ncomp
-    
+
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit, .true.)
 
@@ -146,7 +146,7 @@ contains
     ! Read through the input file until the given keyword is reached.
     ios = 0
     do while(ios .eq. 0)
-      
+
       ! Read next line in file
       call io_readlinefromfile(iunit, sdata, idatalen, ios)
       if (ios .ne. 0) then
@@ -159,7 +159,7 @@ contains
       call sys_tolower(sdata(1:idatalen), skeyword)
       if (trim(adjustl(skeyword)) .eq. trim(adjustl(ssectionname))) exit
     end do
-    
+
     ! We found the keyword. String NCOMP must be the next line to read.
     call io_readlinefromfile(iunit, sdata, idatalen, ios)
     if (ios .ne. 0) then
@@ -175,21 +175,21 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_readParserFromFile')
       call sys_halt()
     end if
-    
+
     ! Read value for NCOMP
     read(iunit,*,IOSTAT=ios) ncomp
     if (ios .ne. 0) then
       call output_line('Unable to read value of NCOMP from input file!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_readParserFromFile')
       call sys_halt()
-    end if   
+    end if
 
     ! Create parser structure
     call fparser_create(rparser, ncomp)
-    
+
     ! Read expressions into parser, relations and concatinations
     do icomp = 1, ncomp
-      
+
       ! Read until expression is finished
       ios  = 0
       ipos = 1
@@ -208,7 +208,7 @@ contains
         ! Append line to expression
         sexpression(ipos:) = sdata(1:idatalen)
         ipos = len_trim(sexpression)
-        
+
         ! Check if expression is continued in the following line
         if (sexpression(max(1,ipos-2):ipos) .eq. '...') then
           ipos = ipos-2
@@ -232,7 +232,7 @@ contains
   subroutine flagship_initUCDexport(rproblemLevel, sfilename, ioutputUCD,&
                                     rexport, ifilenumber)
 
-!<description> 
+!<description>
     ! This subroutine initializes the UCD exporter structure. If the
     ! optional parameter ifilenumber is given, the outputfile is named
     ! 'sfilename'.<ifilenumber>.'ext' where 'ext' is the file
@@ -321,7 +321,7 @@ contains
 
 !<description>
     ! This subroutine updates the solver structure by setting the matrices.
-    ! If the optional parameters NLMINOPT and NLMAXOPT are not given, then 
+    ! If the optional parameters NLMINOPT and NLMAXOPT are not given, then
     ! only the current level of the given multigrid structure is processed.
 !</description>
 
@@ -375,7 +375,7 @@ contains
   contains
 
     ! Here, the real working routines follow.
-    
+
     !**************************************************************
     ! Set the solver matrices recursively. The routine must be called
     ! with a valid solver structure RSOLVER which serves as top-level
@@ -384,7 +384,7 @@ contains
     ! all subnodes. The parameter IMATRIX denotes the matrix number.
     ! The parameters NLMIN/NLMAX denote the minimum/maximum level to
     ! be considered.
-    
+
     recursive subroutine updateMatrix(rproblemLevel, rsolver, imatrix,&
                                       isystemformat, iupdflag, nlmin, nlmax)
 
@@ -392,17 +392,17 @@ contains
       type(t_solver), intent(inout) :: rsolver
       integer(I32), intent(in) :: iupdflag
       integer, intent(in) :: imatrix,isystemformat,nlmin,nlmax
-      
-      
+
+
       ! local variables
       type(t_problemLevel), pointer :: p_rproblemLevelTmp
       type(t_problemLevel), pointer :: p_rproblemLevelCoarse
       integer :: i
-      
+
       ! What kind of solver are we?
       select case(rsolver%csolverType)
       case (SV_FMG)
-        
+
         ! There are no matrices for the full multigrid solver.
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
 
@@ -411,10 +411,10 @@ contains
         call updatematrix(rproblemLevel,&
                           rsolver%p_solverMultigrid%p_solverCoarsegrid,&
                           imatrix, isystemformat, iupdflag, nlmin, nlmax)
-        
-        
+
+
       case (SV_NONLINEARMG)
-        
+
         ! There are no matrices for the nonlinear multigrid solver.
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
 
@@ -424,12 +424,12 @@ contains
                           imatrix, isystemformat, iupdflag,&
                           rsolver%p_solverMultigrid%nlmin,&
                           rsolver%p_solverMultigrid%nlmin)
-          
+
         ! Proceed to the smoothers
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                  ubound(rsolver%p_solverMultigrid%p_smoother,1)
-            
+
             call updateMatrix(rproblemLevel,&
                               rsolver%p_solverMultigrid%p_smoother(i),&
                               imatrix, isystemformat, iupdflag,&
@@ -437,20 +437,20 @@ contains
                               rsolver%p_solverMultigrid%nlmin)
           end do
         end if
-       
-        
+
+
       case (SV_NONLINEAR)
-        
+
         ! There are no matrices for the nonlinear single-grid solver.
         if (iand(iupdflag, UPDMAT_NORECURSIVE) .eq. UPDMAT_NORECURSIVE) return
 
         ! Directly proceed to the linear solver subnode.
         call updateMatrix(rproblemLevel, rsolver%p_solverSubnode(1),&
                           imatrix, isystemformat, iupdflag, nlmin, nlmax)
-        
-        
+
+
       case (SV_LINEARMG)
-        
+
         ! Are there multiple levels?
         if (rsolver%p_solverMultigrid%nlmin .eq.&
             rsolver%p_solverMultigrid%nlmax) then
@@ -461,14 +461,14 @@ contains
                             imatrix, isystemformat, iupdflag,&
                             rsolver%p_solverMultigrid%nlmin,&
                             rsolver%p_solverMultigrid%nlmin)
-          
+
         else
 
-          ! We are on the level of the linear multigrid solver.         
+          ! We are on the level of the linear multigrid solver.
           p_rproblemLevelTmp    => rproblemLevel
           p_rproblemLevelCoarse => rproblemLevel
           do while(associated(p_rproblemLevelTmp))
-            
+
             ! Do we have to set matrices for this level?
             if (p_rproblemLevelTmp%ilev > nlmax) then
               p_rproblemLevelTmp => p_rproblemLevelTmp%p_rproblemLevelCoarse
@@ -476,11 +476,11 @@ contains
             elseif(p_rproblemLevelTmp%ilev < nlmin) then
               exit
             end if
-            
+
             ! What type of matrix format are we
             select case(isystemFormat)
             case (SYSTEM_INTERLEAVEFORMAT)
-              
+
               if (iand(iupdflag, UPDMAT_LINEARMG_SOLVER) .eq.&
                                  UPDMAT_LINEARMG_SOLVER) then
                 ! Set the system matrix for the linear solver
@@ -488,7 +488,7 @@ contains
                     p_rproblemLevelTmp%Rmatrix(imatrix),&
                     p_rproblemLevelTmp%ilev)
               end if
-              
+
               if (iand(iupdflag, UPDMAT_LINEARMG_SMOOTHER) .eq.&
                                  UPDMAT_LINEARMG_SMOOTHER) then
                 ! Set the system matrix for the linear smoother
@@ -509,7 +509,7 @@ contains
                     p_rproblemLevelTmp%RmatrixBlock(imatrix),&
                     p_rproblemLevelTmp%ilev)
               end if
-              
+
               if (iand(iupdflag, UPDMAT_LINEARMG_SMOOTHER) .eq.&
                                  UPDMAT_LINEARMG_SMOOTHER) then
                 ! Set the system matrix for the linear smoother
@@ -520,18 +520,18 @@ contains
                       p_rproblemLevelTmp%ilev)
                 end if
               end if
-              
+
             case DEFAULT
               call output_line('Unsupported system format!',&
                                OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
               call sys_halt()
             end select
-            
+
             ! Switch to next coarser level
             p_rproblemLevelCoarse => p_rproblemLevelTmp
             p_rproblemLevelTmp    => p_rproblemLevelTmp%p_rproblemLevelCoarse
           end do
-          
+
           if (iand(iupdflag, UPDMAT_LINEARMG_COARSEGRID) .eq.&
                              UPDMAT_LINEARMG_COARSEGRID) then
             ! Set the system matrix for the linear coarse grid solver
@@ -542,14 +542,14 @@ contains
                               rsolver%p_solverMultigrid%nlmin)
           end if
         end if
-        
+
 
       case (SV_LINEAR)
-        
+
         ! The solver matrix and preconditioner matrix are only updated if
         ! the current level satisfies nlmin <= ilev <= nlmax
         if (nlmin .eq. rproblemLevel%ilev) then
-          
+
           ! What type of matrix format are we
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
@@ -560,7 +560,7 @@ contains
               call solver_setSolverMatrix(rsolver,&
                   rproblemLevel%Rmatrix(imatrix))
             end if
-          
+
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
@@ -576,7 +576,7 @@ contains
               call solver_setSolverMatrix(rsolver,&
                   rproblemLevel%RmatrixBlock(imatrix))
             end if
-          
+
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
@@ -594,7 +594,7 @@ contains
 
           p_rproblemLevelTmp => rproblemLevel
           do while(associated(p_rproblemLevelTmp))
-            
+
             ! Are we on the coarse grid level?
             if (p_rproblemLevelTmp%ilev > nlmin) then
               p_rproblemLevelTmp => p_rproblemLevelTmp%p_rproblemLevelCoarse
@@ -607,25 +607,25 @@ contains
               call sys_halt()
             end if
           end do
-          
+
           ! What type of matrix format are we
           select case(isystemFormat)
           case (SYSTEM_INTERLEAVEFORMAT)
-            
+
             if (iand(iupdflag, UPDMAT_LINEAR_SOLVER) .eq.&
                                UPDMAT_LINEAR_SOLVER) then
               ! Set the system matrix of the single-grid solver
               call solver_setSolverMatrix(rsolver,&
                   p_rproblemLevelTmp%Rmatrix(imatrix))
             end if
-          
+
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
               call solver_setPrecondMatrix(rsolver,&
                   p_rproblemLevelTmp%Rmatrix(imatrix))
             end if
-            
+
           case (SYSTEM_BLOCKFORMAT)
 
             if (iand(iupdflag, UPDMAT_LINEAR_SOLVER) .eq.&
@@ -634,21 +634,21 @@ contains
               call solver_setSolverMatrix(rsolver,&
                   p_rproblemLevelTmp%RmatrixBlock(imatrix))
             end if
-          
+
             if (iand(iupdflag, UPDMAT_LINEAR_PRECOND) .eq.&
                                UPDMAT_LINEAR_PRECOND) then
               ! Set the system matrix of the preconditioner
               call solver_setPrecondMatrix(rsolver,&
                   p_rproblemLevelTmp%RmatrixBlock(imatrix))
             end if
-            
+
           case DEFAULT
             call output_line('Unsupported system format!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
             call sys_halt()
           end select
         end if
-        
+
       case DEFAULT
         call output_line('Unsupported solver type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'updateMatrix')
