@@ -93,27 +93,27 @@
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 23.) euler_calcTrafoDensity3d
+!# 23.) euler_trafoFluxDensity3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 24.) euler_calcTrafoDensity3d
+!# 24.) euler_trafoFluxDensity3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 25.) euler_calcTrafoDensity3d
+!# 25.) euler_trafoFluxDensity3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 26.) euler_calcTrafoDensityEnergy3d
+!# 26.) euler_trafoFluxDenEng3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 27.) euler_calcTrafoDensityPress3d
+!# 27.) euler_trafoFluxDenPre3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 28.) euler_calcTrafoDensityPressVel3d
+!# 28.) euler_trafoFluxDenPreVel3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
@@ -174,12 +174,12 @@ module euler_callback3d
   public :: euler_calcFluxFCTScalarDiss3d
   public :: euler_calcFluxFCTTensorDiss3d
   public :: euler_calcFluxFCTRusanov3d
-  public :: euler_calcTrafoDensity3d
-  public :: euler_calcTrafoEnergy3d
-  public :: euler_calcTrafoPressure3d
-  public :: euler_calcTrafoDensityEnergy3d
-  public :: euler_calcTrafoDensityPress3d
-  public :: euler_calcTrafoDensityPressVel3d
+  public :: euler_trafoFluxDensity3d
+  public :: euler_trafoFluxEnergy3d
+  public :: euler_trafoFluxPressure3d
+  public :: euler_trafoFluxDenEng3d
+  public :: euler_trafoFluxDenPre3d
+  public :: euler_trafoFluxDenPreVel3d
   public :: euler_calcBoundaryvalues3d
   public :: euler_hadaptCallbackScalar3d
   public :: euler_hadaptCallbackBlock3d
@@ -945,7 +945,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensity3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDensity3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -966,13 +966,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoDensity3d
+  end subroutine euler_trafoFluxDensity3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoEnergy3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxEnergy3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -993,13 +993,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoEnergy3d
+  end subroutine euler_trafoFluxEnergy3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoPressure3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxPressure3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1020,13 +1020,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoPressure3d
+  end subroutine euler_trafoFluxPressure3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityEnergy3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenEng3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1047,13 +1047,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoDensityEnergy3d
+  end subroutine euler_trafoFluxDenEng3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPress3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPre3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1074,13 +1074,13 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoDensityPress3d
+  end subroutine euler_trafoFluxDenPre3d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPressVel3d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPreVel3d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation
@@ -1101,7 +1101,7 @@ contains
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcTrafoDensityPressVel3d
+  end subroutine euler_trafoFluxDenPreVel3d
 
   !*****************************************************************************
 

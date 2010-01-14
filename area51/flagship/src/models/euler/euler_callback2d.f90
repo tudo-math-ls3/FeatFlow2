@@ -94,27 +94,27 @@
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 23.) euler_calcTrafoDensity2d
+!# 23.) euler_trafoFluxDensity2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 24.) euler_calcTrafoEnergy2d
+!# 24.) euler_trafoFluxEnergy2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 25.) euler_calcTrafoPressure2d
+!# 25.) euler_trafoFluxPressure2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 26.) euler_calcTrafoDensityEnergy2d
+!# 26.) euler_trafoFluxDenEng2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 27.) euler_calcTrafoDensityPress2d
+!# 27.) euler_trafoFluxDenPre2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 28.) euler_calcTrafoDensityPressVel2d
+!# 28.) euler_trafoFluxDenPreVel2d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
@@ -175,12 +175,12 @@ module euler_callback2d
   public :: euler_calcFluxFCTScalarDiss2d
   public :: euler_calcFluxFCTTensorDiss2d
   public :: euler_calcFluxFCTRusanov2d
-  public :: euler_calcTrafoDensity2d
-  public :: euler_calcTrafoEnergy2d
-  public :: euler_calcTrafoPressure2d
-  public :: euler_calcTrafoDensityEnergy2d
-  public :: euler_calcTrafoDensityPress2d
-  public :: euler_calcTrafoDensityPressVel2d
+  public :: euler_trafoFluxDensity2d
+  public :: euler_trafoFluxEnergy2d
+  public :: euler_trafoFluxPressure2d
+  public :: euler_trafoFluxDenEng2d
+  public :: euler_trafoFluxDenPre2d
+  public :: euler_trafoFluxDenPreVel2d
   public :: euler_calcBoundaryvalues2d
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
@@ -2665,7 +2665,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensity2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDensity2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2690,13 +2690,13 @@ contains
     G_ij(1) =  F_ij(1)
     G_ji(1) = -F_ij(1)
 
-  end subroutine euler_calcTrafoDensity2d
+  end subroutine euler_trafoFluxDensity2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoEnergy2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxEnergy2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2721,13 +2721,13 @@ contains
     G_ij(1) =  F_ij(4)
     G_ji(1) = -F_ij(4)
 
-  end subroutine euler_calcTrafoEnergy2d
+  end subroutine euler_trafoFluxEnergy2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoPressure2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxPressure2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2749,7 +2749,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj, vi, vj
+    real(DP) :: ui,uj,vi,vj
 
     ! velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
@@ -2759,13 +2759,13 @@ contains
     G_ij(1) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
     G_ji(1) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
 
-  end subroutine euler_calcTrafoPressure2d
+  end subroutine euler_trafoFluxPressure2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityEnergy2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenEng2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2794,13 +2794,13 @@ contains
     G_ij(2) =  F_ij(4)
     G_ji(2) = -F_ij(4)
 
-  end subroutine euler_calcTrafoDensityEnergy2d
+  end subroutine euler_trafoFluxDenEng2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPress2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPre2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2822,7 +2822,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj, vi, vj
+    real(DP) :: ui,uj,vi,vj
 
     ! velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
@@ -2836,13 +2836,13 @@ contains
     G_ij(2) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
     G_ji(2) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
 
-  end subroutine euler_calcTrafoDensityPress2d
+  end subroutine euler_trafoFluxDenPre2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPressVel2d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPreVel2d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation
@@ -2864,7 +2864,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj, vi, vj
+    real(DP) :: ui,uj,vi,vj
 
     ! velocities
     ui = U_i(2)/U_i(1); vi = U_i(3)/U_i(1)
@@ -2886,7 +2886,7 @@ contains
     G_ij(4) =  G1*(0.5_DP*(ui*ui+vi*vi)*F_ij(1)-ui*F_ij(2)-vi*F_ij(3)+F_ij(4))
     G_ji(4) = -G1*(0.5_DP*(uj*uj+vj*vj)*F_ij(1)-uj*F_ij(2)-vj*F_ij(3)+F_ij(4))
 
-  end subroutine euler_calcTrafoDensityPressVel2d
+  end subroutine euler_trafoFluxDenPreVel2d
 
   !*****************************************************************************
 

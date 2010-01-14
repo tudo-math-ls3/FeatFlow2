@@ -79,38 +79,79 @@
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 20.) euler_calcTrafoDensity1d
+!# 20.) euler_trafoFluxDensity1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 21.) euler_calcTrafoEnergy1d
+!# 21.) euler_trafoDiffDensity1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the density
+!#
+!# 22.) euler_trafoFluxEnergy1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 22.) euler_calcTrafoPressure1d
+!# 23.) euler_trafoDiffEnergy1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the energy
+!#
+!# 24.) euler_trafoFluxPressure1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 23.) euler_calcTrafoDensityEnergy1d
+!# 25.) euler_trafoDiffPressure1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the pressure
+!#
+!# 26.) euler_trafoFluxVelocityX1d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the velocity in x-direction
+!#
+!# 27.) euler_trafoDiffVelocityX1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the velocity in x-direction
+!#
+!# 28.) euler_trafoFluxMomentumX1d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the momentum in x-direction
+!#
+!# 29.) euler_trafoDiffMomentumX1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the momentum in x-direction
+!#
+!# 30.) euler_trafoFluxDenEng1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 24.) euler_calcTrafoDensityPress1d
+!# 31.) euler_trafoDiffDenEng1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the density and energy
+!#
+!# 32.) euler_trafoFluxDenPre1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 25.) euler_calcTrafoDensityPressVel1d
+!# 33.) euler_trafoDiffDenPre1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the density and the pessure
+!#
+!# 34.) euler_trafoFluxDenPreVel1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 26.) euler_calcBoundaryvalues1d
+!# 35.) euler_trafoDiffDenPreVel1d
+!#      -> Computes the transformation from conservative solution
+!#         differences to differences for the density, the pressure 
+!#         and the velocity
+!#
+!# 36.) euler_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 27.) euler_hadaptCallbackScalar1d
+!# 37.) euler_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 28.) euler_hadaptCallbackBlock1d
+!# 38.) euler_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
@@ -157,12 +198,22 @@ module euler_callback1d
   public :: euler_calcFluxFCTScalarDiss1d
   public :: euler_calcFluxFCTTensorDiss1d
   public :: euler_calcFluxFCTRusanov1d
-  public :: euler_calcTrafoDensity1d
-  public :: euler_calcTrafoEnergy1d
-  public :: euler_calcTrafoPressure1d
-  public :: euler_calcTrafoDensityEnergy1d
-  public :: euler_calcTrafoDensityPress1d
-  public :: euler_calcTrafoDensityPressVel1d
+  public :: euler_trafoFluxDensity1d
+  public :: euler_trafoFluxEnergy1d
+  public :: euler_trafoFluxPressure1d
+  public :: euler_trafoFluxVelocityX1d
+  public :: euler_trafoFluxMomentumX1d
+  public :: euler_trafoFluxDenEng1d
+  public :: euler_trafoFluxDenPre1d
+  public :: euler_trafoFluxDenPreVel1d
+  public :: euler_trafoDiffDensity1d  
+  public :: euler_trafoDiffEnergy1d
+  public :: euler_trafoDiffPressure1d
+  public :: euler_trafoDiffVelocityX1d
+  public :: euler_trafoDiffMomentumX1d
+  public :: euler_trafoDiffDenEng1d
+  public :: euler_trafoDiffDenPre1d
+  public :: euler_trafoDiffDenPreVel1d
   public :: euler_calcBoundaryvalues1d
   public :: euler_hadaptCallbackScalar1d
   public :: euler_hadaptCallbackBlock1d
@@ -1833,7 +1884,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensity1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDensity1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1858,13 +1909,40 @@ contains
     G_ij(1) =  F_ij(1)
     G_ji(1) = -F_ij(1)
 
-  end subroutine euler_calcTrafoDensity1d
+  end subroutine euler_trafoFluxDensity1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoDiffDensity1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the density in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed difference
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! density difference
+    U_ij(1) =  U_j(1)-U_i(1)
+
+  end subroutine euler_trafoDiffDensity1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1886,16 +1964,43 @@ contains
 !</subroutine>
     
     ! energy fluxes
-    G_ij(1) =  F_ij(3)/U_i(1)
-    G_ji(1) = -F_ij(3)/U_j(1)
+    G_ij(1) =  F_ij(3)
+    G_ji(1) = -F_ij(3)
 
-  end subroutine euler_calcTrafoEnergy1d
+  end subroutine euler_trafoFluxEnergy1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoPressure1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoDiffEnergy1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed difference
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+    
+    ! energy difference
+    U_ij(1) =  U_j(3)-U_i(3)
+
+  end subroutine euler_trafoDiffEnergy1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxPressure1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1917,7 +2022,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj
+    real(DP) :: ui,uj
 
     ! velocities
     ui = U_i(2)/U_i(1)
@@ -1927,13 +2032,170 @@ contains
     G_ij(1) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
     G_ji(1) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
     
-  end subroutine euler_calcTrafoPressure1d
+  end subroutine euler_trafoFluxPressure1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoDiffPressure1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the pressure in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed difference
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: pi,pj
+
+    ! pressures
+    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
+    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+
+    ! pressure difference
+    U_ij(1) = pj-pi
+
+  end subroutine euler_trafoDiffPressure1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxVelocityX1d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the x-velocity in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui,uj
+
+    ! velocities
+    ui = U_i(2)/U_i(1)
+    uj = U_j(2)/U_j(1)
+
+    ! velocity fluxes
+    G_ij(1) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(1) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+    
+  end subroutine euler_trafoFluxVelocityX1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoDiffVelocityX1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the x-velocity in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed differences
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! velocity differences
+    U_ij(1) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
+    
+  end subroutine euler_trafoDiffVelocityX1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxMomentumX1d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the x-momentum in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! momentum fluxes
+    G_ij(1) =  F_ij(2)
+    G_ji(1) = -F_ij(2)
+    
+  end subroutine euler_trafoFluxMomentumX1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoDiffMomentumX1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the x-momentum in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed differences
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! momentum differences
+    U_ij(1) =  U_j(2)-U_i(2)
+    
+  end subroutine euler_trafoDiffMomentumX1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxDenEng1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1962,13 +2224,43 @@ contains
     G_ij(2) =  F_ij(3)
     G_ji(2) = -F_ij(3)
 
-  end subroutine euler_calcTrafoDensityEnergy1d
+  end subroutine euler_trafoFluxDenEng1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPress1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoDiffDenEng1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the density and energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed differences
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! density difference
+    U_ij(1) =  U_j(1)-U_i(1)
+
+    ! energy differences
+    U_ij(2) =  U_j(3)-U_i(3)
+
+  end subroutine euler_trafoDiffDenEng1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxDenPre1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -1990,7 +2282,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj
+    real(DP) :: ui,uj
 
     ! velocities
     ui = U_i(2)/U_i(1)
@@ -2004,17 +2296,54 @@ contains
     G_ij(2) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
     G_ji(2) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
 
-  end subroutine euler_calcTrafoDensityPress1d
+  end subroutine euler_trafoFluxDenPre1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcTrafoDensityPressVel1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoDiffDenPre1d(U_i, U_j, U_ij)
 
 !<description>
-    ! This subroutine computes the transformation
-    ! of the given flux into primitive variables in 1D
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the density and energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed differences
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: pi,pj
+
+    ! pressures
+    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
+    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+
+    ! density differences
+    U_ij(1) = U_j(1)-U_i(1)
+
+    ! pressure differences
+    U_ij(2) = pj-pi
+
+  end subroutine euler_trafoDiffDenPre1d
+  
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoFluxDenPreVel1d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the density, pressure and velocity in 1D
 !</description>
 
 !<input>
@@ -2032,7 +2361,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: ui, uj
+    real(DP) :: ui,uj
 
     ! velocities
     ui = U_i(2)/U_i(1)
@@ -2050,7 +2379,47 @@ contains
     G_ij(3) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
     G_ji(3) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
 
-  end subroutine euler_calcTrafoDensityPressVel1d
+  end subroutine euler_trafoFluxDenPreVel1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_trafoDiffDenPreVel1d(U_i, U_j, U_ij)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to differences for the density, pressure and velocity in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+!</input>
+
+!<output>
+    ! transformed differences
+    real(DP), dimension(:), intent(out) :: U_ij
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: pi,pj
+
+    ! pressures
+    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
+    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+
+    ! density difference
+    U_ij(1) = U_j(1)-U_i(1)
+
+    ! velocity differences
+    U_ij(2) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
+    
+    ! pressure difference
+    U_ij(3) = pj-pi
+
+  end subroutine euler_trafoDiffDenPreVel1d
 
   !*****************************************************************************
 
