@@ -123,13 +123,13 @@ program flagship
 
 
   ! Call application module
-  if (trim(sys_upcase(application)) .eq. 'TRANSPORT') then
+  if (trim(application) .eq. 'transport') then
     call transp_app(rparlist)
 
-  elseif (trim(sys_upcase(application)) .eq. 'EULER') then
+  elseif (trim(application) .eq. 'euler') then
     call euler_app(rparlist)
 
-  elseif (trim(sys_upcase(application)) .eq. 'ZPINCH') then
+  elseif (trim(application) .eq. 'zpinch') then
     call zpinch_app(rparlist)
 
   else

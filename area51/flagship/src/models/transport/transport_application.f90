@@ -430,7 +430,7 @@ contains
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
 
       ! What solution algorithm should be applied?
-      if (trim(sys_upcase(algorithm)) .eq. 'TRANSIENT_PRIMAL') then
+      if (trim(algorithm) .eq. 'transient_primal') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for
         ! the time-dependent problem
@@ -445,7 +445,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      elseif (trim(sys_upcase(algorithm)) .eq. 'TRANSIENT_PRIMALDUAL') then
+      elseif (trim(algorithm) .eq. 'transient_primaldual') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the time-dependent problem
@@ -454,7 +454,7 @@ contains
         stop
 
 
-      elseif (trim(sys_upcase(algorithm)) .eq. 'PSEUDOTRANSIENT_PRIMAL') then
+      elseif (trim(algorithm) .eq. 'pseudotransient_primal') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for
         ! the pseudo time-dependent problem
@@ -469,7 +469,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      elseif (trim(sys_upcase(algorithm)) .eq. 'PSEUDOTRANSIENT_PRIMALDUAL') then
+      elseif (trim(algorithm) .eq. 'pseudotransient_primaldual') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the pseudo time-dependent problem
@@ -488,7 +488,7 @@ contains
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
 
-      elseif (trim(sys_upcase(algorithm)) .eq. 'STATIONARY_PRIMAL') then
+      elseif (trim(algorithm) .eq. 'stationary_primal') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for #
         ! the stationary problem
@@ -503,7 +503,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      elseif (trim(sys_upcase(algorithm)) .eq. 'STATIONARY_PRIMALDUAL') then
+      elseif (trim(algorithm) .eq. 'stationary_primaldual') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the stationary problem

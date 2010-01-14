@@ -83,26 +83,34 @@
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 21.) euler_calcTrafoDensityEnergy1d
+!# 21.) euler_calcTrafoEnergy1d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the energy
+!#
+!# 22.) euler_calcTrafoPressure1d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the pressure
+!#
+!# 23.) euler_calcTrafoDensityEnergy1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 22.) euler_calcTrafoDensityPress1d
+!# 24.) euler_calcTrafoDensityPress1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 23.) euler_calcTrafoDensityPressVel1d
+!# 25.) euler_calcTrafoDensityPressVel1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 24.) euler_calcBoundaryvalues1d
+!# 26.) euler_calcBoundaryvalues1d
 !#      -> Computes the boundary values for a given node
 !#
-!# 25.) euler_hadaptCallbackScalar1d
+!# 27.) euler_hadaptCallbackScalar1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in interleave format
 !#
-!# 26.) euler_hadaptCallbackBlock1d
+!# 28.) euler_hadaptCallbackBlock1d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 1D, whereby the vector is stored in block format
 !#
@@ -150,6 +158,8 @@ module euler_callback1d
   public :: euler_calcFluxFCTTensorDiss1d
   public :: euler_calcFluxFCTRusanov1d
   public :: euler_calcTrafoDensity1d
+  public :: euler_calcTrafoEnergy1d
+  public :: euler_calcTrafoPressure1d
   public :: euler_calcTrafoDensityEnergy1d
   public :: euler_calcTrafoDensityPress1d
   public :: euler_calcTrafoDensityPressVel1d
@@ -1849,6 +1859,75 @@ contains
     G_ji(1) = -F_ij(1)
 
   end subroutine euler_calcTrafoDensity1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the energy in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+    
+    ! energy fluxes
+    G_ij(1) =  F_ij(3)/U_i(1)
+    G_ji(1) = -F_ij(3)/U_j(1)
+
+  end subroutine euler_calcTrafoEnergy1d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoPressure1d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the pressure in 1D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+    ! local variables
+    real(DP) :: ui, uj
+
+    ! velocities
+    ui = U_i(2)/U_i(1)
+    uj = U_j(2)/U_j(1)
+
+    ! pressure fluxes
+    G_ij(1) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
+    G_ji(1) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
+    
+  end subroutine euler_calcTrafoPressure1d
 
   !*****************************************************************************
 

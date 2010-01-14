@@ -358,7 +358,7 @@ contains
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
-      if (trim(adjustl(sys_upcase(algorithm))) .eq. 'TRANSIENT_PRIMAL') then
+      if (trim(algorithm) .eq. 'transient_primal') then
         
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
@@ -1619,7 +1619,7 @@ contains
           call parlst_getvalue_string(rparlist, trim(soutputName),&
               'ucdvariable', cvariable, isubstring=ivariable)
           
-          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
+          if (trim(cvariable) .eq. 'velocity') then
             
             ! Special treatment of velocity vector
             select case(ndim)
@@ -1645,7 +1645,7 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
-          elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'ADVECT') then
+          elseif(trim(cvariable) .eq. 'advect') then
 
             ! Special treatment for tracer quantity
             call lsysbl_getbase_double(rsolution(2), p_Ddata1)
@@ -1672,7 +1672,7 @@ contains
           call parlst_getvalue_string(rparlist, trim(soutputName),&
               'ucdvariable', cvariable, isubstring=ivariable)
           
-          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
+          if (trim(cvariable) .eq. 'velocity') then
 
             ! Special treatment of velocity vector
             select case(ndim)
@@ -1698,7 +1698,7 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
         
-          elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'ADVECT') then
+          elseif(trim(cvariable) .eq. 'advect') then
             
             ! Special treatment for tracer quantity
             call lsysbl_getbase_double(rsolution(2), p_Ddata1)

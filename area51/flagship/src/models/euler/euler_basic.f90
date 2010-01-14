@@ -119,25 +119,6 @@ module euler_basic
 
 !</constantblock>
 
-!<constantblock description="Global type of flux transformation">
-
-  ! Full conservative fluxes (=no transformation)
-  integer, parameter, public :: TRANSFORM_DENSITY_ENERGY_MOMENTUM   = 0
-
-  ! Reduced conservative fluxes (density)
-  integer, parameter, public :: TRANSFORM_DENSITY                   = 1
-
-  ! Reduced conservative fluxes (density, energy)
-  integer, parameter, public :: TRANSFORM_DENSITY_ENERGY            = 2
-
-  ! Full primitive fluxes (density, velocity, pressure)
-  integer, parameter, public :: TRANSFORM_DENSITY_PRESSURE_VELOCITY = 3
-
-  ! Reduced primitive fluxes (density, pressure)
-  integer, parameter, public :: TRANSFORM_DENSITY_PRESSURE          = 4
-
-!</constantblock>
-
 !<constantblock description="Global type of recovery-based error estimation">
 
   ! L2-projection
@@ -242,13 +223,13 @@ contains
     NVAR = rproblemLevel%rtriangulation%ndim + 2
 
   end function euler_getNVAR
-
+  
   !*****************************************************************************
 
 !<function>
 
   pure function euler_getNVARtransformed(rproblemLevel,&
-      itransformationtype) result(NVARtransformed)
+      svariables) result(NVARtransformed)
 
 !<description>
     ! This function returns the number of variables after transformation
@@ -258,8 +239,8 @@ contains
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
-    ! type of transformation
-    integer, intent(in) :: itransformationtype
+    ! list of variable names
+    character(len=*), intent(in) :: svariables
 !</input>
 
 !<result>
@@ -268,22 +249,28 @@ contains
 !</result>
 !</function>
 
-    select case(itransformationtype)
+    ! Check for supported lists of variables
+    if (svariables .eq. 'density,energy,momentum') then
 
-    case (TRANSFORM_DENSITY_ENERGY_MOMENTUM,&
-          TRANSFORM_DENSITY_PRESSURE_VELOCITY)
       NVARtransformed = euler_getNVAR(rproblemLevel)
 
-    case (TRANSFORM_DENSITY)
-      NVARtransformed = 1
+    elseif (svariables .eq. 'density,pressure,velocity') then
 
-    case (TRANSFORM_DENSITY_ENERGY,&
-          TRANSFORM_DENSITY_PRESSURE)
+      NVARtransformed = euler_getNVAR(rproblemLevel)
+
+    elseif (svariables .eq. 'density,pressure') then
+
       NVARtransformed = 2
 
-    case DEFAULT
-      NVARtransformed = 0
-    end select
+    elseif (svariables .eq. 'density,energy') then
+
+      NVARtransformed = 2
+
+    else
+
+      NVARtransformed = 1
+
+    end if
 
   end function euler_getNVARtransformed
 
@@ -404,14 +391,14 @@ contains
     integer :: ieq
 
 
-    if (trim(adjustl(sys_upcase(cvariable))) .eq. 'DENSITY') then
+    if (trim(cvariable) .eq. 'density') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(1, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_MAGNITUDE') then
+    elseif (trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -438,63 +425,63 @@ contains
         !$omp end parallel do
       end select
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_X') then
+    elseif (trim(cvariable) .eq. 'velocity_x') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_Y') then
+    elseif (trim(cvariable) .eq. 'velocity_y') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_Z') then
+    elseif (trim(cvariable) .eq. 'velocity_z') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_X') then
+    elseif (trim(cvariable) .eq. 'momentum_x') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(2, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_Y') then
+    elseif (trim(cvariable) .eq. 'momentum_y') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(3, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_Z') then
+    elseif (trim(cvariable) .eq. 'momentum_z') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(4, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'ENERGY') then
+    elseif (trim(cvariable) .eq. 'energy') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'EFFECTIVE_ENERGY') then
+    elseif (trim(cvariable) .eq. 'effective_energy') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(nvar, ieq)
       end do
       !$omp end parallel do
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'INTERNAL_ENERGY') then
+    elseif (trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -524,7 +511,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'PRESSURE') then
+    elseif (trim(cvariable) .eq. 'pressure') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -557,7 +544,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'MACHNUMBER') then
+    elseif (trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do private(p)
@@ -605,7 +592,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif (trim(adjustl(sys_upcase(cvariable))) .eq. 'SPEEDOFSOUND') then
+    elseif (trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do private(p)
@@ -690,14 +677,14 @@ contains
     integer :: ieq
 
     
-    if(trim(adjustl(sys_upcase(cvariable))) .eq. 'DENSITY') then
+    if(trim(cvariable) .eq. 'density') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 1)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_MAGNITUDE') then
+    elseif(trim(cvariable) .eq. 'velocity_magnitude') then
       select case(nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -724,63 +711,63 @@ contains
         !$omp end parallel do
       end select
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_X') then
+    elseif(trim(cvariable) .eq. 'velocity_x') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 2)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_Y') then
+    elseif(trim(cvariable) .eq. 'velocity_y') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY_Z') then
+    elseif(trim(cvariable) .eq. 'velocity_z') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_X') then
+    elseif(trim(cvariable) .eq. 'momentum_x') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 2)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_Y') then
+    elseif(trim(cvariable) .eq. 'momentum_y') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 3)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'MOMENTUM_Z') then
+    elseif(trim(cvariable) .eq. 'momentum_z') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, 4)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'ENERGY') then
+    elseif(trim(cvariable) .eq. 'energy') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, nvar)/Ddata(ieq, 1)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'EFFECTIVE_ENERGY') then
+    elseif(trim(cvariable) .eq. 'effective_energy') then
       !$omp parallel do
       do ieq = 1, neq
         Dvalue(ieq) = Ddata(ieq, nvar)
       end do
       !$omp end parallel do
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'INTERNAL_ENERGY') then
+    elseif(trim(cvariable) .eq. 'internal_energy') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -810,7 +797,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'PRESSURE') then
+    elseif(trim(cvariable) .eq. 'pressure') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do
@@ -843,7 +830,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'MACHNUMBER') then
+    elseif(trim(cvariable) .eq. 'machnumber') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do private(p)
@@ -891,7 +878,7 @@ contains
         !$omp end parallel do
       end select
 
-    elseif(trim(adjustl(sys_upcase(cvariable))) .eq. 'SPEEDOFSOUND') then
+    elseif(trim(cvariable) .eq. 'speedofsound') then
       select case (nvar)
       case (NVAR1D)
         !$omp parallel do private(p)

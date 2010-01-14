@@ -2269,7 +2269,7 @@ contains
     type(t_timestep) :: rtimestepAux
     type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rpredictor
-    integer :: inviscidAFC, lumpedMassMatrix, itransformationtype
+    integer :: inviscidAFC, lumpedMassMatrix
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2287,10 +2287,6 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'itransformationtype', itransformationtype)
-
 
     ! Initialize dummy timestep
     rtimestepAux%dStep = 1.0_DP
@@ -2660,9 +2656,11 @@ contains
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
-    integer :: inviscidAFC, lumpedMassMatrix, itransformationtype
+    character(len=SYS_STRLEN) :: slimitingvariable
+    integer(I32) :: iopSpec
+    integer :: inviscidAFC, lumpedMassMatrix, ivariable, nvariable
 
-
+    
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
@@ -2673,148 +2671,204 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'itransformationtype', itransformationtype)
 
+    ! Get number of limiting variables
+    nvariable = max(1,&
+        parlst_querysubstrings(p_rparlist,&
+        rcollection%SquickAccess(1), 'slimitingvariable'))
+    
+    ! Copy operation specifier and disable the correction step
+    ! if sequential/multiplicative flux correction is performed
+    if (nvariable .gt. 1) then
+      iopSpec = iand(ioperationSpec, not(AFCSTAB_FCTALGO_CORRECT))
+    else
+      iopSpec = ioperationSpec
+    end if
+    
+    
+    ! Loop over items in the list of variables that should
+    ! be limited sequentially, i.e., in multiplicative way
+    do ivariable = 1, nvariable
+      
+      ! Disable the initialisation of edgewise correction factors
+      ! in all but the first iteration over variables
+      if (ivariable .gt. 1) iopSpec = iand(ioperationSpec,&
+                                           not(AFCSTAB_FCTALGO_INITALPHA))
 
-    ! What type of flux transformation is applied?
-    select case(itransformationtype)
+      ! Get variable declaration string
+      call parlst_getvalue_string(p_rparlist,&
+          rcollection%SquickAccess(1), 'slimitingvariable',&
+          slimitingvariable, isubstring=ivariable)
+      
+      ! What type of flux transformation is applied?
+      if (trim(slimitingvariable) .eq. 'density') then
 
-    case (TRANSFORM_DENSITY_ENERGY_MOMENTUM)
+        ! Apply FEM-FCT algorithm for density fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensity1d)
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensity2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensity3d)
+        end select
 
-      ! Apply FEM-FCT algorithm for full conservative fluxes
+      elseif (trim(slimitingvariable) .eq. 'energy') then
+        
+        ! Apply FEM-FCT algorithm for energy fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoEnergy1d)
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoEnergy2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoEnergy3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'pressure') then
+        
+        ! Apply FEM-FCT algorithm for pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoPressure1d)
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoPressure2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoPressure3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'density,energy') then
+        
+        ! Apply FEM-FCT algorithm for density and energy fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityEnergy1d)          
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityEnergy2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityEnergy3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'density,pressure') then
+        
+        ! Apply FEM-FCT algorithm for density and pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPress1d)          
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPress2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPress3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
+        
+        ! Apply FEM-FCT algorithm for full conservative fluxes
+        call gfsys_buildResidualFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual)
+
+      elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
+
+        ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPressVel1d)          
+        case (NDIM2D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPressVel2d)          
+        case (NDIM3D)
+          call gfsys_buildResidualFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_calcTrafoDensityPressVel3d)
+        end select
+
+      else
+        call output_line('Invalid type of flux transformation!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualFCT')
+        call sys_halt()
+      end if
+    end do
+
+    ! Re-enable the correction step (if required)
+    iopSpec = ieor(iopSpec, ioperationSpec)
+    if (iopSpec .ne. 0_I32) then
       call gfsys_buildResidualFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(inviscidAFC),&
-          rsolution, dscale, bclear,&
-          ioperationSpec, rresidual)
-
-    case (TRANSFORM_DENSITY)
-
-      ! Apply FEM-FCT algorithm for density fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensity1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensity2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensity3d)
-      end select
-
-    case (TRANSFORM_DENSITY_ENERGY)
-
-      ! Apply FEM-FCT algorithm for density and energy fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityEnergy1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityEnergy2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityEnergy3d)
-
-      end select
-
-    case (TRANSFORM_DENSITY_PRESSURE_VELOCITY)
-
-      ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPressVel1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPressVel2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPressVel3d)
-
-      end select
-
-    case (TRANSFORM_DENSITY_PRESSURE)
-
-      ! Apply FEM-FCT algorithm for density and pressure fluxes
-      select case(rproblemLevel%rtriangulation%ndim)
-      case (NDIM1D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPress1d)
-
-      case (NDIM2D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPress2d)
-
-      case (NDIM3D)
-        call gfsys_buildResidualFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear,&
-            ioperationSpec, rresidual,&
-            euler_calcTrafoDensityPress3d)
-
-      end select
-
-    case DEFAULT
-      call output_line('Invalid type of flux transformation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualFCT')
-      call sys_halt()
-    end select
-
+          rsolution, dscale, bclear, iopSpec, rresidual)
+    end if
+    
   end subroutine euler_calcResidualFCT
 
 end module euler_callback

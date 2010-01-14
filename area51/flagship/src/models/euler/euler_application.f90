@@ -338,7 +338,7 @@ contains
           '['//trim(sbdrcondName)//']', ndimension)
 
       ! What solution algorithm should be applied?
-      if (trim(adjustl(sys_upcase(algorithm))) .eq. 'TRANSIENT_PRIMAL') then
+      if (trim(algorithm) .eq. 'transient_primal') then
         
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for #
@@ -509,8 +509,7 @@ contains
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! local variables
-    integer :: inviscidAFC
-    integer :: iconvToTria
+    integer :: inviscidAFC, iconvToTria
 
 
     ! Get global configuration from parameter list
@@ -592,27 +591,14 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: templateMatrix
-    integer :: systemMatrix
-    integer :: jacobianMatrix
-    integer :: consistentMassMatrix
-    integer :: lumpedMassMatrix
-    integer :: coeffMatrix_CX
-    integer :: coeffMatrix_CY
-    integer :: coeffMatrix_CZ
-    integer :: inviscidAFC
-    integer :: discretisation
-    integer :: celement
-    integer :: isystemFormat
-    integer :: isystemCoupling
-    integer :: imatrixFormat
-    integer :: itransformationtype
-    integer :: ivar,jvar
-
     type(t_blockDiscretisation), pointer :: p_rdiscretisation
     type(t_triangulation) , pointer :: p_rtriangulation
     type(t_boundary) , pointer :: p_rboundary
-
+    character(len=SYS_STRLEN) :: slimitingvariable
+    integer :: templateMatrix,systemMatrix,jacobianMatrix,consistentMassMatrix
+    integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
+    integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
+    integer :: imatrixFormat,NVARtransformed,ivar,jvar,nvariable
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -641,8 +627,6 @@ contains
         ssectionName, 'isystemFormat', isystemFormat)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemCoupling', isystemCoupling)
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'itransformationtype', itransformationtype)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'celement', celement)
 
@@ -1085,10 +1069,26 @@ contains
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
+
+        ! Get number of limiting variables
+        nvariable = max(1,&
+            parlst_querysubstrings(rparlist,&
+            ssectionName, 'slimitingvariable'))
+        
+        ! Initialise number of limiting variables
+        if (nvariable .gt. 1) then
+          nvartransformed = 1
+        else
+          call parlst_getvalue_string(rparlist,&
+              ssectionName, 'slimitingvariable',&
+              slimitingvariable, isubstring=1)
+          nvartransformed = euler_getNVARtransformed(&
+              rproblemLevel, slimitingvariable)
+        end if
+        
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            euler_getNVARtransformed(rproblemLevel, itransformationtype))
+            rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
 
       else
         call afcstab_resizeStabilisation(&
@@ -1402,7 +1402,7 @@ contains
           call parlst_getvalue_string(rparlist, trim(soutputName),&
               'ucdvariable', cvariable, isubstring=ivariable)
           
-          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
+          if (trim(cvariable) .eq. 'velocity') then
             
             ! Special treatment of velocity vector
             select case(ndim)
@@ -1448,7 +1448,7 @@ contains
           call parlst_getvalue_string(rparlist, trim(soutputName),&
               'ucdvariable', cvariable, isubstring=ivariable)
           
-          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
+          if (trim(cvariable) .eq. 'velocity') then
 
             ! Special treatment of velocity vector
             select case(ndim)

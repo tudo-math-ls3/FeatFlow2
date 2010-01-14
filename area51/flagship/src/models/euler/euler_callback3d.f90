@@ -97,26 +97,34 @@
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 24.) euler_calcTrafoDensityEnergy3d
+!# 24.) euler_calcTrafoDensity3d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the density
+!#
+!# 25.) euler_calcTrafoDensity3d
+!#      -> Computes the transformation from conservative fluxes
+!#         to fluxes for the density
+!#
+!# 26.) euler_calcTrafoDensityEnergy3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 25.) euler_calcTrafoDensityPress3d
+!# 27.) euler_calcTrafoDensityPress3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 26.) euler_calcTrafoDensityPressVel3d
+!# 28.) euler_calcTrafoDensityPressVel3d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 27.) euler_calcBoundaryvalues3d
+!# 29.) euler_calcBoundaryvalues3d
 !#      -> Computes the boundary values for a given node
 !#
-!# 28.) euler_hadaptCallbackScalar3d
+!# 30.) euler_hadaptCallbackScalar3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in interleave format
 !#
-!# 29.) euler_hadaptCallbackBlock3d
+!# 31.) euler_hadaptCallbackBlock3d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 3D, whereby the vector is stored in block format
 !#
@@ -167,6 +175,8 @@ module euler_callback3d
   public :: euler_calcFluxFCTTensorDiss3d
   public :: euler_calcFluxFCTRusanov3d
   public :: euler_calcTrafoDensity3d
+  public :: euler_calcTrafoEnergy3d
+  public :: euler_calcTrafoPressure3d
   public :: euler_calcTrafoDensityEnergy3d
   public :: euler_calcTrafoDensityPress3d
   public :: euler_calcTrafoDensityPressVel3d
@@ -957,6 +967,60 @@ contains
 !</subroutine>
 
   end subroutine euler_calcTrafoDensity3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoEnergy3d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the energy in 3D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcTrafoEnergy3d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcTrafoPressure3d(U_i, U_j, F_ij, G_ij, G_ji)
+
+!<description>
+    ! This subroutine computes the transformation of
+    ! conservative to fluxes for the pressure in 3D
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U_i,U_j
+
+    ! flux
+    real(DP), dimension(:), intent(in) :: F_ij
+!</input>
+
+!<output>
+    ! transformed flux
+    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcTrafoPressure3d
 
   !*****************************************************************************
 

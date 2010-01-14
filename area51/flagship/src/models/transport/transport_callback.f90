@@ -549,7 +549,7 @@ contains
     end if
 
     ! Are we in primal or dual mode?
-    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+    if (trim(smode) .eq. 'primal') then
 
       !-------------------------------------------------------------------------
       ! We are in primal mode which means that we have to build two
@@ -895,7 +895,7 @@ contains
       end select
 
 
-    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
+    elseif (trim(smode) .eq. 'dual') then
 
       !-------------------------------------------------------------------------
       ! We are in dual mode which means that we have to build two
@@ -1368,7 +1368,7 @@ contains
     end if
 
     ! Are we in primal or dual mode?
-    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+    if (trim(smode) .eq. 'primal') then
 
       !-------------------------------------------------------------------------
       ! We are in primal mode which means that we have to build two
@@ -1545,7 +1545,7 @@ contains
       end select
 
 
-    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
+    elseif (trim(smode) .eq. 'dual') then
 
       ! @FAQ2: What type of velocity are we?
       select case (abs(ivelocitytype))
@@ -1760,7 +1760,7 @@ contains
     !---------------------------------------------------------------------------
 
     ! Are we in primal or dual mode?
-    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+    if (trim(smode) .eq. 'primal') then
       
       !-------------------------------------------------------------------------
       ! We are in primal mode
@@ -2367,7 +2367,7 @@ contains
       end select
 
 
-    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
+    elseif (trim(smode) .eq. 'dual') then
 
       !-------------------------------------------------------------------------
       ! We are in dual mode
@@ -3804,7 +3804,7 @@ contains
 !</subroutine>
 
     ! Are we in primal or dual mode?
-    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+    if (trim(smode) .eq. 'primal') then
       
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
@@ -3871,7 +3871,7 @@ contains
       end select
 
 
-    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
+    elseif (trim(smode) .eq. 'dual') then
 
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
