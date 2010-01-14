@@ -219,10 +219,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/sinusoidal
+sucdsolution = out/sinusoidal
 
 # file for UCD output of error
-ucderror = out/sinusoidal_error
+sucderror = out/sinusoidal_error
 
 
 ################################################################################

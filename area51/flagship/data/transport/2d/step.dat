@@ -216,10 +216,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/step
+sucdsolution = out/step
 
 # file for UCD output of error
-ucderror = out/step_error
+sucderror = out/step_error
 
 
 ################################################################################

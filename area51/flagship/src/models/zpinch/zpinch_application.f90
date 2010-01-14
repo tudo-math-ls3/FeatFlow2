@@ -1534,7 +1534,7 @@ contains
     ! section names
     character(LEN=SYS_STRLEN) :: soutputName
     character(LEN=SYS_STRLEN) :: ssectionNameEuler
-    character(LEN=SYS_STRLEN) :: ucdsolution
+    character(LEN=SYS_STRLEN) :: sucdsolution
 
     ! persistent variable
     integer, save :: ifilenumber = 1
@@ -1551,7 +1551,7 @@ contains
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'output', soutputName)
     call parlst_getvalue_string(rparlist,&
-        trim(soutputName), 'ucdsolution', ucdsolution)
+        trim(soutputName), 'sucdsolution', sucdsolution)
     call parlst_getvalue_int(rparlist,&
         trim(soutputName), 'iformatucd', iformatUCD)
 
@@ -1561,7 +1561,7 @@ contains
         ssectionNameEuler, 'isystemformat', isystemformat)
     
     ! Initialize the UCD exporter
-    call flagship_initUCDexport(rproblemLevel, ucdsolution,&
+    call flagship_initUCDexport(rproblemLevel, sucdsolution,&
         iformatUCD, rexport, ifilenumber)
 
     ! Increase filenumber by one
@@ -1607,7 +1607,7 @@ contains
       ! Get number of variables to be written
       nvariable = max(1,&
           parlst_querysubstrings(rparlist,&
-          trim(soutputName), 'ucdvariable'))
+          trim(soutputName), 'sucdvariable'))
 
       select case(isystemFormat)
       case(SYSTEM_INTERLEAVEFORMAT)
@@ -1617,7 +1617,7 @@ contains
           
           ! Get variable name
           call parlst_getvalue_string(rparlist, trim(soutputName),&
-              'ucdvariable', cvariable, isubstring=ivariable)
+              'sucdvariable', cvariable, isubstring=ivariable)
           
           if (trim(cvariable) .eq. 'velocity') then
             
@@ -1670,7 +1670,7 @@ contains
           
           ! Get variable name
           call parlst_getvalue_string(rparlist, trim(soutputName),&
-              'ucdvariable', cvariable, isubstring=ivariable)
+              'sucdvariable', cvariable, isubstring=ivariable)
           
           if (trim(cvariable) .eq. 'velocity') then
 

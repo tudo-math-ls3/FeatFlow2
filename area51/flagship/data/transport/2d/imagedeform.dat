@@ -213,10 +213,10 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/imagedeform
+sucdsolution = out/imagedeform
 
 # file for UCD output of error
-ucderror = out/imagedeform_error
+sucderror = out/imagedeform_error
 
 
 ################################################################################

@@ -223,10 +223,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/anisodiff
+sucdsolution = out/anisodiff
 
 # file for UCD output of error
-ucderror = out/anisodiff_error
+sucderror = out/anisodiff_error
 
 
 ################################################################################

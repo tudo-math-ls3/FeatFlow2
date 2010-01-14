@@ -206,10 +206,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/convdiff
+sucdsolution = out/convdiff
 
 # file for UCD output of error
-ucderror = out/convdiff_error
+sucderror = out/convdiff_error
 
 
 ################################################################################

@@ -212,10 +212,10 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/buckley
+sucdsolution = out/buckley
 
 # file for UCD output of error
-ucderror = out/buckley_error
+sucderror = out/buckley_error
 
 
 ################################################################################

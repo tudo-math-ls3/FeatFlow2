@@ -206,10 +206,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/burgers
+sucdsolution = out/burgers
 
 # file for UCD output of error
-ucderror = out/burgers_error
+sucderror = out/burgers_error
 
 
 ################################################################################

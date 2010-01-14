@@ -1793,7 +1793,7 @@ contains
 
     ! section names
     character(LEN=SYS_STRLEN) :: soutputName
-    character(LEN=SYS_STRLEN) :: ucdsolution
+    character(LEN=SYS_STRLEN) :: sucdsolution
 
     ! persistent variable
     integer, save :: ifilenumber = 1
@@ -1808,12 +1808,12 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName,&
                                 'output', soutputName)
     call parlst_getvalue_string(rparlist, trim(soutputName),&
-                                'ucdsolution', ucdsolution)
+                                'sucdsolution', sucdsolution)
     call parlst_getvalue_int(rparlist, trim(soutputName),&
                              'iformatucd', iformatUCD)
 
     ! Initialize the UCD exporter
-    call flagship_initUCDexport(rproblemLevel, ucdsolution,&
+    call flagship_initUCDexport(rproblemLevel, sucdsolution,&
                                 iformatUCD, rexport, ifilenumber)
 
     ! Increase filenumber by one

@@ -189,13 +189,13 @@ iformatUCD = 1
 dstepUCD = 0.01
 
 # file for UCD output of solution
-ucdsolution = out/backward
+sucdsolution = out/backward
 
 # file for UCD output of error
-ucderror = out/backward_error
+sucderror = out/backward_error
 
 # variables for ucd output
-ucdvariable(4) =
+sucdvariable(4) =
  density
  velocity
  energy

@@ -185,13 +185,13 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/compressioncorner
+sucdsolution = out/compressioncorner
 
 # file for UCD output of error
-ucderror = out/compressioncorner_error
+sucderror = out/compressioncorner_error
 
 # variables for ucd output
-ucdvariable(4) =
+sucdvariable(4) =
  density
  velocity
  energy

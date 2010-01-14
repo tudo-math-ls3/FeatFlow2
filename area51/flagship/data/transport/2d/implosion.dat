@@ -214,10 +214,10 @@ iformatUCD = 1
 dstepUCD = 0.05
 
 # file for UCD output of solution
-ucdsolution = out/implosion
+sucdsolution = out/implosion
 
 # file for UCD output of error
-ucderror = out/implosion_error
+sucderror = out/implosion_error
 
 
 ################################################################################

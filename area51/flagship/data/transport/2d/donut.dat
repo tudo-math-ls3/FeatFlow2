@@ -222,10 +222,10 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/donut
+sucdsolution = out/donut
 
 # file for UCD output of error
-ucderror = out/donut_error
+sucderror = out/donut_error
 
 
 ################################################################################

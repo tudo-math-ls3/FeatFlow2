@@ -187,13 +187,13 @@ iformatUCD = 1
 dstepUCD = 0.005
 
 # file for UCD output of solution
-ucdsolution = out/explosion
+sucdsolution = out/explosion
 
 # file for UCD output of error
-ucderror = out/explosion_error
+sucderror = out/explosion_error
 
 # variables for ucd output
-ucdvariable(4) =
+sucdvariable(4) =
  density
  velocity
  energy

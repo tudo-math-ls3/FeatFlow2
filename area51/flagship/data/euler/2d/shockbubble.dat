@@ -184,13 +184,13 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/shockbubble
+sucdsolution = out/shockbubble
 
 # file for UCD output of error
-ucderror = out/shockbubble_error
+sucderror = out/shockbubble_error
 
 # variables for ucd output
-ucdvariable(4) =
+sucdvariable(4) =
  density
  velocity
  energy
