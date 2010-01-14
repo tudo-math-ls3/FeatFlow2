@@ -4361,7 +4361,7 @@ contains
 
   subroutine gfsys_buildResFCTBlock(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
-      fcb_calcTransformation)
+      fcb_calcFluxTransformation, fcb_calcDiffTransformation)
 
 !<description>
     ! This subroutine assembles the residual for nonlinear FEM-FCT schemes.
@@ -4391,7 +4391,8 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcTransformation
+    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcDiffTransformation
 !</input>
 
 !<inputoutput>
@@ -4408,7 +4409,7 @@ contains
       call gfsys_buildResFCTScalar(rlumpedMassMatrix,&
           rafcstab, rx%RvectorBlock(1), dscale, bclear,&
           ioperationSpec, ry%RvectorBlock(1),&
-          fcb_calcTransformation)
+          fcb_calcFluxTransformation, fcb_calcDiffTransformation)
       return
     end if
 
@@ -4423,7 +4424,7 @@ contains
 
   subroutine gfsys_buildResFCTScalar(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
-      fcb_calcTransformation)
+      fcb_calcFluxTransformation, fcb_calcDiffTransformation)
 
 !<description>
     ! This subroutine assembles the residual for nonlinear FEM-FCT schemes.
@@ -4496,7 +4497,8 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcTransformation
+    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcDiffTransformation
 !</input>
 
 !<inputoutput>
@@ -4593,7 +4595,8 @@ contains
       end if
 
       ! Compute sums of antidiffusive increments
-      if (present(fcb_calcTransformation)) then
+      if (present(fcb_calcFluxTransformation) .and.&
+          present(fcb_calcDiffTransformation)) then
         call doADIncrementsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             rafcstab%NVARtransformed, p_Dx,&
@@ -4628,8 +4631,8 @@ contains
       call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
-      ! Compute bounds
-      if (present(fcb_calcTransformation)) then
+      ! Compute local bounds
+      if (present(fcb_calcDiffTransformation)) then
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             rafcstab%NVARtransformed, p_Dx, p_Dqp, p_Dqm)
@@ -4714,7 +4717,7 @@ contains
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
 
-        if (present(fcb_calcTransformation)) then
+        if (present(fcb_calcFluxTransformation)) then
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
               rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
@@ -4727,7 +4730,7 @@ contains
 
       else
 
-        if (present(fcb_calcTransformation)) then
+        if (present(fcb_calcFluxTransformation)) then
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
               rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
@@ -4860,8 +4863,7 @@ contains
       real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
 
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Dx_ij,Dx_ji
-      real(DP), dimension(NVAR) :: diff
+      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Diff
       integer :: iedge,i,j
 
       ! Clear P's
@@ -4876,17 +4878,16 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Compute transformed fluxes
-        call fcb_calcTransformation(&
+        call fcb_calcFluxTransformation(&
             Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
 
         ! Compute transformed solution difference
-        diff = Dx(:,j)-Dx(:,i)
-        call fcb_calcTransformation(&
-            Dx(:,i), Dx(:,j), diff, Dx_ij, Dx_ji)
+        call fcb_calcDiffTransformation(&
+            Dx(:,i), Dx(:,j), Diff)
 
         ! Prelimiting of antidiffusive fluxes
-        if (any(F_ij*Dx_ij .ge. 0.0_DP) .or.&
-            any(F_ji*Dx_ji .ge. 0.0_DP))&
+        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
+            any(F_ji*Diff .le. 0.0_DP))&
             Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
@@ -4915,7 +4916,7 @@ contains
       real(DP), dimension(NVAR,NEQ), intent(out) :: Dqp,Dqm
 
       ! local variables
-      real(DP), dimension(NVAR) :: Dx_ij
+      real(DP), dimension(NVAR) :: Diff
       integer :: iedge,i,j
 
       ! Clear Q's
@@ -4930,14 +4931,14 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Compute solution difference
-        Dx_ij = Dx(:,j)-Dx(:,i)
+        Diff = Dx(:,j)-Dx(:,i)
 
         ! Compute the distance to a local extremum
         ! of the predicted solution
-        Dqp(:,i) = max(Dqp(:,i), Dx_ij)
-        Dqp(:,j) = max(Dqp(:,j),-Dx_ij)
-        Dqm(:,i) = min(Dqm(:,i), Dx_ij)
-        Dqm(:,j) = min(Dqm(:,j),-Dx_ij)
+        Dqp(:,i) = max(Dqp(:,i), Diff)
+        Dqp(:,j) = max(Dqp(:,j),-Diff)
+        Dqm(:,i) = min(Dqm(:,i), Diff)
+        Dqm(:,j) = min(Dqm(:,j),-Diff)
       end do
     end subroutine doBounds
 
@@ -4955,8 +4956,7 @@ contains
       real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dqp,Dqm
 
       ! local variables
-      real(DP), dimension(NVAR) :: diff
-      real(DP), dimension(NVARtransformed) :: Dx_ij,Dx_ji
+      real(DP), dimension(NVARtransformed) :: Diff
       integer :: iedge,i,j
 
       ! Clear Q's
@@ -4974,15 +4974,15 @@ contains
         diff = Dx(:,j)-Dx(:,i)
 
         ! Compute transformed solution difference
-        call fcb_calcTransformation(&
-            Dx(:,i), Dx(:,j), diff, Dx_ij, Dx_ji)
+        call fcb_calcDiffTransformation(&
+            Dx(:,i), Dx(:,j), Diff)
 
         ! Compute the distance to a local extremum
         ! of the predicted solution
-        Dqp(:,i) = max(Dqp(:,i), Dx_ij)
-        Dqp(:,j) = max(Dqp(:,j), Dx_ji)
-        Dqm(:,i) = min(Dqm(:,i), Dx_ij)
-        Dqm(:,j) = min(Dqm(:,j), Dx_ji)
+        Dqp(:,i) = max(Dqp(:,i), Diff)
+        Dqp(:,j) = max(Dqp(:,j),-Diff)
+        Dqm(:,i) = min(Dqm(:,i), Diff)
+        Dqm(:,j) = min(Dqm(:,j),-Diff)
       end do
     end subroutine doBoundsTransformed
 
@@ -5119,7 +5119,7 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Compute transformed fluxes
-        call fcb_calcTransformation(&
+        call fcb_calcFluxTransformation(&
             Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
 
         ! Compute nodal correction factors
@@ -5207,9 +5207,9 @@ contains
         j  = IverticesAtEdge(2, iedge)
 
         ! Compute transformed fluxes
-        call fcb_calcTransformation(&
+        call fcb_calcFluxTransformation(&
             Dx(:,i), Dx(:,j), Dflux1(:,iedge), F1_ij, F1_ji)
-        call fcb_calcTransformation(&
+        call fcb_calcFluxTransformation(&
             Dx(:,i), Dx(:,j), Dflux2(:,iedge), F2_ij, F2_ji)
 
         ! Compute nodal correction factors

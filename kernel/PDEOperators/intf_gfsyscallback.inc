@@ -177,7 +177,7 @@
 
 !<subroutine>
 
-  subroutine fcb_calcTransformation(U_i, U_j, F_ij, G_ij, G_ji)
+  subroutine fcb_calcFluxTransformation(U_i, U_j, F_ij, G_ij, G_ji)
 
     use fsystem
 
@@ -200,7 +200,33 @@
 
 !</subroutine>
 
-  end subroutine fcb_calcTransformation
+  end subroutine fcb_calcFluxTransformation
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine fcb_calcDiffTransformation(U_i, U_j, U_ij)
+
+    use fsystem
+
+!<description>
+    ! This subroutine computes the transformed solution difference.
+!</description>
+
+!<input>
+  ! Variables at states $i$ and $j$
+  real(DP), dimension(:), intent(in) :: U_i, U_j
+!</input>
+
+!<output>
+  ! Transformed solution difference
+  real(DP), dimension(:), intent(out) :: U_ij
+  !</output>
+
+!</subroutine>
+
+  end subroutine fcb_calcDiffTransformation
 
   ! ***************************************************************************
 
