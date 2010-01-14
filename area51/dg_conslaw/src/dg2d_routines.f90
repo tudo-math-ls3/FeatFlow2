@@ -45,7 +45,7 @@ contains
   subroutine linf_dg_buildVectorScalarEdge2d (rform, ccubType, bclear,&
                                               rvectorScalar,&
                                               rvectorScalarSol,&
-!                                              flux_dg_buildVectorScEdge2D_sim,&
+                                              flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
   
 !<description>
@@ -82,8 +82,8 @@ contains
   type(t_collection), intent(inout), target, optional :: rcollection
   
   ! A callback routine for the function to be discretised.
-!  include 'intf_flux_dg_buildVectorScEdge2D.inc'
-!  optional :: intf_flux_dg_buildVectorScEdge2D_sim
+  include 'intf_flux_dg_buildVectorScEdge2D.inc'
+  optional :: flux_dg_buildVectorScEdge2D_sim
 !</input>
 
 !<inputoutput>
@@ -182,8 +182,8 @@ contains
       call linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
             rvectorScalar, rvectorScalarSol,&
             p_IedgeList(1:NMT),p_IlocalEdgeNumber&
-!            ,flux_dg_buildVectorScEdge2D_sim,&
-!            rcollection&
+            ,flux_dg_buildVectorScEdge2D_sim,&
+            rcollection&
              )
 
           
@@ -264,7 +264,7 @@ contains
   subroutine linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
               rvector, rvectorSol,&
               IedgeList, IlocalEdgeNumber,&
-!              flux_dg_buildVectorScEdge2D_sim,&
+              flux_dg_buildVectorScEdge2D_sim,&
               rcollection)
 
 !<description>
@@ -286,8 +286,8 @@ contains
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
-!  include 'flux_dg_buildVectorScEdge2D.inc'
-!  optional :: flux_dg_buildVectorScEdge2D_sim 
+  include 'intf_flux_dg_buildVectorScEdge2D.inc'
+  optional :: flux_dg_buildVectorScEdge2D_sim 
   
 !</input>
 
@@ -314,7 +314,7 @@ contains
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
     integer :: iel,icubp,ialbet,ia,idofe
-    real(DP) :: domega,daux,dlen
+    real(DP) :: domega,daux1,daux2,dlen
     real(DP) :: dval1, dval2
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), dimension(2), target :: rlocalVectorAssembly
@@ -349,6 +349,12 @@ contains
     ! Pointer to Ielementsatedge in the triangulation
     integer, dimension(:,:), pointer :: p_IelementsAtEdge
     
+    ! Pointer to IverticesAtEdge in the triangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    
+    ! Pointer to the vertex coordinates
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    
     ! Array for the solution values in the cubature points
     real(DP), dimension(:,:,:), allocatable :: DsolVals
     
@@ -357,12 +363,38 @@ contains
          
     ! Array for the normal vectors
     real(DP), dimension(:,:), allocatable :: normal
+    
+    ! Temp variables for the coordinates of the vertices
+    real(DP) :: dxl1, dxl2, dyl1, dyl2
   
+  
+    ! Copy the assembly data to the local assembly data,
+    ! where we can allocate memory.
+    ! For single processor machines, this is actually boring and nonsense.
+    ! But using OpenMP, here we get a local copy of the vector
+    ! assembly structure to where we can add some local data which
+    ! is released upon return without changing the original assembly
+    ! stucture or disturbing the data of the other processors.
+    rlocalVectorAssembly(1) = rvectorAssembly(1)
+    rlocalVectorAssembly(2) = rvectorAssembly(2)
+    
+    call linf_allocAssemblyData(rlocalVectorAssembly(1))
+    call linf_allocAssemblyData(rlocalVectorAssembly(2))
   
     ! Get pointers to elements at edge
     call storage_getbase_int2D(&
           rvector%p_rspatialDiscr%p_rtriangulation%h_IelementsAtEdge,&
           p_IelementsAtEdge)
+          
+    ! Get pointers to the vertex coordinates
+    call storage_getbase_double2D(&
+          rvector%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
+          p_DvertexCoords)
+          
+    ! Get pointers to vertices at edge
+    call storage_getbase_int2D(&
+          rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
+          p_IverticesAtEdge)          
     
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -380,27 +412,14 @@ contains
     ncubp = rvectorAssembly(1)%ncubp
     
     ! Allocate space for the solution values in the cubature points
-    allocate(DsolVals(ncubp,2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+    allocate(DsolVals(ncubp,2,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     ! Allocate space for normal vectors
     allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
     
     ! Allocate space for edge length
     allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
-    
-    ! Copy the assembly data to the local assembly data,
-    ! where we can allocate memory.
-    ! For single processor machines, this is actually boring and nonsense.
-    ! But using OpenMP, here we get a local copy of the vector
-    ! assembly structure to where we can add some local data which
-    ! is released upon return without changing the original assembly
-    ! stucture or disturbing the data of the other processors.
-    rlocalVectorAssembly(1) = rvectorAssembly(1)
-    rlocalVectorAssembly(2) = rvectorAssembly(2)
-    
-    call linf_allocAssemblyData(rlocalVectorAssembly(1))
-    call linf_allocAssemblyData(rlocalVectorAssembly(2))
-    
+   
 !    ! Get some more pointers to local data.
 !    p_Domega => rlocalVectorAssembly%p_Domega
 !    p_Dbas => rlocalVectorAssembly%p_Dbas
@@ -436,7 +455,7 @@ contains
     !
     !%OMP do schedule(static,1)
     do IELset = 1, size(IedgeList), rlocalVectorAssembly(1)%nelementsPerBlock
-    
+
       ! We always handle nelementsPerBlock elements simultaneously.
       ! How many elements have we actually here?
       ! Get the maximum element number, such that we handle at most LINF_NELEMSIM
@@ -560,10 +579,35 @@ contains
         end do
       end do
       
-
-
+     
+     do iel = 1,IELmax-IELset+1
+      if(IelementList(2,IELset+iel-1).eq.0) then
+        DsolVals(1:ncubp,2,iel) = 1.0_DP
+      end if
       
-!!      ! Now it is time to call our coefficient function to calculate the
+    end do
+     
+      
+     ! --------------------- Get normal vectors ---------------------------
+     
+     do iel = 1,IELmax-IELset+1    
+       ! Calculate the length of the edge 
+       dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
+       dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
+       dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
+       dyl2=p_DvertexCoords(2,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
+       edgelength(iel)=sqrt((dxl1-dxl2)*(dxl1-dxl2)+(dyl1-dyl2)*(dyl1-dyl2))
+         
+       ! Calculate the normal vector to the element at this edge
+       normal(1,iel) = (dyl2-dyl1)/edgelength(iel)
+       normal(2,iel) = (dxl1-dxl2)/edgelength(iel)
+     end do
+      
+      
+     ! ---------------------- Get values of the flux function --------------
+     
+     
+     !!      ! Now it is time to call our coefficient function to calculate the
 !!      ! function values in the cubature points:
 !!      if (present(fcoeff_buildVectorScBdr2D_sim)) then
 !!        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
@@ -584,30 +628,11 @@ contains
 !!      end if
       
       
-      
-      
-     ! --------------------- Get normal vectors ---------------------------
-     
-     do iel = 1,IELmax-IELset+1    
-       ! Calculate the length of the edge 
-       dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
-       dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
-       dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
-       dyl2=p_DvertexCoords(2,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
-       edgelength(iel)=sqrt((dxl1-dxl2)*(dxl1-dxl2)+(dyl1-dyl2)*(dyl1-dyl2))
-         
-       ! Calculate the normal vector to the element at this edge
-       normal(1,iel) = (dyl2-dyl1)/edgelength(iel)
-       normal(2,iel) = (dxl1-dxl2)/edgelength(iel)
-     end do
-      
-      
-      
-      
-      
-      
-      
-      
+      call flux_dg_buildVectorScEdge2D_sim (&
+            rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
+            DsolVals(:,:,1:IELmax-IELset+1),&
+            normal(:,1:IELmax-IELset+1),&
+            rcollection )
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -643,10 +668,11 @@ contains
           ! Calculate the current weighting factor in the cubature
           ! formula in that cubature point.
 
-          domega = dlen * p_Domega(icubp)
+          domega = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+
           
           ! Loop over the additive factors in the bilinear form.
-          do ialbet = 1,rlocalVectorAssembly%rform%itermcount
+          do ialbet = 1,rlocalVectorAssembly(1)%rform%itermcount
           
             ! Get from Idescriptors the type of the derivatives for the 
             ! test and trial functions. The summand we calculate
@@ -659,15 +685,15 @@ contains
             !      =2: 2nd derivative,...
             !    as defined in the module 'derivative'.
             
-            ia = p_Idescriptors(ialbet)
+            ia = rlocalVectorAssembly(1)%rform%Idescriptors(ialbet)
             
             ! Multiply domega with the coefficient of the form.
             ! This gives the actual value to multiply the
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
-            daux1 = domega * p_Dcoefficients(ialbet,icubp,iel)
-            daux2 = domega * p_Dcoefficients(ialbet,ncubp-icubp+1,iel)
-          
+            daux1 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp,iel)
+            daux2 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel)
+
             ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
 
@@ -687,9 +713,12 @@ contains
               
               DlocalData(1,idofe) = DlocalData(1,idofe)+&
                                     rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux1
-              DlocalData(2,idofe) = DlocalData(2,idofe)+&
-                                    rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
               
+              if(IelementList(2,IELset+iel-1).ne.0) then
+                DlocalData(2,idofe) = DlocalData(2,idofe)+&
+                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
+              end if
+             
             end do ! idofe
             
           end do ! ialbet
@@ -700,11 +729,13 @@ contains
         ! The 'local' DOF 1..indofTest is mapped to the global DOF using
         ! the IdofsTest array.
         do idofe = 1,indof
-          p_Ddata(rlocalVectorAssembly(1)%p_Dbas(idofe,iel)) =&
-                       p_Ddata(rlocalVectorAssembly(1)%p_Dbas(idofe,iel)) +&
+        
+        
+          p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) =&
+                       p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) +&
                        DlocalData(1,idofe)
-          p_Ddata(rlocalVectorAssembly(2)%p_Dbas(idofe,iel)) =&
-                       p_Ddata(rlocalVectorAssembly(2)%p_Dbas(idofe,iel)) +&
+          p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) =&
+                       p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) +&
                        DlocalData(2,idofe)
         end do
 

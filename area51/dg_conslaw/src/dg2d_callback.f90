@@ -1027,4 +1027,47 @@ contains
     
   end subroutine
 
+
+
+  subroutine flux_dg_buildVectorScEdge2D_sim (&
+              Dcoefficients,&
+              DsolVals,&
+              normal,&
+              rcollection )
+              
+  use collection
+  
+  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  real(DP), dimension(:,:,:), intent(in) :: DsolVals
+  real(DP), dimension(:,:), intent(in) :: normal
+  type(t_collection), intent(inout), target, optional :: rcollection
+
+
+  integer :: ipoint, iel
+  real(dp), dimension(2) :: Dvel
+  real(DP) :: dvn
+  
+  Dvel(1)=1.0_DP
+  Dvel(2)=1.0_DP
+  
+  do iel = 1, ubound(Dcoefficients,2)
+    do ipoint= 1, ubound(Dcoefficients,1)
+    
+      dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
+    
+      if (dvn.ge.0) then
+        Dcoefficients(ipoint,iel) = dvn *DsolVals(ipoint,1,iel)
+      else
+        Dcoefficients(ipoint,iel) = dvn *DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel)
+      end if
+    end do ! ipoint
+  end do ! iel
+
+
+
+  end subroutine
+
+
+
+
 end module
