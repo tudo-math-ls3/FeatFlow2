@@ -11,7 +11,7 @@ Calculating anisotropic diffusion problem with method 2
 UMFPACK: !!Initial RES!! = 1.198577803441368E-01
 UMFPACK: !!solution!!    = 5.232664176453884E-01 Status = 0
 !!gradient error!! = 9.1657736585E-01
-UMFPACK: !!Initial RES!! = 9.199295443090614E-02
+UMFPACK: !!Initial RES!! = 9.199295443090615E-02
 UMFPACK: !!solution!!    = 5.877810225553307E-01 Status = 0
 !!gradient error!! = 7.4378460808E-01
 UMFPACK: !!Initial RES!! = 7.732888065719286E-02
