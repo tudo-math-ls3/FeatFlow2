@@ -338,9 +338,8 @@ contains
           '['//trim(sbdrcondName)//']', ndimension)
 
       ! What solution algorithm should be applied?
-      select case(trim(algorithm))
-
-      case ('transient_primal')
+      if (trim(adjustl(sys_upcase(algorithm))) .eq. 'TRANSIENT_PRIMAL') then
+        
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for #
         ! the time-dependent problem
@@ -353,12 +352,11 @@ contains
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
-
-      case DEFAULT
+      else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'euler_app')
         call sys_halt()
-      end select
+      end if
 
     else
 
@@ -1331,7 +1329,8 @@ contains
     type(t_ucdExport) :: rexport
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
-    integer :: iformatUCD, isystemFormat, isize, ndim
+    character(len=SYS_NAMELEN) :: cvariable
+    integer :: iformatUCD, isystemFormat, isize, ndim, ivariable, nvariable
 
 
     ! Get global configuration from parameter list
@@ -1356,7 +1355,7 @@ contains
 
     ! Add primal solution vector
     if (present(rsolutionPrimal)) then
-
+      
       ! Set pointers
       call lsysbl_getbase_double(rsolutionPrimal, p_Dsolution)
       isize = size(p_Dsolution)/euler_getNVAR(rproblemLevel)
@@ -1384,222 +1383,114 @@ contains
 
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
-                         OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
         call sys_halt()
       end select
 
-
+      ! Get number of variables to be written
+      nvariable = max(1,&
+          parlst_querysubstrings(rparlist,&
+          trim(soutputName), 'ucdvariable'))
+      
       select case(isystemFormat)
       case(SYSTEM_INTERLEAVEFORMAT)
+        
+        ! Loop over all variables
+        do ivariable = 1, nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'ucdvariable', cvariable, isubstring=ivariable)
+          
+          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
+            
+            ! Special treatment of velocity vector
+            select case(ndim)
+            case (NDIM1D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+            case (NDIM2D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+                  'velocity_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+                  p_Ddata1, p_Ddata2)
+            case (NDIM3D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+                  'velocity_y', p_Dsolution, p_Ddata2)
+              call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+                  'velocity_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
 
-        select case(ndim)
-        case (NDIM1D)
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+          else
 
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-
-        case (NDIM2D)
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
-              'velocity_y', p_Dsolution, p_Ddata2)
-          call ucd_addVarVertBasedVec(rexport, 'velocity',&
-              p_Ddata1, p_Ddata2)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-        case (NDIM3D)
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
-              'velocity_y', p_Dsolution, p_Ddata2)
-          call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
-              'velocity_z', p_Dsolution, p_Ddata3)
-          call ucd_addVarVertBasedVec(rexport, 'velocity',&
-              p_Ddata1, p_Ddata2, p_Ddata3)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-        end select
-
-
+            ! Standard treatment for scalar quantity
+            call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+                cvariable, p_Dsolution, p_Ddata1)
+            call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, p_Ddata1)
+            
+          end if
+        end do
+        
       case (SYSTEM_BLOCKFORMAT)
 
-        select case(ndim)
-        case (NDIM1D)
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+        ! Loop over all variables
+        do ivariable = 1, nvariable
+          
+          ! Get variable name
+          call parlst_getvalue_string(rparlist, trim(soutputName),&
+              'ucdvariable', cvariable, isubstring=ivariable)
+          
+          if (trim(adjustl(sys_upcase(cvariable))) .eq. 'VELOCITY') then
 
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
+            ! Special treatment of velocity vector
+            select case(ndim)
+            case (NDIM1D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+            case (NDIM2D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'velocity_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+                  p_Ddata1, p_Ddata2)
+            case (NDIM3D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+                  'velocity_x', p_Dsolution, p_Ddata1)
+              call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+                  'velocity_y', p_Dsolution, p_Ddata2)
+              call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+                  'velocity_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velocity',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+            
+          else
+            
+            ! Standard treatment for scalar quantity
+            call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+                cvariable, p_Dsolution, p_Ddata1)
+            call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, p_Ddata1)
+            
+          end if
+        end do
 
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-
-        case (NDIM2D)
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
-              'velocity_y', p_Dsolution, p_Ddata2)
-          call ucd_addVarVertBasedVec(rexport, 'velocity',&
-              p_Ddata1, p_Ddata2)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-        case (NDIM3D)
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'velocity_x', p_Dsolution, p_Ddata1)
-          call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
-              'velocity_y', p_Dsolution, p_Ddata2)
-          call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
-              'velocity_z', p_Dsolution, p_Ddata3)
-          call ucd_addVarVertBasedVec(rexport, 'velocity',&
-              p_Ddata1, p_Ddata2, p_Ddata3)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'density', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'density',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'pressure', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'pressure',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'machnumber', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'machnumber',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-          call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
-              'internal_energy', p_Dsolution, p_Ddata1)
-          call ucd_addVariableVertexBased (rexport, 'internal_energy',&
-              UCD_VAR_STANDARD, p_Ddata1)
-
-        end select
+      case default
+        call output_line('Invalid system format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_outputSolution')
+        call sys_halt()
       end select
-
+      
       ! Release temporal memory
       call lsyssc_releaseVector(rvector1)
       call lsyssc_releaseVector(rvector2)
@@ -1608,7 +1499,7 @@ contains
     end if
 
     ! Write UCD file
-    call ucd_write  (rexport)
+    call ucd_write(rexport)
     call ucd_release(rexport)
 
   end subroutine euler_outputSolution
@@ -2601,62 +2492,53 @@ contains
     cmdarg: do
       ! Retrieve next command line argument
       call get_command_argument(iarg,cbuffer)
-      select case(trim(adjustl(cbuffer)))
-
-      case ('-A','--adaptivity')
+      
+      if ((trim(adjustl(cbuffer)) .eq. '-I') .or.&
+          (trim(adjustl(cbuffer)) .eq. '--inviscid')) then
+        
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
-
-      case ('-B','--benchmark')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
-
-      case ('-DC','--dualconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
-
-      case ('-DD','--dualdiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'dualdiff', trim(adjustl(cbuffer)))
-
-      case ('-E','--errorest')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
-
-      case ('-I','--io')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
-
-      case ('-PC','--primalconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
-
-      case ('-PD','--primaldiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'primaldiff', trim(adjustl(cbuffer)))
-
-      case ('-S','--solver')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
-
-      case ('-T','--timestep')
+        call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
+        
+      elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--timestep')) then 
+        
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
 
-      case DEFAULT
+      elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--solver')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--output')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
+
+      else
         iarg = iarg+1
         if (iarg .ge. narg) exit cmdarg
-      end select
+      end if
     end do cmdarg
 
   end subroutine euler_parseCmdlArguments

@@ -430,9 +430,7 @@ contains
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
 
       ! What solution algorithm should be applied?
-      select case(trim(algorithm))
-
-      case ('transient_primal')
+      if (trim(sys_upcase(algorithm)) .eq. 'TRANSIENT_PRIMAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for
         ! the time-dependent problem
@@ -447,7 +445,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      case ('transient_primaldual')
+      elseif (trim(sys_upcase(algorithm)) .eq. 'TRANSIENT_PRIMALDUAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the time-dependent problem
@@ -456,7 +454,7 @@ contains
         stop
 
 
-      case ('pseudotransient_primal')
+      elseif (trim(sys_upcase(algorithm)) .eq. 'PSEUDOTRANSIENT_PRIMAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for
         ! the pseudo time-dependent problem
@@ -471,7 +469,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      case ('pseudotransient_primaldual')
+      elseif (trim(sys_upcase(algorithm)) .eq. 'PSEUDOTRANSIENT_PRIMALDUAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the pseudo time-dependent problem
@@ -490,7 +488,7 @@ contains
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
 
-      case ('stationary_primal')
+      elseif (trim(sys_upcase(algorithm)) .eq. 'STATIONARY_PRIMAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for #
         ! the stationary problem
@@ -505,7 +503,7 @@ contains
             dtime=rtimestep%dTime)
 
 
-      case ('stationary_primaldual')
+      elseif (trim(sys_upcase(algorithm)) .eq. 'STATIONARY_PRIMALDUAL') then
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal and dual formulation for
         ! the stationary problem
@@ -523,11 +521,11 @@ contains
             rproblem%p_rproblemLevelMax,&
             rsolutionPrimal, rsolutionDual, rtimestep%dTime)
 
-      case DEFAULT
+      else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'transp_app')
         call sys_halt()
-      end select
+      end if
 
     else
 
@@ -4909,62 +4907,53 @@ contains
     cmdarg: do
       ! Retrieve next command line argument
       call get_command_argument(iarg,cbuffer)
-      select case(trim(adjustl(cbuffer)))
 
-      case ('-A','--adaptivity')
+      if ((trim(adjustl(cbuffer)) .eq. '-I') .or.&
+          (trim(adjustl(cbuffer)) .eq. '--inviscid')) then
+        
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
-
-      case ('-B','--benchmark')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'benchmark', trim(adjustl(cbuffer)))
-
-      case ('-DC','--dualconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'dualconv', trim(adjustl(cbuffer)))
-
-      case ('-DD','--dualdiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'dualdiff', trim(adjustl(cbuffer)))
-
-      case ('-E','--errorest')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'errorest', trim(adjustl(cbuffer)))
-
-      case ('-I','--io')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'inputoutput', trim(adjustl(cbuffer)))
-
-      case ('-PC','--primalconv')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'primalconv', trim(adjustl(cbuffer)))
-
-      case ('-PD','--primaldiff')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'primaldiff', trim(adjustl(cbuffer)))
-
-      case ('-S','--solver')
-        iarg = iarg+1
-        call get_command_argument(iarg,cbuffer)
-        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
-
-      case ('-T','--timestep')
+        call parlst_setvalue(rparlist, '', 'inviscid', trim(adjustl(cbuffer)))
+        
+      elseif ((trim(adjustl(cbuffer)) .eq. '-T') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--timestep')) then 
+        
         iarg = iarg+1
         call get_command_argument(iarg,cbuffer)
         call parlst_setvalue(rparlist, '', 'timestep', trim(adjustl(cbuffer)))
 
-      case DEFAULT
+      elseif ((trim(adjustl(cbuffer)) .eq. '-S') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--solver')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'solver', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-O') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--output')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'output', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-E') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--errorestimator')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'errorestimator', trim(adjustl(cbuffer)))
+
+      elseif ((trim(adjustl(cbuffer)) .eq. '-A') .or.&
+              (trim(adjustl(cbuffer)) .eq. '--adaptivity')) then 
+
+        iarg = iarg+1
+        call get_command_argument(iarg,cbuffer)
+        call parlst_setvalue(rparlist, '', 'adaptivity', trim(adjustl(cbuffer)))
+
+      else
         iarg = iarg+1
         if (iarg .ge. narg) exit cmdarg
-      end select
+      end if
     end do cmdarg
 
   end subroutine transp_parseCmdlArguments

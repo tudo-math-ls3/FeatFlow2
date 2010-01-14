@@ -123,22 +123,21 @@ program flagship
 
 
   ! Call application module
-  select case(trim(application))
-  case('transport')
+  if (trim(sys_upcase(application)) .eq. 'TRANSPORT') then
     call transp_app(rparlist)
 
-  case('euler')
+  elseif (trim(sys_upcase(application)) .eq. 'EULER') then
     call euler_app(rparlist)
 
-  case('zpinch')
+  elseif (trim(sys_upcase(application)) .eq. 'ZPINCH') then
     call zpinch_app(rparlist)
 
-  case DEFAULT
+  else
     call output_line('Invalid application name!',&
-                     OU_CLASS_WARNING,OU_MODE_STD,'flagship')
+        OU_CLASS_WARNING,OU_MODE_STD,'flagship')
     call sys_halt()
-
-  end select
+    
+  end if
 
   ! Release parameter list
   call parlst_done(rparlist)

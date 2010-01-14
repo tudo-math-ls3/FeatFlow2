@@ -137,9 +137,7 @@ contains
     integer(i32) :: iSpec
     integer :: jacobianMatrix
 
-    select case(rsolver%ssolverName)
-
-    case('NonlinearSolverEuler')
+    if (trim(rsolver%ssolverName) .eq. 'NonlinearSolverEuler') then
 
       ! Set the first string quick access array to the section name
       ! of the Euler model which is stored in the third array
@@ -227,7 +225,7 @@ contains
       end if
 
 
-    case('NonlinearSolverTransport')
+    elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then
 
       ! Set the first string quick access array to the section name
       ! of the Euler model which is stored in the fourth array
@@ -386,7 +384,7 @@ contains
             1.0_DP, 1.0_DP)
       end if
 
-    end select
+    end if
 
     ! Set status flag
     istatus = 0

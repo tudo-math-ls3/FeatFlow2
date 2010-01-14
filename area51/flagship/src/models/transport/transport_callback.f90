@@ -549,8 +549,7 @@ contains
     end if
 
     ! Are we in primal or dual mode?
-    select case(trim(smode))
-    case('primal')
+    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
 
       !-------------------------------------------------------------------------
       ! We are in primal mode which means that we have to build two
@@ -896,7 +895,7 @@ contains
       end select
 
 
-    case('dual')
+    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
 
       !-------------------------------------------------------------------------
       ! We are in dual mode which means that we have to build two
@@ -1057,11 +1056,11 @@ contains
 
       end select
 
-    case DEFAULT
+    else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcPrecondThetaScheme')
       call sys_halt()
-    end select
+    end if
 
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
@@ -1369,8 +1368,7 @@ contains
     end if
 
     ! Are we in primal or dual mode?
-    select case(trim(smode))
-    case('primal')
+    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
 
       !-------------------------------------------------------------------------
       ! We are in primal mode which means that we have to build two
@@ -1547,7 +1545,7 @@ contains
       end select
 
 
-    case('dual')
+    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
 
       ! @FAQ2: What type of velocity are we?
       select case (abs(ivelocitytype))
@@ -1650,11 +1648,11 @@ contains
       end select
 
 
-    case default
+    else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
-    end select
+    end if
 
 
     ! Check if the Jacobian operator has extended sparsity pattern
@@ -1762,9 +1760,8 @@ contains
     !---------------------------------------------------------------------------
 
     ! Are we in primal or dual mode?
-    select case(trim(smode))
-    case('primal')
-
+    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+      
       !-------------------------------------------------------------------------
       ! We are in primal mode
       !-------------------------------------------------------------------------
@@ -2370,7 +2367,7 @@ contains
       end select
 
 
-    case ('dual')
+    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
 
       !-------------------------------------------------------------------------
       ! We are in dual mode
@@ -2634,11 +2631,11 @@ contains
 
       end select
 
-    case DEFAULT
+    else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'transp_calcJacobianThetaScheme')
       call sys_halt()
-    end select
+    end if
 
 
     ! Impose boundary conditions in strong sence (if any)
@@ -3807,10 +3804,8 @@ contains
 !</subroutine>
 
     ! Are we in primal or dual mode?
-    select case(trim(smode))
-
-    case ('primal')
-
+    if (trim(sys_upcase(smode)) .eq. 'PRIMAL') then
+      
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
       case default
@@ -3876,7 +3871,7 @@ contains
       end select
 
 
-    case ('dual')
+    elseif (trim(sys_upcase(smode)) .eq. 'DUAL') then
 
       ! @FAQ2: What type of velocity are we?
       select case(abs(ivelocitytype))
@@ -3941,11 +3936,11 @@ contains
       end select
 
 
-    case DEFAULT
+    else
       call output_line('Invalid mode!',&
           OU_CLASS_ERROR,OU_MODE_STD,'calcLinfBdrCond')
       call sys_halt()
-    end select
+    end if
 
   end subroutine transp_calcLinfBdrCondQuick
 
