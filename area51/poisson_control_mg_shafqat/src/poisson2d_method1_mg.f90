@@ -39,7 +39,7 @@ module poisson2d_method1_mg
     
   use poisson2d_callback
   USE statistics
-  
+
   implicit none
 
 !<types>
@@ -148,7 +148,7 @@ contains
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
-    
+
     ! Some temporary variables
     integer :: i
 
@@ -220,7 +220,7 @@ contains
     do i = NLMIN, NLMAX
       call spdiscr_initDiscr_simple (&
           Rlevels(i)%rdiscretisation%RspatialDiscr(1), &
-          EL_E011,CUB_G2X2,Rlevels(i)%rtriangulation, rboundary)
+          EL_Q1,CUB_G2X2,Rlevels(i)%rtriangulation, rboundary)
 
       call spdiscr_initDiscr_simple (&
 	     Rlevels(i)%rdiscretisation%RspatialDiscr(2), &
@@ -283,8 +283,6 @@ contains
       call bilf_buildMatrixScalar (rform,.true.,&
            Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
      CALL lsyssc_copyMatrix(Rlevels(i)%rmatrix%RmatrixBlock(1,1), Rlevels(i)%rmatrix%RmatrixBlock(2,2))
-!      call bilf_buildMatrixScalar (rform,.true.,&
-!            Rlevels(i)%rmatrix%RmatrixBlock(1,1),coeff_Laplace_2D)
 !---------------------------------------------------------------------- 
 ! Set up matrixMass
       ! And now to the entries of the mass matrix. 
@@ -400,25 +398,25 @@ contains
 
       ! On edge 1 of boundary component 1 add Dirichlet boundary conditions.      
       call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
                                
       ! Now to the edge 2 of boundary component 1 the domain. 
       call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
                                
       ! Edge 3 of boundary component 1.
       call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
       
       ! Edge 4 of boundary component 1. That is it.
       call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,1,&
+      call bcasm_newDirichletBConRealBD (Rlevels(i)%rdiscretisation,2,&
                                         rboundaryRegion,Rlevels(i)%rdiscreteBC,&
                                         getBoundaryValues_2D_P)
 !  ---------------------------------------------------------------------- 
@@ -459,7 +457,6 @@ contains
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
     ! Now we have to build up the level information for multigrid.
-
     ! Create a Multigrid-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
@@ -544,7 +541,7 @@ contains
         Rlevels(NLMAX)%rtriangulation,trim(sucddir)//'/u2d_1_mg.gmv')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'sol_y',UCD_VAR_STANDARD, p_Ddata)
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(2),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol_p',UCD_VAR_STANDARD, p_Ddata)
