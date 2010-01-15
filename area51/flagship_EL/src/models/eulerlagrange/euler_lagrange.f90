@@ -88,9 +88,9 @@ module euler_lagrange
       ! barycentric coordinates
       integer(I32) :: h_lambda1, h_lambda2, h_lambda3, h_lambda4
       real(DP), dimension(:), pointer :: p_lambda1, p_lambda2, p_lambda3, p_lambda4
-      ! diameter and mass 
-      integer(I32) :: h_diam, h_mass
-      real(DP), dimension(:), pointer :: p_diam, p_mass
+      ! diameter, mass and alpha_n 
+      integer(I32) :: h_diam, h_mass, h_alpha_n
+      real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n
       ! midpoints of the element 
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
@@ -259,6 +259,8 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                             ST_NEWBLOCK_NOINIT)
   call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
                             ST_NEWBLOCK_NOINIT)
+  call storage_new ('euler_lagrange', 'Particle:alpha_n', rParticles%npart, ST_DOUBLE, rParticles%h_alpha_n, &
+                            ST_NEWBLOCK_NOINIT)
 
   call storage_new ('euler_lagrange', 'Particle:xpos', rParticles%npart, ST_DOUBLE, rParticles%h_xpos, &
                             ST_NEWBLOCK_NOINIT)
@@ -334,6 +336,7 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
    call storage_getbase_double (rParticles%h_lambda4, rParticles%p_lambda4)
    call storage_getbase_double (rParticles%h_diam, rParticles%p_diam)
    call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
+   call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
 
    call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
   
@@ -399,6 +402,7 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         rParticles%p_zpos_old(iPart)= 0.2d0
         rParticles%p_diam(iPart)= particlediam
         rParticles%p_mass(iPart)= particlemass
+        rParticles%p_alpha_n(iPart)= 0
         rParticles%p_element(iPart)= 1
         rParticles%npart = nPart
         
@@ -407,7 +411,7 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
         ! calculate barycentric coordinates
         call calculatebarycoords(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-write(*,*) rParticles%p_lambda1(iPart), rParticles%p_lambda2(iPart), rParticles%p_lambda3(iPart)
+
         ! wrong element
         IF ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
                   abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) THEN
@@ -732,13 +736,12 @@ SUBROUTINE findnewelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollecti
     ! set particles position
     particlepos(1)= rParticles%p_xpos(iPart)
     particlepos(2)= rParticles%p_ypos(iPart)
-    
+   
     ! Get searchmode (brute force, raytrace, etc.)  
     call parlst_getvalue_string(rparlist, 'Eulerlagrange', "search", searchmode)
 
     select case(trim(searchmode))
     case('bruteforce')
-        ! CHANGED IN KERNEL (for triangles)
         call tsrch_getElem_BruteForce(particlepos,p_DvertexCoords,p_IverticesAtElement,iel)
     case('raytrace2D')
         !call tsrch_getElem_raytrace2D(&
@@ -749,7 +752,7 @@ SUBROUTINE findnewelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollecti
 
 	    gotoNextElm: do ite = 1, itemax
 	    
-		    ! calculate the distances to the midpoints
+		    ! Calculate the distances to the midpoints
 		    distances = 10000.0d0
    
 		    do i = 1, 3 
@@ -765,16 +768,16 @@ SUBROUTINE findnewelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollecti
 		                   (rParticles%p_ypos(iPart)-&
 		                        rParticles%p_midpoints_el(2,rParticles%p_element(iPart)))**2.0d0
 		
-		    ! Position des geringsten Abstandes
+		    ! Position with the smallest distance
 		    minl = minloc(distances,1)
 
-		    ! Teste, ob Abbruch (Abstand wird nicht mehr kleiner)
+		    ! Check if the distance didn't change
 		    if (minl .EQ. 1) exit gotoNextElm
 
-		    ! Nummer des Elements, dessen Mittelpkt den geringsten Abstand zum Partikel hat
+		    ! Element with the lowest distance
 		    adj = p_IneighboursAtElement(minl-1,rParticles%p_element(iPart))
 
-		    ! Setze neues Element
+		    ! Store new element
 		    rParticles%p_element(iPart) = adj
 		    distToMid = distances(minl)
 		    
@@ -839,6 +842,30 @@ SUBROUTINE wrongelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     ! in this array.
     integer, dimension(:), pointer :: p_IelementsAtVertex
 
+    ! pointer to the vertices adjacent to an element
+    !
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the corner-vertices
+    ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! This is a handle to the old KVERT array.
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    ! Handle to 
+    !       p_IelementsAtVertexIdx=array [1..NVT+1] of integer.
+    ! Index array for p_IelementsAtVertex of length NVT+1 for describing the
+    ! elements adjacent to a corner vertex. for vertex IVT, the array
+    ! p_IelementsAtVertex contains the numbers of the elements around this
+    ! vertex at indices 
+    !     p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1.
+    ! By subtracting
+    !     p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT)
+    ! One can get the number of elements adjacent to a vertex IVT.
+    integer, dimension(:), pointer ::  p_IelementsAtVertexIdx
+
+
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
@@ -848,15 +875,53 @@ SUBROUTINE wrongelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     ! pointer to the multigrid level
     type(t_problemLevel), pointer :: rproblemLevel
 
-   ! Set pointer to triangulation
-    p_rtriangulation => rproblemLevel%rtriangulation
- 
-    !call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex, p_IelementsAtVertex)
+	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, lexipunkt, i
 
-    if (((ABS(rParticles%p_lambda1(iPart))+rParticles%p_lambda2(iPart))+&
-              rParticles%p_lambda3(iPart)-1) .GE. 0.00001) then
-      write(*,*) 'wrong element'
-    end if
+    ! Set pointer to triangulation
+    p_rtriangulation => rproblemLevel%rtriangulation
+    
+    !call storage_getbase_int2D(&
+    !     p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+         
+    !call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex,&
+    !    p_IelementsAtVertex)
+        
+    !call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx,&
+    !    p_IelementsAtVertexIdx)
+
+    ! store the current element
+	!currentelm = rParticles%p_element(iPart)
+	
+    ! Loop over the vertices of the element
+	!SearchVertex: do Vert = 1, 3												
+		
+	!	nVertex = p_IverticesAtElement(Vert, currentelm)
+			
+		! Loop over the element containing to the vertex
+		!SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+											
+	    	!if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
+			!	exit SearchElement
+			!end if
+
+			!rParticles%p_element(iPart) = 10 !p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
+
+            ! calculate barycentric coordinates
+            !call calculatebarycoords(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+            
+            !if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
+            !    rParticles%p_lambda3(iPart)) .GE. 1.00001) then
+	        !    rParticles%p_element(iPart) = currentelm
+            !end if
+
+		!end do SearchElement
+
+	!end do SearchVertex
+
+    !if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
+    !          rParticles%p_lambda3(iPart)) .GE. 1.00001) then
+	!  rParticles%p_element(iPart) = currentelm
+    !end if
 
 
 END SUBROUTINE wrongelement
@@ -890,7 +955,6 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     ! current number of particle
     integer, intent(inout) :: iPart
 
-
     ! pointer to elements adjacent to the boundary. 
     !
     ! Handle to 
@@ -906,7 +970,94 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     integer, dimension(:), pointer :: p_IelementsAtBoundary
 
     ! subroutine to check if the element is at the boundary
-    call CheckBoundary(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+    !call CheckBoundary(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+
+	real(DP) :: ux1_part, uy1_part, ux2_part, uy2_part, ux3_part, uy3_part
+	real(DP), dimension(3) :: rho_gas
+    real(DP) :: rho_g, C_W, Re_p, nu_g, Velo_rel, dt, c_pi
+    real(DP), dimension(2) :: gravity
+
+    !change: from parameterlist!!!
+    gravity=0   
+    nu_g=1
+    dt= 0.1
+    c_pi= 3.14
+
+	! store old data
+	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
+	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
+	rParticles%p_xvelo_old(iPart)=	   rParticles%p_xvelo(iPart)
+	rParticles%p_yvelo_old(iPart)=	   rParticles%p_yvelo(iPart)
+	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
+	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
+
+	! corner 1
+	ux1_part= 1
+	uy1_part= 1
+	rho_gas(1)= 1
+
+	! corner 2
+	ux2_part= 2
+	uy2_part= 2
+	rho_gas(2)= 2
+
+	! corner 3
+	ux3_part= 3
+	uy3_part= 3
+	rho_gas(3)= 3
+
+	! calculate velocity of the gas
+	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
+									rParticles%p_lambda2(iPart)*ux2_part + &
+									rParticles%p_lambda3(iPart)*ux3_part 
+	rParticles%p_yvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*uy1_part + &
+									rParticles%p_lambda2(iPart)*uy2_part + &
+									rParticles%p_lambda3(iPart)*uy3_part
+
+	! calculate 
+	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
+	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3) 
+
+
+	! calculate particle Reynoldsnumber
+	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/nu_g)*(SQRT((rParticles%p_xvelo_gas(iPart)- &
+	       rParticles%p_xvelo_old(iPart))**2+&
+		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2))
+
+	! calculate the drag force coefficient
+	if (Re_p<1000) then
+		C_W= 24/Re_p*(1+0.15*Re_p**0.687)
+	else
+		C_W= 24/Re_p
+	end if
+
+	! calculate von alpha_n
+	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8 
+
+	! calculate the velocity
+	Velo_rel= SQRT((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2 +&
+	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2)
+
+	! calculate new velocity of the particle
+	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
+								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25 * rParticles%p_diam(iPart)**2 &
+								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * gravity(1))/&
+								(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
+								0.25*rParticles%p_diam(iPart)**2)
+	rParticles%p_yvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_yvelo_old(iPart)+&
+								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25*rParticles%p_diam(iPart)**2 &
+								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*gravity(2))/&
+    							(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
+    							0.25*rParticles%p_diam(iPart)**2)
+
+	!---------------------------------------------------------------------------------
+	! Calculate the new position of the particle
+    !
+	! x_new= x_old + delta t * ux_old
+	!---------------------------------------------------------------------------------
+	
+	rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt * rParticles%p_xvelo(iPart)
+	rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt * rParticles%p_yvelo(iPart)
 
 
 END SUBROUTINE moveparticle
