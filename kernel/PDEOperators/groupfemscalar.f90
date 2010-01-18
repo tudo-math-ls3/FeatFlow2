@@ -4,56 +4,68 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module provides the basic routines for applying the group-finite
-!# element formulation to scalar problems, i.e. conservation laws.
-!# The technique was proposed by C.A.J. Fletcher in:
+!#
+!# This module provides the basic routines for applying the
+!# group-finite element formulation to scalar problems,
+!# i.e. conservation laws.  The technique was proposed by
+!# C.A.J. Fletcher in:
 !#
 !#     C.A.J. Fletcher, "The group finite element formulation"
-!#     Computer Methods in Applied Mechanics and Engineering (ISSN 0045-7825),
-!#     vol. 37, April 1983, p. 225-244.
+!#     Computer Methods in Applied Mechanics and Engineering (ISSN
+!#     0045-7825), vol. 37, April 1983, p. 225-244.
 !#
-!# The group finite element formulation uses the same basis functions for the
-!# unknown solution and the fluxes. This allows for an efficient matrix assemble,
-!# whereby the constant coefficient matrices can be assembled once and for all
-!# at the beginning of the simulation and each time the grid is modified.
+!# The group finite element formulation uses the same basis functions
+!# for the unknown solution and the fluxes. This allows for an
+!# efficient matrix assemble, whereby the constant coefficient
+!# matrices can be assembled once and for all at the beginning of the
+!# simulation and each time the grid is modified.
 !#
-!# Moreover, this module allows to modifying discrete operators by means of
-!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Moeller
-!# and Turek in a series of publications. As a starting point for scalar
-!# conservation laws, the reader is referred to the book chapter
+!# Moreover, this module allows to modifying discrete operators by
+!# means of the algebraic flux correction (AFC) methodology proposed
+!# by Kuzmin, Moeller and Turek in a series of publications. As a
+!# starting point for scalar conservation laws, the reader is referred
+!# to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar conservation
-!#     laws", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles, 
-!#     Algorithms, and Applications, Springer, 2005, 155-206.
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
+!#     conservation laws", In: D. Kuzmin et al. (eds), Flux-Corrected
+!#     Transport: Principles, Algorithms, and Applications, Springer,
+!#     2005, 155-206.
 !#
-!# A more detailed description of the algorithms is given in the comments of the
-!# subroutine implementing the corresponding discretisation schemes. All methods
-!# are based on the stabilisation structure t_afcstab which is defined in the 
-!# underlying module "afcstabilisation". The initialisation as a scalar stabilisation
-!# structure is done by the routine gfsc_initStabilisation. 
+!# A more detailed description of the algorithms is given in the
+!# comments of the subroutine implementing the corresponding
+!# discretisation schemes. All methods are based on the stabilisation
+!# structure t_afcstab which is defined in the underlying module
+!# "afcstabilisation". The initialisation as a scalar stabilisation
+!# structure is done by the routine gfsc_initStabilisation.
 !# 
-!# There are three types of routines. The gfsc_buildXXXOperator routines can be
-!# used to assemble the discrete convection or diffusion operators resulting
-!# from the standard Galerkin finite element discretisation plus some discretely
-!# defined artificial diffusion. For convective terms, this technique is termed
-!# "discrete upwinding", whereas for physical diffusion operators this approach
-!# ensures that the discrete maximum principle holds. Consequently, the term
-!# DMP is adopted.
+!# There are three types of routines. The gfsc_buildXXXOperator
+!# routines can be used to assemble the discrete convection or
+!# diffusion operators resulting from the standard Galerkin finite
+!# element discretisation plus some discretely defined artificial
+!# diffusion. For convective terms, this technique is termed "discrete
+!# upwinding", whereas for physical diffusion operators this approach
+!# ensures that the discrete maximum principle holds. Consequently,
+!# the term DMP is adopted.
 !#
-!# The second type of routines is given by gfsc_buildResidualXXX. They can be
-!# used to update/initialise the residual term applying some sort of algebraic
-!# flux correction. Importantly, the family of AFC schemes gives rise to nonlinear
-!# algebraic equations that need to be solved iteratively. Thus, it is usefull to
-!# build the compensating antidiffusion into the residual vector rather than the
-!# right hand side. However, it is still possible to give a negative scaling factor.
+!# The second type of routines is given by
+!# gfsc_buildConvVectorXXX. They can be used to update/initialise the
+!# convectove term applying some sort of algebraic flux
+!# correction. Importantly, the family of AFC schemes gives rise to
+!# nonlinear algebraic equations that need to be solved
+!# iteratively. Thus, it is usefull to build the compensating
+!# antidiffusion into the residual vector rather than the right hand
+!# side. However, it is still possible to give a negative scaling
+!# factor.
 !#
-!# The third type of routines is used to assemble the Jacobian matrix for Newton's
-!# method. Here, the exact Jacobian matrix is approximated by means of second-order
-!# divided differences whereby the "perturbation parameter" is specified by the
-!# user. You should be aware of the fact, that in general the employed  flux limiters
-!# are not differentiable globally so that the construction of the Jacobian matrix
-!# is somehow "delicate". Even though the routines will produce some matrix without
-!# warnings, this matrix may be singular and/or ill-conditioned.
+!# The third type of routines is used to assemble the Jacobian matrix
+!# for Newton's method. Here, the exact Jacobian matrix is
+!# approximated by means of second-order divided differences whereby
+!# the "perturbation parameter" is specified by the user. You should
+!# be aware of the fact, that in general the employed flux limiters
+!# are not differentiable globally so that the construction of the
+!# Jacobian matrix is somehow "delicate". Even though the routines
+!# will produce some matrix without warnings, this matrix may be
+!# singular and/or ill-conditioned.
 !#
 !# The following routines are available:
 !#
@@ -73,21 +85,21 @@
 !# 5.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
 !#     -> Assembles the diffusive part of the transport operator
 !#
-!# 6.) gfsc_buildResidualFCT = gfsc_buildResFCTScalar /
-!#                             gfsc_buildResFCTBlock
-!#     -> Assembles the residual vector for AFC stabilisation of FCT type
+!# 6.) gfsc_buildConvVectorFCT = gfsc_buildConvVecFCTScalar /
+!#                               gfsc_buildConvVecFCTBlock
+!#     -> Assembles the convective vector for AFC stabilisation of FCT type
 !#
-!# 7.) gfsc_buildResidualTVD = gfsc_buildResTVDScalar /
-!#                             gfsc_buildResTVDBlock
-!#     -> Assembles the residual vector for AFC stabilisation of TVD type
+!# 7.) gfsc_buildConvVectorTVD = gfsc_buildConvVecTVDScalar /
+!#                               gfsc_buildConvVecTVDBlock
+!#     -> Assembles the convective vector for AFC stabilisation of TVD type
 !#
-!# 8.) gfsc_buildResidualGP = gfsc_buildResGPScalar /
-!#                            gfsc_buildResGPBlock
-!#     -> Assembles the residual vector for AFC stabilisation of general-purpose type
+!# 8.) gfsc_buildConvVectorGP = gfsc_buildConvVecGPScalar /
+!#                              gfsc_buildConvVecGPBlock
+!#     -> Assembles the convective vector for AFC stabilisation of general-purpose type
 !#
-!# 9.) gfsc_buildResidualSymm = gfsc_buildResSymmScalar /
-!#                              gfsc_buildResSymmBlock
-!#     -> Assembles the residual vector for stabilisation by means of
+!# 9.) gfsc_buildConvVectorSymm = gfsc_buildConvVecSymmScalar /
+!#                                gfsc_buildConvVecSymmBlock
+!#     -> Assembles the convective vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
 !# 10.) gfsc_buildConvectionJacobian = gfsc_buildConvJacobianScalar /
@@ -160,10 +172,10 @@ module groupfemscalar
   public :: gfsc_isVectorCompatible
   public :: gfsc_buildConvectionOperator
   public :: gfsc_buildDiffusionOperator
-  public :: gfsc_buildResidualFCT
-  public :: gfsc_buildResidualTVD
-  public :: gfsc_buildResidualGP
-  public :: gfsc_buildResidualSymm
+  public :: gfsc_buildConvVectorFCT
+  public :: gfsc_buildConvVectorTVD
+  public :: gfsc_buildConvVectorGP
+  public :: gfsc_buildConvVectorSymm
   public :: gfsc_buildConvectionJacobian
   public :: gfsc_buildJacobianFCT
   public :: gfsc_buildJacobianTVD
@@ -180,26 +192,26 @@ module groupfemscalar
     module procedure gfsc_buildConvOperatorBlock
   end interface
 
-  interface gfsc_buildResidualFCT
-    module procedure gfsc_buildResFCTScalar
-    module procedure gfsc_buildResFCTBlock
-    module procedure gfsc_buildResFCTScalar_legacy
-    module procedure gfsc_buildResFCTBlock_legacy
+  interface gfsc_buildConvVectorFCT
+    module procedure gfsc_buildConvVecFCTScalar
+    module procedure gfsc_buildConvVecFCTBlock
+    module procedure gfsc_buildConvVecFCTScalar_legacy
+    module procedure gfsc_buildConvVecFCTBlock_legacy
   end interface
 
-  interface gfsc_buildResidualTVD
-    module procedure gfsc_buildResTVDScalar
-    module procedure gfsc_buildResTVDBlock
+  interface gfsc_buildConvVectorTVD
+    module procedure gfsc_buildConvVecTVDScalar
+    module procedure gfsc_buildConvVecTVDBlock
   end interface
 
-  interface gfsc_buildResidualGP
-    module procedure gfsc_buildResGPScalar
-    module procedure gfsc_buildResGPBlock
+  interface gfsc_buildConvVectorGP
+    module procedure gfsc_buildConvVecGPScalar
+    module procedure gfsc_buildConvVecGPBlock
   end interface
 
-  interface gfsc_buildResidualSymm
-    module procedure gfsc_buildResSymmScalar
-    module procedure gfsc_buildResSymmBlock
+  interface gfsc_buildConvVectorSymm
+    module procedure gfsc_buildConvVecSymmScalar
+    module procedure gfsc_buildConvVecSymmBlock
   end interface
 
   interface gfsc_buildConvectionJacobian
@@ -2388,11 +2400,11 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildResFCTBlock(rlumpedMassMatrix,&
+  subroutine gfsc_buildConvVecFCTBlock(rlumpedMassMatrix,&
       rafcstab, ru, dscale, bclear, ioperationSpec, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-FCT type.  Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
     ! the corresponding scalar routine is called.  Otherwise, an error
@@ -2424,7 +2436,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
     
-    ! residual vector
+    ! convective vector
     type(t_vectorBlock), intent(inout) :: rres
     !</inputoutput>
 !</subroutine>
@@ -2433,28 +2445,28 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTBlock')
       call sys_halt()
 
     else
       
-      call gfsc_buildResFCTScalar(rlumpedMassMatrix,&
+      call gfsc_buildConvVecFCTScalar(rlumpedMassMatrix,&
           rafcstab, ru%RvectorBlock(1), dscale, bclear,&
           ioperationSpec, rres%RvectorBlock(1))
       
     end if
     
-  end subroutine gfsc_buildResFCTBlock
+  end subroutine gfsc_buildConvVecFCTBlock
 
   ! *****************************************************************************
   
 !<subroutine>
   
-  subroutine gfsc_buildResFCTScalar(rlumpedMassMatrix,&
+  subroutine gfsc_buildConvVecFCTScalar(rlumpedMassMatrix,&
       rafcstab, ru, dscale, bclear, ioperationSpec, rres)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-FCT type. The idea of flux corrected
     ! transport can be traced back to the early SHASTA algorithm by
     ! Boris and Bock in the early 1970s. Zalesak suggested a fully
@@ -2547,7 +2559,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
     
-    ! residual vector
+    ! convective vector
     type(t_vectorScalar), intent(inout) :: rres
 !</inputoutput>
 !</subroutine>
@@ -2561,7 +2573,7 @@ contains
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
       call sys_halt()
     end if
 
@@ -2577,7 +2589,7 @@ contains
     !
     ! 3) Compute the nodal correction factors (Rp, Rm).
     !
-    ! 4) Apply the limited antiddifusive fluxes to the residual
+    ! 4) Apply the limited antiddifusive fluxes to the convective term
     !
     !    Step 4) may be split into the following substeps
     !    
@@ -2609,7 +2621,7 @@ contains
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2617,7 +2629,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2653,7 +2665,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
       
@@ -2681,7 +2693,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2716,7 +2728,7 @@ contains
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provide nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2724,7 +2736,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2759,14 +2771,14 @@ contains
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provide edgewise correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2774,7 +2786,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -2784,7 +2796,7 @@ contains
       call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
-      ! Clear residual vector?
+      ! Clear convective vector?
       if (bclear) call lsyssc_clearVector(rres)
 
       ! Apply antidiffusive fluxes
@@ -3103,17 +3115,17 @@ contains
       end do
     end subroutine doCorrectScaleByMass
 
-  end subroutine gfsc_buildResFCTScalar
+  end subroutine gfsc_buildConvVecFCTScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResFCTBlock_legacy(rlumpedMassMatrix,&
+  subroutine gfsc_buildConvVecFCTBlock_legacy(rlumpedMassMatrix,&
       ru, theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-FCT type.  Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
     ! the corresponding scalar routine is called.  Otherwise, an error
@@ -3136,9 +3148,9 @@ contains
     ! time step size
     real(DP), intent(in) :: tstep
     
-    ! Switch for residual
-    ! TRUE  : build the initial residual
-    ! FALSE : build an intermediate residual
+    ! Switch for vector assembly
+    ! TRUE  : build the initial vector
+    ! FALSE : update the vector
     logical, intent(in) :: binit
 
     ! OPTIONAL: consistent mass matrix
@@ -3146,7 +3158,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
@@ -3158,28 +3170,28 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTBlock_legacy')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTBlock_legacy')
       call sys_halt()
 
     else
 
-      call gfsc_buildResFCTScalar_legacy(rlumpedMassMatrix,&
+      call gfsc_buildConvVecFCTScalar_legacy(rlumpedMassMatrix,&
           ru%RvectorBlock(1), theta, tstep, binit,&
           rres%RvectorBlock(1), rafcstab, rconsistentMassMatrix)
 
     end if
 
-  end subroutine gfsc_buildResFCTBlock_legacy
+  end subroutine gfsc_buildConvVecFCTBlock_legacy
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResFCTScalar_legacy(rlumpedMassMatrix, ru,&
+  subroutine gfsc_buildConvVecFCTScalar_legacy(rlumpedMassMatrix, ru,&
       theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-FCT type. The idea of flux corrected
     ! transport can be traced back to the early SHASTA algorithm by
     ! Boris and Bock in the early 1970s. Zalesak suggested a fully
@@ -3263,9 +3275,9 @@ contains
     ! time step size
     real(DP), intent(in) :: tstep
     
-    ! Switch for residual
-    ! TRUE  : build the initial residual
-    ! FALSE : build an intermediate residual
+    ! Switch for vector assembly
+    ! TRUE  : build the initial vector
+    ! FALSE : update the vector
     logical, intent(in) :: binit
 
     ! OPTIONAL: consistent mass matrix
@@ -3273,7 +3285,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
@@ -3294,7 +3306,7 @@ contains
     if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0)) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
       call sys_halt()
     end if
  
@@ -3319,7 +3331,7 @@ contains
       
     case (AFCSTAB_FEMFCT_IMPLICIT)
 
-      ! Should we build up the initial residual?
+      ! Should we build up the initial convective term?
       if (binit) then
         
         ! Do we have a fully implicit time discretisation?
@@ -3386,7 +3398,7 @@ contains
           (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
         call output_line('Stabilisation does not provide precomputed fluxes &
             &and/or nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD, 'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD, 'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
       
@@ -3405,7 +3417,7 @@ contains
 
     case (AFCSTAB_FEMFCT_CLASSICAL)
 
-      ! Should we build up the initial residual?
+      ! Should we build up the initial convective term?
       if (binit) then
         
         ! Initialise the flux limiter
@@ -3431,7 +3443,7 @@ contains
           (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
         call output_line('Stabilisation does not provide precomputed fluxes &
             &and/or nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
         call sys_halt()
       end if
 
@@ -3492,19 +3504,19 @@ contains
 
     case (AFCSTAB_FEMFCT_LINEARISED)
       call output_line('The linearised FEM-FCT algorithm is not implemented yet!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
       call sys_halt()
       
 
     case (AFCSTAB_FEMFCT_ITERATIVE)
       call output_line('The iterative FEM-FCT algorithm is not implemented yet!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
       call sys_halt()
 
 
     case DEFAULT
       call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
       call sys_halt()
     end select
 
@@ -4062,16 +4074,16 @@ contains
       end do
     end subroutine doLimit_explFCTconsMass
 
-  end subroutine gfsc_buildResFCTScalar_legacy
+  end subroutine gfsc_buildConvVecFCTScalar_legacy
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResTVDBlock(ru, tstep, rres, rafcstab)
+  subroutine gfsc_buildConvVecTVDBlock(ru, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-TVD type.  Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
     ! the corresponding scalar routine is called.  Otherwise, an error
@@ -4087,7 +4099,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4100,26 +4112,26 @@ contains
         rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDBlock')
       call sys_halt()
 
     else
 
-      call gfsc_buildResTVDScalar(ru%RvectorBlock(1),&
+      call gfsc_buildConvVecTVDScalar(ru%RvectorBlock(1),&
           tstep, rres%RvectorBlock(1), rafcstab)
       
     end if
 
-  end subroutine gfsc_buildResTVDBlock
+  end subroutine gfsc_buildConvVecTVDBlock
   
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResTVDScalar(ru, tstep, rres, rafcstab)
+  subroutine gfsc_buildConvVecTVDScalar(ru, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-TVD type.
     !
     ! A detailed description of the FEM-TVD limiter in general is given in:
@@ -4147,7 +4159,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4167,7 +4179,7 @@ contains
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION).eq.0) .or. &
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)     .eq.0)) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecTVDScalar')
       call sys_halt()
     end if
     
@@ -4276,17 +4288,17 @@ contains
       end do
     end subroutine doLimit_TVD
     
-  end subroutine gfsc_buildResTVDScalar
+  end subroutine gfsc_buildConvVecTVDScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResGPBlock(rconsistentMassMatrix, ru, ru0,&
+  subroutine gfsc_buildConvVecGPBlock(rconsistentMassMatrix, ru, ru0,&
       theta, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation of FEM-GP type.  Note that this routine serves as
     ! a wrapper for block vectors. If there is only one block, then
     ! the corresponding scalar routine is called.  Otherwise, an error
@@ -4311,7 +4323,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4325,27 +4337,27 @@ contains
         (rres%nblocks .ne. 1)) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResGPBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecGPBlock')
       call sys_halt()
 
     else
 
-      call gfsc_buildResGPScalar(rconsistentMassMatrix,&
+      call gfsc_buildConvVecGPScalar(rconsistentMassMatrix,&
           ru%RvectorBlock(1), ru0%RvectorBlock(1),&
           theta, tstep, rres%RvectorBlock(1), rafcstab)
       
     end if
-  end subroutine gfsc_buildResGPBlock
+  end subroutine gfsc_buildConvVecGPBlock
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResGPScalar(rconsistentMassMatrix, ru, ru0,&
+  subroutine gfsc_buildConvVecGPScalar(rconsistentMassMatrix, ru, ru0,&
       theta, tstep, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation using the general purpose limiter.
     !
     ! A detailed description of the FEM-GP limiter in general is given in:
@@ -4381,7 +4393,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4401,7 +4413,7 @@ contains
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0) .or. &
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)      .eq. 0)) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResGPScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecGPScalar')
       call sys_halt()
     end if
     
@@ -4549,16 +4561,16 @@ contains
       end do
     end subroutine doLimit_GP
     
-  end subroutine gfsc_buildResGPScalar
+  end subroutine gfsc_buildConvVecGPScalar
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResSymmBlock(ru, dscale, rres, rafcstab)
+  subroutine gfsc_buildConvVecSymmBlock(ru, dscale, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies
+    ! This subroutine assembles the convective vector and applies
     ! stabilisation by means of symmetric flux limiting for diffusion
     ! operators.  Note that this routine serves as a wrapper for block
     ! vectors. If there is only one block, then the corresponding
@@ -4574,7 +4586,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorBlock), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4586,25 +4598,25 @@ contains
     if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
 
       call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResSymmBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecSymmBlock')
       call sys_halt()
 
     else
 
-      call gfsc_buildResSymmScalar(ru%RvectorBlock(1),&
+      call gfsc_buildConvVecSymmScalar(ru%RvectorBlock(1),&
           dscale, rres%RvectorBlock(1), rafcstab)
 
     end if
-  end subroutine gfsc_buildResSymmBlock
+  end subroutine gfsc_buildConvVecSymmBlock
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsc_buildResSymmScalar(ru, dscale, rres, rafcstab)
+  subroutine gfsc_buildConvVecSymmScalar(ru, dscale, rres, rafcstab)
 
 !<description>
-    ! This subroutine assembles the residual vector and applies stabilisation
+    ! This subroutine assembles the convective vector and applies stabilisation
     ! by means of symmetric flux limiting for diffusion operators.
     !
     ! Yet, there is no publication available. This routine is based on
@@ -4621,7 +4633,7 @@ contains
 !</input>
 
 !<inputoutput>
-    ! residual vector
+    ! convective vector
     type(t_vectorScalar), intent(inout) :: rres
 
     ! stabilisation structure
@@ -4641,7 +4653,7 @@ contains
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0)    .or.&
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0)) then
       call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildResSymmScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecSymmScalar')
       call sys_halt()
     end if
     
@@ -4753,7 +4765,7 @@ contains
       end do
     end subroutine doLimit_Symmetric
 
-  end subroutine gfsc_buildResSymmScalar
+  end subroutine gfsc_buildConvVecSymmScalar
 
   !*****************************************************************************
 
@@ -5761,8 +5773,8 @@ contains
 
 
     !**************************************************************
-    ! Assemble upwind Jacobian matrix for convective operator in 1D
-    ! and assume zero row-sums.
+    ! Assemble upwind Jacobian matrix for convective
+    ! operator in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
     subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, Cx, u, Jac)
@@ -5886,8 +5898,8 @@ contains
     
 
     !**************************************************************
-    ! Assemble upwind Jacobian matrix for convective operator in 2D
-    ! and assume zero row-sums.
+    ! Assemble upwind Jacobian matrix for convective
+    ! operator in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
     subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, Cx, Cy, u, Jac)
@@ -6012,8 +6024,8 @@ contains
 
 
     !**************************************************************
-    ! Assemble Jacobian matrix for convective operator in 3D
-    ! and assume zero row-sums.
+    ! Assemble Jacobian matrix for convective
+    ! operator in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
     subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, Cx, Cy, Cz, u, Jac)
@@ -6139,8 +6151,8 @@ contains
     
     
     !**************************************************************
-    ! Assemble Jacobian matrix for convective operator in 1D
-    ! and assume zero row-sums.
+    ! Assemble Jacobian matrix for convective
+    ! operator in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, u, Jac)
@@ -6264,8 +6276,8 @@ contains
 
 
     !**************************************************************
-    ! Assemble Jacobian matrix for convective operator in 2D
-    ! and assume zero row-sums.
+    ! Assemble Jacobian matrix for convective
+    ! operator in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, u, Jac)
@@ -6390,8 +6402,8 @@ contains
 
 
     !**************************************************************
-    ! Assemble Jacobian matrix for convective operator in 3D
-    ! and assume zero row-sums.
+    ! Assemble Jacobian matrix for convective
+    ! operator in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ, Cx, Cy, Cz, u, Jac)

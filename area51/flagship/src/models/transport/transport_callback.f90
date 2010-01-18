@@ -2783,20 +2783,20 @@ contains
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildResidualFCT(&
+        call gfsc_buildConvVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rsolution, rtimestep%theta, dweight, .true., rrhs,&
             rproblemLevel%Rafcstab(convectionAFC),&
             rproblemLevel%Rmatrix(consistentMassMatrix))
       else
-        call gfsc_buildResidualFCT(&
+        call gfsc_buildConvVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rsolution, rtimestep%theta, dweight, .true., rrhs,&
             rproblemLevel%Rafcstab(convectionAFC))
       end if
 
     case (AFCSTAB_FEMTVD)
-      call gfsc_buildResidualTVD(&
+      call gfsc_buildConvVectorTVD(&
           rsolution, dweight, rrhs,&
           rproblemLevel%Rafcstab(convectionAFC))
 
@@ -2808,13 +2808,13 @@ contains
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildResidualGP(&
+        call gfsc_buildConvVectorGP(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             rsolution, rsolution0,&
             rtimestep%theta, dweight, rrhs,&
             rproblemLevel%Rafcstab(convectionAFC))
       else
-        call gfsc_buildResidualTVD(&
+        call gfsc_buildConvVectorTVD(&
             rsolution, dweight, rrhs,&
             rproblemLevel%Rafcstab(convectionAFC))
       end if
@@ -2833,7 +2833,7 @@ contains
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
 
     case (AFCSTAB_SYMMETRIC)
-      call gfsc_buildResidualSymm(&
+      call gfsc_buildConvVectorSymm(&
           rsolution, 1.0_DP, rrhs,&
           rproblemLevel%Rafcstab(diffusionAFC))
     end select
@@ -3295,7 +3295,7 @@ contains
         end if
 
         ! Perform flux correction
-        call gfsc_buildResidualFCT(&
+        call gfsc_buildConvVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -3304,7 +3304,7 @@ contains
         ! Subtract corrected antidiffusion from right-hand side
         if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
             .eq. AFCSTAB_FEMFCT_ITERATIVE) then
-          call gfsc_buildResidualFCT(&
+          call gfsc_buildConvVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               p_rpredictor, rtimestep%dStep, .false.,&
@@ -3318,14 +3318,14 @@ contains
 !!$
 !!$        ! Should we apply consistent mass antidiffusion?
 !!$        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-!!$          call gfsc_buildResidualFCT(&
+!!$          call gfsc_buildConvVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rsolution, rtimestep%theta, rtimestep%dStep,&
 !!$              (ite .eq. 0), rres,&
 !!$              rproblemLevel%Rafcstab(convectionAFC),&
 !!$              rproblemLevel%Rmatrix(consistentMassMatrix))
 !!$        else
-!!$          call gfsc_buildResidualFCT(&
+!!$          call gfsc_buildConvVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rsolution, rtimestep%theta, rtimestep%dStep,&
 !!$              (ite .eq. 0), rres,&
@@ -3334,7 +3334,7 @@ contains
 
 
       case (AFCSTAB_FEMTVD)
-        call gfsc_buildResidualTVD(&
+        call gfsc_buildConvVectorTVD(&
             rsolution, rtimestep%dStep, rres,&
             rproblemLevel%Rafcstab(convectionAFC))
 
@@ -3347,13 +3347,13 @@ contains
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsc_buildResidualGP(&
+          call gfsc_buildConvVectorGP(&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution, rsolution0,&
               rtimestep%theta, rtimestep%dStep, rres,&
               rproblemLevel%Rafcstab(convectionAFC))
         else
-          call gfsc_buildResidualTVD(&
+          call gfsc_buildConvVectorTVD(&
               rsolution, rtimestep%dStep, rres,&
               rproblemLevel%Rafcstab(convectionAFC))
         end if
@@ -3377,7 +3377,7 @@ contains
       select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
 
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildResidualSymm(&
+        call gfsc_buildConvVectorSymm(&
             rsolution, 1.0_DP, rres,&
             rproblemLevel%Rafcstab(diffusionAFC))
       end select
@@ -4219,7 +4219,7 @@ contains
     end if
 
     ! Apply linearised FEM-FCT algorithm
-    call gfsc_buildResidualFCT(&
+    call gfsc_buildConvVectorFCT(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rproblemLevel%Rafcstab(convectionAFC),&
         rsolution, rtimestep%dStep, .false.,&

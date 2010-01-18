@@ -47,7 +47,7 @@
 !# 8.) euler_calcFluxFCT
 !#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
 !#
-!# 9.) euler_calcResidualFCT
+!# 9.) euler_calcCorrectionFCT
 !#     -> Calculates the contribution of the antidiffusive fluxes
 !#        limited by the FCT algorithm and applies them to the residual
 !#
@@ -106,7 +106,7 @@ module euler_callback
   public :: euler_setBoundaryConditions
   public :: euler_calcLinearisedFCT
   public :: euler_calcFluxFCT
-  public :: euler_calcResidualFCT
+  public :: euler_calcCorrectionFCT
 
 contains
 
@@ -1008,19 +1008,19 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildResidual(&
+            call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin1d, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildResidual(&
+            call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin2d, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildResidual(&
+            call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin3d, dscale, .true., rrhs)
@@ -1047,19 +1047,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxGalerkin1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxGalerkin2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxGalerkin3d, dscale, .true., rrhs)
@@ -1071,19 +1071,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true. , rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss3d, dscale, .true., rrhs)
@@ -1096,19 +1096,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDissDiSp2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDissDiSp3d, dscale, .true., rrhs)
@@ -1120,19 +1120,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss3d, dscale, .true., rrhs)
@@ -1145,19 +1145,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDissDiSp2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDissDiSp3d, dscale, .true., rrhs)
@@ -1169,19 +1169,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov3d, dscale, .true., rrhs)
@@ -1194,19 +1194,19 @@ contains
 
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
 
             case (NDIM2D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanovDiSp2d, dscale, .true., rrhs)
 
             case (NDIM3D)
-              call gfsys_buildResidual(&
+              call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanovDiSp3d, dscale, .true., rrhs)
@@ -1228,21 +1228,21 @@ contains
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildResidualTVD(&
+            call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr1d,&
                 euler_calcCharacteristics1d, dscale, .true., rrhs)
 
           case (NDIM2D)
-            call gfsys_buildResidualTVD(&
+            call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr2d,&
                 euler_calcCharacteristics2d, dscale, .true., rrhs)
 
           case (NDIM3D)
-            call gfsys_buildResidualTVD(&
+            call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr3d,&
@@ -1458,19 +1458,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rres)
@@ -1499,19 +1499,19 @@ contains
         ! Assemble divergence operator without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin3d, dscale, .false., rres)
@@ -1523,19 +1523,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rres)
@@ -1548,19 +1548,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDissDiSp2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDissDiSp3d, dscale, .false., rres)
@@ -1572,19 +1572,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rres)
@@ -1597,19 +1597,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDissDiSp2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDissDiSp3d, dscale, .false., rres)
@@ -1621,19 +1621,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rres)
@@ -1646,19 +1646,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanovDiSp2d, dscale, .false., rres)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanovDiSp3d, dscale, .false., rres)
@@ -1680,21 +1680,21 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
             euler_calcCharacteristics1d, dscale, .false., rres)
 
       case (NDIM2D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
             euler_calcCharacteristics2d, dscale, .false., rres)
 
       case (NDIM3D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
@@ -1774,13 +1774,13 @@ contains
       end if
 
       ! Apply FEM-FCT algorithm
-      call euler_calcResidualFCT(rproblemLevel, p_rpredictor,&
+      call euler_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
           rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
 
       ! Subtract corrected antidiffusion from right-hand side
       if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
           .eq. AFCSTAB_FEMFCT_ITERATIVE) then
-        call gfsys_buildResidualFCT(&
+        call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -1946,19 +1946,19 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildResidual(&
+        call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rrhs)
@@ -1985,19 +1985,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxGalerkin3d, dscale, .false., rrhs)
@@ -2009,19 +2009,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rrhs)
@@ -2034,19 +2034,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rrhs)
@@ -2059,19 +2059,19 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(&
+          call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rrhs)
@@ -2094,21 +2094,21 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
             euler_calcCharacteristics1d, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
             euler_calcCharacteristics2d, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildResidualTVD(&
+        call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
@@ -2310,7 +2310,7 @@ contains
         rtimestepAux%dStep, 1.0_DP, .true., rcollection)
 
     ! Apply linearised FEM-FCT algorithm
-    call euler_calcResidualFCT(rproblemLevel,&
+    call euler_calcCorrectionFCT(rproblemLevel,&
         rsolution, rtimestep%dStep, .false.,&
         AFCSTAB_FCTALGO_STANDARD+&
         AFCSTAB_FCTALGO_SCALEBYMASS,&
@@ -2616,7 +2616,7 @@ contains
 
 !<subroutine>
 
-  subroutine euler_calcResidualFCT(rproblemLevel, rsolution, &
+  subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
       dscale, bclear, ioperationSpec, rresidual, rcollection)
 
 !<description>
@@ -2706,19 +2706,19 @@ contains
         ! Apply FEM-FCT algorithm for density fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDensity1d, euler_trafoDiffDensity1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDensity2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2730,19 +2730,19 @@ contains
         ! Apply FEM-FCT algorithm for energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxEnergy1d, euler_trafoDiffEnergy1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxEnergy2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2754,19 +2754,19 @@ contains
         ! Apply FEM-FCT algorithm for pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxPressure1d, euler_trafoDiffPressure1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxPressure2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2778,19 +2778,19 @@ contains
         ! Apply FEM-FCT algorithm for x-velocity fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxVelocityX1d, euler_trafoDiffVelocityX1d)
 !!$        case (NDIM2D)
-!!$          call gfsys_buildResidualFCT(&
+!!$          call gfsys_buildDivVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rproblemLevel%Rafcstab(inviscidAFC),&
 !!$              rsolution, dscale, bclear, iopSpec, rresidual,&
 !!$              euler_trafoFluxVelocityX2d)
 !!$        case (NDIM3D)
-!!$          call gfsys_buildResidualFCT(&
+!!$          call gfsys_buildDivVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rproblemLevel%Rafcstab(inviscidAFC),&
 !!$              rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2802,19 +2802,19 @@ contains
         ! Apply FEM-FCT algorithm for x-momentum fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxMomentumX1d, euler_trafoDiffMomentumX1d)
 !!$        case (NDIM2D)
-!!$          call gfsys_buildResidualFCT(&
+!!$          call gfsys_buildDivVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rproblemLevel%Rafcstab(inviscidAFC),&
 !!$              rsolution, dscale, bclear, iopSpec, rresidual,&
 !!$              euler_trafoFluxMomentumX2d)
 !!$        case (NDIM3D)
-!!$          call gfsys_buildResidualFCT(&
+!!$          call gfsys_buildDivVectorFCT(&
 !!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
 !!$              rproblemLevel%Rafcstab(inviscidAFC),&
 !!$              rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2826,19 +2826,19 @@ contains
         ! Apply FEM-FCT algorithm for density and energy fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenEng1d, euler_trafoDiffDenEng1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenEng2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2850,19 +2850,19 @@ contains
         ! Apply FEM-FCT algorithm for density and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenPre1d, euler_trafoDiffDenPre1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenPre2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2872,7 +2872,7 @@ contains
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
 
         ! Apply FEM-FCT algorithm for full conservative fluxes
-        call gfsys_buildResidualFCT(&
+        call gfsys_buildDivVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rsolution, dscale, bclear, iopSpec, rresidual)
@@ -2882,19 +2882,19 @@ contains
         ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenPreVel1d, euler_trafoDiffDenPreVel1d)
         case (NDIM2D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
               euler_trafoFluxDenPreVel2d)
         case (NDIM3D)
-          call gfsys_buildResidualFCT(&
+          call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
@@ -2903,7 +2903,7 @@ contains
 
       else
         call output_line('Invalid type of flux transformation!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualFCT')
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcCorrectionFCT')
         call sys_halt()
       end if
     end do
@@ -2911,12 +2911,12 @@ contains
     ! Re-enable the correction step (if required)
     iopSpec = ieor(iopSpec, ioperationSpec)
     if (iopSpec .ne. 0_I32) then
-      call gfsys_buildResidualFCT(&
+      call gfsys_buildDivVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rsolution, dscale, bclear, iopSpec, rresidual)
     end if
 
-  end subroutine euler_calcResidualFCT
+  end subroutine euler_calcCorrectionFCT
 
 end module euler_callback

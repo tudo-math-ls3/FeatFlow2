@@ -4,56 +4,65 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module provides the basic routines for applying the group-finite
-!# element formulation to systems of conservation laws.
+!# This module provides the basic routines for applying the
+!# group-finite element formulation to systems of conservation laws.
 !# The technique was proposed by C.A.J. Fletcher in:
 !#
 !#     C.A.J. Fletcher, "The group finite element formulation"
-!#     Computer Methods in Applied Mechanics and Engineering (ISSN 0045-7825),
-!#     vol. 37, April 1983, p. 225-244.
+!#     Computer Methods in Applied Mechanics and Engineering (ISSN
+!#     0045-7825), vol. 37, April 1983, p. 225-244.
 !#
-!# The group finite element formulation uses the same basis functions for the
-!# unknown solution and the fluxes. This allows for an efficient matrix assemble,
-!# whereby the constant coefficient matrices can be assembled once and for all
-!# at the beginning of the simulation and each time the grid is modified.
+!# The group finite element formulation uses the same basis functions
+!# for the unknown solution and the fluxes. This allows for an
+!# efficient matrix assemble, whereby the constant coefficient
+!# matrices can be assembled once and for all at the beginning of the
+!# simulation and each time the grid is modified.
 !#
-!# Moreover, this module allows to modifying discrete operators by means of
-!# the algebraic flux correction (AFC) methodology proposed by Kuzmin, Moeller
-!# and Turek in a series of publications. As a starting point for systems of
-!# conservation laws, the reader is referred to the book chapter
+!# Moreover, this module allows to modifying discrete operators by
+!# means of the algebraic flux correction (AFC) methodology proposed
+!# by Kuzmin, Moeller and Turek in a series of publications. As a
+!# starting point for systems of conservation laws, the reader is
+!# referred to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction II. Compressible Euler
-!#     Equations", In: D. Kuzmin et al. (eds), Flux-Corrected Transport: Principles,
-!#     Algorithms, and Applications, Springer, 2005, 207-250.
+!#     D. Kuzmin and M. Moeller, "Algebraic flux correction
+!#     II. Compressible Euler Equations", In: D. Kuzmin et al. (eds),
+!#     Flux-Corrected Transport: Principles, Algorithms, and
+!#     Applications, Springer, 2005, 207-250.
 !#
-!#
-!# A more detailed description of the algorithms is given in the comments of the
-!# subroutine implementing the corresponding discretisation schemes. All methods
-!# are based on the stabilisation structure t_afcstab which is defined in the
-!# underlying module "afcstabilisation". The initialisation as a system stabilisation
+!# A more detailed description of the algorithms is given in the
+!# comments of the subroutine implementing the corresponding
+!# discretisation schemes. All methods are based on the stabilisation
+!# structure t_afcstab which is defined in the underlying module
+!# "afcstabilisation". The initialisation as a system stabilisation
 !# structure is done by the routine gfsys_initStabilisation.
 !#
-!# There are three types of routines. The gfsys_buildDivOperator routines can be
-!# used to assemble the discrete divergence operators resulting from the standard
-!# Galerkin finite element discretisation plus some discretely defined artificial
-!# viscosities. This technique represents a generalisation of the discrete upwinding
-!# approach which has been used to construct upwind finite element scheme for
+!# There are three types of routines. The gfsys_buildDivOperator
+!# routines can be used to assemble the discrete divergence operators
+!# resulting from the standard Galerkin finite element discretisation
+!# plus some discretely defined artificial viscosities. This technique
+!# represents a generalisation of the discrete upwinding approach
+!# which has been used to construct upwind finite element scheme for
 !# scalar conservation laws (see module groupfemscalar for details).
 !#
-!# The second type of routines is given by gfsc_buildResidualXXX. They can be
-!# used to update/initialise the residual term applying some sort of algebraic
-!# flux correction. Importantly, the family of AFC schemes gives rise to nonlinear
-!# algebraic equations that need to be solved iteratively. Thus, it is usefull to
-!# build the compensating antidiffusion into the residual vector rather than the
-!# right hand side. However, it is still possible to give a negative scaling factor.
+!# The second type of routines is given by
+!# gfsc_buildDivVectorXXX. They can be used to update/initialise the
+!# divergence term applying some sort of algebraic flux
+!# correction. Importantly, the family of AFC schemes gives rise to
+!# nonlinear algebraic equations that need to be solved
+!# iteratively. Thus, it is usefull to build the compensating
+!# antidiffusion into the residual vector rather than the right hand
+!# side. However, it is still possible to give a negative scaling
+!# factor.
 !#
-!# The third type of routines is used to assemble the Jacobian matrix for Newton's
-!# method. Here, the exact Jacobian matrix is approximated by means of second-order
-!# divided differences whereby the "perturbation parameter" is specified by the
-!# user. You should be aware of the fact, that in general the employed  flux limiters
-!# are not differentiable globally so that the construction of the Jacobian matrix
-!# is somehow "delicate". Even though the routines will produce some matrix without
-!# warnings, this matrix may be singular and/or ill-conditioned.
+!# The third type of routines is used to assemble the Jacobian matrix
+!# for Newton's method. Here, the exact Jacobian matrix is
+!# approximated by means of second-order divided differences whereby
+!# the "perturbation parameter" is specified by the user. You should
+!# be aware of the fact, that in general the employed flux limiters
+!# are not differentiable globally so that the construction of the
+!# Jacobian matrix is somehow "delicate". Even though the routines
+!# will produce some matrix without warnings, this matrix may be
+!# singular and/or ill-conditioned.
 !#
 !# The following routines are available:
 !#
@@ -75,17 +84,17 @@
 !#        of the divergence term $div(F)$ by means of the Galerkin method
 !#        and some sort of artificial dissipation (if required)
 !#
-!# 5.) gfsys_buildResidual = gfsys_buildResScalar /
-!#                           gfsys_buildResBlock
-!#     -> assembles the residual vector
+!# 5.) gfsys_buildDivVector = gfsys_buildVecScalar /
+!#                            gfsys_buildVecBlock
+!#     -> assembles the divergence vector
 !#
-!# 6.) gfsys_buildResidualTVD = gfsys_buildResTVDScalar /
-!#                              gfsys_buildResTVDBlock
-!#     -> assembles the residual for FEM-TVD stabilisation
+!# 6.) gfsys_buildDivVectorTVD = gfsys_buildVecTVDScalar /
+!#                               gfsys_buildVecTVDBlock
+!#     -> assembles the divergence term for FEM-TVD stabilisation
 !#
-!# 7.) gfsys_buildResidualFCT = gfsys_buildResFCTScalar /
-!#                              gfsys_buildResFCTBlock
-!#     -> assembles the residual for nonlinear FEM-FCT stabilisation
+!# 7.) gfsys_buildDivVectorFCT = gfsys_buildVecFCTScalar /
+!#                               gfsys_buildVecFCTBlock
+!#     -> assembles the divergence term for nonlinear FEM-FCT stabilisation
 !#
 !# 8.) gfsys_buildFluxFCT = gfsys_buildFluxFCTScalar /
 !#                          gfsys_buildFluxFCTBlock
@@ -125,9 +134,9 @@ module groupfemsystem
   public :: gfsys_isMatrixCompatible
   public :: gfsys_isVectorCompatible
   public :: gfsys_buildDivOperator
-  public :: gfsys_buildResidual
-  public :: gfsys_buildResidualTVD
-  public :: gfsys_buildResidualFCT
+  public :: gfsys_buildDivVector
+  public :: gfsys_buildDivVectorTVD
+  public :: gfsys_buildDivVectorFCT
   public :: gfsys_buildFluxFCT
 
   ! *****************************************************************************
@@ -207,19 +216,19 @@ module groupfemsystem
      module procedure gfsys_buildDivOperatorBlock
   end interface
 
-  interface gfsys_buildResidual
-    module procedure gfsys_buildResScalar
-    module procedure gfsys_buildResBlock
+  interface gfsys_buildDivVector
+    module procedure gfsys_buildVecScalar
+    module procedure gfsys_buildVecBlock
   end interface
 
-  interface gfsys_buildResidualTVD
-    module procedure gfsys_buildResTVDScalar
-    module procedure gfsys_buildResTVDBlock
+  interface gfsys_buildDivVectorTVD
+    module procedure gfsys_buildVecTVDScalar
+    module procedure gfsys_buildVecTVDBlock
   end interface
 
-  interface gfsys_buildResidualFCT
-    module procedure gfsys_buildResFCTScalar
-    module procedure gfsys_buildResFCTBlock
+  interface gfsys_buildDivVectorFCT
+    module procedure gfsys_buildVecFCTScalar
+    module procedure gfsys_buildVecFCTBlock
   end interface
 
   interface gfsys_buildFluxFCT
@@ -2143,11 +2152,11 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildResBlock(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildVecBlock(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux, dscale, bclear, ry)
 
 !<description>
-    ! This subroutine assembles the residual vector for block vectors.
+    ! This subroutine assembles the divergence vector for block vectors.
     ! If the vector contains only one block, then the scalar
     ! counterpart of this routine is called with the scalar subvector.
 !</description>
@@ -2175,7 +2184,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
@@ -2188,7 +2197,7 @@ contains
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
-      call gfsys_buildResScalar(RcoeffMatrices, rafcstab,&
+      call gfsys_buildVecScalar(RcoeffMatrices, rafcstab,&
           rx%RvectorBlock(1), fcb_calcFlux, dscale, bclear,&
           ry%RvectorBlock(1))
       return
@@ -2197,7 +2206,7 @@ contains
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecBlock')
       call sys_halt()
     end if
 
@@ -2232,7 +2241,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecBlock')
       call sys_halt()
     end select
 
@@ -2246,22 +2255,22 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doResidualMat79_1D(p_IverticesAtEdge,&
+        call doDivVectorMat79_1D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
             p_DcoeffX, p_Dx, dscale, p_Dy)
       case (NDIM2D)
-        call doResidualMat79_2D(p_IverticesAtEdge,&
+        call doDivVectorMat79_2D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
             p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_Dy)
       case (NDIM3D)
-        call doResidualMat79_3D(p_IverticesAtEdge,&
+        call doDivVectorMat79_3D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%nblocks,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_Dy)
       end select
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecBlock')
       call sys_halt()
     end select
 
@@ -2270,10 +2279,10 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble residual vector in 1D
+    ! Assemble divergence vector in 1D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_1D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_1D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dy)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -2309,18 +2318,18 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
       end do
-    end subroutine doResidualMat79_1D
+    end subroutine doDivVectorMat79_1D
 
 
     !**************************************************************
-    ! Assemble residual vector in 2D
+    ! Assemble divergence vector in 2D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_2D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_2D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dy)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -2357,18 +2366,18 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
       end do
-    end subroutine doResidualMat79_2D
+    end subroutine doDivVectorMat79_2D
 
 
     !**************************************************************
-    ! Assemble residual vector in 3D
+    ! Assemble divergence vector in 3D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_3D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_3D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dy)
 
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
@@ -2406,22 +2415,22 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
       end do
-    end subroutine doResidualMat79_3D
-  end subroutine gfsys_buildResBlock
+    end subroutine doDivVectorMat79_3D
+  end subroutine gfsys_buildVecBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildResScalar(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildVecScalar(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux, dscale, bclear, ry)
 
 !<description>
-    ! This subroutine assembles the residual vector. Note that the
+    ! This subroutine assembles the divergence vector. Note that the
     ! vectors are required as scalar vectors which are stored in the
     ! interleave format.
 !</description>
@@ -2449,7 +2458,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
@@ -2463,7 +2472,7 @@ contains
     ! Check if stabilisation has been initialised
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecScalar')
       call sys_halt()
     end if
 
@@ -2498,7 +2507,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecScalar')
       call sys_halt()
     end select
 
@@ -2512,22 +2521,22 @@ contains
       ! How many dimensions do we have?
       select case(ndim)
       case (NDIM1D)
-        call doResidualMat79_1D(p_IverticesAtEdge,&
+        call doDivVectorMat79_1D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
             p_DcoeffX, p_Dx, dscale, p_Dy)
       case (NDIM2D)
-        call doResidualMat79_2D(p_IverticesAtEdge,&
+        call doDivVectorMat79_2D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
             p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_Dy)
       case (NDIM3D)
-        call doResidualMat79_3D(p_IverticesAtEdge,&
+        call doDivVectorMat79_3D(p_IverticesAtEdge,&
             rafcstab%NEDGE, RcoeffMatrices(1)%NEQ, rx%NVAR,&
             p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_Dy)
       end select
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecScalar')
       call sys_halt()
     end select
 
@@ -2536,10 +2545,10 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble residual vector in 1D
+    ! Assemble divergence vector in 1D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_1D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_1D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, Dx, dscale, Dy)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -2572,18 +2581,18 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
       end do
-    end subroutine doResidualMat79_1D
+    end subroutine doDivVectorMat79_1D
 
 
     !**************************************************************
-    ! Assemble residual vector in 2D
+    ! Assemble divergence vector in 2D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_2D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_2D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, Dx, dscale, Dy)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -2617,18 +2626,18 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
       end do
-    end subroutine doResidualMat79_2D
+    end subroutine doDivVectorMat79_2D
 
 
     !**************************************************************
-    ! Assemble residual vector in 3D
+    ! Assemble divergence vector in 3D
     ! All matrices are stored in matrix format 7 and 9
 
-    subroutine doResidualMat79_3D(IverticesAtEdge,&
+    subroutine doDivVectorMat79_3D(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, Dy)
 
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
@@ -2663,23 +2672,23 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble residual vector
+        ! Assemble divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
       end do
-    end subroutine doResidualMat79_3D
+    end subroutine doDivVectorMat79_3D
 
-  end subroutine gfsys_buildResScalar
+  end subroutine gfsys_buildVecScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildResTVDBlock(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildVecTVDBlock(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, ry)
 
 !<description>
-    ! This subroutine assembles the residual vector for FEM-TVD schemes.
+    ! This subroutine assembles the divergence vector for FEM-TVD schemes.
     ! If the vectors contain only one block, then the scalar counterpart
     ! of this routine is called with the scalar subvectors.
 !</description>
@@ -2707,7 +2716,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorBlock), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
@@ -2721,7 +2730,7 @@ contains
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
-      call gfsys_buildResTVDScalar(RcoeffMatrices, rafcstab,&
+      call gfsys_buildVecTVDScalar(RcoeffMatrices, rafcstab,&
           rx%RvectorBlock(1), fcb_calcFlux, fcb_calcCharacteristics,&
           dscale, bclear, ry%RvectorBlock(1))
       return
@@ -2730,7 +2739,7 @@ contains
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
       call sys_halt()
     end if
 
@@ -2773,7 +2782,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
       call sys_halt()
     end select
 
@@ -2805,7 +2814,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
       call sys_halt()
     end select
 
@@ -2817,7 +2826,7 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -2866,7 +2875,7 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
 
@@ -2953,7 +2962,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
       end do
@@ -2961,7 +2970,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -3011,7 +3020,7 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
 
@@ -3104,7 +3113,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
 
@@ -3191,7 +3200,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
       end do
@@ -3200,7 +3209,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -3251,7 +3260,7 @@ contains
         call fcb_calcFlux(Dx_i, Dx_j, C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)+F_ji
 
@@ -3344,7 +3353,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
 
@@ -3437,7 +3446,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
 
@@ -3524,24 +3533,24 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(i,:) = Dy(i,:)+F_ij
         Dy(j,:) = Dy(j,:)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_3D
 
-  end subroutine gfsys_buildResTVDBlock
+  end subroutine gfsys_buildVecTVDBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildResTVDScalar(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildVecTVDScalar(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux, fcb_calcCharacteristics, dscale, bclear, ry)
 
 !<description>
-    ! This subroutine assembles the residual vector for FEM-TVD schemes
+    ! This subroutine assembles the divergence vector for FEM-TVD schemes
 !</description>
 
 !<input>
@@ -3567,7 +3576,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
@@ -3582,7 +3591,7 @@ contains
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
       call sys_halt()
     end if
 
@@ -3623,7 +3632,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
       call sys_halt()
     end select
 
@@ -3655,7 +3664,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
       call sys_halt()
     end select
 
@@ -3667,7 +3676,7 @@ contains
     ! Here, the working routines follow
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 1D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -3713,7 +3722,7 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
 
@@ -3797,7 +3806,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
       end do
@@ -3806,7 +3815,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 2D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -3853,7 +3862,7 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
 
@@ -3943,7 +3952,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
 
@@ -4027,7 +4036,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
       end do
@@ -4036,7 +4045,7 @@ contains
 
 
     !**************************************************************
-    ! Assemble residual for low-order operator plus
+    ! Assemble divergence vector for low-order operator plus
     ! algebraic flux correction of TVD-type in 3D
     ! All matrices are stored in matrix format 7 and 9
 
@@ -4084,7 +4093,7 @@ contains
         call fcb_calcFlux(Dx(:,i), Dx(:,j), C_ij, C_ji,&
                           i, j, dscale, F_ij, F_ji)
 
-        ! Assemble high-order residual vector
+        ! Assemble high-order divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)+F_ji
 
@@ -4173,7 +4182,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
 
@@ -4262,7 +4271,7 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
 
@@ -4346,27 +4355,28 @@ contains
         call DGEMV('n', NVAR, NVAR, dscale, R_ij,&
                    NVAR, W_ij, 1, 0.0_DP, F_ij, 1)
 
-        ! Assemble high-resolution residual vector
+        ! Assemble high-resolution divergence vector
         Dy(:,i) = Dy(:,i)+F_ij
         Dy(:,j) = Dy(:,j)-F_ij
       end do
 
     end subroutine doLimitTVDMat79_3D
 
-  end subroutine gfsys_buildResTVDScalar
+  end subroutine gfsys_buildVecTVDScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildResFCTBlock(rlumpedMassMatrix,&
+  subroutine gfsys_buildVecFCTBlock(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
       fcb_calcFluxTransformation, fcb_calcDiffTransformation)
 
 !<description>
-    ! This subroutine assembles the residual for nonlinear FEM-FCT schemes.
-    ! If the vectors contain only one block, then the scalar counterpart
-    ! of this routine is called with the scalar subvectors.
+    ! This subroutine assembles the divergence vector for nonlinear
+    ! FEM-FCT schemes.  If the vectors contain only one block, then
+    ! the scalar counterpart of this routine is called with the scalar
+    ! subvectors.
 !</description>
 
 !<input>
@@ -4399,14 +4409,14 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorBlock), intent(inout) :: ry
     !</inputoutput>
 !</subroutine>
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
-      call gfsys_buildResFCTScalar(rlumpedMassMatrix,&
+      call gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
           rafcstab, rx%RvectorBlock(1), dscale, bclear,&
           ioperationSpec, ry%RvectorBlock(1),&
           fcb_calcFluxTransformation, fcb_calcDiffTransformation)
@@ -4416,24 +4426,24 @@ contains
     print *, "Block version of nonlinear FEM-FCT not available!"
     stop
 
-  end subroutine gfsys_buildResFCTBlock
+  end subroutine gfsys_buildVecFCTBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildResFCTScalar(rlumpedMassMatrix,&
+  subroutine gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
       fcb_calcFluxTransformation, fcb_calcDiffTransformation)
 
 !<description>
-    ! This subroutine assembles the residual for nonlinear FEM-FCT schemes.
-    ! Note that the vectors are required as scalar vectors which are
-    ! stored in the interleave format. The idea of flux corrected
-    ! transport can be traced back to the early SHASTA algorithm by
-    ! Boris and Bock in the early 1970s. Zalesak suggested a fully
-    ! multi-dimensional generalisation of this approach and paved the
-    ! way for a large family of FCT algorithms.
+    ! This subroutine assembles the divergence vector for nonlinear
+    ! FEM-FCT schemes.  Note that the vectors are required as scalar
+    ! vectors which are stored in the interleave format. The idea of
+    ! flux corrected transport can be traced back to the early SHASTA
+    ! algorithm by Boris and Bock in the early 1970s. Zalesak
+    ! suggested a fully multi-dimensional generalisation of this
+    ! approach and paved the way for a large family of FCT algorithms.
     !
     ! This subroutine provides different nonlinear FEM-FCT algorithms:
     !
@@ -4505,7 +4515,7 @@ contains
     ! stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! residual vector
+    ! divergence vector
     type(t_vectorScalar), intent(inout) :: ry
 !</inputoutput>
 !</subroutine>
@@ -4519,7 +4529,7 @@ contains
     ! Check if stabilisation is prepeared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
       call sys_halt()
     end if
 
@@ -4535,7 +4545,7 @@ contains
     !
     ! 3) Compute the nodal correction factors (Rp, Rm).
     !
-    ! 4) Apply the limited antiddifusive fluxes to the residual
+    ! 4) Apply the limited antidifusive fluxes to the divergence
     !
     !    Step 4) may be split into the following substeps
     !
@@ -4568,7 +4578,7 @@ contains
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4576,7 +4586,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4621,7 +4631,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4656,7 +4666,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4691,7 +4701,7 @@ contains
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4699,7 +4709,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4756,14 +4766,14 @@ contains
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4771,7 +4781,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildResFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
         call sys_halt()
       end if
 
@@ -4781,7 +4791,7 @@ contains
       call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
-      ! Clear residual vector?
+      ! Clear divergence vector?
       if (bclear) call lsyssc_clearVector(ry)
 
       ! Apply antidiffusive fluxes
@@ -5301,7 +5311,7 @@ contains
       end do
     end subroutine doCorrectScaleByMass
 
-  end subroutine gfsys_buildResFCTScalar
+  end subroutine gfsys_buildVecFCTScalar
 
   !*****************************************************************************
 
