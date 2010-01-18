@@ -80,7 +80,6 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-#slimitingvariable = density,pressure,velocity
 slimitingvariable = density,energy,momentum
 
 # type of initial solution profile

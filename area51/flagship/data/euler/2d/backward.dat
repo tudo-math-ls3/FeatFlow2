@@ -1,4 +1,4 @@
-# -*- mode: any-ini; -*-
+		# -*- mode: any-ini; -*-	
 
 ################################################################################
 #                     Input parameters for the FEM-AFC solver                  #
@@ -83,7 +83,6 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-#slimitingvariable = density,pressure,velocity
 slimitingvariable = density,energy,momentum
 
 # type of initial solution profile
