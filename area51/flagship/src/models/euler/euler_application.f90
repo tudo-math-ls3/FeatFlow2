@@ -1330,7 +1330,7 @@ contains
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
     character(len=SYS_NAMELEN) :: cvariable
-    integer :: iformatUCD, isystemFormat, isize, ndim, ivariable, nvariable
+    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
 
 
     ! Get global configuration from parameter list
@@ -1358,7 +1358,8 @@ contains
       
       ! Set pointers
       call lsysbl_getbase_double(rsolutionPrimal, p_Dsolution)
-      isize = size(p_Dsolution)/euler_getNVAR(rproblemLevel)
+      nvar  = euler_getNVAR(rproblemLevel)
+      isize = size(p_Dsolution)/nvar
       ndim  = rproblemLevel%rtriangulation%ndim
 
       ! Create auxiliary vectors
@@ -1410,6 +1411,7 @@ contains
               call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+
             case (NDIM2D)
               call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1417,6 +1419,7 @@ contains
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
+
             case (NDIM3D)
               call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1431,7 +1434,7 @@ contains
           else
 
             ! Standard treatment for scalar quantity
-            call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+            call euler_getVarInterleaveFormat(rvector1%NEQ,  nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
@@ -1456,6 +1459,7 @@ contains
               call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
+
             case (NDIM2D)
               call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1463,6 +1467,7 @@ contains
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
+
             case (NDIM3D)
               call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1477,7 +1482,7 @@ contains
           else
             
             ! Standard treatment for scalar quantity
-            call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+            call euler_getVarBlockFormat(rvector1%NEQ, nvar,&
                 cvariable, p_Dsolution, p_Ddata1)
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, p_Ddata1)
