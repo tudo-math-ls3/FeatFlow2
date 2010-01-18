@@ -51,12 +51,12 @@ imassantidiffusiontype = 1
 # 1 = scalar dissipation
 # 2 = tensorial dissipation
 # 3 = Rusanov type
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 1
+isystemcoupling = 0
 
 # type of preconditioner
 # 0 = Galerkin scheme
@@ -79,10 +79,14 @@ isystemPrecond = 1
 #      pressure
 #      velocity
 #slimitingvariable = density,pressure,velocity
-slimitingvariable(3) = 
-  density
+slimitingvariable(1) = 
   velocity_x
-  pressure
+  
+#  velocity_x
+#  pressure
+
+#slimitingvariable = density,pressure,velocity
+#slimitingvariable = density,energy,momentum
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -106,7 +110,7 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the triangulation
-trifile = grids/1d/unit.tri
+trifile = grids/1d/unit50.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -222,7 +226,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 0.5
+theta = 1e-5
 
 # number of steps for multisteps scheme
 multisteps = 0
@@ -282,10 +286,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 6
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 6
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce

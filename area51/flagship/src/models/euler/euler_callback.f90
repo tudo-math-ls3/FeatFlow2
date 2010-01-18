@@ -2298,16 +2298,15 @@ contains
     ! Compute low-order "right-hand side" without theta parameter
     call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
         rsolver, rsolution, p_rpredictor, rcollection, rsource)
-
+    
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         p_rpredictor, 1.0_DP, p_rpredictor)
 
     ! Compute the raw antidiffusive fluxes
-    call euler_calcFluxFCT(rproblemLevel,&
-        p_rpredictor, rsolution, rtimestepAux%theta,&
-        rtimestepAux%dStep, 1.0_DP, .true., rcollection)
+    call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
+        rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
 
     ! Apply linearised FEM-FCT algorithm
     call euler_calcCorrectionFCT(rproblemLevel,&
@@ -2716,13 +2715,13 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDensity2d)
+              euler_trafoFluxDensity2d, euler_trafoDiffDensity2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDensity3d)
+              euler_trafoFluxDensity3d, euler_trafoDiffDensity3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'energy') then
@@ -2740,13 +2739,13 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxEnergy2d)
+              euler_trafoFluxEnergy2d, euler_trafoDiffEnergy2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxEnergy3d)
+              euler_trafoFluxEnergy3d, euler_trafoDiffEnergy3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'pressure') then
@@ -2764,63 +2763,69 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxPressure2d)
+              euler_trafoFluxPressure2d, euler_trafoDiffPressure2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxPressure3d)
+              euler_trafoFluxPressure3d, euler_trafoDiffPressure3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'velocity_x') then
 
         ! Apply FEM-FCT algorithm for x-velocity fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxVelocityX1d, euler_trafoDiffVelocityX1d)
-!!$        case (NDIM2D)
-!!$          call gfsys_buildDivVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rproblemLevel%Rafcstab(inviscidAFC),&
-!!$              rsolution, dscale, bclear, iopSpec, rresidual,&
-!!$              euler_trafoFluxVelocityX2d)
-!!$        case (NDIM3D)
-!!$          call gfsys_buildDivVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rproblemLevel%Rafcstab(inviscidAFC),&
-!!$              rsolution, dscale, bclear, iopSpec, rresidual,&
-!!$              euler_trafoFluxVelocityX3d)
-        end select
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity1d, euler_trafoDiffVelocity1d)
+        
+      elseif (trim(slimitingvariable) .eq. 'velocity_y') then
 
+        ! Apply FEM-FCT algorithm for y-velocity fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity2d, euler_trafoDiffVelocity2d)
+
+      elseif (trim(slimitingvariable) .eq. 'velocity_z') then
+
+        ! Apply FEM-FCT algorithm for z-velocity fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity3d, euler_trafoDiffVelocity3d)
+        
       elseif (trim(slimitingvariable) .eq. 'momentum_x') then
 
         ! Apply FEM-FCT algorithm for x-momentum fluxes
-        select case(rproblemLevel%rtriangulation%ndim)
-        case (NDIM1D)
-          call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxMomentumX1d, euler_trafoDiffMomentumX1d)
-!!$        case (NDIM2D)
-!!$          call gfsys_buildDivVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rproblemLevel%Rafcstab(inviscidAFC),&
-!!$              rsolution, dscale, bclear, iopSpec, rresidual,&
-!!$              euler_trafoFluxMomentumX2d)
-!!$        case (NDIM3D)
-!!$          call gfsys_buildDivVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rproblemLevel%Rafcstab(inviscidAFC),&
-!!$              rsolution, dscale, bclear, iopSpec, rresidual,&
-!!$              euler_trafoFluxMomentumX3d)
-        end select
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum1d, euler_trafoDiffMomentum1d)
 
+      elseif (trim(slimitingvariable) .eq. 'momentum_y') then
+
+        ! Apply FEM-FCT algorithm for y-momentum fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum2d, euler_trafoDiffMomentum2d)
+
+      elseif (trim(slimitingvariable) .eq. 'momentum_z') then
+
+        ! Apply FEM-FCT algorithm for z-momentum fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum3d, euler_trafoDiffMomentum3d)
+        
       elseif (trim(slimitingvariable) .eq. 'density,energy') then
 
         ! Apply FEM-FCT algorithm for density and energy fluxes
@@ -2836,13 +2841,13 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenEng2d)
+              euler_trafoFluxDenEng2d, euler_trafoDiffDenEng2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenEng3d)
+              euler_trafoFluxDenEng3d, euler_trafoDiffDenEng3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure') then
@@ -2860,13 +2865,13 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenPre2d)
+              euler_trafoFluxDenPre2d, euler_trafoDiffDenPre2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenPre3d)
+              euler_trafoFluxDenPre3d, euler_trafoDiffDenPre3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
@@ -2892,13 +2897,13 @@ contains
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenPreVel2d)
+              euler_trafoFluxDenPreVel2d, euler_trafoDiffDenPreVel2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution, dscale, bclear, iopSpec, rresidual,&
-              euler_trafoFluxDenPreVel3d)
+              euler_trafoFluxDenPreVel3d, euler_trafoDiffDenPreVel3d)
         end select
 
       else

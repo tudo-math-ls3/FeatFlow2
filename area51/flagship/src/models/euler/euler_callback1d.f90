@@ -103,19 +103,19 @@
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the pressure
 !#
-!# 26.) euler_trafoFluxVelocityX1d
+!# 26.) euler_trafoFluxVelocity1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity in x-direction
 !#
-!# 27.) euler_trafoDiffVelocityX1d
+!# 27.) euler_trafoDiffVelocity1d
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity in x-direction
 !#
-!# 28.) euler_trafoFluxMomentumX1d
+!# 28.) euler_trafoFluxMomentum1d
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum in x-direction
 !#
-!# 29.) euler_trafoDiffMomentumX1d
+!# 29.) euler_trafoDiffMomentum1d
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum in x-direction
 !#
@@ -201,16 +201,16 @@ module euler_callback1d
   public :: euler_trafoFluxDensity1d
   public :: euler_trafoFluxEnergy1d
   public :: euler_trafoFluxPressure1d
-  public :: euler_trafoFluxVelocityX1d
-  public :: euler_trafoFluxMomentumX1d
+  public :: euler_trafoFluxVelocity1d
+  public :: euler_trafoFluxMomentum1d
   public :: euler_trafoFluxDenEng1d
   public :: euler_trafoFluxDenPre1d
   public :: euler_trafoFluxDenPreVel1d
   public :: euler_trafoDiffDensity1d  
   public :: euler_trafoDiffEnergy1d
   public :: euler_trafoDiffPressure1d
-  public :: euler_trafoDiffVelocityX1d
-  public :: euler_trafoDiffMomentumX1d
+  public :: euler_trafoDiffVelocity1d
+  public :: euler_trafoDiffMomentum1d
   public :: euler_trafoDiffDenEng1d
   public :: euler_trafoDiffDenPre1d
   public :: euler_trafoDiffDenPreVel1d
@@ -2072,11 +2072,11 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxVelocityX1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxVelocity1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
-    ! conservative to fluxes for the x-velocity in 1D
+    ! conservative to fluxes for the x-velocity
 !</description>
 
 !<input>
@@ -2100,21 +2100,21 @@ contains
     ui = U_i(2)/U_i(1)
     uj = U_j(2)/U_j(1)
 
-    ! velocity fluxes
+    ! velocity fluxes in x-direction
     G_ij(1) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
     G_ji(1) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
     
-  end subroutine euler_trafoFluxVelocityX1d
+  end subroutine euler_trafoFluxVelocity1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffVelocityX1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffVelocity1d(U_i, U_j, U_ij)
 
 !<description>
     ! This subroutine computes the transformation of
-    ! conservative to differences for the x-velocity in 1D
+    ! conservative to differences for the x-velocity
 !</description>
 
 !<input>
@@ -2128,20 +2128,20 @@ contains
 !</output>
 !</subroutine>
 
-    ! velocity differences
+    ! velocity difference in x-direction
     U_ij(1) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
-    
-  end subroutine euler_trafoDiffVelocityX1d
+
+  end subroutine euler_trafoDiffVelocity1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxMomentumX1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxMomentum1d(U_i, U_j, F_ij, G_ij, G_ji)
 
 !<description>
     ! This subroutine computes the transformation of
-    ! conservative to fluxes for the x-momentum in 1D
+    ! conservative to fluxes for the x-momentum
 !</description>
 
 !<input>
@@ -2158,21 +2158,21 @@ contains
 !</output>
 !</subroutine>
 
-    ! momentum fluxes
+    ! momentum fluxes in x-direction
     G_ij(1) =  F_ij(2)
     G_ji(1) = -F_ij(2)
     
-  end subroutine euler_trafoFluxMomentumX1d
+  end subroutine euler_trafoFluxMomentum1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffMomentumX1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffMomentum1d(U_i, U_j, U_ij)
 
 !<description>
     ! This subroutine computes the transformation of
-    ! conservative to differences for the x-momentum in 1D
+    ! conservative to differences for the x-momentum
 !</description>
 
 !<input>
@@ -2186,10 +2186,10 @@ contains
 !</output>
 !</subroutine>
 
-    ! momentum differences
+    ! momentum difference in x-direction
     U_ij(1) =  U_j(2)-U_i(2)
     
-  end subroutine euler_trafoDiffMomentumX1d
+  end subroutine euler_trafoDiffMomentum1d
 
   !*****************************************************************************
 
@@ -2251,7 +2251,7 @@ contains
     ! density difference
     U_ij(1) =  U_j(1)-U_i(1)
 
-    ! energy differences
+    ! energy difference
     U_ij(2) =  U_j(3)-U_i(3)
 
   end subroutine euler_trafoDiffDenEng1d
@@ -2327,10 +2327,10 @@ contains
     pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
     pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
 
-    ! density differences
+    ! density difference
     U_ij(1) = U_j(1)-U_i(1)
 
-    ! pressure differences
+    ! pressure difference
     U_ij(2) = pj-pi
 
   end subroutine euler_trafoDiffDenPre1d
@@ -2371,7 +2371,7 @@ contains
     G_ij(1) =  F_ij(1)
     G_ji(1) = -F_ij(1)
 
-    ! velocity fluxes
+    ! velocity fluxes in x-direction
     G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
     G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
 
@@ -2413,7 +2413,7 @@ contains
     ! density difference
     U_ij(1) = U_j(1)-U_i(1)
 
-    ! velocity differences
+    ! velocity difference in x-direction
     U_ij(2) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
     
     ! pressure difference
