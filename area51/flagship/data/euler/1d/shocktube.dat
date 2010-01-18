@@ -78,15 +78,10 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-#slimitingvariable = density,pressure,velocity
-slimitingvariable(1) = 
+slimitingvariable(3) = 
+  density
+  pressure
   velocity_x
-  
-#  velocity_x
-#  pressure
-
-#slimitingvariable = density,pressure,velocity
-#slimitingvariable = density,energy,momentum
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -169,7 +164,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 11
 
 
 ################################################################################
@@ -193,11 +188,12 @@ sucdsolution = out/shocktube
 sucderror = out/shocktube_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
+ internal_energy
 
 ################################################################################
 [Timestepping]

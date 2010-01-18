@@ -2684,15 +2684,9 @@ contains
       iopSpec = ioperationSpec
     end if
 
-
     ! Loop over items in the list of variables that should
     ! be limited sequentially, i.e., in multiplicative way
     do ivariable = 1, nvariable
-
-      ! Disable the initialisation of edgewise correction factors
-      ! in all but the first iteration over variables
-      if (ivariable .gt. 1) iopSpec = iand(ioperationSpec,&
-                                           not(AFCSTAB_FCTALGO_INITALPHA))
 
       ! Get variable declaration string
       call parlst_getvalue_string(p_rparlist,&
@@ -2911,11 +2905,25 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcCorrectionFCT')
         call sys_halt()
       end if
+
+      ! Disable the initialisation of edgewise correction factors
+      ! in all but the first iteration over variables
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_INITALPHA))
     end do
 
-    ! Re-enable the correction step (if required)
-    iopSpec = ieor(iopSpec, ioperationSpec)
-    if (iopSpec .ne. 0_I32) then
+    ! Perform the correction step separately (if required)
+    if (nvariable .gt. 1) then
+      
+      ! Copy original specifier
+      iopSpec = ioperationSpec
+
+      ! Remove all tasks which might have been performed before
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_INITALPHA))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_ADINCREMENTS))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
+      
       call gfsys_buildDivVectorFCT(&
           rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(inviscidAFC),&
