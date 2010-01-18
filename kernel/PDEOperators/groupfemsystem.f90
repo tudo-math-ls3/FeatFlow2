@@ -4376,7 +4376,8 @@ contains
     ! This subroutine assembles the divergence vector for nonlinear
     ! FEM-FCT schemes.  If the vectors contain only one block, then
     ! the scalar counterpart of this routine is called with the scalar
-    ! subvectors.
+    ! subvectors. Consider the documentation of subroutine
+    ! 'gfsys_buildVecFCTScalar' for further details.
 !</description>
 
 !<input>
@@ -4414,6 +4415,12 @@ contains
     !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    real(DP), dimension(:), pointer :: p_ML,p_Dx,p_Dy
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
       call gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
@@ -4423,8 +4430,785 @@ contains
       return
     end if
 
-    print *, "Block version of nonlinear FEM-FCT not available!"
-    stop
+    ! Check if stabilisation is prepeared
+    if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
+      call output_line('Stabilisation has not been initialised',&
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBLock')
+      call sys_halt()
+    end if
+
+    !---------------------------------------------------------------------------
+    ! The nonlinear FEM-FCT algorithm is split into the following
+    ! steps which can be skipped and performed externally by the user:
+    !
+    ! 1) Initialise the edgewise correction factors (alpha).
+    !
+    ! 2) Compute the antidiffusive increments (Pp, Dpm)
+    !
+    ! 3) Compute the local solution bounds (Qp, Dqm).
+    !
+    ! 3) Compute the nodal correction factors (Rp, Rm).
+    !
+    ! 4) Apply the limited antidifusive fluxes to the divergence
+    !
+    !    Step 4) may be split into the following substeps
+    !
+    !    4.1) Compute the edgewise correction factors based on the pre-
+    !         computed raw-antidiffusive fluxes.
+    !
+    !    4.2) Compute the raw antidiffusive fluxes for a different set of
+    !         variables and limit them by the precomputed correction factors.
+    !-------------------------------------------------------------------------
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Initialise the edgewise correction factors by unity
+      !-------------------------------------------------------------------------
+
+      ! Set pointers
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+
+      ! Initialise alpha by unity
+      call lalg_setVector(p_Dalpha, 1.0_DP)
+    end if
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_ADINCREMENTS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Compute sums of antidiffusive increments
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides raw antidiffusive fluxes
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set pointers
+      call lsysbl_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+      ! Special treatment for semi-implicit FEM-FCT algorithm
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux)
+      else
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      end if
+
+      ! Compute sums of antidiffusive increments
+      if (present(fcb_calcFluxTransformation) .and.&
+          present(fcb_calcDiffTransformation)) then
+        call doADIncrementsTransformed(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            rafcstab%NVARtransformed, p_Dx,&
+            p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+      else
+        call doADIncrements(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+      end if
+
+      ! Set specifiers
+      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_BOUNDS) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Compute local bounds
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set pointers
+      call lsysbl_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+      ! Compute local bounds
+      if (present(fcb_calcDiffTransformation)) then
+        call doBoundsTransformed(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            rafcstab%NVARtransformed, p_Dx, p_Dqp, p_Dqm)
+      else
+        call doBounds(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            p_Dx, p_Dqp, p_Dqm)
+      end if
+
+      ! Set specifiers
+      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITNODAL) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Compute nodal correction factors
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides antidiffusive increments and local bounds
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
+        call output_line('Stabilisation does not provide increments and/or bounds',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set pointers
+      call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+
+      ! Compute nodal correction factors
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        call doLimitNodal(rafcstab%NEQ, rafcstab%NVARtransformed,&
+            dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+      else
+        call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVARtransformed,&
+            dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
+      end if
+
+      ! Set specifier
+      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITEDGE) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Compute edgewise correction factors
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides nodal correction factors
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
+        call output_line('Stabilisation does not provides nodal correction factors',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set pointers
+      call lsysbl_getbase_double(rx, p_Dx)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
+      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+      ! Compute edgewise correction factors
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+
+        ! Special treatment for semi-implicit FEM-FCT algorithm
+        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+
+        if (present(fcb_calcFluxTransformation)) then
+          call doLimitEdgewiseConstrainedTransformed(&
+              p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        else
+          call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        end if
+
+      else
+
+        if (present(fcb_calcFluxTransformation)) then
+          call doLimitEdgewiseTransformed(&
+              p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
+              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        else
+          call doLimitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux, p_Drp, p_Drm, p_Dalpha)
+        end if
+
+      end if
+
+      ! Set specifier
+      rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
+    end if
+
+
+    if (iand(ioperationSpec, AFCSTAB_FCTALGO_CORRECT) .ne. 0) then
+      !-------------------------------------------------------------------------
+      ! Correct antidiffusive fluxes and apply them
+      !-------------------------------------------------------------------------
+
+      ! Check if stabilisation provides edgewise correction factors
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
+        call output_line('Stabilisation does not provides edgewise correction factors',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides raw antidiffusive fluxes
+      if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
+        call output_line('Stabilisation does not provide antidiffusive fluxes',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Check if stabilisation provides edge-based structure
+      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
+          (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
+        call output_line('Stabilisation does not provide edge structure',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+        call sys_halt()
+      end if
+
+      ! Set pointers
+      call lsysbl_getbase_double(ry, p_Dy)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
+
+      ! Clear divergence vector?
+      if (bclear) call lsysbl_clearVector(ry)
+
+      ! Apply antidiffusive fluxes
+      if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
+        call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
+        call doCorrectScaleByMass(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+      else
+        call doCorrect(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+            dscale, p_Dalpha, p_Dflux, p_Dy)
+      end if
+    end if
+
+  contains
+
+    ! Here, the working routines follow
+
+    !**************************************************************
+    ! Assemble sums of antidiffusive increments for the given
+    ! antidiffusive fluxes without transformation
+
+    subroutine doADIncrements(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Dx, Dflux, Dalpha, Dpp, Dpm)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(inout) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: iedge,i,j
+
+      ! Clear P's
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Prelimiting of antidiffusive fluxes
+        if (any(Dflux(:,iedge)*(Dx(j,:)-Dx(i,:)) .ge. 0.0_DP))&
+            Dalpha(iedge) = 0.0_DP
+
+        ! Apply multiplicative correction factor
+        F_ij = Dalpha(iedge) * Dflux(:,iedge)
+
+        ! Compute the sums of antidiffusive increments
+        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+        Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
+        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+        Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
+      end do
+    end subroutine doADIncrements
+
+    !**************************************************************
+    ! Assemble sums of antidiffusive increments for the given
+    ! antidiffusive fluxes which are transformed to a user-
+    ! defined set of variables prior to computing the sums
+
+    subroutine doADIncrementsTransformed(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, Dpp, Dpm)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+
+      ! local variables
+      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Diff
+      integer :: iedge,i,j
+
+      ! Clear P's
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute transformed fluxes
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+
+        ! Compute transformed solution difference
+        call fcb_calcDiffTransformation(&
+            Dx(i,:), Dx(j,:), Diff)
+
+        ! Prelimiting of antidiffusive fluxes
+        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
+            any(F_ji*Diff .le. 0.0_DP))&
+            Dalpha(iedge) = 0.0_DP
+
+        ! Apply multiplicative correction factor
+        F_ij = Dalpha(iedge)*F_ij
+        F_ji = Dalpha(iedge)*F_ji
+
+        ! Compute the sums of positive/negative antidiffusive increments
+        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
+        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+      end do
+    end subroutine doADIncrementsTransformed
+
+    !**************************************************************
+    ! Assemble local bounds from the predicted solution
+    ! without transformation
+
+    subroutine doBounds(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(out) :: Dqp,Dqm
+
+      ! local variables
+      real(DP), dimension(NVAR) :: Diff
+      integer :: iedge,i,j
+
+      ! Clear Q's
+      call lalg_clearVector(Dqp)
+      call lalg_clearVector(Dqm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute solution difference
+        Diff = Dx(j,:)-Dx(i,:)
+
+        ! Compute the distance to a local extremum
+        ! of the predicted solution
+        Dqp(:,i) = max(Dqp(:,i), Diff)
+        Dqp(:,j) = max(Dqp(:,j),-Diff)
+        Dqm(:,i) = min(Dqm(:,i), Diff)
+        Dqm(:,j) = min(Dqm(:,j),-Diff)
+      end do
+    end subroutine doBounds
+
+    !**************************************************************
+    ! Assemble local bounds from the predicted solution
+    ! which is transformed to a user-defined set of variables
+
+    subroutine doBoundsTransformed(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dqp, Dqm)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
+
+      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dqp,Dqm
+
+      ! local variables
+      real(DP), dimension(NVARtransformed) :: Diff
+      integer :: iedge,i,j
+
+      ! Clear Q's
+      call lalg_clearVector(Dqp)
+      call lalg_clearVector(Dqm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute transformed solution difference
+        call fcb_calcDiffTransformation(&
+            Dx(i,:), Dx(j,:), Diff)
+
+        ! Compute the distance to a local extremum
+        ! of the predicted solution
+        Dqp(:,i) = max(Dqp(:,i), Diff)
+        Dqp(:,j) = max(Dqp(:,j),-Diff)
+        Dqm(:,i) = min(Dqm(:,i), Diff)
+        Dqm(:,j) = min(Dqm(:,j),-Diff)
+      end do
+    end subroutine doBoundsTransformed
+
+    !**************************************************************
+    ! Compute nodal correction factors without constraints
+
+    subroutine doLimitNodal(NEQ, NVAR, dscale,&
+        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
+
+      ! local variables
+      integer :: ieq
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL)
+      end do
+      !$omp end parallel do
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL)
+      end do
+      !$omp end parallel do
+    end subroutine doLimitNodal
+
+    !**************************************************************
+    ! Compute nodal correction factors with constraints
+
+    subroutine doLimitNodalConstrained(NEQ, NVAR, dscale,&
+        ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(:), intent(in) :: ML
+      real(DP), intent(in) :: dscale
+      integer, intent(in) :: NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
+
+      ! local variables
+      integer :: ieq
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        Drp(:,ieq) = min(1.0_DP,&
+            ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL))
+      end do
+      !$omp end parallel do
+
+      ! Loop over all vertices
+      !$omp parallel do
+      do ieq = 1, NEQ
+        Drm(:,ieq) = min(1.0_DP,&
+            ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
+      end do
+      !$omp end parallel do
+    end subroutine doLimitNodalConstrained
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of antidiffusive fluxes
+
+    subroutine doLimitEdgewise(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Dflux, Drp, Drm, Dalpha)
+
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij,R_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Get precomputed raw antidiffusive fluxes
+        F_ij = Dflux(:,iedge)
+
+        ! Compute nodal correction factors
+        where (F_ij .ge. 0.0_DP)
+          R_ij = min(Drp(:,i),Drm(:,j))
+        elsewhere
+          R_ij = min(Drp(:,j),Drm(:,i))
+        end where
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
+      end do
+    end subroutine doLimitEdgewise
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of antidiffusive fluxes
+    ! which are transformed to a user-defined set of variables
+    ! priori to computing the correction factors
+
+    subroutine doLimitEdgewiseTransformed(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Drp, Drm, Dalpha)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute transformed fluxes
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+
+        ! Compute nodal correction factors
+        R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+        R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+      end do
+    end subroutine doLimitEdgewiseTransformed
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of a pair of explicit
+    ! and implicit raw antidiffusive fluxes
+
+    subroutine doLimitEdgewiseConstrained(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Dflux1, Dflux2, Drp, Drm, Dalpha)
+
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F1_ij,F2_ij,R_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Get precomputed raw antidiffusive fluxes
+        F1_ij = Dflux1(:,iedge)
+        F2_ij = Dflux2(:,iedge)
+
+        ! Compute nodal correction factors
+        where (F1_ij*F2_ij .le. 0.0_DP)
+          R_ij = 0.0_DP
+        elsewhere
+          where (F1_ij .ge. 0.0_DP)
+            R_ij = min(1.0_DP, F1_ij/F2_ij*min(Drp(:,i),Drm(:,j)))
+          elsewhere
+            R_ij = min(1.0_DP, F1_ij/F2_ij*min(Drp(:,j),Drm(:,i)))
+          end where
+        end where
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
+      end do
+    end subroutine doLimitEdgewiseConstrained
+
+    !**************************************************************
+    ! Compute edgewise correction factors based on the precomputed
+    ! nodal correction factors and the sign of a pair of explicit
+    ! and implicit raw antidiffusive fluxes which are transformed
+    ! to a user-defined set of variables priori to computing the
+    ! correction factors
+
+    subroutine doLimitEdgewiseConstrainedTransformed(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, Drp, Drm, Dalpha)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
+      real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+
+      ! local variables
+      real(DP), dimension(NVARtransformed) :: F1_ij,F1_ji,F2_ij,F2_ji,R_ij,R_ji
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute transformed fluxes
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Dflux1(:,iedge), F1_ij, F1_ji)
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Dflux2(:,iedge), F2_ij, F2_ji)
+
+        ! Compute nodal correction factors
+        where (F1_ij*F2_ij .le. 0.0_DP)
+          R_ij = 0.0_DP
+        elsewhere
+          R_ij = min(1.0_DP,&
+              F1_ij/F2_ij*merge(Drp(:,i), Drm(:,i), F1_ij .ge. 0.0_DP))
+        end where
+
+        where (F1_ji*F2_ji .le. 0.0_DP)
+          R_ji = 0.0_DP
+        elsewhere
+          R_ji = min(1.0_DP,&
+              F1_ji/F2_ji*merge(Drp(:,j), Drm(:,j), F1_ji .ge. 0.0_DP))
+        end where
+
+        ! Compute multiplicative correction factor
+        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+      end do
+    end subroutine doLimitEdgewiseConstrainedTransformed
+
+    !**************************************************************
+    ! Correct the antidiffusive fluxes and apply them
+
+    subroutine doCorrect(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
+
+      real(DP), dimension(:), intent(in) :: Dalpha
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Correct antidiffusive flux
+        F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+        ! Apply limited antidiffusive fluxes
+        Dy(i,:) = Dy(i,:) + F_ij
+        Dy(j,:) = Dy(j,:) - F_ij
+      end do
+    end subroutine doCorrect
+
+    !**************************************************************
+    ! Correct the antidiffusive fluxes and apply them
+    ! scaled by the inverse of the lumped mass matrix
+
+    subroutine doCorrectScaleByMass(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
+
+      real(DP), dimension(:), intent(in) :: Dalpha,ML
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Correct antidiffusive flux
+        F_ij = dscale * Dalpha(iedge) * Dflux(:,iedge)
+
+        ! Apply limited antidiffusive fluxes
+        Dy(i,:) = Dy(i,:) + F_ij/ML(i)
+        Dy(j,:) = Dy(j,:) - F_ij/ML(j)
+      end do
+    end subroutine doCorrectScaleByMass
 
   end subroutine gfsys_buildVecFCTBlock
 
@@ -4979,9 +5763,6 @@ contains
         ! Get node numbers
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
-
-        ! Compute solution difference
-        diff = Dx(:,j)-Dx(:,i)
 
         ! Compute transformed solution difference
         call fcb_calcDiffTransformation(&
@@ -6003,9 +6784,8 @@ contains
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
-    ! FEM-FCT schemes. If the vectors contain only one block, then
-    ! the scalar counterpart of this routine is called with the
-    ! scalar subvectors.
+    ! FEM-FCT schemes. Note that the vectors are required as scalar
+    ! vectors which are stored in the interleave format.
 !</description>
 
 !<input>
