@@ -7,19 +7,19 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/eulerlagrange/default.dat'
+  'data/euler/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = eulerlagrange
+application = euler
 
 ################################################################################
-[Eulerlagrange]
+[Euler]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/eulerlagrange/2d/scramjet.indat
+indatfile = data/euler/2d/scramjet.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -64,6 +64,21 @@ isystemcoupling = 0
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 2
+
+# variables for flux correction
+# (i)  for synchronized flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+slimitingvariable = density,energy,momentum
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -145,7 +160,9 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 20
@@ -166,10 +183,17 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/scramjet
+sucdsolution = out/scramjet
 
 # file for UCD output of error
-ucderror = out/scramjet_error
+sucderror = out/scramjet_error
+
+# variables for ucd output
+sucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
 
 
 ################################################################################

@@ -68,7 +68,7 @@
 !##############################################################################
 
 module boundaryfilter
-  
+
   use basicgeometry
   use boundary
   use fparser
@@ -132,10 +132,10 @@ module boundaryfilter
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
-  
+
 !<constants>
 !<constantblock description="Types of boundary conditions">
-  
+
   ! This parameter determines the maximum number of expressions
   ! that can be present for some type of boundary condition(s)
   integer, parameter :: BDR_MAXEXPRESSIONS = 5
@@ -162,7 +162,7 @@ module boundaryfilter
 
   integer, parameter, public :: BDR_EULERWALL = 2
   integer, parameter, public :: BDR_EULERWALL_WEAK = -BDR_EULERWALL
-  
+
   ! Viscous wall boundary condition
   ! The velocity vector is set to zero
   !
@@ -174,12 +174,12 @@ module boundaryfilter
   ! Farfield boundary condition using characteristics
   ! These boundary conditions can be used for both subsonic and
   ! supersonic in- and outflow where the characteristics are either
-  ! set from free stream quantities for ingoing characteristics or 
+  ! set from free stream quantities for ingoing characteristics or
   ! adopted from the interior values for outgoing characteristics.
 
   integer, parameter, public :: BDR_FARFIELD = 4
   integer, parameter, public :: BDR_FARFIELD_WEAK = -BDR_FARFIELD
-  
+
   ! Subsonic inlet boundary condition
   ! At a subsonic inlet, the recommended boundary condition is to specify
   ! the total temperature and total pressure as well as the flow angle.
@@ -195,7 +195,7 @@ module boundaryfilter
   integer, parameter, public :: BDR_SUBOUTLET_WEAK = -BDR_SUBOUTLET
 
   ! Massflow inlet boundary condition
-  ! This boundary condition can be prescribed at a subsonic inflow boundary 
+  ! This boundary condition can be prescribed at a subsonic inflow boundary
   ! which requires a given value of mass flow. It is in principal identical
   ! to the total states inflow boundary condition, where the value of total
   ! pressure is a function of mass flow. First, the velocity normal to the
@@ -240,8 +240,8 @@ module boundaryfilter
 
   ! Mach outflow boundary condition
   ! This condition is similar to the mass flow outflow boundary condition. It is
-  ! basically the static pressure outflow boundary condition, where the value of 
-  ! static pressure is expressed as function of desired Mach number M and known 
+  ! basically the static pressure outflow boundary condition, where the value of
+  ! static pressure is expressed as function of desired Mach number M and known
   ! value of total pressure p0
   !
   ! p = p0*(1+(gamma-1)/2*M^2)^(-gamma/(gamma-1))
@@ -251,7 +251,7 @@ module boundaryfilter
 
   ! Supersonic inlet boundary condition
   ! All boundary conditions are prescribed by the free stream quantities
-  
+
   integer, parameter, public :: BDR_SUPERINLET = 10
   integer, parameter, public :: BDR_SUPERINLET_WEAK = -BDR_SUPERINLET
 
@@ -285,11 +285,11 @@ module boundaryfilter
 
   integer, parameter, public :: BDR_INHOMNEUMANN = 15
   integer, parameter, public :: BDR_INHOMNEUMANN_WEAK = -BDR_INHOMNEUMANN
-  
+
 !</constantblock>
 
 !<constantblock description="Symbolic variables for boundary description">
-  
+
   ! List of variables which are evaluated by the bytecode interpreter in 3D
   character (LEN=*), dimension(NDIM3D+1), parameter ::&
       BDR_SYMBOLICVARS = (/ (/'x'/),(/'y'/),(/'z'/),(/'t'/) /)
@@ -310,7 +310,7 @@ module boundaryfilter
 
     ! Number of boundary components
     integer :: iboundarycount = -1
-    
+
     ! Number of spatial dimensions
     integer :: ndimension = 0
 
@@ -530,7 +530,7 @@ contains
 
     ! Set pointers
     call storage_getbase_double(rboundaryCondition%h_DmaxPar,&
-        p_DmaxPar)  
+        p_DmaxPar)
     call storage_getbase_int(rboundaryCondition%h_IbdrCondType,&
         p_IbdrCondType)
     call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic,&
@@ -547,7 +547,7 @@ contains
     ! Allocate temporal array of characters for mathematical expressions
     allocate(cMathExpression(rboundaryCondition%nmaxExpressions))
 
-    ! Read boundary parameter intervals, type of boundary 
+    ! Read boundary parameter intervals, type of boundary
     ! and boundary expression from parameter file
     read(iunit, *, end=8888, ERR=9999) keyword
     call sys_tolower(keyword)
@@ -582,7 +582,7 @@ contains
           BDR_VISCOUSWALL,&
           BDR_SUPEROUTLET)
         ! Set mathematical expressions to zero
-        cMathExpression = '0'       
+        cMathExpression = '0'
 
       case (BDR_DIRICHLET,&
           BDR_INHOMNEUMANN,&
@@ -672,7 +672,7 @@ contains
   ! *****************************************************************************
 
 !<subroutine>
-  
+
   subroutine bdrf_release(rboundaryCondition)
 
 !<description>
@@ -744,11 +744,11 @@ contains
     logical, dimension(:), pointer :: p_BisSegClosed
     integer, dimension(2) :: Isize
     integer :: h_Irows,nrows
-    
-    
+
+
     ! Check if periodic boundary conditions are present
     if (rboundaryCondition%bPeriodic) then
-      
+
       ! Create memory for pairs of boundary vertices
       Isize = (/2,rtriangulation%NVBD/)
       call storage_new('bdrf_calcMatrixScalarPeriodic2D', 'p_Irows',&
@@ -788,7 +788,7 @@ contains
             p_IboundaryCpIdx)
         call storage_getbase_int(p_rtriangulation&
             %h_IverticesAtBoundary, p_IverticesAtBoundary)
-        
+
         ! Set pointers for boundary
         call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
         call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
@@ -805,7 +805,7 @@ contains
         call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
         call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
         call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-        
+
         ! Set pointers for boundary
         call storage_getbase_double (rboundaryCondition%h_DmaxPar, p_DmaxPar)
         call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -813,7 +813,7 @@ contains
         call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
         call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
         call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-        
+
         ! Calculate pairs of vertices in 2D
         call calcPeriodic_2D(p_IbdrCompPeriodic, p_IbdrCondPeriodic,&
             p_IbdrCondType, p_IbdrCondCpIdx, p_DmaxPar,&
@@ -846,7 +846,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -858,10 +858,10 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -877,10 +877,10 @@ contains
 
       ! Initialize row counter
       nrows = 0
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
@@ -893,7 +893,7 @@ contains
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-          
+
           ! Append pair of periodic vertices
           nrows = nrows+1
           Irows(1, nrows) = IverticesAtBoundary(ivbd)
@@ -912,7 +912,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -924,16 +924,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -954,14 +954,14 @@ contains
 
       ! Initialize row counter
       nrows = 0
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
-        
+
         ! Set pointer to first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct+1)-1
         dminValue = min(0._DP, DmaxParam(isegment)&
@@ -975,18 +975,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -994,10 +994,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! Are we periodic boundary conditions?
           if (IbdrCondType(isegment) .eq. BDR_PERIODIC) then
-            
+
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
             isegmentPeriodic = IbdrCondPeriodic(isegment)
@@ -1009,39 +1009,39 @@ contains
               dVertexParameterPeriodic = DmaxParam(isegmentPeriodic-1)+&
                   DmaxParam(isegment)-DvertexParameterValue(ivbd)
             end if
-            
+
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Append pair of periodic vertices
             nrows = nrows+1
             Irows(1, nrows) = IverticesAtBoundary(ivbd)
             Irows(2, nrows) = IverticesAtBoundary(ivbdPeriodic)
 
           elseif (p_IbdrCondType(isegment) .eq. BDR_ANTIPERIODIC) then
-            
+
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
             isegmentPeriodic = IbdrCondPeriodic(isegment)
-            
+
             dVertexParameterPeriodic = DmaxParam(isegmentPeriodic)-&
                 (DmaxParam(isegment)-DvertexParameterValue(ivbd))
-            
+
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Append pair of periodic vertices
             nrows = nrows+1
             Irows(1, nrows) = IverticesAtBoundary(ivbd)
@@ -1093,13 +1093,13 @@ contains
     ! Loop over all blocks
     do iblock = 1, rmatrix%nblocksPerCol
       do jblock = 1, rmatrix%nblocksPerRow
-        
+
         if (iblock .eq. jblock) then
-          
+
           ! Diagonal block: impose the prescribed value if required
           call bdrf_filterMatrixScalar(rboundaryCondition, rmatrix&
               %RmatrixBlock(iblock,jblock), dvalue, rtriangulation)
-          
+
         else
 
           ! Off-diagonal block: impose zero values
@@ -1113,11 +1113,11 @@ contains
       end do
     end do
   end subroutine bdrf_filterMatrixBlock
-  
+
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine bdrf_filterMatrixScalar(rboundaryCondition, rmatrix,&
       dvalue, rtriangulation)
 
@@ -1198,35 +1198,35 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
         call sys_halt()
       end if
-    
+
     ! How many spatial dimensions do we have?
     select case (rboundaryCondition%ndimension)
     case (NDIM1D)
       ! Set pointers for triangulation
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
       call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
-      
+
       ! What kind of matrix are we?
       select case (rmatrix%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIXD)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         call filtermatrix_MatD_1D(p_IbdrCondType, p_IbdrCondCpIdx,&
             rboundaryCondition%iboundarycount, p_IverticesAtBoundary,&
             p_IboundaryCpIdx, p_DA, dfilter)
-        
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         call filtermatrix_Mat79_1D(p_IbdrCompPeriodic,&
             p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
             rboundaryCondition%iboundarycount, p_IverticesAtBoundary,&
@@ -1245,7 +1245,7 @@ contains
             dfilter)
 
       case (LSYSSC_MATRIX7INTL)
-        
+
         select case (rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -1262,13 +1262,13 @@ contains
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79Intl1_1D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               rboundaryCondition%iboundarycount,&
               p_IverticesAtBoundary, p_IboundaryCpIdx, p_Kld, p_Kcol,&
               p_Kld, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
@@ -1276,38 +1276,38 @@ contains
         end select
 
       case (LSYSSC_MATRIX9INTL)
-        
+
         select case (rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79IntlD_1D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               rboundaryCondition%iboundarycount,&
               p_IverticesAtBoundary, p_IboundaryCpIdx, p_Kld, p_Kcol,&
               p_Kdiagonal, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case (LSYSSC_MATRIX1)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79Intl1_1D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               rboundaryCondition%iboundarycount,&
               p_IverticesAtBoundary, p_IboundaryCpIdx, p_Kld, p_Kcol,&
               p_Kdiagonal, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
           call sys_halt()
         end select
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
@@ -1320,7 +1320,7 @@ contains
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -1328,111 +1328,111 @@ contains
       call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
       call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-      
+
       ! What kind of matrix are we?
       select case (rmatrix%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIXD)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         call filtermatrix_MatD_2D(p_IbdrCondType, p_IbdrCondCpIdx,&
             p_DmaxPar, p_BisSegClosed, rboundaryCondition&
             %iboundarycount, p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexParameterValue, p_DA, dfilter)
-      
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         call filtermatrix_Mat79_2D(p_IbdrCompPeriodic,&
             p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
             p_DmaxPar, p_BisSegClosed, rboundaryCondition&
             %iboundarycount, p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexParameterValue, p_Kld, p_Kcol, p_Kld, p_DA,&
             dfilter)
-        
+
       case (LSYSSC_MATRIX9)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         call filtermatrix_Mat79_2D(p_IbdrCompPeriodic,&
             p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
             p_DmaxPar, p_BisSegClosed, rboundaryCondition&
             %iboundarycount, p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexParameterValue, p_Kld, p_Kcol, p_Kdiagonal, p_DA,&
             dfilter)
-        
+
       case (LSYSSC_MATRIX7INTL)
-        
+
         select case (rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79IntlD_2D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               p_DmaxPar, p_BisSegClosed, rboundaryCondition&
               %iboundarycount, p_IverticesAtBoundary,&
               p_IboundaryCpIdx, p_DvertexParameterValue, p_Kld,&
               p_Kcol, p_Kld, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case (LSYSSC_MATRIX1)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79Intl1_2D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               p_DmaxPar, p_BisSegClosed, rboundaryCondition&
               %iboundarycount, p_IverticesAtBoundary,&
               p_IboundaryCpIdx, p_DvertexParameterValue, p_Kld,&
               p_Kcol, p_Kld, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIX9INTL)
-        
+
         select case (rmatrix%cinterleavematrixFormat)
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79IntlD_2D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               p_DmaxPar, p_BisSegClosed, rboundaryCondition&
               %iboundarycount, p_IverticesAtBoundary,&
               p_IboundaryCpIdx, p_DvertexParameterValue, p_Kld,&
               p_Kcol, p_Kdiagonal, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case (LSYSSC_MATRIX1)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           call filtermatrix_Mat79Intl1_2D(p_IbdrCompPeriodic,&
               p_IbdrCondPeriodic, p_IbdrCondType, p_IbdrCondCpIdx,&
               p_DmaxPar, p_BisSegClosed, rboundaryCondition&
               %iboundarycount, p_IverticesAtBoundary,&
               p_IboundaryCpIdx, p_DvertexParameterValue, p_Kld,&
               p_Kcol, p_Kdiagonal, rmatrix%NVAR, p_DA, dfilter)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
           call sys_halt()
         end select
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
@@ -1442,12 +1442,12 @@ contains
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterMatrixScalar')
-      call sys_halt()      
+      call sys_halt()
     end select
-    
+
     ! Do we have to re-sort matrix?
     if (bisSorted) call lsyssc_sortMatrix(rmatrix, .true., rmatrix%isortStrategy)
-    
+
   contains
 
     ! Here are the real filter routines
@@ -1455,7 +1455,7 @@ contains
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
     ! Here, the matrix is given as diagonal matrix in 1D.
-    
+
     subroutine filtermatrix_MatD_1D(IbdrCondType, IbdrCondCpIdx,&
         nbct, IverticesAtBoundary, IboundaryCpIdx, DA, dfilter)
 
@@ -1470,7 +1470,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -1479,7 +1479,7 @@ contains
 
       ! Filter value
       real(DP), intent(in) :: dfilter
-      
+
 
       ! local variables
       integer :: ivbd,ivt,ibct,isegment
@@ -1487,45 +1487,45 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           call output_line('Unable to handle periodic boundary conditi' // &
               'ons for diagonal matrix!', OU_CLASS_WARNING&
               ,OU_MODE_STD,'filtermatrix_MatD_1D')
           call sys_halt()
-          
+
         case (BDR_DIRICHLET)
           ! Replace column by [0,...,0,dfilter,0,...,0]
           ivt     = IverticesAtBoundary(ivbd)
           DA(ivt) = dfilter
-          
+
         case DEFAULT
           ! Replace column by [0,...,0,diag(A),0,...,0]
           ! That is easy, since we are a diagonal matrix.
-          
+
         end select
       end do
     end subroutine filtermatrix_MatD_1D
-    
+
 
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
     ! Here, the matrix is given as diagonal matrix in 2D.
-    
+
     subroutine filtermatrix_MatD_2D(IbdrCondType, IbdrCondCpIdx,&
         DmaxParam, BisSegClosed, nbct, IverticesAtBoundary,&
         IboundaryCpIdx, DvertexParameterValue, DA, dfilter)
@@ -1538,7 +1538,7 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
@@ -1547,7 +1547,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -1567,7 +1567,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -1585,17 +1585,17 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment = IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -1603,10 +1603,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
@@ -1617,7 +1617,7 @@ contains
                 'tions for diagonal matrix!', OU_CLASS_WARNING&
                 ,OU_MODE_STD,'filtermatrix_MatD_2D')
             call sys_halt()
-            
+
           case (BDR_DIRICHLET)
             ! Replace column by [0,...,0,dfilter,0,...,0]
             ivt     = IverticesAtBoundary(ivbd)
@@ -1626,12 +1626,12 @@ contains
           case DEFAULT
             ! Replace column by [0,...,0,diag(A),0,...,0]
             ! That is easy, since we are a diagonal matrix.
-            
+
           end select
         end do
       end do
     end subroutine filtermatrix_MatD_2D
-    
+
 
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
@@ -1644,7 +1644,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -1659,7 +1659,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -1672,7 +1672,7 @@ contains
       ! Filter value
       real(DP), intent(in) :: dfilter
 
-      
+
       ! local variables
       real(DP) :: daux
       integer :: ibeg,iend,ipos,jpos,idiag,jdiag
@@ -1681,37 +1681,37 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-                      
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-          
+
           ! Add entries from the row that corresponds to node ivt to the row that
           ! corresponds to node ivtPeriodic and set DFILTER and -DFILTER in row for node ivt.
           ipos  = Kld(ivt)
           jpos  = Kld(ivtPeriodic)
           idiag = Kdiagonal(ivt)
           jdiag = Kdiagonal(ivtPeriodic)
-          
+
           do while(jpos .le. Kld(ivtPeriodic+1)-1)
             if (Kcol(jpos) .eq. ivtPeriodic) then
               ! Skip the diagonal of the second row since it will be processed below
@@ -1739,14 +1739,14 @@ contains
               jpos     = jpos+1
             end if
           end do
-          
+
         case (BDR_DIRICHLET)
           ! Replace column by [0,...,0,dfilter,0,...,0]
           ivt  = IverticesAtBoundary(ivbd)
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           DA(ibeg:iend) = 0.0_DP
           DA(ipos)      = dfilter
 
@@ -1756,11 +1756,11 @@ contains
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           daux          = DA(ipos)
           DA(ibeg:iend) = 0.0_DP
           DA(ipos)      = daux
-          
+
         end select
       end do
     end subroutine filtermatrix_Mat79_1D
@@ -1777,7 +1777,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -1789,7 +1789,7 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
@@ -1798,7 +1798,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -1823,7 +1823,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -1841,18 +1841,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -1860,10 +1860,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
@@ -1883,12 +1883,12 @@ contains
 
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1)) dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -1938,12 +1938,12 @@ contains
 
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1)) dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -1954,7 +1954,7 @@ contains
             jpos  = Kld(ivtPeriodic)
             idiag = Kdiagonal(ivt)
             jdiag = Kdiagonal(ivtPeriodic)
-            
+
             do while(jpos .le. Kld(ivtPeriodic+1)-1)
               if (Kcol(jpos) .eq. ivtPeriodic) then
                 ! Skip the diagonal of the second row since it will be processed below
@@ -1989,7 +1989,7 @@ contains
             ibeg = Kld(ivt)
             iend = Kld(ivt+1)-1
             ipos = Kdiagonal(ivt)
-            
+
             DA(ibeg:iend) = 0.0_DP
             DA(ipos)      = dfilter
 
@@ -1999,11 +1999,11 @@ contains
             ibeg = Kld(ivt)
             iend = Kld(ivt+1)-1
             ipos = Kdiagonal(ivt)
-            
+
             daux          = DA(ipos)
             DA(ibeg:iend) = 0.0_DP
             DA(ipos)      = daux
-            
+
           end select
         end do
       end do
@@ -2012,7 +2012,7 @@ contains
 
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
-    ! Here, the matrix is given in format CSR7 or CSR9 interleave format, 
+    ! Here, the matrix is given in format CSR7 or CSR9 interleave format,
     ! whereby each local matrix is a diagonal matrix in 1D.
 
     subroutine filtermatrix_Mat79IntlD_1D(IbdrCompPeriodic,&
@@ -2022,7 +2022,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -2037,7 +2037,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -2053,15 +2053,15 @@ contains
       ! Filter value
       real(DP), intent(in) :: dfilter
 
-      
+
       ! local variables
       integer :: ibeg,iend,ipos,jpos,iaux,idiag,jdiag
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,isegment
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
@@ -2070,28 +2070,28 @@ contains
 
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-          
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-          
+
           ! Add entries from the row that corresponds to node ivt to the row that
           ! corresponds to node ivtPeriodic and set DFILTER and -DFILTER in row for node ivt.
           ipos  = Kld(ivt)
           jpos  = Kld(ivtPeriodic)
           idiag = Kdiagonal(ivt)
           jdiag = Kdiagonal(ivtPeriodic)
-          
+
           do while(jpos .le. Kld(ivtPeriodic+1)-1)
             if (Kcol(jpos) .eq. ivtPeriodic) then
               ! Skip the diagonal of the second row since it will be processed below
@@ -2126,35 +2126,35 @@ contains
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           do iaux = ibeg, iend
             DA(:,iaux) = 0.0_DP
           end do
           DA(:,ipos) = dfilter
-          
+
         case DEFAULT
           ! Replace all columns by [0,...,0,diag(A),0,...,0]
           ivt  = IverticesAtBoundary(ivbd)
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           do iaux = ibeg, ipos-1
             DA(:,iaux) = 0.0_DP
           end do
-          
+
           do iaux = ipos+1, iend
             DA(:,iaux) = 0.0_DP
           end do
-          
+
         end select
       end do
     end subroutine filtermatrix_Mat79IntlD_1D
-    
-    
+
+
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
-    ! Here, the matrix is given in format CSR7 or CSR9 interleave format, 
+    ! Here, the matrix is given in format CSR7 or CSR9 interleave format,
     ! whereby each local matrix is a diagonal matrix in 2D.
 
     subroutine filtermatrix_Mat79IntlD_2D(IbdrCompPeriodic,&
@@ -2165,7 +2165,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -2177,7 +2177,7 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
@@ -2186,7 +2186,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -2205,16 +2205,16 @@ contains
       ! Filter value
       real(DP), intent(in) :: dfilter
 
-      
+
       ! local variables
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
       integer :: ibeg,iend,ipos,jpos,iaux,idiag,jdiag
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,isegment,isegmentPeriodic
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -2232,18 +2232,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -2251,10 +2251,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-          
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
@@ -2275,12 +2275,12 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -2291,7 +2291,7 @@ contains
             jpos  = Kld(ivtPeriodic)
             idiag = Kdiagonal(ivt)
             jdiag = Kdiagonal(ivtPeriodic)
-            
+
             do while(jpos .le. Kld(ivtPeriodic+1)-1)
               if (Kcol(jpos) .eq. ivtPeriodic) then
                 ! Skip the diagonal of the second row since it will be processed below
@@ -2331,12 +2331,12 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -2347,7 +2347,7 @@ contains
             jpos  = Kld(ivtPeriodic)
             idiag = Kdiagonal(ivt)
             jdiag = Kdiagonal(ivtPeriodic)
-            
+
             do while(jpos .le. Kld(ivtPeriodic+1)-1)
               if (Kcol(jpos) .eq. ivtPeriodic) then
                 ! Skip the diagonal of the second row since it will be processed below
@@ -2382,12 +2382,12 @@ contains
             ibeg = Kld(ivt)
             iend = Kld(ivt+1)-1
             ipos = Kdiagonal(ivt)
-            
+
             do iaux = ibeg, iend
               DA(:,iaux) = 0.0_DP
             end do
             DA(:,ipos) = dfilter
-            
+
           case DEFAULT
             ! Replace all columns by [0,...,0,diag(A),0,...,0]
             ivt  = IverticesAtBoundary(ivbd)
@@ -2402,7 +2402,7 @@ contains
             do iaux = ipos+1, iend
               DA(:,iaux) = 0.0_DP
             end do
-            
+
           end select
         end do
       end do
@@ -2411,7 +2411,7 @@ contains
 
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
-    ! Here, the matrix is given in format CSR7 or CSR9 interleave format, 
+    ! Here, the matrix is given in format CSR7 or CSR9 interleave format,
     ! whereby each local matrix is a full matrix in 1D.
 
     subroutine filtermatrix_Mat79Intl1_1D(IbdrCompPeriodic,&
@@ -2421,7 +2421,7 @@ contains
 
        ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -2436,7 +2436,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -2452,16 +2452,16 @@ contains
       ! Filter value
       real(DP), intent(in) :: dfilter
 
-      
+
       ! local variables
       real(DP), dimension(nvar) :: Daux
       integer :: ibeg,iend,ipos,jpos,iaux,idiag,jdiag
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,ivar,isegment
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
@@ -2470,11 +2470,11 @@ contains
 
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
@@ -2484,14 +2484,14 @@ contains
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-          
+
           ! Add entries from the row that corresponds to node ivt to the row that
           ! corresponds to node ivtPeriodic and set DFILTER and -DFILTER in row for node ivt.
           ipos  = Kld(ivt)
           jpos  = Kld(ivtPeriodic)
           idiag = Kdiagonal(ivt)
           jdiag = Kdiagonal(ivtPeriodic)
-          
+
           do while(jpos .le. Kld(ivtPeriodic+1)-1)
             if (Kcol(jpos) .eq. ivtPeriodic) then
               ! Skip the diagonal of the second row since it will be processed below
@@ -2519,49 +2519,49 @@ contains
               jpos         = jpos+1
             end if
           end do
-          
+
         case (BDR_DIRICHLET)
           ! Replace all columns by [0,...,0,dfilter,0,...,0]
           ivt  = IverticesAtBoundary(ivbd)
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           do iaux = ibeg, iend
             DA(:,:,iaux) = 0.0_DP
           end do
-          
+
           do ivar = 1, nvar
             DA(ivar,ivar,ipos) = dfilter
           end do
-          
+
         case DEFAULT
           ! Replace all columns by [0,...,0,diag(A),0,...,0]
           ivt  = IverticesAtBoundary(ivbd)
           ibeg = Kld(ivt)
           iend = Kld(ivt+1)-1
           ipos = Kdiagonal(ivt)
-          
+
           do ivar = 1, nvar
             Daux(ivar) = DA(ivar,ivar,ipos)
           end do
-          
+
           do iaux = ibeg, iend
             DA(:,:,iaux) = 0.0_DP
           end do
-          
+
           do ivar = 1, nvar
             DA(ivar,ivar,ipos) = Daux(ivar)
           end do
-          
+
         end select
       end do
     end subroutine filtermatrix_Mat79Intl1_1D
-    
+
 
     !***************************************************************
     ! Filter matrix and replace the diagonal entry by a scalar value.
-    ! Here, the matrix is given in format CSR7 or CSR9 interleave format, 
+    ! Here, the matrix is given in format CSR7 or CSR9 interleave format,
     ! whereby each local matrix is a full matrix in 2D.
 
     subroutine filtermatrix_Mat79Intl1_2D(IbdrCompPeriodic,&
@@ -2572,7 +2572,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -2584,7 +2584,7 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
@@ -2593,7 +2593,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -2611,18 +2611,18 @@ contains
 
       ! Filter value
       real(DP), intent(in) :: dfilter
-      
-      
+
+
       ! local variables
       real(DP), dimension(nvar) :: Daux
       real(DP) :: dminValue,dmaxValue,dVertexParameterPeriodic
       integer :: ibeg,iend,ipos,jpos,iaux,idiag,jdiag
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ibct,ibctPeriodic,ivar,isegment,isegmentPeriodic
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -2640,18 +2640,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -2659,10 +2659,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
@@ -2683,12 +2683,12 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -2699,7 +2699,7 @@ contains
             jpos  = Kld(ivtPeriodic)
             idiag = Kdiagonal(ivt)
             jdiag = Kdiagonal(ivtPeriodic)
-            
+
             do while(jpos .le. Kld(ivtPeriodic+1)-1)
               if (Kcol(jpos) .eq. ivtPeriodic) then
                 ! Skip the diagonal of the second row since it will be processed below
@@ -2739,12 +2739,12 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
@@ -2755,7 +2755,7 @@ contains
             jpos  = Kld(ivtPeriodic)
             idiag = Kdiagonal(ivt)
             jdiag = Kdiagonal(ivtPeriodic)
-            
+
             do while(jpos .le. Kld(ivtPeriodic+1)-1)
               if (Kcol(jpos) .eq. ivtPeriodic) then
                 ! Skip the diagonal of the second row since it will be processed below
@@ -2783,7 +2783,7 @@ contains
                 jpos         = jpos+1
               end if
             end do
-            
+
           case (BDR_DIRICHLET)
             ! Replace all columns by [0,...,0,dfilter,0,...,0]
             ivt  = IverticesAtBoundary(ivbd)
@@ -2805,7 +2805,7 @@ contains
             ibeg = Kld(ivt)
             iend = Kld(ivt+1)-1
             ipos = Kdiagonal(ivt)
-            
+
             do ivar = 1, nvar
               Daux(ivar) = DA(ivar,ivar,ipos)
             end do
@@ -2813,11 +2813,11 @@ contains
             do iaux = ibeg, iend
               DA(:,:,iaux) = 0.0_DP
             end do
-            
+
             do ivar = 1, nvar
               DA(ivar,ivar,ipos) = Daux(ivar)
             end do
-            
+
           end select
         end do
       end do
@@ -2830,7 +2830,7 @@ contains
 
   subroutine bdrf_filterVectorBlockValue(rboundaryCondition, rvector,&
       dvalue, rtriangulation)
-        
+
 !<description>
     ! This subroutine performs vector filtering by a constant value.
 !</description>
@@ -2854,7 +2854,7 @@ contains
 
     ! local variables
     integer :: iblock
-    
+
     ! Check if there are strong boundary conditions
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
@@ -2864,7 +2864,7 @@ contains
           %RvectorBlock(iblock), dvalue, rtriangulation)
     end do
   end subroutine bdrf_filterVectorBlockValue
- 
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -2877,7 +2877,7 @@ contains
 !</description>
 
 !<input>
-    ! The boundary conditions 
+    ! The boundary conditions
     type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! The scalar filter value
@@ -2904,7 +2904,7 @@ contains
     integer, dimension(:), pointer :: p_IbdrCondType
     logical, dimension(:), pointer :: p_BisSegClosed
     logical :: bisSorted
-   
+
     ! Check if there are strong boundary conditions
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
@@ -2928,7 +2928,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarValue')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
         call output_line('No triangulation associated!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarValue')
@@ -2936,14 +2936,14 @@ contains
       end if
       p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
           OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarValue')
       call sys_halt()
     end if
-    
+
     ! How many spatial dimensions do we have?
     select case (rboundaryCondition%ndimension)
     case (NDIM1D)
@@ -2965,13 +2965,13 @@ contains
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
       call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-      
+
       ! Set prescribed boundary values in 2D
       call filtervector_2D(p_IbdrCondType, p_IbdrCondCpIdx,&
           p_DmaxPar, p_BisSegClosed, rboundaryCondition&
@@ -2986,17 +2986,17 @@ contains
 
     ! Do we have to re-sort vector?
     if (bisSorted) call lsyssc_vectorActivateSorting(rvector, .true.)
-    
+
   contains
-    
+
     ! Here are the real filter routines
-    
+
     !***************************************************************
     ! Filter vector in 1D.
-    
+
     subroutine filtervector_1D(IbdrCondType, IbdrCondCpIdx, nbct,&
         IverticesAtBoundary, IboundaryCpIdx, nvar, Dx, dfilter)
-      
+
       ! Array with types of boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondType
 
@@ -3008,7 +3008,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -3021,34 +3021,34 @@ contains
       ! Filter value
       real(DP), intent(in) :: dfilter
 
-      
+
       ! local variables
       integer :: ivbd,ivt,ibct,isegment
 
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-          
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-            
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET,&
               BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Do nothing
-            
+
         case DEFAULT
           ! Replace vector entry by dfilter
           ivt = IverticesAtBoundary(ivbd)
           Dx(:,ivt) = dfilter
-          
+
         end select
       end do
     end subroutine filtervector_1D
@@ -3056,11 +3056,11 @@ contains
 
     !***************************************************************
     ! Filter vector in 2D.
-    
+
     subroutine filtervector_2D(IbdrCondType, IbdrCondCpIdx,&
         DmaxParam, BisSegClosed, nbct, IverticesAtBoundary,&
         IboundaryCpIdx, DvertexParameterValue, nvar, Dx, dfilter)
-      
+
       ! Array with types of boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondType
 
@@ -3078,7 +3078,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -3102,7 +3102,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -3120,18 +3120,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -3139,21 +3139,21 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET,&
                 BDR_PERIODIC,&
                 BDR_ANTIPERIODIC)
             ! Do nothing
-            
+
           case DEFAULT
             ! Replace vector entry by dfilter
             ivt = IverticesAtBoundary(ivbd)
             Dx(:,ivt) = dfilter
-            
+
           end select
         end do
       end do
@@ -3163,10 +3163,10 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-  
+
   subroutine bdrf_filterVectorBlockVector(rboundaryCondition,&
       rvector, rvectorFilter, rtriangulation)
-        
+
 !<description>
     ! This subroutine performs vector filtering by another vector.
 !</description>
@@ -3190,7 +3190,7 @@ contains
 
     ! local variables
     integer :: iblock
-    
+
     ! Check if there are strong boundary conditions
     if (.not.rboundaryCondition%bStrongBdrCond) return
 
@@ -3221,7 +3221,7 @@ contains
 !</description>
 
 !<input>
-    ! The boundary conditions 
+    ! The boundary conditions
     type(t_boundaryCondition), intent(in) :: rboundaryCondition
 
     ! OPTIONAL: The triangulation
@@ -3254,7 +3254,7 @@ contains
 
     ! Check if both vectors are compatible
     call lsyssc_isVectorCompatible(rvector, rvectorFilter)
-    
+
     ! Check if vector is sorted?
     if (rvector%isortStrategy .gt. 0) then
       bisSorted = .true.
@@ -3267,7 +3267,7 @@ contains
     ! Set pointer for vector
     call lsyssc_getbase_double (rvector, p_Dx)
     call lsyssc_getbase_double (rvectorFilter, p_Dfilter)
-    
+
     ! Get underlying triangulation structure
     if (present(rtriangulation)) then
       p_rtriangulation => rtriangulation
@@ -3277,7 +3277,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarVector')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
         call output_line('No triangulation associated!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarVector')
@@ -3285,7 +3285,7 @@ contains
       end if
       p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
@@ -3299,11 +3299,11 @@ contains
       ! Set pointers for triangulation
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
-      
+
       ! Set prescribed boundary values in 1D
       call filtervector_1D(p_IbdrCondType, p_IbdrCondCpIdx,&
           rboundaryCondition%iboundarycount, p_IverticesAtBoundary,&
@@ -3314,7 +3314,7 @@ contains
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -3338,14 +3338,14 @@ contains
       call lsyssc_vectorActivateSorting(rvector, .true.)
       call lsyssc_vectorActivateSorting(rvectorFilter, .true.)
     end if
-    
+
   contains
-    
+
     ! Here are the real filter routines
- 
+
     !***************************************************************
     ! Filter vector in 1D.
-    
+
     subroutine filtervector_1D(IbdrCondType, IbdrCondCpIdx, nbct,&
         IverticesAtBoundary, IboundaryCpIdx, nvar, Dx, Dfilter)
 
@@ -3360,7 +3360,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -3372,46 +3372,46 @@ contains
 
       ! Filter data array
       real(DP), dimension(nvar,*), intent(in) :: Dfilter
-      
+
       ! local variables
       integer :: ivbd,ivt,ibct,isegment
 
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-            
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET,&
               BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Do nothing
-          
+
         case DEFAULT
           ! Replace vector entry by dfilter
           ivt = IverticesAtBoundary(ivbd)
           Dx(:,ivt) = Dfilter(:,ivt)
-          
+
         end select
       end do
     end subroutine filtervector_1D
 
-   
+
     !***************************************************************
     ! Filter vector in 2D.
-    
+
     subroutine filtervector_2D(IbdrCondType, IbdrCondCpIdx,&
         DmaxParam, BisSegClosed, nbct, IverticesAtBoundary,&
         IboundaryCpIdx, DvertexParameterValue, nvar, Dx, Dfilter)
-      
+
         ! Array with types of boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondType
 
@@ -3429,7 +3429,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -3445,7 +3445,7 @@ contains
       ! Filter data array
       real(DP), dimension(nvar,*), intent(in) :: Dfilter
 
-      
+
       ! local variables
       real(DP) :: dminValue,dmaxValue
       integer :: ivbd,ivbdFirst,ivbdLast,ivt,ibct,isegment
@@ -3453,7 +3453,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -3470,18 +3470,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -3489,27 +3489,27 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET,&
                 BDR_PERIODIC,&
                 BDR_ANTIPERIODIC)
             ! Do nothing
-            
+
           case DEFAULT
             ! Replace vector entry by dfilter
             ivt = IverticesAtBoundary(ivbd)
             Dx(:,ivt) = Dfilter(:,ivt)
-            
+
           end select
         end do
       end do
     end subroutine filtervector_2D
   end subroutine bdrf_filterVectorScalarVector
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -3529,7 +3529,7 @@ contains
 
     ! The simulation time
     real(DP), intent(in) :: ttime
-    
+
     ! OPTIONAL: The boundary description
     type(t_boundary), intent(in), optional, target :: rboundary
 
@@ -3538,7 +3538,7 @@ contains
 
     ! OPTIONAL: The callback function
     include 'intf_bdrcallback.inc'
-    optional :: fcb_calcBoundaryvalues   
+    optional :: fcb_calcBoundaryvalues
 !</input>
 
 !<inputoutput>
@@ -3580,14 +3580,14 @@ contains
       ! That is it, return
       return
     end if
-    
+
     ! Check if vector and boundary are compatible
     if (rvector%nblocks .ne. rboundaryCondition%nmaxExpressions) then
       call output_line('Vector and boundary description are not compatible',&
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
       call sys_halt()
     end if
-    
+
     ! Get number of vertices
     nvt = int(rvector%NEQ/rvector%nblocks, I32)
 
@@ -3599,7 +3599,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
         call sys_halt()
       end if
-      
+
       ! Check if vector is sorted
       if (rvector%RvectorBlock(iblock)%isortStrategy .gt. 0) then
         BisSorted(iblock) = .true.
@@ -3621,9 +3621,9 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rvector%RvectorBlock(1)%p_rspatialDiscr&
-          %p_rtriangulation)) then 
+          %p_rtriangulation)) then
         call output_line('No triangulation associated!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
         call sys_halt()
@@ -3631,7 +3631,7 @@ contains
       p_rtriangulation => rvector%RvectorBlock(1)%p_rspatialDiscr&
           %p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
@@ -3646,7 +3646,7 @@ contains
       call storage_getbase_double2d(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
@@ -3658,26 +3658,26 @@ contains
           p_DvertexCoords, nvt, rvector%nblocks, p_Dx,&
           fcb_calcBoundaryvalues, istatus)
 
-      
+
     case (NDIM2D)
       ! Set pointers for triangulation
       call storage_getbase_double2d(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
       call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-      
+
       ! Get underlying boundary structure
       if (present(rboundary)) then
         p_rboundary => rboundary
       else
         if (.not.associated(rvector%RvectorBlock(1)%p_rspatialDiscr&
-            %p_rboundary)) then 
+            %p_rboundary)) then
           call output_line('No boundary associated!',&
               OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
           call sys_halt()
@@ -3693,19 +3693,19 @@ contains
           p_IverticesAtBoundary, p_IboundaryCpIdx,&
           p_DvertexParameterValue, p_DvertexCoords, nvt, rvector&
           %nblocks, p_Dx, p_rboundary, fcb_calcBoundaryvalues, istatus)
-      
+
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorBlockExplicit')
       call sys_halt()
     end select
-    
+
     ! Do we have to re-sort the vector?
     do iblock = 1, rvector%nblocks
       if (BisSorted(iblock))&
           call lsyssc_vectorActivateSorting(rvector%RvectorBlock(iblock), .true.)
     end do
-    
+
   contains
 
     ! Here are the real filter routines
@@ -3728,25 +3728,25 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      
+
       ! Total number of vertices
-      integer, intent(in) :: nvt      
+      integer, intent(in) :: nvt
 
       ! Number of variables
       integer, intent(in) :: nvar
 
       ! Vector data array
       real(DP), dimension(nvt,nvar), intent(inout) :: Dx
-      
+
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
@@ -3764,68 +3764,68 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET,&
               BDR_PERIODIC,&
               BDR_ANTIPERIODIC,&
               BDR_RLXEULERWALL)
           ! Do nothing
-          
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, Dx(ivt,ivar))
           end do
-          
+
         case DEFAULT
           if (.not.present(fcb_calcBoundaryvalues)) then
             call output_line('Missing callback function!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'filtervector_1D')
             call sys_halt()
           end if
-          
+
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Get desired boundary values from parser
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, DbdrValues(ivar))
           end do
-          
+
           ! Compute the analytical normal vector
           if (mod(ibct, 2) .eq. 0) then
             DbdrNormal = 1.0_DP
           else
             DbdrNormal = -1.0_DP
           end if
-          
+
           ! Apply callback function to determine boundary conditions
           Daux  = Dx(ivt,:)
           Daux0 = Dx(ivt,:)
@@ -3857,16 +3857,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -3875,9 +3875,9 @@ contains
 
       ! Array with coordinates of vertices at the boundary
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      
+
       ! Total number of vertices
-      integer, intent(in) :: nvt      
+      integer, intent(in) :: nvt
 
       ! Number of variables
       integer, intent(in) :: nvar
@@ -3887,7 +3887,7 @@ contains
 
       ! Boundary description
       type(t_boundary), intent(in) :: rboundary
-      
+
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
@@ -3895,7 +3895,7 @@ contains
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0
@@ -3906,7 +3906,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -3924,18 +3924,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -3943,21 +3943,21 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET,&
                 BDR_PERIODIC,&
                 BDR_ANTIPERIODIC,&
                 BDR_RLXEULERWALL)
             ! Do nothing
-            
+
           case (BDR_DIRICHLET)
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
-            
+
             ! Initialize variable values [x,y,0,time] for parser
             DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
@@ -3979,7 +3979,7 @@ contains
 
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
-            
+
             ! Get vertex number of predecessor
             if (ivbd .eq. ivbdFirst) then
               ivtL = IverticesAtBoundary(ivbdLast)
@@ -4005,7 +4005,7 @@ contains
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                   +ivar, DvariableValues, DbdrValues(ivar))
             end do
-            
+
             ! Compute the analytical and approximate normal vectors
             if (DvertexParameterValue(ivbd) .eq. dminValue) then
               ! We are at the beginning of a segment that includes the starting point.
@@ -4051,17 +4051,17 @@ contains
               ! Compute the approximate normal vector
               dnxL = DvertexCoords(2,ivt) -DvertexCoords(2,ivtL)
               dnyL = DvertexCoords(1,ivtL)-DvertexCoords(1,ivt)
-              
+
               dnxR = DvertexCoords(2,ivtR)-DvertexCoords(2,ivt)
               dnyR = DvertexCoords(1,ivt) -DvertexCoords(1,ivtR)
-              
-              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )                        
+
+              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )
               dwR = sqrt( dnxR*dnxR + dnyR*dnyR )
-              
+
               dnx = (dnxL/dwL + dnxR/dwR)/(1/dwL + 1/dwR)
               dny = (dnyL/dwL + dnyR/dwR)/(1/dwL + 1/dwR)
               dw  = sqrt( dnx*dnx + dny*dny )
-              
+
               DpointNormal(1) = dnx/dw
               DpointNormal(2) = dny/dw
             end if
@@ -4118,7 +4118,7 @@ contains
     integer, intent(inout), optional :: istatus
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
     type(t_boundary), pointer :: p_rboundary
@@ -4154,7 +4154,7 @@ contains
     else
       bisSorted = .false.
     end if
-    
+
     ! Set pointer for vector
     call lsyssc_getbase_double(rvector, p_Dx)
 
@@ -4167,7 +4167,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarExplicit')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rvector%p_rspatialDiscr%p_rtriangulation)) then
         call output_line('No triangulation associated!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarExplicit')
@@ -4175,7 +4175,7 @@ contains
       end if
       p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
@@ -4201,14 +4201,14 @@ contains
           %iboundarycount, p_IverticesAtBoundary, p_IboundaryCpIdx,&
           p_DvertexCoords, rvector%NVAR, p_Dx, fcb_calcBoundaryvalues,&
           istatus)
-      
+
     case (NDIM2D)
       ! Set pointers for triangulation
       call storage_getbase_double2d(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -4234,7 +4234,7 @@ contains
           p_IverticesAtBoundary, p_IboundaryCpIdx,&
           p_DvertexParameterValue, p_DvertexCoords, rvector%NVAR,&
           p_Dx, p_rboundary, fcb_calcBoundaryvalues, istatus)
-      
+
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterVectorScalarExplicit')
@@ -4243,7 +4243,7 @@ contains
 
     ! Do we have to re-sort vector
     if (bisSorted) call lsyssc_vectorActivateSorting(rvector, .true.)
-    
+
   contains
 
     ! Here are the real filter routines
@@ -4266,22 +4266,22 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
       ! Vector data array
       real(DP), dimension(nvar,*), intent(inout) :: Dx
-      
+
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
@@ -4289,7 +4289,7 @@ contains
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues
@@ -4299,40 +4299,40 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-          
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET,&
               BDR_PERIODIC,&
               BDR_ANTIPERIODIC,&
               BDR_RLXEULERWALL)
           ! Do nothing
-          
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
 
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, Dx(ivar,ivt))
           end do
-          
+
         case DEFAULT
           if (.not.present(fcb_calcBoundaryvalues)) then
             call output_line('Missing callback function!',&
@@ -4342,26 +4342,26 @@ contains
 
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-                    
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Get desired boundary values from parser
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, DbdrValues(ivar))
           end do
-          
+
           ! Compute the analytical normal vector
           if (mod(ibct, 2) .eq. 0) then
             DbdrNormal = 1.0_DP
           else
             DbdrNormal = -1.0_DP
           end if
-            
+
           ! Apply callback function to determine boundary conditions
           call fcb_calcBoundaryvalues(DbdrNormal, DbdrNormal,&
               DbdrValues, IbdrCondType(isegment), Dx(:,ivt), Dx(:,&
@@ -4390,16 +4390,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -4408,7 +4408,7 @@ contains
 
       ! Array with coordinates of vertices at the boundary
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -4417,7 +4417,7 @@ contains
 
       ! Boundary description
       type(t_boundary), intent(in) :: rboundary
-      
+
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
@@ -4425,7 +4425,7 @@ contains
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues
@@ -4436,7 +4436,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -4453,17 +4453,17 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment = IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -4471,10 +4471,10 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-          
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET,&
                 BDR_PERIODIC,&
@@ -4485,13 +4485,13 @@ contains
           case (BDR_DIRICHLET)
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
-            
+
             ! Initialize variable values [x,y,0,time] for parser
             DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
             DvariableValues(NDIM3D)   = 0.0_DP
             DvariableValues(NDIM3D+1) = ttime
-            
+
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
@@ -4504,7 +4504,7 @@ contains
                                 OU_CLASS_ERROR,OU_MODE_STD,'filtervector_2D')
               call sys_halt()
             end if
-            
+
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
 
@@ -4527,7 +4527,7 @@ contains
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
             DvariableValues(NDIM3D)   = 0.0_DP
             DvariableValues(NDIM3D+1) = ttime
-            
+
             ! Get desired boundary values from parser
             do ivar = 1, nvar
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
@@ -4579,21 +4579,21 @@ contains
               ! Compute the approximate normal vector
               dnxL = DvertexCoords(2,ivt) -DvertexCoords(2,ivtL)
               dnyL = DvertexCoords(1,ivtL)-DvertexCoords(1,ivt)
-              
+
               dnxR = DvertexCoords(2,ivtR)-DvertexCoords(2,ivt)
               dnyR = DvertexCoords(1,ivt) -DvertexCoords(1,ivtR)
-              
-              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )                        
+
+              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )
               dwR = sqrt( dnxR*dnxR + dnyR*dnyR )
-              
+
               dnx = (dnxL/dwL + dnxR/dwR)/(1/dwL + 1/dwR)
               dny = (dnyL/dwL + dnyR/dwR)/(1/dwL + 1/dwR)
               dw  = sqrt( dnx*dnx + dny*dny )
-              
+
               DpointNormal(1) = dnx/dw
               DpointNormal(2) = dny/dw
             end if
-            
+
             ! Apply callback function to determine boundary conditions
             call fcb_calcBoundaryvalues(DbdrNormal, DpointNormal,&
                 DbdrValues, IbdrCondType(isegment), Dx(:,ivt), Dx(:,&
@@ -4615,7 +4615,7 @@ contains
 !<description>
     ! This subroutine imposes prescribed boundary conditions by
     ! filtering the solution vector in the following way:
-    ! 
+    !
     ! 1. Compute a provisional solution by scaling the defect vector
     !    by the inverse of the diagonal matrix entries and adding
     !    the result to the solution from the last iteration:
@@ -4675,7 +4675,7 @@ contains
     type t_rarray
       real(DP), dimension(:), pointer :: Da
     end type t_rarray
-    
+
 
     ! local variables
     type(t_triangulation), pointer :: p_rtriangulation
@@ -4693,7 +4693,7 @@ contains
     integer, dimension(:), pointer :: p_IbdrCompPeriodic
     integer, dimension(:), pointer :: p_IbdrCondPeriodic
     logical, dimension(:), pointer :: p_BisSegClosed
-    
+
     logical, dimension(rmatrix%nblocksPerCol,&
                        rmatrix%nblocksPerRow) :: BisMatrixSorted
     logical, dimension(rsolution%nblocks) :: BisSolutionSorted
@@ -4750,7 +4750,7 @@ contains
     ! Check if matrix is sorted and prepare auxiliary data structure?
     do iblock = 1, rmatrix%nblocksPerCol
       do jblock = 1, rmatrix%nblocksPerRow
-        
+
         if (rmatrix%RmatrixBlock(jblock,iblock)%isortStrategy .gt. 0) then
           BisMatrixSorted(jblock,iblock) =.true.
           call lsyssc_unsortMatrix(rmatrix%RmatrixBlock(jblock,iblock), .true.)
@@ -4786,7 +4786,7 @@ contains
         BisDefectSorted(iblock) = .false.
       end if
     end do
-    
+
     ! Set pointers for solution and defect
     call lsysbl_getbase_double(rsolution0, p_Du0)
     call lsysbl_getbase_double(rsolution, p_Du)
@@ -4801,7 +4801,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionBlock')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rsolution%RvectorBlock(1)%p_rspatialDiscr&
           %p_rtriangulation)) then
         call output_line('No triangulation associated!',&
@@ -4811,7 +4811,7 @@ contains
       p_rtriangulation => rsolution%RvectorBlock(1)%p_rspatialDiscr&
           %p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
@@ -4832,14 +4832,14 @@ contains
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
       call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
-      
+
       ! What kind of matrix are we?
       select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld (rmatrix%RmatrixBlock(1,1), p_Kld)
         call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1), p_Kcol)
-        
+
         ! Set prescribed boundary values in 1D
         call filtersolution_Mat79_1D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -4848,12 +4848,12 @@ contains
             p_Kld, p_Kcol, p_Kld, rmatrix%RmatrixBlock(1,1)%NEQ,&
             rmatrix%nblocksPerCol, rarray, p_Du, p_Dr, p_Du0,&
             fcb_calcBoundaryvalues, istatus)
-      
+
       case (LSYSSC_MATRIX9)
         call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), p_Kdiagonal)
         call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), p_Kld)
         call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1), p_Kcol)
-        
+
         ! Set prescribed boundary values in 1D
         call filtersolution_Mat79_1D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -4862,13 +4862,13 @@ contains
             p_Kld, p_Kcol, p_Kdiagonal, rmatrix%RmatrixBlock(1,1)%NEQ&
             , rmatrix%nblocksPerCol, rarray, p_Du, p_Dr, p_Du0,&
             fcb_calcBoundaryvalues, istatus)
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionBlock')
         call sys_halt()
       end select
-      
+
 
     case (NDIM2D)
       ! Set pointers for triangulation
@@ -4884,7 +4884,7 @@ contains
       call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
       call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-        
+
       ! Get underlying boundary structure
       if (present(rboundary)) then
         p_rboundary => rboundary
@@ -4896,14 +4896,14 @@ contains
         end if
         p_rboundary => rsolution%RvectorBlock(1)%p_rspatialDiscr%p_rboundary
       end if
- 
+
       ! What kind of matrix are we?
       select case (rmatrix%RmatrixBlock(1,1)%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), p_Kld)
         call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1), p_Kcol)
-        
+
         ! Set prescribed boundary values in 2D
         call filtersolution_Mat79_2D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -4914,12 +4914,12 @@ contains
             %RmatrixBlock(1,1)%NEQ, rmatrix%nblocksPerCol, rarray,&
             p_Du, p_Dr, p_Du0, p_rboundary, fcb_calcBoundaryvalues,&
             istatus)
-      
+
       case (LSYSSC_MATRIX9)
         call lsyssc_getbase_Kdiagonal(rmatrix%RmatrixBlock(1,1), p_Kdiagonal)
         call lsyssc_getbase_Kld(rmatrix%RmatrixBlock(1,1), p_Kld)
         call lsyssc_getbase_Kcol(rmatrix%RmatrixBlock(1,1), p_Kcol)
-        
+
         ! Set prescribed boundary values in 2D
         call filtersolution_Mat79_2D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -4930,7 +4930,7 @@ contains
             %RmatrixBlock(1,1)%NEQ, rmatrix%nblocksPerCol, rarray,&
             p_Du, p_Dr, p_Du0, p_rboundary, fcb_calcBoundaryvalues,&
             istatus)
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionBlock')
@@ -4942,7 +4942,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionBlock')
       call sys_halt()
     end select
-    
+
     ! Do we have to re-sort matrix?
     do iblock = 1, rmatrix%nblocksPerRow
       do jblock = 1, rmatrix%nblocksPerCol
@@ -4965,13 +4965,13 @@ contains
     end do
 
   contains
-    
+
     ! Here are the real filter routines
- 
+
     !***************************************************************
     ! Filter solution and defect vector in 1D
     ! Here, the matrix is store in CSR7 and CSR9 format.
-    
+
     subroutine filtersolution_Mat79_1D(rfparser, IbdrCompPeriodic,&
         IbdrCondPeriodic, IbdrCondType, IbdrCondCpIdx, nbct,&
         IverticesAtBoundary, IboundaryCpIdx, DvertexCoords, Kld,&
@@ -4983,7 +4983,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -4995,10 +4995,10 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -5010,7 +5010,7 @@ contains
 
       ! Number of equations per variable
       integer, intent(in) :: neq
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -5026,10 +5026,10 @@ contains
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
-      
+
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0,Ddiagonal
@@ -5039,65 +5039,65 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-                
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
 
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-            
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-          
-          ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+          ! Add residual of the equation that corresponds to node ivt to the equation that
           ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
           do ivar = 1, NVAR
             Dr(ivtPeriodic,ivar) = Dr(ivt,ivar)+Dr(ivtPeriodic,ivar)
             Dr(ivt,ivar)         = 0.0_DP
           end do
-                    
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, Du(ivt,ivar))
           end do
-          
+
           ! Nullify residual entries
           do ivar = 1, nvar
             Dr(ivt,ivar) = 0.0_DP
           end do
-          
+
         case DEFAULT
           if (.not.present(fcb_calcBoundaryvalues)) then
             call output_line('Missing callback function!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79_1D')
             call sys_halt()
           end if
-          
+
           ! Get vertex number
           ivt  = IverticesAtBoundary(ivbd)
           ipos = Kdiagonal(ivt)
@@ -5106,24 +5106,24 @@ contains
           do ivar = 1, nvar
             Daux(ivar) = Du(ivt,ivar)+Dr(ivt,ivar)/rarray(ivar,ivar)%Da(ipos)
           end do
-          
+
           ! Get values from old solution
           do ivar = 1, nvar
             Daux0(ivar) = Du0(ivt,ivar)
           end do
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Get desired boundary values from parser
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, DbdrValues(ivar))
           end do
-          
+
           ! Compute the analytical normal vector
           if (mod(ibct, 2) .eq. 0) then
             DbdrNormal = 1.0_DP
@@ -5138,7 +5138,7 @@ contains
           do ivar = 1, nvar
             Du(ivt,ivar) = Daux(ivar)
           end do
-          
+
           ! Nullify residual entries
           do ivar = 1, nvar
             Dr(ivt,ivar) = 0.0_DP
@@ -5147,11 +5147,11 @@ contains
       end do
     end subroutine filtersolution_Mat79_1D
 
-   
+
     !***************************************************************
     ! Filter solution and defect vector in 2D
     ! Here, the matrix is store in CSR7 and CSR9 format.
-    
+
     subroutine filtersolution_Mat79_2D(rfparser, IbdrCompPeriodic,&
         IbdrCondPeriodic, IbdrCondType, IbdrCondCpIdx, DmaxParam,&
         BisSegClosed, nbct, IverticesAtBoundary, IboundaryCpIdx,&
@@ -5164,7 +5164,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -5176,16 +5176,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -5200,7 +5200,7 @@ contains
 
       ! Number of equations per variable
       integer, intent(in) :: neq
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -5219,11 +5219,11 @@ contains
       ! OPTIONAL: Callback function
       include 'intf_bdrcallback.inc'
       optional :: fcb_calcBoundaryvalues
-      
+
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Daux,Daux0,Ddiagonal
@@ -5236,7 +5236,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -5253,18 +5253,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -5272,7 +5272,7 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-                
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
 
@@ -5296,17 +5296,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             do ivar = 1, NVAR
               Dr(ivtPeriodic,ivar) = Dr(ivt,ivar)+Dr(ivtPeriodic,ivar)
@@ -5324,17 +5324,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
 
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             do ivar = 1, NVAR
               Dr(ivtPeriodic,ivar) = Dr(ivt,ivar)+Dr(ivtPeriodic,ivar)
@@ -5343,7 +5343,7 @@ contains
 
           case (BDR_DIRICHLET)
             ivt  = IverticesAtBoundary(ivbd)
-            
+
             ! Initialize variable values [x,y,0,time] for parser
             DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
@@ -5355,12 +5355,12 @@ contains
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                   +ivar, DvariableValues, Du(ivt,ivar))
             end do
-            
+
             ! Nullify residual entries
             do ivar = 1, nvar
               Dr(ivt,ivar) = 0.0_DP
             end do
-            
+
           case DEFAULT
             if (.not.present(fcb_calcBoundaryvalues)) then
               call output_line('Missing boundary and/or callback function!',&
@@ -5453,17 +5453,17 @@ contains
               ! Compute the approximate normal vector
               dnxL = DvertexCoords(2,ivt) -DvertexCoords(2,ivtL)
               dnyL = DvertexCoords(1,ivtL)-DvertexCoords(1,ivt)
-              
+
               dnxR = DvertexCoords(2,ivtR)-DvertexCoords(2,ivt)
               dnyR = DvertexCoords(1,ivt) -DvertexCoords(1,ivtR)
-              
-              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )                        
+
+              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )
               dwR = sqrt( dnxR*dnxR + dnyR*dnyR )
-              
+
               dnx = (dnxL/dwL + dnxR/dwR)/(1/dwL + 1/dwR)
               dny = (dnyL/dwL + dnyR/dwR)/(1/dwL + 1/dwR)
               dw  = sqrt( dnx*dnx + dny*dny )
-              
+
               DpointNormal(1) = dnx/dw
               DpointNormal(2) = dny/dw
             end if
@@ -5475,7 +5475,7 @@ contains
             do ivar = 1, nvar
               Du(ivt,ivar) = Daux(ivar)
             end do
-            
+
             ! Nullify residual entries
             do ivar = 1, nvar
               Dr(ivt,ivar) = 0.0_DP
@@ -5493,11 +5493,11 @@ contains
   subroutine bdrf_filterSolutionBlockScalar(rboundaryCondition,&
       rmatrix, rsolution, rdefect, rsolution0, ttime,&
       fcb_calcBoundaryvalues, istatus, rboundary, rtriangulation)
-    
+
 !<description>
     ! This subroutine imposes prescribed boundary conditions by
     ! filtering the solution vector in the following way:
-    ! 
+    !
     ! 1. Compute a provisional solution by scaling the defect vector
     !    by the inverse of the diagonal matrix entries and adding
     !    the result to the solution from the last iteration:
@@ -5547,7 +5547,7 @@ contains
 
     ! The defect vector that should be filtered
     type(t_vectorBlock), intent(inout) :: rdefect
-    
+
     ! OPTIONAL: Status of the callback function
     integer, intent(inout), optional :: istatus
 !</inputoutput>
@@ -5569,7 +5569,7 @@ contains
       call sys_halt()
     end if
   end subroutine bdrf_filterSolutionBlockScalar
-  
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -5581,7 +5581,7 @@ contains
 !<description>
     ! This subroutine imposes prescribed boundary conditions by
     ! filtering the solution vector in the following way:
-    ! 
+    !
     ! 1. Compute a provisional solution by scaling the defect vector
     !    by the inverse of the diagonal matrix entries and adding
     !    the result to the solution from the last iteration:
@@ -5653,7 +5653,7 @@ contains
     integer, dimension(:), pointer :: p_IbdrCompPeriodic
     integer, dimension(:), pointer :: p_IbdrCondPeriodic
     logical, dimension(:), pointer :: p_BisSegClosed
-    
+
     logical :: bisMatrixSorted,bisSolutionSorted,bisDefectSorted
 
     ! Initialize status
@@ -5708,7 +5708,7 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
         call sys_halt()
       end if
-      
+
       if (.not.associated(rsolution%p_rspatialDiscr%p_rtriangulation)) then
         call output_line('No triangulation associated!',&
             OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
@@ -5716,7 +5716,7 @@ contains
       end if
       p_rtriangulation => rsolution%p_rspatialDiscr%p_rtriangulation
     end if
-    
+
     ! Check spatial dimensions
     if (p_rtriangulation%ndim .ne. rboundaryCondition%ndimension) then
       call output_line('Spatial dimension mismatch!',&
@@ -5731,7 +5731,7 @@ contains
       call storage_getbase_double2d(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondType, p_IbdrCondType)
@@ -5740,28 +5740,28 @@ contains
 
       ! What kind of matrix are we?
       select case (rmatrix%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIXD)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         ! Set prescribed boundary values in 1D
         call filtersolution_MatD_1D(rboundaryCondition%rfparser,&
             p_IbdrCondType, p_IbdrCondCpIdx, rboundaryCondition&
             %iboundarycount, p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexCoords, p_DA, p_Du, p_Dr)
-        
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         ! Set prescribed boundary values in 1D
         call filtersolution_Mat79_1D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
             p_IbdrCondCpIdx, rboundaryCondition%iboundarycount,&
             p_IverticesAtBoundary, p_IboundaryCpIdx, p_DvertexCoords,&
             p_Kld, p_Kcol, p_Kld, p_DA, p_Du, p_Dr)
-        
+
       case (LSYSSC_MATRIX9)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -5777,7 +5777,7 @@ contains
 
       case (LSYSSC_MATRIX7INTL)
         select case (rmatrix%cinterleavematrixFormat)
-          
+
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
@@ -5811,10 +5811,10 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_systemScalar')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIX9INTL)
         select case (rmatrix%cinterleavematrixFormat)
-          
+
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
@@ -5850,7 +5850,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
           call sys_halt()
         end select
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
@@ -5864,7 +5864,7 @@ contains
       call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue, p_DvertexParameterValue)
       call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx, p_IboundaryCpIdx)
       call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
-      
+
       ! Set pointers for boundary
       call storage_getbase_double(rboundaryCondition%h_DmaxPar, p_DmaxPar)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
@@ -5872,7 +5872,7 @@ contains
       call storage_getbase_int(rboundaryCondition%h_IbdrCompPeriodic, p_IbdrCompPeriodic)
       call storage_getbase_int(rboundaryCondition%h_IbdrCondPeriodic, p_IbdrCondPeriodic)
       call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
-      
+
       ! Get underlying boundary structure
       if (present(rboundary)) then
         p_rboundary => rboundary
@@ -5887,10 +5887,10 @@ contains
 
       ! What kind of matrix are we?
       select case (rmatrix%cmatrixFormat)
-        
+
       case (LSYSSC_MATRIXD)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         ! Set prescribed boundary values in 2D
         call filtersolution_MatD_2D(rboundaryCondition%rfparser,&
             p_IbdrCondType, p_IbdrCondCpIdx, p_DmaxPar,&
@@ -5898,12 +5898,12 @@ contains
             p_IverticesAtBoundary, p_IboundaryCpIdx,&
             p_DvertexParameterValue, p_DvertexCoords,  p_DA, p_Du,&
             p_Dr)
-        
+
       case (LSYSSC_MATRIX7)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         ! Set prescribed boundary values in 2D
         call filtersolution_Mat79_2D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -5911,13 +5911,13 @@ contains
             rboundaryCondition%iboundarycount, p_IverticesAtBoundary,&
             p_IboundaryCpIdx, p_DvertexParameterValue,&
             p_DvertexCoords, p_Kld, p_Kcol, p_Kld, p_DA, p_Du, p_Dr)
-        
+
       case (LSYSSC_MATRIX9)
         call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
         call lsyssc_getbase_Kld(rmatrix, p_Kld)
         call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
         call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
         ! Set prescribed boundary values in 2D
         call filtersolution_Mat79_2D(rboundaryCondition%rfparser,&
             p_IbdrCompPeriodic, p_IbdrCondPeriodic, p_IbdrCondType,&
@@ -5926,15 +5926,15 @@ contains
             p_IboundaryCpIdx, p_DvertexParameterValue,&
             p_DvertexCoords, p_Kld, p_Kcol, p_Kdiagonal, p_DA, p_Du,&
             p_Dr)
-        
+
       case (LSYSSC_MATRIX7INTL)
         select case (rmatrix%cinterleavematrixFormat)
-          
+
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           ! Set prescribed boundary values in 2D
           call filtersolution_Mat79IntlD_2D(rboundaryCondition&
               %rfparser, p_IbdrCompPeriodic, p_IbdrCondPeriodic,&
@@ -5944,12 +5944,12 @@ contains
               p_DvertexParameterValue, p_DvertexCoords, p_Kld, p_Kcol&
               , p_Kld, rmatrix%NVAR, p_DA, p_Du, p_Dr, p_Du0,&
               p_rboundary, fcb_calcBoundaryvalues, istatus)
-          
+
         case (LSYSSC_MATRIX1)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           ! Set prescribed boundary values in 2D
           call filtersolution_Mat79Intl1_2D(rboundaryCondition&
               %rfparser, p_IbdrCompPeriodic, p_IbdrCondPeriodic,&
@@ -5959,22 +5959,22 @@ contains
               p_DvertexParameterValue, p_DvertexCoords, p_Kld, p_Kcol&
               , p_Kld, rmatrix%NVAR, p_DA, p_Du, p_Dr, p_Du0,&
               p_rboundary, fcb_calcBoundaryvalues, istatus)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_systemScalar')
           call sys_halt()
         end select
-        
+
       case (LSYSSC_MATRIX9INTL)
         select case (rmatrix%cinterleavematrixFormat)
-          
+
         case (LSYSSC_MATRIXD)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-        
+
           ! Set prescribed boundary values in 2D
           call filtersolution_Mat79IntlD_2D(rboundaryCondition&
               %rfparser, p_IbdrCompPeriodic, p_IbdrCondPeriodic,&
@@ -5984,13 +5984,13 @@ contains
               p_DvertexParameterValue, p_DvertexCoords, p_Kld, p_Kcol&
               , p_Kdiagonal, rmatrix%NVAR, p_DA, p_Du, p_Dr, p_Du0,&
               p_rboundary, fcb_calcBoundaryvalues, istatus)
-          
+
         case (LSYSSC_MATRIX1)
           call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
           call lsyssc_getbase_double(rmatrix, p_DA)
-          
+
           ! Set prescribed boundary values in 2D
           call filtersolution_Mat79Intl1_2D(rboundaryCondition&
               %rfparser, p_IbdrCompPeriodic, p_IbdrCondPeriodic,&
@@ -6000,34 +6000,34 @@ contains
               p_DvertexParameterValue, p_DvertexCoords, p_Kld, p_Kcol&
               , p_Kdiagonal, rmatrix%NVAR, p_DA, p_Du, p_Dr, p_Du0,&
               p_rboundary, fcb_calcBoundaryvalues, istatus)
-          
+
         case DEFAULT
           call output_line('Unsupported interleave matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
           call sys_halt()
         end select
-        
+
       case DEFAULT
         call output_line('Unsupported matrix format!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
         call sys_halt()
       end select
-      
+
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'bdrf_filterSolutionScalar')
       call sys_halt()
     end select
-    
+
     ! Do we have to re-sort matrix?
     if (bisMatrixSorted) call lsyssc_sortMatrix(rmatrix,.true.,rmatrix%isortStrategy)
-    
+
     ! Do we have to re-sort solution vector?
     if (bisSolutionSorted) call lsyssc_vectorActivateSorting(rsolution,.true.)
-    
+
     ! Do we have to re-sort defect vector
     if (bisDefectSorted) call lsyssc_vectorActivateSorting(rdefect,.true.)
-    
+
   contains
 
     ! Here are the real filter routines
@@ -6043,7 +6043,7 @@ contains
 
       ! Function parser used to evaluate Dirichlet boundary values
       type(t_fparser), intent(in) :: rfparser
-      
+
       ! Array with types of boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondType
 
@@ -6055,13 +6055,13 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
       ! Array with coordinates of vertices at the boundary
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      
+
       ! Matrix data array
       real(DP), dimension(:), intent(in) :: DA
 
@@ -6081,17 +6081,17 @@ contains
 
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN)
           ! Do nothing
-          
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
@@ -6100,10 +6100,10 @@ contains
 
           ! Impose prescribed Dirichlet boundary conditions
           call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
-          
+
           ! Nullify residual entry
           Dr(ivt) = 0.0_DP
-          
+
         case DEFAULT
           call output_line('Invalid boundary condition!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_MatD_1D')
@@ -6125,7 +6125,7 @@ contains
 
       ! Function parser used to evaluate Dirichlet boundary values
       type(t_fparser), intent(in) :: rfparser
-      
+
       ! Array with types of boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondType
 
@@ -6142,7 +6142,7 @@ contains
 
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -6167,7 +6167,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -6184,18 +6184,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -6203,13 +6203,13 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-                
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN)
             ! Do nothing
-            
+
           case (BDR_DIRICHLET)
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
@@ -6222,10 +6222,10 @@ contains
 
             ! Impose prescribed Dirichlet boundary conditions
             call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
-            
+
             ! Nullify residual entry
             Dr(ivt) = 0.0_DP
-            
+
           case DEFAULT
             call output_line('Invalid boundary condition!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_MatD_2D')
@@ -6234,12 +6234,12 @@ contains
         end do
       end do
     end subroutine filtersolution_MatD_2D
-    
+
     !***************************************************************
     ! Filter solution and defect vector in 1D.
     ! Here, the matrix is store in CSR7 and CSR9 format.
     ! This subroutine can only handle Neumann and Dirichlet boundaries.
-    
+
     subroutine filtersolution_Mat79_1D(rfparser, IbdrCompPeriodic,&
         IbdrCondPeriodic, IbdrCondType, IbdrCondCpIdx, nbct,&
         IverticesAtBoundary, IboundaryCpIdx, DvertexCoords, Kld,&
@@ -6250,7 +6250,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -6262,10 +6262,10 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -6274,7 +6274,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Matrix data array
       real(DP), dimension(:), intent(in) :: DA
 
@@ -6289,7 +6289,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
 
@@ -6298,41 +6298,41 @@ contains
 
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-            
+
         case (:BDR_HOMNEUMANN)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-                      
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-          
-          ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+          ! Add residual of the equation that corresponds to node ivt to the equation that
           ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
           Dr(ivtPeriodic) = Dr(ivt)+Dr(ivtPeriodic)
           Dr(ivt)         = 0.0_DP
-          
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
-          
+
           ! Nullify residual entry
           Dr(ivt) = 0.0_DP
-          
+
         case DEFAULT
           call output_line('Invalid boundary condition!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79_1D')
@@ -6346,7 +6346,7 @@ contains
     ! Filter solution and defect vector in 2D.
     ! Here, the matrix is store in CSR7 and CSR9 format.
     ! This subroutine can only handle Neumann and Dirichlet boundaries.
-    
+
     subroutine filtersolution_Mat79_2D(rfparser, IbdrCompPeriodic,&
         IbdrCondPeriodic, IbdrCondType, IbdrCondCpIdx, DmaxParam,&
         BisSegClosed, nbct, IverticesAtBoundary, IboundaryCpIdx,&
@@ -6358,7 +6358,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -6370,16 +6370,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -6391,7 +6391,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Matrix data array
       real(DP), dimension(:), intent(in) :: DA
 
@@ -6407,7 +6407,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -6424,18 +6424,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -6443,13 +6443,13 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-                
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN)
             ! Do nothing
-            
+
           case (BDR_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
@@ -6465,17 +6465,17 @@ contains
 
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1)) dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
 
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(ivtPeriodic) = Dr(ivt)+Dr(ivtPeriodic)
             Dr(ivt)         = 0.0_DP
@@ -6491,17 +6491,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
 
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(ivtPeriodic) = Dr(ivt)+Dr(ivtPeriodic)
             Dr(ivt)         = 0.0_DP
@@ -6509,7 +6509,7 @@ contains
           case (BDR_DIRICHLET)
             ! Get vertex number
             ivt = IverticesAtBoundary(ivbd)
-            
+
             ! Initialize variable values [x,y,0,time] for parser
             DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
@@ -6518,10 +6518,10 @@ contains
 
             ! Impose prescribed Dirichlet boundary conditions
             call fparser_evalFunction(rfparser, isegment, DvariableValues, Du(ivt))
-            
+
             ! Nullify residual entry
             Dr(ivt) = 0.0_DP
-            
+
           case DEFAULT
             call output_line('Invalid boundary condition!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79_2D')
@@ -6548,7 +6548,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -6560,10 +6560,10 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -6572,7 +6572,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -6592,7 +6592,7 @@ contains
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
@@ -6602,31 +6602,31 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
-        
+
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
-        
+
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-          
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-          ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+          ! Add residual of the equation that corresponds to node ivt to the equation that
           ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
           Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
           Dr(:,ivt)         = 0.0_DP
@@ -6634,60 +6634,60 @@ contains
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)+ivar,&
                                       DvariableValues, Du(ivar,ivt))
           end do
-          
+
           ! Nullify residual entry
           Dr(:,ivt) = 0.0_DP
-          
+
         case DEFAULT
           if (.not.present(fcb_calcBoundaryvalues)) then
             call output_line('Missing callback function!',&
                               OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79IntlD_1D')
             call sys_halt()
           end if
-          
+
           ! Get vertex number
           ivt  = IverticesAtBoundary(ivbd)
           ipos = Kdiagonal(ivt)
-          
+
           ! Predict boundary values
           Du(:,ivt) = Du(:,ivt)+Dr(:,ivt)/Da(:,ipos)
-          
+
           ! Initialize variable values [x,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Get desired boundary values from parser
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)+ivar,&
                                       DvariableValues, DbdrValues(ivar))
           end do
-          
+
           ! Compute the analytical normal vector
           if (mod(ibct, 2) .eq. 0) then
             DbdrNormal = 1.0_DP
           else
             DbdrNormal = -1.0_DP
           end if
-          
+
           ! Apply callback function to determine boundary conditions
           call fcb_calcBoundaryvalues(DbdrNormal, DbdrNormal, DbdrValues,&
                                       IbdrCondType(isegment), Du(:,ivt),&
                                       Du0(:,ivt), istatus)
-          
+
           ! Nullify residual entry
           Dr(:,ivt) = 0.0_DP
         end select
@@ -6712,7 +6712,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -6724,16 +6724,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -6745,7 +6745,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -6768,7 +6768,7 @@ contains
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
 
-      
+
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
       real(DP), dimension(nvar) :: DbdrValues,Ddiagonal
@@ -6780,7 +6780,7 @@ contains
 
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -6800,15 +6800,15 @@ contains
 
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -6816,14 +6816,14 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-            
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
-            
+
           case (BDR_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
@@ -6840,17 +6840,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
             Dr(:,ivt)         = 0.0_DP
@@ -6866,17 +6866,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
             Dr(:,ivt)         = 0.0_DP
@@ -6890,16 +6890,16 @@ contains
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
             DvariableValues(NDIM3D)   = DvertexCoords(2,ivt)
             DvariableValues(NDIM3D+1) = ttime
-            
+
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                   +ivar, DvariableValues, Du(ivar,ivt))
             end do
-            
+
             ! Nullify residual entry
             Dr(:,ivt) = 0.0_DP
-            
+
           case DEFAULT
             if (.not.present(fcb_calcBoundaryvalues)) then
               call output_line('Missing boundary and/or callback function!',&
@@ -6910,7 +6910,7 @@ contains
             ! Get vertex number
             ivt  = IverticesAtBoundary(ivbd)
             ipos = Kdiagonal(ivt)
-            
+
             ! Get vertex number of predecessor
             if (ivbd .eq. ivbdFirst) then
               ivtL = IverticesAtBoundary(ivbdLast)
@@ -6985,17 +6985,17 @@ contains
               ! Compute the approximate normal vector
               dnxL = DvertexCoords(2,ivt) -DvertexCoords(2,ivtL)
               dnyL = DvertexCoords(1,ivtL)-DvertexCoords(1,ivt)
-              
+
               dnxR = DvertexCoords(2,ivtR)-DvertexCoords(2,ivt)
               dnyR = DvertexCoords(1,ivt) -DvertexCoords(1,ivtR)
-              
-              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )                        
+
+              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )
               dwR = sqrt( dnxR*dnxR + dnyR*dnyR )
-              
+
               dnx = (dnxL/dwL + dnxR/dwR)/(1/dwL + 1/dwR)
               dny = (dnyL/dwL + dnyR/dwR)/(1/dwL + 1/dwR)
               dw  = sqrt( dnx*dnx + dny*dny )
-              
+
               DpointNormal(1) = dnx/dw
               DpointNormal(2) = dny/dw
             end if
@@ -7011,7 +7011,7 @@ contains
         end do
       end do
     end subroutine filtersolution_Mat79IntlD_2D
-    
+
 
     !***************************************************************
     ! Filter solution and defect vector in 1D.
@@ -7029,7 +7029,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -7041,10 +7041,10 @@ contains
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -7053,7 +7053,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -7072,7 +7072,7 @@ contains
 
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
-      
+
 
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
@@ -7081,85 +7081,85 @@ contains
       integer :: ivbd,ivbdPeriodic,ivt,ivtPeriodic
       integer :: ipos,ibct,ibctPeriodic,ivar,isegment
 
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Get vertex of the boundary component
         ivbd = IboundaryCpIdx(ibct)
-        
+
         ! Get first region of the boundary component
         isegment  = IbdrCondCpIdx(ibct)
 
         ! What kind of boundary condition are we?
         select case (IbdrCondType(isegment))
-          
+
         case (:BDR_HOMNEUMANN,&
               BDR_SUPEROUTLET)
           ! Do nothing
-          
+
         case (BDR_PERIODIC,&
               BDR_ANTIPERIODIC)
           ! Compute vertex parameter value at periodic boundary
           ibctPeriodic = IbdrCompPeriodic(isegment)
           ivbdPeriodic = IboundaryCpIdx(ibctPeriodic)
-          
+
           ! Get numbers of vertices
           ivt         = IverticesAtBoundary(ivbd)
           ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-          ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+          ! Add residual of the equation that corresponds to node ivt to the equation that
           ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
           Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
           Dr(:,ivt)         = 0.0_DP
-          
+
         case (BDR_DIRICHLET)
           ! Get vertex number
           ivt = IverticesAtBoundary(ivbd)
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Impose prescribed Dirichlet boundary conditions
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)+ivar,&
                                       DvariableValues, Du(ivar,ivt))
           end do
-          
+
           ! Nullify residual entry
           Dr(:,ivt) = 0.0_DP
-          
+
         case DEFAULT
           if (.not.present(fcb_calcBoundaryvalues)) then
             call output_line('Missing callback function!',&
                               OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79Intl1_1D')
             call sys_halt()
           end if
-          
+
           ! Get vertex number
           ivt  = IverticesAtBoundary(ivbd)
           ipos = Kdiagonal(ivt)
-            
+
           ! Predict boundary values
           do ivar = 1, nvar
             Du(ivar,ivt) = Du(ivar,ivt)+Dr(ivar,ivt)/Da(ivar,ivar,ipos)
           end do
-          
+
           ! Initialize variable values [x,0,0,time] for parser
           DvariableValues(NDIM1D)   = DvertexCoords(1,ivt)
           DvariableValues(NDIM2D)   = 0.0_DP
           DvariableValues(NDIM3D)   = 0.0_DP
           DvariableValues(NDIM3D+1) = ttime
-          
+
           ! Get desired boundary values from parser
           do ivar = 1, nvar
             call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                 +ivar, DvariableValues, DbdrValues(ivar))
           end do
-          
+
           ! Compute the analytical normal vector
           if (mod(ibct, 2) .eq. 0) then
             DbdrNormal = 1.0_DP
@@ -7171,7 +7171,7 @@ contains
           call fcb_calcBoundaryvalues(DbdrNormal, DbdrNormal,&
               DbdrValues, IbdrCondType(isegment), Du(:,ivt), Du0(:&
               ,ivt), istatus)
-          
+
           ! Nullify residual entry
           Dr(:,ivt) = 0.0_DP
         end select
@@ -7196,7 +7196,7 @@ contains
 
       ! Array with periodic boundary components
       integer, dimension(:), intent(in) :: IbdrCompPeriodic
-      
+
       ! Array with periodic boundary conditions
       integer, dimension(:), intent(in) :: IbdrCondPeriodic
 
@@ -7208,16 +7208,16 @@ contains
 
       ! Array with maximum parameter value for each boundary component
       real(DP), dimension(:), intent(in) :: DmaxParam
-      
+
       ! Array with booleans for the segment type
       logical, dimension(:), intent(in) :: BisSegClosed
 
       ! Number of boundary components
       integer, intent(in) :: nbct
-      
+
       ! Array with numbers of vertices at the boundary
       integer, dimension(:), intent(in) :: IverticesAtBoundary
-      
+
       ! Index array for vertices at the boundary
       integer, dimension(:), intent(in) :: IboundaryCpIdx
 
@@ -7229,7 +7229,7 @@ contains
 
       ! Array with matrix structure
       integer, dimension(:), intent(in) :: Kld, Kcol, Kdiagonal
-      
+
       ! Number of variables
       integer, intent(in) :: nvar
 
@@ -7251,7 +7251,7 @@ contains
 
       ! OPTIONAL: Status of the callback function
       integer, intent(inout), optional :: istatus
-      
+
 
       ! local variables
       real(DP), dimension(NDIM3D+1) :: DvariableValues
@@ -7262,10 +7262,10 @@ contains
       integer :: ivbd,ivbdFirst,ivbdLast,ivbdPeriodic,ivt,ivtPeriodic,ivtL,ivtR
       integer :: ipos,ibct,ibctPeriodic,ivar,isegment,isegmentPeriodic
 
-      
+
       ! Loop over all boundary components
       do ibct = 1, nbct
-        
+
         ! Set pointer to first/last vertex of the boundary component
         ivbdFirst = IboundaryCpIdx(ibct)
         ivbdLast  = IboundaryCpIdx(ibct+1)-1
@@ -7282,18 +7282,18 @@ contains
 
         ! Loop over all components of the boundary component
         do ivbd = ivbdFirst, ivbdLast
-          
+
           ! Compute segment index
           do while(DvertexParameterValue(ivbd) .gt. dmaxValue)
-            
+
             ! Adjust startpoint parameter of segment
             dminValue = nearest(dmaxValue, 1._DP)
-            
+
             ! Increase segment index and reset it to first segment if required
             isegment = isegment+1
             if (isegment .gt. IbdrCondCpIdx(ibct+1)-1) isegment =&
                 IbdrCondCpIdx(ibct)
-            
+
             ! Adjust endpoint parameter of segment
             dmaxValue = DmaxParam(isegment)
             if (dmaxValue .lt. dminValue) dmaxValue =&
@@ -7301,14 +7301,14 @@ contains
             if (.not.BisSegClosed(isegment)) dmaxValue =&
                 nearest(dmaxValue, -1._DP)
           end do
-                
+
           ! What kind of boundary condition are we?
           select case (IbdrCondType(isegment))
-            
+
           case (:BDR_HOMNEUMANN,&
                 BDR_SUPEROUTLET)
             ! Do nothing
-            
+
           case (BDR_PERIODIC)
             ! Compute vertex parameter value at periodic boundary
             ibctPeriodic     = IbdrCompPeriodic(isegment)
@@ -7325,17 +7325,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
-            
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
             Dr(:,ivt)         = 0.0_DP
@@ -7351,17 +7351,17 @@ contains
             if (dVertexParameterPeriodic .eq.&
                 DmaxParam(IbdrCondCpIdx(ibctPeriodic+1)-1))&
                 dVertexParameterPeriodic = 0._DP
-            
+
             ! Compute vertex number of nearest neighbor at boundary
             call bdrf_getNearestNeighbor2d(DvertexParameterValue,&
                 dVertexParameterPeriodic, ivbdFirst, ivbdLast,&
                 ivbdPeriodic)
-            
+
             ! Get numbers of vertices
             ivt         = IverticesAtBoundary(ivbd)
             ivtPeriodic = IverticesAtBoundary(ivbdPeriodic)
 
-            ! Add residual of the equation that corresponds to node ivt to the equation that 
+            ! Add residual of the equation that corresponds to node ivt to the equation that
             ! corresponds to node ivtPeriodic and set residual of first equation equal to zero
             Dr(:,ivtPeriodic) = Dr(:,ivt)+Dr(:,ivtPeriodic)
             Dr(:,ivt)         = 0.0_DP
@@ -7375,27 +7375,27 @@ contains
             DvariableValues(NDIM2D)   = DvertexCoords(2,ivt)
             DvariableValues(NDIM3D)   = 0.0_DP
             DvariableValues(NDIM3D+1) = ttime
-            
+
             ! Impose prescribed Dirichlet boundary conditions
             do ivar = 1, nvar
               call fparser_evalFunction(rfparser, nvar*(isegment-1)&
                   +ivar, DvariableValues, Du(ivar,ivt))
             end do
-            
+
             ! Nullify residual entry
             Dr(:,ivt) = 0.0_DP
-            
+
           case DEFAULT
             if (.not.present(fcb_calcBoundaryvalues)) then
               call output_line('Missing boundary and/or callback function!',&
                                 OU_CLASS_ERROR,OU_MODE_STD,'filtersolution_Mat79Intl1_2D')
               call sys_halt()
             end if
-            
+
             ! Get vertex number
             ivt  = IverticesAtBoundary(ivbd)
             ipos = Kdiagonal(ivt)
-            
+
             ! Get vertex number of predecessor
             if (ivbd .eq. ivbdFirst) then
               ivtL = IverticesAtBoundary(ivbdLast)
@@ -7472,17 +7472,17 @@ contains
               ! Compute the approximate normal vector
               dnxL = DvertexCoords(2,ivt) -DvertexCoords(2,ivtL)
               dnyL = DvertexCoords(1,ivtL)-DvertexCoords(1,ivt)
-              
+
               dnxR = DvertexCoords(2,ivtR)-DvertexCoords(2,ivt)
               dnyR = DvertexCoords(1,ivt) -DvertexCoords(1,ivtR)
-              
-              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )                        
+
+              dwL = sqrt( dnxL*dnxL + dnyL*dnyL )
               dwR = sqrt( dnxR*dnxR + dnyR*dnyR )
-              
+
               dnx = (dnxL/dwL + dnxR/dwR)/(1/dwL + 1/dwR)
               dny = (dnyL/dwL + dnyR/dwR)/(1/dwL + 1/dwR)
               dw  = sqrt( dnx*dnx + dny*dny )
-              
+
               DpointNormal(1) = dnx/dw
               DpointNormal(2) = dny/dw
             end if
@@ -7509,7 +7509,7 @@ contains
 
 !<description>
     ! This subroutine determines the number of the boundary vertex which
-    ! represents the nearest neighbor to the desired parameter value. 
+    ! represents the nearest neighbor to the desired parameter value.
 !</description>
 
 !<input>
@@ -7538,7 +7538,7 @@ contains
 
     ilow  = ivbdMin
     ihigh = ivbdMax
-    
+
     if (ivbd .ge. ilow .and. ivbd .le. ihigh) then
       imid  = ivbd
     else
@@ -7605,7 +7605,7 @@ contains
     case (BDR_SUBINLET,&
          BDR_MASSINLET)
       nexpressions = ndimension+1
-      
+
     case (BDR_MACHOUTLET)
       nexpressions = 2
 
@@ -7625,7 +7625,7 @@ contains
 !<description>
     ! This subroutine creates a boundary region from a boundary
     !  condition structure which stores all required data.
-    ! 
+    !
 !</description>
 
 !<input>
@@ -7634,7 +7634,7 @@ contains
 
     ! Index of boundary component.
     integer, intent(in) :: iboundCompIdx
-  
+
     ! Index of the boundary segment.
     ! =0: Create a boundary region that covers the whole boundary component.
     integer, intent(in) :: iboundSegIdx
@@ -7652,8 +7652,8 @@ contains
     logical, dimension(:), pointer :: p_BisSegClosed
     real(DP) :: dcurrentpar, dendpar, dmaxpar
     integer :: iproperties,isegment
-    
-    
+
+
     if ((iboundCompIdx .gt. rboundaryCondition%iboundarycount) .or.&
         (iboundCompIdx .lt. 0)) then
       call output_line ('iboundCompIdx out of bounds!', &
@@ -7666,7 +7666,7 @@ contains
     call storage_getbase_int(rboundaryCondition%h_IbdrCondCpIdx, p_IbdrCondCpIdx)
     call storage_getbase_logical(rboundaryCondition%h_BisSegClosed, p_BisSegClosed)
 
-    
+
     if (iboundSegIdx .ne. 0) then
 
       if ((iboundSegIdx .gt. p_IbdrCondCpIdx(iboundCompIdx+1)&
@@ -7701,20 +7701,20 @@ contains
         if (.not.p_BisSegClosed(isegment-1))&
             iproperties = ior(iproperties, BDR_PROP_WITHSTART)
       end if
-      
+
       if (p_BisSegClosed(isegment))&
           iproperties = ior(iproperties, BDR_PROP_WITHEND)
-      
+
     else
 
       ! Create a boundary region that covers the whole boundary component.
       dcurrentpar = 0.0_DP
       dmaxpar     = p_DmaxPar(p_IbdrCondCpIdx(iboundCompIdx+1)-1)
       dendpar     = dmaxpar
-      
+
       ! We have an unspecified boundary segment
       rregion%isegmentType = BOUNDARY_TYPE_ANALYTIC
-      
+
       ! Set interval properties. The whole boundary either includes
       !  the start or the end-point.
       if (p_BisSegClosed(p_IbdrCondCpIdx(iboundCompIdx+1)-1)) then

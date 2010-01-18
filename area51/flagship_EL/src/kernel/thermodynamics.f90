@@ -24,7 +24,7 @@
 !# </purpose>
 !##############################################################################
 module thermodynamics
-  
+
   use fsystem
 
   implicit none
@@ -61,14 +61,14 @@ module thermodynamics
 !<constants>
 
 !<constantblock description="Ratio of specific heats">
-  
+
   real(DP), parameter, public :: GAMMA_AIR        = 1.4_DP
 
 !</constantblock>
 
 
 !<constantblock description="Specific heats at constant pressure and volume">
-  
+
   real(DP), parameter, public :: CV_AIR           = 717_DP
   real(DP), parameter, public :: CP_AIR           = 1004_DP
 
@@ -87,7 +87,7 @@ contains
   !*****************************************************************************
 
 !<function>
-  
+
   elemental function thdyn_speedOfSound(gamma, p, rho) result(c)
 
 !<description>
@@ -98,7 +98,7 @@ contains
 !<input>
     ! ratio of specific heats
     real(DP), intent(in) :: gamma
-    
+
     ! pressure
     real(DP), intent(in) :: p
 
@@ -129,7 +129,7 @@ contains
 !<input>
     ! ratio of specific heats
     real(DP), intent(in) :: gamma
-    
+
     ! pressure
     real(DP), intent(in) :: p
 
@@ -164,7 +164,7 @@ contains
 !<input>
     ! ratio of specific heats
     real(DP), intent(in) :: gamma
-    
+
     ! pressure
     real(DP), intent(in) :: p
 
@@ -173,7 +173,7 @@ contains
 
     ! x-velocity component
     real(DP), intent(in) :: u
-    
+
     ! y-velocity component
     real(DP), intent(in) :: v
 !</input>
@@ -202,7 +202,7 @@ contains
 !<input>
     ! ratio of specific heats
     real(DP), intent(in) :: gamma
-    
+
     ! pressure
     real(DP), intent(in) :: p
 
@@ -211,7 +211,7 @@ contains
 
     ! x-velocity component
     real(DP), intent(in) :: u
-    
+
     ! y-velocity component
     real(DP), intent(in) :: v
 

@@ -73,7 +73,7 @@ module timestepaux
   ! calling the time-stepping algorithm the basic settings need to be initialized.
 
   type t_timestep
-    
+
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Name of time-stepping object
     character(LEN=SYS_STRLEN) :: sName = ''
@@ -119,7 +119,7 @@ module timestepaux
     real(DP) :: dStep = 0.0_DP
 
     ! OUTPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
-    ! Value for previous time step 
+    ! Value for previous time step
     real(DP) :: dStep1 = 0.0_DP
 
     ! INPUT PARAMETER FOR THE TIME-STEPPING ALGORITHM
@@ -160,7 +160,7 @@ module timestepaux
     ! !! U^{N+1} - U^{N} !! <= EPSSTAG * dStep
     ! =0: ignore, do not stop time-stepping until final time is reached
     real(DP) :: depsSteady = 0.0_DP
-    
+
     ! INTERNAL PARAMETER FOR THE TIME-STEPPING ALGORITHM
     ! Weights for multistage methods
     real(DP), dimension(:), pointer :: DmultistepWeights => null()
@@ -184,12 +184,12 @@ module timestepaux
   end type t_timestep
 
 !</typeblock>
-  
-  ! *****************************************************************************  
+
+  ! *****************************************************************************
 
 !<typeblock>
 
-  ! This data structure contains all settings/parameters for 
+  ! This data structure contains all settings/parameters for
   ! proportional-integral-derivative (PID) controlling.
 
   type t_pidController
@@ -197,23 +197,23 @@ module timestepaux
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Exponent for proportional term.
     real(DP) :: dProportionalExponent = 0.075_DP
-    
+
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Exponent for integral term.
     real(DP) :: dIntegralExponent =  0.175_DP
-    
+
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Exponent for derivative term.
     real(DP) :: dDerivativeExponent = 0.01_DP
-    
+
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Factor by which the time step is allowed to increase.
     real(DP) :: dIncreaseFactor = 2.0_DP
-    
+
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Factor by which the time step is allowed to decrease.
     real(DP) :: dDecreaseFactor = 0.5_DP
-    
+
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Tolerance of relative changes.
     real(DP) :: depsRel = 0.0_DP
@@ -221,7 +221,7 @@ module timestepaux
     ! INPUT PARAMETER FOR PID CONTROLLER:
     ! Maximum tolerance for relative changes
     real(DP) :: dmaxRel = 0.0_DP
-    
+
     ! OUTPUT PARAMETER FOR PID CONTROLLER:
     ! Measure of the control variable from one time step before.
     real(DP) :: dcontrolValue1 = 0.0_DP
@@ -234,7 +234,7 @@ module timestepaux
 
 !</typeblock>
 
-  ! *****************************************************************************  
+  ! *****************************************************************************
 
 !<typeblock>
 
@@ -257,7 +257,7 @@ module timestepaux
 
   end type t_autoController
 
-  ! *****************************************************************************  
+  ! *****************************************************************************
 
 !<typeblock>
 

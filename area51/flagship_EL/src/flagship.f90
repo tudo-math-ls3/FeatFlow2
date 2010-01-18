@@ -18,11 +18,8 @@
 !#     name and user-defined parameters are supplied via parameter list.
 !#
 !# TODO
-!# ----
 !#
-!# 1.) Implement the linearized FCT algorithm in a general version
-!#
-!# 2.) Remove the old splib (ILU-k) from the solver module and replace it
+!# 1.) Remove the old splib (ILU-k) from the solver module and replace it
 !#     by the routines from the iluk.f90 module.
 !#
 !# </purpose>
@@ -127,26 +124,26 @@ program flagship
 
 
   ! Call application module
-  select case(trim(application))
-  case('transport')
+  if (trim(application) .eq. 'transport') then
     call transp_app(rparlist)
 
-  case('euler')
+  elseif (trim(application) .eq. 'euler') then
     call euler_app(rparlist)
 
-  case('zpinch')
+  elseif (trim(application) .eq. 'zpinch') then
     call zpinch_app(rparlist)
 
-  case('eulerlagrange')
+  elseif (trim(application) .eq. 'eulerlagrange') then
     call eulerlagrange_app(rparlist)
 
-  case DEFAULT
+  else
+  
     call output_line('Invalid application name!',&
                      OU_CLASS_WARNING,OU_MODE_STD,'flagship')
     call sys_halt()
     
-  end select
-  
+  end if
+
   ! Release parameter list
   call parlst_done(rparlist)
 

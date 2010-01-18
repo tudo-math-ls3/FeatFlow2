@@ -1,5 +1,12 @@
 # -*- mode: any-ini; -*-
 
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+#                     Steady-state convection-diffusion in 1D                  #
+#                                                                              #
+################################################################################
+
 simportdatafiles(2) =
   'data/transport/default.dat'
   'data/solverdefault.dat'
@@ -122,7 +129,6 @@ trifile = grids/1d/unit.tri
 # -2 = mixed P2/Q2 finite elements
 celement = 1
 
-# convert mesh to triangular mesh?
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
@@ -131,7 +137,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 0
+ijacobianformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -166,7 +172,9 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 20
@@ -195,13 +203,13 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
-ucdsolution = out/convdiff
+sucdsolution = out/convdiff
 
 # file for UCD output of error
-ucderror = out/convdiff_error
+sucderror = out/convdiff_error
 
 
 ################################################################################
@@ -291,10 +299,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -450,7 +458,7 @@ dperturbationStrategy = 2
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 1e-1
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization

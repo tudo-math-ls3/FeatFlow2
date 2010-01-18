@@ -70,6 +70,21 @@ isystemcoupling = 0
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 2
 
+# variables for flux correction
+# (i)  for synchronized flux correction list 
+#      all variables in alphabetical(!) order, e.g.
+#
+# slimitingvariable = density,pressure,velocity
+#
+# (ii) for sequential/multiplicative flux correction list
+#      all variables one by one, e.g.
+#
+# slimitingvariable(3) =
+#      density
+#      pressure
+#      velocity
+slimitingvariable = density,energy,momentum
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution
@@ -150,7 +165,9 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 20
@@ -171,10 +188,17 @@ iformatUCD = 1
 dstepUCD = 0.005
 
 # file for UCD output of solution
-ucdsolution = out/doublemach
+sucdsolution = out/doublemach
 
 # file for UCD output of error
-ucderror = out/doublemach_error
+sucderror = out/doublemach_error
+
+# variables for ucd output
+sucdvariable(4) =
+ density
+ velocity
+ energy
+ pressure
 
 
 ################################################################################

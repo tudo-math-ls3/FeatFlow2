@@ -180,7 +180,9 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 1
@@ -212,10 +214,10 @@ iformatUCD = 1
 dstepUCD = 0.05
 
 # file for UCD output of solution
-ucdsolution = out/implosion
+sucdsolution = out/implosion
 
 # file for UCD output of error
-ucderror = out/implosion_error
+sucderror = out/implosion_error
 
 
 ################################################################################

@@ -183,7 +183,9 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 10
@@ -215,10 +217,10 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/leveque
+sucdsolution = out/leveque
 
 # file for UCD output of error
-ucderror = out/leveque_error
+sucderror = out/leveque_error
 
 
 ################################################################################

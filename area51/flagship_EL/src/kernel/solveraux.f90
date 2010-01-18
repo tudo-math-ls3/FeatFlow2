@@ -6,7 +6,7 @@
 !# <purpose>
 !#
 !# This module provides the basic data structures and subroutines for
-!# handling both linear/nonlinear and one-level/multilevel solvers. 
+!# handling both linear/nonlinear and one-level/multilevel solvers.
 !# A calling program should create a new solver structure and fill the
 !# required parameters either by reading a user-supplied parameters or
 !# via direct adjustment.
@@ -131,7 +131,7 @@ module solveraux
   use paramlist
   use storage
   use triangulation
-  
+
   implicit none
 
   private
@@ -145,7 +145,7 @@ module solveraux
   public :: t_solverILU
   public :: t_solverDefcor
   public :: t_solverNewton
-  
+
   public :: solver_createSolver
   public :: solver_releaseSolver
   public :: solver_resetSolver
@@ -176,7 +176,7 @@ module solveraux
   public :: solver_testConvergence
   public :: solver_testDivergence
   public :: solver_testStagnation
-  
+
   ! ****************************************************************************
 
   interface solver_createSolver
@@ -193,7 +193,7 @@ module solveraux
     module procedure solver_setPrecondMatrixScalar
     module procedure solver_setPrecondMatrixBlock
   end interface
-  
+
   interface solver_setSmootherMatrix
     module procedure solver_setSmootherMatrixScalar
     module procedure solver_setSmootherMatrixBlock
@@ -222,7 +222,7 @@ module solveraux
 
   ! Linear multigrid solver type
   integer, parameter, public :: SV_LINEARMG     = 4
-  
+
   ! Full multigrid solver for steady state computations
   integer, parameter, public :: SV_FMG          = 5
 
@@ -294,7 +294,7 @@ module solveraux
   ! If both are > 0: use one of them, i.e. the iteration stops when the
   !    either the relative OR the absolute stopping criterium holds
   integer, parameter, public :: SV_STOP_ANY = 1
-  
+
 !</constantblock>
 
   ! ****************************************************************************
@@ -326,7 +326,7 @@ module solveraux
   ! ****************************************************************************
 
 !<constantblock description="Global nonlinear preconditioners">
-  
+
   ! Preconditioning by segregated/block-diagonal approach
   integer, parameter, public :: NLSOL_PRECOND_BLOCKD        = 1
 
@@ -363,7 +363,7 @@ module solveraux
   integer(I32), parameter, public :: NLSOL_OPSPEC_CALCJACOBIAN   = 2**3
 
   ! Nonlinear solver requires application of Jacobian operator
-  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**4  
+  integer(I32), parameter, public :: NLSOL_OPSPEC_APPLYJACOBIAN  = 2**4
 !</constantblock>
 
   ! ****************************************************************************
@@ -375,19 +375,19 @@ module solveraux
 
   ! (block-)Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
   integer, parameter, public :: LINSOL_SOLVER_JACOBI   = 2
-  
+
   ! (block-)SOR/GS iteration $x_1 = x_0 + (L+\omega D)^{-1}(b-Ax_0)$
   integer, parameter, public :: LINSOL_SOLVER_SOR      = 4
-  
+
   ! (block-)SSOR iteration
   integer, parameter, public :: LINSOL_SOLVER_SSOR     = 5
 
-  ! BiCGStab iteration (preconditioned) 
+  ! BiCGStab iteration (preconditioned)
   integer, parameter, public :: LINSOL_SOLVER_BICGSTAB = 7
-  
-  ! GMRES iteration (preconditioned) 
+
+  ! GMRES iteration (preconditioned)
   integer, parameter, public :: LINSOL_SOLVER_GMRES    = 8
-  
+
   ! Identifier for Umfpack4
   integer, parameter, public :: LINSOL_SOLVER_UMFPACK4 = 11
 
@@ -416,7 +416,7 @@ module solveraux
 
   ! (block-)SSOR smoother
   integer, parameter, public :: LINSOL_SMOOTHER_SSOR     = LINSOL_SOLVER_SSOR
-  
+
   ! ILU(0) smoother (scalar system)
   integer, parameter, public :: LINSOL_SMOOTHER_ILU      = LINSOL_SOLVER_ILU
 !</constantblock>
@@ -428,7 +428,7 @@ module solveraux
 !<types>
 
 !<typeblock>
-  
+
   ! This data structure contains all settings/parameters for linear/nonlinear
   ! single/multigrid-solvers. Hence, it is the most abstract solver structure.
   !
@@ -436,14 +436,14 @@ module solveraux
   ! nodes which need to be allocated/deallocated depending on the solver/
   ! preconditioner type. In addition, it contains a subnode p_solverMultigrid
   ! which has to be allocated/deallocated in case the solver is applied
-  ! to multiple grid levels. 
-  
+  ! to multiple grid levels.
+
   type t_solver
-    
+
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Identifier of the solver
     character(SYS_STRLEN) :: ssolverName = ''
-    
+
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
     ! Identifies the type of the solver
     ! Valid values: SV_UNDEFINED, SV_FMG, SV_NONLINEARMG,
@@ -471,7 +471,7 @@ module solveraux
     integer :: ioutputLevel = 0
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS
-    integer :: istoppingCriterion = SV_STOP_ALL    
+    integer :: istoppingCriterion = SV_STOP_ALL
 
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Status of the solver
@@ -481,66 +481,66 @@ module solveraux
     ! Type of norm to use in the residual checking
     integer :: iresNorm = 0
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Minimum number of iterations top perform
     integer :: nminIterations = 0
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Maximum number of iterations top perform
     integer :: nmaxIterations = 0
 
-    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Number of performed iterations
     integer :: iiterations = 0
-    
-    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS: 
+
+    ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Total number of performed iterations
     integer :: niterations = 0
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relaxation factor; standard value = 1.0
     ! If DOMEGA < 0 than implicit under-relaxation is perform by
     ! ABS(DOMEGA). Otherwise, the value DOMEGA is used to perform
     ! explicit under-relaxation of the system.
     real(DP) :: domega = 1.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL * !!initial defect!!.
     ! =0: ignore, use absolute stopping criterion
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsRel = 0.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute stopping criterion. Stop iteration if
     ! !!defect!! < EPSREL.
     ! =0: ignore, use relative stopping criterion
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP) :: depsAbs = 0.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL * !!initial defect!!
     ! A value of SYS_INFINITY disables the relative divergence check.
     real(DP) :: ddivRel = SYS_INFINITY
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Absolute divergence criterion. Treat iteration as
     ! diverged if
     !   !!defect!! >= DIVREL
     ! A value of SYS_INFINITY disables the absolute divergence check.
     real(DP) :: ddivAbs = SYS_INFINITY
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! RHS-vector is treated as zero if max(rhs) < drhsZero
     real(DP) :: drhsZero = 0.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Defect-vector is treated as zero if !!defect!! < ddefZero
     real(DP) :: ddefZero = 0.0_DP
 
-    ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
+    ! INPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Relative stopping criterion. Stop iteration of
     ! !!current solution - last solution!! <= EPSSTAG
     ! =0: ignore, do not check for stagnation
@@ -549,7 +549,7 @@ module solveraux
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Norm of initial right-hand side
     real(DP) :: dinitialRHS = 0.0_DP
-    
+
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Norm of initial residuum
     real(DP) :: dinitialDefect = 0.0_DP
@@ -561,7 +561,7 @@ module solveraux
     ! OUTPUT PARAMETER FOR ITERATIVE SOLVERS:
     ! Convergence rate
     real(DP) :: dconvergenceRate = 0.0_DP
-    
+
     ! INPUT: system boundary, this boundary condition is used in
     ! all nonlinear/linear iterations to impose boundary conditions
     type(t_boundaryCondition), pointer :: rboundaryCondition => null()
@@ -598,7 +598,7 @@ module solveraux
   end type t_solver
 
 !</typeblock>
-  
+
   ! *****************************************************************************
 
 !<typeblock>
@@ -637,7 +637,7 @@ module solveraux
 
     ! INPUT: number of pre-smoothing steps
     integer :: npresmooth = 0
-    
+
     ! INPUT: number of post-smoothing steps
     integer :: npostsmooth = 0
 
@@ -685,7 +685,7 @@ module solveraux
     ! Array of handles for numeric factorization
     ! These are no FEAT-Handles!
     integer(I32), dimension(:), pointer :: InumericBlock => null()
-   
+
     ! INTERNAL: system matrix
     type(t_matrixBlock) :: rmatrix
 
@@ -785,13 +785,13 @@ module solveraux
 
   type t_solverILU
 
-    ! INPUT: For IFILL > 0, it defines the fill-in level for 
+    ! INPUT: For IFILL > 0, it defines the fill-in level for
     !        for the incomplete LU decomposition
     !        For IFILL = 0, the standard ILU decomposition is performed
     !        For IFILL =-1, the standard ILU decomposition is performed with shifting
     !        For IFILL =-2, the modified ILU decomposition is performed with shifting
     integer :: ifill = 0
-    
+
     ! INPUT: Relaxation factor for (M)ILU(s)
     real(DP) :: domega = 1.0_DP
 
@@ -813,7 +813,7 @@ module solveraux
 
     ! INPUT: tolerance for ILU-factorization
     real(DP) :: depsILU = 0.0_DP
-    
+
     ! INPUT: ILU decomposition of the system matrix
     type(t_matrixBlock) :: rmatrix
 
@@ -871,7 +871,7 @@ module solveraux
 
 !</types>
 
-contains  
+contains
 
   ! *****************************************************************************
 
@@ -909,7 +909,7 @@ contains
 
     ! Get solver type from parameter list
     call parlst_getvalue_int(rparlist, ssectionName, "csolvertype", csolverType)
-    
+
     ! The INTENT(out) already initializes rsolver with the most
     ! important information. In the first part mandatory and optional
     ! parameters which apply to some type of solvers are read from
@@ -919,7 +919,7 @@ contains
 
     ! What kind of solver are we
     select case(csolverType)
-      
+
     case (SV_COUPLED)
       ! ----------------------------------------------------------------------------------
       ! Create a coupled solver:
@@ -935,7 +935,7 @@ contains
         call solver_createSolver(rparlist, ssolverName,&
                                  rsolver%p_solverSubnode(isolver))
       end do
-      
+
     case (SV_FMG)
       ! ----------------------------------------------------------------------------------
       ! Create a full multigrid solver:
@@ -961,13 +961,13 @@ contains
 
       ! Coarsegrid solver:
       ! ~~~~~~~~~~~~~~~~~~
-      ! Ok, we need a so-called coarse grid solver which is used to solve the 
+      ! Ok, we need a so-called coarse grid solver which is used to solve the
       ! nonlinear algebraic system on all multigrid levels from NLMIN up to NLMAX.
       ! Note that it suffices to have one nonlinear coarse grid solver for all
       ! multigrid levels since the nonlinear solver has no matrices and all
       ! temporal vectors are resized in the nonlinear solver routines.
       allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
-      
+
       ! Get type of solver and create solver structure recursively:
       ! For full multigrid only nonlinear multi- or single-grid solvers are
       ! admissible as coarse grid solvers. All other solver type must be rejected.
@@ -985,7 +985,7 @@ contains
         call sys_halt()
       end select
       ! Now, we are done with the full multigrid solver !!!
-      
+
 
     case (SV_NONLINEARMG)
       ! ----------------------------------------------------------------------------------
@@ -1014,16 +1014,16 @@ contains
 
       ! Coarsegrid solver:
       ! ~~~~~~~~~~~~~~~~~~
-      ! Ok, we need a so-called coarse grid solver which is used to solve the 
+      ! Ok, we need a so-called coarse grid solver which is used to solve the
       ! nonlinear algebraic system on the coarsest grid.
       allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
-           
+
       ! Get type of solver and create solver structure recursively:
       ! For nonlinear multigrid only nonlinear multi- or single-grid solvers are
       ! admissible as coarse grid solvers. All other solver types must be rejected.
       call parlst_getvalue_int(rparlist, ssectionName, "isolver", isolver)
       select case(isolver)
-        
+
       case (SV_FMG, SV_NONLINEARMG, SV_NONLINEAR)
         call parlst_getvalue_string(rparlist, ssectionName, "ssolvername", ssolverName)
         call solver_createSolver(rparlist, ssolverName,&
@@ -1045,7 +1045,7 @@ contains
                                rsolver%p_solverMultigrid%npresmooth)
       call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
                                rsolver%p_solverMultigrid%npostsmooth)
-      
+
       ! Create smoother recursively
       if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
           (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
@@ -1055,12 +1055,12 @@ contains
                                  ismoother)
         call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
                                     ssmootherName)
-        
+
         ! For nonlinear multigrid only nonlinear multigrid- or single
         ! -grid solvers are admissible as smoothers. All other solver
         ! types must be rejected.
         select case(ismoother)
-          
+
         case (SV_NONLINEAR, SV_NONLINEARMG)
           rsolver%p_solverMultigrid%csmootherType = ismoother
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
@@ -1094,7 +1094,7 @@ contains
                                rsolver%p_solverMultigrid%ilmin)
       call parlst_getvalue_int(rparlist, ssectionName, "ilmax", &
                                rsolver%p_solverMultigrid%ilmax)
-      
+
       ! Set initial levels
       rsolver%p_solverMultigrid%initialNlmin = rsolver%p_solverMultigrid%nlmin
       rsolver%p_solverMultigrid%initialNlmax = rsolver%p_solverMultigrid%nlmax
@@ -1104,7 +1104,7 @@ contains
       ! Ok, we need a so-called coarse grid solver which is used to solve the
       ! linear algebraic equation on the coarsest grid.
       allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
-     
+
       ! Get type of solver and create solver structure recursively:
       ! For linear multigrid only linear multi- or single-grid solvers are
       ! admissible as coarse grid solvers. All other solver types must be rejected.
@@ -1130,7 +1130,7 @@ contains
                                rsolver%p_solverMultigrid%npresmooth)
       call parlst_getvalue_int(rparlist, ssectionName, "npostsmooth", &
                                rsolver%p_solverMultigrid%npostsmooth)
-      
+
       ! Create smoother recursively
       if ((rsolver%p_solverMultigrid%npresmooth  .ne. 0) .or. &
           (rsolver%p_solverMultigrid%npostsmooth .ne. 0)) then
@@ -1140,14 +1140,14 @@ contains
                                  ismoother)
         call parlst_getvalue_string(rparlist, ssectionName, "ssmootherName", &
                                     ssmootherName)
-        
+
         ! For linear multigrid only linear multigrid- or single-grid solvers are
         ! admissible as smoothers. All other solver types must be rejected
         select case(ismoother)
-          
+
         case (SV_LINEAR, SV_LINEARMG)
           call create_smoother(rparlist, ssmootherName, rsolver%p_solverMultigrid)
-          
+
         case DEFAULT
           call output_line('Invalid smoother for nonlinear multigrid solver!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
@@ -1158,7 +1158,7 @@ contains
 
 
     case (SV_NONLINEAR)
-      ! ----------------------------------------------------------------------------------      
+      ! ----------------------------------------------------------------------------------
       ! Create a nonlinear single-grid solver:
       ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
       ! This type of solver has no explicit solver subnode but a nonlinear
@@ -1172,7 +1172,7 @@ contains
       case (NLSOL_SOLVER_FIXEDPOINT)
         ! Ok, set up the nonlinear preconditioner
         call create_preconditioner(rparlist, ssectionName, rsolver)
-        
+
       case DEFAULT
         call output_line('Unsupported nonlinear solver!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
@@ -1198,22 +1198,22 @@ contains
       ! filled with values.
       call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
                                rsolver%isolver)
-      
+
       ! Ok, now set up the individual solver structures
       select case (rsolver%isolver)
       case (LINSOL_SOLVER_UMFPACK4)
         allocate(rsolver%p_solverUMFPACK)
         ! Initialize control structure
         call UMF4DEF(rsolver%p_solverUMFPACK%Dcontrol)
-                
+
       case (LINSOL_SOLVER_JACOBI)
         allocate(rsolver%p_solverJacobi)
-        
+
       case (LINSOL_SOLVER_SOR,LINSOL_SOLVER_SSOR)
         allocate(rsolver%p_solverSSOR)
-        
+
       case (LINSOL_SOLVER_BICGSTAB)
-        allocate(rsolver%p_solverBiCGSTAB)  
+        allocate(rsolver%p_solverBiCGSTAB)
 
         ! Check for preconditioner
         call parlst_getvalue_string(rparlist, ssectionName, "sprecondName", &
@@ -1224,7 +1224,7 @@ contains
           call create_preconditioner(rparlist, sprecondName,&
                                      rsolver%p_solverBiCGSTAB%p_precond)
         end if
-        
+
       case (LINSOL_SOLVER_GMRES)
         allocate(rsolver%p_solverGMRES)
 
@@ -1268,7 +1268,7 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
         call sys_halt()
       end select
-      
+
     case DEFAULT
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_createSolverDirect')
@@ -1306,17 +1306,17 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
-    ! This subroutine turns an structure of type t_solver into a 
-    ! preconditioner. Depending on the type of solver, various 
-    ! parameters are modified so as to meet the requirements of 
+    ! This subroutine turns an structure of type t_solver into a
+    ! preconditioner. Depending on the type of solver, various
+    ! parameters are modified so as to meet the requirements of
     ! a preconditioner of read in from parameter list
-    
+
     subroutine create_preconditioner(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
       type(t_parlist), intent(in) :: rparlist
-      
+
       ! Section name of the parameter list containing solver data
       character(LEN=*), intent(in) :: ssectionName
 
@@ -1329,7 +1329,7 @@ contains
 
       ! Get preconditioner type from parameter list
       call parlst_getvalue_int(rparlist, ssectionName, "csolverType", csolverType)
-      
+
       ! Check if given solver matches the current solver type
       if ((rsolver%csolverType .ne. SV_UNDEFINED) .and.&
           (rsolver%csolverType .ne. csolverType)) then
@@ -1342,7 +1342,7 @@ contains
       ! of solvers are read from the parameter list and applied to the solver.
       rsolver%ssolverName = trim(adjustl(ssectionName))
       rsolver%csolverType = csolverType
-      
+
       ! What kind of solver are we?
       select case(csolverType)
 
@@ -1359,13 +1359,13 @@ contains
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         call parlst_getvalue_int(rparlist, ssectionName, "iprecond", &
                                  rsolver%iprecond)
-        
+
         ! What kind of preconditioner should be created?
         select case(rsolver%iprecond)
         case (NLSOL_PRECOND_BLOCKD,&
               NLSOL_PRECOND_DEFCOR)
           allocate(rsolver%p_solverDefcor)
-          
+
         case (NLSOL_PRECOND_NEWTON)
           allocate(rsolver%p_solverNewton)
           call parlst_getvalue_int(rparlist, ssectionName, "icheckSufficientDecrease",&
@@ -1378,7 +1378,7 @@ contains
                                       rsolver%p_solverNewton%dforcingStrategy)
           call parlst_getvalue_double(rparlist, ssectionName, "dperturbationStrategy",&
                                       rsolver%p_solverNewton%dperturbationStrategy)
-          
+
         case DEFAULT
           call output_line('Unsupported nonlinear preconditioner!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'create_preconditioner')
@@ -1398,7 +1398,7 @@ contains
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
         call parlst_getvalue_int(rparlist, ssectionName, "isolver", &
                                  rsolver%isolver)
-        
+
         ! What kind of preconditioner should be created?
         select case(rsolver%isolver)
         case (LINSOL_SOLVER_NONE)
@@ -1406,10 +1406,10 @@ contains
 
         case (LINSOL_SOLVER_JACOBI)
           allocate(rsolver%p_solverJacobi)
-          
+
         case (LINSOL_SOLVER_SOR,LINSOL_SOLVER_SSOR)
           allocate(rsolver%p_solverSSOR)
-          
+
         case (LINSOL_SOLVER_ILU)
           allocate(rsolver%p_solverILU)
           call parlst_getvalue_double(rparlist, ssectionName, "depsILU", &
@@ -1420,15 +1420,15 @@ contains
                                    rsolver%p_solverILU%ifill)
 
         case DEFAULT
-          ! Ok, we could not identify one of the simple preconditioners. 
+          ! Ok, we could not identify one of the simple preconditioners.
           ! Let us try to create the preconditioner as real solver subnode
           call solver_createSolver(rparlist, ssectionName, rsolver)
         end select
-        
+
         ! Let us (re-)set some data for the linear preconditioner
         rsolver%nminIterations   = 1
         rsolver%nmaxIterations   = 1
-        rsolver%domega           = 1.0_DP    
+        rsolver%domega           = 1.0_DP
         rsolver%drhsZero         = 0.0_DP
         rsolver%ddefZero         = 0.0_DP
         rsolver%depsAbs          = 0.0_DP
@@ -1453,7 +1453,7 @@ contains
     subroutine create_smoother(rparlist, ssectionName, rsolver)
       ! Parameter list containing all data
       type(t_parlist), intent(in) :: rparlist
-      
+
       ! Section name of the parameter list containing smoother data
       character(LEN=*), intent(in) :: ssectionName
 
@@ -1466,7 +1466,7 @@ contains
       ! Get smoother type from parameter list
       call parlst_getvalue_int(rparlist, ssectionName, "csolverType", &
                                csolverType)
-      
+
       ! In the first part mandatory and optional parameters which apply to some type
       ! of solvers are read from the parameter list and applied to the solverrr.
       rsolver%ssmootherName = trim(adjustl(ssectionName))
@@ -1478,7 +1478,7 @@ contains
         ! ----------------------------------------------------------------------------------
         ! Create a nonlinear smoother:
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        
+
         ! Create nonlinear smoother recursively. Note that we create only one (!) template
         ! smoother which will be used (later) do generate smoother subnodes on all levels.
         if (rsolver%nlmin .lt. rsolver%nlmax) then
@@ -1487,12 +1487,12 @@ contains
             call solver_createSolver(rparlist, ssectionName, rsolver%p_smoother(i))
           end do
         end if
-        
+
       case (SV_LINEAR)
         ! ----------------------------------------------------------------------------------
         ! Create a linear smoother:
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~
-        
+
         ! Create linear smoother recursively. Note that we create an array of solvers
         ! for each level. Each level is created and initialized individually.
         if (rsolver%nlmin .lt. rsolver%nlmax) then
@@ -1507,13 +1507,13 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'create_smoother')
         call sys_halt()
       end select
-      
+
     end subroutine create_smoother
-    
+
   end subroutine solver_createSolverDirect
-  
+
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   recursive subroutine solver_createSolverIndirect(rsolver, rsolverTemplate)
@@ -1543,13 +1543,13 @@ contains
     ! Mark the solver as "empty" so that it structure and
     ! its content is updated automatically
     rsolver%isolverSpec = ior(rsolver%isolverSpec, SV_SSPEC_EMPTY)
-    
+
     ! Set boundary pointer
     if (associated(rsolverTemplate%rboundaryCondition))&
         rsolver%rboundaryCondition => rsolverTemplate%rboundaryCondition
 
     ! Next, we have to proceed to the subnodes and create them recursively
-    
+
     ! Generic solver subnode
     if (associated(rsolverTemplate%p_solverSubnode)) then
       allocate(rsolver%p_solverSubnode(size(rsolverTemplate%p_solverSubnode)))
@@ -1560,7 +1560,7 @@ contains
     else
       nullify(rsolver%p_solverSubnode)
     end if
-    
+
     ! Multigrid solver
     if (associated(rsolverTemplate%p_solverMultigrid)) then
       allocate(rsolver%p_solverMultigrid)
@@ -1645,7 +1645,7 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Create a multigrid solver
 
@@ -1845,16 +1845,16 @@ contains
 
     ! local variables
     integer :: i
-    
+
     ! Nullify boundary condition pointer
     nullify(rsolver%rboundaryCondition)
 
     ! Proceed to the subnodes. Note that the procedure is the same for all
     ! subnodes. First, the subnode itself is release by calling the corresponding
     ! subroutine. If the solver hierarchy does not stop at the given subnode, then
-    ! the release process is continued recursively. 
-    ! Afterwards the subnode is  physically deallocated and its pointer is nullifies. 
-    
+    ! the release process is continued recursively.
+    ! Afterwards the subnode is  physically deallocated and its pointer is nullifies.
+
     ! Generic solver subnode
     if (associated(rsolver%p_solverSubnode)) then
       do i = 1, size(rsolver%p_solverSubnode)
@@ -1877,60 +1877,60 @@ contains
       deallocate(rsolver%p_solverUMFPACK)
       nullify(rsolver%p_solverUMFPACK)
     end if
-    
+
     ! Jacobi solver
     if (associated(rsolver%p_solverJacobi)) then
       call release_solverJacobi(rsolver%p_solverJacobi)
       deallocate(rsolver%p_solverJacobi)
       nullify(rsolver%p_solverJacobi)
     end if
-    
+
     ! (S)SOR solver
     if (associated(rsolver%p_solverSSOR)) then
       call release_solverSSOR(rsolver%p_solverSSOR)
       deallocate(rsolver%p_solverSSOR)
       nullify(rsolver%p_solverSSOR)
     end if
-    
+
     ! BiCGSTAB solver
     if (associated(rsolver%p_solverBiCGSTAB)) then
       call release_solverBiCGSTAB(rsolver%p_solverBiCGSTAB)
       deallocate(rsolver%p_solverBiCGSTAB)
       nullify(rsolver%p_solverBiCGSTAB)
     end if
-    
+
     ! GMRES solver
     if (associated(rsolver%p_solverGMRES)) then
       call release_solverGMRES(rsolver%p_solverGMRES)
       deallocate(rsolver%p_solverGMRES)
       nullify(rsolver%p_solverGMRES)
     end if
-    
+
     ! ILU solver
     if (associated(rsolver%p_solverILU)) then
       call release_solverILU(rsolver%p_solverILU)
       deallocate(rsolver%p_solverILU)
       nullify(rsolver%p_solverILU)
     end if
-    
+
     ! Defect correction algorithm
     if (associated(rsolver%p_solverDefcor)) then
       call release_solverDefcor(rsolver%p_solverDefcor)
       deallocate(rsolver%p_solverDefcor)
       nullify(rsolver%p_solverDefcor)
     end if
-    
+
     ! Newton`s algorithm
     if (associated(rsolver%p_solverNewton)) then
       call release_solverNewton(rsolver%p_solverNewton)
       deallocate(rsolver%p_solverNewton)
       nullify(rsolver%p_solverNewton)
     end if
-    
+
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Release multigrid solver
 
@@ -1949,7 +1949,7 @@ contains
         deallocate(rsolver%rmatrix)
         nullify(rsolver%rmatrix)
       end if
-      
+
       ! Release temporal vectors
       if (associated(rsolver%RtempVectors)) then
         do i = lbound(rsolver%RtempVectors,1),&
@@ -1959,14 +1959,14 @@ contains
         deallocate(rsolver%RtempVectors)
         nullify(rsolver%RtempVectors)
       end if
-      
+
       ! Release coarse grid solver if required
       if (associated(rsolver%p_solverCoarsegrid)) then
         call solver_releaseSolver(rsolver%p_solverCoarsegrid)
         deallocate(rsolver%p_solverCoarsegrid)
         nullify(rsolver%p_solverCoarsegrid)
       end if
-      
+
       ! Release all smoother subnodes
       if (associated(rsolver%p_smoother)) then
         do i = lbound(rsolver%p_smoother,1),&
@@ -1975,7 +1975,7 @@ contains
         end do
         deallocate(rsolver%p_smoother)
         nullify(rsolver%p_smoother)
-      end if     
+      end if
     end subroutine release_solverMultigrid
 
     !*************************************************************
@@ -1988,8 +1988,8 @@ contains
 
       ! Release UMFPACK handles
       if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
-      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)  
-      
+      if (rsolver%inumeric  .ne. 0) call UMF4FNUM(rsolver%inumeric)
+
       if (associated(rsolver%IsymbolicBlock)) then
         do i = lbound(rsolver%IsymbolicBlock,1),&
                ubound(Rsolver%IsymbolicBlock,1)
@@ -2005,10 +2005,10 @@ contains
         end do
         deallocate(rsolver%InumericBlock)
       end if
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine release_solverUMFPACK
@@ -2021,7 +2021,7 @@ contains
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine release_solverJacobi
@@ -2047,16 +2047,16 @@ contains
 
       ! local variables
       integer :: i
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%RtempVectors,1),&
              ubound(rsolver%RtempVectors,1)
         call lsysbl_releaseVector(rsolver%RtempVectors(i))
       end do
-      
+
       ! Release preconditioner if required
       if (associated(rsolver%p_precond)) then
         call solver_releaseSolver(rsolver%p_precond)
@@ -2067,39 +2067,39 @@ contains
 
     !*************************************************************
     ! Release GMRES solver
-    
+
     subroutine release_solverGMRES(rsolver)
       type(t_solverGMRES), intent(inout) :: rsolver
-      
+
       ! local variables
       integer :: i
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release handles
       call storage_free(rsolver%h_Dh)
       call storage_free(rsolver%h_Dc)
       call storage_free(rsolver%h_Ds)
       call storage_free(rsolver%h_Dq)
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%rv,1),&
              ubound(rsolver%rv,1)
         call lsysbl_releaseVector(rsolver%rv(i))
       end do
-      
+
       do i = lbound(rsolver%rz,1),&
              ubound(rsolver%rz,1)
         call lsysbl_releaseVector(rsolver%rz(i))
       end do
-      
+
       ! Deallocate subarray of temporal vectors
       deallocate(rsolver%rv)
       deallocate(rsolver%rz)
       nullify(rsolver%rv)
       nullify(rsolver%rz)
-      
+
       ! Release preconditioner if required
       if (associated(rsolver%p_precond)) then
         call solver_releaseSolver(rsolver%p_precond)
@@ -2107,7 +2107,7 @@ contains
         nullify(rsolver%p_precond)
       end if
     end subroutine release_solverGMRES
-    
+
     !*************************************************************
     ! Release ILU solver
 
@@ -2124,14 +2124,14 @@ contains
         end do
         deallocate(rsolver%p_rsolverBlockILU)
       end if
-      
+
       ! Release handles
       if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
       if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine release_solverILU
@@ -2144,7 +2144,7 @@ contains
 
       ! local variables
       integer :: i
-      
+
       ! Release temporal vectors
       do i = lbound(rprecond%RtempVectors,1),&
              ubound(rprecond%RtempVectors,1)
@@ -2154,13 +2154,13 @@ contains
 
     !*************************************************************
     ! Release Newton`s algorithm
-    
+
     subroutine release_solverNewton(rprecond)
       type(t_solverNewton), intent(inout) :: rprecond
 
       ! local variables
       integer :: i
-            
+
       ! Release temporal vectors
       do i = lbound(rprecond%RtempVectors,1),&
              ubound(rprecond%RtempVectors,1)
@@ -2177,7 +2177,7 @@ contains
   recursive subroutine solver_infoSolver(rsolver, bprintInternal)
 
 !<description>
-    ! This subroutine prints information about the solver. If bprintInternal is 
+    ! This subroutine prints information about the solver. If bprintInternal is
     ! specified than a detailed output of the internal solver structure us printed.
 !</description>
 
@@ -2194,16 +2194,16 @@ contains
     integer :: i
     logical :: bprint
 
-    
+
     ! What should be printed?
     bprint = .false.
     if (present(bprintInternal)) bprint=bprintInternal
-    
+
     ! Output general information
     call output_line('Solver:')
     call output_line('-------')
     call output_line('Name: '//trim(rsolver%ssolverName))
-    
+
     select case(rsolver%csolverType)
     case (SV_COUPLED)
       call output_line('Number of coupled components:                 '//&
@@ -2228,7 +2228,7 @@ contains
             trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
             real(rsolver%niterations,DP)),15)))
       end if
-      
+
     case (SV_LINEARMG)
       call output_line('Number of linear steps:                       '//&
           trim(sys_siL(rsolver%niterations,15)))
@@ -2238,7 +2238,7 @@ contains
             trim(sys_siL(int(rsolver%p_solverMultigrid%p_solverCoarsegrid%niterations/&
             real(rsolver%niterations,DP)),15)))
       end if
-      
+
     case(SV_NONLINEAR)
       call output_line('Number of nonlinear steps:                    '//&
           trim(sys_siL(rsolver%niterations,15)))
@@ -2258,7 +2258,7 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_infoSolver')
       call sys_halt()
     end select
-    
+
     ! Output internal information
     if (bprint) then
       call output_line('csolverType:                                  '//trim(sys_siL(rsolver%csolverType,3)))
@@ -2289,7 +2289,7 @@ contains
       call output_line('dinitialDefect:                               '//trim(sys_sdL(rsolver%dinitialDefect,5)))
       call output_line('dfinalDefect:                                 '//trim(sys_sdL(rsolver%dfinalDefect,5)))
       call output_line('dconvergenceRate:                             '//trim(sys_sdL(rsolver%dconvergenceRate,5)))
-      
+
       ! UMFPACK4 solver
       if (associated(rsolver%p_solverUMFPACK)) then
         call output_lbrk()
@@ -2304,7 +2304,7 @@ contains
         call output_line('--------------------')
         call lsysbl_infoVector(rsolver%p_solverUMFPACK%rtempVector)
       end if
-      
+
       ! Jacobi solver
       if (associated(rsolver%p_solverJacobi)) then
         call output_lbrk()
@@ -2314,7 +2314,7 @@ contains
         call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverJacobi%rmatrix)
       end if
-      
+
       ! (S)SOR solver
       if (associated(rsolver%p_solverSSOR)) then
         call output_lbrk()
@@ -2324,7 +2324,7 @@ contains
         call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverSSOR%rmatrix)
       end if
-      
+
       ! BiCGSTAB solver
       if (associated(rsolver%p_solverBiCGSTAB)) then
         call output_lbrk()
@@ -2345,7 +2345,7 @@ contains
           call solver_infoSolver(rsolver%p_solverBiCGSTAB%p_precond, bprint)
         end if
       end if
-      
+
       ! GMRES solver
       if (associated(rsolver%p_solverGMRES)) then
         call output_lbrk()
@@ -2374,7 +2374,7 @@ contains
           call solver_infoSolver(rsolver%p_solverGMRES%p_precond, bprint)
         end if
       end if
-      
+
       ! ILU solver
       if (associated(rsolver%p_solverILU)) then
         call output_lbrk()
@@ -2387,7 +2387,7 @@ contains
         call output_line('------------------')
         call lsysbl_infoMatrix(rsolver%p_solverILU%rmatrix)
       end if
-      
+
       ! Defcor preconditioner
       if (associated(rsolver%p_solverDefcor)) then
         call output_lbrk()
@@ -2400,7 +2400,7 @@ contains
           call lsysbl_infoVector(rsolver%p_solverDefcor%RtempVectors(i))
         end do
       end if
-      
+
       ! Newton preconditioner
       if (associated(rsolver%p_solverNewton)) then
         call output_lbrk()
@@ -2418,7 +2418,7 @@ contains
           call lsysbl_infoVector(rsolver%p_solverNewton%RtempVectors(i))
         end do
       end if
-      
+
       ! Solver subnode
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
@@ -2428,7 +2428,7 @@ contains
           call solver_infoSolver(rsolver%p_solverSubnode(i), bprint)
         end do
       end if
-      
+
       ! Multigrid solver
       if (associated(rsolver%p_solverMultigrid)) then
         call output_lbrk()
@@ -2468,7 +2468,7 @@ contains
             call lsysbl_infoVector(rsolver%p_solverMultigrid%RtempVectors(i))
           end do
         end if
-        
+
         ! Smoothers
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
@@ -2478,7 +2478,7 @@ contains
             call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
           end do
         end if
-        
+
         ! Coarse-grid solver
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           call output_lbrk()
@@ -2503,7 +2503,7 @@ contains
         call output_line('>>> Jacobi solver:')
         call output_line('------------------')
       end if
-      
+
       ! (S)SOR solver
       if (associated(rsolver%p_solverSSOR)) then
         call output_lbrk()
@@ -2543,7 +2543,7 @@ contains
         call output_line('>>> ILU solver:')
         call output_line('---------------')
       end if
-      
+
       ! Defcor preconditioner
       if (associated(rsolver%p_solverDefcor)) then
         call output_lbrk()
@@ -2573,7 +2573,7 @@ contains
         call output_lbrk()
         call output_line('>>> Multigrid solver:')
         call output_line('---------------------')
-        
+
         ! Smoothers
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
@@ -2584,7 +2584,7 @@ contains
             call solver_infoSolver(rsolver%p_solverMultigrid%p_smoother(i), bprint)
           end do
         end if
-        
+
         ! Coarse-grid solver
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           call output_lbrk()
@@ -2648,7 +2648,7 @@ contains
       ! Reset multigrid levels
       rsolver%p_solverMultigrid%nlmin = rsolver%p_solverMultigrid%initialNlmin
       rsolver%p_solverMultigrid%nlmax = rsolver%p_solverMultigrid%initialNlmax
-      
+
       ! Reset coarsegrid solver
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
         call solver_resetSolver(rsolver%p_solverMultigrid%p_solverCoarsegrid,&
@@ -2740,7 +2740,7 @@ contains
     if (associated(rsolver%p_solverGMRES)) then
       call remove_solverGMRES(rsolver%p_solverGMRES)
     end if
-    
+
     ! ILU solver
     if (associated(rsolver%p_solverILU)) then
       call remove_solverILU(rsolver%p_solverILU)
@@ -2750,25 +2750,25 @@ contains
     if (associated(rsolver%p_solverDefcor)) then
       call remove_solverDefcor(rsolver%p_solverDefcor)
     end if
-      
+
     ! Newton preconditioner
     if (associated(rsolver%p_solverNewton)) then
       call remove_solverNewton(rsolver%p_solverNewton)
     end if
 
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Remove temporal data from multigrid solver
-    
+
     subroutine remove_solverMultigrid(rsolver)
       type(t_solverMultigrid), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
-      
+
       ! Release matrix
       if (associated(rsolver%rmatrix)) then
         do i = lbound(rsolver%rmatrix,1),&
@@ -2776,7 +2776,7 @@ contains
           call lsysbl_releaseMatrix(rsolver%rmatrix(i))
         end do
       end if
-      
+
       ! Release temporal vectors
       if (associated(rsolver%RtempVectors)) then
         do i = lbound(rsolver%RtempVectors,1),&
@@ -2784,12 +2784,12 @@ contains
           call lsysbl_releaseVector(rsolver%RtempVectors(i))
         end do
       end if
-      
+
       ! Remove temporal from coarsegrid solver
       if (associated(rsolver%p_solverCoarsegrid)) then
         call solver_removeTempFromSolver(rsolver%p_solverCoarsegrid)
       end if
-      
+
       ! Remove temporals from smoother
       if (associated(rsolver%p_smoother)) then
         do i = lbound(rsolver%p_smoother,1),&
@@ -2827,20 +2827,20 @@ contains
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine remove_solverUMFPACK
 
     !*************************************************************
     ! Remove temporal data from Jacobi solver
-    
+
     subroutine remove_solverJacobi(rsolver)
       type(t_solverJacobi), intent(inout) :: rsolver
 
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine remove_solverJacobi
@@ -2866,16 +2866,16 @@ contains
 
       ! local variables
       integer :: i
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%RtempVectors,1),&
              ubound(rsolver%RtempVectors,1)
         call lsysbl_releaseVector(rsolver%RtempVectors(i))
       end do
-      
+
       ! Remove temporals from preconditioner
       if (associated(rsolver%p_precond)) then
         call solver_removeTempFromSolver(rsolver%p_precond)
@@ -2890,21 +2890,21 @@ contains
 
       ! local variables
       integer :: i
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%rv,1),&
              ubound(rsolver%rv,1)
         call lsysbl_releaseVector(rsolver%rv(i))
       end do
-      
+
       do i = lbound(rsolver%rz,1),&
              ubound(rsolver%rz,1)
         call lsysbl_releaseVector(rsolver%rz(i))
       end do
-      
+
       ! Remove temporals from preconditioner
       if (associated(rsolver%p_precond)) then
         call solver_removeTempFromSolver(rsolver%p_precond)
@@ -2920,23 +2920,23 @@ contains
       ! Release ILU handles
       if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
       if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine remove_solverILU
 
     !*************************************************************
     ! Remove temporal data from defect correction algorithm
-    
+
     subroutine remove_solverDefcor(rsolver)
       type(t_solverDefcor), intent(inout) :: rsolver
 
       ! local variables
       integer :: i
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%RtempVectors,1),&
              ubound(rsolver%RtempVectors,1)
@@ -2952,7 +2952,7 @@ contains
 
       ! local variables
       integer :: i
-      
+
       ! Release temporal vectors
       do i = lbound(rsolver%RtempVectors,1),&
              ubound(rsolver%RtempVectors,1)
@@ -2992,7 +2992,7 @@ contains
     type(t_solverMultigrid), pointer :: p_solverMultigrid
     type(t_solver) :: rsolverTemplateSmoother
     integer :: i, nlmin, nlmax, ilbound, iubound
-    
+
     ! Determine NLMIN and NLMAX for structure
     if (present(nlminOpt)) then
       nlmin = nlminOpt
@@ -3015,7 +3015,7 @@ contains
     ! Do we have a multigrid structure?
     if (associated(rsolver%p_solverMultigrid)) then
       p_solverMultigrid => rsolver%p_solverMultigrid
-      
+
       ! Should multigrid be used or is NLMIN = NLMAX
       if (p_solverMultigrid%initialNlmin .eq. &
           p_solverMultigrid%initialNlmax) then
@@ -3034,7 +3034,7 @@ contains
                                     SV_SSPEC_STRUCTURENEEDSUPDATE)
         end if
       else
-        
+
         ! Check maximum multigrid level
         if (p_solverMultigrid%nlmax .ne. nlmax) then
           p_solverMultigrid%nlmax = nlmax
@@ -3059,7 +3059,7 @@ contains
       if (associated(p_solverMultigrid%p_smoother)) then
         ilbound = lbound(p_solverMultigrid%p_smoother, 1)
         iubound = ubound(p_solverMultigrid%p_smoother, 1)
-        
+
         ! Do we have to adjust smoother?
         if ((p_solverMultigrid%nlmin+1 .ne. ilbound) .or.&
             (p_solverMultigrid%nlmax   .ne. iubound)) then
@@ -3067,13 +3067,13 @@ contains
           ! Create template solver from smoother
           call solver_createSolver(rsolverTemplateSmoother,&
                                    p_solverMultigrid%p_smoother(iubound))
-          
+
           ! Release all existing smoothers
           do i = ilbound, iubound
             call solver_releaseSolver(p_solverMultigrid%p_smoother(i))
           end do
           deallocate(p_solverMultigrid%p_smoother)
-          
+
           ! Create new array of smoothers from template solver
           if (p_solverMultigrid%nlmin .lt. p_solverMultigrid%nlmax) then
             allocate(p_solverMultigrid%p_smoother(&
@@ -3098,9 +3098,9 @@ contains
         end do
       end if
     end if
-    
+
     ! Do we have a single-grid solver which has a preconditioner?
-    
+
     ! BiCGSTAB ?
     if (associated(rsolver%p_solverBiCGSTAB)) then
       if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
@@ -3139,9 +3139,9 @@ contains
     call showLevel(rsolver, '  ')
 
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! This subroutine shows the current level of th solver hierarchy
     ! and proceeds to the next sublevel
@@ -3162,17 +3162,17 @@ contains
           call continueIndent(cindent, "NLMAX: "//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
-          
+
           if (associated(rsolver%p_solverMultigrid%p_smoother)) then
             do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                    ubound(rsolver%p_solverMultigrid%p_smoother,1)
-              
+
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
               call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
-          
+
           if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
             call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
@@ -3189,17 +3189,17 @@ contains
           call continueIndent(cindent, "NLMAX: "//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
-          
+
           if (associated(rsolver%p_solverMultigrid%p_smoother)) then
             do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                    ubound(rsolver%p_solverMultigrid%p_smoother,1)
-              
+
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
               call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
-          
+
           if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
             call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
@@ -3216,17 +3216,17 @@ contains
           call continueIndent(cindent, "NLMAX: "//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%nlmax,3)))//" ("//&
               trim(adjustl(sys_si(rsolver%p_solverMultigrid%initialNlmax,3)))//")")
-          
+
           if (associated(rsolver%p_solverMultigrid%p_smoother)) then
             do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
                    ubound(rsolver%p_solverMultigrid%p_smoother,1)
-              
+
               call continueIndent(cindent, "Smoother on level "//&
                   trim(adjustl(sys_si(i,3))))
               call showLevel(rsolver%p_solverMultigrid%p_smoother(i), cindent//"  |")
             end do
           end if
-          
+
           if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
             call continueIndent(cindent, "Coarsegrid-Solver")
             call showLevel(rsolver%p_solverMultigrid%p_solverCoarsegrid,cindent//"  |")
@@ -3240,7 +3240,7 @@ contains
           call continueIndent(cindent, "Subsolver")
           call showLevel(rsolver%p_solverSubnode(1),cindent//"  |")
         end if
-        
+
         if (associated(rsolver%p_solverDefcor)) then
           call continueIndent(cindent, "Defect-correction Solver")
         end if
@@ -3284,7 +3284,7 @@ contains
             call showLevel(rsolver%p_solverGMRES%p_precond,cindent//"  |")
           end if
         end if
-        
+
         if (associated(rsolver%p_solverILU)) then
           call continueIndent(cindent, "ILU Solver")
         end if
@@ -3300,9 +3300,9 @@ contains
     subroutine startIndent(cindent, cmsg)
       character(LEN=*), intent(in) :: cindent
       character(LEN=*), intent(in) :: cmsg
-      
+
       call output_line(cindent//'+--'//cmsg)
-      
+
     end subroutine startIndent
 
     !*************************************************************
@@ -3314,14 +3314,14 @@ contains
 
       call output_line(cindent//'  |'//cmsg)
 
-    end subroutine continueIndent   
+    end subroutine continueIndent
 
     !*************************************************************
     ! This subroutine stopt indentation, i.e. "  +"
 
     subroutine stopIndent(cindent)
       character(LEN=*), intent(in) :: cindent
-      
+
       call output_line(cindent//'  +')
 
     end subroutine stopIndent
@@ -3329,15 +3329,15 @@ contains
   end subroutine solver_showHierarchy
 
   ! ***************************************************************************
-  
+
 !<subroutine>
 
   subroutine solver_statistics(rsolver, iiterations)
 
 !<description>
-    ! For a given solver structure, this subroutine computes solver 
+    ! For a given solver structure, this subroutine computes solver
     ! statistics such as total number of iterations, the rate of
-    ! convergence and the status. If the optional parameter 
+    ! convergence and the status. If the optional parameter
     ! rsolverSource is given, then its data is copied to rsolver
     ! and used to compute the solver statistics for rsolver.
 !</description>
@@ -3378,7 +3378,7 @@ contains
     else
       rsolver%istatus = SV_CONVERGED
     end if
-        
+
   end subroutine solver_statistics
 
   ! ***************************************************************************
@@ -3437,7 +3437,7 @@ contains
   function solver_getNextSolver(rsolver, isubsolver) result(p_rsubsolver)
 
 !<description>
-    ! This functions sets the pointer to the next solver structure in the solver 
+    ! This functions sets the pointer to the next solver structure in the solver
     ! hierarchy. If the type of the given solver denotes a single grid solver,
     ! then the corresponding solver subnode is returned if available.
     ! For multigrid-type solvers the corresponding coarsegrid solver is
@@ -3490,7 +3490,7 @@ contains
       else
         nullify(p_rsubsolver)
       end if
-      
+
     case (SV_NONLINEAR, SV_LINEAR)
       if (associated(rsolver%p_solverSubnode)) then
         p_rsubsolver => rsolver%p_solverSubnode(1)
@@ -3505,7 +3505,7 @@ contains
   end function solver_getNextSolver
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function solver_getNextSolverByTypes(rsolver, CsolverType, isubsolver)&
@@ -3545,7 +3545,7 @@ contains
   end function solver_getNextSolverByTypes
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function solver_getNextSolverByType(rsolver, csolverType, isubsolver)&
@@ -3583,15 +3583,15 @@ contains
     end do
 
   end function solver_getNextSolverByType
-  
+
   ! ***************************************************************************
-  
+
 !<function>
 
   function solver_getMinimumMultigridlevel(rsolver, nlminAlt) result(nlmin)
 
 !<description>
-    ! This function returns the minimal multigrid level required throughout the 
+    ! This function returns the minimal multigrid level required throughout the
     ! entire solver structure. Note that preconditioner and smoother structures
     ! are not taken into account as they are only auxiliary solvers.
     !
@@ -3628,7 +3628,7 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! This function returns the minimum mulitigrid level
 
@@ -3641,18 +3641,18 @@ contains
 
       ! Initialization
       nlmin = huge(1)
-      
+
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
           nlmin = min(nlmin, get_nlmin(rsolver%p_solverSubnode(i)))
         end do
       end if
-      
+
       ! Do we have multigrid subnode?
       if (associated(rsolver%p_solverMultigrid)) then
         nlmin = min(nlmin, rsolver%p_solverMultigrid%nlmin)
-        
+
         ! Do we have coarsegrid subnode?
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           nlmin = min(nlmin, get_nlmin(rsolver%p_solverMultigrid%p_solverCoarsegrid))
@@ -3663,13 +3663,13 @@ contains
   end function solver_getMinimumMultigridlevel
 
   ! ***************************************************************************
-  
+
 !<function>
 
   function solver_getMaximumMultigridlevel(rsolver, nlmaxAlt) result(nlmax)
 
 !<description>
-    ! This function returns the maximal multigrid level required throughout the 
+    ! This function returns the maximal multigrid level required throughout the
     ! entire solver structure. Note that preconditioner and smoother structures
     ! are not taken into account as they are only auxiliary solvers.
     !
@@ -3706,31 +3706,31 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! This function returns the maximum mulitigrid level
-    
+
     recursive function get_nlmax(rsolver) result(nlmax)
       type(t_solver), intent(in) :: rsolver
       integer :: nlmax
-      
+
       ! local variables
       integer :: i
 
       ! Initialization
       nlmax = 0
-      
+
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
           nlmax = max(nlmax, get_nlmax(rsolver%p_solverSubnode(i)))
         end do
       end if
-      
+
       ! Do we have multigrid subnode?
       if (associated(rsolver%p_solverMultigrid)) then
         nlmax = max(nlmax, rsolver%p_solverMultigrid%nlmax)
-        
+
         ! Do we have coarsegrid subnode?
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           nlmax = max(nlmax, get_nlmax(rsolver%p_solverMultigrid%p_solverCoarsegrid))
@@ -3747,7 +3747,7 @@ contains
   subroutine solver_setMinimumMultigridlevel(rsolver, nlmin)
 
 !<description>
-    ! This subroutine sets the minimum multigrid level 
+    ! This subroutine sets the minimum multigrid level
     ! required throughout the entire solver structure
 !</description>
 
@@ -3768,33 +3768,33 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! This subroutine sets the minimum multigrid leve recursively
 
     recursive subroutine set_nlmin(rsolver, nlmin)
       type(t_solver), intent(inout) :: rsolver
       integer, intent(in) :: nlmin
-      
+
       ! local variables
       integer :: i
-      
+
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
           call set_nlmin(rsolver%p_solverSubnode(i), nlmin)
         end do
       end if
-      
+
       ! Do we have multigrid subnode?
       if (associated(rsolver%p_solverMultigrid)) then
         rsolver%p_solverMultigrid%nlmin = nlmin
-        
+
         ! Do we have coarsegrid subnode?
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           call set_nlmin(rsolver%p_solverMultigrid%p_solverCoarsegrid, nlmin)
         end if
-        
+
         ! Do we have a smoother subnode?
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
@@ -3803,16 +3803,16 @@ contains
           end do
         end if
       end if
-      
+
       ! Do we have a single-grid solver which has a preconditioner?
-      
+
       ! BiCGSTAB ?
       if (associated(rsolver%p_solverBiCGSTAB)) then
         if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
           call set_nlmin(rsolver%p_solverBiCGSTAB%p_precond, nlmin)
         end if
       end if
-      
+
       ! GMRES ?
       if (associated(rsolver%p_solverGMRES)) then
         if (associated(rsolver%p_solverGMRES%p_precond)) then
@@ -3847,37 +3847,37 @@ contains
 
     ! Set maximum multigrid level
     call set_nlmax(rsolver, nlmax)
-    
+
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! This subroutine sets the maximum multigrid leve recursively
 
     recursive subroutine set_nlmax(rsolver, nlmax)
       type(t_solver), intent(inout) :: rsolver
       integer, intent(in) :: nlmax
-      
+
       ! local variables
       integer :: i
-      
+
       ! Do we have a generic solver subnode?
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
           call set_nlmax(rsolver%p_solverSubnode(i), nlmax)
         end do
       end if
-      
+
       ! Do we have multigrid subnode?
       if (associated(rsolver%p_solverMultigrid)) then
         rsolver%p_solverMultigrid%nlmax = nlmax
-        
+
         ! Do we have coarsegrid subnode?
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
           call set_nlmax(rsolver%p_solverMultigrid%p_solverCoarsegrid, nlmax)
         end if
-        
+
         ! Do we have a smoother subnode?
         if (associated(rsolver%p_solverMultigrid%p_smoother)) then
           do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
@@ -3886,16 +3886,16 @@ contains
           end do
         end if
       end if
-      
+
       ! Do we have a single-grid solver which has a preconditioner?
-      
+
       ! BiCGSTAB ?
       if (associated(rsolver%p_solverBiCGSTAB)) then
         if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
           call set_nlmax(rsolver%p_solverBiCGSTAB%p_precond, nlmax)
         end if
       end if
-      
+
       ! GMRES ?
       if (associated(rsolver%p_solverGMRES)) then
         if (associated(rsolver%p_solverGMRES%p_precond)) then
@@ -3915,7 +3915,7 @@ contains
 !<description>
     ! This subroutine associates a given boundary condition to the solver.
     ! If brecursive=.TRUE. then the same boundary condition is used for
-    ! all solvers in the underlying solver hierarchy. Otherwise, the 
+    ! all solvers in the underlying solver hierarchy. Otherwise, the
     ! boundary conditions is only associated to the top-level solver.
 !</description>
 
@@ -3950,16 +3950,16 @@ contains
             rboundaryCondition, brecursive)
       end do
     end if
-    
+
     ! Do we have a multigrid subnode?
     if (associated(rsolver%p_solverMultigrid)) then
-      
+
       ! Do we have a coarsegrid solver?
       if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
         call solver_setBoundaryCondition(&
             rsolver%p_solverMultigrid%p_solverCoarsegrid, rboundaryCondition, brecursive)
       end if
-      
+
       ! Do we have a smoother?
       if (associated(rsolver%p_solverMultigrid%p_smoother)) then
         do i = lbound(rsolver%p_solverMultigrid%p_smoother,1),&
@@ -3979,7 +3979,7 @@ contains
             rsolver%p_solverBiCGSTAB%p_precond, rboundaryCondition, brecursive)
       end if
     end if
-    
+
     ! GMRES ?
     if (associated(rsolver%p_solverGMRES)) then
       if (associated(rsolver%p_solverGMRES%p_precond)) then
@@ -4017,7 +4017,7 @@ contains
     ! local variable
     type(t_solverMultigrid), pointer :: p_solverMultigrid
 
-    
+
     ! What kind of solver are we?
     select case(rsolver%csolverType)
     case (SV_FMG, SV_NONLINEARMG, SV_NONLINEAR)
@@ -4029,7 +4029,7 @@ contains
       ! ------------------------------------------------------------------------
       ! Set system matrices for linear multigrid solver
       p_solverMultigrid => rsolver%p_solverMultigrid
-      
+
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
         call output_line('Multigrid level is missing!',&
@@ -4066,7 +4066,7 @@ contains
 
     case (SV_LINEAR)
       ! ------------------------------------------------------------------------
-      
+
       ! UMFPACK subnode
       if (associated(rsolver%p_solverUMFPACK)) then
 
@@ -4180,7 +4180,7 @@ contains
     ! local variable
     type(t_solverMultigrid), pointer :: p_solverMultigrid
 
-    
+
     ! What kind of solver are we?
     select case(rsolver%csolverType)
     case (SV_FMG, SV_NONLINEARMG, SV_NONLINEAR)
@@ -4192,7 +4192,7 @@ contains
       ! ------------------------------------------------------------------------
       ! Set system matrices for linear multigrid solver
       p_solverMultigrid => rsolver%p_solverMultigrid
-      
+
       ! Check if multigrid level is specified
       if (.not.present(ilev)) then
         call output_line('Multigrid level is missing!',&
@@ -4230,7 +4230,7 @@ contains
 
     case (SV_LINEAR)
       ! ------------------------------------------------------------------------
-      
+
       ! UMFPACK subnode
       if (associated(rsolver%p_solverUMFPACK)) then
 
@@ -4275,7 +4275,7 @@ contains
 
       ! BiCGSTAB subnode
       if (associated(rsolver%p_solverBiCGSTAB)) then
-        
+
         ! Release existing matrix and set new matrix
         call lsysbl_releaseMatrix(rsolver%p_solverBiCGSTAB%rmatrix)
         call lsysbl_duplicateMatrix(rmatrix,&
@@ -4461,11 +4461,11 @@ contains
     type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     type(t_solverMultigrid), pointer :: p_solverMultigrid
     type(t_solver), dimension(:), pointer :: p_smoother
-    
+
     ! What kind of solver are we?
     select case(rsolver%csolverType)
     case (SV_FMG, SV_NONLINEARMG)
@@ -4477,7 +4477,7 @@ contains
       ! ------------------------------------------------------------------------
       ! There are no smoothers for single-grid solvers
 
-      
+
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver
@@ -4489,7 +4489,7 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'solver_setSmootherMatrixScalar')
           call sys_halt()
         end if
-        
+
         ! Set pointer
         p_solverMultigrid => rsolver%p_solverMultigrid
 
@@ -4543,11 +4543,11 @@ contains
     type(t_solver), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variable
     type(t_solverMultigrid), pointer :: p_solverMultigrid
     type(t_solver), dimension(:), pointer :: p_smoother
-    
+
     ! What kind of solver are we?
     select case(rsolver%csolverType)
     case (SV_FMG, SV_NONLINEARMG)
@@ -4559,7 +4559,7 @@ contains
       ! ------------------------------------------------------------------------
       ! There are no smoothers for single-grid solvers
 
-      
+
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver
@@ -4577,7 +4577,7 @@ contains
 
         ! Check if subarray of smoothers exists
         if (associated(p_solverMultigrid%p_smoother)) then
-          
+
           ! Set pointer
           p_smoother => p_solverMultigrid%p_smoother
 
@@ -4619,7 +4619,7 @@ contains
     !     subroutine should be called immediately, once the top-most
     !     solver structure has been created from parameter file in
     !     order to build the internal structure.
-    !     
+    !
     ! 2.) If the internal structures exist and if, e.g., matrices are
     !     attached, then the temporal vectors, etc. are created
     !     /resized to the correct dimensions. Consequently, the
@@ -4648,7 +4648,7 @@ contains
       ! Remove update marker from specification bitfields
       rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
-      
+
       ! Proceed to solver subnodes
       if (associated(rsolver%p_solverSubnode)) then
         do i = 1, size(rsolver%p_solverSubnode)
@@ -4664,7 +4664,7 @@ contains
       ! Remove update marker from specification bitfields
       rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
-      
+
       ! Proceed to coarsegrid solver
       if (associated(rsolver%p_solverMultigrid)) then
         if (associated(rsolver%p_solverMultigrid%p_solverCoarsegrid)) then
@@ -4672,7 +4672,7 @@ contains
         end if
       end if
 
-      
+
     case (SV_NONLINEARMG)
       ! ------------------------------------------------------------------------
       ! Nonlinear multigrid solver
@@ -4680,36 +4680,36 @@ contains
 
         ! Set pointer
         p_solverMultigrid => rsolver%p_solverMultigrid
-        
+
         ! Check if structure needs update
         if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
-          
+
           ! Step 1: Prepare structure
           nlmin = p_solverMultigrid%nlmin
           nlmax = p_solverMultigrid%nlmax
-          
+
           ! Check if subarray for temporal vectors exists.
           ! Remark: On each level NLMIN+1,...,NLMAX, we need three
           ! temporal vectors for residual on finegrid, residual on
           ! coarsegrid and auxiliary solution vector plus one auxiliary
-          ! solution vector on the coarsest level, i.e., NLMIN. 
+          ! solution vector on the coarsest level, i.e., NLMIN.
           ! Hence, the array must have dimensions (NLMIN : 3*NLMAX-2*NLMIN)
           if (associated(p_solverMultigrid%RtempVectors)) then
-            
+
             ! Do we have to reallocate the subarray of matrices?
             ilbound = lbound(p_solverMultigrid%RtempVectors,1)
             iubound = ubound(p_solverMultigrid%RtempVectors,1)
-            
+
             if ((ilbound > nlmin) .or. (iubound < 3*nlmax-2*nlmin)) then
               do i = ilbound, iubound
                 call lsysbl_releaseVector(p_solverMultigrid%RtempVectors(i))
               end do
               deallocate(p_solverMultigrid%RtempVectors)
-              
+
               ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
               allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
             end if
-            
+
           else
             ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
             allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
@@ -4721,7 +4721,7 @@ contains
           ! Remove update marker from specification bitfields
           rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                      not(SV_SSPEC_STRUCTURENEEDSUPDATE))
-        end if       
+        end if
       end if
 
 
@@ -4731,79 +4731,79 @@ contains
       if (associated(rsolver%p_solverMultigrid)) then
 
         ! Set pointer
-        p_solverMultigrid => rsolver%p_solverMultigrid        
+        p_solverMultigrid => rsolver%p_solverMultigrid
 
         ! Check if structure needs update
         if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
-          
+
           ! Step 1: prepare structure
           nlmin = p_solverMultigrid%nlmin
           nlmax = p_solverMultigrid%nlmax
-          
+
           ! Check if subarray for system matrices exist
           if (associated(p_solverMultigrid%rmatrix)) then
-            
+
             ! Do we have to reallocate the subarray of matrices?
             ilbound = lbound(p_solverMultigrid%rmatrix,1)
             iubound = ubound(p_solverMultigrid%rmatrix,1)
-            
+
             if ((ilbound > nlmin) .or. (iubound < nlmax)) then
               do i = ilbound, iubound
                 call lsysbl_releaseMatrix(p_solverMultigrid%rmatrix(i))
               end do
               deallocate(p_solverMultigrid%rmatrix)
-              
+
               ! Allocate subarray(NLMIN:NLMAX) for system matrices
               allocate(p_solverMultigrid%rmatrix(nlmin:nlmax))
             end if
-            
+
           else
             ! Allocate subarray(NLMIN:NLMAX) for system matrices
             allocate(p_solverMultigrid%rmatrix(nlmin:nlmax))
           end if
-          
+
           ! Check if subarray for temporal vectors exists.
           ! Remark: On each level NLMIN+1,...,NLMAX, we need three
           ! temporal vectors for residual on finegrid, residual on
           ! coarsegrid and auxiliary solution vector plus one auxiliary
-          ! solution vector on the coarsest level, i.e., NLMIN. 
+          ! solution vector on the coarsest level, i.e., NLMIN.
           ! Hence, the array must have dimensions (NLMIN : 3*NLMAX-2*NLMIN
           if (associated(p_solverMultigrid%RtempVectors)) then
-            
+
             ! Do we have to reallocate the subarray of matrices?
             ilbound = lbound(p_solverMultigrid%RtempVectors,1)
             iubound = ubound(p_solverMultigrid%RtempVectors,1)
-            
+
             if ((ilbound > nlmin) .or. (iubound < 3*nlmax-2*nlmin)) then
               do i = ilbound, iubound
                 call lsysbl_releaseVector(p_solverMultigrid%RtempVectors(i))
               end do
               deallocate(p_solverMultigrid%RtempVectors)
-              
+
               ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
               allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
             end if
-            
+
           else
             ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
             allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
           end if
 
-          
+
           ! Ok, now the subarrays definitively exist. Let us try to initialize the
-          ! temporal vectors from the attached matrices (if any). 
+          ! temporal vectors from the attached matrices (if any).
           ! We need the following layout:
           !   raux(NLMIN), raux(NLMIN),   rresc(NLMIN),   rresf(NLMIN+1),
           !                raux(NLMIN+1), rresc(NLMIN+1), rresf(NLMIN+2),
           !                ...            ...             ...
           !                raux(NLMAX-1), rresc(NLMAX-1), rresf(NLMAX)
-          
+
           ! Loop over levels NLMIN,...,NLMAX-1
           do ilev = nlmin, nlmax-1
-            
+
             ! Check if we have a usable matrix for current level
             if (p_solverMultigrid%rmatrix(ilev)%NEQ > 0) then
-              
+
               ! We need three vectors on each level except for the highest level
               do i = 0, 2
                 if (p_solverMultigrid%RtempVectors(nlmin+3*(ilev-nlmin)+i)%NEQ > 0) then
@@ -4818,7 +4818,7 @@ contains
               end do
             end if
           end do
-          
+
           ! Finally, create one temporal vectors on the finest grid
           if (p_solverMultigrid%rmatrix(nlmax)%NEQ > 0) then
             if (p_solverMultigrid%RtempVectors(3*nlmax-2*nlmin)%NEQ > 0) then
@@ -4836,21 +4836,21 @@ contains
                                        not(SV_SSPEC_STRUCTURENEEDSUPDATE))
           end if
         end if
-        
+
 
         ! Update coarsegrid solver
         if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
           call solver_updateStructure(p_solverMultigrid%p_solverCoarsegrid)
         end if
 
-        
+
         ! Update smoother subnode
         if (associated(p_solverMultigrid%p_smoother)) then
           call smoother_updateStructure(p_solverMultigrid)
         end if
       end if
 
-      
+
     case (SV_NONLINEAR)
       ! ------------------------------------------------------------------------
       ! Nonlinear single-grid solver - do nothing for the solver itself
@@ -4858,29 +4858,29 @@ contains
       ! Remove update marker from specification bitfields
       rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                  not(SV_SSPEC_STRUCTURENEEDSUPDATE))
-        
+
       ! Proceed to the generic solver subnode
       if (associated(rsolver%p_solverSubnode)) then
         call solver_updateStructure(rsolver%p_solverSubnode(1))
       end if
-      
+
 
     case (SV_LINEAR)
       ! ------------------------------------------------------------------------
       ! Linear single-grid solver
       !
-      ! 1.-2. Step: Prepare individual solver subnodes and, eventually, 
+      ! 1.-2. Step: Prepare individual solver subnodes and, eventually,
       !             solver structure for preconditioners
 
       ! Check if structure needs update
       if (iand(rsolver%isolverSpec, SV_SSPEC_STRUCTURENEEDSUPDATE) .ne. 0) then
-        
+
         ! UMFPACK solver
         if (associated(rsolver%p_solverUMFPACK)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverUMFPACK%rmatrix%NEQ > 0) then
-            
+
             ! We need one temporal vector
             if (rsolver%p_solverUMFPACK%rtempVector%NEQ > 0) then
               ! Resize existing vector
@@ -4889,19 +4889,19 @@ contains
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_solverUMFPACK%rmatrix,&
-                                               rsolver%p_solverUMFPACK%rtempVector, .false.)  
+                                               rsolver%p_solverUMFPACK%rtempVector, .false.)
             end if
-            
+
           end if
         end if   ! UMFPACK solver
 
 
         ! Jacobi solver
         if (associated(rsolver%p_solverJacobi)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverJacobi%rmatrix%NEQ > 0) then
-            
+
             ! We need one temporal vector
             if (rsolver%p_solverJacobi%rtempVector%NEQ > 0) then
               ! Resize existing vector
@@ -4910,20 +4910,20 @@ contains
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_solverJacobi%rmatrix,&
-                                               rsolver%p_solverJacobi%rtempVector, .false.)  
+                                               rsolver%p_solverJacobi%rtempVector, .false.)
             end if
-            
+
           end if
         end if   ! Jacobi solver
-        
-        
-        ! (S)SOR solver - nothing to update since no temporal vectors 
+
+
+        ! (S)SOR solver - nothing to update since no temporal vectors
         !                 are required and no preconditioning is available
         if (associated(rsolver%p_solverSSOR)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverSSOR%rmatrix%NEQ > 0) then
-            
+
             ! We need one temporal vector
             if (rsolver%p_solverSSOR%rtempVector%NEQ > 0) then
               ! Resize existing vector
@@ -4932,19 +4932,19 @@ contains
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_solverSSOR%rmatrix,&
-                                               rsolver%p_solverSSOR%rtempVector, .false.)  
+                                               rsolver%p_solverSSOR%rtempVector, .false.)
             end if
-            
+
           end if
         end if   ! SSOR solver
-        
-        
+
+
         ! BiCGSTAB solver
         if (associated(rsolver%p_solverBiCGSTAB)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverBiCGSTAB%rmatrix%NEQ > 0) then
-            
+
             ! We need some temporal vectors
             if (rsolver%p_solverBiCGSTAB%RtempVectors(1)%NEQ > 0) then
 
@@ -4954,31 +4954,31 @@ contains
                 call lsysbl_resizeVecBlockIndMat(rsolver%p_solverBiCGSTAB%rmatrix,&
                                                  rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)
               end do
-              
+
             else
 
               ! Create vectors from matrix
               do i = lbound(rsolver%p_solverBiCGSTAB%RtempVectors,1),&
                      ubound(rsolver%p_solverBiCGSTAB%RtempVectors,1)
                 call lsysbl_createVecBlockIndMat(rsolver%p_solverBiCGSTAB%rmatrix,&
-                                                 rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)  
+                                                 rsolver%p_solverBiCGSTAB%RtempVectors(i), .false.)
               end do
             end if
           end if
-          
+
           ! Check if preconditioner is attached
           if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
             call solver_updateStructure(rsolver%p_solverBiCGSTAB%p_precond)
           end if
         end if   ! BiCGSTAB solver
-        
-        
+
+
         ! GMRES solver
         if (associated(rsolver%p_solverGMRES)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverGMRES%rmatrix%NEQ > 0) then
-            
+
             ! We need some temporal vectors
             if (rsolver%p_solverGMRES%rv(1)%NEQ > 0) then
               ! Resize existing vectors rv
@@ -4992,10 +4992,10 @@ contains
               do i = lbound(rsolver%p_solverGMRES%rv,1),&
                      ubound(rsolver%p_solverGMRES%rv,1)
                 call lsysbl_createVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rv(i), .false.)  
+                                                 rsolver%p_solverGMRES%rv(i), .false.)
               end do
             end if
-            
+
             if (rsolver%p_solverGMRES%rz(1)%NEQ > 0) then
               ! Resize existing vectors rz
               do i = lbound(rsolver%p_solverGMRES%rz,1),&
@@ -5008,24 +5008,24 @@ contains
               do i = lbound(rsolver%p_solverGMRES%rz,1),&
                      ubound(rsolver%p_solverGMRES%rz,1)
                 call lsysbl_createVecBlockIndMat(rsolver%p_solverGMRES%rmatrix,&
-                                                 rsolver%p_solverGMRES%rz(i), .false.)  
+                                                 rsolver%p_solverGMRES%rz(i), .false.)
               end do
             end if
           end if
-          
+
           ! Check if preconditioner is attached
           if (associated(rsolver%p_solverGMRES%p_precond)) then
             call solver_updateStructure(rsolver%p_solverGMRES%p_precond)
           end if
         end if   ! GMRES solver
-        
-        
+
+
         ! ILU solver
         if (associated(rsolver%p_solverILU)) then
-          
+
           ! Check if matrix is attached
           if (rsolver%p_solverILU%rmatrix%NEQ > 0) then
-            
+
             ! We need one temporal vector
             if (rsolver%p_solverILU%rtempVector%NEQ > 0) then
               ! Resize existing vector
@@ -5034,12 +5034,12 @@ contains
             else
               ! Create vector from matrix
               call lsysbl_createVecBlockIndMat(rsolver%p_solverILU%rmatrix,&
-                                               rsolver%p_solverILU%rtempVector, .false.)  
+                                               rsolver%p_solverILU%rtempVector, .false.)
             end if
-            
+
           end if
         end if   ! ILU solver
-        
+
         ! Remove update marker from specification bitfields
         rsolver%isolverSpec = iand(rsolver%isolverSpec,&
                                    not(SV_SSPEC_STRUCTURENEEDSUPDATE))
@@ -5054,33 +5054,33 @@ contains
     end select
 
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Update the structure of the smoother
 
     subroutine smoother_updateStructure(rsolver)
       type(t_solverMultigrid), intent(inout) :: rsolver
-      
+
       ! local variables
       type(t_solver) :: rsolverTemplateSmoother
       integer :: ilbound,iubound
 
       ! What kind of smoother are we?
       select case(rsolver%csmootherType)
-        
+
       case (SV_NONLINEAR, SV_LINEAR)
         ! ----------------------------------------------------------------------
         ! Nonlinear/Linear smoother subnode
-                  
+
         ! Check if subarray of smoothers exists
         if (associated(rsolver%p_smoother)) then
-                     
+
           ! Do we have to reallocate the subarray of smoothers?
           ilbound = lbound(rsolver%p_smoother,1)
           iubound = ubound(rsolver%p_smoother,1)
-          
+
           if ((ilbound > rsolver%nlmin+1) .or. (iubound < rsolver%nlmax)) then
 
             ! Create template solver from smoother
@@ -5104,25 +5104,25 @@ contains
 
             ! Release template smoother
             call solver_releaseSolver(rsolverTemplateSmoother)
-            
+
             ! That is it, the subarray of smoothers exists and has the correct dimensions
           end if
-          
+
         else
           call output_line('Smoother structure does not exist!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
           call sys_halt()
         end if
-        
+
         ! Ok, now the subarray of smoothers definitively exists and has the correct dimension.
         ! Initialize the smoothers on all levels, whereby each individual smoother is
         ! treated as a standard solver
         do i = lbound(rsolver%p_smoother,1), &
                ubound(rsolver%p_smoother,1)
-          call solver_updateStructure(rsolver%p_smoother(i))      
+          call solver_updateStructure(rsolver%p_smoother(i))
         end do
-        
-        
+
+
       case DEFAULT
         call output_line('Unsupported solver type!',&
                          OU_CLASS_ERROR,OU_MODE_STD,'smoother_updateStructure')
@@ -5171,8 +5171,8 @@ contains
           call solver_updateContent(rsolver%p_solverMultigrid%p_solverCoarsegrid)
         end if
       end if
-      
-      
+
+
     case (SV_NONLINEARMG)
       ! ------------------------------------------------------------------------
       ! Nonlinear multigrid solver - do nothing for the solver itself
@@ -5190,7 +5190,7 @@ contains
         if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
           call solver_updateContent(p_solverMultigrid%p_solverCoarsegrid)
         end if
-      
+
         ! ... and smoother
         if (associated(p_solverMultigrid%p_smoother)) then
           do i = lbound(p_solverMultigrid%p_smoother,1),&
@@ -5200,7 +5200,7 @@ contains
         end if
       end if
 
-      
+
     case (SV_NONLINEAR)
       ! ------------------------------------------------------------------------
       ! Nonlinear single-grid solver - do nothing for the solver itself
@@ -5214,7 +5214,7 @@ contains
         call solver_updateContent(rsolver%p_solverSubnode(1))
       end if
 
-      
+
     case (SV_LINEARMG)
       ! ------------------------------------------------------------------------
       ! Linear multigrid solver - do nothing for the solver itself
@@ -5232,7 +5232,7 @@ contains
         if (associated(p_solverMultigrid%p_solverCoarsegrid)) then
           call solver_updateContent(p_solverMultigrid%p_solverCoarsegrid)
         end if
-      
+
         ! ... and smoother
         if (associated(p_solverMultigrid%p_smoother)) then
           do i = lbound(p_solverMultigrid%p_smoother,1),&
@@ -5249,7 +5249,7 @@ contains
 
       ! Check if content needs update
       if (iand(rsolver%isolverSpec, SV_SSPEC_CONTENTNEEDSUPDATE) .ne. 0) then
-        
+
         ! Initialize UMFPACK solver
         if (associated(rsolver%p_solverUMFPACK)) then
           call solver_initUMFPACK(rsolver%p_solverUMFPACK)
@@ -5259,14 +5259,14 @@ contains
         if (associated(rsolver%p_solverILU)) then
           call solver_initILU(rsolver%p_solverILU)
         end if
-      
+
         ! Initialize preconditioner of BiCGSTAB solver
         if (associated(rsolver%p_solverBiCGSTAB)) then
           if (associated(rsolver%p_solverBiCGSTAB%p_precond)) then
             call solver_updateContent(rsolver%p_solverBiCGSTAB%p_precond)
           end if
         end if
-      
+
         ! Initialize preconditioner of GMRES solver
         if (associated(rsolver%p_solverGMRES)) then
           if (associated(rsolver%p_solverGMRES%p_precond)) then
@@ -5279,7 +5279,7 @@ contains
                                    not(SV_SSPEC_CONTENTNEEDSUPDATE))
       end if
 
-      
+
     case DEFAULT
       call output_line('Unsupported solver type!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_updateContent')
@@ -5294,25 +5294,25 @@ contains
 
   subroutine solver_prolongationScalar(rtriangulationCoarse, rtriangulationFine,&
                                        rxCoarse, rxFine)
-    
+
 !<description>
     ! This subroutine performs prolongation from coarse grid to fine grid, i.e.
     ! rx(Fine) := prolongation(rx(Coarse)).
-    ! 
+    !
     ! Note that prolongation can be performed in situ if both vectors are the same.
 !</description>
 
 !<input>
     ! Coarse triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationCoarse
-    
+
     ! Fine triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationFine
-    
+
     ! Coarse mesh vector
     type(t_vectorScalar), intent(in) :: rxCoarse
 !</input>
-    
+
 !<inputoutput>
     ! Fine mesh vector
     type(t_vectorScalar), intent(inout) :: rxFine
@@ -5338,35 +5338,35 @@ contains
                                 p_IverticesAtElementCoarse)
 
     nvar = rxCoarse%NVAR
-    
+
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationScalar')
       call sys_halt()
     end if
-      
+
     ! Set pointers
     call lsyssc_getbase_double(rxFine, p_DxFine)
     call lsyssc_getbase_double(rxCoarse, p_DxCoarse)
-    
+
     ! Explicitely adopt values from coarser level
     call lalg_copyVectorDble(p_DxCoarse, p_DxFine)
-    
+
     ! Do the prolongation
     call do_prolongationP1Q1(nvar, rtriangulationCoarse%NEL,&
                              p_IneighboursAtElementFine, p_IneighboursAtElementCoarse,&
                              p_IverticesAtElementFine, p_IverticesAtElementCoarse, &
                              p_DxFine, p_DxCoarse)
-    
+
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Perform prolongation from coarse to fine grid
     ! for P1 and Q1 finite elements
-    
+
     subroutine do_prolongationP1Q1(nvar, nel, IneighboursAtElementFine, &
                                    IneighboursAtElementCoarse, IverticesAtElementFine, &
                                    IverticesAtElementCoarse, DxFine, DxCoarse)
@@ -5378,17 +5378,17 @@ contains
       integer, dimension(:,:), intent(in) :: IverticesAtElementCoarse
       real(DP), dimension(nvar,*), intent(in) :: DxCoarse
       real(DP), dimension(nvar,*), intent(inout) :: DxFine
-      
+
       real(DP), dimension(nvar,TRIA_MAXNVE2D) :: Dxloc
       integer :: iel,iel1,iel2,iel3,iel4,nve
-      
+
       ! Loop over all elements of the coarse grid
       do iel = 1, nel
-        
+
         ! Determine number and values of local vertices
         nve = tria_getNVE(IverticesAtElementCoarse, iel)
         Dxloc(:,1:nve) = DxCoarse(:,IverticesAtElementCoarse(1:nve,iel))
-        
+
         ! What kind of element are we?
         select case(nve)
         case(TRIA_NVETRI2D)
@@ -5401,29 +5401,29 @@ contains
 
           if (IneighboursAtElementCoarse(3,iel) < iel)&
               DxFine(:,IverticesAtElementFine(3,iel)) = 0.5_DP*(Dxloc(:,3)+Dxloc(:,1))
-          
-          
+
+
         case(TRIA_NVEQUAD2D)
           ! bilinear quadrilateral
           iel1 = iel
           iel2 = IneighboursAtElementFine(2,iel1)
           iel3 = IneighboursAtElementFine(2,iel2)
           iel4 = IneighboursAtElementFine(2,iel3)
-          
+
           if (IneighboursAtElementCoarse(1,iel ) < iel)&
               DxFine(:,IverticesAtElementFine(2,iel1)) = 0.5_DP*(Dxloc(:,1)+Dxloc(:,2))
 
           if (IneighboursAtElementCoarse(2,iel ) < iel)&
               DxFine(:,IverticesAtElementFine(2,iel2)) = 0.5_DP*(Dxloc(:,2)+Dxloc(:,3))
-          
+
           if (IneighboursAtElementCoarse(3,iel ) < iel)&
               DxFine(:,IverticesAtElementFine(2,iel3)) = 0.5_DP*(Dxloc(:,3)+Dxloc(:,4))
 
           if (IneighboursAtElementCoarse(4,iel ) < iel)&
               DxFine(:,IverticesAtElementFine(2,iel4)) = 0.5_DP*(Dxloc(:,4)+Dxloc(:,1))
-          
+
           DxFine(:,IverticesAtElementFine(3,iel)) = 0.25_DP*sum(Dxloc,2)
-          
+
         case DEFAULT
           call output_line('Invalid number of vertices per element!',&
               OU_CLASS_ERROR,OU_MODE_STD,'do_prolongationP1Q1')
@@ -5440,25 +5440,25 @@ contains
 
   subroutine solver_prolongationBlock(rtriangulationCoarse, rtriangulationFine,&
                                       rxCoarse, rxFine)
-    
+
 !<description>
     ! This subroutine performs prolongation from coarse grid to fine grid, i.e.
     ! rx(Fine) := prolongation(rx(Coarse)).
-    ! 
+    !
     ! Note that prolongation can be performed in situ if both vectors are the same.
 !</description>
 
 !<input>
     ! Coarse triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationCoarse
-    
+
     ! Fine triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationFine
-    
+
     ! Coarse mesh vector
     type(t_vectorBlock), intent(in) :: rxCoarse
 !</input>
-    
+
 !<inputoutput>
     ! Fine mesh vector
     type(t_vectorBlock), intent(inout) :: rxFine
@@ -5467,13 +5467,13 @@ contains
 
     ! Local variables
     integer :: iblock
-    
+
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_prolongationBlock')
       call sys_halt()
     end if
-    
+
     ! Treat each block separately
     do iblock = 1, rxCoarse%nblocks
       call solver_prolongationScalar(rtriangulationCoarse, rtriangulationFine,&
@@ -5500,14 +5500,14 @@ contains
 !<input>
     ! Coarse triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationFine
-    
+
     ! Fine triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationCoarse
-    
+
     ! Coarse mesh vector
     type(t_vectorScalar), intent(in) :: rxFine
 !</input>
-    
+
 !<inputoutput>
     ! Fine mesh vector
     type(t_vectorScalar), intent(inout) :: rxCoarse
@@ -5519,44 +5519,44 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElementFine
     real(DP), dimension(:), pointer :: p_DxFine,p_DxCoarse
     integer :: nvar
-    
+
     ! Set global pointers
     call storage_getbase_int2D (rtriangulationFine%h_IneighboursAtElement,&
                                 p_IneighboursAtElementFine)
     call storage_getbase_int2D (rtriangulationFine%h_IverticesAtElement,&
                                 p_IverticesAtElementFine)
-    
+
     nvar = rxFine%NVAR
-    
+
     ! Check if scalar vectors are compatible
     if (rxFine%NVAR .ne. rxCoarse%NVAR) then
       call output_line('Scalar vectors must be compatible!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionScalar')
       call sys_halt()
     end if
-    
+
     ! Set pointers
     call lsyssc_getbase_double(rxFine, p_DxFine)
     call lsyssc_getbase_double(rxCoarse, p_DxCoarse)
-    
+
     ! Explicitely adopt values 1:NVT_Coarse from coarser level.
     call lalg_copyVectorDble(p_DxFine(1:nvar*rtriangulationCoarse%NVT), p_DxCoarse)
-    
+
     call do_restrictionP1Q1(nvar, rtriangulationFine%NEL, rtriangulationCoarse%NEL, &
                             p_IneighboursAtElementFine, p_IverticesAtElementFine,&
                             p_DxFine, p_DxCoarse)
-        
+
     ! If restriction is performed in situ, then you must nor forget so
     ! adjust the dimension of the coarse grid vector outside of this routine
 
   contains
-    
+
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Perform restriction from fine to coarse grid
     ! for P1 and Q1 finite elements
-    
+
     subroutine do_restrictionP1Q1(nvar, nelFine, nelCoarse, &
                                   IneighboursAtElementFine, IverticesAtElementFine,&
                                   DxFine, DxCoarse)
@@ -5572,17 +5572,17 @@ contains
 
       ! Loop over all elements of the fine grid
       do iel = 1, nelFine
-        
+
         ! Determine number local vertices
         nve = tria_getNVE(IverticesAtElementFine, iel)
-        
+
         ! Check if current element is a triangle
         ! Then, ignore element if IEL < NEL of the coarse grid
         if (nve .eq. TRIA_NVETRI2D .and. iel < nelCoarse+1) cycle
-        
+
         ! Determine number of local vertices
         iloc(1:nve) = IverticesAtElementFine(1:nve,iel)
-        
+
         ! What kind of element are we?
         select case(nve)
         case(TRIA_NVETRI2D)
@@ -5592,7 +5592,7 @@ contains
 
           if (IneighboursAtElementFine(3,iel) < iel)&
               DxCoarse(:,iloc(1)) = DxCoarse(:,iloc(1)) + 0.5_DP*DxFine(:,iloc(3))
-          
+
 
         case(TRIA_NVEQUAD2D)
           ! bilinear quadrilateral
@@ -5600,7 +5600,7 @@ contains
 
           if (IneighboursAtElementFine(1,iel) .eq. 0)&
               DxCoarse(:,iloc(1)) = DxCoarse(:,iloc(1))+0.25_DP*DxFine(:,iloc(2))
-          
+
           if (IneighboursAtElementFine(4,iel) .eq. 0)&
               DxCoarse(:,iloc(1)) = DxCoarse(:,iloc(1)) + 0.25_DP*DxFine(:,iloc(4))
 
@@ -5614,7 +5614,7 @@ contains
     end subroutine do_restrictionP1Q1
 
   end subroutine solver_restrictionScalar
- 
+
   ! ***************************************************************************
 
 !<subroutine>
@@ -5632,14 +5632,14 @@ contains
 !<input>
     ! Coarse triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationFine
-    
+
     ! Fine triangulation structure
     type(t_triangulation), intent(in) :: rtriangulationCoarse
-    
+
     ! Coarse mesh vector
     type(t_vectorBlock), intent(in) :: rxFine
 !</input>
-    
+
 !<inputoutput>
     ! Fine mesh vector
     type(t_vectorBlock), intent(inout) :: rxCoarse
@@ -5648,16 +5648,16 @@ contains
 
     ! local variables
     integer :: iblock
-    
+
     if (rxFine%nblocks .ne. rxCoarse%nblocks) then
       call output_line('Block vectors must be compatible!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_restrictionBlock')
       call sys_halt()
     end if
-    
+
     ! Treat each block separately
     do iblock = 1, rxFine%nblocks
-      
+
       call solver_restrictionScalar(rtriangulationFine, rtriangulationCoarse,&
                                     rxFine%RvectorBlock(iblock),&
                                     rxCoarse%RvectorBlock(iblock))
@@ -5718,7 +5718,7 @@ contains
       rsolverDest%drhsZero           = rsolverSource%drhsZero
       rsolverDest%ddefZero           = rsolverSource%ddefZero
     end if
-    
+
     ! Copy output parameters?
     if (bcopyOutput) then
       rsolverDest%istatus            = rsolverSource%istatus
@@ -5747,8 +5747,8 @@ contains
 !</input>
 
 !<result>
-    ! Boolean value. 
-    ! =TRUE if the convergence criterion is reached; 
+    ! Boolean value.
+    ! =TRUE if the convergence criterion is reached;
     ! =FALSE otherwise.
     logical :: bconverged
 !</result>
@@ -5760,7 +5760,7 @@ contains
       ! Iteration stops if either the absolute or the relative
       ! criterium holds.
       bconverged = .false.
-      
+
       ! Absolute convergence criterion? Check the norm directly.
       if (rsolver%depsAbs .ne. 0.0_DP) then
         if (.not. (rsolver%dfinalDefect .gt. rsolver%depsAbs)) then
@@ -5770,7 +5770,7 @@ contains
       end if
 
       ! Relative convergence criterion? Multiply with initial residuum
-      ! and check the norm. 
+      ! and check the norm.
       if (rsolver%depsRel .ne. 0.0_DP) then
         if (.not. (rsolver%dfinalDefect .gt. rsolver%depsRel *&
                    rsolver%dinitialDefect)) then
@@ -5778,7 +5778,7 @@ contains
           return
         end if
       end if
-      
+
     case (SV_STOP_ALL)
       ! Iteration stops if both the absolute and the relative criterium holds.
       bconverged = .true.
@@ -5790,9 +5790,9 @@ contains
           return
         end if
       end if
-      
+
       ! Relative convergence criterion? Multiply with initial residuum
-      ! and check the norm. 
+      ! and check the norm.
       if (rsolver%depsRel .ne. 0.0_DP) then
         if (rsolver%dfinalDefect .gt. rsolver%depsRel *&
             rsolver%dinitialDefect) then
@@ -5825,8 +5825,8 @@ contains
 !</input>
 
 !<result>
-    ! Boolean value. 
-    ! =TRUE if the divergence criterion holds; 
+    ! Boolean value.
+    ! =TRUE if the divergence criterion holds;
     ! =FALSE otherwise.
     logical :: bdiverged
 !</result>
@@ -5836,19 +5836,19 @@ contains
 
     ! Absolute divergence criterion? Check the norm directly.
     if (rsolver%ddivAbs .ne. SYS_INFINITY) then
-      
+
       ! use NOT here - gives a better handling of special cases like NaN!
       if ( .not. (rsolver%dfinalDefect .le. rsolver%ddivAbs)) then
         bdiverged = .true.
         return
       end if
-      
+
     end if
 
     ! Relative divergence criterion? Multiply with initial residuum
-    ! and check the norm. 
+    ! and check the norm.
     if (rsolver%depsRel .ne. SYS_INFINITY) then
-      
+
       if ( .not. (rsolver%dfinalDefect .le. rsolver%dinitialDefect*rsolver%ddivRel) ) then
         bdiverged = .true.
         return
@@ -5857,7 +5857,7 @@ contains
     end if
 
   end function solver_testDivergence
-  
+
   ! ***************************************************************************
 
 !<function>
@@ -5877,15 +5877,15 @@ contains
 !</input>
 
 !<result>
-    ! Boolean value. 
-    ! =TRUE if the stagnation criterion holds; 
+    ! Boolean value.
+    ! =TRUE if the stagnation criterion holds;
     ! =FALSE otherwise.
     logical :: bstagnated
 !</result>
 !</function>
 
     bstagnated = .false.
-    
+
     ! Stagnation criterion?
     if (rsolver%depsStag .ne. 0.0_DP) then
       if (rsolver%dfinalDefect .gt. rsolver%depsStag*doldDefect) then
@@ -5893,7 +5893,7 @@ contains
         return
       end if
     end if
-    
+
   end function solver_testStagnation
 
   ! ***************************************************************************
@@ -5905,7 +5905,7 @@ contains
   recursive subroutine solver_initILU(rsolver)
 
 !<description>
-    ! This subroutine initializes the ILU solver. 
+    ! This subroutine initializes the ILU solver.
     ! The subroutine requires the matrix to be set before.
     ! Otherwise, it will terminate with an error.
 !</description>
@@ -5915,7 +5915,7 @@ contains
     type(t_solverILU), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_matrixScalar), pointer :: p_rmatrix
     integer :: i,isize,nblock
@@ -5930,7 +5930,7 @@ contains
 
       ! Check if block structure exists
       if (associated(rsolver%p_rsolverBlockILU)) then
-        
+
         ! Check if block structure has correct dimensions
         isize = size(rsolver%p_rsolverBlockILU)
         if (nblock .ne. isize) then
@@ -5940,35 +5940,35 @@ contains
           deallocate(rsolver%p_rsolverBlockILU)
           allocate(rsolver%p_rsolverBlockILU(nblock))
         end if
-       
+
       else
-        
+
         allocate(rsolver%p_rsolverBlockILU(nblock))
 
       end if
 
       ! Loop over all diagonal blocks
       do i = 1, nblock
-        
+
         ! Fill solver
         rsolver%p_rsolverBlockILU(i)%ifill   = rsolver%ifill
         rsolver%p_rsolverBlockILU(i)%domega  = rsolver%domega
         rsolver%p_rsolverBlockILU(i)%depsILU = rsolver%depsILU
-        
+
         ! Attach submatrix from diagonal block
         call lsysbl_createMatFromScalar(rsolver%rmatrix%RmatrixBlock(i,i),&
                                         rsolver%p_rsolverBlockILU(i)%rmatrix)
-        
+
         ! Initialize ILU solver for submatrix
         call solver_initILU(rsolver%p_rsolverBlockILU(i))
       end do
 
     else
-      
+
       ! Set pointer to scalar matrix
       p_rmatrix => rsolver%rmatrix%RmatrixBlock(1,1)
       call do_scalarILU(rsolver, p_rmatrix)
-     
+
     end if
 
   contains
@@ -5978,7 +5978,7 @@ contains
     !**************************************************************
     ! Release ILU solver
     recursive subroutine release_solverILU(rsolver)
-      
+
       type(t_solverILU), intent(inout) :: rsolver
 
       integer :: i
@@ -5991,14 +5991,14 @@ contains
         end do
         deallocate(rsolver%p_rsolverBlockILU)
       end if
-      
+
       ! Release handles
       if (rsolver%h_Idata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Idata)
       if (rsolver%h_Ddata .ne. ST_NOHANDLE) call storage_free(rsolver%h_Ddata)
-      
+
       ! Release matrix
       call lsysbl_releaseMatrix(rsolver%rmatrix)
-      
+
       ! Release temporal vector
       call lsysbl_releaseVector(rsolver%rtempVector)
     end subroutine release_solverILU
@@ -6012,25 +6012,25 @@ contains
 
       type(t_solverILU), intent(inout) :: rsolver
       type(t_matrixScalar), intent(INout) :: rmatrix
-      
+
       real(DP), dimension(:), pointer :: p_DA,p_Ddata
       integer, dimension(:), pointer :: p_Kld
       integer, dimension(:), pointer :: p_Kcol
       integer, dimension(:), pointer :: p_Kdiagonal
       integer :: isize
 
-      
+
       ! Set pointer
       call lsyssc_getbase_double(rmatrix, p_DA)
-      
+
       ! What kind of ILU algorithm should be used?
       if (rsolver%ifill .le. 0) then
-        
+
         ! What kind of matrix are we?
         select case(rmatrix%cmatrixFormat)
-          
+
         case (LSYSSC_MATRIX7, LSYSSC_MATRIX9)
-          
+
           ! (Re-)allocate required memory for matrix data
           if (rsolver%h_Ddata .eq. ST_NOHANDLE) then
             call storage_new('do_scalarILU', 'h_Ddata', rmatrix%NA,&
@@ -6042,26 +6042,26 @@ contains
                                    rsolver%h_Ddata, ST_NEWBLOCK_NOINIT, .false.)
             end if
           end if
-          
+
 
           ! Copy matrix data
           call storage_getbase_double(rsolver%h_Ddata, p_Ddata, rmatrix%NA)
           call lalg_copyVectorDble(p_DA, p_Ddata)
-          
+
           ! Set pointers
           call lsyssc_getbase_Kld (rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
 
-          
+
           if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
-            
+
             ! Perform (M)ILU(0) factorization for matrix format 7
             call do_mat7MILU0(p_Ddata, p_Kcol, p_Kld,&
                               rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
                               abs(rsolver%domega), rsolver%depsILU)
 
           else
-            
+
             ! Perform (M)ILU(0) factorization for matrix format 9
             call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 
@@ -6070,10 +6070,10 @@ contains
                               abs(rsolver%domega), rsolver%depsILU)
 
           end if
-            
+
 
         case (LSYSSC_MATRIX7INTL, LSYSSC_MATRIX9INTL)
-          
+
           ! What kind of interleave format are we?
           select case(rmatrix%cinterleavematrixFormat)
 
@@ -6090,34 +6090,34 @@ contains
                                      rsolver%h_Ddata, ST_NEWBLOCK_NOINIT, .false.)
               end if
             end if
-            
+
 
             ! Copy matrix data
             call storage_getbase_double(rsolver%h_Ddata, p_Ddata,&
                                         rmatrix%NA*rmatrix%NVAR)
             call lalg_copyVectorDble(p_DA, p_Ddata)
-            
+
             ! Set pointers
             call lsyssc_getbase_Kld (rmatrix, p_Kld)
             call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
 
             if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-              
+
               ! Perform (M)ILU(0) factorization for matrix format 7
               call do_mat7MILU0(p_Ddata, p_Kcol, p_Kld,&
                                 rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
                                 abs(rsolver%domega), rsolver%depsILU)
-            
+
             else
-              
+
               ! Perform (M)ILU(0) factorization for matrix format 9
               call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
               call do_mat9MILU0(p_Ddata, p_Kcol, p_Kld, p_Kdiagonal,&
                                 rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
                                 abs(rsolver%domega), rsolver%depsILU)
-              
+
             end if
-              
+
 
           case (LSYSSC_MATRIX1)
 
@@ -6134,25 +6134,25 @@ contains
                                      rsolver%h_Ddata, ST_NEWBLOCK_NOINIT, .false.)
               end if
             end if
-            
+
             ! Copy matrix data (explicitly)
             call storage_getbase_double(rsolver%h_Ddata, p_Ddata,&
                                         rmatrix%NEQ*rmatrix%NVAR*rmatrix%NVAR)
-            
+
             if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
-              
+
               ! Perform BILU(0) factorization for matrix format 7
               call lsyssc_getbase_Kld (rmatrix, p_Kld)
               call do_mat79Intl1BILU0(p_DA, p_Ddata, p_Kld,&
                                       rmatrix%NEQ, rmatrix%NVAR)
-              
+
             else
-              
+
               ! Perform BILU(0) factorization for matrix format 9
               call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
               call do_mat79Intl1BILU0(p_DA, p_Ddata, p_Kdiagonal,&
                                       rmatrix%NEQ, rmatrix%NVAR)
-              
+
             end if
 
           case DEFAULT
@@ -6166,18 +6166,18 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
-        
+
       else
-        
+
         ! What kind of matrix are we?
         select case(rmatrix%cmatrixFormat)
-          
+
         case (LSYSSC_MATRIX7,LSYSSC_MATRIX9)
-          
+
           ! Set pointers
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
-          
+
           ! Perform (M)ILU(s), s>0 factorization for matrix format 7/9
           call do_mat79MILUs(p_DA, p_Kcol, p_Kld,&
                              rmatrix%NEQ, rmatrix%NA, rsolver%ifill,&
@@ -6189,10 +6189,10 @@ contains
                            OU_CLASS_ERROR,OU_MODE_STD,'do_scalarILU')
           call sys_halt()
         end select
-        
+
       end if
     end subroutine do_scalarILU
-    
+
 
     !**************************************************************
     ! Calculate (M)ILU(s) decomposition of a matrix in format CSR7/CSR9
@@ -6253,26 +6253,26 @@ contains
       call ILUS(neq, Da, Kcol, Kld, ifill, domega,&
                 lu, jlu, ilup, p_Idata, maxstr, ierr, mneed)
       maxstr = max(mneed, 3*NA+(3+4*ifill)*NEQ)+10000
-      
+
       if (ierr .ne. 0) then
         try: do
-          
+
           ! Reallocate the memory
           call storage_realloc('solver_initILU', int(maxstr, I32),&
                                 h_Idata, ST_NEWBLOCK_NOINIT, .false.)
           call storage_getbase_int(h_Idata, p_Idata)
-          
+
           ! Calculate the ILU(s) matrix using SPLIB
           call ILUS(neq, Da, Kcol, Kld, ifill, domega,&
                     lu, jlu, ilup, p_Idata, maxstr, ierr, mneed)
-          
+
           ! Error?
           select case(ierr)
           case (:-1)
             call output_line('Singular matrix!',&
                              OU_CLASS_ERROR,OU_MODE_STD,'solver_initILU')
             call sys_halt()
-            
+
           case (0)
             ! ok
             exit try
@@ -6301,7 +6301,7 @@ contains
     !**************************************************************
     ! Calculate (shifted, modified) ILU(0) decomposition,
     ! whereby the matrix is stored in format CSR7
-    
+
     subroutine do_mat7MILU0(Da, Kcol, Kld, neq, nvar, ilu, alpha, tol)
 
       real(DP), intent(in) :: alpha,tol
@@ -6318,13 +6318,13 @@ contains
       real(DP) :: alpha1
       integer :: ip,jc,ild,jld,icol,jcol,jcol0,ieq,ivar
 
-      
+
       if (ilu .eq. 1) then
 
         ! Constant shifting for ILU
         if (alpha .ne. 0._DP .and. alpha .ne. -1._DP) then
           alpha1 = 1._DP/(1._DP+alpha)
-          
+
 !$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1, neq
             do ild = Kld(ieq)+1, Kld(ieq+1)-1
@@ -6333,9 +6333,9 @@ contains
           end do
 !$omp  end parallel do
         end if
-        
+
       else
-        
+
         ! Constant shift for MILUE
         if (alpha .ne. 0._DP) then
           alpha1 = 1._DP+alpha
@@ -6359,14 +6359,14 @@ contains
         ild = 1
         outer1: do ieq = 2, neq
           A = Da(:,ild)
-          
+
           do ivar = 1, nvar
             if (abs(A(ivar)) .lt. tol) Da(ivar,ild) = sign(tol, A(ivar))
           end do
-          
+
           ild = Kld(ieq)
           if (Kcol(ild+1) .ge. ieq) cycle outer1
-          
+
           inner1: do jcol = ild+1, Kld(ieq+1)-1
             icol = Kcol(jcol)
             if (icol .ge. ieq) cycle outer1
@@ -6375,50 +6375,50 @@ contains
             ! Compute A_ij, that is, the entry of the eliminated matrix at position (IEQ,ICOL)
             A_ij = Da(:,jcol)/Da(:,jld)
             Da(:,jcol) = A_ij
-            
+
             ! Store pointer
             ip = Kld(ieq+1)-1
-            
+
             ! Loop over subdiagonal entries in line ICOL
             sub1: do jc = Kld(icol+1)-1, jld, -1
               jcol0 = Kcol(jc)
-              
+
               ! First check for diagonal entry - diagonals are stored separately
               if (jcol0 .eq. ieq) then
-                
+
                 ! Insert at diagonal position
                 Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
               else
-                
+
                 if ((jcol0 .lt. ieq)  .and.&
                     (jcol0 .le. icol)) cycle inner1
-                
+
                 ! Look for an entry at position (ICOL,JCOL0)
                 search1: do
                   if (Kcol(ip) .lt. jcol0) then
-                    
+
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
                     ! That is it exit searching
                     exit search1
-                    
+
                   elseif (Kcol(ip) .eq. jcol0) then
-                    
+
                     ! Off-diagonal entry (ICOL,JCOL0) found
                     Da(:,ip) = Da(:,ip)-A_ij*Da(:,jc)
                     ip = ip-1
 
                     ! That is it exit searching
                     exit search1
-                    
+
                   else
-                    
+
                     ! Entry not yet found
                     ip = ip-1
                     if (ip .gt. ild) cycle search1
-                    
+
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
@@ -6430,13 +6430,13 @@ contains
             end do sub1
           end do inner1
         end do outer1
-        
+
       else
 
         !-----------------------------------------------------------------------
         ! Shifted incomplete LU decomposition
         !-----------------------------------------------------------------------
-        
+
         ! Incomplete Gauss elimination
         ild = 1
         outer2: do ieq = 2, neq
@@ -6445,10 +6445,10 @@ contains
           do ivar = 1, nvar
             if (abs(A(ivar)) .lt. tol) Da(ivar,ild) = sign(tol, A(ivar))
           end do
-          
+
           ild = Kld(ieq)
           if (Kcol(ild+1) .ge. ieq) cycle outer2
-          
+
           inner2: do jcol = ild+1, Kld(ieq+1)-1
             icol = Kcol(jcol)
             if (icol .ge. ieq) cycle outer2
@@ -6457,20 +6457,20 @@ contains
             ! Compute A_ij, that is, the entry of the eliminated matrix at position (IEQ,ICOL)
             A_ij = Da(:,jcol)/Da(:,jld)
             Da(:,jcol) = A_ij
-            
+
             ! Store pointer
             ip = Kld(ieq+1)-1
-            
+
             ! Loop over subdiagonal entries in line ICOL
             sub2: do jc = Kld(icol+1)-1, jld, -1
               jcol0 = Kcol(jc)
-              
+
               ! First check for diagonal entry - diagonals are stored separately
               if (jcol0 .eq. ieq) then
-                
+
                 ! Insert at diagonal position
                 Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
-                
+
               else
 
                 if ((jcol0 .lt. ieq)  .and.&
@@ -6486,7 +6486,7 @@ contains
 
                     ! That is it, exit searching
                     exit search2
-                    
+
                   elseif (Kcol(ip) .gt. jcol0) then
                     ip = ip-1
 
@@ -6506,10 +6506,10 @@ contains
 
     !**************************************************************
     ! Calculate (shifted, modified) ILU(0) decomposition,
-    ! whereby the matrix is stored in format CSR9    
-    
+    ! whereby the matrix is stored in format CSR9
+
     subroutine do_mat9MILU0(Da, Kcol, Kld, Kdiagonal, neq, nvar, ilu, alpha, tol)
-      
+
       real(DP), intent(in) :: alpha,tol
       integer, dimension(:), intent(in) :: Kcol
       integer, dimension(:), intent(in) :: Kld
@@ -6527,11 +6527,11 @@ contains
 
 
       if (ilu .eq. 1) then
-        
+
         ! Constant shifting for ILU
         if (alpha .ne. 0._DP .and. alpha .ne. -1._DP) then
           alpha1 = 1._DP/(1._DP+alpha)
-          
+
 !$omp  parallel do default(shared) private(ieq,ild)
           do ieq = 1,neq
             do ild = Kld(ieq), Kdiagonal(ieq)-1
@@ -6559,7 +6559,7 @@ contains
 
       end if
 
-      
+
       if (ilu .eq. 2) then
         !-----------------------------------------------------------------------
         ! Modified incomplete LU decomposition
@@ -6569,14 +6569,14 @@ contains
         ild = Kdiagonal(1)
         outer1: do ieq = 2, neq
           A = Da(:,ild)
-          
+
           do ivar = 1, nvar
             if (abs(A(ivar)) .lt. tol) Da(ivar,ild) = sign(tol, A(ivar))
           end do
-          
+
           ild = Kdiagonal(ieq)
           if (Kcol(Kld(ieq)) .ge. ieq) cycle outer1
-          
+
           inner1: do jcol = Kld(ieq), Kld(ieq+1)-1
             icol = Kcol(jcol)
             if (icol .ge. ieq) cycle outer1
@@ -6585,35 +6585,35 @@ contains
             ! Compute A_ij, that is, the entry of the eliminated matrix at position (IEQ,ICOL)
             A_ij = Da(:,jcol)/Da(:,jld)
             Da(:,jcol) = A_ij
-            
+
             ! Store pointer
             ip = Kld(ieq+1)-1
-            
+
             ! Loop over subdiagonal entries in line ICOL
             sub1: do jc = Kld(icol+1)-1, jld, -1
               jcol0 = Kcol(jc)
-              
+
               ! First check for diagonal entry - diagonals are stored separately
               if (jcol0 .eq. ieq) then
-                
+
                 ! Insert at diagonal position
                 Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
               else
-                
+
                 if ((jcol0 .lt. ieq)  .and.&
                     (jcol0 .le. icol)) cycle inner1
 
                 ! Look for an entry at position (ICOL,JCOL0)
                 search1: do
                   if (Kcol(ip) .lt. jcol0) then
-                    
+
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
-                    
+
                     ! That is it exit searching
                     exit search1
-                    
+
                   elseif (Kcol(ip) .eq. jcol0) then
 
                     ! Off-diagonal entry (ICOL,JCOL0) found
@@ -6624,11 +6624,11 @@ contains
                     exit search1
 
                   else
-                    
+
                     ! Entry not yet found
                     ip = ip-1
                     if (ip .gt. ild) cycle search1
-                    
+
                     ! Insert at diagonal position
                     Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
@@ -6640,41 +6640,41 @@ contains
             end do sub1
           end do inner1
         end do outer1
-        
+
       else
 
         !-----------------------------------------------------------------------
         ! Shifted incomplete LU decomposition
         !-----------------------------------------------------------------------
-        
+
         ! Incomplete Gauss elimination
         ild = Kdiagonal(1)
         outer2: do ieq = 2, neq
           A = Da(:,ild)
-          
+
           do ivar = 1, nvar
             if (abs(A(ivar)) .lt. tol) Da(ivar,ild) = sign(tol, A(ivar))
           end do
-          
+
           ild = Kdiagonal(ieq)
           if (Kcol(Kld(ieq)) .ge. ieq) cycle outer2
-          
+
           inner2: do jcol = Kld(ieq), Kld(ieq+1)-1
             icol = Kcol(jcol)
             if (icol .ge. ieq) cycle outer2
             jld = Kdiagonal(icol)
-            
+
             ! Compute A_ij, that is, the entry of the eliminated matrix at position (IEQ,ICOL)
             A_ij = Da(:,jcol)/Da(:,jld)
             Da(:,jcol) = A_ij
-            
+
             ! Store pointer
             ip = Kld(ieq+1)-1
-            
+
             ! Loop over subdiagonal entries in line ICOL
             sub2: do jc = Kld(icol+1)-1, jld, -1
               jcol0 = Kcol(jc)
-              
+
               ! First check for diagonal entry - diagonals are stored separately
               if (jcol0 .eq. ieq) then
 
@@ -6682,10 +6682,10 @@ contains
                 Da(:,ild) = Da(:,ild)-A_ij*Da(:,jc)
 
               else
-                
+
                 if ((jcol0 .lt. ieq)  .and.&
                     (jcol0 .le. icol)) cycle inner2
-                
+
                 ! Look for an entry at position (ICOL,JCOL0)
                 search2: do
                   if (Kcol(ip) .eq. jcol0) then
@@ -6696,7 +6696,7 @@ contains
 
                     ! That is it, exit searching
                     exit search2
-                  
+
                   elseif (Kcol(ip) .gt. jcol0) then
                     ip = ip-1
 
@@ -6717,7 +6717,7 @@ contains
     !**************************************************************
     ! Calculate BILU(0) decomposition of a matrix in format CSR7/CSR9,
     ! whereby the local blocks are full matrices
-    
+
     subroutine do_mat79Intl1BILU0(DDa, Da, Kdiagonal, neq, nvar)
 
       real(DP), dimension(nvar,nvar,*), intent(in) :: DDa
@@ -6733,11 +6733,11 @@ contains
 
       ! Loop over all diagonal blocks
       do ieq = 1, neq
-        
+
         ! Get position of diagonal block
         ild = Kdiagonal(ieq)
 
-        ! Copy data from original matrix        
+        ! Copy data from original matrix
         Da(:,:,ieq) = DDa(:,:,ild)
 
         ! Perform complete LU decomposition (without pivoting)
@@ -6751,8 +6751,8 @@ contains
             end do
             Da(ivar,jvar,ieq) = a_ij
           end do
-          
-          
+
+
           do ivar = jvar, nvar
             a_ij = Da(ivar,jvar,ieq)
             do kvar = 1, jvar-1
@@ -6785,7 +6785,7 @@ contains
     type(t_solverUMFPACK), intent(inout) :: rsolver
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_matrixScalar) :: rmatrixScalar
     integer, dimension(:), pointer :: p_Kcol
@@ -6803,8 +6803,8 @@ contains
       call output_line('Matrix must be associated to solver node!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
-    end if   
-    
+    end if
+
     ! Prepare the system matrix for UMFPACK and convert it into a scalar matrix
     call initPrepareMatrix(rsolver%rmatrix, rmatrixScalar)
 
@@ -6813,7 +6813,7 @@ contains
     call lsyssc_getbase_Kcol  (rmatrixScalar, p_Kcol)
     call lsyssc_getbase_double(rmatrixScalar, p_Da)
 
-        
+
     ! Perform symbolical factorization
     if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
     call UMF4SYM(rmatrixScalar%NEQ, rmatrixScalar%NCOLS,&
@@ -6856,7 +6856,7 @@ contains
       ! ok.
 
     case (1)
-      ! Singular matrix      
+      ! Singular matrix
       call output_line('Matrix is singular!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'solver_initUMFPACK')
       call sys_halt()
@@ -6880,22 +6880,22 @@ contains
   contains
 
     ! Here, the real working routine follows
-    
+
     !*************************************************************
     ! Prepare the matrix for UMFACK
 
     subroutine initPrepareMatrix(rmatrixSrc, rmatrixDest)
       type(t_matrixBlock), intent(in) :: rmatrixSrc
       type(t_matrixScalar), intent(inout) :: rmatrixDest
-      
+
 
       ! Check if matrix is a 1x1 block matrix
       if ((rmatrixSrc%nblocksPerCol .eq. 1) .and.&
           (rmatrixSrc%nblocksPerRow .eq. 1)) then
-        
+
         ! Initialize working matrix
         select case(rmatrixSrc%RmatrixBlock(1,1)%cmatrixFormat)
-          
+
         case (LSYSSC_MATRIX9)
           ! Format 9 is exactly the UMFPACK matrix.
           ! Make a copy of the matrix structure, but use the same matrix entries.
@@ -6907,10 +6907,10 @@ contains
           ! Make a copy of the complete matrix
           call lsyssc_duplicateMatrix(rmatrixSrc%RmatrixBlock(1,1), rmatrixDest,&
                                       LSYSSC_DUP_COPY, LSYSSC_DUP_COPY)
-        
+
           ! Convert to format 9
           call lsyssc_convertMatrix(rmatrixDest, LSYSSC_MATRIX9, .true.)
-          
+
         case DEFAULT
           call output_line('Unsupported matrix format!',&
                            OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
@@ -6927,10 +6927,10 @@ contains
                          OU_CLASS_ERROR,OU_MODE_STD,'initPrepareMatrix')
         call sys_halt()
 
-      end if     
-      
+      end if
+
     end subroutine initPrepareMatrix
 
-  end subroutine solver_initUMFPACK 
+  end subroutine solver_initUMFPACK
 
 end module solveraux

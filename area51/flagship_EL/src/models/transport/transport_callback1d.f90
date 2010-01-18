@@ -116,22 +116,22 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'transp_setVariable1d')
       call sys_halt()
     end select
-    
+
   end subroutine transp_setVariable1d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvectionP1d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -159,19 +159,19 @@ contains
   end subroutine transp_calcMatGalConvectionP1d
 
     !*****************************************************************************
-  
+
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvectionP1d(u_i, u_j, C_ij, C_ji&
-      , i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwConvectionP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -202,15 +202,15 @@ contains
 
 !<subroutine>
 
-  pure subroutine transp_calcMatGalConvectionD1d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalConvectionD1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -234,23 +234,23 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-    
+
   end subroutine transp_calcMatGalConvectionD1d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwConvectionD1d(u_i, u_j, C_ij, C_ji,&
-      i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwConvectionD1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -274,21 +274,21 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
-    
+
   end subroutine transp_calcMatUpwConvectionD1d
 
   !*****************************************************************************
-    
+
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBurgersP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatGalBurgersP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 1D.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -312,22 +312,22 @@ contains
 
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
-    
+
   end subroutine transp_calcMatGalBurgersP1d
 
   !*****************************************************************************
-    
+
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBurgersP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
+  pure subroutine transp_calcMatUpwBurgersP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 1D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -355,22 +355,22 @@ contains
   end subroutine transp_calcMatUpwBurgersP1d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
-  pure subroutine transp_calcMatGalBuckLevP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
-                                                
+  pure subroutine transp_calcMatGalBuckLevP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation 
-    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is 
+    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation
+    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is
     ! given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
     !
     ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
     ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -391,23 +391,23 @@ contains
     ! Compute convective coefficients
     k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
     k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
-    
+
     ! Set artificial diffusion to zero
     d_ij = 0.0_DP
 
   end subroutine transp_calcMatGalBuckLevP1d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
-  pure subroutine transp_calcMatUpwBuckLevP1d(u_i, u_j, C_ij,&
-      C_ji, i, j, k_ij, k_ji, d_ij)
-                                                
+  pure subroutine transp_calcMatUpwBuckLevP1d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation 
-    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is 
+    ! $k_{ij}$ and $k_{ji}$ for the Buckley-Leverett equation
+    ! $du/dt+df(u)/dx=0$ in 1D, whereby the flux function is
     ! given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
     !
     ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
@@ -415,7 +415,7 @@ contains
     !
     ! Moreover, artificial diffusion is applied.
 !</description>
-   
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -436,7 +436,7 @@ contains
     ! Compute convective coefficients
     k_ij = -(4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2)*C_ij(1)
     k_ji = -(4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2)*C_ji(1)
-    
+
     ! Compute artificial diffusion coefficient
     d_ij = max(-k_ij, 0.0_DP, -k_ji)
 
@@ -477,18 +477,18 @@ contains
       ! Retrieve solution vector from colletion and set pointer
       rsolution => rcollection%p_rvectorQuickAccess1
       call lsysbl_getbase_double(rsolution, p_Dsolution)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback1d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vector
       nullify(rsolution, p_Dsolution)
 
       ! Call the general callback function
       call flagship_hadaptCallback1d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector
@@ -522,7 +522,7 @@ contains
       else
         p_Dsolution(rcollection%IquickAccess(1)) = 0.0_DP
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback1d(iOperation, rcollection)
 
@@ -532,7 +532,7 @@ contains
       call flagship_hadaptCallback1d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine transp_hadaptCallback1d
 
 end module transport_callback1d

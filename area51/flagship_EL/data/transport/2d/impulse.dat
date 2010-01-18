@@ -37,7 +37,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = pseudotransient_primaldual
+algorithm = pseudotransient_primal
 
 #-------------------------------------------------------------------------------
 
@@ -187,10 +187,12 @@ errorestimator = ErrorEstimator
 #  1 = discrete upwinding
 # 10 = semi-impl. FEM-FCT
 # 11 = semi-expl. FEM-FCT
-# 12 = linearized FEM-FCT
+# 12 = linearised FEM-FCT
+# 13 = iterative FEM-FCT
+# 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 11
 
 
 ################################################################################
@@ -219,10 +221,10 @@ iformatUCD = 1
 dstepUCD = 1.0
 
 # file for UCD output of solution
-ucdsolution = out/impulse
+sucdsolution = out/impulse
 
 # file for UCD output of error
-ucderror =
+sucderror =
 
 
 ################################################################################
@@ -252,7 +254,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1].
-theta = 1.0
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 1
@@ -261,10 +263,10 @@ multisteps = 1
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 10.0
+dfinalTime = 2.0
 
 # initial time step size
-dinitialStep = 0.01
+dinitialStep = 0.001
 
 # lower bound for the admissible time step
 dminStep = 0.001
@@ -697,7 +699,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 3
+nadapt = 0
 
 # time for grid adaptivity
 dtimeadapt = 0.0

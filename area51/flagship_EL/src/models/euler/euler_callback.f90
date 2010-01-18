@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This module contains all callback functions which are required to solve the 
+!# This module contains all callback functions which are required to solve the
 !# compressible Euler/Navier Stokes equations in arbitrary spatial dimensions.
 !#
 !# The following callback functions are available:
@@ -41,9 +41,15 @@
 !#        by filtering the system matrix and the solution/residual
 !#        vector explicitly (i.e. strong boundary conditions)
 !#
-!# 7.) euler_calcLinearizedFCT
-!#     -> Calculates the linearized FCT correction
+!# 7.) euler_calcLinearisedFCT
+!#     -> Calculates the linearised FCT correction
 !#
+!# 8.) euler_calcFluxFCT
+!#     -> Calculates the raw antidiffusive fluxes for FCT algorithm
+!#
+!# 9.) euler_calcCorrectionFCT
+!#     -> Calculates the contribution of the antidiffusive fluxes
+!#        limited by the FCT algorithm and applies them to the residual
 !#
 !# Frequently asked questions?
 !#
@@ -92,13 +98,15 @@ module euler_callback
 
   private
   public :: euler_calcJacobianThetaScheme
-  public :: euler_calcLinearizedFCT
   public :: euler_calcPrecondThetaScheme
   public :: euler_calcResidualThetaScheme
   public :: euler_calcRhsRungeKuttaScheme
   public :: euler_calcRhsThetaScheme
   public :: euler_nlsolverCallback
   public :: euler_setBoundaryConditions
+  public :: euler_calcLinearisedFCT
+  public :: euler_calcFluxFCT
+  public :: euler_calcCorrectionFCT
 
 contains
 
@@ -107,7 +115,7 @@ contains
 !<subroutine>
 
   subroutine euler_nlsolverCallback(rproblemLevel, rtimestep,&
-      rsolver,rsolution, rsolution0, rrhs, rres, istep,&
+      rsolver, rsolution, rsolution0, rrhs, rres, istep,&
       ioperationSpec, rcollection, istatus, rsource)
 
 !<description>
@@ -118,10 +126,10 @@ contains
 !<input>
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
-    
+
     ! number of solver step
     integer, intent(in) :: istep
-    
+
     ! specifier for operations
     integer(I32), intent(in) :: ioperationSpec
 
@@ -132,22 +140,22 @@ contains
 !<inputoutput>
     ! problem level structure
     type(t_problemLevel), intent(inout) :: rproblemLevel
-    
+
     ! time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
-    
+
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
-    
+
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
-    
+
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
-        
+
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
@@ -158,7 +166,7 @@ contains
 !</output>
 !</subroutine>
 
-    
+
     ! Do we have to calculate the preconditioner?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
@@ -167,12 +175,12 @@ contains
       call euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rcollection)
     end if
-    
-    
+
+
     ! Do we have to calculate the constant right-hand side?
     ! --------------------------------------------------------------------------
     if ((iand(ioperationSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
-      
+
       ! Compute the right-hand side
       call euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rrhs, istep,&
@@ -183,7 +191,7 @@ contains
     ! Do we have to calculate the residual?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
-      
+
       if (istep .eq. 0) then
         ! Compute the constant right-hand side
         call euler_calcRhsThetaScheme(rproblemLevel, rtimestep,&
@@ -195,8 +203,8 @@ contains
           rsolver, rsolution, rsolution0, rrhs, rres, istep,&
           rcollection)
     end if
-    
-    
+
+
     ! Do we have to impose boundary conditions?
     ! --------------------------------------------------------------------------
     if (iand(ioperationSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
@@ -205,11 +213,11 @@ contains
       call euler_setBoundaryConditions(rproblemLevel, rtimestep,&
           rsolver, rsolution, rsolution0, rres, rcollection)
     end if
-    
-    
+
+
     ! Set status flag
     istatus = 0
-    
+
   end subroutine euler_nlsolverCallback
 
   !*****************************************************************************
@@ -218,7 +226,7 @@ contains
 
   subroutine euler_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
       rsolver, rsolution, rcollection)
-    
+
 !<description>
     ! This subroutine calculates the nonlinear preconditioner and
     ! configures the linear solver structure accordingly. Depending on
@@ -245,7 +253,7 @@ contains
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
@@ -274,7 +282,7 @@ contains
     ! Check if fully explicit time-stepping is used
     !---------------------------------------------------------------------------
     if (rtimestep%theta .le. SYS_EPSREAL) then
-      
+
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1), 'isystemformat', isystemFormat)
       call parlst_getvalue_int(p_rparlist,&
@@ -286,14 +294,16 @@ contains
 
       select case(isystemFormat)
       case (SYSTEM_INTERLEAVEFORMAT)
-        
+
         select case(imasstype)
         case (MASS_LUMPED)
-          call lsyssc_spreadMatrix(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-                                   rproblemLevel%Rmatrix(systemMatrix))
+          call lsyssc_spreadMatrix(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(systemMatrix))
         case (MASS_CONSISTENT)
-          call lsyssc_spreadMatrix(rproblemLevel%Rmatrix(consistentMassMatrix),&
-                                   rproblemLevel%Rmatrix(systemMatrix))
+          call lsyssc_spreadMatrix(&
+              rproblemLevel%Rmatrix(consistentMassMatrix),&
+              rproblemLevel%Rmatrix(systemMatrix))
         case DEFAULT
           call output_line('Empty system matrix is invalid!',&
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
@@ -301,21 +311,23 @@ contains
         end select
 
       case (SYSTEM_BLOCKFORMAT)
-        
+
         select case(imasstype)
         case (MASS_LUMPED)
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, euler_getNVAR(rproblemLevel)
-            call lsyssc_matrixLinearComb(rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+            call lsyssc_matrixLinearComb(&
+                rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                 .false., .false., .true., .true.)
           end do
-          
+
         case (MASS_CONSISTENT)
           call lsysbl_clearMatrix(rproblemLevel%RmatrixBlock(systemMatrix))
           do ivar = 1, euler_getNVAR(rproblemLevel)
-            call lsyssc_matrixLinearComb(rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+            call lsyssc_matrixLinearComb(&
+                rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar), 1.0_DP,&
                 rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                 .false., .false., .true., .true.)
@@ -326,7 +338,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
-          
+
       case DEFAULT
         call output_line('Invalid system format!',&
             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
@@ -352,41 +364,41 @@ contains
 
     ! What kind of coupling is applied?
     select case(isystemCoupling)
-      
+
     case (SYSTEM_SEGREGATED)
-      
+
       !-------------------------------------------------------------------------
       ! Assemble block-diagonal divergence operator
       !-------------------------------------------------------------------------
-      
+
       ! What kind of preconditioner is applied?
       select case(isystemPrecond)
 
-      case (AFCSTAB_GALERKIN)
+      case (DISSIPATION_ZERO)
 
-        ! Assemble divergence operator for standard Galerin scheme
+        ! Assemble divergence operator without dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixGalerkinDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixGalerkinDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixGalerkinDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -396,33 +408,33 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
-        
-        
+
+
       case (DISSIPATION_SCALAR)
 
         ! Assemble divergence operator with scalar dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixScalarDissDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixScalarDissDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixScalarDissDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -435,30 +447,30 @@ contains
 
 
       case (DISSIPATION_TENSOR)
-        
+
         ! Assemble divergence operator with tensorial dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixTensorDissDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixTensorDissDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
-          
+
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixTensorDissDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -471,34 +483,34 @@ contains
 
 
       case (DISSIPATION_RUSANOV)
-        
+
         ! Assemble divergence operator with the Rusanov dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag1d,&
               euler_calcMatrixRusanovDiag1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag2d,&
               euler_calcMatrixRusanovDiag2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
-          
+
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonalDiag3d,&
               euler_calcMatrixRusanovDiag3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
-          
+
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
@@ -511,8 +523,8 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
         call sys_halt()
       end select
-      
-      
+
+
     case (SYSTEM_ALLCOUPLED)
 
       !-------------------------------------------------------------------------
@@ -521,32 +533,32 @@ contains
 
       ! What kind of preconditioner is applied?
       select case(isystemPrecond)
-        
-      case (AFCSTAB_GALERKIN)
-        
-        ! Assemble divergence operator for standard Galerin scheme
-        
+
+      case (DISSIPATION_ZERO)
+
+        ! Assemble divergence operator without dissipation
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d, euler_calcMatrixGalerkin1d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d, euler_calcMatrixGalerkin2d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d, euler_calcMatrixGalerkin3d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
@@ -559,30 +571,30 @@ contains
 
 
       case (DISSIPATION_SCALAR)
-        
+
         ! Assemble divergence operator with scalar dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d,&
               euler_calcMatrixScalarDiss1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d,&
               euler_calcMatrixScalarDiss2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d,&
               euler_calcMatrixScalarDiss3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -593,32 +605,32 @@ contains
           call sys_halt()
         end select
 
-        
+
       case (DISSIPATION_TENSOR)
 
         ! Assemble divergence operator with tensorial dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d,&
               euler_calcMatrixTensorDiss1d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d,&
               euler_calcMatrixTensorDiss2d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d,&
               euler_calcMatrixTensorDiss3d, 1.0_DP, .true.,&
               rproblemLevel%RmatrixBlock(systemMatrix))
@@ -633,28 +645,28 @@ contains
       case (DISSIPATION_RUSANOV)
 
         ! Assemble divergence operator with the Rusanov dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal1d, euler_calcMatrixRusanov1d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal2d, euler_calcMatrixRusanov2d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
-          call gfsys_buildDivOperator(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivOperator(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcMatrixDiagonal3d, euler_calcMatrixRusanov3d,&
               1.0_DP, .true., rproblemLevel&
               %RmatrixBlock(systemMatrix))
@@ -664,8 +676,8 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
           call sys_halt()
         end select
-          
-        
+
+
       case DEFAULT
         call output_line('Invalid type of dissipation!',&
             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcPrecondThetaScheme')
@@ -679,7 +691,7 @@ contains
       call sys_halt()
     end select
 
-    
+
     !---------------------------------------------------------------------------
     ! Assemble the global system operator
     !---------------------------------------------------------------------------
@@ -692,7 +704,7 @@ contains
     select case(isystemFormat)
 
     case (SYSTEM_INTERLEAVEFORMAT)
-      
+
       !-------------------------------------------------------------------------
       ! Assemble global system operator in interleave matrix format
       !-------------------------------------------------------------------------
@@ -704,16 +716,17 @@ contains
         ! Compute the global operator for transient flows
         !
         !   $ A = blockdiag(M_L)-theta*dt*L $
-!-----------------------------------------------------------------------
+        !-----------------------------------------------------------------------
 
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
 
-        call lsyssc_MatrixLinearComb(rproblemLevel&
-            %Rmatrix(lumpedMassMatrix), 1.0_DP, rproblemLevel&
-            %Rmatrix(systemMatrix), rtimestep%theta*rtimestep%dStep,&
-            rproblemLevel%Rmatrix(systemMatrix), .false., .false.,&
-            .true., .true.)
+        call lsyssc_MatrixLinearComb(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+            rproblemLevel%Rmatrix(systemMatrix),&
+            rtimestep%theta*rtimestep%dStep,&
+            rproblemLevel%Rmatrix(systemMatrix),&
+            .false., .false., .true., .true.)
 
       case (MASS_CONSISTENT)
 
@@ -726,23 +739,24 @@ contains
         call parlst_getvalue_int(p_rparlist,&
             rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
 
-        call lsyssc_MatrixLinearComb(rproblemLevel&
-            %Rmatrix(consistentMassMatrix), 1.0_DP, rproblemLevel&
-            %Rmatrix(systemMatrix), rtimestep%theta*rtimestep%dStep,&
-            rproblemLevel%Rmatrix(systemMatrix), .false., .false.,&
-            .true., .true.)
-        
+        call lsyssc_MatrixLinearComb(&
+            rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+            rproblemLevel%Rmatrix(systemMatrix),&
+            rtimestep%theta*rtimestep%dStep,&
+            rproblemLevel%Rmatrix(systemMatrix),&
+            .false., .false., .true., .true.)
+
       case DEFAULT
-        
+
         !-----------------------------------------------------------------------
         ! Use the global operator for steady-state flow
         !
         !   $ A = -L $
         !-----------------------------------------------------------------------
-        
+
       end select
-      
-      
+
+
     case (SYSTEM_BLOCKFORMAT)
 
       !-------------------------------------------------------------------------
@@ -766,17 +780,17 @@ contains
 
             if (ivar .eq. jvar) then
 
-              call lsyssc_MatrixLinearComb(rproblemLevel&
-                  %Rmatrix(lumpedMassMatrix), 1.0_DP, rproblemLevel&
-                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
-                  rtimestep%theta*rtimestep%dStep, rproblemLevel&
-                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+              call lsyssc_MatrixLinearComb(&
+                  rproblemLevel%Rmatrix(lumpedMassMatrix), 1.0_DP,&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                  rtimestep%theta*rtimestep%dStep,&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
                   .false., .false., .true., .true.)
 
             elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
 
-              call lsyssc_scaleMatrix(rproblemLevel&
-                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
+              call lsyssc_scaleMatrix(&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                   rtimestep%theta*rtimestep%dStep)
 
             end if
@@ -784,9 +798,9 @@ contains
           end do ! jvar
         end do ! ivar
 
-      
+
       case (MASS_CONSISTENT)
-        
+
         !-----------------------------------------------------------------------
         ! Compute the global operator for transient flows
         !
@@ -801,17 +815,17 @@ contains
 
             if (ivar .eq. jvar) then
 
-              call lsyssc_MatrixLinearComb(rproblemLevel&
-                  %Rmatrix(consistentMassMatrix), 1.0_DP,&
-                  rproblemLevel%RmatrixBlock(systemMatrix)&
-                  %RmatrixBlock(ivar,ivar), rtimestep%theta*rtimestep&
-                  %dStep, rproblemLevel%RmatrixBlock(systemMatrix)&
-                  %RmatrixBlock(ivar,ivar), .false., .false., .true.,.true.)
+              call lsyssc_MatrixLinearComb(&
+                  rproblemLevel%Rmatrix(consistentMassMatrix), 1.0_DP,&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                  rtimestep%theta*rtimestep%dStep,&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,ivar),&
+                  .false., .false., .true.,.true.)
 
             elseif (isystemCoupling .eq. SYSTEM_ALLCOUPLED) then
 
-              call lsyssc_scaleMatrix(rproblemLevel&
-                  %RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
+              call lsyssc_scaleMatrix(&
+                  rproblemLevel%RmatrixBlock(systemMatrix)%RmatrixBlock(ivar,jvar),&
                   rtimestep%theta*rtimestep%dStep)
 
             end if
@@ -841,8 +855,8 @@ contains
     ! Impose boundary conditions
     call bdrf_filterMatrix(rsolver%rboundaryCondition, &
         rproblemLevel%RmatrixBlock(systemMatrix), 1.0_DP)
-    
-    ! Ok, we updated the (nonlinear) system operator successfully. Now we still 
+
+    ! Ok, we updated the (nonlinear) system operator successfully. Now we still
     ! have to link it to the solver hierarchy. This is done recursively.
     call flagship_updateSolverMatrix(rproblemLevel, rsolver,&
         systemMatrix, isystemFormat, UPDMAT_ALL,&
@@ -850,10 +864,10 @@ contains
 
     ! Finally, we have to update the content of the solver hierarchy
     call solver_updateContent(rsolver)
-    
+
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
-    
+
   end subroutine euler_calcPrecondThetaScheme
 
   !*****************************************************************************
@@ -929,7 +943,7 @@ contains
 
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
-    
+
     ! right-hand side vector
     type(t_vectorBlock), intent(inout) :: rrhs
 
@@ -947,7 +961,7 @@ contains
     integer :: inviscidAFC, imasstype, idissipationtype
     integer :: iblock
 
-    
+
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
@@ -968,11 +982,13 @@ contains
         'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'imasstype', imasstype)
-    
+    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+        'idissipationtype', idissipationtype)
+
     ! Do we have some kind of mass matrix?
     select case(imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      
+
       ! Do we have some explicit part?
       if (rtimestep%theta .lt. 1.0_DP) then
 
@@ -981,36 +997,39 @@ contains
 
         ! What type if stabilization is applied?
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
-          
+
         case (AFCSTAB_GALERKIN)
-          
+
           !---------------------------------------------------------------------
           ! Compute the initial high-order right-hand side
           !
           !   $$ rhs = (1-theta)*dt*K(U^n)*U^n $$
           !---------------------------------------------------------------------
-          
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin1d, dscale, .true., rrhs)
-            
+
           case (NDIM2D)
-            call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin2d, dscale, .true., rrhs)
-            
+
           case (NDIM3D)
-            call gfsys_buildResidual(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            call gfsys_buildDivVector(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkin3d, dscale, .true., rrhs)
           end select
-      
+
         case (AFCSTAB_UPWIND,&
+              AFCSTAB_FEMFCT_CLASSICAL,&
+              AFCSTAB_FEMFCT_ITERATIVE,&
+              AFCSTAB_FEMFCT_IMPLICIT,&
               AFCSTAB_FEMFCT_LINEARISED)
 
           !---------------------------------------------------------------------
@@ -1018,158 +1037,179 @@ contains
           !
           !   $$ rhs = (1-theta)*dt*L(U^n)*U^n $$
           !---------------------------------------------------------------------
-        
-          call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-              'idissipationtype', idissipationtype)
-          
+
           ! What type of dissipation is applied?
           select case(idissipationtype)
-            
-          case (DISSIPATION_SCALAR)
-            
-            ! Assemble divergence operator with scalar dissipation
-            
+
+          case (DISSIPATION_ZERO)
+
+            ! Assemble divergence operator without dissipation
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin1d, dscale, .true., rrhs)
+
+            case (NDIM2D)
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin2d, dscale, .true., rrhs)
+
+            case (NDIM3D)
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+                  rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+                  euler_calcFluxGalerkin3d, dscale, .true., rrhs)
+            end select
+
+          case (DISSIPATION_SCALAR)
+
+            ! Assemble divergence operator with scalar dissipation
+
+            select case(rproblemLevel%rtriangulation%ndim)
+            case (NDIM1D)
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true. , rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss2d, dscale, .true., rrhs)
-              
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss3d, dscale, .true., rrhs)
             end select
-            
+
           case (DISSIPATION_SCALAR_DSPLIT)
-            
+
             ! Assemble divergence operator with scalar dissipation
             ! adopting dimensional splitting
-            
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxScalarDiss1d, dscale, .true., rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitScalarDiss2d, dscale, .true., rrhs)
-              
+                  euler_calcFluxScalarDissDiSp2d, dscale, .true., rrhs)
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitScalarDiss3d, dscale, .true., rrhs)
+                  euler_calcFluxScalarDissDiSp3d, dscale, .true., rrhs)
             end select
-            
+
           case (DISSIPATION_TENSOR)
 
             ! Assemble divergence operator with tensorial dissipation
-            
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss2d, dscale, .true., rrhs)
-              
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss3d, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_TENSOR_DSPLIT)
-            
+
             ! Assemble divergence operator with tensorial dissipation
             ! adopting dimensional splitting
-          
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxTensorDiss1d, dscale, .true., rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitTensorDiss2d, dscale, .true., rrhs)
-              
+                  euler_calcFluxTensorDissDiSp2d, dscale, .true., rrhs)
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitTensorDiss3d, dscale, .true., rrhs)
+                  euler_calcFluxTensorDissDiSp3d, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV)
-            
+
             ! Assemble divergence operator with Rusanov flux
-            
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov2d, dscale, .true., rrhs)
-              
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov3d, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV_DSPLIT)
 
-            ! Assemble divergence operator with Rusanov flux 
+            ! Assemble divergence operator with Rusanov flux
             ! adopting dimensional splitting
-          
+
             select case(rproblemLevel%rtriangulation%ndim)
             case (NDIM1D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                   euler_calcFluxRusanov1d, dscale, .true., rrhs)
-              
+
             case (NDIM2D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitRusanov2d, dscale, .true., rrhs)
-              
+                  euler_calcFluxRusanovDiSp2d, dscale, .true., rrhs)
+
             case (NDIM3D)
-              call gfsys_buildResidual(rproblemLevel&
-                  %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              call gfsys_buildDivVector(&
+                  rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  euler_calcFluxDSplitRusanov3d, dscale, .true., rrhs)
+                  euler_calcFluxRusanovDiSp3d, dscale, .true., rrhs)
             end select
 
           case DEFAULT
@@ -1181,34 +1221,34 @@ contains
         case (AFCSTAB_FEMTVD)
 
           !---------------------------------------------------------------------
-          ! Compute the initial low-order right-hand side + FEM-TVD
+          ! Compute the initial low-order right-hand side + FEM-TVD stabilisation
           !
           !   $$ rhs = (1-theta)dt*L(U^n)*U^n + F(U^n) $$
           !---------------------------------------------------------------------
-          
+
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
-            call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            call gfsys_buildDivVectorTVD(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr1d,&
                 euler_calcCharacteristics1d, dscale, .true., rrhs)
-            
+
           case (NDIM2D)
-            call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            call gfsys_buildDivVectorTVD(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr2d,&
                 euler_calcCharacteristics2d, dscale, .true., rrhs)
-            
+
           case (NDIM3D)
-            call gfsys_buildResidualTVD(rproblemLevel&
-                %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            call gfsys_buildDivVectorTVD(&
+                rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalerkinNoBdr3d,&
                 euler_calcCharacteristics3d, dscale, .true., rrhs)
           end select
-          
+
         case DEFAULT
           call output_line('Invalid type of stabilisation!',&
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsThetaScheme')
@@ -1216,20 +1256,21 @@ contains
         end select
 
         !-----------------------------------------------------------------------
-        ! Compute the transernt term
+        ! Compute the transient term
         !
         !   $$ rhs := M*U^n + rhs $$
         !-----------------------------------------------------------------------
 
-        massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
-                           imasstype .eq. MASS_LUMPED)
+        massMatrix = merge(lumpedMassMatrix,&
+            consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
         do iblock = 1, rsolution%nblocks
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
+          call lsyssc_scalarMatVec(&
+              rproblemLevel%Rmatrix(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 1.0_DP)
         end do
-        
+
       else ! theta = 1
 
         !-----------------------------------------------------------------------
@@ -1238,15 +1279,16 @@ contains
         !   $$ rhs = M*U^n $$
         !-----------------------------------------------------------------------
 
-        massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
-                           imasstype .eq. MASS_LUMPED)
+        massMatrix = merge(lumpedMassMatrix,&
+            consistentMassMatrix, imasstype .eq. MASS_LUMPED)
 
         do iblock = 1, rsolution%nblocks
-          call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
+          call lsyssc_scalarMatVec(&
+              rproblemLevel%Rmatrix(massMatrix),&
               rsolution%RvectorBlock(iblock),&
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
-        
+
       end if ! theta
 
     case DEFAULT
@@ -1265,12 +1307,12 @@ contains
     ! Apply the source vector to the right-hand side (if any)
     if (present(rsource))&
         call lsysbl_vectorLinearComb(rsource, rrhs, 1.0_DP, 1.0_DP)
-    
+
     ! Stop time measurement for rhs evaluation
     call stat_stopTimer(p_rtimer)
-    
+
   end subroutine euler_calcRhsThetaScheme
-  
+
   !*****************************************************************************
 
 !<subroutine>
@@ -1302,9 +1344,6 @@ contains
     ! initial solution vector
     type(t_vectorBlock), intent(in) :: rsolution0
 
-    ! right-hand side vector
-    type(t_vectorBlock), intent(in) :: rrhs
-
     ! number of nonlinear iteration
     integer, intent(in) :: ite
 
@@ -1319,6 +1358,9 @@ contains
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
 
+    ! right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rrhs
+
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rres
 
@@ -1330,17 +1372,18 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_rpredictor
     real(DP) :: dscale
+    integer(I32) :: ioperationSpec
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
     integer :: consistentMassMatrix, lumpedMassMatrix, massMatrix
     integer :: inviscidAFC, imasstype, idissipationtype
     integer :: iblock
 
-    
     ! Start time measurement for residual/rhs evaluation
     p_rtimer => collct_getvalue_timer(rcollection, 'rtimerAssemblyVector')
     call stat_startTimer(p_rtimer, STAT_TIMERSHORT)
-    
+
     ! Get parameters from parameter list which are required unconditionally
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
@@ -1357,41 +1400,42 @@ contains
         'inviscidAFC', inviscidAFC)
     call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
         'imasstype', imasstype)
-    
+
     ! Do we have some kind of mass matrix?
     select case(imasstype)
     case (MASS_LUMPED, MASS_CONSISTENT)
-      
+
       !-------------------------------------------------------------------------
       ! Initialize the residual for transient flows
       !
       !   $$ res = rhs-M*U^{(m)} $$
       !-------------------------------------------------------------------------
-      
+
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
-      
-      massMatrix = merge(lumpedMassMatrix, consistentMassMatrix,&
-                         imasstype .eq. MASS_LUMPED)
-      
+
+      massMatrix = merge(lumpedMassMatrix,&
+          consistentMassMatrix, imasstype .eq. MASS_LUMPED)
+
       ! Apply mass matrix
       do iblock = 1, rsolution%nblocks
-        call lsyssc_scalarMatVec(rproblemLevel%Rmatrix(massMatrix),&
+        call lsyssc_scalarMatVec(&
+            rproblemLevel%Rmatrix(massMatrix),&
             rsolution%RvectorBlock(iblock),&
             rres%RvectorBlock(iblock) , -1._DP, 1.0_DP)
       end do
 
     case DEFAULT
-      
+
       !-----------------------------------------------------------------------
       ! Initialize the residual for stationary flows zeros
       !
       !   $$ res = rhs $$
       !-----------------------------------------------------------------------
-      
+
       ! Apply constant right-hand side
       call lsysbl_copyVector(rrhs, rres)
-      
+
     end select
 
     !---------------------------------------------------------------------------
@@ -1403,36 +1447,39 @@ contains
 
     ! What type if stabilization is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
-      
+
     case (AFCSTAB_GALERKIN)
-      
+
       !-------------------------------------------------------------------------
       ! Compute the high-order residual
       !
       !   $$ res := res + dt*theta*K(U^{(m)})*U^(m) $$
       !-------------------------------------------------------------------------
-        
+
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rres)
-        
+
       case (NDIM2D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rres)
-        
+
       case (NDIM3D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rres)
       end select
 
     case (AFCSTAB_UPWIND,&
+          AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_ITERATIVE,&
+          AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_LINEARISED)
 
       !-------------------------------------------------------------------------
@@ -1440,158 +1487,181 @@ contains
       !
       !   $$ res := res + dt*theta*L(U^{(m)})*U^(m) $$
       !-------------------------------------------------------------------------
-      
-      call parlst_getvalue_int(p_rparlist, rcollection %SquickAccess(1),&
-          'idissipationtype', idissipationtype)
-      
+
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1), 'idissipationtype', idissipationtype)
+
       ! What type of dissipation is applied?
       select case(idissipationtype)
-        
-      case (DISSIPATION_SCALAR)
-        
-        ! Assemble divergence operator with scalar dissipation
-        
+
+      case (DISSIPATION_ZERO)
+
+        ! Assemble divergence operator without dissipation
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScalarDiss1d, dscale, .false., rres)
-          
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin1d, dscale, .false., rres)
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxScalarDiss2d, dscale, .false., rres)
-          
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin2d, dscale, .false., rres)
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin3d, dscale, .false., rres)
+        end select
+
+      case (DISSIPATION_SCALAR)
+
+        ! Assemble divergence operator with scalar dissipation
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxScalarDiss1d, dscale, .false., rres)
+
+        case (NDIM2D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxScalarDiss2d, dscale, .false., rres)
+
+        case (NDIM3D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rres)
         end select
-        
+
       case (DISSIPATION_SCALAR_DSPLIT)
-        
+
         ! Assemble divergence operator with scalar dissipation
         ! adopting dimensional splitting
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rres)
-          
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitScalarDiss2d, dscale, .false., rres)
-          
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxScalarDissDiSp2d, dscale, .false., rres)
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitScalarDiss3d, dscale, .false., rres)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxScalarDissDiSp3d, dscale, .false., rres)
         end select
-        
+
       case (DISSIPATION_TENSOR)
-        
+
         ! Assemble divergence operator with tensorial dissipation
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
-          
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rres)
-          
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rres)
         end select
-        
+
       case (DISSIPATION_TENSOR_DSPLIT)
-        
+
         ! Assemble divergence operator with tensorial dissipation
         ! adopting dimensional splitting
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rres)
-          
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitTensorDiss2d, dscale, .false., rres)
-          
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxTensorDissDiSp2d, dscale, .false., rres)
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitTensorDiss3d, dscale, .false., rres)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxTensorDissDiSp3d, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV)
-        
+
         ! Assemble divergence operator with Rusanov flux
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
-          
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rres)
-          
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rres)
         end select
-        
+
       case (DISSIPATION_RUSANOV_DSPLIT)
-        
+
         ! Assemble divergence operator with Rusanov flux adopting
         ! dimensional splitting
-        
+
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rres)
-          
+
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitRusanov2d, dscale, .false., rres)
-          
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxRusanovDiSp2d, dscale, .false., rres)
+
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
-              euler_calcFluxDSplitRusanov3d, dscale, .false., rres)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxRusanovDiSp3d, dscale, .false., rres)
         end select
 
       case DEFAULT
@@ -1599,56 +1669,137 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
         call sys_halt()
       end select
-      
+
     case (AFCSTAB_FEMTVD)
-      
+
       !-------------------------------------------------------------------------
       ! Compute the low-order residual + FEM-TVD stabilization
       !
       !   $$ res = res + dt*theta*L(U^{(m)})*U^{(m)} + F(U^{(m)}) $$
       !-------------------------------------------------------------------------
+
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
             euler_calcCharacteristics1d, dscale, .false., rres)
-        
+
       case (NDIM2D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
             euler_calcCharacteristics2d, dscale, .false., rres)
-        
+
       case (NDIM3D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
             euler_calcCharacteristics3d, dscale , .false., rres)
       end select
-      
+
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcResidualThetaScheme')
       call sys_halt()
     end select
-    
-    
+
+
+    !-------------------------------------------------------------------------
+    ! Perform algebraic flux correction for the inviscid term
+    !
+    !   $$ res = res + f^*(u^(m),u^n) $$
+    !-------------------------------------------------------------------------
+
+    ! What type if stabilization is applied?
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+    case (AFCSTAB_FEMFCT_CLASSICAL,&
+          AFCSTAB_FEMFCT_ITERATIVE,&
+          AFCSTAB_FEMFCT_IMPLICIT)
+
+
+      ! Set pointer to low-order predictor
+      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
+
+      ! Compute low-order predictor ...
+      if (ite .eq. 0) then
+        ! ... only in the zeroth iteration
+        if (rtimestep%theta .ne. 1.0_DP) then
+          call lsysbl_invertedDiagMatVec(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rrhs, 1.0_DP, p_rpredictor)
+        else
+          call lsysbl_copyVector(rsolution, p_rpredictor)
+        end if
+      elseif (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+              .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+        ! ... in each iteration for iterative limiting
+        call lsysbl_invertedDiagMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rrhs, 1.0_DP, p_rpredictor)
+      end if
+
+      ! Assemble the raw antidiffusive fluxes
+      call euler_calcFluxFCT(rproblemLevel, rsolution, rsolution,&
+          rtimestep%theta, rtimestep%dStep, 1.0_DP, (ite .eq. 0), rcollection)
+
+      !-------------------------------------------------------------------------
+      ! Set operation specifier
+      !-------------------------------------------------------------------------
+
+      if (ite .eq. 0) then
+        ! Perform standard flux correction in zeroth iteration
+        ioperationSpec = AFCSTAB_FCTALGO_STANDARD
+      else
+        select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+        case (AFCSTAB_FEMFCT_CLASSICAL)
+          ! Perform standard flux correction without recomputing bounds
+          ioperationSpec = AFCSTAB_FCTALGO_STANDARD-&
+                           AFCSTAB_FCTALGO_BOUNDS
+
+        case (AFCSTAB_FEMFCT_IMPLICIT)
+          ! Perform semi-implicit flux correction
+          ioperationSpec = AFCSTAB_FCTALGO_INITALPHA+&
+                           AFCSTAB_FCTALGO_LIMITEDGE+&
+                           AFCSTAB_FCTALGO_CORRECT+&
+                           AFCSTAB_FCTALGO_CONSTRAIN
+
+        case (AFCSTAB_FEMFCT_ITERATIVE)
+          ! Perform standard flux correction
+          ioperationSpec = AFCSTAB_FCTALGO_STANDARD
+        end select
+      end if
+
+      ! Apply FEM-FCT algorithm
+      call euler_calcCorrectionFCT(rproblemLevel, p_rpredictor,&
+          rtimestep%dStep, .false., ioperationSpec, rres, rcollection)
+
+      ! Subtract corrected antidiffusion from right-hand side
+      if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+          .eq. AFCSTAB_FEMFCT_ITERATIVE) then
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            p_rpredictor, rtimestep%dStep, .false.,&
+            AFCSTAB_FCTALGO_CORRECT, rrhs)
+      end if
+    end select
+
     ! Apply the source vector to the residual  (if any)
     if (present(rsource)) then
       call lsysbl_vectorLinearComb(rsource, rres, -1.0_DP, 1.0_DP)
     end if
-    
+
     ! Stop time measurement for residual/rhs evaluation
     call stat_stopTimer(p_rtimer)
-    
+
   end subroutine euler_calcResidualThetaScheme
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine euler_calcRhsRungeKuttaScheme(rproblemLevel, rtimestep,&
@@ -1676,7 +1827,7 @@ contains
 
     ! solver structure
     type(t_solver), intent(inout) :: rsolver
-    
+
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
@@ -1687,7 +1838,7 @@ contains
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
-    
+
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
@@ -1725,7 +1876,7 @@ contains
 
     select case(imasstype)
     case (MASS_LUMPED)
-      
+
       !-------------------------------------------------------------------------
       ! Initialize the right-hand side vector
       !
@@ -1736,13 +1887,14 @@ contains
           rcollection%SquickAccess(1), 'lumpedmassmatrix', lumpedMassMatrix)
 
       do iblock = 1, rsolution%nblocks
-        call lsyssc_scalarMatVec(rproblemLevel&
-            %Rmatrix(lumpedMassMatrix), rsolution&
-            %RvectorBlock(iblock), rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
+        call lsyssc_scalarMatVec(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rsolution%RvectorBlock(iblock),&
+            rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
       end do
 
     case(MASS_CONSISTENT)
-      
+
       !-------------------------------------------------------------------------
       ! Initialize the right-hand side vector
       !
@@ -1750,12 +1902,14 @@ contains
       !-------------------------------------------------------------------------
 
       call parlst_getvalue_int(p_rparlist,&
-          rcollection%SquickAccess(1), 'consistentmassmatrix', consistentMassMatrix)
+          rcollection%SquickAccess(1), 'consistentmassmatrix',&
+          consistentMassMatrix)
 
       do iblock = 1, rsolution%nblocks
-        call lsyssc_scalarMatVec(rproblemLevel&
-            %Rmatrix(consistentMassMatrix), rsolution&
-            %RvectorBlock(iblock), rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
+        call lsyssc_scalarMatVec(&
+            rproblemLevel%Rmatrix(consistentMassMatrix),&
+            rsolution%RvectorBlock(iblock),&
+            rrhs%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
       end do
 
     case DEFAULT
@@ -1764,11 +1918,11 @@ contains
       call lsysbl_clearVector(rrhs)
     end select
 
-    
+
     !---------------------------------------------------------------------------
     ! Compute the divergence term of the right-hand side
     !---------------------------------------------------------------------------
-    
+
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1), 'inviscidAFC', inviscidAFC)
 
@@ -1780,8 +1934,8 @@ contains
 
     dscale = rtimestep%DmultistepWeights(istep)*(1.0_DP-rtimestep%theta)*rtimestep%dStep
 
-    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)      
-      
+    select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
+
     case (AFCSTAB_GALERKIN)
 
       !-------------------------------------------------------------------------
@@ -1789,26 +1943,25 @@ contains
       !
       !   $$ rhs = M*U+weight*(1-theta)*dt*K(U)*U $$
       !-------------------------------------------------------------------------
-      
+
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin1d, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin2d, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildResidual(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVector(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkin3d, dscale, .false., rrhs)
-
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -1825,28 +1978,52 @@ contains
           rcollection%SquickAccess(1), 'idissipationtype', idissipationtype)
 
       select case(idissipationtype)
-        
+
+      case (DISSIPATION_ZERO)
+
+        ! Assemble divergence operator without dissipation
+
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin1d, dscale, .false., rrhs)
+
+        case (NDIM2D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin2d, dscale, .false., rrhs)
+
+        case (NDIM3D)
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
+              euler_calcFluxGalerkin3d, dscale, .false., rrhs)
+        end select
+
       case (DISSIPATION_SCALAR)
 
         ! Assemble divergence operator with scalar dissipation
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxScalarDiss3d, dscale, .false., rrhs)
 
         end select
@@ -1857,21 +2034,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxTensorDiss3d, dscale, .false., rrhs)
 
         end select
@@ -1882,21 +2059,21 @@ contains
 
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov1d, dscale, .false., rrhs)
 
         case (NDIM2D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov2d, dscale, .false., rrhs)
 
         case (NDIM3D)
-          call gfsys_buildResidual(rproblemLevel&
-              %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-              %Rafcstab(inviscidAFC), rsolution,&
+          call gfsys_buildDivVector(&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
               euler_calcFluxRusanov3d, dscale, .false., rrhs)
 
         end select
@@ -1917,23 +2094,23 @@ contains
 
       select case(rproblemLevel%rtriangulation%ndim)
       case (NDIM1D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CX), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr1d,&
             euler_calcCharacteristics1d, dscale, .false., rrhs)
 
       case (NDIM2D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CY), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr2d,&
             euler_calcCharacteristics2d, dscale, .false., rrhs)
 
       case (NDIM3D)
-        call gfsys_buildResidualTVD(rproblemLevel&
-            %Rmatrix(coeffMatrix_CX:coeffMatrix_CZ), rproblemLevel&
-            %Rafcstab(inviscidAFC), rsolution,&
+        call gfsys_buildDivVectorTVD(&
+            rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+            rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalerkinNoBdr3d,&
             euler_calcCharacteristics3d, dscale, .false., rrhs)
 
@@ -1947,7 +2124,7 @@ contains
 
     ! Stop time measurement for global operator
     call stat_stopTimer(p_rtimer)
-    
+
   end subroutine euler_calcRhsRungeKuttaScheme
 
   !*****************************************************************************
@@ -1991,7 +2168,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     integer :: imatrix, istatus
-    
+
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2001,12 +2178,12 @@ contains
     case (NLSOL_PRECOND_BLOCKD,&
           NLSOL_PRECOND_DEFCOR,&
           NLSOL_PRECOND_NEWTON_FAILED)
-      
+
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1), 'systemmatrix', imatrix)
-      
+
     case (NLSOL_PRECOND_NEWTON)
-      
+
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1), 'jacobianmatrix', imatrix)
 
@@ -2015,62 +2192,71 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
       call sys_halt()
     end select
-      
+
 
     ! Impose boundary conditions for the solution vector and impose
-    ! zeros in the residual vector and the off-diagonal positions 
+    ! zeros in the residual vector and the off-diagonal positions
     ! of the system matrix which is obtained from the collection
-    
+
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-          rproblemLevel%RmatrixBlock(imatrix), rsolution, rres,&
-          rsolution0, rtimestep%dTime, euler_calcBoundaryvalues1d,&
-          istatus)
-      
+      call bdrf_filterSolution(&
+          rsolver%rboundaryCondition,&
+          rproblemLevel%RmatrixBlock(imatrix),&
+          rsolution, rres, rsolution0, rtimestep%dTime,&
+          euler_calcBoundaryvalues1d, istatus)
+
     case (NDIM2D)
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-          rproblemLevel%RmatrixBlock(imatrix), rsolution, rres,&
-          rsolution0, rtimestep%dTime, euler_calcBoundaryvalues2d,&
-          istatus)
+      call bdrf_filterSolution(&
+          rsolver%rboundaryCondition,&
+          rproblemLevel%RmatrixBlock(imatrix),&
+          rsolution, rres, rsolution0, rtimestep%dTime,&
+          euler_calcBoundaryvalues2d, istatus)
 
     case (NDIM3D)
-      call bdrf_filterSolution(rsolver%rboundaryCondition,&
-          rproblemLevel%RmatrixBlock(imatrix), rsolution, rres,&
-          rsolution0, rtimestep%dTime, euler_calcBoundaryvalues3d,&
-          istatus)
+      call bdrf_filterSolution(&
+          rsolver%rboundaryCondition,&
+          rproblemLevel%RmatrixBlock(imatrix),&
+          rsolution, rres, rsolution0, rtimestep%dTime,&
+          euler_calcBoundaryvalues3d, istatus)
 
     case DEFAULT
       call output_line('Invalid spatial dimension!',&
           OU_CLASS_ERROR,OU_MODE_STD,'euler_setBoundaryConditions')
       call sys_halt()
     end select
-    
+
   end subroutine euler_setBoundaryConditions
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcLinearizedFCT(rbdrCond, rproblemLevel,&
-      rtimestep, rsolution, rcollection)
+  subroutine euler_calcLinearisedFCT(rbdrCond, rproblemLevel,&
+      rtimestep, rsolver, rsolution, rcollection, rsource)
 
 !<description>
-    ! This subroutine calculates the linearized FCT correction
+    ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
     ! boundary condition structure
     type(t_boundaryCondition), intent(in) :: rbdrCond
 
-    ! problem level structure
-    type(t_problemLevel), intent(in) :: rproblemLevel
-
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsource
 !</input>
 
 !<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(inout) :: rsolver
+
     ! solution vector
     type(t_vectorBlock), intent(inout) :: rsolution
 
@@ -2080,558 +2266,670 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_timestep) :: rtimestepAux
     type(t_parlist), pointer :: p_rparlist
-    type(t_afcstab), pointer :: p_rafcstab
-    type(t_vectorBlock) :: rdata
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    real(DP), dimension(:), pointer :: p_MC, p_ML, p_Cx, p_Cy
-    real(DP), dimension(:), pointer :: p_pp, p_pm, p_qp, p_qm, p_rp, p_rm
-    real(DP), dimension(:), pointer :: p_u, p_flux0, p_flux, p_alpha, p_data
-    integer, dimension(:), pointer :: p_Kdiagonal
-    integer :: templatematrix, inviscidAFC
-    integer :: lumpedMassMatrix, consistentMassMatrix
-    integer :: coeffMatrix_CX, coeffMatrix_CY
+    type(t_vectorBlock), pointer :: p_rpredictor
+    integer :: inviscidAFC, lumpedMassMatrix
 
-    print *, "We must not use this routine"
-    stop
-
-    ! Get parameters from parameter list which are required unconditionally
+    ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'templatematrix', templateMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'coeffMatrix_CX', coeffMatrix_CX)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'coeffMatrix_CY', coeffMatrix_CY)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'consistentmassmatrix', consistentMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
-        'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(p_rparlist, rcollection%SquickAccess(1),&
+
+    ! Get more parameter from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
+
+    ! Do we have to apply linearised FEM-FCT?
+    if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+        .ne. AFCSTAB_FEMFCT_LINEARISED) return
+
+    ! Get more parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+
+    ! Initialize dummy timestep
+    rtimestepAux%dStep = 1.0_DP
+    rtimestepAux%theta = 0.0_DP
+
+    ! Set pointer to low-order predictor
+    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
+
+    ! Compute low-order "right-hand side" without theta parameter
+    call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+        rsolver, rsolution, p_rpredictor, rcollection, rsource)
     
-    ! Set pointers to template matrix
-    p_rmatrix => rproblemLevel%Rmatrix(templatematrix)
-    p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
+    ! Compute low-order predictor
+    call lsysbl_invertedDiagMatVec(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        p_rpredictor, 1.0_DP, p_rpredictor)
 
-    ! Let us check if the edge-based data structure has been generated
-    if((iand(p_rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .and.&
-       (iand(p_rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
-      call afcstab_generateVerticesAtEdge(p_rmatrix, p_rafcstab)
-    end if
-    
-    ! Set pointers
-    call lsyssc_getbase_Kdiagonal(p_rmatrix, p_Kdiagonal)
-    call lsysbl_getbase_double(rsolution, p_u)
-    call afcstab_getbase_IverticesAtEdge(p_rafcstab, p_IverticesAtEdge)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(consistentMassMatrix), p_MC)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CX), p_Cx)
-    call lsyssc_getbase_double(rproblemLevel%Rmatrix(coeffMatrix_CY), p_Cy)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(p_rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(1), p_flux)
-    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(2), p_flux0)
-    call lsyssc_getbase_double(p_rafcstab%RedgeVectors(3), p_alpha)
-    
-    ! Create auxiliary vector
-    call lsysbl_createVectorBlock(rsolution, rdata, .true.)
-    call lsysbl_getbase_double(rdata, p_data)
-    
-    ! Initialize alpha with ones
-    call lalg_setVector(p_alpha, 1.0_DP)
-    
-    ! Build the flux
-    call buildFluxCons2d(p_Kdiagonal, p_IverticesAtEdge,&
-        p_rmatrix%NEQ, NVAR2D, p_rafcstab%NEDGE, rtimestep%dStep,&
-        p_u, p_MC, p_ML, p_Cx, p_Cy, p_data, p_flux, p_flux0)
+    ! Compute the raw antidiffusive fluxes
+    call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
+        rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
 
-    ! Build the correction
-    call buildCorrectionCons(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        p_rafcstab%NEDGE, 1, p_ML, p_flux, p_flux0, p_alpha, p_u,&
-        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
-    call buildCorrectionCons(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        p_rafcstab%NEDGE, 4, p_ML, p_flux, p_flux0, p_alpha, p_u, p_pp, p_pm,&
-        p_qp, p_qm, p_rp, p_rm)
-    
-    ! Apply correction to low-order solution
-    call applyCorrection(p_IverticesAtEdge, p_rmatrix%NEQ, NVAR2D,&
-        p_rafcstab%NEDGE, p_ML, p_flux, p_alpha, p_data, p_u)
+    ! Apply linearised FEM-FCT algorithm
+    call euler_calcCorrectionFCT(rproblemLevel,&
+        rsolution, rtimestep%dStep, .false.,&
+        AFCSTAB_FCTALGO_STANDARD+&
+        AFCSTAB_FCTALGO_SCALEBYMASS,&
+        rsolution, rcollection)
 
-    ! Set boundary conditions explicitly
-    call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-        rtimestep%dTime, euler_calcBoundaryvalues2d)
+    ! Impose boundary conditions for the solution vector
+    select case(rproblemLevel%rtriangulation%ndim)
+    case (NDIM1D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dTime, euler_calcBoundaryvalues1d)
 
-    ! Release flux vectors
-    call lsysbl_releaseVector(rdata)
+    case (NDIM2D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dTime, euler_calcBoundaryvalues2d)
 
-  contains
+    case (NDIM3D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dTime, euler_calcBoundaryvalues3d)
+    end select
 
-    !***************************************************************************
+  end subroutine euler_calcLinearisedFCT
 
-    subroutine buildFluxCons2d(Kdiagonal, IverticesAtEdge,&
-        NEQ, NVAR, NEDGE, dscale, u, MC, ML, Cx, Cy, troc, flux, flux0)
+  !*****************************************************************************
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: u
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: MC,ML,Cx,Cy
-      integer, dimension(:), intent(in) :: Kdiagonal
-      real(DP), intent(in) :: dscale
-      integer, intent(in) :: NEQ,NVAR,NEDGE
-      
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux0,flux
-      
-      real(DP), dimension(NVAR,NEQ), intent(out) :: troc     
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: K_ij,K_ji,D_ij,Diff,F_ij,F_ji
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      integer :: ij,ji,i,j,iedge
+!<subroutine>
 
-      ! Initialize time rate of change
-      call lalg_clearVector(troc)
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-      
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
+  subroutine euler_calcFluxFCT(rproblemLevel, rsolution1, rsolution2,&
+      theta, tstep, dscale, binit, rcollection)
 
-        ! Compute coefficients
-        C_ij(1) = Cx(ij); C_ji(1) = Cx(ji)
-        C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
-        
-        ! Calculate low-order flux
-        call euler_calcFluxRusanov2d(u(:,i), u(:,j),&
-            C_ij, C_ji, i, j, dscale, F_ij, F_ji)
-        
-        ! Update the time rate of change vector
-        troc(:,i) = troc(:,i) + F_ij
-        troc(:,j) = troc(:,j) + F_ji
-        
-        ! Calculate diffusion coefficient
-        call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
-            C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-        
-        ! Compute solution difference
-        Diff = u(:,i)-u(:,j)         
-        
-        ! Compute the raw antidiffusive flux
-        flux0(:,iedge) = D_ij*Diff
-      end do
+!<description>
+    ! This subroutine calculates the raw antidiffusive fluxes for
+    ! the different FCT algorithms
+!</description>
 
-      ! Scale the time rate of change by the lumped mass matrix
-      !$omp parallel do
-      do i = 1, NEQ
-        troc(:,i) = troc(:,i)/ML(i)
-      end do
-      !$omp end parallel do
+!<input>
+    ! solution vectors
+    type(t_vectorBlock), intent(in) :: rsolution1, rsolution2
 
-      ! Loop over all edges
-      !$omp parallel do private(i,j,ij)
-      do iedge = 1, NEDGE
-      
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        
-        ! Apply mass antidiffusion
-        flux(:,iedge) = flux0(:,iedge) + MC(ij)*(troc(:,i)-troc(:,j))
-      end do
-      !$omp end parallel do
+    ! implicitness parameter
+    real(DP), intent(in) :: theta
 
-    end subroutine buildFluxCons2d
-    
-    !***************************************************************************
+    ! time step size
+    real(DP), intent(in) :: tstep
 
-    subroutine  buildCorrectionCons(IverticesAtEdge, NEQ, NVAR, NEDGE,&
-        ivar, ML, flux, flux0, alpha, u, pp, pm, qp, qm, rp, rm)
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
 
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux0
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML
-      integer, intent(in) :: NEQ,NVAR,NEDGE,ivar
-      
-      real(DP), dimension(NVAR,NEDGE), intent(inout) :: flux
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: u
-      real(DP), dimension(:), intent(inout) :: alpha
-      
-      real(DP), dimension(:), intent(out) :: pp,pm,qp,qm,rp,rm
-      
-      
-      ! local variables
-      real(DP) :: f_ij,f0_ij,diff,aux
-      integer :: i,j,iedge
-      
-      ! Initialize vectors
-      call lalg_clearVector(pp)
-      call lalg_clearVector(pm)
-      call lalg_clearVector(qp)
-      call lalg_clearVector(qm)
-      call lalg_setVector(rp, 1.0_DP)
-      call lalg_setVector(rm, 1.0_DP)
+    ! Switch for flux assembly
+    ! TRUE  : assemble the initial antidiffusive flux
+    ! FALSE : assemble the antidiffusive flux using some initial values
+    logical, intent(in) :: binit
+!</input>
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix position
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-!!$          ! Flux correction in primitive variables
-!!$          select case(ivar)
-!!$          case default
-        
-        ! Flux correction in conservative variables
-        f_ij  = flux(ivar,iedge)
-        f0_ij = flux0(ivar,iedge)
-        diff  = u(ivar,j)-u(ivar,i)
-        
-        ! MinMod prelimiting of antidiffusive fluxes
-        if (f_ij > SYS_EPSREAL .and. f0_ij > SYS_EPSREAL) then
-          aux = min(f_ij, f0_ij)
-          alpha(iedge) = min(alpha(iedge), aux/f_ij)
-          f_ij = aux
-        elseif (f_ij < - SYS_EPSREAL .and. f0_ij < -SYS_EPSREAL) then
-          aux = max(f_ij, f0_ij)
-          alpha(iedge) = min(alpha(iedge), aux/f_ij)
-          f_ij = aux
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    integer :: inviscidAFC, lumpedMassMatrix, consistentMassMatrix
+    integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ
+    integer :: idissipationtype, imassantidiffusiontype
+
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CX', coeffMatrix_CX)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CY', coeffMatrix_CY)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'coeffMatrix_CZ', coeffMatrix_CZ)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'consistentmassmatrix', consistentmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'imassantidiffusiontype', imassantidiffusiontype)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'idissipationtype', idissipationtype)
+
+
+    ! What type of dissipation is applied?
+    select case(idissipationtype)
+
+    case (DISSIPATION_SCALAR)
+
+      ! Assemble raw antidiffusive fluxes using scalar dissipation
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
         else
-          f_ij = 0.0; alpha(iedge) = 0.0
-        end if
-        
-        ! Sums of raw antidiffusive fluxes
-        pp(i) = pp(i) + max(0.0_DP,  f_ij)
-        pp(j) = pp(j) + max(0.0_DP, -f_ij)
-        pm(i) = pm(i) + min(0.0_DP,  f_ij)
-        pm(j) = pm(j) + min(0.0_DP, -f_ij)
-        
-        ! Sums of admissible edge contributions
-        qp(i) = max(qp(i),  diff)
-        qp(j) = max(qp(j), -diff)
-        qm(i) = min(qm(i),  diff)
-        qm(j) = min(qm(j), -diff)
-        
-        
-!!$          case (4)
-!!$            ! Velocities
-!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
-!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
-!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
-!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
-!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
-!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
-!!$            p0_ij = (GAMMA-1) * (flux0(4, iedge) + &
-!!$                          0.5 * (u_i*u_i + v_i*v_i)*flux0(1, iedge) -&
-!!$                                 u_i*flux0(2, iedge) - v_i*flux0(3, iedge) )
-!!$            p0_ji = -(GAMMA-1) * (flux0(4, iedge) + &
-!!$                           0.5 * (u_j*u_j + v_j*v_j)*flux0(1, iedge) -&
-!!$                                  u_j*flux0(2, iedge) - v_j*flux0(3, iedge) )
-!!$
-!!$            ! Solution differences
-!!$            diff = (GAMMA-1) * (u(4,j) + &
-!!$                         0.5 * (u_j*u_j + v_j*v_j)*u(1,j) -&
-!!$                                u_j*u(2,j) - v_j*u(3,j) )&
-!!$                 - (GAMMA-1) * (u(4,i) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*u(1,i) -&
-!!$                                u_i*u(2,i) - v_i*u(3,i) )
-!!$
-!!$            ! Pressure variables
-!!$            p_ij =   (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
-!!$                                  -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
-!!$            p_ji =  -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
-!!$                                  -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
-!!$            p0_ij =  (GAMMA-1) * ( u(4,i)*flux0(1,iedge) - u(2,i)*flux0(2,iedge) &
-!!$                                  -u(3,i)*flux0(3,iedge) + u(1,i)*flux0(4,iedge) )
-!!$            p0_ji = -(GAMMA-1) * ( u(4,j)*flux0(1,iedge) - u(2,j)*flux0(2,iedge) &
-!!$                                  -u(3,j)*flux0(3,iedge) + u(1,j)*flux0(4,iedge) )
-!!$
-!!$            ! Solution differences
-!!$            diff =  (GAMMA-1) * ( u(4,j)*u(1,j) - u(2,j)*u(2,j) &
-!!$                                 -u(3,j)*u(3,j) + u(1,j)*u(4,j) )&
-!!$                   -(GAMMA-1) * ( u(4,i)*u(1,i) - u(2,i)*u(2,i) &
-!!$                                 -u(3,i)*u(3,i) + u(1,i)*u(4,i) )
-!!$            
-!!$            ! MinMod prelimiting of antidiffusive fluxes
-!!$            if (p_ij >  SYS_EPSREAL .and. p0_ij >  SYS_EPSREAL) then
-!!$              aux = min(p_ij, p0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
-!!$              p_ij = aux
-!!$            elseif (p_ij < -SYS_EPSREAL .and. p0_ij < -SYS_EPSREAL) then
-!!$              aux = max(p_ij, p0_ij)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ij)
-!!$              p_ij = aux
-!!$            else
-!!$              p_ij = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$
-!!$            if (p_ji >  SYS_EPSREAL .and. p0_ji >  SYS_EPSREAL) then
-!!$              aux = min(p_ji, p0_ji)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
-!!$              p_ji = aux
-!!$            elseif (p_ji < -SYS_EPSREAL .and. p0_ji < -SYS_EPSREAL) then
-!!$              aux = max(p_ji, p0_ji)
-!!$              alpha(iedge) = min(alpha(iedge), aux/p_ji)
-!!$              p_ji = aux
-!!$            else
-!!$              p_ji = 0.0; alpha(iedge) = 0.0
-!!$            end if
-!!$            
-!!$            ! Sums of raw antidiffusive fluxes
-!!$            pp(i) = pp(i) + max(0.0_DP, p_ij)
-!!$            pp(j) = pp(j) + max(0.0_DP, p_ji)
-!!$            pm(i) = pm(i) + min(0.0_DP, p_ij)
-!!$            pm(j) = pm(j) + min(0.0_DP, p_ji)
-!!$            
-!!$            ! Sums of admissible edge contributions
-!!$            qp(i) = max(qp(i),  diff)
-!!$            qp(j) = max(qp(j), -diff)
-!!$            qm(i) = min(qm(i),  diff)
-!!$            qm(j) = min(qm(j), -diff)
-!!$          end select
-            
-      end do
-
-
-      ! Compute nodal correction factors
-      !$omp parallel do
-      do i = 1, NEQ
-        qp(i) = qp(i)*ML(i)
-        qm(i) = qm(i)*ML(i)
-
-        if (pp(i) > qp(i) + SYS_EPSREAL) rp(i) = qp(i)/pp(i)
-        if (pm(i) < qm(i) - SYS_EPSREAL) rm(i) = qm(i)/pm(i)
-      end do
-      !$omp end parallel do
-
-      
-      ! Loop over all edges
-      !$omp parallel do private(i,j,f_ij)
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-!!$          ! Flux correction in primitive variables
-!!$          select case(ivar)
-!!$          case default
-            
-        ! Flux correction in conservative variables
-        f_ij = flux(ivar,iedge)
-        
-        ! Limit conservative fluxes
-        if (f_ij > SYS_EPSREAL) then
-          alpha(iedge) = min(alpha(iedge), rp(i), rm(j))
-        elseif (f_ij < -SYS_EPSREAL) then
-          alpha(iedge) = min(alpha(iedge), rm(i), rp(j))
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
+              theta, tstep, dscale, binit)
         end if
 
-!!$          case (4)
-!!$            
-!!$            ! Flux correction in primitive variables
-!!$            
-!!$            ! Velocities
-!!$            u_i = u(2,i)/u(1,i);   v_i = u(3,i)/u(1,i)
-!!$            u_j = u(2,j)/u(1,j);   v_j = u(3,j)/u(1,j)
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * (flux(4, iedge) + &
-!!$                         0.5 * (u_i*u_i + v_i*v_i)*flux(1, iedge) -&
-!!$                                u_i*flux(2, iedge) - v_i*flux(3, iedge) )
-!!$            p_ji = -(GAMMA-1) * (flux(4, iedge) + &
-!!$                          0.5 * (u_j*u_j + v_j*v_j)*flux(1, iedge) -&
-!!$                                 u_j*flux(2, iedge) - v_j*flux(3, iedge) )
-!!$
-!!$            ! Pressure variables
-!!$            p_ij = (GAMMA-1) * ( u(4,i)*flux(1,iedge) - u(2,i)*flux(2,iedge) &
-!!$                                -u(3,i)*flux(3,iedge) + u(1,i)*flux(4,iedge) )
-!!$            
-!!$            p_ji = -(GAMMA-1) * ( u(4,j)*flux(1,iedge) - u(2,j)*flux(2,iedge) &
-!!$                                 -u(3,j)*flux(3,iedge) + u(1,j)*flux(4,iedge) )
-!!$
-!!$            if (p_ij > SYS_EPSREAL) then
-!!$              r_i = rp(i)
-!!$            elseif (p_ij < -SYS_EPSREAL) then
-!!$              r_i = rm(i)
-!!$            else
-!!$              r_i = 1.0
-!!$            end if
-!!$
-!!$            if (p_ji > SYS_EPSREAL) then
-!!$              r_j = rp(j)
-!!$            elseif (p_ji < -SYS_EPSREAL) then
-!!$              r_j = rm(j)
-!!$            else
-!!$              r_j = 1.0
-!!$            end if
-!!$
-!!$            alpha(iedge) = min(alpha(iedge), r_i, r_j)
-!!$            
-!!$          end select
-      end do
-      !$omp end parallel do
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
+              theta, tstep, dscale, binit)
+        end if
 
-    end subroutine buildCorrectionCons
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
 
-    !***************************************************************************
 
-    subroutine applyCorrection(IverticesAtEdge, NEQ, NVAR, NEDGE,&
-        ML, flux, alpha, data, u)
-      
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: flux
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML
-      integer, intent(in) :: NEQ,NVAR,NEDGE
-      
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: u,data
-      real(DP), dimension(:), intent(inout) :: alpha
-      
-      ! local variables
-      real(DP), dimension(:,:), pointer :: ufail
-      real(DP), dimension(:), pointer :: pp,pm
-      logical, dimension(:), pointer :: bfail
-      real(DP), dimension(NVAR) :: f_ij
-      real(DP) :: diff
-      integer :: i,j,iedge
+    case (DISSIPATION_TENSOR)
 
-      ! Initialize correction
-      call lalg_clearVector(data)
+      ! Assemble raw antidiffusive fluxes using tensorial dissipation
 
-      allocate(ufail(NVAR, NEQ), bfail(NEQ), pp(NEQ), pm(NEQ))
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
+              theta, tstep, dscale, binit)
+        end if
 
-      ! Initialize vectors
-      call lalg_clearVector(pp)
-      call lalg_clearVector(pm)
-      call lalg_copyVector(u, ufail)
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
+              theta, tstep, dscale, binit)
+        end if
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-      
-        ! Get node numbers and matrix position
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
+
+
+    case (DISSIPATION_RUSANOV)
+
+      ! Assemble raw antidiffusive fluxes using th Rusanov dissipation
+
+      select case(rproblemLevel%rtriangulation%ndim)
+      case (NDIM1D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM2D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
+              theta, tstep, dscale, binit)
+        end if
+
+      case (NDIM3D)
+        ! Should we apply consistent mass antidiffusion?
+        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              theta, tstep, dscale, binit,&
+              rproblemLevel%Rmatrix(consistentMassMatrix))
+        else
+          call gfsys_buildFluxFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
+              theta, tstep, dscale, binit)
+        end if
+      end select
+
+
+    case DEFAULT
+      call output_line('Invalid type of dissipation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcFluxFCT')
+      call sys_halt()
+    end select
+
+  end subroutine euler_calcFluxFCT
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
+      dscale, bclear, ioperationSpec, rresidual, rcollection)
+
+!<description>
+    ! This subroutine calculates the raw antidiffusive fluxes for
+    ! the different FCT algorithms
+!</description>
+
+!<input>
+    ! solution vector
+    type(t_vectorBlock), intent(in) :: rsolution
+
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! Switch for vector assembly
+    ! TRUE  : clear vector before assembly
+    ! FLASE : assemble vector in an additive way
+    logical, intent(in) :: bclear
+
+    ! Operation specification tag. This is a bitfield coming from an OR
+    ! combination of different AFCSTAB_FCT_xxxx constants and specifies
+    ! which operations need to be performed by this subroutine.
+    integer(I32), intent(in) :: ioperationSpec
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! residual vector
+    type(t_vectorBlock), intent(inout) :: rresidual
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_parlist), pointer :: p_rparlist
+    character(len=SYS_STRLEN) :: slimitingvariable
+    integer(I32) :: iopSpec
+    integer :: inviscidAFC, lumpedMassMatrix, ivariable, nvariable
+
+
+    ! Get parameters from parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+
+    ! Get number of limiting variables
+    nvariable = max(1,&
+        parlst_querysubstrings(p_rparlist,&
+        rcollection%SquickAccess(1), 'slimitingvariable'))
+
+    ! Copy operation specifier and disable the correction step
+    ! if sequential/multiplicative flux correction is performed
+    if (nvariable .gt. 1) then
+      iopSpec = iand(ioperationSpec, not(AFCSTAB_FCTALGO_CORRECT))
+    else
+      iopSpec = ioperationSpec
+    end if
+
+    ! Loop over items in the list of variables that should
+    ! be limited sequentially, i.e., in multiplicative way
+    do ivariable = 1, nvariable
+
+      ! Get variable declaration string
+      call parlst_getvalue_string(p_rparlist,&
+          rcollection%SquickAccess(1), 'slimitingvariable',&
+          slimitingvariable, isubstring=ivariable)
+
+      ! What type of flux transformation is applied?
+      if (trim(slimitingvariable) .eq. 'density') then
+
+        ! Apply FEM-FCT algorithm for density fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDensity1d, euler_trafoDiffDensity1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDensity2d, euler_trafoDiffDensity2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDensity3d, euler_trafoDiffDensity3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'energy') then
+
+        ! Apply FEM-FCT algorithm for energy fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxEnergy1d, euler_trafoDiffEnergy1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxEnergy2d, euler_trafoDiffEnergy2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxEnergy3d, euler_trafoDiffEnergy3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'pressure') then
+
+        ! Apply FEM-FCT algorithm for pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxPressure1d, euler_trafoDiffPressure1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxPressure2d, euler_trafoDiffPressure2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxPressure3d, euler_trafoDiffPressure3d)
+        end select
+
+      elseif (trim(slimitingvariable) .eq. 'velocity_x') then
+
+        ! Apply FEM-FCT algorithm for x-velocity fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity1d, euler_trafoDiffVelocity1d)
         
-        ! Limit raw antidiffusive flux
-        f_ij = alpha(iedge)*flux(:,iedge)
+      elseif (trim(slimitingvariable) .eq. 'velocity_y') then
+
+        ! Apply FEM-FCT algorithm for y-velocity fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity2d, euler_trafoDiffVelocity2d)
+
+      elseif (trim(slimitingvariable) .eq. 'velocity_z') then
+
+        ! Apply FEM-FCT algorithm for z-velocity fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxVelocity3d, euler_trafoDiffVelocity3d)
         
-        ! Apply correction
-        data(:,i) = data(:,i) + f_ij
-        data(:,j) = data(:,j) - f_ij
+      elseif (trim(slimitingvariable) .eq. 'momentum_x') then
+
+        ! Apply FEM-FCT algorithm for x-momentum fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum1d, euler_trafoDiffMomentum1d)
+
+      elseif (trim(slimitingvariable) .eq. 'momentum_y') then
+
+        ! Apply FEM-FCT algorithm for y-momentum fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum2d, euler_trafoDiffMomentum2d)
+
+      elseif (trim(slimitingvariable) .eq. 'momentum_z') then
+
+        ! Apply FEM-FCT algorithm for z-momentum fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual,&
+            euler_trafoFluxMomentum3d, euler_trafoDiffMomentum3d)
         
-        ! Compute pressure difference at nodes I and J
-        diff = (GAMMA-1) * ( u(4,j) - u(4,i) &
-                         - 0.5_DP*(u(2,j)**2 + u(3,j)**2)/u(1,j)&
-                         + 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i))
-        
-        ! Compute upper and lower bounds for the pressure
-        pp(i) = max(pp(i),  diff)
-        pp(j) = max(pp(j), -diff)
-        pm(i) = min(pm(i),  diff)
-        pm(j) = min(pm(j), -diff)
-      end do
-      
-      ! Loop over all rows
-      !$omp parallel do
-      do i = 1, NEQ
+      elseif (trim(slimitingvariable) .eq. 'density,energy') then
 
-        ! Compute flux-corrected solution
-        u(:,i) = u(:,i) + data(:,i)/ML(i)
+        ! Apply FEM-FCT algorithm for density and energy fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenEng1d, euler_trafoDiffDenEng1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenEng2d, euler_trafoDiffDenEng2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenEng3d, euler_trafoDiffDenEng3d)
+        end select
 
-        ! Compute pressure difference between the low-order solution
-        ! and flux-corrected solution value at node I
-        diff = (GAMMA-1) * ( u(4,i) - ufail(4,i) &
-                           - 0.5_DP*(u(2,i)**2 + u(3,i)**2)/u(1,i)&
-                           + 0.5_DP*(ufail(2,i)**2 + ufail(3,i)**2)/ufail(1,i))
-        
-        ! Check if pressure violates upper/lower bounds
-        bfail(i) = (pm(i) .gt. diff) .or. (diff .gt. pp(i))
-      end do
-      !$omp end parallel do
-      
-      
-      ! Do we need to apply failsave limiting?
-      if (all(.not.bfail)) then
-        deallocate(ufail, bfail, pp, pm)
-        return
-      end if
-     
-      ! Loop over all edges
-      !$omp parallel do private(i,j)
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix position
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        ! Do we have to cancel the antidiffusive flux for this edge?
-        if (bfail(i) .or. bfail(j)) alpha(iedge) = 0.0_DP
-      end do
-      !$omp end parallel do
+      elseif (trim(slimitingvariable) .eq. 'density,pressure') then
 
-      ! Deallocate temporal memory
-      deallocate(bfail, pp, pm)
+        ! Apply FEM-FCT algorithm for density and pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPre1d, euler_trafoDiffDenPre1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPre2d, euler_trafoDiffDenPre2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPre3d, euler_trafoDiffDenPre3d)
+        end select
 
+      elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
 
-      ! Initialize correction
-      call lalg_clearVector(data)
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix position
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        ! Apply FEM-FCT algorithm for full conservative fluxes
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rsolution, dscale, bclear, iopSpec, rresidual)
 
-        ! Limit raw antidiffusive flux
-        f_ij = alpha(iedge)*flux(:,iedge)
-        
-        ! Apply correction
-        data(:,i) = data(:,i) + f_ij
-        data(:,j) = data(:,j) - f_ij
-      end do
+      elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
 
+        ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPreVel1d, euler_trafoDiffDenPreVel1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPreVel2d, euler_trafoDiffDenPreVel2d)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix),&
+              rproblemLevel%Rafcstab(inviscidAFC),&
+              rsolution, dscale, bclear, iopSpec, rresidual,&
+              euler_trafoFluxDenPreVel3d, euler_trafoDiffDenPreVel3d)
+        end select
 
-      ! Loop over all rows
-      !$omp parallel do
-      do i = 1, NEQ
-        u(:,i) = ufail(:,i) + data(:,i)/ML(i)
-      end do
-      !$omp end parallel do
-
-      ! Deallocate temporal memory
-      deallocate(ufail)
-
-    end subroutine applyCorrection
-
-    !***************************************************************************
-
-    pure elemental function minmod(a,b)
-      real(DP), intent(in) :: a,b
-      real(DP) :: minmod
-
-      if (a > 0 .and. b > 0) then
-        minmod = min(a,b)
-      elseif (a < 0 .and. b < 0) then
-        minmod = max(a,b)
       else
-        minmod = 0
+        call output_line('Invalid type of flux transformation!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_calcCorrectionFCT')
+        call sys_halt()
       end if
-    end function minmod
 
-  end subroutine euler_calcLinearizedFCT
+      ! Disable the initialisation of edgewise correction factors
+      ! in all but the first iteration over variables
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_INITALPHA))
+    end do
+
+    ! Perform the correction step separately (if required)
+    if (nvariable .gt. 1) then
+      
+      ! Copy original specifier
+      iopSpec = ioperationSpec
+
+      ! Remove all tasks which might have been performed before
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_INITALPHA))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_ADINCREMENTS))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
+      iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
+      
+      call gfsys_buildDivVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rsolution, dscale, bclear, iopSpec, rresidual)
+    end if
+
+  end subroutine euler_calcCorrectionFCT
 
 end module euler_callback

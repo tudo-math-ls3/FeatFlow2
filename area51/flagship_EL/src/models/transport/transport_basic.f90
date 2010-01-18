@@ -14,7 +14,7 @@
 !#
 !# 2.) transp_setVariable
 !#     -> Sets the scalar variable from an UCD import
-!# 
+!#
 !# </purpose>
 !##############################################################################
 
@@ -30,7 +30,7 @@ module transport_basic
 
   implicit none
 
-  private 
+  private
 
   public :: transp_hasVelocityVector
   public :: transp_setVariable
@@ -41,7 +41,7 @@ module transport_basic
 
   ! no mass matrix, i.e., no time derivative
   integer, parameter, public :: MASS_ZERO       = 0
-  
+
   ! consistent mass matrix
   integer, parameter, public :: MASS_CONSISTENT = 1
 
@@ -162,7 +162,7 @@ module transport_basic
 
   ! Superconvergent patch recovery (face-based)
   integer, parameter, public :: ERREST_SPR_FACE      = 4
- 
+
   ! Limited averaging gradient recovery
   integer, parameter, public :: ERREST_LIMAVR        = 5
 
@@ -198,7 +198,7 @@ module transport_basic
   integer, parameter, public :: PERTURB_SQRTEPS = 2
 
 !</constantblock>
-  
+
 !</constants>
 
 contains
@@ -211,7 +211,7 @@ contains
 
 !<description>
     ! This function returns .true. if the velocity vector is given explicitly.
-    ! If there is no velocity vector, then it returns .false. 
+    ! If there is no velocity vector, then it returns .false.
 !</description>
 
 !<input>
@@ -235,11 +235,11 @@ contains
     end select
 
   end function transp_hasVelocityVector
-  
+
   !*****************************************************************************
 
 !<subroutine>
-  
+
   subroutine transp_setVariable(rexport, cvariable, rvectorBlock, iblock)
 
 !<description>
@@ -287,10 +287,10 @@ contains
 
     ! Set dimensions
     neq  = rvectorBlock%RvectorBlock(jblock)%NEQ
-    
+
     ! Set pointer
     call lsyssc_getbase_double(rvectorBlock%RvectorBlock(jblock), p_Ddata)
-    
+
     ! Get length of values
     call ucd_getVariable(rexport, cvariable, nlength=nlength)
     if (nlength .ne. neq) then
@@ -301,7 +301,7 @@ contains
 
     ! Get variable values
     call ucd_getVariable(rexport, cvariable, p_Ddata)
-    
+
   end subroutine transp_setVariable
 
 end module transport_basic

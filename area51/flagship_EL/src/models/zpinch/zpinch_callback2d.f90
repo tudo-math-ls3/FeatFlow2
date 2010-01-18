@@ -43,7 +43,7 @@ module zpinch_callback2d
   use storage
 
   implicit none
-  
+
   private
   public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
@@ -111,7 +111,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableScalar2d')
       call sys_halt()
     end select
-    
+
   end subroutine zpinch_setVariableScalar2d
 
   !*****************************************************************************
@@ -150,7 +150,7 @@ contains
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_setVariableBlock2d')
       call sys_halt()
     end select
-    
+
   end subroutine zpinch_setVariableBlock2d
 
   !*****************************************************************************
@@ -190,7 +190,7 @@ contains
       ! Retrieve solution vectors from colletion and set pointer
       rsolutionEuler     => rcollection%p_rvectorQuickAccess1
       rsolutionTransport => rcollection%p_rvectorQuickAccess2
-     
+
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. 1) then
         call output_line('Vector is not in interleave format!',&
@@ -201,19 +201,19 @@ contains
       ! Set pointers
       call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
       call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
       nullify(rsolutionEuler, p_DsolutionEuler)
       nullify(rsolutionTransport, p_DsolutionTransport)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector for the Euler model
@@ -251,7 +251,7 @@ contains
         call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       end if
       p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&    
+          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
                   p_DsolutionTransport(rcollection%IquickAccess(3)))
 
       ! Call the general callback function
@@ -283,8 +283,8 @@ contains
           0.25_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
                    p_DsolutionTransport(rcollection%IquickAccess(3))+&
                    p_DsolutionTransport(rcollection%IquickAccess(4))+&
-                   p_DsolutionTransport(rcollection%IquickAccess(5)))    
-      
+                   p_DsolutionTransport(rcollection%IquickAccess(5)))
+
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
@@ -310,7 +310,7 @@ contains
       else
         p_DsolutionTransport(rcollection%IquickAccess(1)) = 0.0_DP
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -320,7 +320,7 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine zpinch_hadaptCallbackScalar2d
 
   !*****************************************************************************
@@ -360,7 +360,7 @@ contains
       ! Retrieve solution vectors from colletion and set pointer
       rsolutionEuler     => rcollection%p_rvectorQuickAccess1
       rsolutionTransport => rcollection%p_rvectorQuickAccess2
-      
+
       ! Check if solution is stored in interleave format
       if (rsolutionEuler%nblocks .ne. NVAR2D) then
         call output_line('Vector is not in block format!',&
@@ -371,19 +371,19 @@ contains
       ! Set pointers
       call lsysbl_getbase_double(rsolutionEuler, p_DsolutionEuler)
       call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
-      
+
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify solution vectors
       nullify(rsolutionEuler, p_DsolutionEuler)
       nullify(rsolutionTransport, p_DsolutionTransport)
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-      
+
 
     case(HADAPT_OPR_ADJUSTVERTEXDIM)
       ! Resize solution vector for the Euler model
@@ -422,13 +422,13 @@ contains
         call lsysbl_getbase_double(rsolutionTransport, p_DsolutionTransport)
       end if
       p_DsolutionTransport(rcollection%IquickAccess(1)) =&
-          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&    
+          0.5_DP*(p_DsolutionTransport(rcollection%IquickAccess(2))+&
                   p_DsolutionTransport(rcollection%IquickAccess(3)))
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
-      
+
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector for the Euler model
       if (rsolutionEuler%NEQ .lt. NVAR2D*rcollection%IquickAccess(1)) then
@@ -483,7 +483,7 @@ contains
       else
         p_DsolutionTransport(rcollection%IquickAccess(1)) = 0.0_DP
       end if
-      
+
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
@@ -493,11 +493,11 @@ contains
       call flagship_hadaptCallback2d(iOperation, rcollection)
 
     end select
-    
+
   end subroutine zpinch_hadaptCallbackBlock2d
 
   !*****************************************************************************
-  
+
 !<subroutine>
 
   subroutine zpinch_calcMatRusConvectionP2d(&
@@ -505,11 +505,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -537,13 +537,13 @@ contains
     ! Compute convective coefficients
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
     k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
-    
+
 !!$    ! Compute artificial diffusion coefficient
 !!$    d_ij = max( abs(k_ij), abs(k_ji) )
-    
+
     ! Compute base indices
     idx = 4*(i-1); jdx = 4*(j-1)
-    
+
     ! Compute auxiliary variables
     ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
     vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
@@ -562,7 +562,7 @@ contains
     ! Compute dissipation tensor D_ij
     d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
                 abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
-    
+
   end subroutine zpinch_calcMatRusConvectionP2d
 
   !*****************************************************************************
@@ -574,11 +574,11 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the 
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
     ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
-    
+
 !<input>
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
@@ -602,7 +602,7 @@ contains
 
     ! Compute artificial diffusion coefficient
     d_ij = max( abs(k_ij), abs(k_ji) )
-    
+
   end subroutine zpinch_calcMatRusConvectionD2d
-  
+
 end module zpinch_callback2d
