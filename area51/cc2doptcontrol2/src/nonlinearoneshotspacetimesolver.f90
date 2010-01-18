@@ -428,10 +428,17 @@ contains
         
         dtempdef = ddefNorm / dinitDefNorm
         
-        rnlstsolver%p_rspaceTimePrec%depsAbs = min(&
-            max(rnlstsolver%dinexactNewtonEpsRel * rnlstsolver%depsRel,&
-                dtempDef**rnlstsolver%dinexactNewtonExponent),&
-            rnlstsolver%dinexactNewtonEpsRel*dtempdef) * dinitDefNorm
+        rnlstsolver%p_rspaceTimePrec%depsAbs = &
+            
+            dinitDefNorm * min(&
+        
+              ! Try to gain quadratic convergence, but get at most only a little but
+              ! more digits than depsRel.
+              max(rnlstsolver%dinexactNewtonEpsRel * rnlstsolver%depsRel,&
+                  dtempDef**rnlstsolver%dinexactNewtonExponent),&
+                
+              ! Get at least dinexactNewtonEpsRel.
+              rnlstsolver%dinexactNewtonEpsRel*dtempdef) 
         
         if (associated(rnlstsolver%p_rcgrSolver)) then
           ! For the coarse grid solver, we choose the same stopping criterion.
