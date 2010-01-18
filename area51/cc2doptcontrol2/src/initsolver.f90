@@ -2762,7 +2762,7 @@ contains
     ! Implement the Dirichlet boundary conditions.
     call tbc_implementBCsolution (rsettings%roptcBDC,rvector,&
         rsettings%rglobalData,rvectorSpace)
-
+        
     ! Release memory
     call lsysbl_releaseMatrix(rmassMatrix)
     call lsysbl_releaseVector (rvectorSpace)

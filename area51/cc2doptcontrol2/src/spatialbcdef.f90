@@ -1114,6 +1114,12 @@ contains
         d = d / (rboundaryRegion%dmaxParam - rboundaryRegion%dminParam)
         
         evalBoundary = mprim_getParabolicProfile (d,1.0_DP,dvalue) 
+        
+      case default
+        call output_line ('Invalid boundary condition type!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'evalBoundary')
+        call sys_halt()
+
       end select
     
     end function

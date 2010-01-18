@@ -1155,7 +1155,7 @@ contains
     type(t_optcPostprocessing) :: rpostproc
     
     ! Some timers
-    type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc
+    type(t_timer) :: rtotalTime,rinitTime,rsolverTime,rtimePostProc,rstartvectime
 
     ! Ok, let us start. 
     !
@@ -1206,10 +1206,22 @@ contains
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
     call init_getSpaceDiscrSettings (rparlist,rsettings%ssectionDiscrSpace,&
         rsettingsSpaceDiscr)
+
+    call stat_clearTimer (rstartvectime)
+    call stat_startTimer (rstartvectime)
+
     call init_initStartVector(p_rsettingsSolver,rsettingsSpaceDiscr,&
         p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
         rparlist,rsettings%ssectionSpaceTimePreprocessing,&
         p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete)
+    
+    call stat_stopTimer (rstartvectime)
+    
+    if (rsettings%routput%ioutputInit .ge. 1) then
+      call output_lbrk ()
+      call output_line ("Time for creation of the start vector = "//&
+          sys_sdL(rstartvectime%delapsedReal,10))
+    end if
     
     ! Implement the initial condition to the discrete RHS.
     call init_implementInitCondRHS (p_rsettingsSolver,rsolution,rrhsdiscrete)
@@ -1263,6 +1275,8 @@ contains
     call output_separator (OU_SEP_EQUAL)
     call output_line ("Time for initialisation            = "//&
         sys_sdL(rinitTime%delapsedReal,10))
+    call output_line ("Time for creation of the start vec = "//&
+        sys_sdL(rstartvectime%delapsedReal,10))
     call output_line ("Time for postprocessing            = "//&
         sys_sdL(rtimePostProc%delapsedReal,10))
     call output_line ("Time for solving                   = "//&
