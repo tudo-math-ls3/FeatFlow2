@@ -1562,7 +1562,9 @@ contains
       end if
       
       ! Create the basic analytic solution: Mesh, discretisation structure,...
-      call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
+      ! As we pass the mesh file here, we also pass the original ilevel
+      ! because the mesh has to be refined up to that.
+      call ansol_init (rflow,ilevel,&
           NDIM2D,smesh,rcollection%IquickAccess(1),&
           fget1LevelDiscretisation,rcollection,rboundary)
     

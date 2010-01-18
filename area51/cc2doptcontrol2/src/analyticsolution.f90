@@ -770,7 +770,8 @@ contains
     ! Create the vector holding the solution if not yet created.
     if (rsolution%ctype .eq. ANSOL_TP_MBUNDEFINED) then
       call tdiscr_initOneStepTheta (rsolution%rtimeDiscr,&
-          dstartTime, dendTime, ntimesteps, 1.0_DP)
+          dstartTime, dendTime - mod(ntimesteps,idelta)*(dendTime-dstartTime)/idelta, &
+          ntimesteps/idelta, 1.0_DP)
 
       call sptivec_initVector (rsolution%rnonstationary,&
           rsolution%rtimeDiscr,&

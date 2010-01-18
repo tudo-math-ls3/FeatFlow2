@@ -1509,7 +1509,7 @@ contains
     type(t_vectorBlock) :: rvector
     type(t_vectorScalar) :: rvectorScalar
     character(SYS_STRLEN) :: sfile,sarray
-    integer :: i,ilast
+    integer :: i,ilast,ifileidx
     logical :: bexists,brepeat
     integer :: hdata
     real(dp), dimension(:), pointer :: p_Ddata,p_Ddata2
@@ -1525,6 +1525,9 @@ contains
 
     ! Loop over the files
     do i=istart,iend,max(1,idelta)
+    
+      ! Index of the file. =0,1,2,...
+      ifileidx = (i-istart)/max(1,idelta)
     
       ! Form the filename
       write(sfile,sfilename) i
@@ -1544,7 +1547,7 @@ contains
 
           if ((i .eq. istart) .and. (rx%NEQtime .eq. 0)) then
             ! At the first file, create a space-time vector holding the data.
-            call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,iend-istart+1)
+            call sptivec_initVectorPlain (rx,rvectorScalar%NEQ,(iend-istart+1)/max(1,idelta))
           end if
           
           if (i .eq. istart) then
@@ -1556,9 +1559,9 @@ contains
             call output_line('Input vector has incorrect length; truncating.',&
                 OU_CLASS_WARNING,ssubroutine='sptivec_loadFromFileSequence')
             call lalg_copyVector(p_Ddata2,p_Ddata,min(size(p_Ddata2),size(p_Ddata)))
-            call exstor_setdata_storage (rx%p_IdataHandleList(1+i),hdata)
+            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),hdata)
           else
-            call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvectorScalar%h_Ddata)
+            call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvectorScalar%h_Ddata)
           end if
     
         else
@@ -1571,7 +1574,7 @@ contains
             call sptivec_initVector (rx,1+iend-istart,rblockDiscretisation)
           end if         
           ! Save the data
-          call exstor_setdata_storage (rx%p_IdataHandleList(1+i),rvector%h_Ddata)
+          call exstor_setdata_storage (rx%p_IdataHandleList(1+ifileidx),rvector%h_Ddata)
           
         end if
         
@@ -1590,13 +1593,13 @@ contains
           ! Copy the data from the last known solution to the current one.
           call exstor_copy (&
               rx%p_IdataHandleList(1+ilast),&
-              rx%p_IdataHandleList(1+i))
+              rx%p_IdataHandleList(1+ifileidx))
         else
           call output_line ('Warning: Unable to load file "'//trim(sfile) &
               //'". Assuming zero!', ssubroutine='sptivec_loadFromFileSequence')
         
           ! Clear that array. Zero solution.
-          call exstor_clear (rx%p_IdataHandleList(1+i))
+          call exstor_clear (rx%p_IdataHandleList(1+ifileidx))
         end if
       end if
     
