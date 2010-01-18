@@ -8,7 +8,7 @@
 !# group-finite element formulation to systems of conservation laws.
 !# The technique was proposed by C.A.J. Fletcher in:
 !#
-!#     C.A.J. Fletcher, "The group finite element formulation"
+!#     C.A.J. Fletcher, The group finite element formulation
 !#     Computer Methods in Applied Mechanics and Engineering (ISSN
 !#     0045-7825), vol. 37, April 1983, p. 225-244.
 !#
@@ -24,8 +24,8 @@
 !# starting point for systems of conservation laws, the reader is
 !# referred to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction
-!#     II. Compressible Euler Equations", In: D. Kuzmin et al. (eds),
+!#     D. Kuzmin and M. Moeller, Algebraic flux correction
+!#     II. Compressible Euler Equations, In: D. Kuzmin et al. (eds),
 !#     Flux-Corrected Transport: Principles, Algorithms, and
 !#     Applications, Springer, 2005, 207-250.
 !#
@@ -33,7 +33,7 @@
 !# comments of the subroutine implementing the corresponding
 !# discretisation schemes. All methods are based on the stabilisation
 !# structure t_afcstab which is defined in the underlying module
-!# "afcstabilisation". The initialisation as a system stabilisation
+!# afcstabilisation. The initialisation as a system stabilisation
 !# structure is done by the routine gfsys_initStabilisation.
 !#
 !# There are three types of routines. The gfsys_buildDivOperator
@@ -55,12 +55,12 @@
 !# factor.
 !#
 !# The third type of routines is used to assemble the Jacobian matrix
-!# for Newton's method. Here, the exact Jacobian matrix is
+!# for Newton`s method. Here, the exact Jacobian matrix is
 !# approximated by means of second-order divided differences whereby
-!# the "perturbation parameter" is specified by the user. You should
+!# the perturbation parameter is specified by the user. You should
 !# be aware of the fact, that in general the employed flux limiters
 !# are not differentiable globally so that the construction of the
-!# Jacobian matrix is somehow "delicate". Even though the routines
+!# Jacobian matrix is somehow delicate. Even though the routines
 !# will produce some matrix without warnings, this matrix may be
 !# singular and/or ill-conditioned.
 !#
@@ -339,7 +339,7 @@ contains
       call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -358,8 +358,8 @@ contains
       call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 4 nodal vectors for P's, Q's and R's,
-      ! whereby the same memory is used for R's and P's
+      ! We need 4 nodal vectors for P`s, Q`s and R`s,
+      ! whereby the same memory is used for R`s and P`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -392,8 +392,8 @@ contains
       call storage_new('gfsys_initStabilisationBlock', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 4 nodal vectors for P's and Q's. The R's can be stored
-      ! in th same memory as the P's since they are not needed once the
+      ! We need 4 nodal vectors for P`s and Q`s. The R`s can be stored
+      ! in th same memory as the P`s since they are not needed once the
       ! nodal correction factos have been computed.
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
@@ -496,7 +496,7 @@ contains
       call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -515,8 +515,8 @@ contains
       call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 4 nodal vectors for P's, Q's and R's,
-      ! whereby the same memory is used for R's and P's
+      ! We need 4 nodal vectors for P`s, Q`s and R`s,
+      ! whereby the same memory is used for R`s and P`s
       allocate(rafcstab%RnodalVectors(7))
       do i = 1, 7
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -549,8 +549,8 @@ contains
       call storage_new('gfsys_initStabilisationScalar', 'IverticesAtEdge',&
           Isize, ST_INT, rafcstab%h_IverticesAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 4 nodal vectors for P's and Q's. The R's can be stored
-      ! in th same memory as the P's since they are not needed once the
+      ! We need 4 nodal vectors for P`s and Q`s. The R`s can be stored
+      ! in th same memory as the P`s since they are not needed once the
       ! nodal correction factos have been computed.
       ! Moreover, we need one additional vector for the approximation
       ! to the time derivative. However, this vector will be addressed
@@ -4443,9 +4443,9 @@ contains
     !
     ! 1) Initialise the edgewise correction factors (alpha).
     !
-    ! 2) Compute the antidiffusive increments (Pp, Dpm)
+    ! 2) Compute the antidiffusive increments (Pp, Pm)
     !
-    ! 3) Compute the local solution bounds (Qp, Dqm).
+    ! 3) Compute the local solution bounds (Qp, Qm).
     !
     ! 3) Compute the nodal correction factors (Rp, Rm).
     !
@@ -4732,7 +4732,7 @@ contains
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
 
-      ! Clear P's
+      ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
@@ -4778,7 +4778,7 @@ contains
       real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Diff
       integer :: iedge,i,j
 
-      ! Clear P's
+      ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
@@ -4831,7 +4831,7 @@ contains
       real(DP), dimension(NVAR) :: Diff
       integer :: iedge,i,j
 
-      ! Clear Q's
+      ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
@@ -4871,7 +4871,7 @@ contains
       real(DP), dimension(NVARtransformed) :: Diff
       integer :: iedge,i,j
 
-      ! Clear Q's
+      ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
@@ -5233,24 +5233,24 @@ contains
     !
     ! 1. Semi-explicit FEM-FCT algorithm
     !
-    !    This is the classical algorithm which makes use of Zalesak's
+    !    This is the classical algorithm which makes use of Zalesak`s
     !    flux limiter and recomputes and auxiliary positivity-
     !    preserving solution in each iteration step.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 2. Iterative FEM-FCT algorithm
     !
     !    This is an extension of the classical algorithm which makes
-    !    use of Zalesak's flux limiter and tries to include the
+    !    use of Zalesak`s flux limiter and tries to include the
     !    amount of rejected antidiffusion in subsequent iteration
     !    steps. The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 3. Semi-implicit FEM-FCT algorithm
@@ -5263,9 +5263,9 @@ contains
     !    the actual target flux.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and D. Kourounis, "A semi-implicit FEM-FCT
+    !    D. Kuzmin and D. Kourounis, A semi-implicit FEM-FCT
     !    algorithm for efficient treatment of time-dependent
-    !    problems", Ergebnisberichte Angew. Math. 302, University of
+    !    problems, Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
 !</description>
 
@@ -5323,9 +5323,9 @@ contains
     !
     ! 1) Initialise the edgewise correction factors (alpha).
     !
-    ! 2) Compute the antidiffusive increments (Pp, Dpm)
+    ! 2) Compute the antidiffusive increments (Pp, Pm)
     !
-    ! 3) Compute the local solution bounds (Qp, Dqm).
+    ! 3) Compute the local solution bounds (Qp, Qm).
     !
     ! 3) Compute the nodal correction factors (Rp, Rm).
     !
@@ -5614,7 +5614,7 @@ contains
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
 
-      ! Clear P's
+      ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
@@ -5660,7 +5660,7 @@ contains
       real(DP), dimension(NVARtransformed) :: F_ij,F_ji,Diff
       integer :: iedge,i,j
 
-      ! Clear P's
+      ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
@@ -5713,7 +5713,7 @@ contains
       real(DP), dimension(NVAR) :: Diff
       integer :: iedge,i,j
 
-      ! Clear Q's
+      ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
@@ -5753,7 +5753,7 @@ contains
       real(DP), dimension(NVARtransformed) :: Diff
       integer :: iedge,i,j
 
-      ! Clear Q's
+      ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 

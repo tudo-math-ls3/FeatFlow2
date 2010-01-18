@@ -10,7 +10,7 @@
 !# i.e. conservation laws.  The technique was proposed by
 !# C.A.J. Fletcher in:
 !#
-!#     C.A.J. Fletcher, "The group finite element formulation"
+!#     C.A.J. Fletcher, The group finite element formulation
 !#     Computer Methods in Applied Mechanics and Engineering (ISSN
 !#     0045-7825), vol. 37, April 1983, p. 225-244.
 !#
@@ -26,8 +26,8 @@
 !# starting point for scalar conservation laws, the reader is referred
 !# to the book chapter
 !#
-!#     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-!#     conservation laws", In: D. Kuzmin et al. (eds), Flux-Corrected
+!#     D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+!#     conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
 !#     Transport: Principles, Algorithms, and Applications, Springer,
 !#     2005, 155-206.
 !#
@@ -35,15 +35,15 @@
 !# comments of the subroutine implementing the corresponding
 !# discretisation schemes. All methods are based on the stabilisation
 !# structure t_afcstab which is defined in the underlying module
-!# "afcstabilisation". The initialisation as a scalar stabilisation
+!# afcstabilisation. The initialisation as a scalar stabilisation
 !# structure is done by the routine gfsc_initStabilisation.
 !# 
 !# There are three types of routines. The gfsc_buildXXXOperator
 !# routines can be used to assemble the discrete convection or
 !# diffusion operators resulting from the standard Galerkin finite
 !# element discretisation plus some discretely defined artificial
-!# diffusion. For convective terms, this technique is termed "discrete
-!# upwinding", whereas for physical diffusion operators this approach
+!# diffusion. For convective terms, this technique is termed discrete
+!# upwinding, whereas for physical diffusion operators this approach
 !# ensures that the discrete maximum principle holds. Consequently,
 !# the term DMP is adopted.
 !#
@@ -58,12 +58,12 @@
 !# factor.
 !#
 !# The third type of routines is used to assemble the Jacobian matrix
-!# for Newton's method. Here, the exact Jacobian matrix is
+!# for Newton`s method. Here, the exact Jacobian matrix is
 !# approximated by means of second-order divided differences whereby
-!# the "perturbation parameter" is specified by the user. You should
+!# the perturbation parameter is specified by the user. You should
 !# be aware of the fact, that in general the employed flux limiters
 !# are not differentiable globally so that the construction of the
-!# Jacobian matrix is somehow "delicate". Even though the routines
+!# Jacobian matrix is somehow delicate. Even though the routines
 !# will produce some matrix without warnings, this matrix may be
 !# singular and/or ill-conditioned.
 !#
@@ -329,7 +329,7 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(7))
       do i = 1, 7
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -377,7 +377,7 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -409,7 +409,7 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -448,7 +448,7 @@ contains
       call storage_new('gfsc_initStabilisation', 'DcoefficientsAtEdge',&
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
-      ! We need 6 nodal vectors for P's, Q's and R's
+      ! We need 6 nodal vectors for P`s, Q`s and R`s
       allocate(rafcstab%RnodalVectors(6))
       do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
@@ -655,8 +655,8 @@ contains
     !     elimination of negative off-diagonal entries from the Galerkin
     !     operator. This technique is for instance described in the reference:
     !
-    !     D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !     conservation laws", In: D. Kuzmin et al. (eds), Flux-Corrected
+    !     D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !     conservation laws, In: D. Kuzmin et al. (eds), Flux-Corrected
     !     Transport: Principles,  Algorithms, and Applications,
     !     Springer, 2005, 155-206.
     !
@@ -668,7 +668,7 @@ contains
     !     numbers i and j and the matrix positions ij/ji of the edge (i,j).
     !     For upwind-biased flux limiters the same data are stored but the
     !     following orientation convention is applied. Node i is located 
-    !     "upwind" and corresponds to the column number whose entry has been
+    !     upwind and corresponds to the column number whose entry has been
     !     eliminated.
 !</description>
 
@@ -2479,24 +2479,24 @@ contains
     ! ~~~~~~~~~~~~~~~~~
     ! 1. Semi-explicit FEM-FCT algorithm
     !
-    !    This is the classical algorithm which makes use of Zalesak's
+    !    This is the classical algorithm which makes use of Zalesak`s
     !    flux limiter and recomputes and auxiliary positivity-
     !    preserving solution in each iteration step. 
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 2. Iterative FEM-FCT algorithm
     !
     !    This is an extension of the classical algorithm which makes
-    !    use of Zalesak's flux limiter and tries to include the
+    !    use of Zalesak`s flux limiter and tries to include the
     !    amount of rejected antidiffusion in subsequent iteration
     !    steps. The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 3. Semi-implicit FEM-FCT algorithm
@@ -2509,9 +2509,9 @@ contains
     !    the actual target flux.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and D. Kourounis, "A semi-implicit FEM-FCT
+    !    D. Kuzmin and D. Kourounis, A semi-implicit FEM-FCT
     !    algorithm for efficient treatment of time-dependent
-    !    problems", Ergebnisberichte Angew. Math. 302, University of
+    !    problems, Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
     !
     ! Linearised FEM-FCT
@@ -2525,12 +2525,12 @@ contains
     !    scheme. By virtue of this linearisation, the costly
     !    evaluation of correction factors needs to be performed just
     !    once per time step. Furthermore, no questionable
-    !    `prelimiting' of antidiffusive fluxes is required, which
+    !    `prelimiting` of antidiffusive fluxes is required, which
     !    eliminates the danger of artificial steepening.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin, "Explicit and implicit FEM-FCT algorithms with
-    !    flux linearization", Ergebnisberichte Angew. Math. 358,
+    !    D. Kuzmin, Explicit and implicit FEM-FCT algorithms with
+    !    flux linearization, Ergebnisberichte Angew. Math. 358,
     !    University of Dortmund, 2008.
 !</description>
 
@@ -2832,7 +2832,7 @@ contains
       real(DP) :: f_ij
       integer :: iedge,i,j
 
-      ! Clear P's
+      ! Clear P`s
       call lalg_clearVector(pp)
       call lalg_clearVector(pm)
       
@@ -2873,7 +2873,7 @@ contains
       real(DP) :: u_ij
       integer :: iedge,i,j
 
-      ! Clear Q's
+      ! Clear Q`s
       call lalg_clearVector(qp)
       call lalg_clearVector(qm)
 
@@ -3207,24 +3207,24 @@ contains
     ! ~~~~~~~~~~~~~~~~~
     ! 1. Semi-explicit FEM-FCT algorithm
     !
-    !    This is the classical algorithm which makes use of Zalesak's
+    !    This is the classical algorithm which makes use of Zalesak`s
     !    flux limiter and recomputes and auxiliary positivity-
     !    preserving solution in each iteration step. 
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 2. Iterative FEM-FCT algorithm
     !
     !    This is an extension of the classical algorithm which makes
-    !    use of Zalesak's flux limiter and tries to include the
+    !    use of Zalesak`s flux limiter and tries to include the
     !    amount of rejected antidiffusion in subsequent iteration
     !    steps. The details of this method can be found in:
     !
-    !    D. Kuzmin and M. Moeller, "Algebraic flux correction I. Scalar
-    !    conservation laws", Ergebnisberichte Angew. Math. 249,
+    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
+    !    conservation laws, Ergebnisberichte Angew. Math. 249,
     !    University of Dortmund, 2004.
     !
     ! 3. Semi-implicit FEM-FCT algorithm
@@ -3237,9 +3237,9 @@ contains
     !    the actual target flux.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin and D. Kourounis, "A semi-implicit FEM-FCT
+    !    D. Kuzmin and D. Kourounis, A semi-implicit FEM-FCT
     !    algorithm for efficient treatment of time-dependent
-    !    problems", Ergebnisberichte Angew. Math. 302, University of
+    !    problems, Ergebnisberichte Angew. Math. 302, University of
     !    Dortmund, 2005.
     !
     ! Linearised FEM-FCT
@@ -3253,12 +3253,12 @@ contains
     !    scheme. By virtue of this linearisation, the costly
     !    evaluation of correction factors needs to be performed just
     !    once per time step. Furthermore, no questionable
-    !    `prelimiting' of antidiffusive fluxes is required, which
+    !    `prelimiting` of antidiffusive fluxes is required, which
     !    eliminates the danger of artificial steepening.
     !    The details of this method can be found in:
     !
-    !    D. Kuzmin, "Explicit and implicit FEM-FCT algorithms with
-    !    flux linearization", Ergebnisberichte Angew. Math. 358,
+    !    D. Kuzmin, Explicit and implicit FEM-FCT algorithms with
+    !    flux linearization, Ergebnisberichte Angew. Math. 358,
     !    University of Dortmund, 2008.
 !</description>
 
@@ -4136,15 +4136,15 @@ contains
     !
     ! A detailed description of the FEM-TVD limiter in general is given in:
     !
-    !     D. Kuzmin and S. Turek, "Multidimensional FEM-TVD paradigm
-    !     for convection-dominated flows" In:  Proceedings of the 
+    !     D. Kuzmin and S. Turek, Multidimensional FEM-TVD paradigm
+    !     for convection-dominated flows In:  Proceedings of the 
     !     IV European Congress on Computational Methods in Applied Sciences
     !     and Engineering (ECCOMAS 2004). Vol. II, ISBN 951-39-1869-6.
     !
     ! The method actually implemented in this routine is described in:
     !
-    !     D. Kuzmin, "Algebraic flux correction for finite element
-    !     discretizations of coupled systems" In: E. Onate,
+    !     D. Kuzmin, Algebraic flux correction for finite element
+    !     discretizations of coupled systems In: E. Onate,
     !     M. Papadrakakis and B. Schrefler (eds.) Computational
     !     Methods for Coupled Problems in Science and Engineering II,
     !     CIMNE, Barcelona, 2007, 653-656.
@@ -4236,7 +4236,7 @@ contains
       call lalg_clearVectorDble(qp)
       call lalg_clearVectorDble(qm)
 
-      ! Assemble P's and Q's
+      ! Assemble P`s and Q`s
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -4251,14 +4251,14 @@ contains
         ! Determine solution difference
         diff = tstep*(u(i)-u(j))
         
-        ! Prelimit the antidiffusive flux F'_IJ=MIN(-P_IJ,L_JI)(U_I-U_J)
+        ! Prelimit the antidiffusive flux F`_IJ=MIN(-P_IJ,L_JI)(U_I-U_J)
         f_ij = min(d_ij,l_ji)*diff; flux(iedge) = f_ij
         
-        ! Assemble P's accordingly
+        ! Assemble P`s accordingly
         pp(i) = pp(i)+max(0.0_DP, f_ij)
         pm(i) = pm(i)+min(0.0_DP, f_ij)
         
-        ! Assemble Q's
+        ! Assemble Q`s
         qp(i) = qp(i)+max(0.0_DP,-f_ij)
         qp(j) = qp(j)+max(0.0_DP, f_ij)
         qm(i) = qm(i)+min(0.0_DP,-f_ij)
@@ -4362,9 +4362,9 @@ contains
     !
     ! A detailed description of the FEM-GP limiter in general is given in:
     !
-    !     D. Kuzmin, "On the design of general-purpose flux 
+    !     D. Kuzmin, On the design of general-purpose flux 
     !     limiters for implicit FEM with a consistent mass matrix.
-    !     I. Scalar convection."
+    !     I. Scalar convection.
     !     J. Comput. Phys.  219  (2006) 513-531.
     !
     ! Note however, that is is quite expensive and not recommended as
@@ -4476,7 +4476,7 @@ contains
       call lalg_clearVectorDble(qp)
       call lalg_clearVectorDble(qm)
       
-      ! Assemble P' and Q's
+      ! Assemble P`s and Q`s
       do iedge = 1, NEDGE
         
         ! Determine indices
@@ -4503,13 +4503,13 @@ contains
           f_ij = p_ij*diff
         end if
         
-        ! Prelimit the antidiffusive flux F'_IJ=MIN(-P_IJ,L_JI)(U_I-U_J)
+        ! Prelimit the antidiffusive flux F`_IJ=MIN(-P_IJ,L_JI)(U_I-U_J)
         pf_ij = min(p_ij,l_ji)*diff; fluxExpl(iedge) = pf_ij
         
-        ! Compute the remaining flux dF_IJ=F_IJ-F'_IJ
+        ! Compute the remaining flux dF_IJ=F_IJ-F`_IJ
         df_ij = f_ij-pf_ij; fluxImpl(iedge) = df_ij
         
-        ! Assemble P's accordingly
+        ! Assemble P`s accordingly
         pp(i) = pp(i)+max(0.0_DP,  f_ij)
         pm(i) = pm(i)+min(0.0_DP,  f_ij)
         pp(j) = pp(j)+max(0.0_DP,-df_ij)
@@ -4518,7 +4518,7 @@ contains
         q_ij = m_ij/tstep+l_ij
         q_ji = m_ij/tstep+l_ji
 
-        ! Assemble Q's
+        ! Assemble Q`s
         qp(i) = qp(i)+q_ij*max(0.0_DP,-diff)
         qm(i) = qm(i)+q_ij*min(0.0_DP,-diff)
         qp(j) = qp(j)+q_ji*max(0.0_DP, diff)
@@ -7113,8 +7113,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -7142,8 +7142,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -7328,7 +7328,7 @@ contains
       !-------------------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
-      !     "eliminate" the contribution of the edge IJ for the
+      !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values u_i and u_j.
       !
       ! (2) perturbed values: The local Ps and Qs require the 
@@ -7782,8 +7782,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     pure subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -7811,8 +7811,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matric structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     pure subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -8022,7 +8022,7 @@ contains
       !-------------------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
-      !     "eliminate" the contribution of the edge IJ for the
+      !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values u_i and u_j.
       !
       ! (2) perturbed values: The local Ps and Qs require the 
@@ -9734,8 +9734,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -9763,8 +9763,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -10244,7 +10244,7 @@ contains
       !------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
-      !     "eliminate" the contribution of the edge IJ for the
+      !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values u_i and u_j.
       !------------------------------------------------------------
       ! Determine coefficients
@@ -10362,7 +10362,7 @@ contains
             qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-f_ij)
             qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-f_ij)
             
-            ! For node "l" opposite to k which is the downwind node
+            ! For node l opposite to k which is the downwind node
             qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, f_ij)
             qmloc(iperturb,iloc) = qmloc(iperturb,iloc)+min(0.0_DP, f_ij)
 
@@ -10372,7 +10372,7 @@ contains
             qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP, f_ij)
             qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP, f_ij)
             
-            ! For node "l" opposite to k which is the upwind node
+            ! For node l opposite to k which is the upwind node
             pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
             pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
             qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-f_ij)
@@ -10843,8 +10843,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -10872,8 +10872,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -11381,7 +11381,7 @@ contains
       !------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
-      !     "eliminate" the contribution of the edge IJ for the
+      !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values u_i and u_j.
       !------------------------------------------------------------
       ! Determine coefficients
@@ -11566,7 +11566,7 @@ contains
             qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP, diff)*q_ij
             qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP, diff)*q_ij
                        
-            ! For node "l" opposite to k which is the downwind node
+            ! For node l opposite to k which is the downwind node
             pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP,-df_ij)
             pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP,-df_ij)
             qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP,-diff)*q_ji
@@ -11580,7 +11580,7 @@ contains
             qploc(iperturb,0) = qploc(iperturb,0)+max(0.0_DP,-diff)*q_ji
             qmloc(iperturb,0) = qmloc(iperturb,0)+min(0.0_DP,-diff)*q_ji
             
-            ! For node "l" opposite to k which is the upwind node
+            ! For node l opposite to k which is the upwind node
             pploc(iperturb,iloc) = pploc(iperturb,iloc)+max(0.0_DP, f_ij)
             pmloc(iperturb,iloc) = pmloc(iperturb,iloc)+min(0.0_DP, f_ij)
             qploc(iperturb,iloc) = qploc(iperturb,iloc)+max(0.0_DP, diff)*q_ij
@@ -11999,8 +11999,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat7(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -12028,8 +12028,8 @@ contains
     ! The separator is initialied by the column separator (increased
     ! by one if this is necessary for matrix format 7).
     ! Based on the matrix structure given by Kld/Kcol, the separator
-    ! is "moved" to the given column "k". For efficiency reasons, only
-    ! those entries are considered which are present in column "k".
+    ! is moved to the given column k. For efficiency reasons, only
+    ! those entries are considered which are present in column k.
     subroutine adjustKsepMat9(Kld, Kcol, k, Ksep)
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: k
@@ -12204,7 +12204,7 @@ contains
       !------------------------------------------------------------
       ! (1) unperturbed values: Retrieve the global Ps and Qs and
       !     copy their content to the local ones. Moreover,
-      !     "eliminate" the contribution of the edge IJ for the
+      !     eliminate the contribution of the edge IJ for the
       !     unperturbed solution values u_i and u_j.
       !------------------------------------------------------------
       ! Determine coefficients
@@ -12735,7 +12735,7 @@ contains
         ! Set pointer for consistent mass matrix
         call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
         
-        ! There are only "initial" fluxes
+        ! There are only initial fluxes
         call doFluxesConsMass(p_IverticesAtEdge,&
             p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_u1, p_u2,&
             dscale, dscale, p_flux)
@@ -12746,7 +12746,7 @@ contains
         ! Do not include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
 
-        ! There are only "initial" fluxes
+        ! There are only initial fluxes
         call doFluxesNoMass(p_IverticesAtEdge,&
             p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_flux)
 
