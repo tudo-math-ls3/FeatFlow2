@@ -254,7 +254,7 @@ sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 #   cevaluateFlux(1) =
 #     0.5 0.5 0.5 0.0
 
-cevaluateFlux(0) =
+cevaluateFluxValues(0) =
 
 # Whether to write the point values to a file
 
