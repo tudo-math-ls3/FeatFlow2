@@ -1745,7 +1745,7 @@ contains
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 1D using tensodial dissipation.
+    ! FCT algorithms in 1D using tensorial dissipation.
 !</description>
 
 !<input>

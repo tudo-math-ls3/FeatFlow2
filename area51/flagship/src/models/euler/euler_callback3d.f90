@@ -928,7 +928,7 @@ contains
 
 !<description>
     ! This subroutine computes the raw antidiffusive fluxes for
-    ! FCT algorithms in 3D using tensodial dissipation.
+    ! FCT algorithms in 3D using tensorial dissipation.
 !</description>
 
 !<input>
