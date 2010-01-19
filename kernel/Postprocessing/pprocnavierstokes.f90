@@ -28,6 +28,9 @@
 !#     -> Calculate the body forces acting in some part of the domain
 !#     -> Volume integral working on mixed meshes, based on a
 !#        characteristic function of the subdomain where to integrate
+!#
+!# 6.) ppns2D_calcFluxThroughLine
+!#     -> Calculate the flux through a line
 !# </purpose>
 !#########################################################################
 
@@ -54,6 +57,7 @@ module pprocnavierstokes
   use bcassembly
   use transformation
   use feevaluation
+  use pprocintegrals
 
   implicit none
   
@@ -99,7 +103,7 @@ module pprocnavierstokes
   public :: ppns2D_streamfct_uniform
   public :: ppns2D_bdforces_line
   public :: ppns2D_bdforces_vol
-
+  public :: ppns2D_calcFluxThroughLine
 
 contains
 
@@ -3261,6 +3265,146 @@ contains
     Dforces = 0.0_DP
     Dforces(1:NDIM2D) = 2.0_DP/dpf2 * (DintU(:) + DintP(:))
 
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine ffluxCallback (nelements,npointsPerElement,Ielements,&
+                                  Dpoints,Dvalues,rcollection,&
+                                  DpointsRef,Djac,Ddetj)
+  
+  ! Calculates the flux in a set of points on a set of elements.
+  
+  integer, intent(in)                               :: nelements
+  integer, intent(in)                               :: npointsPerElement
+  integer, dimension(:), intent(in)                 :: Ielements
+  real(DP), dimension(:,:,:), intent(in)            :: Dpoints
+  type(t_collection), intent(inout), optional       :: rcollection
+  real(DP), dimension(:,:,:),intent(in), optional   :: DpointsRef
+  real(DP), dimension(:,:,:),intent(in), optional   :: Djac
+  real(DP), dimension(:,:),intent(in), optional     :: Ddetj
+
+  real(DP), dimension(:,:), intent(out)             :: Dvalues
+
+    ! local variables
+    real(DP), dimension(:,:,:), allocatable :: Dvelocity
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP) :: dn1,dn2
+    integer :: iel,ipt
+    
+    ! Calculate the velocity in all the points.
+    allocate(Dvelocity(npointsPerElement,nelements,2))
+    
+    ! For that purpose, take the velocity vector from the collection.
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    
+    ! Calculate the X-velocity
+    call fevl_evaluate_sim (DER_FUNC, Dvelocity(:,:,1), p_rvector%RvectorBlock(1), &
+        Dpoints, Ielements)
+
+    ! Calculate the Y-velocity
+    call fevl_evaluate_sim (DER_FUNC, Dvelocity(:,:,2), p_rvector%RvectorBlock(2), &
+        Dpoints, Ielements)
+        
+    ! Get the normal of the line
+    dn1 = rcollection%DquickAccess(1)
+    dn2 = rcollection%DquickAccess(2)
+    
+    ! Calculate the flux
+    do iel = 1,nelements
+      do ipt = 1,npointsPerElement
+        Dvalues(ipt,iel) = Dvelocity(ipt,iel,1)*dn1 + Dvelocity(ipt,iel,2)*dn2
+      end do
+    end do
+    
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine ppns2D_calcFluxThroughLine (rvector,Dstart,Dend,dflux,&
+      ccubature,nlevels)
+  
+!<description>
+  ! Calculates the flux through a line given by two points.
+!</description>
+
+!<input>
+  ! Velocity vector.
+  type(t_vectorBlock), intent(in), target :: rvector
+  
+  ! Starting point of the line.
+  real(dp), dimension(:), intent(in) :: Dstart
+
+  ! Ending point of the line.
+  real(dp), dimension(:), intent(in) :: Dend
+  
+  ! OPTIONAL: Basic 1D cubature rule tu use for line integration.
+  integer(I32), intent(in), optional :: ccubature
+  
+  ! OPTIONAL: Refinement of the cubature rule. >= 0.
+  ! The line Dstart..Dend will be divided into 2**idegree intervals and a
+  ! summed cubature formula will be applied.
+  integer, intent(in), optional :: nlevels
+  
+!</input>
+
+!<output>
+  ! The calculated flux.
+  real(DP), intent(out) :: dflux
+!</output>
+
+!</subroutine>
+
+    type(t_collection) :: rcollection
+    real(dp) :: dnorm,dsize,dlocalh
+    real(DP), dimension(NDIM2D) :: Dbox
+    integer :: ireflevel,nel
+    integer(I32) :: ccub
+    
+    ! Default settings
+    ccub = CUB_G3_1D
+    if (present(ccubature)) ccub = ccubature
+    
+    ! Initialise the collection for the calculation
+    rcollection%p_rvectorQuickAccess1 => rvector
+    
+    if (.not. present(nlevels)) then
+      ! Normal vector
+      dnorm = sqrt((Dend(1)-Dstart(1))**2 + (Dend(2)-Dstart(2))**2)
+      if (dnorm .eq. 0.0_DP) then
+        ! No line, no flux...
+        dflux = 0
+        return
+      end if
+      rcollection%DquickAccess(1) = -(Dend(2)-Dstart(2)) / dnorm
+      rcollection%DquickAccess(2) = (Dend(1)-Dstart(1)) / dnorm
+      
+      ! To compute the level of refinement of the cubature rule, we make a guess.
+      Dbox(1:2) = rvector%p_rblockDiscr%p_rtriangulation%DboundingBoxMax(1:2) &
+          - rvector%p_rblockDiscr%p_rtriangulation%DboundingBoxMin(1:2)
+      dsize = min(Dbox(1),Dbox(2))
+      
+      ! In the mean, an element has this size:
+      dlocalh = dsize / sqrt(real(rvector%p_rblockDiscr%p_rtriangulation%NEL,dp))
+      
+      ! Divide the length of the line by this, that's the mean number of elements
+      ! on the line.
+      nel = min(int(dnorm/dlocalh),1)
+      
+      ! Every refinement gives 2 elements, so the log2 of nel is the cubature
+      ! refinement. We add 2 levels as 'safety' buffer.
+      ireflevel = log(real(nel,dp))/log(2._DP) + 2
+    else
+      ! Take the given one.
+      ireflevel = nlevels
+    end if
+      
+    ! Go...
+    call ppint_lineIntegral (dflux,rvector%p_rblockDiscr%p_rtriangulation,&
+        Dstart,Dend,ccub,ireflevel,ffluxCallback,rcollection)
+    
   end subroutine
 
 end module
