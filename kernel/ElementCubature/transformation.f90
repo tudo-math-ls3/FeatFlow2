@@ -346,6 +346,7 @@ module transformation
   public :: trafo_calcTrafo_pyra3d 
   public :: trafo_calcTrafo_prism3d
   public :: trafo_igetReferenceDimension
+  public :: trafo_calcBackTrafo_hexa
 
 contains
 
@@ -4338,7 +4339,7 @@ contains
   ! in real coordinates.
   !
 !<input>
-  ! Coordinates of the four points forming the element.
+  ! Coordinates of the eight points forming the element.
   ! Dcoord(1,.) = x-coordinates,
   ! Dcoord(2,.) = y-coordinates.
   ! Dcoord(3,.) = z-coordinates.
@@ -4454,18 +4455,24 @@ contains
                (-DCoord(3,1)+DCoord(3,2)-DCoord(3,3)+DCoord(3,4)&
                 +DCoord(3,5)-DCoord(3,6)+DCoord(3,7)-DCoord(3,8))
   
-  
-  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
-              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
-              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)  
-
-  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
-              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
-              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)  
-
-  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
-              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
-              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)  
+  !  dparx = a1 + a2*xi1 + a3*xi2 + a4*xi3 + a5*xi1*xi2 
+  !      + a6*xi1*xi3 + a7*xi2*xi3 + a8*xi1*xi2*xi3  dxreal,dyreal,dzreal
+  ! DEBUG
+!  DPoints(1)=-1.0_dp
+!  DPoints(2)=-1.0_dp
+!  DPoints(3)=-1.0_dp
+!  
+!  dparx_old = DjacPrep(1)+DjacPrep(2)*DPoints(1)+DjacPrep(3)*DPoints(2)+DjacPrep(4)*DPoints(3) &
+!              +DjacPrep(5)*DPoints(1)*DPoints(2)+ DjacPrep(6)*DPoints(1)*DPoints(3) &
+!              +DjacPrep(7)*DPoints(2)*DPoints(3)+DjacPrep(8)*DPoints(1)*DPoints(2)*DPoints(3)  
+!
+!  dpary_old = DjacPrep(9)+DjacPrep(10)*DPoints(1)+DjacPrep(11)*DPoints(2)+DjacPrep(12)*DPoints(3) &
+!              +DjacPrep(13)*DPoints(1)*DPoints(2)+ DjacPrep(14)*DPoints(1)*DPoints(3) &
+!              +DjacPrep(15)*DPoints(2)*DPoints(3)+DjacPrep(16)*DPoints(1)*DPoints(2)*DPoints(3)  
+!
+!  dparz_old = DjacPrep(17)+DjacPrep(18)*DPoints(1)+DjacPrep(19)*DPoints(2)+DjacPrep(20)*DPoints(3) &
+!              +DjacPrep(21)*DPoints(1)*DPoints(2)+ DjacPrep(22)*DPoints(1)*DPoints(3) &
+!              +DjacPrep(23)*DPoints(2)*DPoints(3)+DjacPrep(24)*DPoints(1)*DPoints(2)*DPoints(3)  
   
   do i=1,20
   
@@ -4508,59 +4515,65 @@ contains
            + DjacPrep(24)*dparx*dpary*dparz - dzreal
     
     ! We have the rhs, now solve the system using cramer's rule
-    
            
-    ! determinant 
+!    ! determinant 
+!    ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
+!          - Djac(2)*(Djac(4)*Djac(9) - Djac(6)*Djac(7)) &
+!          + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+          
+    ! Determinant of the mapping
     ddetj = Djac(1)*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
           + Djac(2)*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
           + Djac(3)*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
           
+          
     ! determinant substituting the 1st-column with the rhs
     ddetjx = rhsx*(Djac(5)*Djac(9) - Djac(6)*Djac(8)) &
-           + Djac(2)*(Djac(6)*rhsz - rhsy*Djac(9)) &
-           + Djac(3)*(rhsy*Djac(8) - Djac(5)*rhsz)
+           - Djac(4)*(rhsy*Djac(9) - Djac(8)*rhsz) &
+           + Djac(7)*(rhsy*Djac(6) - Djac(5)*rhsz)
            
     ! determinant substituting the 2nd-column with the rhs
-    ddetjy = Djac(1)*(rhsy*Djac(9) - Djac(6)*rhsz) &
-           + rhsx*(Djac(6)*Djac(7) - Djac(4)*Djac(9)) &
-           + Djac(3)*(Djac(4)*rhsz - rhsy*Djac(7))
+    ddetjy = Djac(1)*(rhsy*Djac(9) - Djac(8)*rhsz) &
+           - rhsx*(Djac(2)*Djac(9) - Djac(3)*Djac(8)) &
+           + Djac(3)*(Djac(2)*rhsz - rhsy*Djac(3))
            
     ! determinant substituting the 3rd-column with the rhs
-    ddetjz = Djac(1)*(Djac(5)*rhsz - rhsy*Djac(8)) &
-           + Djac(2)*(rhsy*Djac(7) - Djac(4)*rhsz) &
-           + rhsx*(Djac(4)*Djac(8) - Djac(5)*Djac(7))
+    ddetjz = Djac(1)*(Djac(5)*rhsz - rhsy*Djac(6)) &
+           - Djac(4)*(Djac(2)*rhsz - rhsy*Djac(3)) &
+           + rhsx*(Djac(2)*Djac(6) - Djac(3)*Djac(5))
 
     ! calculate the solution
     dparx = ddetjx/ddetj
     dpary = ddetjy/ddetj
     dparz = ddetjz/ddetj
     
-    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
-    
-    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
-    
-    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
+    ! DEBUG
+!    c1=Djac(1)*dparx + Djac(2)*dpary + Djac(3)*dparz
+!    
+!    c2=Djac(4)*dparx + Djac(5)*dpary + Djac(6)*dparz
+!    
+!    c3=Djac(7)*dparx + Djac(8)*dpary + Djac(9)*dparz
     
     ! compute the correction
     dparx = dparx_old-dparx
     dpary = dpary_old-dpary
     dparz = dparz_old-dparz
     
-    if((dparx .lt. -1.0_dp) .or. (dparx .gt. 1.0_dp))then
+    if((dparx .lt. -2.0_dp) .or. (dparx .gt. 2.0_dp))then
       dparx_old=dparx
       dpary_old=dpary
       dparz_old=dparz
       return
     end if
 
-    if((dpary .lt. -1.0_dp) .or. (dpary .gt. 1.0_dp))then
+    if((dpary .lt. -2.0_dp) .or. (dpary .gt. 2.0_dp))then
       dparx_old=dparx
       dpary_old=dpary
       dparz_old=dparz
       return
     end if
 
-    if((dparz .lt. -1.0_dp) .or. (dparz .gt. 1.0_dp))then
+    if((dparz .lt. -2.0_dp) .or. (dparz .gt. 2.0_dp))then
       dparx_old=dparx
       dpary_old=dpary
       dparz_old=dparz
