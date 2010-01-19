@@ -236,3 +236,30 @@ iwritePointValues = 0
 # Filename for the point values
 
 sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
+
+# ------------------------------------------------------------------------
+# Flux values
+
+# Calculate the flux through one or multilple lines.
+# The number in braces "(n)" defines the number of lines where to
+# evaluate the flux. Afterwards follows a list of points in the
+# format
+#   "x-start y-start x-end y-end"
+# that defines the starting and ending point of the line.
+#
+# Example: Don't evaluate anything:
+#   cevaluateFlux(0) =
+#
+# Example: Evaluate the flux through the line (0.5,0.5)->(0.5,0.0)
+#   cevaluateFlux(1) =
+#     0.5 0.5 0.5 0.0
+
+cevaluateFlux(0) =
+
+# Whether to write the point values to a file
+
+iwriteFluxValues = 0
+
+# Filename for the point values
+
+sfilenameFluxValues = '%{ssolutiondirectory}/flux'

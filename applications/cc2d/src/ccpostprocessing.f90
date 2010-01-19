@@ -187,6 +187,9 @@ contains
     
     ! Calculate point values
     call cc_evaluatePoints (rvector,rproblem)
+
+    ! Calculate flux values
+    call cc_evaluateFlux (rvector,rproblem)
     
     ! Calculate the divergence
     call cc_calculateDivergence (rvector,rproblem)
@@ -1028,8 +1031,7 @@ contains
     call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
         'IWRITEPOINTVALUES', iwritePointValues, 0)
     call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-        'SFILENAMEPOINTVALUES', sstr, '''''')
-    read(sstr,*) sfilenamePointValues
+        'SFILENAMEPOINTVALUES', sfilenamePointValues, """""", bdequote=.true.)
     if (sfilenamePointValues .eq. "") iwritePointValues = 0
     
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -1069,7 +1071,118 @@ contains
     deallocate(Dvalues)
 
   end subroutine
+
+!******************************************************************************
+
+!<subroutine>
+
+  subroutine cc_evaluateFlux (rsolution,rproblem)
+
+!<description>
+  ! Evaluates the flux thropugh a set of lines as configured in the DAT file.
+!</description>
+  
+!<input>
+  ! Solution vector to compute the norm/error from.
+  type(t_vectorBlock), intent(in), target :: rsolution
+!</input>
+
+!<inputoutput>
+  ! Problem structure.
+  type(t_problem), intent(inout) :: rproblem
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    integer :: nlines,i,iunit,iwriteFluxValues
+    integer :: iderType, cflag
+    logical :: bfileExists
+    real(dp), dimension(:), allocatable :: Dvalues
+    real(dp), dimension(:,:,:), allocatable :: Dcoords
+    integer, dimension(:), allocatable :: Itypes
+    integer, dimension(:), allocatable :: Ider
+    character(LEN=SYS_STRLEN) :: sparam
+    character(LEN=SYS_STRLEN) :: sstr,sfilenameFluxValues,stemp
+
+    ! Get the number of points to evaluate
+    nlines = parlst_querysubstrings (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'CEVALUATEFLUXVALUES')
+        
+    if (nlines .eq. 0) return
     
+    ! Allocate memory for the values
+    allocate(Dvalues(nlines))
+    allocate(Dcoords(NDIM2D,nlines,2))
+    
+    ! Read the points
+    do i=1,nlines
+      call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+          "CEVALUATEFLUXALUES", sparam, "", i)
+      read (sparam,*) Dcoords(1,i,1),Dcoords(2,i,1),Dcoords(1,i,2),Dcoords(2,i,2)
+    end do
+    
+    ! Calculate the flux
+    do i=1,nlines
+      call ppns2D_calcFluxThroughLine (rsolution,Dcoords(1:2,i,1),Dcoords(1:2,i,2),Dvalues(i))
+    end do
+    
+    ! Print the values to the terminal
+    call output_lbrk()
+    call output_line ('Flux values')
+    call output_line ('-----------')
+    do i=1,nlines
+      write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") "flux (",&
+          Dcoords(1,i,1),",",Dcoords(2,i,1),")->",&
+          Dcoords(1,i,2),",",Dcoords(2,i,2),") = ",Dvalues(i)
+      call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+    end do
+    
+    ! Get information about writing the stuff into a DAT file.
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'IWRITEFLUXVALUES', iwriteFluxValues, 0)
+    call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'SFILENAMEFLUXVALUES', sfilenameFluxValues, """""",bdequote=.true.)
+    if (sfilenameFluxValues .eq. "") iwriteFluxValues = 0
+    
+    ! When writing to a file is enabled, delete the file in the first timestep.
+    cflag = SYS_APPEND
+    if (rproblem%rtimedependence%itimeStep .eq. 0) cflag = SYS_REPLACE
+    
+    if (iwriteFluxValues .ne. 0) then
+      ! Write the result to a text file.
+      ! Format: timestep current-time value value value ...
+      call io_openFileForWriting(sfilenameFluxValues, iunit, &
+          cflag, bfileExists,.true.)
+      if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+        ! Write a headline
+        write (iunit,'(A)') &
+          '# timestep time x1 y1 x2 y2 value1 x1 y1 x2 y2 value2 ...'
+      end if
+      stemp = &
+          trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
+          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+      write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      do i=1,nlines
+        stemp = ' ' //&
+            trim(sys_sdEL(Dcoords(1,i,1),5)) // ' ' // &
+            trim(sys_sdEL(Dcoords(2,i,1),5)) // ' ' // &
+            trim(sys_sdEL(Dcoords(1,i,2),5)) // ' ' // &
+            trim(sys_sdEL(Dcoords(2,i,2),5)) // ' ' // &
+            trim(sys_sdEL(Dvalues(i),10))
+        write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
+      end do
+      write (iunit,ADVANCE='YES',FMT='(A)') ""
+      close (iunit)
+    end if
+    
+    deallocate(Ider)
+    deallocate(Itypes)
+    deallocate(Dcoords)
+    deallocate(Dvalues)
+
+  end subroutine
+
 !******************************************************************************
 
 !<subroutine>
