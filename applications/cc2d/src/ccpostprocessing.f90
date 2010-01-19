@@ -1118,7 +1118,7 @@ contains
     ! Read the points
     do i=1,nlines
       call parlst_getvalue_string (rproblem%rparamList, 'CC-POSTPROCESSING', &
-          "CEVALUATEFLUXALUES", sparam, "", i)
+          "CEVALUATEFLUXVALUES", sparam, "", i)
       read (sparam,*) Dcoords(1,i,1),Dcoords(2,i,1),Dcoords(1,i,2),Dcoords(2,i,2)
     end do
     
