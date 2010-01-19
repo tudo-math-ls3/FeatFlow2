@@ -138,6 +138,10 @@
 		<Filter Name="Mathematics">
 		<File RelativePath="..\..\..\kernel\Mathematics\adjacency.f90"/>
 		<File RelativePath="..\..\..\kernel\Mathematics\mprimitives.f90"/></Filter>
+		<Filter Name="hierarchies">
+		<File RelativePath="..\..\..\kernel\Hierarchies\fespacehierarchy.f90"/>
+		<File RelativePath="..\..\..\kernel\Hierarchies\meshhierarchy.f90"/>
+		<File RelativePath="..\..\..\kernel\Hierarchies\timescalehierarchy.f90"/></Filter>
 		<Filter Name="NonlinearSolver">
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\intf_nlsolcallback.inc"/>
 		<File RelativePath="..\..\..\kernel\NonlinearSolver\nonlinearsolver.f90"/></Filter>
@@ -182,22 +186,12 @@
 		<File RelativePath="..\..\..\kernel\System\error.f90"/>
 		<File RelativePath="..\..\..\kernel\System\externalstorage.f90"/>
 		<File RelativePath="..\..\..\kernel\System\fparser.f90">
-			<FileConfiguration Name="Release ohne IPO|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\fpersistence.f90"/>
 		<File RelativePath="..\..\..\kernel\System\fsystem.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration>
-			<FileConfiguration Name="Release ohne IPO|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\genoutput.f90"/>
 		<File RelativePath="..\..\..\kernel\System\io.f90"/>
 		<File RelativePath="..\..\..\kernel\System\paramlist.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\signals.f90">
-			<FileConfiguration Name="Debug|Win32">
-				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="false" Preprocess="preprocessYes"/></FileConfiguration></File>
 		<File RelativePath="..\..\..\kernel\System\sort.f90"/>
 		<File RelativePath="..\..\..\kernel\System\statistics.f90"/>
 		<File RelativePath="..\..\..\kernel\System\storage.f90"/>
