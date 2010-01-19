@@ -2820,7 +2820,7 @@ contains
 !</subroutine>
     
     ! energy difference
-    U_ij(1) =  U_j(3)-U_i(3)
+    U_ij(1) =  U_j(4)-U_i(4)
 
   end subroutine euler_trafoDiffEnergy2d
 
