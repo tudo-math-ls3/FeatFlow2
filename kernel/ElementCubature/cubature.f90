@@ -647,7 +647,10 @@ contains
     ! Based on this information, calculate the number of cubature points.
     n = 0
     select case (cub_getStdCubType(ccubType))
-      case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D,CUB_TRZ)
+      case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D,CUB_TRZ_1D)
+        ! One element is refined into two subelements
+        n = 2
+      case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D,CUB_TRZ_2D)
         ! One element is refined into four subelements
         n = 4
       case default
@@ -783,9 +786,22 @@ contains
           ! This is a quad element in 2D, so every refinement brings 4 new
           ! elements.
           n = n * (cub_getRefElements(ccubType))**nreflevels
-        case (CUB_TRZ)
+          
+        case (CUB_TRZ_2D)
           ! Points are in the corners of the elements.
           n = 4**nreflevels + 2*2**nreflevels + 1
+          
+        case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
+          ! All points are inner points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is a quad element in 2D, so every refinement brings 2 new
+          ! elements.
+          n = n * (cub_getRefElements(ccubType))**nreflevels
+          
+        case (CUB_TRZ_1D)
+          ! Points are in the corners of the elements.
+          n = 2**nreflevels + 1
+          
         case default
           call output_line ('Unsupported summed cubature formula.', &
                             OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
@@ -1197,7 +1213,7 @@ contains
             end do
           end do
           
-        case (CUB_TRZ)
+        case (CUB_TRZ_2D)
         
           ! Points are in the corners of the (sub-)elements.
           !
@@ -1233,6 +1249,59 @@ contains
           Domega(nsubelements+1)                               = dweight
           Domega(nsubelements*(nsubelements+1)+1)              = dweight
           Domega(nsubelements*(nsubelements+1)+nsubelements+1) = dweight
+
+        case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
+          ! All points are innter points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is a quad element in 2D, so every refinement brings 2 new
+          ! elements.
+          nsubelements = cub_getRefElements(ccubType) ** nreflevels
+
+          ! Transfer the weights.
+          dweight = 1.0_DP/real(nsubelements,dp)
+          do isubelement = 1,nsubelements
+            do icubp = 1,ncubpts
+              Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
+            end do
+          end do
+          
+          ! Transfer the point coordinates.
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Length of the edge of every subelement.
+          ! Note that the reference element is [-1,1]^2 !
+          dedgelen = 2.0_DP/real(nsubelements,dp)
+          
+          do isubx = 0,nsubelements-1
+            do icubp = 1,ncubpts
+              Dpoints(1,isubx*ncubpts+icubp) = &
+                  DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                  + real(isubx,dp)*dedgelen
+            end do
+          end do
+          
+        case (CUB_TRZ_1D)
+        
+          ! Points are in the corners of the (sub-)elements.
+          !
+          ! How many subelements do we have?
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Manually initialise the coordinates and weights.
+          dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
+          do isubx = 0,nsubelements
+            Dpoints(1,isubx+1) = &
+                real(isubx,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+          end do
+
+          do isubx = 1,nsubelements-1
+            Domega(isubx+1) = dweight*2.0_DP
+          end do
+          
+          Domega(1)              = dweight
+          Domega(nsubelements+1) = dweight
 
         case default
           call output_line ('Unsupported element.', &

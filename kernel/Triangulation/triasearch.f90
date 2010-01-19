@@ -13,9 +13,9 @@
 !#     -> Search for an element containing a specific point.
 !#        Brute force method.
 !#
-!# 2.) tsrch_getElem_raytrace2D
+!# 2.) tsrch_getElem_raytrace2D, tsrch_getElem_raytrace3D
 !#     -> Search for an element containing a specific point.
-!#        Raytracing method in 2D.
+!#        Raytracing method in 2D/3D.
 !#
 !# 3.) tsrch_getElem_hierarch
 !#     -> Search for an element containing a specific point.
@@ -24,6 +24,9 @@
 !# 4.) tsrch_getNearestElem_BruteForce
 !#     -> Find the element with the nearest midpoint to a specific point.
 !#
+!# 5.) tsrch_getElementsByRaytrace
+!#     -> Determins all elements containing a set of points
+!#        using raytracing search
 !# </purpose>
 !##############################################################################
 
@@ -34,6 +37,7 @@ module triasearch
   use basicgeometry
   use triangulation
   use geometryaux
+  use genoutput
   
   ! DEBUG!!!
   ! use io
@@ -74,7 +78,7 @@ module triasearch
   end interface
   
   public :: tsrch_getElem_raytrace3D
-  
+  public :: tsrch_getElementsByRaytrace  
 
   ! ***************************************************************************
   ! ***************************************************************************
@@ -979,6 +983,105 @@ contains
         p_DvertexCoords,p_IverticesAtElement,p_IedgesAtElement,p_IneighboursAtElement,&
         iresult,ilastElement,ilastFace,imaxIterations)    
     
+  end subroutine
+
+  !****************************************************************************
+
+!<subroutine>
+
+  subroutine tsrch_getElementsByRaytrace (rtriangulation,Dpoints,Ielements,&
+      ifirstUnknownPoint,ilastUnknownPoint)
+
+!<description>
+  ! Determine the elements containing the points in Dpoints using a raytracing
+  ! linesearch.
+!</description>
+
+!<input>
+  ! Underlying triangulation structure.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! List of points where to find the corresponding elements to.
+  real(DP), dimension(:,:), intent(in) :: Dpoints
+!</input>
+
+!<output>  
+  ! List of elements containing the points in Dpoints.
+  ! If there was no element found for a point, the correpsonding element number
+  ! is set to 0.
+  integer, dimension(:), intent(out) :: Ielements
+  
+  ! Index in Dpoints to the first point where the corresponding element
+  ! was not found. =0: All points found.
+  ! If not all elements were found, the caller can loop from here through
+  ! Ielements to get all unknown points.
+  integer, intent(out) :: ifirstUnknownPoint
+
+  ! Index in Dpoints to the last point where the corresponding element
+  ! was not found. =0: All points found.
+  ! If not all elements were found, the caller can loop from here through
+  ! Ielements to get all unknown points.
+  integer, intent(out) :: ilastUnknownPoint
+!</output>
+
+!</subroutine>
+
+    integer :: iel,ipoint,ilastfoundel,iresult
+
+    ! We use an accumulated raytracing search to find the points.
+    ! This is very fast for lines and hopefully acceptable
+    ! for arbitrary meshes.
+    
+    ifirstUnknownPoint = 0
+    ilastUnknownPoint = 0
+    
+    ilastfoundel = 0
+    do ipoint = 1,ubound(Dpoints,2)
+    
+      ! Find the element
+      select case (ubound(Dpoints,1))
+      case (NDIM2D)
+      
+        ! Try to start from the last found element.
+        iel = ilastfoundel
+        call tsrch_getElem_raytrace2D (Dpoints(:,ipoint),rtriangulation,iel,&
+            iresult,ilastfoundel)
+            
+      case (NDIM3D)
+
+        ! Try to start from the last found element.
+        iel = ilastfoundel
+        call tsrch_getElem_raytrace3D (Dpoints(:,ipoint),rtriangulation,iel,&
+            iresult,ilastfoundel)
+
+      case default
+        call output_line ('Invalid dimension.', &
+            OU_CLASS_ERROR,OU_MODE_STD,'tsrch_getElements')
+        call sys_halt()
+      end select
+      
+      if (iel .eq. 0) then
+        ! Fallback to brute force search
+        call tsrch_getElem_BruteForce (Dpoints(:,ipoint),rtriangulation,iel)
+        
+        ! Continue the next search from here.
+        ! If not found, this is =0, so raytracing will start from the scratch.
+        ilastfoundel = iel
+      end if
+      
+      if (iel .eq. 0) then
+        ! Oops, not found.
+        if (ifirstUnknownPoint .eq. 0) then
+          ifirstUnknownPoint = ipoint
+        end if
+        ilastUnknownPoint = ipoint
+      end if
+      
+      ! Save the element
+      Ielements(ipoint) = iel
+      
+    end do
+
   end subroutine
 
 end module

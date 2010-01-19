@@ -225,6 +225,9 @@
 !# 28.) tria_hangingNodeRefinement
 !#      -> Performs a local hanging-node refinement of quadrilateral elements
 !#
+!# 29.) tria_calcBoundingBox
+!#      -> Calculates a bounding box around a mesh
+!#
 !# Auxiliary routines for connector lists
 !#
 !#  1.) tria_buildConnectorList
@@ -966,6 +969,14 @@ module triangulation
     ! distribution of vertices in corners, on edges or on elements.
     integer                  :: nadditionalVertices = 0
   
+    ! Minimum X/Y/Z coordinate of a bounding box around the mesh.
+    ! This information is only present in a 'standard' mesh.
+    real(DP), dimension(NDIM3D) :: DboundingBoxMin = (/0.0_DP,0.0_DP,0.0_DP/)
+
+    ! Maximum X/Y/Z coordinate of a bounding box around the mesh.
+    ! This information is only present in a 'standard' mesh.
+    real(DP), dimension(NDIM3D) :: DboundingBoxMax = (/0.0_DP,0.0_DP,0.0_DP/)
+    
     ! A list of all corner(!)-vertices of the elements in the triangulation.
     ! Handle to 
     !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
@@ -1723,7 +1734,8 @@ contains
       rbackupTriangulation%nverticesInEachElement = rtriangulation%nverticesInEachElement
       rbackupTriangulation%nverticesInAllElements = rtriangulation%nverticesInAllElements
       rbackupTriangulation%nadditionalVertices    = rtriangulation%nadditionalVertices   
-      
+      rbackupTriangulation%DboundingBoxMin        = rtriangulation%DboundingBoxMin   
+      rbackupTriangulation%DboundingBoxMax        = rtriangulation%DboundingBoxMax
       
       ! Decide on IDPFLG which arrays to copy
       rbackupTriangulation%iduplicationFlag = iduplicationFlag
@@ -2371,6 +2383,8 @@ contains
     rtriangulation%InelOfType(:) = 0
     rtriangulation%NNelAtVertex = 0
     rtriangulation%NNelAtEdge = 0
+    rtriangulation%DboundingBoxMin(:) = 0.0_DP
+    rtriangulation%DboundingBoxMax(:) = 0.0_DP
 
     ! That is it...
 
@@ -2554,6 +2568,8 @@ contains
 
     ! Clean up the rest of the structure
 
+    rtriangulation%DboundingBoxMin(:) = 0.0_DP
+    rtriangulation%DboundingBoxMax(:) = 0.0_DP
     if (.not. bext) then  
       rtriangulation%NMT = 0
       rtriangulation%NAT = 0
@@ -2693,6 +2709,10 @@ contains
       ! select-case statement.
       iflag = iand(iflag,not(TR_GEN_EXTENDEDRAW))
     end if
+    
+    ! Get the bounding box of the mesh.
+    call tria_calcBoundingBox(rtriangulation,&
+        rtriangulation%DboundingBoxMin,rtriangulation%DboundingBoxMax)
     
     select case (rtriangulation%ndim)
     case (NDIM1D)
@@ -16952,5 +16972,50 @@ p_InodalPropertyDest = -4711
     tria_BinSearch = 0
   
   end function tria_BinSearch
+  
+  !************************************************************************      
+
+!<subroutine> 
+
+  subroutine tria_calcBoundingBox(rtriangulation,DboundingBoxMin,DboundingBoxMax)
+    
+!<description>
+  ! Calculates the X/Y/Z coordinates of a bounding box surrounding the mesh.
+!</description>
+    
+!<input> 
+  ! Underlying triangulation
+  type(t_triangulation), intent(in) :: rtriangulation
+!</input>
+
+!<output>
+  ! Minimum X/Y/Z coordinate of a bounding box around the mesh.
+  real(DP), dimension(:), intent(out) :: DboundingBoxMin
+
+  ! Maximum X/Y/Z coordinate of a bounding box around the mesh.
+  real(DP), dimension(:), intent(out) :: DboundingBoxMax
+!</output>
+
+!</subroutine>     
+
+    ! local variables
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    integer :: ipt,idim
+    
+    ! Get the coordinate array
+    call storage_getbase_double2d(rtriangulation%h_DvertexCoords,p_DvertexCoords)
+    
+    DboundingBoxMin(1:rtriangulation%ndim) = p_DvertexCoords(1:rtriangulation%ndim,1)
+    DboundingBoxMax(1:rtriangulation%ndim) = p_DvertexCoords(1:rtriangulation%ndim,1)
+    
+    ! Find the minimum x/y/z-coordinate in each direction
+    do ipt = 2,rtriangulation%nvt
+      do idim = 1,rtriangulation%ndim
+        DboundingBoxMin(idim) = min(DboundingBoxMin(idim),p_DvertexCoords(idim,ipt))
+        DboundingBoxMax(idim) = max(DboundingBoxMax(idim),p_DvertexCoords(idim,ipt))
+      end do
+    end do
+
+  end subroutine
   
 end module triangulation
