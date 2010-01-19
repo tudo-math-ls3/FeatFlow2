@@ -1100,8 +1100,6 @@ contains
     logical :: bfileExists
     real(dp), dimension(:), allocatable :: Dvalues
     real(dp), dimension(:,:,:), allocatable :: Dcoords
-    integer, dimension(:), allocatable :: Itypes
-    integer, dimension(:), allocatable :: Ider
     character(LEN=SYS_STRLEN) :: sparam
     character(LEN=SYS_STRLEN) :: sstr,sfilenameFluxValues,stemp
 
@@ -1132,8 +1130,8 @@ contains
     call output_line ('Flux values')
     call output_line ('-----------')
     do i=1,nlines
-      write (sstr,"(A10,A,F9.4,A,F9.4,A,E16.10)") "flux (",&
-          Dcoords(1,i,1),",",Dcoords(2,i,1),")->",&
+      write (sstr,"(A,F9.4,A,F9.4,A,F9.4,A,F9.4,A,E16.10)") "flux (",&
+          Dcoords(1,i,1),",",Dcoords(2,i,1),")->(",&
           Dcoords(1,i,2),",",Dcoords(2,i,2),") = ",Dvalues(i)
       call output_line(trim(sstr),coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
     end do
@@ -1176,8 +1174,6 @@ contains
       close (iunit)
     end if
     
-    deallocate(Ider)
-    deallocate(Itypes)
     deallocate(Dcoords)
     deallocate(Dvalues)
 
