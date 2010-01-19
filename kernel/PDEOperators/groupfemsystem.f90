@@ -4743,9 +4743,9 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
-        ! Prelimiting of antidiffusive fluxes
-        if (any(Dflux(:,iedge)*(Dx(j,:)-Dx(i,:)) .ge. 0.0_DP))&
-            Dalpha(iedge) = 0.0_DP
+!!$        ! Prelimiting of antidiffusive fluxes
+!!$        if (any(Dflux(:,iedge)*(Dx(j,:)-Dx(i,:)) .ge. 0.0_DP))&
+!!$            Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
         F_ij = Dalpha(iedge) * Dflux(:,iedge)
@@ -4797,10 +4797,10 @@ contains
         call fcb_calcDiffTransformation(&
             Dx(i,:), Dx(j,:), Diff)
 
-        ! Prelimiting of antidiffusive fluxes
-        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
-            any(F_ji*Diff .le. 0.0_DP))&
-            Dalpha(iedge) = 0.0_DP
+!!$        ! Prelimiting of antidiffusive fluxes
+!!$        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
+!!$            any(F_ji*Diff .le. 0.0_DP))&
+!!$            Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
         F_ij = Dalpha(iedge)*F_ij
