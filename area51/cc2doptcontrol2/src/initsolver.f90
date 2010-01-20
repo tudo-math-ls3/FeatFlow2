@@ -2652,7 +2652,7 @@ contains
     call parlst_getvalue_int (rparlist, ssection, &
         'ctypeStartVector', ctypeStartVector, 0)
 
-    call parlst_getvalue_int (rparlist, ssection, &
+    call parlst_getvalue_double (rparlist, ssection, &
         'dstartVectorWeight', dstartVectorWeight, 1.0_DP)
 
     call parlst_getvalue_string (rparlist, ssection, &
