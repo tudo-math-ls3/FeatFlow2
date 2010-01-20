@@ -194,6 +194,9 @@ errorestimator = ErrorEstimator
 # 21 = FEM-GP
 istabilisation = 11
 
+# perform prelimiting
+iprelimiting = 1
+
 
 ################################################################################
 [Diffusion]

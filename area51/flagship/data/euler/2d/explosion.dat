@@ -170,6 +170,9 @@ errorestimator = ErrorEstimator
 # 21 = FEM-GP
 istabilisation = 20
 
+# perform prelimiting
+iprelimiting = 1
+
 
 ################################################################################
 [Output]
