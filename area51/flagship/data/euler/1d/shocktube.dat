@@ -74,12 +74,11 @@ isystemPrecond = 1
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-# slimitingvariable(3) =
-#      density
-#      pressure
-#      velocity
-slimitingvariable(1) =
+slimitingvariable(3) =
   density
+  pressure
+  velocity_x
+#  velocity
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -164,6 +163,8 @@ errorestimator = ErrorEstimator
 # 21 = FEM-GP
 istabilisation = 12
 
+# perform prelimiting
+iprelimiting = 1
 
 ################################################################################
 [Output]
