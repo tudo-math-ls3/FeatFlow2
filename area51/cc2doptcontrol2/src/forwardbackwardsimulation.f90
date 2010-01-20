@@ -3875,7 +3875,7 @@ contains
               rdefectPrimal%RvectorBlock(3),rcurrentsol%RvectorBlock(3),domega,1.0_DP)
           call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
         else
-          exit
+          !exit
         end if
       
       end do ! iiterate
@@ -4010,7 +4010,7 @@ contains
               rdefectDual%RvectorBlock(3),rcurrentsol%RvectorBlock(6),domega,1.0_DP)
           call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
         else
-          exit
+          !exit
         end if
       
       end do ! iiterate
