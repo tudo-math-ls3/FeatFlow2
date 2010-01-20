@@ -2591,7 +2591,7 @@ contains
 !<subroutine>
 
   subroutine init_initStartVector (rsettings,rsettingsSpaceDiscr,ilevel,rparlist,ssection,&
-      rinitialCondition,rvector,rrhs)
+      rinitialCondition,rvector,rrhs,ioutputLevel)
   
 !<description>
   ! Creates a space-time vector used as start vector.
@@ -2620,6 +2620,9 @@ contains
   
   ! Space-time vector containing the RHS of the forward problem.
   type(t_spaceTimeVector), intent(inout) :: rrhs
+  
+  ! Output level during the initialisation phase
+  integer, intent(in) :: ioutputLevel
 !</input>
 
 !<inputoutput>
@@ -2756,6 +2759,34 @@ contains
       ! Clean up
       call fbsim_done (rsimsolver)
       call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
+    
+      ! Probably print some statistical data
+      if (ioutputLevel .ge. 1) then
+        call output_lbrk ()
+        call output_line ("Total time for forward simulation:      "//&
+            trim(sys_sdL(rsimsolver%dtimeTotal,10)))
+
+        call output_line ("Total time for nonlinear solver:        "//&
+          trim(sys_sdL(rsimsolver%dtimeNonlinearSolver,10)))
+          
+        call output_line ("Total time for defect calculation:      "//&
+          trim(sys_sdL(rsimsolver%dtimeDefectCalculation,10)))
+
+        call output_line ("Total time for matrix assembly:         "//&
+          trim(sys_sdL(rsimsolver%dtimeMatrixAssembly,10)))
+          
+        call output_line ("Total time for linear solver:           "//&
+          trim(sys_sdL(rsimsolver%dtimeLinearSolver,10)))
+          
+        call output_line ("Total time for postprocessing:          "//&
+          trim(sys_sdL(rsimsolver%dtimePostprocessing,10)))
+          
+        call output_line ("Total #iterations nonlinear solver:     "//&
+          trim(sys_siL(rsimsolver%nnonlinearIterations,10)))
+          
+        call output_line ("Total #iterations linear solver:        "//&
+          trim(sys_siL(rsimsolver%nlinearIterations,10)))
+      end if
     
     end select
     

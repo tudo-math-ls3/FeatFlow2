@@ -1213,7 +1213,7 @@ contains
     call init_initStartVector(p_rsettingsSolver,rsettingsSpaceDiscr,&
         p_rsettingsSolver%rspaceTimeHierPrimalDual%nlevels,&
         rparlist,rsettings%ssectionSpaceTimePreprocessing,&
-        p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete)
+        p_rsettingsSolver%rinitialCondition,rsolution,rrhsdiscrete,rsettings%routput%ioutputInit)
     
     call stat_stopTimer (rstartvectime)
     

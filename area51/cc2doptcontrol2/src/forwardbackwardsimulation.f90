@@ -81,6 +81,7 @@ module forwardbackwardsimulation
   use ucd
   use spdiscprojection
   use collection
+  use statistics
   
   use fespacehierarchy
 
@@ -268,6 +269,34 @@ module forwardbackwardsimulation
     ! Parameters for the adaptive Newton iteration.
     type(t_ccDynamicNewtonControl) :: radaptiveNewton
     
+    ! <!-- ---------- -->
+    ! <!-- STATISTICS -->
+    ! <!-- ---------- -->
+    
+    ! Total number of nonlinear iterations
+    integer :: nnonlinearIterations = 0
+    
+    ! Total number of linear iterations
+    integer :: nlinearIterations = 0
+    
+    ! Total time for the solver
+    real(DP) :: dtimeTotal = 0.0_DP
+    
+    ! Total time for nonlinear iteration
+    real(DP) :: dtimeNonlinearSolver = 0.0_DP
+    
+    ! Total time for linear solver
+    real(DP) :: dtimeLinearSolver = 0.0_DP
+    
+    ! Total time for matrix assembly
+    real(DP) :: dtimeMatrixAssembly = 0.0_DP
+
+    ! Total time for defect calculation
+    real(DP) :: dtimeDefectCalculation = 0.0_DP
+
+    ! Total time for matrix assembly
+    real(DP) :: dtimePostprocessing = 0.0_DP
+
   end type
 
 !</typeblock>
@@ -518,6 +547,35 @@ module forwardbackwardsimulation
     ! User defined parameter list; if not NULL(), this is added
     ! as comments to postprocessing files.
     type(t_parlist), pointer :: p_rparlist => null()
+    
+    ! <!-- ---------- -->
+    ! <!-- STATISTICS -->
+    ! <!-- ---------- -->
+    
+    ! Total number of nonlinear iterations
+    integer :: nnonlinearIterations = 0
+    
+    ! Total number of linear iterations
+    integer :: nlinearIterations = 0
+    
+    ! Total time for the solver
+    real(DP) :: dtimeTotal = 0.0_DP
+    
+    ! Total time for nonlinear iteration
+    real(DP) :: dtimeNonlinearSolver = 0.0_DP
+    
+    ! Total time for linear solver
+    real(DP) :: dtimeLinearSolver = 0.0_DP
+    
+    ! Total time for matrix assembly
+    real(DP) :: dtimeMatrixAssembly = 0.0_DP
+
+    ! Total time for defect calculation
+    real(DP) :: dtimeDefectCalculation = 0.0_DP
+
+    ! Total time for matrix assembly
+    real(DP) :: dtimePostprocessing = 0.0_DP
+
   end type
 
 !</typeblock>
@@ -772,6 +830,13 @@ contains
 
     integer :: cspace
     character(len=SYS_STRLEN) :: ssectionLinSol
+
+    ! Reset statistrics
+    rsimsolver%nnonlinearIterations = 0
+    rsimsolver%nlinearIterations = 0
+    rsimsolver%dtimeNonlinearSolver = 0.0_DP
+    rsimsolver%dtimeLinearSolver = 0.0_DP
+    rsimsolver%dtimeMatrixAssembly = 0.0_DP
 
     ! Take the information from the problem structure.
     rsimsolver%ilevel = nlmax
@@ -2320,7 +2385,7 @@ contains
   logical, intent(inout) :: bsuccess
 
   ! OPTIONAL: Reference to the nonlinear solver structure.
-  ! If present, convergence rates are written to here.
+  ! If present, convergence rates and needed time are written to here.
   type(t_fbsimNonlinearIteration), intent(inout), optional :: rnonlinearIteration
 !</inputoutput>
 
@@ -2328,7 +2393,8 @@ contains
 
     ! local variables
     integer :: ierror
-    type(t_linsolNode), pointer :: p_rsolverNode 
+    type(t_linsolNode), pointer :: p_rsolverNode
+    type(t_timer) :: rtimer
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_def
@@ -2358,12 +2424,17 @@ contains
         call sys_halt()
       end if
       
+      ! Init statistics
+      call stat_clearTimer (rtimer)
+      
       ! Solve the system. As we want to solve Ax=b with
       ! b being the real RHS and x being the real solution vector,
       ! we use linsol_solveAdaptively. If b is a defect
       ! RHS and x a defect update to be added to a solution vector,
       ! we would have to use linsol_precondDefect instead.
+      call stat_startTimer (rtimer)
       call linsol_precondDefect (p_rsolverNode,rd)
+      call stat_stopTimer (rtimer)
 
       ! Release the numeric factorisation of the matrix.
       ! We don't release the symbolic factorisation, as we can use them
@@ -2376,6 +2447,9 @@ contains
         rnonlinearIteration%drhoLinearSolver = p_rsolverNode%dconvergenceRate
         rnonlinearIteration%dlastInitPrecDef = p_rsolverNode%dinitialDefect
         rnonlinearIteration%dlastPrecDef = p_rsolverNode%dfinalDefect
+
+        rnonlinearIteration%dtimeLinearSolver = rtimer%delapsedReal
+        rnonlinearIteration%nlinearIterations = p_rsolverNode%iiterations
       end if
 
       ! Did the preconditioner work?
@@ -3217,6 +3291,10 @@ contains
     type(t_ccoptSpaceTimeMatrix) :: rspaceTimeMatrixPrecond
     type(t_ccDynamicNewtonControl), pointer :: p_radaptiveNewton
     
+    ! Statistical data
+    type(t_timer) :: rtimerNonlinearSolver,rtimerMatrixAssembly
+    type(t_timer) :: rtimerTotal,rtimerPostProc,rtimerDefectCalc
+    
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Dsol,p_Drhs,p_Doseen1,p_Doseen2,p_Doseen3
     real(dp), dimension(:), pointer :: p_Dactrhs
@@ -3304,6 +3382,15 @@ contains
         rsimsolver%rpreconditioner%cspace,rsimsolver%p_rboundaryConditions,&
         rsimsolver%p_rmatrix)
     
+    ! Initialise timers
+    call stat_clearTimer(rtimerNonlinearSolver)
+    call stat_clearTimer(rtimerMatrixAssembly)
+    call stat_clearTimer(rtimerPostproc)
+    call stat_clearTimer(rtimerDefectCalc)
+    call stat_clearTimer(rtimerTotal)
+    
+    call stat_startTimer(rtimerTotal)
+    
     ! What to do?
     select case (rsimsolver%csimtype)
     case (FBSIM_SOLVER_NLFORWARD)
@@ -3352,8 +3439,10 @@ contains
       call lsysbl_clearVector (roseensol3)
 
       ! Initial postprocessing
+      call stat_startTimer (rtimerPostProc)
       call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,ifirstinterval,&
           dtime,rsimsolver%p_rsettings)
+      call stat_stopTimer (rtimerPostProc)
           
       ! Loop through the timesteps. Ignore the initial solution, this is the
       ! initial condition.
@@ -3376,7 +3465,9 @@ contains
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
             rsimsolver%rpreconditioner,dtime)
 
+        call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
+          
           ! Solution.
           call lsysbl_copyVector (rcurrentsol,rprevsol)
           call lsysbl_copyVector (rcurrentsol,roseensol1)
@@ -3405,6 +3496,7 @@ contains
         else
           call lsysbl_copyVector (rcurrentrhs,rrhs)
         end if
+        call stat_stopTimer(rtimerDefectCalc)
         
         ! Filter the current RHS in rdefect as well as the solution vector
         ! to implement boundary conditions.
@@ -3415,8 +3507,10 @@ contains
         ite = 0
 
         ! Create the initial nonlinear defect
+        call stat_startTimer(rtimerDefectCalc)
         call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
             iiterate,rsimsolver%rdiscrData,rnonlinearData,rcurrentsol,rrhs,rdefect)
+        call stat_stopTimer(rtimerDefectCalc)
 
         ! Implement the boundary conditions        
         call vecfil_discreteBCdef(rdefectPrimal)
@@ -3434,6 +3528,7 @@ contains
         if ((.not. bconvergence) .and. (.not. bdivergence)) then
         
           ! Start the nonlinear solver
+          call stat_startTimer (rtimerNonlinearSolver)
           do ite = 1,rsimsolver%rnonlinearIteration%nmaxIterations
 
             ! Preconditioning to the defect
@@ -3537,12 +3632,20 @@ contains
             end select
                 
             ! Assemble the preconditioner matrices on all levels.
+            call stat_startTimer (rtimerMatrixAssembly)
             call fbsim_assemblePrecMatrices (rsimsolver%rpreconditioner,&
                 iiterate,0,rspaceTimeMatrixPrecond,rnonlinearData,.true.)
+            call stat_stopTimer (rtimerMatrixAssembly)
                 
             ! Do preconditioning to the defect
             call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
                 rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
+            
+            ! Gather statistics
+            rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+                rsimsolver%rnonlinearIteration%dtimeLinearSolver
+            rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+                rsimsolver%rnonlinearIteration%nlinearIterations
             
             ! If bsuccess=false, the preconditioner had an error.
             if (.not. blocalsuccess) then
@@ -3583,8 +3686,10 @@ contains
                 rsimsolver%rnonlinearIteration%DresidualCorr)
 
             ! Create the new nonlinear defect
+            call stat_startTimer(rtimerDefectCalc)
             call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
                 iiterate,rsimsolver%rdiscrData,rnonlinearData,rcurrentsol,rrhs,rdefect)
+            call stat_stopTimer(rtimerDefectCalc)
 
             ! Implement the boundary conditions        
             call vecfil_discreteBCdef(rdefectPrimal)
@@ -3615,6 +3720,8 @@ contains
             
           end do ! ite
           
+          call stat_stopTimer (rtimerNonlinearSolver)
+          
         end if
 
         ! Nonlinear loop finished. Now save the solution or stop incase of an error.
@@ -3624,8 +3731,10 @@ contains
           call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
 
           ! Postprocessing
+          call stat_startTimer (rtimerPostProc)
           call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,iiterate,&
               dtime,rsimsolver%p_rsettings)
+          call stat_stopTimer (rtimerPostProc)
         else  
           exit
         end if
@@ -3672,6 +3781,7 @@ contains
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
             rsimsolver%rpreconditioner,dtime)
 
+        call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
 
           ! Initialise the previous and current timestep. 
@@ -3728,15 +3838,24 @@ contains
 
         ! Implement the boundary conditions        
         call vecfil_discreteBCdef(rdefectPrimal)
+        call stat_stopTimer(rtimerDefectCalc)
         
         ! Assemble the preconditioner matrices on all levels.
+        call stat_startTimer (rtimerMatrixAssembly)
         call fbsim_assemblePrecMatrices (rsimsolver%rpreconditioner,&
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
+        call stat_stopTimer (rtimerMatrixAssembly)
             
         ! Do preconditioning to the defect
         call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
             rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
             
+          ! Gather statistics
+          rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+              rsimsolver%rnonlinearIteration%dtimeLinearSolver
+          rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+              rsimsolver%rnonlinearIteration%nlinearIterations
+
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Forward Iteration "//&
               trim(sys_siL(iiterate,10))//". Residual damped from "//&
@@ -3797,6 +3916,7 @@ contains
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
             rsimsolver%rpreconditioner,dtime)
         
+        call stat_startTimer(rtimerDefectCalc)
         if (iiterate .lt. NEQtime) then
 
           ! Initialise the previous and current timestep. 
@@ -3850,18 +3970,27 @@ contains
         
         call smva_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
             rdefect,1.0_DP)
+        call stat_stopTimer(rtimerDefectCalc)
         
         ! Implement the boundary conditions        
         call vecfil_discreteBCdef(rdefectDual)
 
         ! Assemble the preconditioner matrices on all levels.
+        call stat_startTimer (rtimerMatrixAssembly)
         call fbsim_assemblePrecMatrices (rsimsolver%rpreconditioner,&
             iiterate,0,p_rspaceTimeMatrix,rnonlinearData,.true.)
+        call stat_stopTimer (rtimerMatrixAssembly)
             
         ! Do preconditioning to the defect
         call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
             rdefectDual,blocalsuccess,rsimsolver%rnonlinearIteration)
         
+        ! Gather statistics
+        rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+            rsimsolver%rnonlinearIteration%dtimeLinearSolver
+        rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+            rsimsolver%rnonlinearIteration%nlinearIterations
+
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Backward Iteration "//&
               trim(sys_siL(iiterate,10))//". Residual damped from "//&
@@ -3887,6 +4016,24 @@ contains
       end do ! iiterate
       
     end select
+    
+    call stat_stopTimer(rtimerTotal)
+    
+    ! Gather statistics
+    rsimSolver%dtimeNonlinearSolver = rsimSolver%dtimeNonlinearSolver + &
+        rtimerNonlinearSolver%delapsedReal
+    rsimSolver%dtimeMatrixAssembly = rsimSolver%dtimeMatrixAssembly + &
+        rtimerMatrixAssembly%delapsedReal
+    rsimSolver%dtimeTotal = rsimSolver%dtimeTotal + &
+        rtimerTotal%delapsedReal
+    rsimSolver%dtimePostprocessing = rsimSolver%dtimePostprocessing + &
+        rtimerPostProc%delapsedReal
+    rsimSolver%dtimeDefectCalculation = rsimSolver%dtimeDefectCalculation + &
+        rtimerDefectCalc%delapsedReal
+
+    ! ite may be maxite+1 in case the loop passed through.
+    rsimSolver%nnonlinearIterations = rsimSolver%nnonlinearIterations + &
+        max(ite,rsimsolver%rnonlinearIteration%nmaxIterations)
     
     if (present(bsuccess)) then
       bsuccess = blocalsuccess
