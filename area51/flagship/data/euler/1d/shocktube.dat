@@ -78,7 +78,6 @@ slimitingvariable(3) =
   density
   pressure
   velocity_x
-#  velocity
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -221,7 +220,7 @@ ctimestepType = 1
 isolNorm = 0
 
 # implicitness parameter: Valid values of THETA are in the range [0,1]
-theta = 1e-5
+theta = 0.5
 
 # number of steps for multisteps scheme
 multisteps = 0
