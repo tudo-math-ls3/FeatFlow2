@@ -570,7 +570,14 @@ contains
                          
       denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
 
-      call output_line ('||u||^2_L2         = '//trim(sys_sdEP(denergy,15,6)),&
+      call output_line ('||u_1||_L2         = '//trim(sys_sdEP(Derr(1),15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      call output_line ('||u_2||_L2         = '//trim(sys_sdEP(Derr(2),15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      call output_line ('||u||_L2           = '//&
+          trim(sys_sdEP(sqrt(Derr(1)**2+Derr(2)**2),15,6)),&
+          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      call output_line ('1/2||u||^2_L2      = '//trim(sys_sdEP(denergy,15,6)),&
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
@@ -582,11 +589,14 @@ contains
             cflag, bfileExists,.true.)
         if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
           ! Write a headline
-          write (iunit,'(A)') '# timestep time ||u||^2_L2'
+          write (iunit,'(A)') '# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
             // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
-            // trim(sys_sdEL(denergy,10))
+            // trim(sys_sdEL(denergy,10)) // ' ' &
+            // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
+            // trim(sys_sdEL(Derr(1),10)) // ' ' &
+            // trim(sys_sdEL(Derr(2),10))
         write (iunit,'(A)') trim(stemp)
         close (iunit)
       end if
