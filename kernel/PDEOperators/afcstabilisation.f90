@@ -153,11 +153,7 @@ module afcstabilisation
   
   ! Edgewise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
-  
-  ! Approximation to time derivative
-  integer(I32), parameter, public :: AFCSTAB_TIMEDER          = 2_I32**11
-
-  
+    
 !</constantblock>
 
 !<constantblock description="Bitfield identifiers for FCT-algorithm">
@@ -187,8 +183,6 @@ module afcstabilisation
   ! Constrain the raw antidiffusive fluxes by the size of limited
   ! limited rather than by the correction factors directly
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_CONSTRAIN    = 2_I32**7
-
-  
   
   ! FEM-FCT algorithm without application of the corrected fluxes
   integer(I32), parameter, public :: AFCSTAB_FCTALGO_PREPARE  = AFCSTAB_FCTALGO_INITALPHA +&
@@ -251,6 +245,9 @@ module afcstabilisation
     ! Maximum number of edges adjacent to one vertex. This
     ! corresponds to the maximum number of nonzero row entries.
     integer :: NNVEDGE = 0
+
+    ! Flag: compute auxiliary structures for flux prelimiting
+    logical :: bprelimiting = .true.
 
     ! Handle to vertices at edge structure
     ! IverticesAtEdge(1:2,1:NEDGE) : the two end-points of the edge
@@ -329,7 +326,7 @@ contains
 !</subroutine>
 
     ! local variable
-    integer :: istabilisation
+    integer :: istabilisation,iprelimiting
 
     ! Get type of stabilisation from parameter list
     call parlst_getvalue_int(rparlist, ssectionName,&
@@ -360,6 +357,13 @@ contains
       rafcstab%ctypeAFCstabilisation = istabilisation
       
     end if
+
+    ! Get type of prelimiting from parameter list
+    call parlst_getvalue_int(rparlist, ssectionName,&
+        "iprelimiting", iprelimiting, 1)
+
+    ! Set flag for prelimiting
+    rafcstab%bprelimiting = (iprelimiting .ne. 0)
 
   end subroutine afcstab_initFromParameterlist
 
@@ -487,7 +491,8 @@ contains
       if(associated(rafcstab%RnodalVectors)) then
         do i = lbound(rafcstab%RnodalVectors,1),&
                ubound(rafcstab%RnodalVectors,1)
-          call lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
+          if (rafcstab%RnodalVectors(i)%NEQ .ne. 0)&
+              call lsyssc_resizeVector(rafcstab%RnodalVectors(i),&
               rafcstab%NEQ, .false., .false.)
         end do
       end if
@@ -496,7 +501,8 @@ contains
       if(associated(rafcstab%RnodalBlockVectors)) then
         do i = lbound(rafcstab%RnodalBlockVectors,1),&
                ubound(rafcstab%RnodalBlockVectors,1)
-          call lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
+          if (rafcstab%RnodalBlockVectors(i)%NEQ .ne. 0)&
+              call lsysbl_resizeVectorBlock(rafcstab%RnodalBlockVectors(i),&
               rafcstab%NEQ, .false., .false.)
         end do
       end if
@@ -534,7 +540,8 @@ contains
       if(associated(rafcstab%RedgeVectors)) then
         do i = lbound(rafcstab%RedgeVectors,1),&
                ubound(rafcstab%RedgeVectors,1)
-          call lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
+          if (rafcstab%RedgeVectors(i)%NEQ .ne. 0)&
+              call lsyssc_resizeVector(rafcstab%RedgeVectors(i),&
               rafcstab%NEDGE, .false., .false.)
         end do
       end if
