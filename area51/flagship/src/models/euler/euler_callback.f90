@@ -2267,9 +2267,11 @@ contains
 
     ! local variables
     type(t_timestep) :: rtimestepAux
+    type(t_vectorBlock) :: rvector1
     type(t_parlist), pointer :: p_rparlist
-    type(t_vectorBlock), pointer :: p_rpredictor
-    integer :: inviscidAFC, lumpedMassMatrix
+    integer :: inviscidAFC, lumpedMassMatrix, istep, nstep
+
+    integer(I32) :: ioperationSpec
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2292,21 +2294,24 @@ contains
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to low-order predictor
-    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
+    ! Create vector for approximate time derivative
+    call lsysbl_createVectorBlock(rsolution, rvector1, .false.)
 
     ! Compute low-order "right-hand side" without theta parameter
     call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, p_rpredictor, rcollection, rsource)
-    
+        rsolver, rsolution, rvector1, rcollection, rsource)
+
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        p_rpredictor, 1.0_DP, p_rpredictor)
+        rvector1, 1.0_DP, rvector1)
 
     ! Compute the raw antidiffusive fluxes
-    call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
+    call euler_calcFluxFCT(rproblemLevel, rvector1,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
+    
+!!$    ! Make a copy of the low-order solution
+!!$    call lsysbl_copyVector(rsolution, p_rpredictor)
 
     ! Apply linearised FEM-FCT algorithm
     call euler_calcCorrectionFCT(rproblemLevel,&
@@ -2315,6 +2320,34 @@ contains
         AFCSTAB_FCTALGO_SCALEBYMASS,&
         rsolution, rcollection)
 
+!!$    ! Make a copy of the flux corrected value
+!!$    call lsysbl_copyVector(rsolution, p_rcorrector)
+!!$    
+!!$    nstep = 1
+!!$
+!!$    do istep = 1, nstep
+!!$      
+!!$      if (istep .eq. 1) then
+!!$        ioperationSpec = AFCSTAB_FCTALGO_INITALPHA+&
+!!$                         AFCSTAB_FCTALGO_LIMITEDGE
+!!$      else
+!!$        ioperationSpec = AFCSTAB_FCTALGO_LIMITEDGE
+!!$      end if
+!!$      
+!!$      call gfsys_buildFailsafeFCT(&
+!!$          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$          rproblemLevel%Rafcstab(inviscidAFC),&
+!!$          p_rpredictor, p_rcorrector,&
+!!$          rtimestep%dStep*real(istep, dp)/real(nstep, dp),&
+!!$          .false., ioperationSpec, rsolution)
+!!$
+!!$      call gfsys_buildFailsafeFCT(&
+!!$          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+!!$          rproblemLevel%Rafcstab(inviscidAFC),&
+!!$          p_rpredictor, p_rcorrector, 1._DP,&
+!!$          .false., AFCSTAB_FCTALGO_CORRECT, rsolution)
+!!$    end do
+    
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
@@ -2329,6 +2362,9 @@ contains
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
           rtimestep%dTime, euler_calcBoundaryvalues3d)
     end select
+
+    ! Release auxiliary vectors
+    call lsysbl_releaseVector(rvector1)
 
   end subroutine euler_calcLinearisedFCT
 
