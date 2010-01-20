@@ -80,6 +80,11 @@
 !# 22.) mprim_solve2x2BandDiag
 !#      -> Solves a 2x2 block system containing only diagonal bands
 !#
+!# 23.) mprim_minmod2
+!#      -> Computes the minmod function for two parameters
+!#
+!# 24.) mprim_minmod3
+!#      -> Computes the minmod function for three parameters
 !# </purpose>
 !##############################################################################
 
@@ -124,6 +129,16 @@ module mprimitives
     module procedure mprim_meanValueDble
   end interface
 
+  interface mprim_minmod2
+    module procedure mprim_minmod2Dble
+    module procedure mprim_minmod2Sngl
+  end interface
+
+  interface mprim_minmod3
+    module procedure mprim_minmod3Dble
+    module procedure mprim_minmod3Sngl
+  end interface
+
   public :: mprim_getParabolicProfile
   public :: mprim_invertMatrix,mprim_invertMatrixDble
   public :: mprim_kronecker
@@ -145,6 +160,8 @@ module mprimitives
   public :: mprim_solve2x2DirectDble
   public :: mprim_solve3x3DirectDble
   public :: mprim_solve2x2BandDiag
+  public :: mprim_minmod2
+  public :: mprim_minmod3
 
 contains
 
@@ -3031,5 +3048,121 @@ contains
     end do
 
   end subroutine
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_minmod2Dble(a,b) result (c)
+
+!<description>
+    ! The minmod functions returns zero if the two arguments a and b
+    ! have different sign and the argument with the smallest absolute
+    ! value otherwise.
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(DP) :: c
+!</result>
+!</function>
+
+    if (a*b .le. 0.0_DP) then
+      c = 0.0_DP
+    else
+      c = sign(min(abs(a), abs(b)), a)
+    end if
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_minmod2Sngl(a,b) result (c)
+
+!<description>
+    ! The minmod functions returns zero if the two arguments a and b
+    ! have different sign and the argument with the smallest absolute
+    ! value otherwise.
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b
+!</input>
+
+!<result>
+    real(SP) :: c
+!</result>
+!</function>
+
+    if (a*b .le. 0.0_DP) then
+      c = 0.0_DP
+    else
+      c = sign(min(abs(a), abs(b)), a)
+    end if
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_minmod3Dble(a,b,c) result (d)
+
+!<description>
+    ! The minmod functions returns zero if the two arguments a and b
+    ! have different sign and the scaling parameter d by which the
+    ! third argument c hass to be scaled to obtain minmod(a,b) otherwise.
+!</description>
+
+!<input>
+    real(DP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(DP) :: d
+!</result>
+!</function>
+
+    if (a*b*abs(c) .le. 0.0_DP) then
+      d = 0.0_DP
+    elseif (abs(a) .lt. abs(b)) then
+      d = a/c
+    else
+      d = b/c
+    end if
+  end function
+
+  !*****************************************************************************
+
+!<function>
+
+  elemental function mprim_minmod3Sngl(a,b,c) result (d)
+
+!<description>
+    ! The minmod functions returns zero if the two arguments a and b
+    ! have different sign and the scaling parameter d by which the
+    ! third argument c hass to be scaled to obtain minmod(a,b) otherwise.
+!</description>
+
+!<input>
+    real(SP), intent(in) :: a,b,c
+!</input>
+
+!<result>
+    real(SP) :: d
+!</result>
+!</function>
+
+    if (a*b*abs(c) .le. 0.0_DP) then
+      d = 0.0_DP
+    elseif (abs(a) .lt. abs(b)) then
+      d = a/c
+    else
+      d = b/c
+    end if
+  end function
 
 end module mprimitives
