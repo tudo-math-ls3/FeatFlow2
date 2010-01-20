@@ -5804,7 +5804,9 @@ contains
         ! MinMod prelimiting
         alpha_ij = minval(mprim_minmod3(F_ij, G_ij, F_ij))
         alpha_ji = minval(mprim_minmod3(F_ji, G_ji, F_ji))
-        alpha_ij = min(alpha_ij, alpha_ji)
+
+        ! Synchronisation of correction factors
+        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
 
         ! Update the raw antidiffusive fluxes
          F_ij = alpha_ij * F_ij
