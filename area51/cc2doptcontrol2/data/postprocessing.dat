@@ -124,3 +124,31 @@ iwriteBodyForces = 1
 
 sfilenameBodyForces = 'ns/bdforces'
 
+# Whether to calculate flux integrals
+
+icalcFlux = 0
+
+# Start/End coordinates of the lines along which to calculate the flux.
+# The line contains four numbers: x-start y-start x-end y-end
+
+dfluxline = 0.0 0.0 0.0 0.0
+
+# Whether to write the flux to a file
+
+iwriteFlux = 0
+
+# Filename for the flux
+
+sfilenameFlux = 'ns/flux'
+
+# Whether to calculate the kinetic energy
+
+icalcKineticEnergy = 0
+
+# Whether to write the kinetic energy to a file
+
+iwriteKineticEnergy = 0
+
+# Filename for the kinetic energy
+
+sfilenameKineticEnergy = 'ns/kineticenergy'
