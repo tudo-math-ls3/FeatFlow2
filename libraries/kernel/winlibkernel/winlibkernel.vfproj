@@ -197,6 +197,7 @@
 		<File RelativePath="..\..\..\kernel\System\storage.f90"/>
 		<File RelativePath="..\..\..\kernel\System\uuid.f90"/></Filter>
 		<Filter Name="TimeDependence">
+		<File RelativePath="..\..\..\kernel\TimeDependence\timediscretisation.f90"/></Filter>
 		<File RelativePath="..\..\..\kernel\TimeDependence\timestepping.f90"/></Filter>
 		<Filter Name="Triangulation">
 		<File RelativePath="..\..\..\kernel\Triangulation\meshadjacency.f90"/>
