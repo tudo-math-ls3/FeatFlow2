@@ -1,0 +1,83 @@
+##############################
+[ASD_Q2_LV_5_RE250]
+##############################
+
+# Type of flow.
+# =2: nonstationary flow as prescribed by a sequence of files on the 
+
+ctype = 2
+
+# Refinement level of the coarse mesh corresponding to the flow vector.
+
+ilevel = 5
+
+# Element type of the flow.
+
+ielementType = 4
+
+# Name and path to the TRI file containing the mesh that corresponds to the
+# flow. ='': Use the same TRI file as for the computation of the
+# solution.
+
+#smesh = './pre/asd.tri'
+smesh = ''
+
+# If ctype = 1/2, this is the filename of a file on disc containing
+# the flow. The file must contain a solution at the same spatial
+# level as prescribed by ilevel.
+
+sflowFile = 'ns\asd_q2_lv_5_re250/asd_q2_lv_5_re250'
+
+# Granularity parameter for the filenames of the flow if ctype=2.
+
+idelta = 1
+
+# If ctype=2/4: Number of files that describe the flow. If this is set to -1,
+# the number of files is automatically determined by the number of timesteps
+# in the finest level. If this is >= 0, the flow consists of nimesteps
+# files with file extension '.00000', '.00001', '.00002',...
+# If there are less files available on the hard disc that specified here,
+# the last solution is duplicated to fill the remaining time steps.
+
+ntimesteps = 64 
+
+# Start time of a nonstationary flow if ctype=2/4.
+# Default coincides with the start time of the nonstationary simulation.
+
+dstartTime = 0.0
+
+# End time of a nonstationary flow if ctype=2/4.
+# Default coincides with the end time of the nonstationary simulation.
+
+dtimeMax = 2.0
+
+
+#######################
+[ASD_Q2_LV_5_RE250INIT]
+#######################
+
+# Type of flow.
+# =1: stationary flow as prescribed by a solution vector read in from a file.
+#     The filename is stargetFlow below.
+
+ctype = 1
+
+# Refinement level of the coarse mesh corresponding to the flow vector.
+
+ilevel = 5
+
+# Element type of the flow.
+
+ielementType = 4
+
+# Name and path to the TRI file containing the mesh that corresponds to the
+# flow. ='': Use the same TRI file as for the computation of the
+# solution.
+
+smesh = ''
+
+# If ctype = 1/2, this is the filename of a file on disc containing
+# the flow. The file must contain a solution at the same spatial
+# level as prescribed by ilevel.
+
+sflowFile = 'ns/asd_q2_lv_5_re250/asd_q2_lv_5_re250.00000'

@@ -1,0 +1,34 @@
+############
+[POISEUILLE]
+############
+
+# Type of flow.
+# =1: stationary flow
+
+ctype = 1
+
+# The poiseuille flow.
+
+sflowFile = './ns/poiseuille/bench2m55poiseuillestatlv4q2'
+
+# Level
+
+ilevel = 4
+
+# Q2
+
+ielementType = 4
+
+# bench2m55-mesh
+
+smesh = './pre/bench2m55.tri'
+
+#################
+[POISEUILLE_INIT]
+#################
+
+# Type of flow.
+# =0: zero flow.
+
+ctype = 0
+

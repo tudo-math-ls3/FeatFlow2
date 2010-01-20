@@ -1,0 +1,40 @@
+##############################
+[ASD_Q2_LV_5_RE250]
+##############################
+
+# Type of flow.
+# =2: statinonary
+
+ctype = 1
+
+# Refinement level of the coarse mesh corresponding to the flow vector.
+
+ilevel = 5
+
+# Element type of the flow.
+
+ielementType = 4
+
+# Name and path to the TRI file containing the mesh that corresponds to the
+# flow. ='': Use the same TRI file as for the computation of the
+# solution.
+
+#smesh = './pre/asd.tri'
+smesh = ''
+
+# If ctype = 1/2, this is the filename of a file on disc containing
+# the flow. The file must contain a solution at the same spatial
+# level as prescribed by ilevel.
+
+sflowFile = 'ns\asd_q2_lv_5_re250/asd_q2_lv_5_re250.00016'
+
+
+#######################
+[ASD_Q2_LV_5_RE250INIT]
+#######################
+
+# Type of flow.
+# =0: zero
+
+ctype = 0
+

@@ -1,0 +1,25 @@
+############
+[POISEUILLE]
+############
+
+# Type of flow.
+# =3: analytically given
+
+ctype = 3
+
+# The poiseulle flow.
+
+sflowExpressionY1 = '0.3*(4/0.1681)*Y*(0.41-Y)*SIN(TIME*_PI)'
+sflowExpressionY2 = '0'
+sflowExpressionP = '0'
+
+
+#################
+[POISEUILLE_INIT]
+#################
+
+# Type of flow.
+# =0: zero flow.
+
+ctype = 0
+

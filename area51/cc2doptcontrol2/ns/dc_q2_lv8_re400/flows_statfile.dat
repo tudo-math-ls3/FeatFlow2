@@ -1,0 +1,64 @@
+###########
+[DRIVENCAV]
+###########
+
+# Type of flow.
+# =1: stationary flow
+
+ctype = 1
+
+# The Stokes flow.
+
+sflowFile = './ns/dc_q2_lv8_re400/drivencav_lv8_q2_statstokes.sol'
+
+# Level
+
+ilevel = 8
+
+# Q2
+
+ielementType = 4
+
+# Mesh
+#smesh = './pre/QUAD.tri'
+
+################
+[DRIVENCAV_INIT]
+################
+
+# Type of flow.
+# =1: stationary flow
+
+ctype = 1
+
+# Navier-Stokes flow at RE=400
+
+sflowFile = './ns/dc_q2_lv8_re400/drivencav_lv8_q2_statnavstokes.sol'
+
+# Level
+
+ilevel = 8
+
+# Q2
+
+ielementType = 4
+
+# Mesh
+#smesh = './pre/QUAD.tri'
+
+###############
+[BDEXPRESSIONS]
+###############
+
+bdExpressions(2) =
+  'Dirichlet0'    0    0.0
+  'Dirichlet1'    0    1.0
+
+##############
+[BDCONDITIONS]
+##############
+
+bdComponent1(3)=
+  2.0  1  1  'Dirichlet0'  'Dirichlet0'
+  3.0  3  1  'Dirichlet1'  'Dirichlet0'
+  4.0  2  1  'Dirichlet0'  'Dirichlet0'
