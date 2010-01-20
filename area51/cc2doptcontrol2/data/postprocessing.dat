@@ -38,6 +38,12 @@ sfilenameUCD = './gmv/u.vtk'
 
 ctypeStartVector = 3
 
+# Multiplication factor for the start vector (excluding the initial condition).
+# May be used to scale the start vector after creation.
+# Standard = 1.0
+
+dstartVectorWeight = 1.0
+
 # Name of the section that defines the initial iterate if ctypeStartVector=2.
 
 sstartVector = INITIALITERATE

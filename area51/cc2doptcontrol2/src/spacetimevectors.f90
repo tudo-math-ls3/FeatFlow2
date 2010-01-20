@@ -1139,7 +1139,7 @@ contains
 
 !<subroutine>
 
-  subroutine sptivec_scaleVector (rx,dscale)
+  subroutine sptivec_scaleVector (rx,dscale,isubstep)
 
 !<description>
   ! Scales a vector by dscale.
@@ -1148,6 +1148,9 @@ contains
 !<input>
   ! Scaling factor.
   real(DP), intent(IN) :: dscale
+  
+  ! OPTIONAL: Number of the substep to scale.
+  integer, intent(in), optional :: isubstep
 !</input>
 
 !<inputoutput>
@@ -1172,7 +1175,11 @@ contains
 
     ! Scale the scaling factors of all subvectors with dscale.
     ! rx%p_Dscale(:) = rx%p_Dscale(:) * dscale
-    call lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
+    if (.not. present(isubstep)) then
+      call lalg_scaleVectorDble(rx%p_Dscale(:),dscale)
+    else
+      rx%p_Dscale(isubstep) = rx%p_Dscale(isubstep) * dscale
+    end if
 
   end subroutine
 

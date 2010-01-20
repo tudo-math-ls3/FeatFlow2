@@ -2635,7 +2635,7 @@ contains
 !</subroutine>
 
     integer :: ctypeStartVector,i,ispacelevel,isuccess
-    real(dp) :: dtime
+    real(dp) :: dtime,dstartVectorWeight
     logical :: bsuccess
     type(t_anSolution) :: rlocalsolution
     character(len=SYS_STRLEN) :: sstartVector,sstartVectorSolver
@@ -2651,6 +2651,9 @@ contains
     ! Get the definition of the start vector
     call parlst_getvalue_int (rparlist, ssection, &
         'ctypeStartVector', ctypeStartVector, 0)
+
+    call parlst_getvalue_int (rparlist, ssection, &
+        'dstartVectorWeight', dstartVectorWeight, 1.0_DP)
 
     call parlst_getvalue_string (rparlist, ssection, &
         'sstartVector', sstartVector, "",bdequote=.true.)
@@ -2797,6 +2800,11 @@ contains
     ! Release memory
     call lsysbl_releaseMatrix(rmassMatrix)
     call lsysbl_releaseVector (rvectorSpace)
+
+    ! Scale the start vector.
+    do i=2,rvector%neqTime
+      call sptivec_scaleVector (rvector,dstartVectorWeight,i)
+    end do
 
   end subroutine
 
