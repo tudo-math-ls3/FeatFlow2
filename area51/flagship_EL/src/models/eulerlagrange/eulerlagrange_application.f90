@@ -383,6 +383,11 @@ contains
         call eulerlagrange_outputSolution(rparlist, 'eulerlagrange', rproblem&
             %p_rproblemLevelMax, rsolutionPrimal, dtime=rtimestep&
             %dTime)
+            
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        ! Euler-Lagrange
+        !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,rtimestep,rcollection,rParticles)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -465,7 +470,8 @@ contains
     call storage_free (rParticles%h_element)
     call storage_free (rParticles%h_diam)
     call storage_free (rParticles%h_mass)
-    !call storage_free (h_midpoints)
+    call storage_free (rParticles%h_midpoints_el)
+    call storage_free (rParticles%h_alpha_n)
 
   end subroutine eulerlagrange_app
 

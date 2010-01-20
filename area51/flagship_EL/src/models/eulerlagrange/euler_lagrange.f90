@@ -94,6 +94,11 @@ module euler_lagrange
       ! midpoints of the element 
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
+      ! gravity
+      real(DP), dimension(2)  :: gravity
+      ! viscosity of the gas
+      real(DP) :: nu_g
+      
     end type t_Particles
 
 
@@ -386,7 +391,13 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
     ! get boundarybehaviour
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "boundbehav", boundbehav)
-  
+
+    ! store particlesnumber, viscosity of the gas and gravity  
+    rParticles%npart = nPart
+    rParticles%nu_g= gas_nu
+    rParticles%gravity(1)= gravityx
+    rParticles%gravity(2)= gravityy
+
     ! initialize data for each particle
     DO iPart=1,rParticles%npart
   
@@ -396,15 +407,12 @@ SUBROUTINE eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     
         rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
         rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
-        rParticles%p_zpos(iPart)= 0.2d0
         rParticles%p_xpos_old(iPart)= velopartx
         rParticles%p_ypos_old(iPart)= veloparty
-        rParticles%p_zpos_old(iPart)= 0.2d0
         rParticles%p_diam(iPart)= particlediam
         rParticles%p_mass(iPart)= particlemass
         rParticles%p_alpha_n(iPart)= 0
         rParticles%p_element(iPart)= 1
-        rParticles%npart = nPart
         
         ! Find the start element for each particle
         call findnewelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
@@ -455,20 +463,19 @@ SUBROUTINE eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     do iPart = 1, rParticles%nPart
 
       ! subroutine to find the element with the particle
+      call findnewelement(rparlist,p_rproblemLevel,rsolution,&
+                            rtimestep,rcollection,rParticles,iPart)
+
+
       ! check if particle is in the wrong element
-      !call findnewelement(rparlist,p_rproblemLevel,rsolution,&
-                            !rtimestep,rcollection,rParticles,iPart)
+      IF (((ABS(rParticles%p_lambda1(iPart))+rParticles%p_lambda2(iPart))+&
+                  rParticles%p_lambda3(iPart)-1) .GE. 0.00001) THEN
+        call wrongelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+      END IF
 
-
-        ! wrong element
-        !IF (((ABS(rParticles%p_lambda1(iPart))+rParticles%p_lambda2(iPart))+&
-        !          rParticles%p_lambda3(iPart)-1) .GE. 0.00001) THEN
-        !    call wrongelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-        !END IF
-
-        ! subroutine to compute the new position of the particles
-        !call moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-
+      ! subroutine to compute the new position of the particles
+      call moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+write(*,*) iPart
     end do
 
 
@@ -872,56 +879,54 @@ SUBROUTINE wrongelement(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     ! pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! pointer to the multigrid level
-    type(t_problemLevel), pointer :: rproblemLevel
-
-	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, lexipunkt, i
+ 	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, lexipunkt, i
 
     ! Set pointer to triangulation
-    p_rtriangulation => rproblemLevel%rtriangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
     
-    !call storage_getbase_int2D(&
-    !     p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
          
-    !call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex,&
-    !    p_IelementsAtVertex)
+    call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex,&
+        p_IelementsAtVertex)
         
-    !call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx,&
-    !    p_IelementsAtVertexIdx)
+    call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx,&
+        p_IelementsAtVertexIdx)
 
     ! store the current element
-	!currentelm = rParticles%p_element(iPart)
+	currentelm = rParticles%p_element(iPart)
 	
     ! Loop over the vertices of the element
-	!SearchVertex: do Vert = 1, 3												
+	SearchVertex: do Vert = 1, 3												
 		
-	!	nVertex = p_IverticesAtElement(Vert, currentelm)
+		nVertex = p_IverticesAtElement(Vert, currentelm)
 			
 		! Loop over the element containing to the vertex
-		!SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+		SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
 											
-	    	!if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
-			!	exit SearchElement
-			!end if
+	    	if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
+				exit SearchElement
+			end if
 
-			!rParticles%p_element(iPart) = 10 !p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
+			rParticles%p_element(iPart) = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
 
-            ! calculate barycentric coordinates
-            !call calculatebarycoords(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+            !calculate barycentric coordinates
+            call calculatebarycoords(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
             
-            !if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
-            !    rParticles%p_lambda3(iPart)) .GE. 1.00001) then
-	        !    rParticles%p_element(iPart) = currentelm
-            !end if
+            if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
+                rParticles%p_lambda3(iPart)) .GE. 1.00001) then
+	            rParticles%p_element(iPart) = currentelm
+            end if
 
-		!end do SearchElement
+		end do SearchElement
 
-	!end do SearchVertex
+	end do SearchVertex
 
-    !if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
-    !          rParticles%p_lambda3(iPart)) .GE. 1.00001) then
-	!  rParticles%p_element(iPart) = currentelm
-    !end if
+    if ((rParticles%p_lambda1(iPart)+rParticles%p_lambda2(iPart)+&
+              rParticles%p_lambda3(iPart)) .GE. 1.00001) then
+	  rParticles%p_element(iPart) = currentelm
+	  !write(*,*) 'wrong element', rParticles%p_lambda1(iPart) + rParticles%p_lambda2(iPart) + rParticles%p_lambda3(iPart)
+    end if
 
 
 END SUBROUTINE wrongelement
@@ -969,18 +974,46 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     ! This is the old KEBD array.
     integer, dimension(:), pointer :: p_IelementsAtBoundary
 
-    ! subroutine to check if the element is at the boundary
-    !call CheckBoundary(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+
+    ! pointer to the vertices adjacent to an element
+    !
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the corner-vertices
+    ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! This is a handle to the old KVERT array.
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
 
 	real(DP) :: ux1_part, uy1_part, ux2_part, uy2_part, ux3_part, uy3_part
 	real(DP), dimension(3) :: rho_gas
-    real(DP) :: rho_g, C_W, Re_p, nu_g, Velo_rel, dt, c_pi
-    real(DP), dimension(2) :: gravity
+    real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
+    
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
+  
+    ! Set pointer to triangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
+    
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-    !change: from parameterlist!!!
-    gravity=0   
-    nu_g=1
-    dt= 0.1
+    
+    ! get values for the startingpositions of the particles
+    call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
+
+!TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
+    call eulerlagrange_getVariable(rsolution, 'velocity_x', rvector1)
+    call eulerlagrange_getVariable(rsolution, 'velocity_y', rvector2)
+    call eulerlagrange_getVariable(rsolution, 'density', rvector3)
+    call lsyssc_getbase_double(rvector1, p_Ddata1)
+    call lsyssc_getbase_double(rvector2, p_Ddata2)
+    call lsyssc_getbase_double(rvector2, p_Ddata3)
+    
     c_pi= 3.14
 
 	! store old data
@@ -991,20 +1024,20 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
 	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
 
-	! corner 1
-	ux1_part= 1
-	uy1_part= 1
-	rho_gas(1)= 1
+	! velocity and density of the gas in the first corner (in mathematically positive sense)
+	ux1_part= p_Ddata1(p_IverticesAtElement(1,rParticles%p_element(iPart)))
+	uy1_part= p_Ddata2(p_IverticesAtElement(1,rParticles%p_element(iPart)))
+	rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,rParticles%p_element(iPart)))
 
-	! corner 2
-	ux2_part= 2
-	uy2_part= 2
-	rho_gas(2)= 2
+	! velocity and density of the gas in the second corner (in mathematically positive sense)
+	ux2_part= p_Ddata1(p_IverticesAtElement(2,rParticles%p_element(iPart)))
+	uy2_part= p_Ddata2(p_IverticesAtElement(2,rParticles%p_element(iPart)))
+	rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,rParticles%p_element(iPart)))
 
-	! corner 3
-	ux3_part= 3
-	uy3_part= 3
-	rho_gas(3)= 3
+	! velocity and density of the gas in the third corner (in mathematically positive sense)
+	ux3_part= p_Ddata1(p_IverticesAtElement(3,rParticles%p_element(iPart)))
+	uy3_part= p_Ddata2(p_IverticesAtElement(3,rParticles%p_element(iPart)))
+	rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,rParticles%p_element(iPart)))
 
 	! calculate velocity of the gas
 	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
@@ -1020,7 +1053,7 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 
 
 	! calculate particle Reynoldsnumber
-	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/nu_g)*(SQRT((rParticles%p_xvelo_gas(iPart)- &
+	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/rParticles%nu_g)*(SQRT((rParticles%p_xvelo_gas(iPart)- &
 	       rParticles%p_xvelo_old(iPart))**2+&
 		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2))
 
@@ -1041,12 +1074,12 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	! calculate new velocity of the particle
 	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
 								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25 * rParticles%p_diam(iPart)**2 &
-								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * gravity(1))/&
+								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * rParticles%gravity(1))/&
 								(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
 								0.25*rParticles%p_diam(iPart)**2)
 	rParticles%p_yvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_yvelo_old(iPart)+&
 								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25*rParticles%p_diam(iPart)**2 &
-								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*gravity(2))/&
+								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*rParticles%gravity(2))/&
     							(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
     							0.25*rParticles%p_diam(iPart)**2)
 
@@ -1058,6 +1091,10 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	
 	rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt * rParticles%p_xvelo(iPart)
 	rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt * rParticles%p_yvelo(iPart)
+
+!TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
+call lsyssc_releasevector(rvector1)
+call lsyssc_releasevector(rvector2)
 
 
 END SUBROUTINE moveparticle
