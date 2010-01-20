@@ -74,8 +74,16 @@ isystemPrecond = 1
 # (ii) for sequential/multiplicative flux correction list
 #      all variables one by one, e.g.
 #
-slimitingvariable(3) =
+slimitingvariable(1) =
   density
+#  pressure
+#  velocity_x
+
+# number of failsafe steps
+nfailsafe = 4
+
+# variables for failsafe flux correction
+sfailsafevariables(2) =
   pressure
   velocity_x
 
@@ -163,7 +171,7 @@ errorestimator = ErrorEstimator
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
