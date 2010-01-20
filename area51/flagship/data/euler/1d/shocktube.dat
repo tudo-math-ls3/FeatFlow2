@@ -78,9 +78,7 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(3) = 
-  density
-  density
+slimitingvariable(1) =
   density
 
 # type of initial solution profile
