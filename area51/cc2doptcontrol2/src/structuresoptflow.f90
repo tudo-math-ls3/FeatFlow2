@@ -110,6 +110,26 @@ module structuresoptflow
     ! Filename for the body forces
     character(len=SYS_STRLEN) :: sfilenameBodyForces = ""
 
+    ! Whether to calculate flux
+    integer :: icalcFlux = 0
+
+    ! Start/End coordinates of the lines along which to calculate the flux.
+    real(DP), dimension(4) :: Dfluxline = (/0.0,0.0,0.0,0.0/)
+
+    ! Whether to write the flux to a file
+    integer :: iwriteFlux = 0
+
+    ! Filename for the flux
+    character(len=SYS_STRLEN) :: sfilenameFlux = ""
+
+    ! Whether to calculate flux
+    integer :: icalcKineticEnergy = 0
+
+    ! Whether to write the flux to a file
+    integer :: iwriteKineticEnergy = 0
+
+    ! Filename for the flux
+    character(len=SYS_STRLEN) :: sfilenameKineticEnergy = ""
     ! <!-- the following parameters are automatically maintained during a simulation -->
     
     ! Space that is available in rsolution. One of the CCSPACE_xxxx constants.

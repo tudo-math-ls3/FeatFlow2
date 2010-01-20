@@ -2819,43 +2819,84 @@ contains
         rboundaryConditions,rtimeDiscr,rspaceDiscr)
         
     ! Read remaining parameters from the DAT file.
+    !
+    ! UCD export
     call parlst_getvalue_int (rparlist,ssection,&
-        'ioutputUCD',rpostproc%ioutputUCD,0)
+        "ioutputUCD",rpostproc%ioutputUCD,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfilenameUCD",rpostproc%sfilenameUCD,"",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
+        "",bdequote=.true.)
+
+    ! function value calculation
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'icalcError',rpostproc%icalcError,0)
+        "icalcFunctionalValues",rpostproc%icalcFunctionalValues,0)
+
+    ! Body forces
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'icalcForces',rpostproc%icalcForces,0)
+        "icalcForces",rpostproc%icalcForces,0)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'ibodyForcesBdComponent',rpostproc%ibodyForcesBdComponent,2)
+        "ibodyForcesBdComponent",rpostproc%ibodyForcesBdComponent,2)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dbdForcesCoeff1',rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnu)
+        "dbdForcesCoeff1",rpostproc%dbdForcesCoeff1,rsettings%rphysicsPrimal%dnu)
 
     call parlst_getvalue_double (rparlist,ssection,&
-        'dbdForcesCoeff2',rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
+        "dbdForcesCoeff2",rpostproc%dbdForcesCoeff2,0.1_DP * 0.2_DP**2)
 
     call parlst_getvalue_int (rparlist,ssection,&
-        'iwriteBodyForces',rpostproc%iwriteBodyForces,0)
+        "iwriteBodyForces",rpostproc%iwriteBodyForces,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
         "sfilenameBodyForces",rpostproc%sfilenameBodyForces,&
         "",bdequote=.true.)
 
+    ! Flux
+
     call parlst_getvalue_int (rparlist,ssection,&
-        'icalcFunctionalValues',rpostproc%icalcFunctionalValues,0)
+        "icalcFlux",rpostproc%icalcFlux,0)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwriteFlux",rpostproc%iwriteFlux,0)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfilenameUCD',rpostproc%sfilenameUCD,"",bdequote=.true.)
+        'sfilenameFlux',rpostproc%sfilenameFlux,"",bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,ssection,&
-        'sfinalSolutionFileName',rpostproc%sfinalSolutionFileName,&
-        "",bdequote=.true.)
-    
+        'dfluxline',sstr,"",bdequote=.true.)
+        
     call parlst_getvalue_string (rparlist,ssection,&
-        'ssectionReferenceFunction',sstr,"",bdequote=.true.)
+        'dfluxline',sstr,"",bdequote=.true.)
+    if (sstr .ne. "") then
+      ! Read the start/end coordinates
+      read(sstr,*) rpostproc%Dfluxline(1),rpostproc%Dfluxline(2),&
+          rpostproc%Dfluxline(3),rpostproc%Dfluxline(4)
+    end if
+
+    ! internal Energy
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcKineticEnergy",rpostproc%icalcKineticEnergy,1)
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iwriteKineticEnergy",rpostproc%iwriteKineticEnergy,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        'sfilenameKineticEnergy',rpostproc%sfilenameKineticEnergy,"",bdequote=.true.)
+
+    ! Error calculation
+
+    call parlst_getvalue_int (rparlist,ssection,&
+        "icalcError",rpostproc%icalcError,0)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "ssectionReferenceFunction",sstr,"",bdequote=.true.)
     
     if (sstr .eq. "") &
         rpostproc%icalcError = 0
@@ -2866,8 +2907,8 @@ contains
           rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
           rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
       if (isuccess .eq. 1) then
-        call output_line ('Flow created by simulation not yet supported!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+        call output_line ("Flow created by simulation not yet supported!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlTargetFlow")
         call sys_halt()
       end if
     end if

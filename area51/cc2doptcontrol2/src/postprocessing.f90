@@ -54,6 +54,11 @@ module postprocessing
   use paramlist
   use pprocerror
   use pprocgradients
+  use triasearch
+  use mprimitives
+  use derivatives
+  use feevaluation
+  use pprocintegrals
   
   use collection
   use convection
@@ -87,7 +92,7 @@ module postprocessing
   public :: optcpp_postprocessSingleSol
   public :: optcpp_postprocessSpaceTimeVec
   public :: optcpp_postprocSpaceVisOutput
-  
+ 
 !!<constants>
 !
 !!<constantblock description="Type identifiers for creating a space-time vector.">
@@ -254,6 +259,7 @@ contains
 
   ! local variables
   integer :: ieltype,cflag,iunit
+  real(DP) :: dflux,denergy
   logical :: bfileexists
   type(t_collection) :: rcollection
 
@@ -271,13 +277,13 @@ contains
   type(t_ucdExport) :: rexport
   
   ! Forces on the object
-  real(DP), dimension(NDIM2D) :: Dforces
+  real(DP), dimension(NDIM2D) :: Dforces,Derr
   type(t_boundaryRegion) :: rregion
   
   ! Divergence
   !type(t_vectorScalar), target :: rtempVector
   
-  character(SYS_STRLEN) :: sfilename
+  character(SYS_STRLEN) :: sfilename,stemp
 
   ! Discrete boundary conditions
   type(t_discreteBC) :: rdiscreteBC
@@ -286,7 +292,7 @@ contains
   type(t_discreteFBC) :: rdiscreteFBC
 
     ! -------------------------------------------------------------------------
-    ! Body forces
+    ! Body forces & flux calculation
     ! -------------------------------------------------------------------------
 
     ! When writing to a file is enabled, delete the file in the first timestep.
@@ -325,15 +331,79 @@ contains
           ! Write a headline
           write (iunit,'(A)') '# timestep time bdc horiz vert'
         end if
-        write (iunit,'(A)') trim(sys_siL(ifileid,10)) // ' ' &
+        stemp = trim(sys_siL(ifileid,10)) // ' ' &
             // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_siL(rpostproc%ibodyForcesBdComponent,10)) // ' ' &
             // trim(sys_sdEL(Dforces(1),10)) // ' '&
             // trim(sys_sdEL(Dforces(2),10))
+        write (iunit,'(A)') trim(stemp)
         close (iunit)
       end if
       
     endif
+    
+    if (rpostproc%icalcFlux .ne. 0) then
+      
+      ! Calculate the flux.
+      call ppns2D_calcFluxThroughLine (rvector,&
+          rpostproc%Dfluxline(1:2),rpostproc%Dfluxline(3:4),dflux)
+          
+      call output_lbrk()
+      call output_line ('Flux = '//trim(sys_sdEP(dflux,15,6)))
+
+      if (rpostproc%iwriteflux .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(rpostproc%sfilenameFlux, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time flux'
+        end if
+        stemp = trim(sys_siL(ifileid,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_sdEL(dflux,10))
+        write (iunit,'(A)') trim(stemp)
+        close (iunit)
+      end if
+      
+    end if
+    
+    if (rpostproc%icalcKineticEnergy .ne. 0) then
+    
+      ! Perform error analysis to calculate and add 1/2||u||^2_{L^2}.
+      call pperr_scalar (rvector%RvectorBlock(1),PPERR_L2ERROR,Derr(1))
+      call pperr_scalar (rvector%RvectorBlock(2),PPERR_L2ERROR,Derr(2))
+                         
+      denergy = 0.5_DP*(Derr(1)**2+Derr(2)**2)
+
+      call output_lbrk()
+      call output_line ('||u_1||_L2         = '//trim(sys_sdEP(Derr(1),15,6)))
+      call output_line ('||u_2||_L2         = '//trim(sys_sdEP(Derr(2),15,6)))
+      call output_line ('||u||_L2           = '//&
+          trim(sys_sdEP(sqrt(Derr(1)**2+Derr(2)**2),15,6)))
+      call output_line ('1/2||u||^2_L2      = '//trim(sys_sdEP(denergy,15,6)))
+      
+      if (rpostproc%iwriteKineticEnergy .ne. 0) then
+        ! Write the result to a text file.
+        ! Format: timestep current-time value
+        call io_openFileForWriting(rpostproc%sfilenameKineticEnergy, iunit, &
+            cflag, bfileExists,.true.)
+        if ((cflag .eq. SYS_REPLACE) .or. (.not. bfileexists)) then
+          ! Write a headline
+          write (iunit,'(A)') '# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2'
+        end if
+        stemp = trim(sys_siL(ifileid,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_sdEL(denergy,10)) // ' ' &
+            // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
+            // trim(sys_sdEL(Derr(1),10)) // ' ' &
+            // trim(sys_sdEL(Derr(2),10))
+        write (iunit,'(A)') trim(stemp)
+        close (iunit)
+      end if
+
+    end if
     
     ! -------------------------------------------------------------------------
     ! Writing out of the final solution
