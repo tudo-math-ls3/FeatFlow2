@@ -4480,7 +4480,7 @@ contains
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4488,7 +4488,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4533,7 +4533,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4568,7 +4568,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4603,7 +4603,7 @@ contains
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4611,7 +4611,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4668,14 +4668,14 @@ contains
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4683,7 +4683,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
         call sys_halt()
       end if
 
@@ -4789,9 +4789,12 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
+        ! Apply multiplicative correction factor
+        Diff = Dalpha(iedge) * Dflux(:,iedge)
+
         ! Compute transformed fluxes
         call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+            Dx(i,:), Dx(j,:), Diff, F_ij, F_ji)
 
         ! Compute transformed solution difference
         call fcb_calcDiffTransformation(&
@@ -4801,10 +4804,6 @@ contains
 !!$        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
 !!$            any(F_ji*Diff .le. 0.0_DP))&
 !!$            Dalpha(iedge) = 0.0_DP
-
-        ! Apply multiplicative correction factor
-        F_ij = Dalpha(iedge)*F_ij
-        F_ji = Dalpha(iedge)*F_ji
 
         ! Compute the sums of positive/negative antidiffusive increments
         Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
@@ -5317,6 +5316,14 @@ contains
       call sys_halt()
     end if
 
+!!$    print *, "Initialising alpha      ", iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA)
+!!$    print *, "Antidiffusive increments", iand(ioperationSpec, AFCSTAB_FCTALGO_ADINCREMENTS)
+!!$    print *, "Low-order bounds        ", iand(ioperationSpec, AFCSTAB_FCTALGO_BOUNDS)
+!!$    print *, "Nodal factors           ", iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITNODAL)
+!!$    print *, "Edgewise factors        ", iand(ioperationSpec, AFCSTAB_FCTALGO_LIMITEDGE)
+!!$    print *, "Apply correction        ", iand(ioperationSpec, AFCSTAB_FCTALGO_CORRECT)
+!!$    print *, "Scale by mass matrix    ", iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS)
+
     !---------------------------------------------------------------------------
     ! The nonlinear FEM-FCT algorithm is split into the following
     ! steps which can be skipped and performed externally by the user:
@@ -5590,7 +5597,7 @@ contains
             dscale, p_Dalpha, p_Dflux, p_Dy)
       end if
     end if
-
+    
   contains
 
     ! Here, the working routines follow
@@ -5625,9 +5632,9 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
-        ! Prelimiting of antidiffusive fluxes
-        if (any(Dflux(:,iedge)*(Dx(:,j)-Dx(:,i)) .ge. 0.0_DP))&
-            Dalpha(iedge) = 0.0_DP
+!!$        ! Prelimiting of antidiffusive fluxes
+!!$        if (any(Dflux(:,iedge)*(Dx(:,j)-Dx(:,i)) .ge. 0.0_DP))&
+!!$            Dalpha(iedge) = 0.0_DP
 
         ! Apply multiplicative correction factor
         F_ij = Dalpha(iedge) * Dflux(:,iedge)
@@ -5671,22 +5678,21 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
 
+        ! Apply multiplicative correction factor
+        Diff = Dalpha(iedge)*Dflux(:,iedge)
+
         ! Compute transformed fluxes
         call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+            Dx(:,i), Dx(:,j), Diff, F_ij, F_ji)
 
         ! Compute transformed solution difference
         call fcb_calcDiffTransformation(&
             Dx(:,i), Dx(:,j), Diff)
 
-        ! Prelimiting of antidiffusive fluxes
-        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
-            any(F_ji*Diff .le. 0.0_DP))&
-            Dalpha(iedge) = 0.0_DP
-
-        ! Apply multiplicative correction factor
-        F_ij = Dalpha(iedge)*F_ij
-        F_ji = Dalpha(iedge)*F_ji
+!!$        ! Prelimiting of antidiffusive fluxes
+!!$        if (any(F_ij*Diff .ge. 0.0_DP) .or.&
+!!$            any(F_ji*Diff .le. 0.0_DP))&
+!!$            Dalpha(iedge) = 0.0_DP
 
         ! Compute the sums of positive/negative antidiffusive increments
         Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
@@ -5839,6 +5845,7 @@ contains
             ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
       end do
       !$omp end parallel do
+
     end subroutine doLimitNodalConstrained
 
     !**************************************************************
