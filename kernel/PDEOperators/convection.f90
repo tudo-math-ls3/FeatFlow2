@@ -3676,13 +3676,6 @@ contains
       call sys_halt()
     end if
 
-    if (lsysbl_isSubmatrixPresent(rmatrix,1,2) .and. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
-        (rmatrix%RmatrixBlock(1,2)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
-      print *,'SD: Unsupported matrix format'
-      call sys_halt()
-    end if
-
     if (lsysbl_isSubmatrixPresent(rmatrix,2,1) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
         (rmatrix%RmatrixBlock(2,1)%cmatrixFormat .ne. LSYSSC_MATRIX7)) then
