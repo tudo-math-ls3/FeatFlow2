@@ -292,10 +292,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 8
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 8
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
