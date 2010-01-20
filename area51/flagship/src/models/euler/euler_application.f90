@@ -598,7 +598,7 @@ contains
     integer :: templateMatrix,systemMatrix,jacobianMatrix,consistentMassMatrix
     integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
-    integer :: imatrixFormat,NVARtransformed,ivar,jvar,nvariable
+    integer :: imatrixFormat,ivar,jvar,nvariable
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -1076,19 +1076,19 @@ contains
             ssectionName, 'slimitingvariable'))
         
         ! Initialise number of limiting variables
-        if (nvariable .gt. 1) then
-          nvartransformed = 1
-        else
+        if (nvariable .eq. 1) then
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'slimitingvariable',&
               slimitingvariable, isubstring=1)
-          nvartransformed = euler_getNVARtransformed(&
+          nvariable = euler_getNVARtransformed(&
               rproblemLevel, slimitingvariable)
+        else
+          nvariable = 1
         end if
         
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
+            rproblemLevel%Rafcstab(inviscidAFC), nvariable)
 
       else
         call afcstab_resizeStabilisation(&
