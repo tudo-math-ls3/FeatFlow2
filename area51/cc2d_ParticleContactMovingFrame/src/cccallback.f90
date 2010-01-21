@@ -1610,14 +1610,14 @@ contains
   end if
 
   p_rparticleCollection => collct_getvalue_particles(rcollection,'particles')
-  
+                      
   ! Default implementation: Velocity and acceleration is zero in all dimensinons.
   Dvelocity(1) = 0.0_DP
-  Dvelocity(2) = p_rparticleCollection%p_rParticles(1)%dtransVelY
+  Dvelocity(2) = p_rparticleCollection%p_rParticles(1)%dAccel(1)
   
   Dacceleration(1) = 0.0_DP
-  Dacceleration(2) = (p_rparticleCollection%p_rParticles(1)%dtransVelY - &
-                      p_rparticleCollection%p_rParticles(1)%dtransVelYold)/dtimestep
+  Dacceleration(2) = p_rparticleCollection%p_rParticles(1)%dAccel(1)/dtimestep                      
+                      
 
   end subroutine
   

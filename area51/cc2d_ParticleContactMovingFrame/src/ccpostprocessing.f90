@@ -533,12 +533,13 @@ contains
           ! Write a headline
           write (iunit,'(A)') '# timestep time ||u-reference||_H1'
         end if
-        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
             // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
-            // trim(sys_sdEL(derrorVel,10))
+            // trim(sys_sdEL(derrorVel,10)) // ' ' &
+            // trim(sys_sdEL(derrorP,10))
+        write (iunit,'(A)') trim (stemp)
         close (iunit)
-      end if
-      
+        end if
     end if
     
     if (icalcEnergy .ne. 0) then
@@ -565,9 +566,10 @@ contains
           ! Write a headline
           write (iunit,'(A)') '# timestep time ||u||^2_L2'
         end if
-        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
             // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
             // trim(sys_sdEL(denergy,10))
+        write (iunit,'(A)') trim(stemp)
         close (iunit)
       end if
 
@@ -875,12 +877,12 @@ contains
           ! Write a headline
           write (iunit,'(A)') '# timestep time bdc horiz vert'
         end if
-        write (iunit,'(A)') trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
+        stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
             // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
             // trim(sys_siL(ibodyForcesBdComponent,10)) // ' ' &
             // trim(sys_sdEL(Dforces(1),10)) // ' '&
             // trim(sys_sdEL(Dforces(2),10))
-        close (iunit)
+        write (iunit,'(A)') trim(stemp)
       end if
       
     end if
@@ -980,7 +982,7 @@ contains
     integer, dimension(:), allocatable :: Itypes
     integer, dimension(:), allocatable :: Ider
     character(LEN=SYS_STRLEN) :: sparam
-    character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues
+    character(LEN=SYS_STRLEN) :: sstr,sfilenamePointValues,stemp    
     character(LEN=10), dimension(3,3), parameter :: Sfctnames = RESHAPE (&
       (/ "       u1 ","     u1_x ","     u1_y " , &
          "       u2 ","     u2_x ","     u2_y " , &
@@ -1055,16 +1057,18 @@ contains
         write (iunit,'(A)') &
           '# timestep time x y type deriv value x y type deriv value ...'
       end if
-      write (iunit,ADVANCE='NO',FMT='(A)') &
+      stemp = &
           trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
           trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+      write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
       do i=1,npoints
-        write (iunit,ADVANCE='NO',FMT='(A)') ' ' //&
+        stemp = ' ' //&
             trim(sys_sdEL(Dcoords(1,i),5)) // ' ' // &
             trim(sys_sdEL(Dcoords(2,i),5)) // ' ' // &
             trim(sys_siL(Itypes(i),2)) // ' ' // &
             trim(sys_siL(Ider(i),2)) // ' ' // &
             trim(sys_sdEL(Dvalues(i),10))
+        write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
       end do
       write (iunit,ADVANCE='YES',FMT='(A)') ""
       close (iunit)
@@ -3066,6 +3070,9 @@ contains
       dvelx   = dtimestep*(FPx+FWx+1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
       dvely   = dtimestep*(FPy+FWy+1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
       !dvely   = dtimestep*(FWy+1.0_dp*dfy+ddmasssl*0.0_dp)/dmasssl
+      p_rparticleCollection%p_rParticles(ipart)%dAccel(2)=&
+      p_rparticleCollection%p_rParticles(ipart)%dAccel(1)
+      p_rparticleCollection%p_rParticles(ipart)%dAccel(1)=dvely      
    
       ! integrate the torque to get the angular velocity
       ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
