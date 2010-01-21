@@ -29,14 +29,33 @@
 #
 #   allowbuildIDs:
 #      comma-separated list of build IDs (standard FEAT2 five dash-separated tokens
-#      to identify architecture, cpu, operating system, compiler suite and BLAS 
-#      implementation) a benchmark test should be run on.
-#      The mechanism works exactly like 'allowhosts' and supports the same special
-#      values 'all', 'any' and 'none'. The remark on the complementary nature of
-#      'allowhosts'/'denyhosts' holds for 'allowbuildIDs'/'denybuildIDs', too.
+#      to identify architecture, cpu, operating system, compiler suite and BLAS
+#      implementation) a benchmark test should be run on. Like for 'allowhosts'
+#      special values 'all', 'any' and 'none' are supported. Additionally, simple
+#      Perl regular expressions are supported.
 #
 #      Examples:
+#         allowbuildIDs   = all
 #         allowbuildIDs   = pc-opteron-linux64-intel-goto
+#         allowbuildIDs   = pc-.*-linux64-intel-.*
+#
+#      Note that regexp support is not 100% foolproof. A setting of
+#         allowbuildIDs   = pc-opteron-linux64-intel-goto, pc-.*-linux64-intel-.*
+#      is not undone by a single
+#         denybuildIDs   = pc-.*-linux64-intel-.*
+#      but only by
+#         denbybuildIDs  = pc-opteron-linux64-intel-goto, pc-.*-linux64-intel-.*
+#
+#      More pathologic cases:
+#         allowbuildIDs   = all
+#         denybuildIDs    = pc-.*-linux32-.*-.*
+#         allowbuildIDs   = pc-athlon64-linux32-gcc-.*
+#      => should allow pc-athlon64-linux32-gcc-.* and does. Ok.
+#
+#         allowbuildIDs   = all
+#         allowbuildIDs   = pc-.*-linux32-.*-.*
+#         denybuildIDs    = pc-athlon64-linux32-gcc-.*
+#      => should allow pc-athlon64-linux32-gcc-.* and does. Ok.
 #
 #
 #   denyhosts:
@@ -61,17 +80,20 @@
 #      comma-separated list of build IDs (standard FEAT2 five dash-separated tokens
 #      to identify architecture, cpu, operating system, compiler suite, BLAS
 #      implementation) a benchmark test should never be run on.
-#      The mechanism works exactly like 'denyhosts' and supports the same special
-#      values 'all', 'any' and 'none'. The remark on the complementary nature of
-#      'allowhosts'/'denyhosts' holds for 'allowbuildIDs'/'denybuildIDs', too.
+#      The mechanism works exactly like 'allowbuildIDs' and supports the same special
+#      values 'all', 'any' and 'none' as well as simple Perl regular expressions.
+#      The remark on the complementary nature of 'allowhosts'/'denyhosts' holds for
+#      'allowbuildIDs'/'denybuildIDs', too.
 #
 #      Examples:
 #         denybuildIDs   = pc-opteron-linux64-intel-goto
+#         denybuildIDs   = pc-opteron-linux64-intel-goto, sun4u-sparcv9-sunos-.*-.*
 #
 #
 #   execmode:
 #      comma-separated list of execution modes. Valid values are 'mpi' and
-#      'serial'. We might add 'openmp' in future.
+#      'serial'. The use of 'parallel' is equivalent to 'mpi', but deprecated.
+#      We might add 'openmp' in future.
 #
 
 
@@ -82,7 +104,7 @@ use strict;
 use warnings;
 
 # Try to import execmode from environment (set by calling Makefile)
-use Env qw(MPI ID);
+use Env;
 
 # handling of command line options
 use Getopt::Long 2.33 qw(:config prefix_pattern=--);
@@ -112,7 +134,8 @@ my $testsdir = "tests";
 # Extension of files encoding FEAT2 benchmark tests
 my $testfileext = "fbdef";
 
-# Immediately print messages to screen, don't buffer them
+# Immediately print messages to screen, don't buffer them,
+# especially helpful when debugging.
 use IO::Handle;
 STDOUT->autoflush(1);
 
@@ -232,40 +255,30 @@ foreach my $testfile (@defaultSettingsFiles) {
 	    my %hash = &splitup($1, $2);
 	    foreach my $keyword (keys %hash) {
 		my $value = $hash{$keyword};
-		# Remove leading white space 
+		# Remove leading white space
 		# (any trailing white space has been remove on the complete line already)
 		$value =~ s/^\s*//;
 
 		# Store it (keyword in uppercase).
 		if ($value ne "") {
-		    # Special handling of ALLOW*, DENY*
-		    # Because having inherited a setting of
-		    #   denyhosts = all
-		    #   allowhosts = jerusalem, jericho
-		    # and reading a setting of
-		    #   denyhosts = jerusalem
-		    # should not overwrite, but append the denyhosts setting.
-		    # But avoid a new setting like
-		    #   denyhosts = none,jerusalem
-		    # The removal of jerusalem from the allowhosts setting will be done
-		    # in update_allowdeny_settings().
-		    if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i &&
-			$value !~ m/\b(all|any|none)\b/i) {
-			# allowhosts = all|any   =>   append (possibly leads to removal from denylist)
-			# allowhosts = none      =>   overwrite
-			# denyhosts  = none      =>   overwrite
-			# denyhosts  = all|any   =>   append (possibly leads to removal from allowlist)
-			if ($default{uc($keyword)} !~ m/\bnone\b/i) {
-			    $value = $default{uc($keyword)} . "," . $value;
-			}
+		    # Special handling of ALLOW*, DENY* because they are realised as
+		    # hashes, not scalar values and may require updating the
+		    # complimentary setting (i.e. allowhosts = jerusalem should cancel
+		    # out a previous 'denyhosts = jerusalem' setting.)
+		    if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i) {
 
+			# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
+			# complimentary and hash structures, while all other values are
+			# scalars.  Take additional measures to ensure correct input and
+			# consistency of complimentary settings.
+			&update_allowdeny_settings($keyword, $value, \%default, "Storing as new default value:");
+		    } else {
+			printf STDERR
+			    "Storing as new default value: '" .
+			    uc($keyword) . "' => '" .
+			    $value. "'\n" if ($debugScript);
+			$default{uc($keyword)} = $value;
 		    }
-
-		    printf STDERR
-			"Storing as new default value: '" .
-			uc($keyword) . "' => '" .
-			$value. "'\n" if ($debugScript);
-		    $default{uc($keyword)} = $value;
 		} else {
 		    if (exists($default{uc($keyword)})) {
 			# Unset keyword
@@ -275,11 +288,6 @@ foreach my $testfile (@defaultSettingsFiles) {
 			delete $default{uc($keyword)};
 		    }
 		}
-
-		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
-		# complimentary. Take additional measures to ensure consistency
-		# of settings.
-		&update_allowdeny_settings($keyword, $value, \%default);
 	    }
 	    undef %hash;
 	}
@@ -314,8 +322,31 @@ foreach my $testfile (@testfiles) {
 
     # Copy defaults to inherited
     foreach my $keyword (keys %default) {
-	my $value = $default{$keyword};
-	$inherited{$keyword} = $value;
+	# Scalars can simply be copied, but using an assignment operator for
+	# arrays and hashes, too, would only copy references to these arrays and
+	# hashes and not create independent structures! Those can not be altered
+	# independently later on. All test IDs would point to the very same,
+	# single array and hash objects.
+	if (ref($default{$keyword}) eq "") {
+	    # Dealing with a scalar value
+	    print STDERR "Copying inherited scalar value to inherited{$keyword}: $default{$keyword}\n" if ($debugScript);
+	    $inherited{$keyword} = $default{$keyword};
+	} elsif (ref($default{$keyword}) eq "ARRAY") {
+	    # Dealing with an array
+	    print STDERR "Copying inherited array value to inherited{$keyword}: $default{$keyword}\n" if ($debugScript);
+	    @{ $inherited{$keyword} } = ();
+	    foreach my $token (@{ $default{$keyword} }) {
+		push @{ $inherited{$keyword} }, $token;
+	    }
+	} elsif (ref($default{$keyword}) eq "HASH") {
+	    # Dealing with a hash
+	    print STDERR "Copying inherited hash value to inherited{$keyword}: $default{$keyword}\n" if ($debugScript);
+	    %{ $inherited{$keyword} } = ();
+	    foreach my $key (keys %{ $default{$keyword} }) {
+		$inherited{$keyword}{$key} = $default{$keyword}{$key};
+	    }
+	}
+
     }
 
     my $lineno = 0;
@@ -337,8 +368,30 @@ foreach my $testfile (@testfiles) {
 	    $testid = $1;
 	    # Init settings with defaults (= latest settings)
 	    foreach my $entry (sort keys %inherited) {
-		print STDERR "Copying inherited value to test{$testid}{$entry}: $inherited{$entry}\n" if ($debugScript);
-		$test{$testid}{$entry} = $inherited{$entry};
+		# Scalars can simply be copied, but using an assignment operator for
+		# arrays and hashes, too, would only copy references to these arrays and
+		# hashes and not create independent structures! Those can not be altered
+		# independently later on. All test IDs would point to the very same,
+		# single array and hash objects.
+		if (ref($inherited{$entry}) eq "") {
+		    # Dealing with a scalar value
+		    print STDERR "Copying inherited scalar value to test{$testid}{$entry}: $inherited{$entry}\n" if ($debugScript);
+		    $test{$testid}{$entry} = $inherited{$entry};
+		} elsif (ref($inherited{$entry}) eq "ARRAY") {
+		    # Dealing with an array
+		    print STDERR "Copying inherited array value to test{$testid}{$entry}: $inherited{$entry}\n" if ($debugScript);
+		    @{ $test{$testid}{$entry} } = ();
+		    foreach my $token (@{ $inherited{$entry} }) {
+			push @{ $test{$testid}{$entry} }, $token;
+		    }
+		} elsif (ref($inherited{$entry}) eq "HASH") {
+		    # Dealing with a hash
+		    print STDERR "Copying inherited hash value to test{$testid}{$entry}: $inherited{$entry}\n" if ($debugScript);
+		    %{ $test{$testid}{$entry} } = ();
+		    foreach my $key (keys %{ $inherited{$entry} }) {
+			$test{$testid}{$entry}{$key} = $inherited{$entry}{$key};
+		    }
+		}
 	    }
 	} else {
 	    # Match a line of format
@@ -367,37 +420,27 @@ foreach my $testfile (@testfiles) {
 	    my %hash = &splitup($1, $2);
 	    foreach my $keyword (keys %hash) {
 		my $value = $hash{$keyword};
-		# Remove leading white space 
+		# Remove leading white space
 		# (any trailing white space has been remove on the complete line already)
 		$value =~ s/^\s*//;
 
 		if ($testid ne "") {
 		    if ($value ne "") {
-			# Special handling of ALLOW*, DENY*
-			# Because having inherited a setting of
-			#   denyhosts = all
-			#   allowhosts = jerusalem, jericho
-			# and reading a setting of
-			#   denyhosts = jerusalem
-			# should not overwrite, but append the denyhosts setting.
-			# But avoid a new setting like
-			#   denyhosts = none,jerusalem
-			# The removal of jerusalem from the allowhosts setting will be done
-			# in update_allowdeny_settings().
-			if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i &&
-			    $value !~ m/\b(all|any|none)\b/i) {
-			    # allowhosts = all|any   =>   append (possibly leads to removal from denylist)
-			    # allowhosts = none      =>   overwrite
-			    # denyhosts  = none      =>   overwrite
-			    # denyhosts  = all|any   =>   append (possibly leads to removal from allowlist)
-			    if ($test{$testid}{uc($keyword)} !~ m/\bnone\b/i) {
-				$value = $test{$testid}{uc($keyword)} . "," . $value;
-			    }
+			# Special handling of ALLOW*, DENY* because they are realised as
+			# hashes, not scalar values and may require updating the
+			# complimentary setting (i.e. allowhosts = jerusalem should cancel
+			# out a previous 'denyhosts = jerusalem' setting.)
+			if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i) {
+			    # 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
+			    # complimentary and hash structures, while all other values are
+			    # scalars.  Take additional measures to ensure correct input and
+			    # consistency of complimentary settings.
+			    &update_allowdeny_settings($keyword, $value, \%{ $test{$testid} }, "Storing in test{$testid}{$keyword}:");
+			} else {
+			    # Store it for current ID (keyword in uppercase).
+			    print STDERR "Storing in test{$testid}{$keyword}: $value\n" if ($debugScript);
+			    $test{$testid}{uc($keyword)} = $value;
 			}
-
-			# Store it for current ID (keyword in uppercase).
-			print STDERR "Storing in test{$testid}{$keyword}: $value\n" if ($debugScript);
-			$test{$testid}{uc($keyword)} = $value;
 		    } else {
 			if (exists($test{$testid}{uc($keyword)})) {
 			    # Unset keyword
@@ -406,28 +449,25 @@ foreach my $testfile (@testfiles) {
 			    delete $test{$testid}{uc($keyword)};
 			}
 		    }
-
-		    # 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
-		    # complimentary. Take additional measures to ensure consistency
-		    # of settings.
-		    &update_allowdeny_settings($keyword, $value, \%{ $test{$testid} });
 		}
 
 		if ($value ne "") {
 		    # Store new settings as defaults for next entry
 		    printf STDERR "Storing as new inherited value: '$keyword' => $value\n" if ($debugScript);
-		    $inherited{uc($keyword)} = $value;
+		    if ($keyword =~ m/^\b(allow|deny)(hosts|buildIDs)\b$/i) {
+			# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
+			# complimentary. Take additional measures to ensure consistency
+			# of settings.
+			&update_allowdeny_settings($keyword, $value, \%inherited, "Storing as new inherited value:");
+		    } else {
+			$inherited{uc($keyword)} = $value;
+		    }
 		} else {
 		    if (exists($inherited{uc($keyword)})) {
 			# Unset keyword
 			delete $inherited{uc($keyword)};
 		    }
 		}
-
-		# 'allowhosts'/'denyhosts' and 'allowbuildIDs'/'denybuildIDs' are
-		# complimentary. Take additional measures to ensure consistency
-		# of settings.
-		&update_allowdeny_settings($keyword, $value, \%inherited);
 	    }
 	    undef %hash;
 	}
@@ -514,70 +554,88 @@ ID: foreach my $testid (@idsToCode) {
 	}
     }
 
-    if (exists($test{$testid}{ALLOWHOSTS}) && exists($test{$testid}{DENYHOSTS})) {
-	# Skip test if it should not be run on current host.
-	#
-	# Continue only in case
-	# * all hosts are on whitelist
-	# * current host is on whitelist
-	# and
-	# * not all hosts are blacklisted or
-	# * current host is not on the blacklist.
-#	unless (($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i) &&
-#		($test{$testid}{DENYHOSTS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYHOSTS} !~ m/\b$host\b/i )) {
-	if ($test{$testid}{ALLOWHOSTS} =~ m/\b(all|any|$host)\b/i && $test{$testid}{DENYHOSTS} =~ m/\b$host\b/i ) {
-	    warn "$progname: WARNING:\n" .
-		"  Test case with ID <$testid> is coded not to be run on current host, <$host>:\n" .
-		"  list of allowed hosts: " . join(', ', $test{$testid}{ALLOWHOSTS}) . "\n" .
-		"  list of denied hosts : " . join(', ', $test{$testid}{DENYHOSTS}) . "\n" .
-		"  Test will be skipped.\n";
-	    next ID;
+
+    if (exists($test{$testid}{'HOSTPERMISSIONS'})) {
+	my $allowed = 0;
+	foreach my $entry ( @{ $test{$testid}{'HOSTPERMISSIONS'} } ) {
+	    $entry =~ m/^(.)(.*)$/;
+	    my ($perm, $regexp) = ($1, $2);
+
+	    if ($perm eq "+") {
+		$perm = 1;
+	    } else {
+		$perm = 0;
+	    }
+	    print STDERR "Splitting up $entry into $perm and $regexp.\n" if ($debugScript);
+
+	    if ($regexp eq "all" || $host =~ m/$regexp/) {
+		$allowed = $perm;
+	    }
 	}
 
-	# Skip if
-	# * all or current hosts are blacklisted
-	# and
-	# * current host is not explicitly whitelisted
-	if ($test{$testid}{DENYHOSTS} =~ m/\b(all|any|$host)\b/i && $test{$testid}{ALLOWHOSTS} !~ m/\b$host\b/i) {
+	if (! $allowed) {
+	    my ($allowedHosts, $deniedHosts) = ("", "");
+	    foreach my $entry ( @{ $test{$testid}{'HOSTPERMISSIONS'} } ) {
+		$entry =~ m/^(.)(.*)$/;
+		my ($perm, $regexp) = ($1, $2);
+
+		if ($perm eq "+") {
+		    $allowedHosts .= ", " . $regexp;
+		} else {
+		    $deniedHosts .= ", " . $regexp;
+		}
+	    }
+	    $allowedHosts =~ s/^, //;
+	    $deniedHosts  =~ s/^, //;
+
 	    warn "$progname: WARNING:\n" .
-		"  Test case with ID <$testid> is coded to not be run on current host, <$host>:\n" .
-		"  list of allowed hosts: " . join(', ', $test{$testid}{ALLOWHOSTS}) . "\n" .
-		"  list of denied hosts : " . join(', ', $test{$testid}{DENYHOSTS}) . "\n" .
-		"  Test will be skipped.\n";
+	    	"  Test case with ID <$testid> is coded not to be run on current host, <$host>:\n" .
+	    	"  list of allowed hosts: " . $allowedHosts . "\n" .
+	    	"  list of denied hosts : " . $deniedHosts . "\n" .
+	    	"  Test will be skipped.\n";
 	    next ID;
 	}
     }
 
 
-    if (exists($test{$testid}{ALLOWBUILDIDS}) && exists($test{$testid}{DENYBUILDIDS})) {
-	# Skip test if it should not be run for current build ID.
-	#
-	# Continue only in case
-	# * all build IDs are on whitelist
-	# * current build IDs is on whitelist
-	# and
-	# * not all build IDs are blacklisted or
-	# * current build IDs is not on the blacklist.
-#	unless (($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i) &&
-#		($test{$testid}{DENYBUILDIDS} =~ m/\bnone\b/i  ||  $test{$testid}{DENYBUILDIDS} !~ m/\b$buildID\b/i )) {
-	if ($test{$testid}{ALLOWBUILDIDS} =~ m/\b(all|any|$buildID)\b/i && $test{$testid}{DENYBUILDIDS} =~ m/\b$buildID\b/i ) {
-	    warn "$progname: WARNING:\n" .
-		"  Test case with ID <$testid> is coded not to be run for current build ID, <$buildID>:\n" .
-		"  list of allowed build IDs: " . join(', ', $test{$testid}{ALLOWBUILDIDS}) . "\n" .
-		"  list of denied build IDs : " . join(', ', $test{$testid}{DENYBUILDIDS}) . "\n" .
-		"  Test will be skipped.\n";
-	    next ID;
+    if (exists($test{$testid}{'BUILDIDPERMISSIONS'})) {
+	my $allowed = 0;
+	foreach my $entry ( @{ $test{$testid}{'BUILDIDPERMISSIONS'} } ) {
+	    $entry =~ m/^(.)(.*)$/;
+	    my ($perm, $regexp) = ($1, $2);
+
+	    if ($perm eq "+") {
+		$perm = 1;
+	    } else {
+		$perm = 0;
+	    }
+	    print STDERR "Splitting up $entry into $perm and $regexp.\n" if ($debugScript);
+
+	    if ($regexp eq "all" || $buildID =~ m/$regexp/) {
+		$allowed = $perm;
+	    }
 	}
-	# Skip if
-	# * all or current build IDs are blacklisted
-	# and
-	# * current build ID is not explicitly whitelisted
-	if ($test{$testid}{DENYBUILDIDS} =~ m/\b(all|any|$buildID)\b/i && $test{$testid}{ALLOWBUILDIDS} !~ m/\b$buildID\b/i) {
+
+	if (! $allowed) {
+	    my ($allowedBuildIDs, $deniedBuildIDs) = ("", "");
+	    foreach my $entry ( @{ $test{$testid}{'BUILDIDPERMISSIONS'} } ) {
+		$entry =~ m/^(.)(.*)$/;
+		my ($perm, $regexp) = ($1, $2);
+
+		if ($perm eq "+") {
+		    $allowedBuildIDs .= ", " . $regexp;
+		} else {
+		    $deniedBuildIDs .= ", " . $regexp;
+		}
+	    }
+	    $allowedBuildIDs =~ s/^, //;
+	    $deniedBuildIDs  =~ s/^, //;
+
 	    warn "$progname: WARNING:\n" .
 		"  Test case with ID <$testid> is coded not to be run for current build ID, <$buildID>:\n" .
-		"  list of allowed build IDs: " . join(', ', $test{$testid}{ALLOWBUILDIDS}) . "\n" .
-		"  list of denied build IDs : " . join(', ', $test{$testid}{DENYBUILDIDS}) . "\n" .
-		"  Test will be skipped.\n";
+		"  list of allowed build IDs: " . $allowedBuildIDs . "\n" .
+		"  list of denied build IDs : " . $deniedBuildIDs . "\n" .
+	    	"  Test will be skipped.\n";
 	    next ID;
 	}
     }
@@ -640,12 +698,16 @@ ID: foreach my $testid (@idsToCode) {
 	# Directory does already exist.
 	# Rename or overwrite?
 	unless ($cl{'overwrite-log-directory'}) {
+	    if ( -d "$test{$testid}{LOGDIR}.prev" ) {
+		unlink <$test{$testid}{LOGDIR}.prev/*>;
+		rmdir "$test{$testid}{LOGDIR}.prev";
+	    }
 	    # rename existing (clobbering any existing *.prev directory) and create a new one.
-	    move("$test{$testid}{LOGDIR}", "$test{$testid}{LOGDIR}.prev") ||
+	    File::Copy::move("$test{$testid}{LOGDIR}", "$test{$testid}{LOGDIR}.prev") ||
 		die "\n$progname: ERROR:\n" .
 		    "  This script tried to rename a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
 		    "  but an error occured: $?\n\n";
-	    mkpath($test{$testid}{LOGDIR}) ||
+	    File::Path::mkpath($test{$testid}{LOGDIR}) ||
 		die "\n$progname: ERROR:\n" .
 		    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
 		    "  but an error occured: $?\n\n";
@@ -660,7 +722,7 @@ ID: foreach my $testid (@idsToCode) {
 		"  This script was about to create a directory named <" . $test{$testid}{LOGDIR} . ">.\n" .
 		"  But there exists already such a file system object and it is no directory. Please check.\n\n";
 	} else {
-	    mkpath($test{$testid}{LOGDIR}) ||
+	    File::Path::mkpath($test{$testid}{LOGDIR}) ||
 		die "\n$progname: ERROR:\n" .
 		    "  This script tried to create a directory named <" . $test{$testid}{LOGDIR} . ">,\n" .
 		    "  but an error occured: $?\n\n";
@@ -678,14 +740,15 @@ ID: foreach my $testid (@idsToCode) {
 
 
     # Export all remaining items but the special keywords
-    # ('allowbuildids', 'allowhosts', 'denybuildids' 'denyhosts', 'execmode')
+    # ('buildidpermissions' 'hostpermissions', 'execmode')
     foreach my $entry (sort keys %{ $test{$testid} }) {
 	# Skip entries we already handled
-	next if ("DESCR TESTID EXECMODE ALLOWBUILDIDS ALLOWHOSTS DENYBUILDIDS DENYHOSTS" =~ m/\b$entry\b/i);
+	next if ("DESCR TESTID EXECMODE BUILDIDPERMISSIONS HOSTPERMISSIONS" =~ m/\b$entry\b/i);
 
 	&formatted_print_env_variable($entry, $test{$testid}{$entry}, $fieldlength);
 	push @vars2export, $entry;
     }
+
 
     # Finally, export execmode. This has to be done at the end as it might be necessary
     # to override previously set variables because of the execmode.
@@ -713,7 +776,7 @@ ID: foreach my $testid (@idsToCode) {
     my $length = length("export");
     print STDOUT "export";
     foreach my $entry (sort keys %{ $test{$testid} }) {
-	unless ($entry =~ m/\b((ALLOW|DENY)(HOSTS|BUILDIDS))\b/i) {
+	unless ($entry =~ m/\b(HOST|BUILDID)PERMISSIONS\b/i) {
 	    $length += length($entry) + 1;
 
 	    if ($length < 80) {
@@ -747,7 +810,7 @@ ID: foreach my $testid (@idsToCode) {
     $length = length("unset");
     print STDOUT "unset";
     foreach my $entry (sort keys %{ $test{$testid} }) {
-	unless ($entry =~ m/\b((ALLOW|DENY)(HOSTS|BUILDIDS))\b/i) {
+	unless ($entry =~ m/\b(HOST|BUILDID)PERMISSIONS\b/i) {
 	    $length += length($entry) + 1;
 
 	    if ($length < 80) {
@@ -860,206 +923,228 @@ sub splitup {
 }
 
 
+sub findInArray () {
+    my ( $arrayRef, $string ) = @_;
+
+    for (my $i = 0; $i <= $#{ $arrayRef }; $i++) {
+	if (${ $arrayRef }[$i] eq $string) {
+	    return $i;
+	}
+    }
+    return -1;
+}
+
+
+sub addToArray () {
+    my ( $arrayRef, $string ) = @_;
+
+    # Add only if not already on the list
+    return if ( grep { $_ eq $string} @{ $arrayRef } );
+
+    push @{ $arrayRef }, $string;
+    return;
+}
+
+
+sub clearArray () {
+    my ( $arrayRef ) = @_;
+
+    @{ $arrayRef } = ();
+    return;
+}
+
+
+sub removeIthTokenFromArray () {
+    my ( $arrayRef, $string, $i ) = @_;
+
+    if ($i >= 0) {
+	splice @{ $arrayRef }, $i, 1;
+    } else {
+	warn "$0: removeFromArray(): Could not locate $i-th string <$string> and remove from array.\n";
+    }
+    return;
+}
+
+
+sub removeFromArray () {
+    my ( $arrayRef, $string ) = @_;
+
+    my $i = &findInArray($arrayRef, $string);
+    &removeIthTokenFromArray($arrayRef, $string, $i);
+    return;
+}
+
+
 sub update_allowdeny_settings {
-    my ($keyword, $value, $hashref) = @_;
+    my ($keyword, $value, $hashref, $message) = @_;
 
-    # 'ALLOWHOSTS=...' given. Remove items from blacklist if necessary
+    # 'ALLOWHOSTS=...' given.
     if ($keyword =~ m/^\ballowhosts\b$/i) {
-	# Deal with special values 'all' / 'any'
-	if ($value =~ m/\b(all|any)\b/i) {
-	    # AllowHosts: all => DenyHosts: none
-	    $keyword = "DENYHOSTS";
-	    $value = "none";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
+	# allowhosts = all|any => 1) discard any previous allowhosts setting,
+	#                            replace with "all"
+	#                         2) set denyhosts to "none"
+	# allowhosts = none    => 1) discard any previous allowhosts setting,
+	#                            replace with "none"
+	#                         2) set denyhosts to "all"
+	# allowhosts = tesla, previous setting neither one of "all|any|none":
+	#                      => 1) append
+	#                      => 2) remove tesla from denyhosts list, if present
 
-	# Deal with special values 'none'
-	} elsif ($value =~ m/\bnone\b/i) {
-	    # AllowHosts: none => DenyHosts: all
-	    $keyword = "DENYHOSTS";
-	    $value = "all";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-	}
+	foreach my $entry (split(/\s*,\s*/, lc($value))) {
+	    # Deal with special values 'all' / 'any'
+	    if ($entry eq "all" || $entry eq "any") {
+		# AllowHosts: all
+		&clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+all");
 
-	# Remove any host occurring on allow list from the deny list
-	else {
-	    if (exists(${ $hashref }{DENYHOSTS})) {
-		foreach my $host (split(/,/, $value)) {
-		    if (${ $hashref }{DENYHOSTS} =~ m/\b$host\b/i) {
-			printf STDERR
-			    "Altering setting: Removing $host from deny list.\n" if ($debugScript);
-			${ $hashref }{DENYHOSTS} =~ s/\b$host\b//i;
-		    }
-		}
+	    # Deal with special values 'none'
+	    } elsif ($entry eq "none") {
+		# AllowHosts: none <=> DenyHosts: all
+		&clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-all");
 	    }
-	}
 
-	if (exists(${ $hashref }{DENYHOSTS})) {
-	    # Remove duplicate or orphaned commas
-	    ${ $hashref }{DENYHOSTS} =~ s/[,]+/,/g;
-	    ${ $hashref }{DENYHOSTS} =~ s/^,$//g;
+	    # A host is given, append/replace/don't append as appropriate.
+	    else {
+		# Remove host from denylist (if present), add it to allowlist
+		my $index = &findInArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-" . $entry);
+		&removeIthTokenFromArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-" . $entry, $index) if ($index >= 0);
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+" . $entry);
+	    }
 	}
     }
 
-    # 'DENYHOSTS=...' given. Remove items from whitelist if necessary
-    elsif ($keyword =~ m/^\bdenyhosts\b$/i) {
-	# Deal with special values 'all' / 'any'
-	if ($value =~ m/\b(all|any)\b/i) {
-	    # DenyHosts: all => AllowHosts: none
-	    $keyword = "ALLOWHOSTS";
-	    $value = "none";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
+    # 'DENYHOSTS=...' given.
+    if ($keyword =~ m/^\bdenyhosts\b$/i) {
+        # denyhosts = all|any => 1) discard any previous denyhosts setting,
+        #                           replace with "all"
+        #                        2) set allowhosts to "none"
+        # denyhosts = none    => 1) discard any previous denyhosts setting,
+        #                           replace with "none"
+        #                        2) set allowhosts to "all"
+        # denyhosts = tesla, previous setting neither one of "all|any|none":
+        #                      => 1) append
+        #                      => 2) remove tesla from allowhosts list, if present
 
-	# Deal with special values 'none'
-	} elsif ($value =~ m/\bnone\b/i) {
-	    # DenyHosts: none => AllowHosts: all
-	    $keyword = "ALLOWHOSTS";
-	    $value = "all";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-	}
+	foreach my $entry (split(/\s*,\s*/, lc($value))) {
+	    # Deal with special values 'all' / 'any'
+	    if ($entry eq "all" || $entry eq "any") {
+		# AllowHosts: all
+		&clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-all");
 
-	# Remove any host occurring on allow list from the deny list
-	else {
-	    if (exists(${ $hashref }{ALLOWHOSTS})) {
-		foreach my $host (split(/,/, $value)) {
-		    if (${ $hashref }{ALLOWHOSTS} =~ m/\b$host\b/i) {
-			printf STDERR
-			    "Altering setting: Removing $host from allow list.\n" if ($debugScript);
-			${ $hashref }{ALLOWHOSTS} =~ s/\b$host\b//i;
-		    }
-		}
+	    # Deal with special values 'none'
+	    } elsif ($entry eq "none") {
+		# AllowHosts: none <=> DenyHosts: all
+		&clearArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+all");
 	    }
-	}
 
-	if (exists(${ $hashref }{ALLOWHOSTS})) {
-	    # Remove duplicate or orphaned commas
-	    ${ $hashref }{ALLOWHOSTS} =~ s/[,]+/,/g;
-	    ${ $hashref }{ALLOWHOSTS} =~ s/^,$//g;
-	}
-    }
-
-    # 'ALLOWBUILDIDS=...' given. Remove items from blacklist if necessary
-    elsif ($keyword =~ m/^\ballowbuildIDs\b$/i) {
-	# Deal with special values 'all' / 'any'
-	if ($value =~ m/\b(all|any)\b/i) {
-	    # AllowBuildIDs: all => DenyBuildIDs: none
-	    $keyword = "DENYBUILDIDS";
-	    $value = "none";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-
-	# Deal with special values 'none'
-	} elsif ($value =~ m/\bnone\b/i) {
-	    # AllowBuildIDs: none => DenyBuildIDs: all
-	    $keyword = "DENYBUILDIDS";
-	    $value = "all";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-	}
-
-	# Remove any host occurring on allow list from the deny list
-	else {
-	    if (exists(${ $hashref }{DENYBUILDIDS})) {
-		foreach my $buildID (split(/,/, $value)) {
-		    if (${ $hashref }{DENYBUILDIDS} =~ m/\b$buildID\b/i) {
-			printf STDERR
-			    "Altering setting: Removing $buildID from deny list.\n" if ($debugScript);
-			${ $hashref }{DENYBUILDIDS} =~ s/\b$buildID\b//i;
-		    }
-		}
+	    # A host is given, append/replace/don't append as appropriate.
+	    else {
+		# Remove host from allowlist (if present), add it to denylist
+		my $index = &findInArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+" . $entry);
+		&removeIthTokenFromArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "+" . $entry, $index) if ($index >= 0);
+		&addToArray(\@{ ${ $hashref }{'HOSTPERMISSIONS'} }, "-" . $entry);
 	    }
-	}
-
-	if (exists(${ $hashref }{DENYBUILDIDS})) {
-	    # Remove duplicate or orphaned commas
-	    ${ $hashref }{DENYBUILDIDS} =~ s/[,]+/,/g;
-	    ${ $hashref }{DENYBUILDIDS} =~ s/^,$//g;
-	}
-    }
-
-    # 'DENYBUILDIDS=...' given. Remove items from whitelist if necessary
-    elsif ($keyword =~ m/^\bdenybuildIDs\b$/i) {
-	# Deal with special values 'all' / 'any'
-	if ($value =~ m/\b(all|any)\b/i) {
-	    # DenyHosts: all => AllowHosts: none
-	    $keyword = "ALLOWBUILDIDS";
-	    $value = "none";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-
-	# Deal with special values 'none'
-	} elsif ($value =~ m/\bnone\b/i) {
-	    # DenyHosts: none => AllowHosts: all
-	    $keyword = "ALLOWBUILDIDS";
-	    $value = "all";
-	    printf STDERR
-		"Altering setting: '" .
-		uc($keyword) . "' => '" .
-		$value. "'\n" if ($debugScript);
-	    ${ $hashref }{uc($keyword)} = $value;
-	}
-
-	# Remove any host occurring on allow list from the deny list
-	else {
-	    if (exists(${ $hashref }{ALLOWBUILDIDS})) {
-		foreach my $buildID (split(/,/, $value)) {
-		    if (${ $hashref }{ALLOWBUILDIDS} =~ m/\b$buildID\b/i) {
-			printf STDERR
-			    "Altering setting: Removing $buildID from allow list.\n" if ($debugScript);
-			${ $hashref }{ALLOWBUILDIDS} =~ s/\b$buildID\b//i;
-		    }
-		}
-	    }
-	}
-
-	if (exists(${ $hashref }{ALLOWBUILDIDS})) {
-	    # Remove duplicate or orphaned commas
-	    ${ $hashref }{ALLOWBUILDIDS} =~ s/[,]+/,/g;
-	    ${ $hashref }{ALLOWBUILDIDS} =~ s/^,$//g;
 	}
     }
 
 
-    # Because allow/deny values are simply appended to the allow/deny list
-    # there may very well be duplicates in those lists. Remove these duplicates.
-    foreach my $token ("ALLOWHOSTS", "DENYHOSTS", "ALLOWBUILDIDS", "DENYBUILDIDS") {
-	if (exists(${ $hashref }{$token})) {
-	    my %hash = ();
-	    foreach my $entry (split(/,/, ${ $hashref }{$token})) {
-		if (exists($hash{$entry})) {
-		    # remove it
-		    ${ $hashref }{$token} =~ s/$entry//;
-		} else {
-		    # set flag
-		    $hash{$entry} = 1;
-		}
-		${ $hashref }{$token} =~ s/,\s*,/,/g;
-		${ $hashref }{$token} =~ s/^\s*,\s*//g;
-		${ $hashref }{$token} =~ s/,\s*$//g;
+    # 'ALLOWBUILDIDS=...' given.
+    if ($keyword =~ m/^\ballowBuildIds\b$/i) {
+	# allowBuildIds = all|any => 1) discard any previous allowBuildIds setting,
+	#                               replace with "all"
+	#                            2) set denyBuildIds to "none"
+	# allowbuildids = none    => 1) discard any previous allowBuildIds setting,
+	#                               replace with "none"
+	#                            2) set denyBuildIds to "all"
+	# # allowBuildIds = pc-opteron-linux64-.*.-.*, previous setting "all|any":
+	# #                         => 1) append to list to support cases like
+	# #                                denyBuildIDs = all
+	# #                                allowBuildIDs  = pc-.*-linux64-intel-.*
+	# #                                denyBuildIDs = pc-athlon64-linux64-intel-.*
+	# #                               which forbids all Linux64 build IDs using Intel
+	# #                               compiler except for on Athlon64 cpus.
+	# #                            2) remove pc-opteron-linux64-.*.-.* from denyBuildIds list, if present
+	# # allowBuildIds = pc-opteron-linux64-.*.-.*, previous setting "none":
+	# #                         => 1) replace
+	# #                            2) remove pc-opteron-linux64-.*.-.* from denyBuildIds
+	# #                               list, if present
+	# allowBuildIds = pc-opteron-linux64-.*.-.*, previous setting neither one of "all|any|none":
+	#                         => 1) append
+	#                         => 2) remove pc-opteron-linux64-.*.-.* from denyBuildIds
+	#                               list, if present
+
+	foreach my $entry (split(/\s*,\s*/, lc($value))) {
+	    # Deal with special values 'all' / 'any'
+	    if ($entry eq "all" || $entry eq "any") {
+		# AllowBuildIDs: all
+		&clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+all");
+
+	    # Deal with special values 'none'
+	    } elsif ($entry eq "none") {
+		# AllowBuildIDs: none <=> DenyBuildIDs: all
+		&clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-all");
+	    }
+
+	    # A host is given, append/replace/don't append as appropriate.
+	    else {
+		# Remove host from denylist (if present), add it to allowlist
+		my $index = &findInArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-" . $entry);
+		&removeIthTokenFromArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-" . $entry, $index) if ($index >= 0);
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+" . $entry);
+	    }
+	}
+    }
+
+    # 'DENYBUILDIDS=...' given.
+    if ($keyword =~ m/^\bdenyBuildIds\b$/i) {
+	# denyBuildIds = all|any => 1) discard any previous denyBuildIds setting,
+	#                              replace with "all"
+	#                           2) set allowBuildIds to "none"
+	# denyBuildIds = none    => 1) discard any previous denyBuildIds setting,
+	#                             replace with "none"
+	#                           2) set allowBuildIds to "all"
+	# # denyBuildIds = pc-opteron-linux64-.*.-.*, previous setting "all|any":
+	# #                        => 1) append to list to support cases like
+	# #                               allowBuildIDs = all
+	# #                               denyBuildIDs  = pc-.*-linux64-intel-.*
+	# #                               allowBuildIDs = pc-athlon64-linux64-intel-.*
+	# #                              which forbids all Linux64 build IDs using Intel
+	# #                              compiler except for on Athlon64 cpus.
+	# #                           2) remove pc-opteron-linux64-.*.-.* from allowBuildIds list, if present
+	# # denyBuildIds = pc-opteron-linux64-.*.-.*, previous setting "none":
+	# #                        => 1) replace
+	# #                           2) remove pc-opteron-linux64-.*.-.* from allowBuildIds
+	# #                              list, if present
+	# denyBuildIds = pc-opteron-linux64-.*.-.*, previous setting neither one of "all|any|none":
+	#                        => 1) append
+	#                        => 2) remove pc-opteron-linux64-.*.-.* from allowBuildIds
+	#                              list, if present
+
+	foreach my $entry (split(/\s*,\s*/, lc($value))) {
+	    # Deal with special values 'all' / 'any'
+	    if ($entry eq "all" || $entry eq "any") {
+		# AllowBuildIDs: all
+		&clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-all");
+
+	    # Deal with special values 'none'
+	    } elsif ($entry eq "none") {
+		# AllowBuildIDs: none <=> DenyBuildIDs: all
+		&clearArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} });
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+all");
+	    }
+
+	    # A host is given, append/replace/don't append as appropriate.
+	    else {
+		# Remove host from allowlist (if present), add it to denylist
+		my $index = &findInArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+" . $entry);
+		&removeIthTokenFromArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "+" . $entry, $index) if ($index >= 0);
+		&addToArray(\@{ ${ $hashref }{'BUILDIDPERMISSIONS'} }, "-" . $entry);
 	    }
 	}
     }
