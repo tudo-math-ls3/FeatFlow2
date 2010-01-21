@@ -993,7 +993,7 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	real(DP), dimension(3) :: rho_gas
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
     
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3
+    !type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
   
     ! Set pointer to triangulation
@@ -1007,12 +1007,12 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
 !TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
-    call eulerlagrange_getVariable(rsolution, 'velocity_x', rvector1)
-    call eulerlagrange_getVariable(rsolution, 'velocity_y', rvector2)
-    call eulerlagrange_getVariable(rsolution, 'density', rvector3)
-    call lsyssc_getbase_double(rvector1, p_Ddata1)
-    call lsyssc_getbase_double(rvector2, p_Ddata2)
-    call lsyssc_getbase_double(rvector2, p_Ddata3)
+    !call eulerlagrange_getVariable(rsolution, 'velocity_x', rvector1)
+    !call eulerlagrange_getVariable(rsolution, 'velocity_y', rvector2)
+    !call eulerlagrange_getVariable(rsolution, 'density', rvector3)
+    !call lsyssc_getbase_double(rvector1, p_Ddata1)
+    !call lsyssc_getbase_double(rvector2, p_Ddata2)
+    !call lsyssc_getbase_double(rvector2, p_Ddata3)
     
     c_pi= 3.14
 
@@ -1025,19 +1025,19 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
 
 	! velocity and density of the gas in the first corner (in mathematically positive sense)
-	ux1_part= p_Ddata1(p_IverticesAtElement(1,rParticles%p_element(iPart)))
-	uy1_part= p_Ddata2(p_IverticesAtElement(1,rParticles%p_element(iPart)))
-	rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,rParticles%p_element(iPart)))
+	ux1_part= 1 !p_Ddata1(p_IverticesAtElement(1,rParticles%p_element(iPart)))
+	uy1_part= 1 !p_Ddata2(p_IverticesAtElement(1,rParticles%p_element(iPart)))
+	rho_gas(1)= 1 !p_Ddata3(p_IverticesAtElement(1,rParticles%p_element(iPart)))
 
 	! velocity and density of the gas in the second corner (in mathematically positive sense)
-	ux2_part= p_Ddata1(p_IverticesAtElement(2,rParticles%p_element(iPart)))
-	uy2_part= p_Ddata2(p_IverticesAtElement(2,rParticles%p_element(iPart)))
-	rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,rParticles%p_element(iPart)))
+	ux2_part= 1 !p_Ddata1(p_IverticesAtElement(2,rParticles%p_element(iPart)))
+	uy2_part= 1 !p_Ddata2(p_IverticesAtElement(2,rParticles%p_element(iPart)))
+	rho_gas(2)= 1 !p_Ddata3(p_IverticesAtElement(2,rParticles%p_element(iPart)))
 
 	! velocity and density of the gas in the third corner (in mathematically positive sense)
-	ux3_part= p_Ddata1(p_IverticesAtElement(3,rParticles%p_element(iPart)))
-	uy3_part= p_Ddata2(p_IverticesAtElement(3,rParticles%p_element(iPart)))
-	rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,rParticles%p_element(iPart)))
+	ux3_part= 1 !p_Ddata1(p_IverticesAtElement(3,rParticles%p_element(iPart)))
+	uy3_part= 1 !p_Ddata2(p_IverticesAtElement(3,rParticles%p_element(iPart)))
+	rho_gas(3)= 1 !p_Ddata3(p_IverticesAtElement(3,rParticles%p_element(iPart)))
 
 	! calculate velocity of the gas
 	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
@@ -1093,8 +1093,8 @@ SUBROUTINE moveparticle(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection
 	rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt * rParticles%p_yvelo(iPart)
 
 !TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
-call lsyssc_releasevector(rvector1)
-call lsyssc_releasevector(rvector2)
+!call lsyssc_releasevector(rvector1)
+!call lsyssc_releasevector(rvector2)
 
 
 END SUBROUTINE moveparticle
