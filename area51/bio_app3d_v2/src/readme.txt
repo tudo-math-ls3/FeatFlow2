@@ -54,3 +54,23 @@ u=x*(16-x); c=x+y+z
 14) Cleaned code. Gradient c stil doesn't work.
 15:23   13.11.2009
 
+15) Before testing for Prof. Turek.
+16:27   24.11.2009
+
+16) Working code. Before remaking it into coupled version.
+16:03   07.12.2009
+
+17) Relaxation is done.
+10:58   08.12.2009
+
+18) Norm |analyt - numer| can be meassured
+12:52   08.12.2009
+
+19) Before working with Mu^n in chemotactic equation.
+10:50   09.12.2009
+
+20) good code to test difference between (x*(16-x),\phi) and (u,\phi), where u=x*(16-x).
+11:49   09.12.2009
+
+21) Just tedious validation of THIS code. No mistakes occured so far.
+11:18   12.01.2010

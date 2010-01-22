@@ -1119,13 +1119,12 @@ END IF
  - Dpoints(2,:,:) ) 
   end subroutine
 
-  ! ***************************************************************************
+ ! ***************************************************************************
 
 
  ! ***************************************************************************
 
-
-!<subroutine>
+ !<subroutine>
     ! This cb fct is used for the analytic projection of the exponential test fct
     ! E.g. this is used for every test file, which does not use a analytic given fct as
     ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
@@ -1213,13 +1212,11 @@ END IF
     END DO
   end subroutine
 
-  ! ***************************************************************************
-
+ ! ***************************************************************************
 
  ! ***************************************************************************
 
-
-!<subroutine>
+ !<subroutine>
     ! This cb fct is used for the analytic projection of the exponential test fct
     ! E.g. this is used for every test file, which does not use a analytic given fct as
     ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
@@ -3190,6 +3187,7 @@ END IF
     real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
   !</output>
     
+    real(DP) :: convecRelaxation    
 !</subroutine>
 
     ! local variables
@@ -3209,6 +3207,7 @@ END IF
     real(DP) :: dtstep
 
     dtstep = rcollection%DquickAccess(1)
+    convecRelaxation = rcollection%DquickAccess(2)
     
     !coordinates: Dpoints(x,:,:)
         ! laplacian
@@ -3219,7 +3218,7 @@ END IF
             z=Dpoints(3,icub,iel)
             ! laplacian
             Dcoefficients(1,icub,iel) = - dtstep*( - 2_DP  &
-                                                   - 16_DP + 2*x ) 
+                                                   + convecRelaxation*(- 16_DP + 2*x) ) 
             !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
             !                                    2*x*(x-16_DP)*z*(z-16_DP)+ & 
             !                                    2*x*(x-16_DP)*y*(y-16_DP))!- &
@@ -3330,14 +3329,19 @@ END IF
 
     ! This is the vector which is of interest
     type(t_vectorScalar) :: rvector
-
+ 
+    real(DP) :: PHI
+    
+    PHI = rcollection%DquickAccess(1)
+    
     ! laplacian
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
             z=Dpoints(3,icub,iel)
-            Dcoefficients(1,icub,iel) = - ( -(x + y + z) + x*(16_DP - x) )
+            Dcoefficients(1,icub,iel) = - ( -(x + y + z) + PHI*x*(16_DP - x) )
+            !Dcoefficients(1,icub,iel) = - ( -(x + y + z) )
             !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 
             !                            2*x*(x-16_DP)*z*(z-16_DP)- & 
             !                            2*x*(x-16_DP)*y*(y-16_DP) + &
@@ -5474,10 +5478,9 @@ END IF
     type(t_vectorScalar) :: rvector_x, rvector_y, rvector_z
 
     ! Some params passed by the collection structure
-    real(DP) :: dtstep, CHI, GAMMA, ALPHA
+    real(DP) :: dtstep, CHI, GAMMA, ALPHA, convecRelaxation 
 
     integer :: icub, iel
-
 
     ! allocate some memory for the calls of Fevl
     allocate (DvaluesFevl(3,npointsPerElement,nelements))
@@ -5486,13 +5489,13 @@ END IF
     rvector_x = collct_getvalue_vecsca (rcollection, "rvector_x",0,'')
     rvector_y = collct_getvalue_vecsca (rcollection, "rvector_y",0,'')
     rvector_z = collct_getvalue_vecsca (rcollection, "rvector_z",0,'')
-    !rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
-    !rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
+    rvector_c = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
+    rvector_u = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
     dtstep = rcollection%DquickAccess(1)
     CHI = rcollection%DquickAccess(2)
     GAMMA = rcollection%DquickAccess(3)
     ALPHA = rcollection%DquickAccess(4)
-
+    convecRelaxation=rcollection%DquickAccess(5)
 
 
     ! Fetching the values of rvector_c in the cubature pts.
@@ -5518,13 +5521,13 @@ END IF
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) =   CHI*DvaluesFevl(1,icub,iel) 
+            Dcoefficients(1,icub,iel) = convecRelaxation*CHI*DvaluesFevl(1,icub,iel) 
             !Dcoefficients(1,icub,iel) =   CHI
             ! second term
-            Dcoefficients(2,icub,iel) =   CHI*DvaluesFevl(2,icub,iel) 
+            Dcoefficients(2,icub,iel) = convecRelaxation*CHI*DvaluesFevl(2,icub,iel) 
             !Dcoefficients(2,icub,iel) =   CHI
             ! third term
-            Dcoefficients(3,icub,iel) =   CHI*DvaluesFevl(3,icub,iel)             
+            Dcoefficients(3,icub,iel) = convecRelaxation*CHI*DvaluesFevl(3,icub,iel)             
             !Dcoefficients(3,icub,iel) =   CHI
         END DO
     END DO
@@ -6555,6 +6558,190 @@ END IF
     !!!!! User prescribed functions !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
+    
+     ! ***************************************************************************
+ !<subroutine>
+    ! This cb fct is used for the analytic projection of the exponential test fct
+    ! E.g. this is used for every test file, which does not use a analytic given fct as
+    ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
+    subroutine analyt_u_pattern (cderivative,rdiscretisation, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dvalues,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the (analytical) values of a function in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+  !</description>
+    
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(IN)                                         :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  !</output>
+    
+  !</subroutine>
+
+    ! loop-indices
+    integer :: icub, iel
+
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement             
+            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 16_DP - Dpoints(1,icub,iel))
+        END DO
+    END DO
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!! end of  analyt_u_pattern functions !!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! ***************************************************************************
+
+  ! ***************************************************************************
+
+  !<subroutine>
+    ! This cb fct is used for the analytic projection of the exponential test fct
+    ! E.g. this is used for every test file, which does not use a analytic given fct as
+    ! a reference sol. ( like chemotaxis_cherkur_TVD_test.f90 )
+    subroutine analyt_c_pattern (cderivative,rdiscretisation, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset, &
+                  Dvalues,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the (analytical) values of a function in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+  !</description>
+    
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(IN)                                         :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(IN)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(IN)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+
+    ! An array accepting the DOF's on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF's in trial space,Number of elements)
+    integer, dimension(:,:), intent(IN) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(INOUT), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+  !</output>
+    
+  !</subroutine>
+
+    ! loop-indices
+    integer :: icub, iel
+
+    DO iel = 1, nelements
+        DO icub = 1, npointsPerElement             
+            Dvalues(icub, iel) = Dpoints(1,icub,iel)+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
+        END DO
+    END DO
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!! end of  analyt_c_pattern functions !!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! ***************************************************************************
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! User prescribed function for setting initial conditions for cells !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -6567,8 +6754,10 @@ END IF
 		real(DP) :: func_result
 
         ! setting for analytical solution
+        
         !func_result = 0.0_DP
         func_result = x*(16_DP-x)
+        
         !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
 
         ! part of a user code: prescribe initial conditions for cells
@@ -6595,8 +6784,10 @@ END IF
 
         ! setting for analytical solution
         !func_result = 0_DP
+        
         !func_result = 0.0_DP
         func_result = x+y+z
+        
         !func_result = -x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
         !func_result = x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
         
