@@ -929,23 +929,6 @@ contains
           p_rsolver,p_rprecond)
 
     case (11)
-      ! Simple defect correction with time-VANKA and forward-backward preconditioning.
-      !
-      ! Create a forward-backward solver.
-      call sptils_initTimeVanka (rsettings,ispaceTimeLevel,&
-          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          rprecsettings%drelax,4,8,p_rprecond)
-          
-      p_rprecond%nminIterations = rprecsettings%nminIterations
-      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
-      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
-      p_rprecond%domega = rprecsettings%domega
-      
-      ! Initialise the defect correction solver.
-      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
-          p_rsolver,p_rprecond)
-
-    case (12)
       ! BiCGStab with forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
@@ -965,7 +948,7 @@ contains
       p_rsolver%p_rsubnodeBiCGStab%bstopOnRealResiduum = .true.
       p_rsolver%p_rsubnodeBiCGStab%nitereinit = 4
 
-    case (13)
+    case (12)
       ! BiCGStab with right forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
@@ -982,6 +965,23 @@ contains
       call sptils_initBiCGStabRight (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
           
+    case (13)
+      ! Simple defect correction with time-VANKA and forward-backward preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initTimeVanka (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rprecsettings%drelax,4,8,p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
     case default
 
       call output_line('Invalid single grid solver!',&
