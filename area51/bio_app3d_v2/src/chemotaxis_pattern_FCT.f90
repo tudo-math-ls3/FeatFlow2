@@ -532,8 +532,8 @@ module chemotaxis_pattern_FCT
                 
                 ! set coupled rhschemo    
                 call lsyssc_copyVector(rrhschemo_notCoupled, rrhschemo)
-                !call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
-                call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+                call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+                !call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
                                 
                 rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
                 rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
