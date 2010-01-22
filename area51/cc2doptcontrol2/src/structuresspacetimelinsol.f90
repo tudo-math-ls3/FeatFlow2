@@ -720,6 +720,23 @@ contains
       call sptils_initBiCGStab (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
+    case (12)
+      ! BiCGStab with right Forward backward preconditioning.
+      !
+      ! Create a Block_Jacobi preconditioner
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rprecsettings%drelax,p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStabRight (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
+
     case default
 
       call output_line('Invalid smoother!',&
@@ -947,6 +964,23 @@ contains
           
       p_rsolver%p_rsubnodeBiCGStab%bstopOnRealResiduum = .true.
       p_rsolver%p_rsubnodeBiCGStab%nitereinit = 4
+
+    case (12)
+      ! BiCGStab with right forward-backward preconditioning.
+      !
+      ! Create a forward-backward solver.
+      call sptils_initFBsim (rsettings,ispaceTimeLevel,&
+          rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
+          rprecsettings%drelax,p_rprecond)
+          
+      p_rprecond%nminIterations = rprecsettings%nminIterations
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
+      p_rprecond%domega = rprecsettings%domega
+      
+      ! Initialise the defect correction solver.
+      call sptils_initBiCGStabRight (rsettings,ispaceTimeLevel,&
+          p_rsolver,p_rprecond)
           
     case default
 
