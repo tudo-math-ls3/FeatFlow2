@@ -6,14 +6,14 @@
 
 [GENERAL]
 
-# Level where -checkit- to solve. >= NLMIN !
-NLMAX = 6
+# Level where to solve. >= NLMIN !
+NLMAX = 4
 # Output level. 
 # =2 export the last solution vectors only
 # =1 export data to gmv files
 # =0 no gmv files
 OUTPUT = 3
-ISTEP_GMV = 1
+ISTEP_GMV = 2
 
 # gmv output folder. this is just needed by chemotaxiscoupld2
 # 0 and nonzero integers alternate the output folder
@@ -38,7 +38,7 @@ checkneg = 0
 negthres = -0.1
 
 # Tolerance for the defect correction abort criterium
-defectTol = 0.000000000000001
+defectTol = 0.00001
 #------------------------------------------------------------------------------
 # The 'equation' section configures the different constants in the equation.
 #
@@ -56,21 +56,21 @@ defectTol = 0.000000000000001
 
 n=1
 gamma=1
-phi=1.0
+PHI=0.5
 r=1.0
 w=1.0
 sigma = 1.0
-chi = 3.0
+chi = 1.0
 d_1 = 1.0
-alpha=0.0
+alpha=1.0
 beta = 1.0
 d_2 = 1.0
 
 # The following coefficients are only used for the nontest Chemotaxis Pb
 a_cells = 1000.0
-a_chemo = 0.0
-b_cells = 50.0
-b_chemo =0.0
+a_chemo = 500.0
+b_cells = 100.0
+b_chemo =50.0
 
 # The following parameter is used to initialize the cell-concentration to a given mass
 mass = 26
@@ -94,10 +94,10 @@ SCALE_U = 2.0
 
 # Maximum number of time steps.
 # Time iteration stops if #iterations >= niterations or time >= dtimemax.
-ntimesteps = 5000
+ntimesteps = 4
 
 # If != 0 the sim will run at this amount of steps neglecting loop ctrl , e.g. error ctrl
-steps = 1000
+steps = 200
 
 # Time step size.
 dtstep = 0.1
@@ -118,3 +118,8 @@ tol = 0.01
 
 # mentioning which norm should be used for the errorcontrol
 controlnorm = 2
+
+[TEST]
+
+# mentioning which norm should be used for the errorcontrol
+convecRelaxation = 1.0
