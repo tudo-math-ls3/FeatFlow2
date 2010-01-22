@@ -79,6 +79,7 @@ module geometryaux
   public :: gaux_isInElement_tetra
   public :: gaux_isInElement_hexa
   public :: gaux_calcDistPEdg2D
+  public :: gaux_projectPointPlane
 contains
 
   ! ***************************************************************************
@@ -1241,7 +1242,55 @@ contains
   end if
 
   end subroutine gaux_calcDistPEdg2D
+  
+!************************************************************************
 
-  ! ***************************************************************************
+!<subroutine>
+  
+ pure subroutine gaux_projectPointPlane(DPoint,DR1,DR2,DQ,DQP)
+!<description>
+  ! This routine projects a point onto a plane.
+  ! the plane must be entered in parameterform that means:E= p + alpha*r1 + beta*r2
+  ! the code will transform this to point normal form and calculate the result
+!</description>
+
+!<input>
+  ! the p in the equation for E above
+  real(DP), dimension(3), intent(in) :: DPoint
+  ! the r1 in the equation for E above
+  real(DP), dimension(3), intent(in) :: DR1
+  ! the r2 in the equation for E above
+  real(DP), dimension(3), intent(in) :: DR2
+  ! the point that should be projected
+!</input> 
+!<inputoutput>   
+  real(DP), dimension(3), intent(inout) :: DQ
+  ! the projection of DQ onto the plane
+  real(DP), dimension(3), intent(inout) :: DQP
+!</inputoutput>  
+!</subroutine>
+  ! local variables
+  real(DP) :: d,n,q
+  real(DP), dimension(3) :: DN, DNscaled
+  
+  DN(1)=DR1(2)*DR2(3)-DR1(3)*DR2(2)    
+  DN(2)=DR1(3)*DR2(1)-DR1(1)*DR2(3)    
+  DN(3)=DR1(1)*DR2(2)-DR1(2)*DR2(1) 
+  
+  n=sqrt(DN(1)**2 + DN(2)**2 + DN(3)**2)
+  DN(:)=DN(:)/n
+  
+  d = -1.0_dp * (DN(1)*DPoint(1)+DN(2)*DPoint(2)+DN(3)*DPoint(3))
+  
+  q = (DQ(1)*DN(1)+DQ(2)*DN(2)+DQ(3)*DN(3))+d
+
+  DNscaled(:)=q*DN(:)
+  
+  DQP(:)=DQ(:)-DNscaled(:)
+
+  end subroutine
+
+!************************************************************************
+  
 
 end module
