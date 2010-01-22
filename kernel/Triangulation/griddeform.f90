@@ -338,7 +338,7 @@ module griddeform
 contains
 
 !<subroutine>
-  subroutine griddef_deformationInit(rgriddefInfo,NLMIN,NLMAX,rboundary,iStyle,iadaptSteps)
+  subroutine griddef_deformationInit(rgriddefInfo,NLMIN,NLMAX,rboundary,iStyle,iadaptSteps,iodesteps)
   
 !<description>
   ! This subroutine initialises the rgriddefinfo structure which describes the
@@ -356,6 +356,10 @@ contains
   
   ! user defined number of adaptation steps
   integer,intent(in), optional :: iadaptSteps
+  
+  ! user defined number of adaptation steps
+  integer,intent(in), optional :: iodesteps
+  
   
 !</inputoutput>
 
@@ -537,6 +541,13 @@ contains
       
         ! initialise the tolerance
         rgriddefInfo%dtolQ = 1.0E10_DP      
+        
+        if(present(iodesteps))then        
+        ! number of ode steps
+          rgriddefInfo%ntimeSteps = iodesteps
+        else
+          rgriddefInfo%ntimeSteps = 20
+        end if
         
         ! set the multigrid level for the deformation PDE(really ?)
         p_ilevelODE(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
@@ -3095,6 +3106,9 @@ contains
   p_DvertexCoords)    
 
   ntimeSteps = rgriddefInfo%ntimeSteps
+  
+  dstepSize = 1.0_dp/real(ntimeSteps,dp)
+  
   ! difference between grid level for ODE and PDE solving
   ! write the coordinates of the moved points to the actual coordinate vector
   ! Here, only the case ilevelODE < ilevel is considered, the opposite case
@@ -3150,7 +3164,7 @@ contains
            Dpoint,ielement)
 
       ! compute step size for next time step
-      dstepSize = 0.05_dp
+      !dstepSize = 1.00_dp
 
       ! so this means in Dvalues(1) there is the
       ! x coordinate of the recovered gradient
@@ -3184,10 +3198,6 @@ contains
           Dpoint(1) = dx
           Dpoint(2) = dy      
           Dpoint(3) = dz 
-               
-!          Dpoint(1) = 0.75_dp
-!          Dpoint(2) = 0.75_dp
-!          Dpoint(3) = 0.75_dp 
 
           ! we search for the point, we enter the element it
           ! was found in last time
@@ -3208,7 +3218,7 @@ contains
 
           ! compute step size for next time step
           ! griddef_computeStepSize(dtime, ntimeSteps)
-          dstepSize = 0.05_dp 
+          !dstepSize = 0.01_dp 
 
           ! perform the actual Euler step
           dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
@@ -3242,11 +3252,11 @@ contains
       ! in case time interval exhausted in the first time step  
       else
         ! write the coordinates
-              if(dx .gt. 1.0_dp)then
-                print *,ive
-              end if
-        !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
-        !print *,"new coordinates: ",dx,dy,dz
+        if(dx .gt. 1.0_dp)then
+          print *,ive
+          print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
+          print *,"new coordinates: ",dx,dy,dz
+        end if
               
         p_DvertexCoords(1,ive) = dx
         p_DvertexCoords(2,ive) = dy     
@@ -4821,7 +4831,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
 ! ***************************************************************************   
   
 !<subroutine>
-  subroutine griddef_deformationInit3D(rgriddefInfo,NLMIN,NLMAX,iStyle,iadaptSteps)
+  subroutine griddef_deformationInit3D(rgriddefInfo,NLMIN,NLMAX,iStyle,iadaptSteps,iodesteps)
   
 !<description>
   ! This subroutine initialises the rgriddefinfo structure which describes the
@@ -4836,6 +4846,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   
   ! user defined number of adaptation steps
   integer,intent(in), optional :: iadaptSteps
+
+  ! user defined number of adaptation steps
+  integer,intent(in), optional :: iodesteps
   
 !</inputoutput>
 
@@ -4875,86 +4888,86 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   rgriddefInfo%dblendPar = 1.0_dp
   
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dql2',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_Dql2',&
                    NLMAX, ST_INT, rgriddefInfo%h_Dql2,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_Dqlinfty',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_Dqlinfty',&
                    NLMAX, ST_INT, rgriddefInfo%h_Dqlinfty,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_nadapSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nadapSteps,&
                    ST_NEWBLOCK_ZERO)    
                    
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_calcAdapSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_calcAdapSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_calcAdapSteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nadapStepsReally',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_nadapStepsReally',&
                    NLMAX, ST_INT, rgriddefInfo%h_nadapStepsReally,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmaxCorrSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_nmaxCorrSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nmaxCorrSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ncorrSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_ncorrSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_ncorrSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODE',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_ilevelODE',&
                    NLMAX, ST_INT, rgriddefInfo%h_ilevelODE,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_ilevelODECorr',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_ilevelODECorr',&
                    NLMAX, ST_INT, rgriddefInfo%h_ilevelODECorr,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npreSmoothSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_npreSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_npreSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_npostSmoothSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_npostSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_npostSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nintSmoothSteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_nintSmoothSteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nintSmoothSteps,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_nmonSmoothsteps',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_nmonSmoothsteps',&
                    NLMAX, ST_INT, rgriddefInfo%h_nmonSmoothsteps,&
                    ST_NEWBLOCK_ZERO)    
 
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpreSmoothMthd',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_cpreSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cpreSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cpostSmoothMthd',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_cpostSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cpostSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
   ! now allocate memory for the arrays
-  call storage_new('griddef_deformationInit', 'rgriddefInfo%h_cintSmoothMthd',&
+  call storage_new('griddef_deformationInit3D', 'rgriddefInfo%h_cintSmoothMthd',&
                    NLMAX, ST_INT, rgriddefInfo%h_cintSmoothMthd,&
                    ST_NEWBLOCK_ZERO)    
 
@@ -5014,7 +5027,14 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
         iaux = 1
       
         ! initialise the tolerance
-        rgriddefInfo%dtolQ = 1.0E10_DP      
+        rgriddefInfo%dtolQ = 1.0E10_DP
+        
+        if(present(iodesteps))then        
+        ! number of ode steps
+          rgriddefInfo%ntimeSteps = iodesteps
+        else
+          rgriddefInfo%ntimeSteps = 20
+        end if
         
         ! set the multigrid level for the deformation PDE(really ?)
         p_ilevelODE(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
@@ -5380,6 +5400,8 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     p_rsolverNode%ioutputLevel = 2    
     
     p_rsolverNode%nmaxIterations = 20
+    
+    p_rsolverNode%depsRel = 1e-13
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
