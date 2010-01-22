@@ -7235,7 +7235,7 @@ contains
 
       end if
 
-      if (not(present(rconsistentMassMatrix)) .or.&
+      if (.not.(present(rconsistentMassMatrix)) .or.&
           rafcstab%bprelimiting) then
 
         !-----------------------------------------------------------------------
@@ -7285,7 +7285,7 @@ contains
         ! is built into the raw antidiffusive fluxes. However, if the
         ! switch for prelimiting was not set to .false. and no mass
         ! antidiffusion is built into the fluxes we can simply copy it
-        if (not(present(rconsistentMassMatrix)) .and.&
+        if (.not.(present(rconsistentMassMatrix)) .and.&
             rafcstab%bprelimiting) then
           call lsyssc_copyVector(rafcstab%RedgeVectors(4),&
               rafcstab%RedgeVectors(2))
