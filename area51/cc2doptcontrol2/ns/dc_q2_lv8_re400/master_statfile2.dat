@@ -3,10 +3,10 @@
 #
 # - Imports the flows_statfile.dat file which defines
 #   - start condition = fully developed stationary
-#     Navier-Stokes at Re=400
-#   - target flow = fully developed Stokes flow
+#     Stokes at Re=400
+#   - target flow = fully developed Navier-Stokes flow
 #     at Re=400
-# - Re=400
+# - Re=400, Stokes-equation
 # - zero initial flow
 # - No constraints
 # - Q2/P1 / CN, no stabilisation
@@ -18,14 +18,14 @@
 #####################################################
 
 simportdatafiles(1) = 
-  "./ns/dc_q2_lv8_re400/flows_statfile.dat"
+  "./ns/dc_q2_lv8_re400/flows_statfile1.dat"
 
 [PARAMTRIANG]
 sParametrisation = './pre/QUAD.prm'
 sMesh = './pre/QUAD.tri'
  
 [CC-PHYSICSPRIMAL]
-iequation  = 0
+iequation  = 1
 RE = 400
 
 [CC-DISCRETISATION]
@@ -50,8 +50,8 @@ ctype = 0
 ctype = 0
  
 [OPTIMALCONTROL]
-stargetFlow = DRIVENCAV
-sinitialCondition = DRIVENCAV_INIT
+stargetFlow = DRIVENCAV_INIT
+sinitialCondition = DRIVENCAV
 dalphaC = 0.01
 dgammaC = 0.0
 ccontrolConstraints = 0
