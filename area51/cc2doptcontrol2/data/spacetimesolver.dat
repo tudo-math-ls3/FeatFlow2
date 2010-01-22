@@ -245,10 +245,11 @@ ifbSORPartialUpdate=0
 # =6: direct (UMFPACK Gauss elimination)
 # =7: Pure block FBSOR solver
 # =8: Defect correction with UMFPACK preconditioning
-# =9: Defect correction with with a simple Forward-Backward preconditioner
-# =10: Defect correction with with space-time VANKA and a simple 
+# =10: Defect correction with with a simple Forward-Backward preconditioner
+# =11: Defect correction with with space-time VANKA and a simple 
 #      Forward-Backward preconditioner
-# =11: BiCGStab with a simple Forward-Backward preconditioner
+# =12: BiCGStab with a simple Forward-Backward preconditioner
+# =13: BiCGStab with a right simple Forward-Backward preconditioner
 # If there's a preconditioner involved, its parameters can be found in the section
 # [TIME-SINGLEGRIDPRECOND] below!
 ctypeSolver = 1

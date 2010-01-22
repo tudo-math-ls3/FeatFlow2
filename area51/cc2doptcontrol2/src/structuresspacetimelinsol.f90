@@ -911,7 +911,7 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
-    case (9)
+    case (10)
       ! Simple defect correction with forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
@@ -928,7 +928,7 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
-    case (10)
+    case (11)
       ! Simple defect correction with time-VANKA and forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
@@ -945,7 +945,7 @@ contains
       call sptils_initDefCorr (rsettings,ispaceTimeLevel,&
           p_rsolver,p_rprecond)
 
-    case (11)
+    case (12)
       ! BiCGStab with forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
@@ -965,7 +965,7 @@ contains
       p_rsolver%p_rsubnodeBiCGStab%bstopOnRealResiduum = .true.
       p_rsolver%p_rsubnodeBiCGStab%nitereinit = 4
 
-    case (12)
+    case (13)
       ! BiCGStab with right forward-backward preconditioning.
       !
       ! Create a forward-backward solver.
