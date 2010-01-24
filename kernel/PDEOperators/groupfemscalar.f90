@@ -129,10 +129,10 @@
 !#                             gfsc_buildJacLinearGPBlock /
 !#                             gfsc_buildJacobianGPScalar /
 !#                             gfsc_buildJacobianGPBlock
-!#      -> Assembles the Jacobian matrix for the stabilisation part of general purpose limiter; 
-!#         For the first two routines, the velocity is assumed to be linear which
-!#         simplifies the evaluation of the Jacobian matrix significantly.
-!#         For the second two routines, the velocity can be arbitrary.
+!#      -> Assembles the Jacobian matrix for the stabilisation part of general 
+!#         purpose limiter. For the first two routines, the velocity is assumed
+!#         to be linear which simplifies the evaluation of the Jacobian matrix
+!#         significantly. For the second two routines, the velocity can be arbitrary.
 !#
 !# 14.) gfsc_buildJacobianSymm = gfsc_buildJacobianSymmScalar /
 !#                               gfsc_buildJacobianSymmBlock
@@ -153,15 +153,16 @@
 
 module groupfemscalar
 
+  use afcstabilisation
+  use basicgeometry
   use fsystem
   use genoutput
   use linearalgebra
-  use storage
-  use basicgeometry
-  use triangulation
   use linearsystemblock
   use linearsystemscalar
-  use afcstabilisation
+  use mprimitives
+  use storage
+  use triangulation
 
   implicit none
 
@@ -195,8 +196,6 @@ module groupfemscalar
   interface gfsc_buildConvVectorFCT
     module procedure gfsc_buildConvVecFCTScalar
     module procedure gfsc_buildConvVecFCTBlock
-    module procedure gfsc_buildConvVecFCTScalar_legacy
-    module procedure gfsc_buildConvVecFCTBlock_legacy
   end interface
 
   interface gfsc_buildConvVectorTVD
@@ -330,8 +329,8 @@ contains
           Isize, ST_DOUBLE, rafcstab%h_DcoefficientsAtEdge, ST_NEWBLOCK_NOINIT)
 
       ! We need 6 nodal vectors for P`s, Q`s and R`s
-      allocate(rafcstab%RnodalVectors(7))
-      do i = 1, 7
+      allocate(rafcstab%RnodalVectors(6))
+      do i = 1, 6
         call lsyssc_createVector(rafcstab%RnodalVectors(i),&
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
@@ -359,6 +358,23 @@ contains
               rafcstab%NEDGE, .false., ST_DOUBLE)
         end do
       end if
+
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
+      rafcstab%p_rvectorPredictor  => rafcstab%RnodalBlockVectors(1)
+      
+      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(4)
+      end if
+
       
     case (AFCSTAB_FEMTVD,&
           AFCSTAB_FEMGP)
@@ -391,6 +407,17 @@ contains
         call lsyssc_createVector(rafcstab%RedgeVectors(i),&
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
+      
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
       
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -430,6 +457,17 @@ contains
       call lsysbl_createVectorBlock(&
           rafcstab%RnodalBlockVectors(1),&
           rafcstab%NEQ, 1, .false., ST_DOUBLE)
+
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux => rafcstab%RedgeVectors(2)
+      rafcstab%p_rvectorPredictor  => rafcstab%RnodalBlockVectors(1)
 
 
     case (AFCSTAB_SYMMETRIC)
@@ -2566,8 +2604,8 @@ contains
 
     ! local variables
     real(DP), dimension(:), pointer :: p_ML,p_u,p_res
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_alpha,p_flux,p_flux0
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
 
     ! Check if stabilisation is prepeared
@@ -2606,10 +2644,10 @@ contains
       !-------------------------------------------------------------------------
       
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
       
       ! Initialise alpha by unity
-      call lalg_setVector(p_alpha, 1.0_DP)
+      call lalg_setVector(p_Dalpha, 1.0_DP)
     end if
 
 
@@ -2635,21 +2673,27 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(ru, p_u)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
       else
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
-      call doADIncrements(p_IverticesAtEdge,&
-          rafcstab%NEDGE, p_u, p_flux, p_alpha, p_pp, p_pm)
+      if (rafcstab%bprelimiting) then
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call doPreADIncrements(p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+      else
+        call doADIncrements(p_IverticesAtEdge,&
+            rafcstab%NEDGE, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+      end if
 
       ! Set specifiers
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
@@ -2671,13 +2715,13 @@ contains
       
       ! Set pointers
       call lsyssc_getbase_double(ru, p_u)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute bounds
       call doBounds(p_IverticesAtEdge,&
-          rafcstab%NEDGE, p_u, p_qp, p_qm)
+          rafcstab%NEDGE, p_u, p_Dqp, p_Dqm)
 
       ! Set specifiers
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
@@ -2699,20 +2743,20 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         call doLimitNodal(rafcstab%NEQ, dscale,&
-            p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
         call doLimitNodalConstrained(rafcstab%NEQ, dscale,&
-            p_ML, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm)
+            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
       
       ! Set specifier
@@ -2741,21 +2785,21 @@ contains
       end if
 
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
         call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
-            rafcstab%NEDGE, p_flux0, p_flux, p_rp, p_rm, p_alpha)
+            rafcstab%NEDGE, p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
       else
         call doLimitEdgewise(p_IverticesAtEdge,&
-            rafcstab%NEDGE, p_flux, p_rp, p_rm, p_alpha)
+            rafcstab%NEDGE, p_Dflux, p_Drp, p_Drm, p_Dalpha)
       end if
 
       ! Set specifier
@@ -2792,8 +2836,8 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rres, p_res)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Clear convective vector?
@@ -2803,10 +2847,10 @@ contains
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
         call doCorrectScaleByMass(p_IverticesAtEdge,&
-            rafcstab%NEDGE, dscale, p_ML, p_alpha, p_flux, p_res)
+            rafcstab%NEDGE, dscale, p_ML, p_Dalpha, p_Dflux, p_res)
       else
         call doCorrect(p_IverticesAtEdge,&
-            rafcstab%NEDGE, dscale, p_alpha, p_flux, p_res)
+            rafcstab%NEDGE, dscale, p_Dalpha, p_Dflux, p_res)
       end if
     end if
 
@@ -2819,9 +2863,9 @@ contains
     ! for the given antidiffusive fluxes
     
     subroutine doADIncrements(IverticesAtEdge,&
-        NEDGE, u, flux, alpha, pp, pm)
+        NEDGE, flux, alpha, pp, pm)
       
-      real(DP), dimension(:), intent(in) :: u,flux
+      real(DP), dimension(:), intent(in) :: flux
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE
 
@@ -2843,10 +2887,6 @@ contains
         i  = IverticesAtEdge(1, iedge)
         j  = IverticesAtEdge(2, iedge)
         
-        ! Prelimiting of antidiffusive fluxes
-        if (flux(iedge)*(u(j)-u(i)) .ge. 0.0_DP)&
-            alpha(iedge) = 0.0_DP
-        
         ! Apply multiplicative correction factor
         f_ij = alpha(iedge)*flux(iedge)
         
@@ -2857,6 +2897,55 @@ contains
         pm(j) = pm(j)+min(0.0_DP,-f_ij)
       end do
     end subroutine doADIncrements
+
+    !**************************************************************
+    ! Assemble sums of antidiffusive increments for the given
+    ! antidiffusive fluxes without transformation and with prelimiting
+
+    subroutine doPreADIncrements(IverticesAtEdge,&
+        NEDGE, flux, flux0, alpha, pp, pm)
+      
+      real(DP), dimension(:), intent(in) :: flux,flux0
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE
+
+      real(DP), dimension(:), intent(inout) :: alpha
+      real(DP), dimension(:), intent(out) :: pp,pm
+      
+      ! local variables
+      real(DP) :: f_ij,alpha_ij
+      integer :: iedge,i,j
+
+      ! Clear P`s
+      call lalg_clearVector(pp)
+      call lalg_clearVector(pm)
+      
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        ! Apply multiplicative correction factor
+        f_ij = alpha(iedge)*flux(iedge)
+        
+        ! MinMod prelimiting
+        alpha_ij = mprim_minmod3(f_ij, flux0(iedge), f_ij)
+
+        ! Synchronisation of correction factors
+        alpha(iedge) = alpha(iedge) * alpha_ij
+
+        ! Update the raw antidiffusive flux
+        F_ij = alpha_ij * F_ij
+
+        ! Compute the sums of antidiffusive increments
+        pp(i) = pp(i)+max(0.0_DP, f_ij)
+        pp(j) = pp(j)+max(0.0_DP,-f_ij)
+        pm(i) = pm(i)+min(0.0_DP, f_ij)
+        pm(j) = pm(j)+min(0.0_DP,-f_ij)
+      end do
+    end subroutine doPreADIncrements
 
     !**************************************************************
     ! Assemble local bounds from the predicted solution
@@ -3121,965 +3210,6 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvVecFCTBlock_legacy(rlumpedMassMatrix,&
-      ru, theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
-
-!<description>
-    ! This subroutine assembles the convective vector and applies
-    ! stabilisation of FEM-FCT type.  Note that this routine serves as
-    ! a wrapper for block vectors. If there is only one block, then
-    ! the corresponding scalar routine is called.  Otherwise, an error
-    ! is thrown.
-    !
-    ! THIS IS THE OLD IMPLEMENTATION WHICH WILL BE REMOVED SOON
-    ! USE THE NEW MORE FLEXIBLE IMPLEMENTATION AS REPLACEMENT
-!</description>
-
-!<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
-    ! solution vector
-    type(t_vectorBlock), intent(in) :: ru
-
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! time step size
-    real(DP), intent(in) :: tstep
-    
-    ! Switch for vector assembly
-    ! TRUE  : build the initial vector
-    ! FALSE : update the vector
-    logical, intent(in) :: binit
-
-    ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
-!</input>
-
-!<inputoutput>
-    ! convective vector
-    type(t_vectorBlock), intent(inout) :: rres
-
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    ! Check if block vectors contain exactly one block
-    if (ru%nblocks .ne. 1 .or. rres%nblocks .ne. 1) then
-
-      call output_line('Vector must not contain more than one block!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTBlock_legacy')
-      call sys_halt()
-
-    else
-
-      call gfsc_buildConvVecFCTScalar_legacy(rlumpedMassMatrix,&
-          ru%RvectorBlock(1), theta, tstep, binit,&
-          rres%RvectorBlock(1), rafcstab, rconsistentMassMatrix)
-
-    end if
-
-  end subroutine gfsc_buildConvVecFCTBlock_legacy
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine gfsc_buildConvVecFCTScalar_legacy(rlumpedMassMatrix, ru,&
-      theta, tstep, binit, rres, rafcstab, rconsistentMassMatrix)
-
-!<description>
-    ! This subroutine assembles the convective vector and applies
-    ! stabilisation of FEM-FCT type. The idea of flux corrected
-    ! transport can be traced back to the early SHASTA algorithm by
-    ! Boris and Bock in the early 1970s. Zalesak suggested a fully
-    ! multi-dimensional generalisation of this approach and paved the
-    ! way for a large family of FCT algorithms.
-    !
-    ! THIS IS THE OLD IMPLEMENTATION WHICH WILL BE REMOVED SOON
-    ! USE THE NEW MORE FLEXIBLE IMPLEMENTATION AS REPLACEMENT
-    !
-    ! This subroutine provides different algorithms:
-    !
-    ! Nonlinear FEM-FCT
-    ! ~~~~~~~~~~~~~~~~~
-    ! 1. Semi-explicit FEM-FCT algorithm
-    !
-    !    This is the classical algorithm which makes use of Zalesak`s
-    !    flux limiter and recomputes and auxiliary positivity-
-    !    preserving solution in each iteration step. 
-    !    The details of this method can be found in:
-    !
-    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
-    !    conservation laws, Ergebnisberichte Angew. Math. 249,
-    !    University of Dortmund, 2004.
-    !
-    ! 2. Iterative FEM-FCT algorithm
-    !
-    !    This is an extension of the classical algorithm which makes
-    !    use of Zalesak`s flux limiter and tries to include the
-    !    amount of rejected antidiffusion in subsequent iteration
-    !    steps. The details of this method can be found in:
-    !
-    !    D. Kuzmin and M. Moeller, Algebraic flux correction I. Scalar
-    !    conservation laws, Ergebnisberichte Angew. Math. 249,
-    !    University of Dortmund, 2004.
-    !
-    ! 3. Semi-implicit FEM-FCT algorithm
-    !
-    !    This is the FCT algorithm that should be used by default. It
-    !    is quite efficient since the nodal correction factors are
-    !    only computed in the first iteration and used to limit the
-    !    antidiffusive flux from the first iteration. This explicit
-    !    predictor is used in all subsequent iterations to constrain
-    !    the actual target flux.
-    !    The details of this method can be found in:
-    !
-    !    D. Kuzmin and D. Kourounis, A semi-implicit FEM-FCT
-    !    algorithm for efficient treatment of time-dependent
-    !    problems, Ergebnisberichte Angew. Math. 302, University of
-    !    Dortmund, 2005.
-    !
-    ! Linearised FEM-FCT
-    ! ~~~~~~~~~~~~~~~~~~
-    !
-    ! 3. Linearised FEM-FCT algorithm
-    !
-    !    A new trend in the development of FCT algorithms is to
-    !    linearise the raw antidiffusive fluxes about an intermediate
-    !    solution computed by a positivity-preserving low-order
-    !    scheme. By virtue of this linearisation, the costly
-    !    evaluation of correction factors needs to be performed just
-    !    once per time step. Furthermore, no questionable
-    !    `prelimiting` of antidiffusive fluxes is required, which
-    !    eliminates the danger of artificial steepening.
-    !    The details of this method can be found in:
-    !
-    !    D. Kuzmin, Explicit and implicit FEM-FCT algorithms with
-    !    flux linearization, Ergebnisberichte Angew. Math. 358,
-    !    University of Dortmund, 2008.
-!</description>
-
-!<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
-    ! solution vector
-    type(t_vectorScalar), intent(in) :: ru
-
-    ! implicitness parameter
-    real(DP), intent(in) :: theta
-
-    ! time step size
-    real(DP), intent(in) :: tstep
-    
-    ! Switch for vector assembly
-    ! TRUE  : build the initial vector
-    ! FALSE : update the vector
-    logical, intent(in) :: binit
-
-    ! OPTIONAL: consistent mass matrix
-    type(t_matrixScalar), intent(in), optional :: rconsistentMassMatrix
-!</input>
-
-!<inputoutput>
-    ! convective vector
-    type(t_vectorScalar), intent(inout) :: rres
-
-    ! stabilisation structure
-    type(t_afcstab), intent(inout) :: rafcstab
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
-    real(DP), dimension(:), pointer :: p_u,p_res,p_uPredictor
-    real(DP), dimension(:), pointer :: p_MC,p_ML
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    
-    
-    ! Check if stabilisation is prepared
-    if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE) .eq. 0) .or.&
-        (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)    .eq. 0)) then
-      call output_line('Stabilisation does not provide required structures',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-      call sys_halt()
-    end if
- 
-    ! Set pointers
-    call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
-    call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxImpl)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_fluxExpl)
-    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-    call lsyssc_getbase_double(rres, p_res)
-    call lsyssc_getbase_double(ru, p_u)
-
-
-    ! What kind of stabilisation are we?
-    select case(rafcstab%ctypeAFCstabilisation)
-      
-    case (AFCSTAB_FEMFCT_IMPLICIT)
-
-      ! Should we build up the initial convective term?
-      if (binit) then
-        
-        ! Do we have a fully implicit time discretisation?
-        if (theta < 1.0_DP) then
-
-          ! Compute the low-order predictor
-          !
-          !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
-          ! 
-          ! whereby the residual of the 0-th iteration is assumed to be
-          !
-          !  $ r^{(0)}=\Delta t Lu^n $
-
-          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix, rres, 1.0_DP-theta,&
-                                         rafcstab%RnodalVectors(7))
-          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(7), 1.0_DP, 1.0_DP)
-          call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredictor)
-          
-          ! Initialise the flux limiter
-          if (present(rconsistentMassMatrix)) then
-            call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-            call doInit_implFCTconsMass(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-                p_u, p_uPredictor, theta, tstep, rafcstab%NEDGE,&
-                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
-          else
-            call doInit_implFCTnoMass(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-                p_u, p_uPredictor, theta, tstep, rafcstab%NEDGE,&
-                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
-          end if
-          
-        else   ! theta < 1
-          
-          ! The low-order predictor is simply given by
-          !
-          !   $ \tilde u=u^n $
-          
-          ! Initialise the flux limiter with u in lieu of uLow
-          if (present(rconsistentMassMatrix)) then
-            call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-            call doInit_implFCTconsMass(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-                p_u, p_u, theta, tstep, rafcstab%NEDGE,&
-                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
-          else
-            call doInit_implFCTnoMass(&
-                p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-                p_u, p_u, theta, tstep, rafcstab%NEDGE,&
-                p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_fluxExpl)
-          end if
-          
-        end if   ! theta < 1
-        
-        ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)        
-
-      end if   ! binit
-      
-
-      ! Check if correction factors and fluxes are available
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
-        call output_line('Stabilisation does not provide precomputed fluxes &
-            &and/or nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD, 'gfsc_buildConvVecFCTScalar')
-        call sys_halt()
-      end if
-      
-      ! Apply the limited antidiffusion
-      if (present(rconsistentMassMatrix)) then
-        call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-        call doLimit_implFCTconsMass(&
-            p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_u,&
-            p_fluxImpl, p_fluxExpl, theta, tstep, rafcstab%NEDGE, p_res)
-      else
-        call doLimit_implFCTnoMass(&
-            p_IverticesAtEdge, p_DcoefficientsAtEdge, p_u,&
-            p_fluxImpl, p_fluxExpl, theta, tstep, rafcstab%NEDGE, p_res)
-      end if
-
-
-    case (AFCSTAB_FEMFCT_CLASSICAL)
-
-      ! Should we build up the initial convective term?
-      if (binit) then
-        
-        ! Initialise the flux limiter
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doInit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC,&
-              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-        else
-          call doInit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-              p_u, theta, tstep, rafcstab%NEDGE, p_fluxExpl)
-        end if
-
-        ! Set specifier
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER)
-        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) 
-
-      end if   ! binit
-
-      ! Check if correction factors and fluxes are available
-      if ((iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) .or.&
-          (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)    .eq. 0)) then
-        call output_line('Stabilisation does not provide precomputed fluxes &
-            &and/or nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-        call sys_halt()
-      end if
-
-      ! Do we have a fully implicit time discretisation?
-      if (theta < 1.0_DP) then
-        
-        ! Compute the low-order predictor
-        !
-        !   $ \tilde u=u^n+(1-\theta)\Delta t M_L^{-1}Lu^n $
-        ! 
-        ! whereby the residual of the 0-th iteration is assumed to be
-        !
-        !   $ r^{(0)}=\Delta tLu^n $
-
-        if (binit) then
-          call lsyssc_invertedDiagMatVec(rlumpedMassMatrix,&
-              rres, 1.0_DP-theta, rafcstab%RnodalVectors(7))
-          call lsyssc_vectorLinearComb(ru, rafcstab%RnodalVectors(7), 1.0_DP, 1.0_DP)
-        end if
-        call lsyssc_getbase_double(rafcstab%RnodalVectors(7), p_uPredictor)
-        
-        ! Apply the flux limiter
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doLimit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        else
-          call doLimit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-              p_u, p_uPredictor, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        end if
-        
-      else   ! theta < 1
-        
-        ! The low-order predictor is simply given by
-        !
-        !   $ \tilde u=u^n $
-        
-        ! Apply the flux limiter with u in leu of ulow
-        if (present(rconsistentMassMatrix)) then
-          call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
-          call doLimit_explFCTconsMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_MC, p_ML,&
-              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        else
-          call doLimit_explFCTnoMass(&
-              p_IverticesAtEdge, p_DcoefficientsAtEdge, p_ML,&
-              p_u, p_u, p_fluxExpl, theta, tstep, rafcstab%NEDGE,&
-              p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, p_fluxImpl, p_res)
-        end if
-
-      end if   ! theta < 1
-
-
-    case (AFCSTAB_FEMFCT_LINEARISED)
-      call output_line('The linearised FEM-FCT algorithm is not implemented yet!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-      call sys_halt()
-      
-
-    case (AFCSTAB_FEMFCT_ITERATIVE)
-      call output_line('The iterative FEM-FCT algorithm is not implemented yet!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-      call sys_halt()
-
-
-    case DEFAULT
-      call output_line('Invalid type of AFC stabilisation!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildConvVecFCTScalar')
-      call sys_halt()
-    end select
-
-  contains
-      
-    ! Here, the working routine follow
-
-    !**************************************************************
-    ! Initialisation of the semi-implicit FEM-FCT procedure,
-    ! whereby no mass antidiffusion is built into the residual
-    
-    subroutine doInit_implFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, ML, u, ulow, theta, tstep, NEDGE,&
-        pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: ML
-      real(DP), dimension(:), intent(in) :: u,ulow
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
-
-      ! local variables
-      real(DP) :: d_ij,f_ij,diff
-      integer :: iedge,ij,i,j
-      
-
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-      
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge)
-        
-        ! Determine fluxes
-        diff = u(i)-u(j); f_ij = d_ij*diff
-        fluxImpl(iedge) = f_ij
-          
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
-        ! Upper/lower bounds
-        diff = ulow(j)-ulow(i)
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-      
-      ! Adopt the explicit part (if required)
-      if (theta < 1.0_DP) then
-        call lalg_copyVectorDble(fluxImpl, fluxExpl)
-        call lalg_scaleVectorDble(fluxExpl, 1.0_DP-theta)
-      else
-        call lalg_clearVectorDble(fluxExpl)
-      end if
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit( pm, rm, 0.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          fluxImpl(iedge) = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          fluxImpl(iedge) = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-      end do
-
-    end subroutine doInit_implFCTnoMass
-
-    !**************************************************************
-    ! Initialisation of the semi-implicit FEM-FCT procedure,
-    ! whereby consistent mass antidiffusion is built into the residual
-    
-    subroutine doInit_implFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, ML, u, ulow, theta, tstep, NEDGE,&
-        pp, pm, qp, qm, rp, rm, fluxImpl, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,ML
-      real(DP), dimension(:), intent(in) :: u,ulow
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout):: pp,pm,qp,qm,rp,rm,fluxImpl,fluxExpl
-
-      ! local variables
-      real(DP) :: d_ij,f_ij,m_ij,diff
-      integer :: iedge,ij,i,j
-      
-
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-      
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
-        
-        ! Determine fluxes
-        diff = u(i)-u(j); f_ij = d_ij*diff
-        fluxImpl(iedge) = f_ij; fluxExpl(iedge) = -m_ij*diff
-
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-
-        ! Upper/lower bounds
-        diff = ulow(j)-ulow(i)
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-      
-      ! Adopt the explicit part (if required)
-      if (theta < 1.0_DP) then
-        call lalg_vectorLinearCombDble(fluxImpl, fluxExpl, 1.0_DP-theta, 1.0_DP)
-      end if
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit( pp, rp, 0.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit( pm, rm, 0.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          fluxImpl(iedge) = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          fluxImpl(iedge) = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-      end do
-
-    end subroutine doInit_implFCTconsMass
-    
-
-    !**************************************************************
-    ! The semi-implicit FEM-FCT limiting procedure,
-    ! whereby no mass antidiffusion is built into the residual
-    
-    subroutine doLimit_implFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, u, fluxImpl, fluxExpl, theta, tstep,&
-        NEDGE, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: u,fluxImpl,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: res
-      
-      ! local variables
-      real(DP) :: d_ij,f_ij
-      integer :: iedge,ij,i,j
-      
-      
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge)
-        
-        ! Determine fluxes
-        f_ij = (theta*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
-        
-        if (f_ij > 0.0_DP) then
-          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
-        else
-          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
-        end if
-        
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-      
-    end subroutine doLimit_implFCTnoMass
-
-
-    !**************************************************************
-    ! The semi-implicit FEM-FCT limiting procedure,
-    ! whereby consistent mass antidiffusion is built into the residual
-    
-    subroutine doLimit_implFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, u, fluxImpl, fluxExpl, theta, tstep,&
-        NEDGE, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,u,fluxImpl,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: res
-      
-      ! local variables
-      real(DP) :: d_ij,f_ij,m_ij,alpha_ij
-      integer :: iedge,ij,i,j
-      
-      
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
-        
-        ! Determine fluxes
-        f_ij = (m_ij+theta*d_ij)*(u(i)-u(j))+fluxExpl(iedge)
-        
-        if (f_ij > 0.0_DP) then
-          f_ij = min(f_ij,max(fluxImpl(iedge),0.0_DP))
-        else
-          f_ij = max(f_ij,min(fluxImpl(iedge),0.0_DP))
-        end if
-        
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-      
-    end subroutine doLimit_implFCTconsMass
-
-    
-    !**************************************************************
-    ! Initialisation of the semi-explicit FEM-FCT procedure,
-    ! whereby no mass antidiffusion is built into the residual
-    
-    subroutine doInit_explFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, u, theta, tstep, NEDGE, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: u
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: fluxExpl
-      
-      ! local variables
-      real(DP) :: d_ij,diff
-      integer :: iedge,ij,i,j
-      
-      
-      ! Should we use semi-implicit scheme?
-      if (theta < 1.0_DP) then
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge)
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = (1-theta)*d_ij*diff
-        end do
-        
-      else
-        
-        ! Initialise explicit fluxes by zero
-        call lalg_clearVectorDble(fluxExpl)
-        
-      end if
-      
-    end subroutine doInit_explFCTnoMass
-
-
-    !**************************************************************
-    ! Initialisation of the semi-explicit FEM-FCT procedure,
-    ! whereby no mass antidiffusion is built into the residual
-    
-    subroutine doInit_explFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, u, theta, tstep, NEDGE, fluxExpl)
-      
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,u
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-      
-      real(DP), dimension(:), intent(inout) :: fluxExpl
-      
-      ! local variables
-      real(DP) :: d_ij,m_ij,diff
-      integer :: iedge,ij,i,j
-      
-      
-      ! Should we use semi-implicit scheme?
-      if (theta < 1.0_DP) then
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = -m_ij*diff+(1-theta)*d_ij*diff
-        end do
-        
-      else
-        
-        ! Loop over edges
-        do iedge = 1, NEDGE
-          
-          ! Determine indices
-          i  = IverticesAtEdge(1,iedge)
-          j  = IverticesAtEdge(2,iedge)
-          ij = IverticesAtEdge(3,iedge)
-          
-          ! Determine coefficients
-          m_ij = MC(ij)/tstep
-          
-          ! Determine solution difference
-          diff = u(i)-u(j)
-          
-          ! Determine explicit antidiffusive flux
-          fluxExpl(iedge) = -m_ij*diff
-        end do
-        
-      end if
-      
-    end subroutine doInit_explFCTconsMass
-
-    !**************************************************************
-    ! The semi-explicit FEM-FCT limiting procedure,
-    ! whereby no mass antidiffusion is built into the residual
-    
-    subroutine doLimit_explFCTnoMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, ML, u, ulow, fluxExpl, theta, tstep,&
-        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: ML,u,ulow,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-
-      ! local variables
-      real(DP) :: diff,d_ij,f_ij
-      integer :: iedge,ij,i,j
-      
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        
-        ! Determine coefficients
-        d_ij = DcoefficientsAtEdge(1,iedge); diff=u(i)-u(j)
-        
-        ! Determine antidiffusive flux
-        f_ij = fluxExpl(iedge)+theta*d_ij*diff
-        
-        ! Determine low-order solution difference
-        diff = ulow(j)-ulow(i)
-        
-        ! Perform prelimiting
-        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-        fluxImpl(iedge) = f_ij
-        
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
-        ! Upper/lower bounds
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-        
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-
-    end subroutine doLimit_explFCTnoMass
-
-
-    !**************************************************************
-    ! The semi-explicit FEM-FCT limiting procedure,
-    ! whereby consistent mass antidiffusion is built into the residual
-    
-    subroutine doLimit_explFCTconsMass(IverticesAtEdge,&
-        DcoefficientsAtEdge, MC, ML, u, ulow, fluxExpl, theta, tstep,&
-        NEDGE, pp, pm, qp, qm, rp, rm, fluxImpl, res)
-
-      real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: MC,ML,u,ulow,fluxExpl
-      real(DP), intent(in) :: theta,tstep
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, intent(in) :: NEDGE
-
-      real(DP), dimension(:), intent(inout) :: pp,pm,qp,qm,rp,rm,fluxImpl,res
-
-      ! local variables
-      real(DP) :: diff,d_ij,f_ij,m_ij
-      integer :: iedge,ij,i,j
-      
-      ! Clear nodal vectors
-      call lalg_clearVectorDble(pp)
-      call lalg_clearVectorDble(pm)
-      call lalg_clearVectorDble(qp)
-      call lalg_clearVectorDble(qm)
-
-      ! Loop over edges
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i  = IverticesAtEdge(1,iedge)
-        j  = IverticesAtEdge(2,iedge)
-        ij = IverticesAtEdge(3,iedge)
-        
-        ! Determine coefficients and solution difference
-        d_ij = DcoefficientsAtEdge(1,iedge); m_ij = MC(ij)/tstep; diff=u(i)-u(j)
-        
-        ! Determine antidiffusive flux
-        f_ij = fluxExpl(iedge)+m_ij*diff+theta*d_ij*diff
-        
-        ! Determine low-order solution difference
-        diff = ulow(j)-ulow(i)
-        
-        ! Perform prelimiting
-        if (f_ij*diff .ge. 0) f_ij = 0.0_DP         
-        fluxImpl(iedge) = f_ij
-        
-        ! Sum of positive/negative fluxes
-        pp(i) = pp(i)+max(0.0_DP, f_ij)
-        pp(j) = pp(j)+max(0.0_DP,-f_ij)
-        pm(i) = pm(i)+min(0.0_DP, f_ij)
-        pm(j) = pm(j)+min(0.0_DP,-f_ij)
-        
-        ! Upper/lower bounds
-        qp(i) = max(qp(i), diff)
-        qp(j) = max(qp(j),-diff)
-        qm(i) = min(qm(i), diff)
-        qm(j) = min(qm(j),-diff)
-      end do
-      
-      ! Apply the nodal limiter
-      rp = ML*qp/tstep; rp = afcstab_limit(pp, rp, 0.0_DP, 1.0_DP)
-      rm = ML*qm/tstep; rm = afcstab_limit(pm, rm, 0.0_DP, 1.0_DP)
-      
-      ! Limiting procedure
-      do iedge = 1, NEDGE
-        
-        ! Determine indices
-        i = IverticesAtEdge(1,iedge)
-        j = IverticesAtEdge(2,iedge)
-        
-        if (fluxImpl(iedge) > 0.0_DP) then
-          f_ij = min(rp(i), rm(j))*fluxImpl(iedge)
-        else
-          f_ij = min(rm(i), rp(j))*fluxImpl(iedge)
-        end if
-
-        ! Update the defect vector
-        res(i) = res(i)+tstep*f_ij
-        res(j) = res(j)-tstep*f_ij
-      end do
-    end subroutine doLimit_explFCTconsMass
-
-  end subroutine gfsc_buildConvVecFCTScalar_legacy
-
-  !*****************************************************************************
-
-!<subroutine>
-
   subroutine gfsc_buildConvVecTVDBlock(ru, tstep, rres, rafcstab)
 
 !<description>
@@ -4169,8 +3299,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_u,p_res,p_flux
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_u,p_res,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
     
@@ -4186,20 +3316,20 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(ru, p_u)
     call lsyssc_getbase_double(rres, p_res)
 
     ! Perform flux limiting of TVD-type
     call doLimit_TVD(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-        p_u, tstep, rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm,&
-        p_rp, p_rm, p_flux, p_res)
+        p_u, tstep, rafcstab%NEDGE, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+        p_Drp, p_Drm, p_Dflux, p_res)
 
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
@@ -4403,8 +3533,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_MC,p_u,p_u0,p_res,p_fluxImpl,p_fluxExpl
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_MC,p_u,p_u0,p_res,p_DfluxImpl,p_DfluxExpl
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
     
@@ -4420,14 +3550,14 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxImpl)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_fluxExpl)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_DfluxImpl)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_DfluxExpl)
     call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
     call lsyssc_getbase_double(ru, p_u)
     call lsyssc_getbase_double(ru0, p_u0)
@@ -4436,8 +3566,8 @@ contains
     ! Perform flux limiting by the general purpose limiter
     call doLimit_GP(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
         p_MC, p_u, p_u0, theta, tstep, rafcstab%NEDGE,&
-        p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
-        p_fluxImpl, p_fluxExpl, p_res)
+        p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
+        p_DfluxImpl, p_DfluxExpl, p_res)
     
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
@@ -4643,8 +3773,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_u,p_res,p_flux
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_u,p_res,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     
     
@@ -4660,20 +3790,20 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(ru, p_u)
     call lsyssc_getbase_double(rres, p_res)
     
     ! Perform symmetric flux limiting
     call doLimit_Symmetric(p_IverticesAtEdge, p_DcoefficientsAtEdge,&
-        p_u, dscale, rafcstab%NEDGE, p_pp, p_pm, p_qp, p_qm,&
-        p_rp, p_rm, p_flux, p_res)
+        p_u, dscale, rafcstab%NEDGE, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+        p_Drp, p_Drm, p_Dflux, p_res)
 
     ! Set specifier
     rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
@@ -6641,7 +5771,7 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_fluxImpl,p_fluxExpl
+    real(DP), dimension(:), pointer :: p_DfluxImpl,p_DfluxExpl
     real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u
     
     
@@ -6660,8 +5790,8 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_fluxImpl)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_fluxExpl)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_DfluxImpl)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_DfluxExpl)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
@@ -6685,11 +5815,11 @@ contains
           call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_MC, p_u,&
-              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_DfluxImpl, p_DfluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_u,&
-              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_DfluxImpl, p_DfluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
         
       case(LSYSSC_MATRIX9)
@@ -6705,11 +5835,11 @@ contains
           call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
           call doJacobian_implFCTconsMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_MC, p_u,&
-              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_DfluxImpl, p_DfluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         else
           call doJacobian_implFCTnoMass(&
               p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_u,&
-              p_fluxImpl, p_fluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+              p_DfluxImpl, p_DfluxExpl, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
         end if
 
         
@@ -6991,8 +6121,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm
-    real(DP), dimension(:), pointer :: p_Jac,p_u,p_flux
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm
+    real(DP), dimension(:), pointer :: p_Jac,p_u,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
@@ -7028,11 +6158,11 @@ contains
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
@@ -7065,7 +6195,7 @@ contains
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-          p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+          p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
           tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
           rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       
@@ -7091,7 +6221,7 @@ contains
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-          p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+          p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
           tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
           rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
         
@@ -7657,8 +6787,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u,p_u0,p_flux,p_flux0
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_MC,p_Jac,p_u,p_u0,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
@@ -7692,14 +6822,14 @@ contains
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
     call lsyssc_getbase_double(ru, p_u)
@@ -7733,8 +6863,8 @@ contains
       call doJacobianMat79_GP(&
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge, p_IsubdiagEdgesIdx,&
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
-          p_Kld, p_MC, p_u, p_u0, p_flux, p_flux0,&
-          p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta, tstep, hstep,&
+          p_Kld, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+          p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta, tstep, hstep,&
           rafcstab%NEQ, rafcstab%NEDGE, rafcstab%NNVEDGE,&
           bisExtended, .true., p_Ksep, p_Jac)
       
@@ -7759,8 +6889,8 @@ contains
       call doJacobianMat79_GP(&
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge, p_IsubdiagEdgesIdx,&
           p_IsubdiagEdges, p_DcoefficientsAtEdge, p_Kld, p_Kcol,&
-          p_Kdiagonal, p_MC, p_u, p_u0, p_flux, p_flux0,&
-          p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+          p_Kdiagonal, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+          p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
           theta, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
           rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       
@@ -8438,7 +7568,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_flux,p_flux0,p_u,p_Cx,p_Cy,p_Cz,p_MC,p_Jac
+    real(DP), dimension(:), pointer :: p_Dflux,p_Dflux0,p_u,p_Cx,p_Cy,p_Cz,p_MC,p_Jac
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer :: ndim
@@ -8459,8 +7589,8 @@ contains
     ! Set pointers
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
@@ -8506,33 +7636,33 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
         case (NDIM2D)
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
         case (NDIM3D)
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy, p_Cz,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld, p_Cx, p_Cy, p_Cz,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
         
@@ -8551,33 +7681,33 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
             
         case (NDIM2D)
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
         case (NDIM3D)
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy, p_Cz,&
-                p_MC, p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_MC, p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal, p_Cx, p_Cy, p_Cz,&
-                p_u, p_flux, p_flux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
+                p_u, p_Dflux, p_Dflux0, theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
         
@@ -9551,7 +8681,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_flux
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Dflux
     real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_Jac,p_u
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
@@ -9583,11 +8713,11 @@ contains
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
 
@@ -9648,7 +8778,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -9656,7 +8786,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_Cy, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -9664,7 +8794,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_Cy, p_Cz, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       end select
@@ -9695,7 +8825,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -9703,7 +8833,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_Cy, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_Cy, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -9711,7 +8841,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_Cy, p_Cz, p_u, p_flux, p_pp, p_pm, p_qp, p_qm,&
+            p_Cx, p_Cy, p_Cz, p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       end select
@@ -10650,7 +9780,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm,p_flux,p_flux0
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm,p_Dflux,p_Dflux0
     real(DP), dimension(:), pointer :: p_Cx,p_Cy,p_Cz,p_MC,p_Jac,p_u,p_u0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
@@ -10682,14 +9812,14 @@ contains
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
     call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
@@ -10752,8 +9882,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -10761,8 +9891,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_Cy, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -10770,8 +9900,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       end select
@@ -10801,8 +9931,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -10810,8 +9940,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_Cy, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_Cy, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -10819,8 +9949,8 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_flux, p_flux0,&
-            p_pp, p_pm, p_qp, p_qm, p_rp, p_rm, theta,&
+            p_Cx, p_Cy, p_Cz, p_MC, p_u, p_u0, p_Dflux, p_Dflux0,&
+            p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       end select
@@ -11876,8 +11006,8 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_pp,p_pm,p_qp,p_qm,p_rp,p_rm
-    real(DP), dimension(:), pointer :: p_flux,p_u,p_Jac
+    real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
+    real(DP), dimension(:), pointer :: p_Dflux,p_u,p_Jac
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
@@ -11911,13 +11041,13 @@ contains
     call afcstab_getbase_IsubdiagEdge(rafcstab, p_IsubdiagEdges)
     call afcstab_getbase_IsubdiagEdgeIdx(rafcstab, p_IsubdiagEdgesIdx)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_pp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_pm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_qp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_qm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_rp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_rm)
-    call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
     call lsyssc_getbase_double(rjacobianMatrix, p_Jac)
     call lsyssc_getbase_double(ru, p_u)
     
@@ -11950,7 +11080,7 @@ contains
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-          p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+          p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
           dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
           rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
 
@@ -11977,7 +11107,7 @@ contains
           p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
           p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
           p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-          p_u, p_flux, p_pp, p_pm, p_qp, p_qm, p_rp, p_rm,&
+          p_u, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm,&
           dscale, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
           rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
 
@@ -12575,7 +11705,7 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_ML,p_MC,p_u1,p_u2
-    real(DP), dimension(:), pointer :: p_alpha,p_flux0,p_flux
+    real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux0,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
 
     ! Check if stabilisation is prepared
@@ -12621,11 +11751,11 @@ contains
       !-------------------------------------------------------------------------
       
       ! The current flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       
       ! The initial flux (including the iterative correction for
       ! the iterative FEM-FCT algorithm) is stored at position 3
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_flux0)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
       
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
@@ -12647,10 +11777,10 @@ contains
         end if
 
         ! Set pointer
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_alpha)
+        call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
         ! Subtract amount of rejected antidiffusion
-        p_flux0 = p_flux0-p_alpha*p_flux
+        p_Dflux0 = p_Dflux0-p_Dalpha*p_Dflux
       end if
 
       ! Do we have to use the consistent mass matrix?
@@ -12667,15 +11797,15 @@ contains
         if (binit) then
           call doFluxesConsMass(p_IverticesAtEdge,&
               p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_u1, p_u2,&
-              -dscale/tstep, (1-theta)*dscale, p_flux0)
+              -dscale/tstep, (1-theta)*dscale, p_Dflux0)
           call doFluxesNoMass(p_IverticesAtEdge,&
-              p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_flux)
+              p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_Dflux)
           
         else
           call doFluxesConsMass(p_IverticesAtEdge,&
               p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_u1, p_u2,&
-              dscale/tstep, theta*dscale, p_flux)
-          call lalg_vectorLinearComb(p_flux0, p_flux, 1.0_DP, 1.0_DP)
+              dscale/tstep, theta*dscale, p_Dflux)
+          call lalg_vectorLinearComb(p_Dflux0, p_Dflux, 1.0_DP, 1.0_DP)
         end if
         
       else
@@ -12685,18 +11815,18 @@ contains
         !-----------------------------------------------------------------------
         
         call doFluxesNoMass(p_IverticesAtEdge,&
-            p_DcoefficientsAtEdge, rafcstab%NEDGE, p_u2, dscale, p_flux)
+            p_DcoefficientsAtEdge, rafcstab%NEDGE, p_u2, dscale, p_Dflux)
         
         ! Combine explicit and implicit fluxes
         if (binit) then
-          call lalg_copyVector(p_flux, p_flux0)
+          call lalg_copyVector(p_Dflux, p_Dflux0)
         elseif (1-theta .gt. SYS_EPSREAL) then
           call lalg_vectorLinearComb(&
-              p_flux0, p_flux, 1-theta, theta)
+              p_Dflux0, p_Dflux, 1-theta, theta)
         elseif (theta .gt. SYS_EPSREAL) then
-          call lalg_scaleVector(p_flux, theta)
+          call lalg_scaleVector(p_Dflux, theta)
         else
-          call lalg_clearVector(p_flux)
+          call lalg_clearVector(p_Dflux)
         end if
         
       end if
@@ -12707,9 +11837,9 @@ contains
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
         ! The initial flux without contribution of the 
         ! consistent mass matrix is stored at position 4
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_flux0)
-        call lalg_copyVector(p_flux, p_flux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+        call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
 
@@ -12723,7 +11853,7 @@ contains
       !-------------------------------------------------------------------------
       
       ! The linearised flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_flux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       
       ! Do we have to use the consistent mass matrix?
       if (present(rconsistentMassMatrix)) then
@@ -12738,7 +11868,7 @@ contains
         ! There are only initial fluxes
         call doFluxesConsMass(p_IverticesAtEdge,&
             p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_u1, p_u2,&
-            dscale, dscale, p_flux)
+            dscale, dscale, p_Dflux)
 
       else
         
@@ -12748,7 +11878,7 @@ contains
 
         ! There are only initial fluxes
         call doFluxesNoMass(p_IverticesAtEdge,&
-            p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_flux)
+            p_DcoefficientsAtEdge,rafcstab%NEDGE, p_u2, dscale, p_Dflux)
 
       end if
       

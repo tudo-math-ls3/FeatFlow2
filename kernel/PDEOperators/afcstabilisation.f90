@@ -270,6 +270,44 @@ module afcstabilisation
     ! Handle to coefficient at edge structure
     integer :: h_DcoefficientsAtEdge = ST_NOHANDLE
 
+    ! REMARK: The following pointers are linked to some position of the
+    ! auxiliary vectors (see below) during the initialisation of the
+    ! stabilisation structure. You should never address any of the
+    ! auxiliary vectors directly but always use one of the pointers
+    ! p_rvectorXYZ below to be sure to obtain the correct data.
+
+    ! Pointer to the vector of correction factors
+    type(t_vectorScalar), pointer :: p_rvectorAlpha => null()
+
+    ! Pointer to the vector of explicit antidiffusive fluxes
+    type(t_vectorScalar), pointer :: p_rvectorFlux0 => null()
+
+    ! Pointer to the vector of raw antidiffusive fluxes
+    type(t_vectorScalar), pointer :: p_rvectorFlux => null()
+
+    ! Pointer to the vector of prelimiting antidiffusive fluxes
+    type(t_vectorScalar), pointer :: p_rvectorPrelimit => null()
+
+    ! Pointers to the vectors of antidiffusive contributions
+    type(t_vectorScalar), pointer :: p_rvectorPp => null()
+    type(t_vectorScalar), pointer :: p_rvectorPm => null()
+
+    ! Pointers to the vectors of local solution bounds
+    type(t_vectorScalar), pointer :: p_rvectorQp => null()
+    type(t_vectorScalar), pointer :: p_rvectorQm => null()
+
+    ! Pointers to the vectors of nodal correction factors
+    type(t_vectorScalar), pointer :: p_rvectorRp => null()
+    type(t_vectorScalar), pointer :: p_rvectorRm => null()
+
+    ! Pointer to the low-order predictor
+    type(t_vectorBlock), pointer :: p_rvectorPredictor => null()
+
+
+    ! Here, the auxiliary vectors follow which are allocated during the
+    ! initialisation of the stabilisation structure and should neve be
+    ! addressed directly by the used.
+
     ! Auxiliary nodal vectors; used internally
     type(t_vectorScalar), dimension(:), pointer :: RnodalVectors => null()
 
@@ -406,6 +444,18 @@ contains
     rafcstab%NVARtransformed       = 1
     rafcstab%NEDGE                 = 0
     rafcstab%NNVEDGE               = 0
+
+    ! Nullify pointers
+    nullify(rafcstab%p_rvectorAlpha)
+    nullify(rafcstab%p_rvectorFlux0)
+    nullify(rafcstab%p_rvectorFlux)
+    nullify(rafcstab%p_rvectorPp)
+    nullify(rafcstab%p_rvectorPm)
+    nullify(rafcstab%p_rvectorQp)
+    nullify(rafcstab%p_rvectorQm)
+    nullify(rafcstab%p_rvectorRp)
+    nullify(rafcstab%p_rvectorRm)
+    nullify(rafcstab%p_rvectorPredictor)
 
     ! Release auxiliary nodal vectors
     if (associated(rafcstab%RnodalVectors)) then

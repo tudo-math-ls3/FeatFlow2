@@ -359,6 +359,14 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+      
 
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
@@ -378,18 +386,50 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
-      ! We need 3 edgewise vectors at most
-      allocate(rafcstab%RedgeVectors(3))
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+
+      ! We need 3-4 edgewise vectors at most
+      if (rafcstab%bprelimiting) then
+        allocate(rafcstab%RedgeVectors(4))
+      else
+        allocate(rafcstab%RedgeVectors(3))
+      end if
 
       ! We need 1 edgewise vector for the correction factors
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
           rafcstab%NEDGE, 1, .false., ST_DOUBLE)
-
+      
       ! We need 2 edgewise vectors for the raw antidiffusive fluxes
       call lsyssc_createVector(rafcstab%RedgeVectors(2),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       call lsyssc_createVector(rafcstab%RedgeVectors(3),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+      
+      ! Set pointers
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
+      
+      ! We need 2 edgewise vector for the prelimiting flux
+      if (rafcstab%bprelimiting) then
+        call lsyssc_createVector(rafcstab%RedgeVectors(4),&
+            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(4)
+      end if
+
+      ! We need 1 nodal block vector for the low-order predictor
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsysbl_createVectorBlock(rafcstab%RnodalBlockVectors(1),&
+          rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+      
+      ! Set pointer
+      rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
       
 
     case (AFCSTAB_FEMFCT_LINEARISED)
@@ -408,8 +448,20 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
-      ! We need 4 edgewise vectors at most
-      allocate(rafcstab%RedgeVectors(4))
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+
+      ! We need 2-3 edgewise vectors at most
+      if (rafcstab%bprelimiting) then
+        allocate(rafcstab%RedgeVectors(3))
+      else
+        allocate(rafcstab%RedgeVectors(2))
+      end if
       
       ! We need 1 edgewise vector for the correction factors
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
@@ -419,14 +471,27 @@ contains
       call lsyssc_createVector(rafcstab%RedgeVectors(2),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       
+      ! Set pointers
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(2)
+
       ! If the raw antidiffusive fluxes should be prelimited
       ! then 1 additional edgewie vector is required
       if (rafcstab%bprelimiting) then
-        call lsyssc_createVector(rafcstab%RedgeVectors(4),&
+        call lsyssc_createVector(rafcstab%RedgeVectors(3),&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(3)
       end if
 
+      ! We need 1 nodal block vector for the low-order predictor
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsysbl_createVectorBlock(rafcstab%RnodalBlockVectors(1),&
+          rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+      
+      ! Set pointer
+      rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
 
+      
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_initStabilisationBlock')
@@ -514,6 +579,14 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
 
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+
 
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
@@ -533,8 +606,20 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
       
-      ! We need 3 edgewise vectors at most
-      allocate(rafcstab%RedgeVectors(3))
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+
+      ! We need 3-4 edgewise vectors at most
+      if (rafcstab%bprelimiting) then
+        allocate(rafcstab%RedgeVectors(4))
+      else
+        allocate(rafcstab%RedgeVectors(3))
+      end if
 
       ! We need 1 edgewise vector for the correction factors
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
@@ -546,6 +631,28 @@ contains
       call lsyssc_createVector(rafcstab%RedgeVectors(3),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
 
+      ! Set pointers
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
+      
+      ! We need 2 edgewise vector for the prelimiting flux
+      if (rafcstab%bprelimiting) then
+        call lsyssc_createVector(rafcstab%RedgeVectors(4),&
+            rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(4)
+      end if
+
+      ! We need 1 nodal block vector for the low-order predictor
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsyssc_createVector(rafcstab%RnodalVectors(4),&
+          rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+      call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(4),&
+          rafcstab%RnodalBlockVectors(1))
+      
+      ! Set pointer
+      rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
+      
 
     case (AFCSTAB_FEMFCT_LINEARISED)
 
@@ -563,8 +670,20 @@ contains
             rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
       end do
       
-      ! We need 4 edgewise vectors at most
-      allocate(rafcstab%RedgeVectors(4))
+      ! Associated vectors
+      rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
+      rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
+      rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
+      rafcstab%p_rvectorQm => rafcstab%RnodalVectors(4)
+      rafcstab%p_rvectorRp => rafcstab%RnodalVectors(5)
+      rafcstab%p_rvectorRm => rafcstab%RnodalVectors(6)
+
+      ! We need 3-4 edgewise vectors at most
+      if (rafcstab%bprelimiting) then
+        allocate(rafcstab%RedgeVectors(4))
+      else
+        allocate(rafcstab%RedgeVectors(3))
+      end if
       
       ! We need 1 edgewise vector for the correction factors
       call lsyssc_createVector(rafcstab%RedgeVectors(1),&
@@ -574,14 +693,29 @@ contains
       call lsyssc_createVector(rafcstab%RedgeVectors(2),&
           rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
       
+      ! Set pointers
+      rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
+      rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(2)
+
       ! If the raw antidiffusive fluxes should be prelimited
       ! then 1 additional edgewie vector is required
       if (rafcstab%bprelimiting) then
-        call lsyssc_createVector(rafcstab%RedgeVectors(4),&
+        call lsyssc_createVector(rafcstab%RedgeVectors(3),&
             rafcstab%NEDGE, rafcstab%NVAR, .false., ST_DOUBLE)
+        rafcstab%p_rvectorPrelimit  => rafcstab%RedgeVectors(3)
       end if
       
+      ! We need 1 nodal block vector for the low-order predictor
+      allocate(rafcstab%RnodalBlockVectors(1))
+      call lsyssc_createVector(rafcstab%RnodalVectors(4),&
+          rafcstab%NEQ, rafcstab%NVAR, .false., ST_DOUBLE)
+      call lsysbl_createVecFromScalar(rafcstab%RnodalVectors(4),&
+          rafcstab%RnodalBlockVectors(1))
+      
+      ! Set pointer
+      rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
 
+      
     case DEFAULT
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_initStabilisationScalar')
@@ -2764,12 +2898,12 @@ contains
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call lsysbl_getbase_double(rx, p_Dx)
     call lsysbl_getbase_double(ry, p_Dy)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
@@ -3614,12 +3748,12 @@ contains
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call lsyssc_getbase_double(rx, p_Dx)
     call lsyssc_getbase_double(ry, p_Dy)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-    call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+    call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
     ! How many dimensions do we have?
     ndim = size(RcoeffMatrices,1)
@@ -4472,7 +4606,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
       ! Initialise alpha by unity
       call lalg_setVector(p_Dalpha, 1.0_DP)
@@ -4500,29 +4634,44 @@ contains
 
       ! Set pointers
       call lsysbl_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
       else
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (present(fcb_calcFluxTransformation) .and.&
           present(fcb_calcDiffTransformation)) then
-        call doADIncrementsTransformed(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            rafcstab%NVARtransformed, p_Dx,&
-            p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        if (rafcstab%bprelimiting) then
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+          call doPreADIncrementsTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+        else
+          call doADIncrementsTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              rafcstab%NVARtransformed, p_Dx,&
+              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        end if
       else
-        call doADIncrements(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        if (rafcstab%bprelimiting) then
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+          call doPreADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+        else
+          call doADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        end if
       end if
 
       ! Set specifiers
@@ -4545,8 +4694,8 @@ contains
 
       ! Set pointers
       call lsysbl_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute local bounds
@@ -4580,12 +4729,12 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
@@ -4623,17 +4772,17 @@ contains
 
       ! Set pointers
       call lsysbl_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
 
         if (present(fcb_calcFluxTransformation)) then
           call doLimitEdgewiseConstrainedTransformed(&
@@ -4695,8 +4844,8 @@ contains
 
       ! Set pointers
       call lsysbl_getbase_double(ry, p_Dy)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Clear divergence vector?
@@ -4721,12 +4870,11 @@ contains
 
     !**************************************************************
     ! Assemble sums of antidiffusive increments for the given
-    ! antidiffusive fluxes without transformation
+    ! antidiffusive fluxes without transformation and prelimiting
 
     subroutine doADIncrements(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dx, Dflux, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
-      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -4809,6 +4957,121 @@ contains
         Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
       end do
     end subroutine doADIncrementsTransformed
+
+    !**************************************************************
+    ! Assemble sums of antidiffusive increments for the given
+    ! antidiffusive fluxes without transformation and with prelimiting
+
+    subroutine doPreADIncrements(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, Dflux, Dflux0, Dalpha, Dpp, Dpm)
+
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+      
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      real(DP) :: alpha_ij
+      integer :: iedge,i,j
+
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Apply multiplicative correction factor
+        F_ij = Dalpha(iedge) * Dflux(:,iedge)
+
+        ! MinMod prelimiting
+        alpha_ij = minval(mprim_minmod3(F_ij, Dflux0(:,iedge), F_ij))
+
+        ! Synchronisation of correction factors
+        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+
+        ! Update the raw antidiffusive flux
+        F_ij = alpha_ij * F_ij
+
+        ! Compute the sums of antidiffusive increments
+        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+        Dpp(:,j) = Dpp(:,j)+max(0.0_DP,-F_ij)
+        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+        Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
+      end do
+    end subroutine doPreADIncrements
+
+    !**************************************************************
+    ! Assemble sums of antidiffusive increments for the given
+    ! antidiffusive fluxes which are transformed to a user-
+    ! defined set of variables prior to computing the sums
+    ! Perform minmod prelimiting of the raw antidiffusive fluxes
+
+    subroutine doPreADIncrementsTransformed(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dflux0,&
+        Dalpha, Dpp, Dpm)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
+
+      real(DP), dimension(:), intent(inout) :: Dalpha
+      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+
+      ! local variables
+      real(DP), dimension(NVAR) :: Diff
+      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,G_ij,G_ji
+      real(DP) :: alpha_ij,alpha_ji
+      integer :: iedge,i,j
+
+      ! Clear P`s
+      call lalg_clearVector(Dpp)
+      call lalg_clearVector(Dpm)
+
+      ! Loop over all edges
+      do iedge = 1, NEDGE
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Apply multiplicative correction factor
+        Diff = Dalpha(iedge)*Dflux(:,iedge)
+
+        ! Compute transformed fluxes
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Diff, F_ij, F_ji)
+        
+        ! Compute transformed fluxes
+        call fcb_calcFluxTransformation(&
+            Dx(i,:), Dx(j,:), Dflux0(:,iedge), G_ij, G_ji)
+        
+        ! MinMod prelimiting
+        alpha_ij = minval(mprim_minmod3(F_ij, G_ij, F_ij))
+        alpha_ji = minval(mprim_minmod3(F_ji, G_ji, F_ji))
+
+        ! Synchronisation of correction factors
+        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+
+        ! Update the raw antidiffusive fluxes
+         F_ij = alpha_ij * F_ij
+         F_ji = alpha_ij * F_ji
+
+        ! Compute the sums of positive/negative antidiffusive increments
+        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
+        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+      end do
+    end subroutine doPreADIncrementsTransformed
 
     !**************************************************************
     ! Assemble local bounds from the predicted solution
@@ -5343,7 +5606,7 @@ contains
       !-------------------------------------------------------------------------
 
       ! Set pointers
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
       ! Initialise alpha by unity
       call lalg_setVector(p_Dalpha, 1.0_DP)
@@ -5372,23 +5635,23 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Special treatment for semi-implicit FEM-FCT algorithm
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
       else
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       end if
 
       ! Compute sums of antidiffusive increments
       if (present(fcb_calcFluxTransformation) .and.&
           present(fcb_calcDiffTransformation)) then
         if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
           call doPreADIncrementsTransformed(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               rafcstab%NVARtransformed, p_Dx,&
@@ -5401,7 +5664,7 @@ contains
         end if
       else
         if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
           call doPreADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dx, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
@@ -5432,8 +5695,8 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute local bounds
@@ -5467,12 +5730,12 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(1), p_Dpp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(2), p_Dpm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(3), p_Dqp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(4), p_Dqm)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPp, p_Dpp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorPm, p_Dpm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQp, p_Dqp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
@@ -5510,17 +5773,17 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(rx, p_Dx)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(5), p_Drp)
-      call lsyssc_getbase_double(rafcstab%RnodalVectors(6), p_Drm)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRp, p_Drp)
+      call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute edgewise correction factors
       if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
 
         ! Special treatment for semi-implicit FEM-FCT algorithm
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
 
         if (present(fcb_calcFluxTransformation)) then
           call doLimitEdgewiseConstrainedTransformed(&
@@ -5582,8 +5845,8 @@ contains
 
       ! Set pointers
       call lsyssc_getbase_double(ry, p_Dy)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Clear divergence vector?
@@ -6334,12 +6597,9 @@ contains
       ! used to constrain the raw antidiffusive fluxes in each iteration.
       !-------------------------------------------------------------------------
 
-      ! The current flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-
-      ! The initial flux (including the iterative correction for
-      ! the iterative FEM-FCT algorithm) is stored at position 3
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_Dflux0)
+      ! Get pointers
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
 
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
@@ -6361,7 +6621,7 @@ contains
         end if
 
         ! Set pointer
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+        call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
         ! Subtract amount of rejected antidiffusion
         call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE,&
@@ -6499,10 +6759,8 @@ contains
       ! Do we have to store the initial fluxes separately?
       if (binit .and. (rafcstab%ctypeAFCstabilisation &
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
-        ! The initial flux without contribution of the
-        ! consistent mass matrix is stored at position 4
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
         call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
@@ -6516,9 +6774,6 @@ contains
       ! Linearised FEM-FCT algorithm
       !-------------------------------------------------------------------------
 
-      ! The linearised flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-
       ! Do we have to use the consistent mass matrix?
       if (present(rconsistentMassMatrix)) then
 
@@ -6526,7 +6781,8 @@ contains
         ! Include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
 
-        ! Set pointer for consistent mass matrix
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
 
         ! What kind of matrix are we?
@@ -6562,11 +6818,21 @@ contains
           call sys_halt()
         end select
 
-      else
+      end if
+
+      if (.not.(present(rconsistentMassMatrix)) .or.&
+          rafcstab%bprelimiting) then
 
         !-----------------------------------------------------------------------
         ! Do not include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
+
+        ! Set pointer
+        if (rafcstab%bprelimiting) then
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
+        else
+          call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        end if
 
         ! What kind of matrix are we?
         select case(RcoeffMatrices(1)%cmatrixFormat)
@@ -6598,6 +6864,16 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
           call sys_halt()
         end select
+        
+        ! Prelimiting is only necessary if the consistent mass matrix
+        ! is built into the raw antidiffusive fluxes. However, if the
+        ! switch for prelimiting was not set to .false. and no mass
+        ! antidiffusion is built into the fluxes we can simply copy it
+        if (.not.(present(rconsistentMassMatrix)) .and.&
+            rafcstab%bprelimiting) then
+          call lsyssc_copyVector(rafcstab%p_rvectorPrelimit,&
+              rafcstab%p_rvectorFlux)
+        end if
 
       end if
 
@@ -7005,13 +7281,10 @@ contains
       ! used to constrain the raw antidiffusive fluxes in each iteration.
       !-------------------------------------------------------------------------
 
-      ! The current flux is stored at position 2
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-
-      ! The initial flux (including the iterative correction for
-      ! the iterative FEM-FCT algorithm) is stored at position 3
-      call lsyssc_getbase_double(rafcstab%RedgeVectors(3), p_Dflux0)
-
+      ! Get pointers
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(rafcstab%p_rvectorFlux0, p_Dflux0)
+      
       ! Check if the amount of rejected antidiffusion should be
       ! included in the initial raw antidiffusive fluxes
       if (.not.binit .and.&
@@ -7032,7 +7305,7 @@ contains
         end if
 
         ! Set pointer
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(1), p_Dalpha)
+        call lsyssc_getbase_double(rafcstab%p_rvectorAlpha, p_Dalpha)
 
         ! Subtract amount of rejected antidiffusion
         call doCombineFluxes(rafcstab%NVAR, rafcstab%NEDGE,&
@@ -7170,10 +7443,8 @@ contains
       ! Do we have to store the initial fluxes separately?
       if (binit .and. (rafcstab%ctypeAFCstabilisation &
                        .eq. AFCSTAB_FEMFCT_IMPLICIT)) then
-        ! The initial flux without contribution of the
-        ! consistent mass matrix is stored at position 4
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux0)
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
         call lalg_copyVector(p_Dflux, p_Dflux0)
       end if
 
@@ -7194,10 +7465,8 @@ contains
         ! Include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
 
-        ! The linearised flux is stored at position 2
-        call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
-
-        ! Set pointer for consistent mass matrix
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
 
         ! What kind of matrix are we?
@@ -7242,12 +7511,11 @@ contains
         ! Do not include contribution of the consistent mass matrix
         !-----------------------------------------------------------------------
 
+        ! Set pointer
         if (rafcstab%bprelimiting) then
-          ! The flux for prelimiting is stored at position 4
-          call lsyssc_getbase_double(rafcstab%RedgeVectors(4), p_Dflux)
+          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux)
         else
-          ! The linearised flux is stored at position 2
-          call lsyssc_getbase_double(rafcstab%RedgeVectors(2), p_Dflux)
+          call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
         end if
           
         ! What kind of matrix are we?
@@ -7287,8 +7555,8 @@ contains
         ! antidiffusion is built into the fluxes we can simply copy it
         if (.not.(present(rconsistentMassMatrix)) .and.&
             rafcstab%bprelimiting) then
-          call lsyssc_copyVector(rafcstab%RedgeVectors(4),&
-              rafcstab%RedgeVectors(2))
+          call lsyssc_copyVector(rafcstab%p_rvectorPrelimit,&
+              rafcstab%p_rvectorFlux)
         end if
         
       end if

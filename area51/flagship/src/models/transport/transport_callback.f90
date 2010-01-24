@@ -2722,6 +2722,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_rpredictor
     real(DP) :: dweight
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
@@ -2777,22 +2778,34 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_ITERATIVE)
 
+      ! Set pointer to low-order predictor
+      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1),&
           'imassantidiffusiontype', imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildConvVectorFCT(&
+        call gfsc_buildFluxFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rsolution, rtimestep%theta, dweight, .true., rrhs,&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, rsolution, rtimestep%theta,&
+            rtimestep%dStep, 1.0_DP, .true.,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
       else
+        call gfsc_buildFluxFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, rsolution, rtimestep%theta,&
+            rtimestep%dStep, 1.0_DP, .true.)
+        
+        ! Perform flux correction
         call gfsc_buildConvVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rsolution, rtimestep%theta, dweight, .true., rrhs,&
-            rproblemLevel%Rafcstab(convectionAFC))
+            rproblemLevel%Rafcstab(convectionAFC),&
+            p_rpredictor, dweight, .false.,&
+            AFCSTAB_FCTALGO_STANDARD, rrhs)
       end if
 
     case (AFCSTAB_FEMTVD)
