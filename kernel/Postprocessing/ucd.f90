@@ -318,8 +318,6 @@ module ucd
   ! After writing out the data, the structure can be released with ucd_release.
   
   type t_ucdExport
-  
-    
     
     ! Output format. One of the UCD_FORMAT_XXXX constants.
     integer :: coutputFormat = UCD_FORMAT_NONE
@@ -345,6 +343,9 @@ module ucd
     
     ! Number of curently attached polygons
     integer :: npolygons         = 0
+
+    ! Number of curently attached surface triangulations
+    integer :: nsurfTri          = 0
     
     ! Number of currently attached tracer data fields
     integer :: ntracerVariables  = 0
@@ -407,6 +408,21 @@ module ucd
     ! p_Hpolygon(I) points to a list of (X,Y) or (X,Y,Z) tags
     ! containing the points of a polygon of line segments.
     integer, dimension(:), pointer :: p_Hpolygons => null()
+
+    ! A pointer to a list of handles to surface triangulation vertices.
+    ! p_HsurfTris(I) points to a list of (X,Y,Z) tags
+    ! containing the points of a the surface triangulation
+    integer, dimension(:), pointer :: p_HsurfTris => null()
+
+    ! A pointer to a list of handles to surface triangulation data.
+    ! p_HTriangles(I) is a handle an integer array that describes
+    ! the connectivity of the vertices in p_HsurfTris(I)
+    integer, dimension(:), pointer :: p_HTriangles => null()
+    
+    ! A pointer to a list of handles to surface triangulation data.
+    ! p_HsurfData(I) is a handle an integer array that describes
+    ! how many vertices and triangles there are in p_HsurfTris(I)
+    integer, dimension(:), pointer :: p_HsurfData => null()
     
     ! A pointer to a list of material identifier for polygonal data.
     ! Element i in this list specifies the material of the polygon.
@@ -518,6 +534,7 @@ module ucd
   public :: ucd_getVariable
   public :: ucd_infoVariables
   public :: ucd_getSimulationTime
+  public :: ucd_addSurfTri
 
 contains
 
@@ -1087,12 +1104,18 @@ contains
       deallocate(rexport%p_Hpolygons    )
     end if
     
-    if (rexport%hpolygonMaterial .ne. ST_NOHANDLE) &
-        call storage_free(rexport%hpolygonMaterial    )
-    if (rexport%hIcellMaterial    .ne. ST_NOHANDLE) &
-        call storage_free(rexport%hIcellMaterial)
-    if (rexport%hIvertexMaterial    .ne. ST_NOHANDLE) &
-        call storage_free(rexport%hIvertexMaterial)
+
+    if (associated(rexport%p_HsurfTris    )) then
+      do i=1,rexport%nsurfTri
+        if (rexport%p_HsurfTris(i) .ne. ST_NOHANDLE) &
+          call storage_free (rexport%p_HsurfTris(i))
+          call storage_free (rexport%p_HTriangles(i))
+          call storage_free (rexport%p_HsurfData(i))
+      end do
+      deallocate(rexport%p_HsurfTris)
+      deallocate(rexport%p_HTriangles)
+      deallocate(rexport%p_HsurfData)
+    end if
 
     if (associated(rexport%p_SvertexMaterials)) deallocate(rexport%p_SvertexMaterials)
     if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
@@ -1491,7 +1514,7 @@ contains
     ! if vtk output is desired
     ! polygons are written into a seperate file
     if ((rexport%coutputFormat .eq. UCD_FORMAT_VTK).and. &
-         (rexport%npolygons .gt. 0))then
+        ((rexport%npolygons .gt. 0) .or. (rexport%nsurfTri .gt. 0)))then
       call ucd_writeVTKPolygon(rexport)
     end if
 
@@ -3732,10 +3755,12 @@ contains
     type(t_ucdExport), intent(inout) :: rexport
     integer :: mfile,i,j,k,jy,jz,ipoints,num_ndata,num_cdata,ncls,nverts,ncells,ipart
     real(DP), dimension(:,:), pointer :: p_Ddata2D
+    integer, dimension(:,:), pointer :: p_Itriangles
+    integer, dimension(:), pointer :: p_IsurfData
     character(LEN=SYS_STRLEN) :: sdl
     character(LEN=SYS_STRLEN) :: sfilepoly
     integer, dimension(GEOM_STANDARD_VCOUNT) :: iconnect    
-    integer :: ioffset1,ioffset2,ilengthPolylist
+    integer :: ioffset1,ioffset2,ilengthPolylist,ioffset,ipolygonsTotal
     ! Get file name
     sfilepoly = rexport%sfilepolyvtk
     
@@ -3755,7 +3780,7 @@ contains
       call sys_halt()
     end if
     
-    ! write the polygon
+    
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! Write VTK header
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
@@ -3768,11 +3793,17 @@ contains
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     ! we write polydata
     write(rexport%iunit, '(A)') "DATASET POLYDATA"
-    ! calculate the number of points
+    
+    ! calculate the number of total points
     ipoints = GEOM_STANDARD_VCOUNT * rexport%npolygons
+
+    do ipart=1,rexport%nsurfTri
+      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)    
+      ipoints = ipoints + p_IsurfData(1)
+    end do
     write(rexport%iunit, '(A,I10,A)') "POINTS", ipoints, " double"
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-    ! Write vertices
+    ! Write vertices of simple polygons
     ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     do ipart=1,rexport%npolygons
       call storage_getbase_double2D (rexport%p_Hpolygons(ipart),p_Ddata2D)
@@ -3785,17 +3816,51 @@ contains
       iconnect(j)=j-1
     end do
     
-    
-    ilengthPolylist=rexport%npolygons*GEOM_STANDARD_VCOUNT+rexport%npolygons
-    
-    write(rexport%iunit, '(A,2I10)') "POLYGONS", rexport%npolygons, ilengthPolylist
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Write vertices of surface triangulations
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ioffset = GEOM_STANDARD_VCOUNT * rexport%npolygons
+    do ipart=1,rexport%nsurfTri
+      call storage_getbase_double2D(rexport%p_HsurfTris(ipart),p_Ddata2D)
+      call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)   
+      do j=1,p_IsurfData(1)
+         write(rexport%iunit, '(3E15.7)') p_Ddata2D(1, j),p_Ddata2D(2, j), p_Ddata2D(3, j)
+      end do    
+    end do
+        
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Write list of simple polygons
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ipolygonsTotal=rexport%npolygons
+    ilengthPolylist=rexport%npolygons*(GEOM_STANDARD_VCOUNT+1)
+    do i=1,rexport%nsurfTri
+      call storage_getbase_int(rexport%p_HsurfData(i),p_IsurfData)   
+      ipolygonsTotal  = ipolygonsTotal+p_IsurfData(2) 
+      ilengthPolylist=ilengthPolylist + p_IsurfData(2)*4
+    end do
+
+    write(rexport%iunit, '(A,2I10)') "POLYGONS", ipolygonsTotal, ilengthPolylist
     do ipart=1,rexport%npolygons
         write(rexport%iunit, '(65I10)') GEOM_STANDARD_VCOUNT, iconnect(:)
         do j=1,GEOM_STANDARD_VCOUNT
           iconnect(j)=iconnect(j)+GEOM_STANDARD_VCOUNT
         end do
     end do
-    
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Write list of triangles
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    do ipart=1,rexport%nsurfTri
+        call storage_getbase_int2d(rexport%p_Htriangles(ipart),p_Itriangles)
+        call storage_getbase_int(rexport%p_HsurfData(ipart),p_IsurfData)       
+        do j=1,p_IsurfData(2)   
+        write(rexport%iunit, '(4I10)') 3,p_Itriangles(1,j)+ioffset,&
+            p_Itriangles(2,j)+ioffset ,p_Itriangles(3,j)+ioffset  
+        end do
+        ioffset=ioffset+p_IsurfData(1)   
+    end do
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    ! Write list of lines
+    ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
     write(rexport%iunit,'(A,2I10)')"LINES",rexport%npolygons,rexport%npolygons*2+rexport%npolygons
     do ipart=1,rexport%npolygons
         ioffset1=(ipart-1)*GEOM_STANDARD_VCOUNT
@@ -3803,6 +3868,7 @@ contains
         write(rexport%iunit, '(3I10)') 2, ioffset1, ioffset2
     end do
     
+    ! first we write the polygons and lines then the triangles
     if (sfilepoly .ne. '') then
       ! Close the file if it was opened previously.
       close (rexport%iunit)
@@ -4844,6 +4910,154 @@ contains
   end subroutine
 
   !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_moreSurfTri(rexport)
+
+!<description>
+  ! (Re)allocates memory for surface triangulations. Increases the number of available
+  ! variables in the export structure.
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure which is to be tackled.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!</subroutine>
+
+    integer, dimension(:), pointer :: p_Hpolygons
+    integer :: nsize
+    integer, dimension(2) :: Ilength
+    integer, dimension(:), pointer :: p_HsurfTris
+    integer, dimension(:), pointer :: p_HTriangles
+    integer, dimension(:), pointer :: p_HsurfData
+    
+
+!    ! A pointer to a list of handles to surface triangulation vertices.
+!    ! p_HsurfTris(I) points to a list of (X,Y,Z) tags
+!    ! containing the points of a the surface triangulation
+!    integer, dimension(:), pointer :: p_HsurfTris => null()
+!
+!    ! A pointer to a list of handles to surface triangulation data.
+!    ! p_HTriangles(I) is a handle an integer array that describes
+!    ! the connectivity of the vertices in p_HsurfTris(I)
+!    integer, dimension(:), pointer :: p_HTriangles => null()
+!    
+!    ! A pointer to a list of handles to surface triangulation data.
+!    ! p_HsurfData(I) is a handle an integer array that describes
+!    ! how many vertices and triangles there are in p_HsurfTris(I)
+!    integer, dimension(:), pointer :: p_HsurfData => null()
+    
+
+
+
+    nsize = 0
+    if (associated(rexport%p_HsurfTris)) &
+      nsize = size(rexport%p_HsurfTris)
+
+    allocate(p_HsurfTris(nsize+16))
+    allocate(p_HTriangles(nsize+16))
+    allocate(p_HsurfData(nsize+16))
+    
+    if (associated(rexport%p_HsurfTris)) then
+      p_HsurfTris(1:size(rexport%p_HsurfTris)) = rexport%p_HsurfTris
+      p_HTriangles(1:size(rexport%p_HTriangles)) = rexport%p_HTriangles
+      p_HsurfData(1:size(rexport%p_HsurfData)) = rexport%p_HsurfData
+      deallocate(rexport%p_HsurfTris)
+      deallocate(rexport%p_HTriangles)
+      deallocate(rexport%p_HsurfData)
+    end if
+    rexport%p_HsurfTris => p_HsurfTris
+    rexport%p_HTriangles => p_HTriangles
+    rexport%p_HsurfData => p_HsurfData
+
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>
+
+  subroutine ucd_addSurfTri(rexport,DpolygonCoords,Itriangles,Idata)
+
+!<description>
+  ! add a surface triangulation to the output file
+!</description>
+
+!<inputoutput>
+  ! The ucd export structure identifying the output file.
+  type(t_ucdExport), intent(inout) :: rexport
+!</inputoutput>
+
+!<input>
+  ! A list of 3D (X,Y,Z) coordinates specifying the
+  ! points which form the surface triangulation
+  real(DP), dimension(:,:), intent(in) :: DpolygonCoords
+  ! array describing triangle connectivity
+  integer, dimension(:,:), intent(in)  :: Itriangles
+  ! Idata(1)=number vertices in triangulation
+  ! Idata(2)=number triangles
+  integer, dimension(2), intent(in)    :: Idata
+!</input>
+
+!</subroutine>
+    ! local varables
+    integer, dimension(2) :: Ilength
+    integer :: isize
+    real(DP), dimension(:,:), pointer :: p_Ddata
+    integer, dimension(:,:), pointer :: p_ItriangleData
+    integer, dimension(:), pointer :: p_Idata
+    
+    if (rexport%coutputFormat .eq. UCD_FORMAT_NONE) then
+      call output_line ('Export structure not initialised!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'ucd_addSurfTri')
+      call sys_halt()
+    end if
+    
+    ! Create a new variable. If necessary, increase the size of the buffers.
+    if (.not. associated(rexport%p_HsurfTris)) then
+      call ucd_moreSurfTri(rexport)
+    end if
+    
+    if (rexport%nsurfTri .ge. size(rexport%p_HsurfTris)) then
+      call ucd_moreSurfTri(rexport)
+    end if
+    rexport%nsurfTri = rexport%nsurfTri+1
+    
+    ! Allocate a new vector for the data
+    Ilength = ubound(DpolygonCoords)
+    call storage_new ('ucd_addSurfTri','p_HsurfTris',&
+        Ilength,ST_DOUBLE,rexport%p_HsurfTris(rexport%nsurfTri),&
+        ST_NEWBLOCK_NOINIT)
+
+    ! Allocate a new vector for the data
+    Ilength = ubound(Itriangles)
+    call storage_new ('ucd_addSurfTri','p_HTriangles',&
+        Ilength,ST_INT,rexport%p_HTriangles(rexport%nsurfTri),&
+        ST_NEWBLOCK_NOINIT)
+
+    isize=2
+    call storage_new ('ucd_addSurfTri','p_HsurfData',&
+        isize,ST_INT,rexport%p_HsurfData(rexport%nsurfTri),&
+        ST_NEWBLOCK_NOINIT)
+
+        
+    ! Copy the coordinate data into that vector
+    call storage_getbase_double2d (rexport%p_HsurfTris(rexport%nsurfTri),p_Ddata)
+    p_Ddata = DpolygonCoords
+
+    ! Copy the coordinate data into that vector
+    call storage_getbase_int2d (rexport%p_HTriangles(rexport%nsurfTri),p_ItriangleData)
+    p_ItriangleData = Itriangles
+
+    ! Copy the coordinate data into that vector
+    call storage_getbase_int(rexport%p_HsurfData(rexport%nsurfTri),p_Idata)
+    p_Idata = Idata
+
+  end subroutine ucd_addSurfTri
+  
+  !************************************************************************  
   
 !<subroutine>
 
