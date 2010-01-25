@@ -87,7 +87,7 @@ slimitingvariable(3) =
 nfailsafe = 4
 
 # variables for failsafe flux correction
-sfailsafevariables(2) =
+sfailsafevariable(2) =
   pressure
   velocity_x
 
