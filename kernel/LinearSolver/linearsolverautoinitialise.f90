@@ -261,8 +261,8 @@ contains
 
     ! local variables
     type(t_parlstSection), pointer :: p_rsection
-    character(LEN=PARLST_MLDATA) :: spreconditioner,spresmoother, spostsmoother
-    character(LEN=PARLST_MLDATA) :: scoarsegridsolver,sString
+    character(LEN=SYS_STRLEN) :: spreconditioner,spresmoother, spostsmoother
+    character(LEN=SYS_STRLEN) :: scoarsegridsolver,sString
     integer :: isolverType,isolverSubtype
     type(t_linsolNode), pointer :: p_rpreconditioner,p_rpresmoother,p_rpostsmoother
     type(t_linsolNode), pointer :: p_rcoarsegridsolver

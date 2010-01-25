@@ -211,7 +211,7 @@ module paramlist
   ! Maximum length of parameter names: 32 characters
   integer, parameter, public :: PARLST_MLNAME = 32
 
-  ! Maximum length of parameter data: 256 characters
+  ! Default length of parameter data: 256 characters
   integer, parameter, public :: PARLST_MLDATA = 256
   
   ! Minimum number of free parameter 'slots' per parameter section.
@@ -248,14 +248,14 @@ module paramlist
   
     ! Number of strings. If set to 0, the value consists of one
     ! string, to be found in svalue. If > 0, there are nsize
-    ! strings to be found in p_Sentry.
+    ! strings to be found in p_SentryList.
     integer :: nsize = 0
     
     ! Single string; contains the value in case nsize=0
-    character(LEN=PARLST_MLDATA) :: sentry = ''
+    character, dimension(:), pointer :: p_sentry => null()
     
     ! Array of strings in case nsize>0
-    character(LEN=PARLST_MLDATA), dimension(:), pointer :: p_Sentry => null()
+    character, dimension(:,:), pointer :: p_SentryList => null()
   
   end type
   
@@ -316,6 +316,7 @@ module paramlist
 !</types>
 
   private :: parlst_initsection, parlst_reallocsection, parlst_realloclist
+  private :: parlst_reallocSubVariables
   private :: parlst_fetchparameter,parlst_readlinefromfile,parlst_parseline
   
   interface parlst_queryvalue
@@ -450,6 +451,44 @@ contains
 
   ! ***************************************************************************
 
+  ! Internal subroutine: Reallocates a sub-parameter list
+  ! This increases the size of the sub-parameters of a parameter.
+  ! Old strings are copied.
+  
+  subroutine parlst_reallocSubVariables (rvalue, inewsize)
+  
+  ! THe parameter item where to reallocate sub-parameters.
+  type(t_parlstValue), intent(inout) :: rvalue
+  
+  ! The new 'length' of the sub-parameters.
+  integer, intent(in) :: inewsize
+  
+    ! local variables
+    integer :: i,iold
+    character, dimension(:,:), pointer :: p_Sdata
+    
+    if (ubound(rvalue%p_SentryList,2) .eq. 0) return ! nothing to do
+    
+    ! Old size
+    iold = ubound(rvalue%p_SentryList,1)
+    
+    ! Allocate memory for the strings.
+    allocate(p_Sdata(inewsize,ubound(rvalue%p_SentryList,2)))
+    p_Sdata(:,:) = ' '
+    
+    ! Copy the substrings.
+    do i=1,ubound(rvalue%p_SentryList,2)
+      p_Sdata(1:min(inewsize,iold),i) = rvalue%p_SentryList(1:min(inewsize,iold),i)
+    end do
+    
+    ! Replace the data.
+    deallocate(rvalue%p_SentryList)
+    rvalue%p_SentryList => p_Sdata
+      
+  end subroutine
+
+  ! ***************************************************************************
+
   ! Internal subroutine: Release a section.
   ! Removes all temporary memory that is allocated by a section.
   
@@ -464,8 +503,9 @@ contains
   ! Loop through all values in the current section if there is
   ! an array-value. Release them.
   do i=size(rparlstSection%p_Rvalues),1,-1
+    deallocate(rparlstSection%p_Rvalues(i)%p_sentry)
     if (rparlstSection%p_Rvalues(i)%nsize .gt. 0) then
-      deallocate(rparlstSection%p_Rvalues(i)%p_Sentry)
+      deallocate(rparlstSection%p_Rvalues(i)%p_SentryList)
     end if
   end do
   
@@ -1071,9 +1111,9 @@ contains
     if (present(isubstring)) isub = isubstring
   
     if ((isub .le. 0) .or. (isub .gt. rsection%p_Rvalues(i)%nsize)) then
-      svalue = rsection%p_Rvalues(i)%sentry
+      call sys_chararraytostring(rsection%p_Rvalues(i)%p_sentry,svalue)
     else
-      svalue = rsection%p_Rvalues(i)%p_Sentry(isub)
+      call sys_chararraytostring(rsection%p_Rvalues(i)%p_SentryList(:,isub),svalue)
     end if
   end if
   
@@ -1175,9 +1215,9 @@ contains
 
   if ((isub .le. 0) .or. &
       (isub .gt. rsection%p_Rvalues(iparameter)%nsize)) then
-    svalue = rsection%p_Rvalues(iparameter)%sentry
+    call sys_charArrayToString(rsection%p_Rvalues(iparameter)%p_sentry,svalue)
   else
-    svalue = rsection%p_Rvalues(iparameter)%p_Sentry(isub)
+    call sys_charArrayToString(rsection%p_Rvalues(iparameter)%p_SentryList(:,isub),svalue)
   end if
   
   if (present(bexists)) bexists = .true.
@@ -1332,7 +1372,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(fdefault)) then
@@ -1406,7 +1446,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_LENLINEBUF) :: svalue
   
   svalue = '0.0E0'
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
@@ -1470,7 +1510,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(fdefault)) then
@@ -1539,7 +1579,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(ddefault)) then
@@ -1613,7 +1653,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_LENLINEBUF) :: svalue
   
   svalue = '0.0E0'
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
@@ -1678,7 +1718,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(ddefault)) then
@@ -1746,7 +1786,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(idefault)) then
@@ -1818,7 +1858,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: svalue
+  character (LEN=PARLST_LENLINEBUF) :: svalue
   
   svalue = '0'
   call parlst_getvalue_string_fetch (rsection, iparameter, svalue, &
@@ -1882,7 +1922,7 @@ contains
 !</subroutine>
 
   ! local variables
-  character (LEN=PARLST_MLDATA) :: sdefault,svalue
+  character (LEN=PARLST_LENLINEBUF) :: sdefault,svalue
   
   ! Call the string routine, perform a conversion afterwards.
   if (present(idefault)) then
@@ -1937,7 +1977,7 @@ contains
 
     ! local variables
     character(LEN=PARLST_MLNAME) :: paramname
-    integer :: i
+    integer :: i,j
     
     ! Create the upper-case parameter name
     paramname = adjustl(sparameter)
@@ -1965,27 +2005,35 @@ contains
     
       ! Check if there are substrings. If yes, deallocate.
       ! Will be allocated later if necessary.
-      if (associated(rsection%p_Rvalues(i)%p_Sentry)) then
-        deallocate(rsection%p_Rvalues(i)%p_Sentry)
+      if (associated(rsection%p_Rvalues(i)%p_SentryList)) then
+        deallocate(rsection%p_Rvalues(i)%p_SentryList)
         rsection%p_Rvalues(i)%nsize = 0
+      end if
+      
+      ! Deallocate memory for the value, will be reallocated later.
+      if (associated(rsection%p_Rvalues(i)%p_sentry)) then
+        deallocate(rsection%p_Rvalues(i)%p_sentry)
       end if
       
     end if
       
     rsection%p_Sparameters(i) = paramname
-    rsection%p_Rvalues(i)%sentry = svalue
+    j = len_trim(svalue)
+    allocate(rsection%p_Rvalues(i)%p_sentry(max(1,j)))
+    rsection%p_Rvalues(i)%p_sentry(:) = ' '
+    call sys_stringtochararray(svalue,rsection%p_Rvalues(i)%p_sentry,j)
     
     ! Add a list for the substrings if the parameter should have substrings.
     if (present(nsubstrings)) then
       if (nsubstrings .gt. 0) then
-        allocate(rsection%p_Rvalues(i)%p_Sentry(nsubstrings))
+        allocate(rsection%p_Rvalues(i)%p_SentryList(max(1,j),nsubstrings))
         rsection%p_Rvalues(i)%nsize = nsubstrings
       else
-        nullify(rsection%p_Rvalues(i)%p_Sentry)
+        nullify(rsection%p_Rvalues(i)%p_SentryList)
         rsection%p_Rvalues(i)%nsize = 0
       end if
     else
-      nullify(rsection%p_Rvalues(i)%p_Sentry)
+      nullify(rsection%p_Rvalues(i)%p_SentryList)
       rsection%p_Rvalues(i)%nsize = 0
     end if
 
@@ -2111,7 +2159,7 @@ contains
 
 !</subroutine>
 
-  integer :: isub
+  integer :: isub,j
 
   ! Check if iparameter is out of bounds. If yes, probably
   ! throw an error.
@@ -2135,11 +2183,20 @@ contains
   isub = 0
   if (present(isubstring)) isub = isubstring
 
+  j = len_trim(svalue)
   if ((isub .le. 0) .or. &
       (isub .gt. rsection%p_Rvalues(iparameter)%nsize)) then
-    rsection%p_Rvalues(iparameter)%sentry = svalue
+    ! Reallocate memory
+    deallocate(rsection%p_Rvalues(iparameter)%p_sentry)
+    allocate(rsection%p_Rvalues(iparameter)%p_sentry(max(1,j)))
+    rsection%p_Rvalues(iparameter)%p_sentry(:) = ' '
+    call sys_stringToCharArray(svalue,rsection%p_Rvalues(iparameter)%p_sentry,j)
   else
-    rsection%p_Rvalues(iparameter)%p_Sentry(isub) = svalue
+    ! Check that there is enough memory to save the string.
+    if (ubound(rsection%p_Rvalues(iparameter)%p_SentryList,1) .le. j) then
+      call parlst_reallocSubVariables(rsection%p_Rvalues(iparameter),j)
+    end if
+    call sys_stringToCharArray(svalue,rsection%p_Rvalues(iparameter)%p_SentryList(:,isub),j)
   end if
 
   if (present(iexists)) iexists = YES
@@ -2190,7 +2247,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i,isub
+  integer :: i,isub,j
   character(LEN=PARLST_MLNAME) :: paramname
   
   ! Create the upper-case parameter name
@@ -2211,11 +2268,20 @@ contains
     ! of the substrings.
     isub = 0
     if (present(isubstring)) isub = isubstring
-
+    
+    j = len_trim(svalue)
     if ((isub .le. 0) .or. (isub .gt. rsection%p_Rvalues(i)%nsize)) then
-      rsection%p_Rvalues(i)%sentry = svalue
+      ! Reallocate memory
+      deallocate(rsection%p_Rvalues(i)%p_sentry)
+      allocate(rsection%p_Rvalues(i)%p_sentry(max(1,j)))
+      rsection%p_Rvalues(i)%p_sentry(:) = ' '
+      call sys_stringToCharArray(svalue,rsection%p_Rvalues(i)%p_sentry,j)
     else
-      rsection%p_Rvalues(i)%p_Sentry(isub) = svalue
+      ! Check that there is enough memory to save the string.
+      if (ubound(rsection%p_Rvalues(i)%p_SentryList,1) .le. j) then
+        call parlst_reallocSubVariables(rsection%p_Rvalues(i),j)
+      end if
+      call sys_stringToCharArray(svalue,rsection%p_Rvalues(i)%p_SentryList(:,isub),j)
     end if
   
   end if
@@ -2652,9 +2718,9 @@ contains
 
     ! local variables
     integer :: iidxsubfiles,icurrentsubfile
-    character(LEN=PARLST_MLDATA), dimension(:), pointer :: p_Ssubfiles,p_SsubfilesTemp
-    character(LEN=PARLST_MLDATA) :: sstring,smainfile
-    integer :: nsubfiles,nnewsubfiles,j
+    character(LEN=PARLST_LENLINEBUF), dimension(:), pointer :: p_Ssubfiles,p_SsubfilesTemp
+    character(LEN=PARLST_LENLINEBUF) :: sstring,smainfile
+    integer :: nsubfiles,nnewsubfiles,j,ilensubf
     logical :: bexists,bmainpath
     character(LEN=PARLST_LENLINEBUF) :: smainpath
 
@@ -2804,8 +2870,10 @@ contains
     
     ! Ok, at that point we know which files to read -- so read them, one after
     ! the other. The 'master' file must be read at last!
+    ilensubf = 1
     do icurrentsubfile = 2,nsubfiles
       sstring = trim(p_Ssubfiles(icurrentsubfile))
+      ilensubf = max(ilensubf,len_trim(sstring))
       inquire(file=sstring, exist=bexists)
       
       if (bexists) then
@@ -2830,14 +2898,14 @@ contains
       ! All subfiles can be found in p_Ssubfiles.
       
       ! Incorporate the complete list to the parameter "SIMPORTDATAFILES".
-      if (associated(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry)) then
-        deallocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry)
+      if (associated(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList)) then
+        deallocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList)
       end if
       
-      allocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry(nsubfiles-1))
+      allocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList(ilensubf+2,nsubfiles-1))
       do icurrentsubfile = 1,nsubfiles-1
-        rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_Sentry(icurrentsubfile) = &
-          '"'//trim(p_Ssubfiles(1+icurrentsubfile))//'"'
+        call sys_stringToCharArray('"'//trim(p_Ssubfiles(1+icurrentsubfile))//'"',&
+          rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList(:,icurrentsubfile));
       end do
       rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%nsize = nsubfiles-1
     end if
@@ -2905,7 +2973,7 @@ contains
     character(LEN=PARLST_LENLINEBUF) :: sdata
     character(LEN=PARLST_MLSECTION) :: ssectionname
     character(LEN=PARLST_MLNAME) :: sparname
-    character(LEN=PARLST_MLDATA) :: svalue
+    character(LEN=PARLST_LENLINEBUF) :: svalue
     
     ! Try to open the file
     call io_openFileForReading(sfilename, iunit)
@@ -3036,6 +3104,7 @@ contains
 
   integer :: ilength,isection,ivalue,ientry,icount
   character, dimension(:), pointer :: p_sbuf
+  character(len=PARLST_LENLINEBUF) :: sbuf
   
     if (rparlist%isectionCount .eq. 0) then
       call output_line ('Parameter list not initialised', &
@@ -3067,10 +3136,11 @@ contains
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
         if (icount .eq. 0) then
           ! Write "name=value"
+          call sys_charArrayToString(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,sbuf)
           call appendString(p_sbuf,ilength,&
-            trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
-            //"="// &
-            trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+              trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
+              //"="//trim(sbuf))
         else
           ! Write "name(icount)="
           call appendString(p_sbuf,ilength,&
@@ -3078,9 +3148,9 @@ contains
             //"("//trim(sys_siL(icount, 10))//")=")
           ! Write all the entries of that value, one each line.
           do ientry = 1,icount
-            call appendString(p_sbuf,ilength,&
-              trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
-                   p_Sentry(ientry)))
+            call sys_charArrayToString(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList(:,ientry),sbuf)
+            call appendString(p_sbuf,ilength,trim(sbuf))
           end do
         end if
       
@@ -3183,6 +3253,7 @@ contains
 
 
   integer :: isection,ivalue,ientry,icount
+  character(len=PARLST_LENLINEBUF) :: sbuf
   
     if (rparlist%isectionCount .eq. 0) then
       call output_line ('Parameter list not initialised', &
@@ -3208,10 +3279,11 @@ contains
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
         if (icount .eq. 0) then
           ! Write "name=value"
+          call sys_charArrayToString(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,sbuf)
           call output_line(&
             trim(rparlist%p_Rsections(isection)%p_Sparameters(ivalue)) &
-            //"="// &
-            trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry))
+            //"="//trim(sbuf))
         else
           ! Write "name(icount)="
           call output_line(&
@@ -3219,9 +3291,10 @@ contains
             //"("//trim(sys_siL(icount, 10))//")=")
           ! Write all the entries of that value, one each line.
           do ientry = 1,icount
-            call output_line(&
-              trim(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
-                   p_Sentry(ientry)))
+            call sys_charArrayToString(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)% &
+                   p_SentryList(:,ientry),sbuf)
+            call output_line(trim(sbuf))
           end do
         end if
       
@@ -3256,7 +3329,8 @@ contains
 
 !</subroutine>
 
-    integer :: isection,ivalue,ientry,icount
+    integer :: isection,ivalue,ientry,icount,j
+    character(len=PARLST_LENLINEBUF) :: sbuf
     
     if (rparlist%isectionCount .eq. 0) then
       call output_line ('Parameter list not initialised', &
@@ -3274,14 +3348,31 @@ contains
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
         if (icount .eq. 0) then
           ! Expand the value if is refers to subvalues.
-          call parlst_expandEnvVariable(&
-              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
+          call sys_charArrayToString(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,sbuf)
+          call parlst_expandEnvVariable(sbuf)
+          
+          j = len_trim(sbuf)
+          deallocate(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry)
+          allocate(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry(j))
+          rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry(:) = ' '
+          call sys_stringToCharArray(sbuf,&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,j)
         else
           ! Loop through the subvalues.
           do ientry = 1,icount
             ! Expand the value if is refers to subvalues.
-            call parlst_expandEnvVariable(&
-                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
+            call sys_charArrayToString(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList(:,ientry),sbuf)
+            call parlst_expandEnvVariable(sbuf)
+
+            ! Reallocate before writing back if necessary
+            j = len_trim(sbuf)
+            if (j .gt. ubound(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList,1)) then
+              call parlst_reallocSubVariables(rparlist%p_Rsections(isection)%p_Rvalues(ivalue),j)
+            end if
+            call sys_stringToCharArray(sbuf,&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList(:,ientry),j)
           end do
         end if
       
@@ -3322,7 +3413,7 @@ contains
     character(len=SYS_STRLEN) :: sauxEnv
 
     ! Buffer for the result
-    character(len=SYS_STRLEN) :: sresult
+    character(len=PARLST_LENLINEBUF) :: sresult
 
     ! Initialise return value
     sresult = trim(sbuffer)
@@ -3390,7 +3481,8 @@ contains
 
 !</subroutine>
 
-    integer :: isection,ivalue,ientry,icount
+    integer :: isection,ivalue,ientry,icount,j
+    character(len=PARLST_LENLINEBUF) :: sbuf
     
     if (rparlist%isectionCount .eq. 0) then
       call output_line ('Parameter list not initialised', &
@@ -3406,17 +3498,36 @@ contains
         
         ! Do we have one or multiple entries to that parameter?
         icount = rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%nsize
+      
         if (icount .eq. 0) then
           ! Expand the value if is refers to subvalues.
-          call parlst_expandSubvariable(rparlist,&
-              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%sentry)
+          call sys_charArrayToString(&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,sbuf)
+          call parlst_expandSubvariable(rparlist,sbuf)
+          
+          j = len_trim(sbuf)
+          deallocate(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry)
+          allocate(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry(j))
+          rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry(:) = ' '
+          call sys_stringToCharArray(sbuf,&
+              rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_sentry,j)
         else
           ! Loop through the subvalues.
           do ientry = 1,icount
             ! Expand the value if is refers to subvalues.
-            call parlst_expandSubvariable(rparlist,&
-                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_Sentry(ientry))
+            call sys_charArrayToString(&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList(:,ientry),sbuf)
+            call parlst_expandSubvariable(rparlist,sbuf)
+
+            ! Reallocate before writing back if necessary
+            j = len_trim(sbuf)
+            if (j .gt. ubound(rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList,1)) then
+              call parlst_reallocSubVariables(rparlist%p_Rsections(isection)%p_Rvalues(ivalue),j)
+            end if
+            call sys_stringToCharArray(sbuf,&
+                rparlist%p_Rsections(isection)%p_Rvalues(ivalue)%p_SentryList(:,ientry),j)
           end do
+          
         end if
       
       end do ! ivalue
@@ -3594,7 +3705,7 @@ contains
     character(len=PARLST_MLSECTION) :: ssection
     character(len=PARLST_MLNAME) :: sname
     character(len=len(sstring)) :: sbuffer
-    character(len=PARLST_MLDATA) :: sdata
+    character(len=PARLST_LENLINEBUF) :: sdata
     
     ! Repeat until we found all subvariables
     istart = 1

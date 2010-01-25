@@ -2368,4 +2368,89 @@ contains
   
   end subroutine
 
+! ****************************************************************************************
+
+!<subroutine>
+
+  subroutine sys_stringToCharArray (sstring,schararray,slength)
+  
+!<description>
+  ! Converts a string to a character array.
+!</description>
+  
+!<input>
+  ! String to convert
+  character(len=*), intent(in) :: sstring
+  
+  ! OPTIONAL: Length of the string.
+  ! If not present, the default string length is used.
+  integer, intent(in), optional :: slength
+!</input>
+
+!<output>
+  ! Character array that receives the converted string.
+  ! Must be at least as long as the string or as slength.
+  character, dimension(:), intent(out) :: schararray
+!</output>
+
+!</subroutine>
+  
+    integer :: i,j
+    
+    if (present(slength)) then
+      j = slength
+    else
+      j = len_trim(sstring)
+    end if
+    
+    ! Copy all characters.
+    do i=1,j
+      schararray(i) = sstring(i:i)
+    end do
+  
+  end subroutine
+
+! ****************************************************************************************
+
+!<subroutine>
+
+  subroutine sys_charArrayToString (schararray,sstring,slength)
+  
+!<description>
+  ! Converts a character array to a string.
+!</description>
+  
+!<input>
+  ! Character array to convert
+  character, dimension(:), intent(in) :: schararray
+
+  ! OPTIONAL: Length of the string.
+  ! If not present, the default string length is used.
+  integer, intent(in), optional :: slength
+!</input>
+
+!<output>
+  ! Character array that receives the converted string.
+  ! Must be at least as long as the character array or slength.
+  character(len=*), intent(out) :: sstring
+!</output>
+
+!</subroutine>
+  
+    integer :: i,j
+    
+    if (present(slength)) then
+      j = slength
+    else
+      j = size(schararray)
+    end if
+    
+    ! Copy all characters.
+    sstring = ""
+    do i=1,j
+      sstring(i:i) = schararray(i)
+    end do
+  
+  end subroutine
+
 end module fsystem
