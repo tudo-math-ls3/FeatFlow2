@@ -83,6 +83,14 @@ slimitingvariable(3) =
   pressure
   velocity_x
 
+# number of failsafe steps
+nfailsafe = 4
+
+# variables for failsafe flux correction
+sfailsafevariables(2) =
+  pressure
+  velocity_x
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution
