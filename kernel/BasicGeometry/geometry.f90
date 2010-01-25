@@ -298,6 +298,9 @@ module geometry
 !<constantblock description="various parameters">
   ! default number of vertices in polygon representation
   integer, parameter, public :: GEOM_STANDARD_VCOUNT  = 64  
+  
+  integer, parameter, public :: GEOM_VERTICES_TRIANGLE  = 3  
+  
 !</constantblock>
 
 !</constants>
@@ -549,14 +552,14 @@ module geometry
     ! the translational x-velocity of the particle
     real(dp) :: dtransVelX     = 0.0_dp  
 
+    ! the translational x-velocity of the particle from the previous timestep
+    real(dp) :: dtransVelXold  = 0.0_dp  
+
     ! the translational y-velocity of the particle
     real(dp) :: dtransVelY     = 0.0_dp
-    
-    ! the old translational x-velocity of the particle
-    real(dp) :: dtransVelXold     = 0.0_dp
 
-    ! the old translational y-velocity of the particle
-    real(dp) :: dtransVelYold     = 0.0_dp
+    ! the translational y-velocity of the particle from the previous timestep
+    real(dp) :: dtransVelYold  = 0.0_dp  
     
     ! the angular of the particle
     real(dp) :: dangVelocity   = 0.0_dp  
@@ -585,6 +588,7 @@ module geometry
     real(dp), dimension(2) :: rResForceX = 0
     real(dp), dimension(2) :: rResForceY = 0
     real(dp), dimension(2) :: dTorque = 0
+    real(dp)               :: dFWall = 0
     real(dp), dimension(2) :: dAccel  = 0
   
   end type
@@ -768,8 +772,8 @@ module geometry
   end type
 !</typeblock>
 
-
 ! *****************************************************************************  
+
 
   public :: t_particleDescriptor3D
   public :: t_particleDescriptor
@@ -834,6 +838,7 @@ module geometry
   public :: geom_initParticleCollct3D
   public :: geom_releaseParticleCollct
   public :: geom_releaseParticleCollct3D
+  public :: geom_triangulateSphere
   
 contains
 
@@ -5594,6 +5599,138 @@ end subroutine
   end subroutine
   
 ! ***************************************************************************  
+
+!<subroutine>
+  subroutine geom_triangulateSphere(rgeomObject,slices,stacks,iHandle)
+!<description>
+  ! 
+!</description>
+
+!<input>
+  ! The sphere to be triangulated
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  integer, intent(in) :: slices
+  integer, intent(in) :: stacks  
+  integer,dimension(3), intent(inout) :: iHandle  
+!</input>
+
+
+!</subroutine>
+  ! local variables
+  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad
+  integer  :: i,j,iverts,ive,itriangles,stacks2,index,ioffset
+  real(dp), dimension(:,:), pointer :: p_Dvertices
+  integer, dimension(:,:), pointer :: p_Itriangles
+  integer, dimension(:), pointer :: p_Idata
+  real(dp), dimension(3) :: DPoint
+  integer, dimension(2) :: Isize  
+  
+  !
+  drad=rgeomObject%rsphere%dradius
+  stacks2 = 2*stacks
+  !
+  halfpi = SYS_PI/2.0_dp
+  dphi   = SYS_PI/real(slices)
+  dtheta = SYS_PI/real(stacks)
+
+  itriangles = 2 * stacks2 + (slices-2)*stacks2*2
+  iverts = 2 + (slices-1) * (2*stacks)
+  ! not good!
+  ! allocate memory
+  Isize=(/NDIM3D,iverts/)
+  call storage_new('geom_triangulateSphere', 'iHandle(1)', Isize, &
+                     ST_DOUBLE, iHandle(1), ST_NEWBLOCK_NOINIT)
+
+  Isize=(/GEOM_VERTICES_TRIANGLE,itriangles/)
+  call storage_new('geom_triangulateSphere', 'iHandle(2)', Isize, &
+                     ST_INT, iHandle(2), ST_NEWBLOCK_NOINIT)
+
+  call storage_new('geom_triangulateSphere', 'iHandle(3)', 2, &
+                     ST_INT, iHandle(3), ST_NEWBLOCK_NOINIT)
+
+                     
+  call storage_getbase_double2D(iHandle(1), p_Dvertices)                     
+  
+  call storage_getbase_int2D(iHandle(2), p_Itriangles)                       
+  
+  call storage_getbase_int(iHandle(3), p_Idata)   
+  
+  p_Idata(1)= iverts
+  p_Idata(2)= itriangles                    
+  
+  call sphereValue(halfpi,0.0_dp,DPoint,drad)
+  p_Dvertices(:,1)=DPoint(:)  
+  
+  call sphereValue(-1.0_dp*halfpi,0.0_dp,DPoint,drad)
+  p_Dvertices(:,iverts)=DPoint(:)  
+  
+  ive=1
+  phi  = halfpi-dphi
+  ! assign the top
+  do i=1,slices-1
+    theta = 0.0_dp
+    do j=1,2*stacks
+      ive=ive+1
+      call sphereValue(phi,theta,DPoint,drad)
+      p_Dvertices(:,ive)=DPoint(:)
+      theta=theta+dtheta
+    end do
+    phi=phi-dphi
+  end do
+
+  ! top fan  
+  do i=0,stacks2-1
+    p_Itriangles(1,i+1)=0
+    p_Itriangles(2,i+1)=1+i
+    p_Itriangles(3,i+1)=1+mod(i+1,stacks2)
+  end do
+
+
+  !add body
+  ioffset=stacks2+1
+  do i=0,(slices-3)
+    index=1+i*stacks2
+    do j=0,stacks2-1
+      p_Itriangles(1,ioffset)=index+j
+      p_Itriangles(2,ioffset)=index+stacks2+j
+      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)      
+      
+      p_Itriangles(1,ioffset+1)=index+mod((j+1),stacks2)
+      p_Itriangles(2,ioffset+1)=index+stacks2+j
+      p_Itriangles(3,ioffset+1)=index+stacks2+mod((j+1),stacks2)
+      ioffset=ioffset+2
+    end do
+  end do
+  
+  ! bottom fan  
+  index = (iverts-1) - stacks2
+  do i=0,(stacks2-1)
+    p_Itriangles(1,ioffset)=(iverts-1)
+    p_Itriangles(2,ioffset)=index+mod((i+1),stacks2)
+    p_Itriangles(3,ioffset)=index+i
+    ioffset=ioffset+1
+  end do
+
+  contains
+  
+    subroutine sphereValue(Dphi1,Dtheta1,DP1,rad)
+    real(dp),intent(in) :: Dphi1
+    real(dp),intent(in) :: Dtheta1
+    real(dp),intent(in) :: rad
+    real(dp), dimension(3),intent(inout) :: DP1
+    
+    DP1(1)= rad*cos(Dphi1)*cos(Dtheta1)
+    DP1(2)= rad*cos(Dphi1)*sin(Dtheta1)
+    DP1(3)= rad*sin(Dphi1)
+    
+    end subroutine sphereValue
+  
+  
+  end subroutine geom_triangulateSphere
+
+! ***************************************************************************  
+
+
 
 !<subroutine>  
   subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy)
