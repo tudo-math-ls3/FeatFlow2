@@ -457,15 +457,6 @@ contains
     nullify(rafcstab%p_rvectorRm)
     nullify(rafcstab%p_rvectorPredictor)
 
-    ! Release auxiliary nodal vectors
-    if (associated(rafcstab%RnodalVectors)) then
-      do i = lbound(rafcstab%RnodalVectors,1),&
-             ubound(rafcstab%RnodalVectors,1)
-        call lsyssc_releaseVector(rafcstab%RnodalVectors(i))
-      end do
-      deallocate(rafcstab%RnodalVectors)
-    end if
-
     ! Release auxiliary nodal block vectors
     if (associated(rafcstab%RnodalBlockVectors)) then
       do i = lbound(rafcstab%RnodalBlockVectors,1),&
@@ -473,6 +464,15 @@ contains
         call lsysbl_releaseVector(rafcstab%RnodalBlockVectors(i))
       end do
       deallocate(rafcstab%RnodalBlockVectors)
+    end if
+
+    ! Release auxiliary nodal vectors
+    if (associated(rafcstab%RnodalVectors)) then
+      do i = lbound(rafcstab%RnodalVectors,1),&
+             ubound(rafcstab%RnodalVectors,1)
+        call lsyssc_releaseVector(rafcstab%RnodalVectors(i))
+      end do
+      deallocate(rafcstab%RnodalVectors)
     end if
 
     ! Release auxiliary edge vectors

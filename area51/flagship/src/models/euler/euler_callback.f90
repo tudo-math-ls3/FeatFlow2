@@ -1721,8 +1721,8 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT)
 
 
-      ! Set pointer to low-order predictor
-      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
       ! Compute low-order predictor ...
       if (ite .eq. 0) then
@@ -2267,6 +2267,7 @@ contains
 
     ! local variables
     type(t_timestep) :: rtimestepAux
+    type(t_vectorBlock), pointer :: p_rpredictor
     type(t_vectorBlock) :: rloworder, rpredictor
     type(t_vectorScalar) :: rloworderScalar, rsolutionScalar
     type(t_vectorScalar) :: rbeta, rubound, rlbound
@@ -2302,24 +2303,24 @@ contains
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
 
-    ! Create vector for approximate time derivative
-    call lsysbl_createVectorBlock(rsolution, rloworder, .false.)
-
+    ! Set pointer to predictor
+    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+    
     ! Compute low-order "right-hand side" without theta parameter
     call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolver, rsolution, rloworder, rcollection, rsource)
+        rsolver, rsolution, p_rpredictor, rcollection, rsource)
 
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
-        rloworder, 1.0_DP, rloworder)
+        p_rpredictor, 1.0_DP, p_rpredictor)
 
     ! Compute the raw antidiffusive fluxes
-    call euler_calcFluxFCT(rproblemLevel, rloworder,&
+    call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
     
-    ! Make a copy of the low-order solution
-    if (nfailsafe .gt. 0) call lsysbl_copyVector(rsolution, rloworder)
+!!$    ! Make a copy of the low-order solution
+!!$    if (nfailsafe .gt. 0) call lsysbl_copyVector(rsolution, rloworder)
 
     ! Apply linearised FEM-FCT algorithm
     call euler_calcCorrectionFCT(rproblemLevel,&
@@ -2328,71 +2329,68 @@ contains
         AFCSTAB_FCTALGO_SCALEBYMASS,&
         rsolution, rcollection)
     
-    ! Perform failsafe flux correction
-    if (nfailsafe .gt. 0) then
-      
-      ! Make a copy of the flux corrected value
-      call lsysbl_copyVector(rsolution, rpredictor)
-      
-      ! Initialisation
-      call lsyssc_createVector(rbeta,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEDGE, .true.)
-
-      ! Set pointers
-      call lsyssc_getbase_double(rbeta, p_Dbeta)
-      call afcstab_getbase_IverticesAtEdge(&
-          rproblemLevel%Rafcstab(inviscidAFC), p_IverticesAtEdge)
-      
-      ! Failsafe steps
-      do ifailsafe = 1, nfailsafe
-        
-        ! Get x-velocity
-        call euler_getVariable(rloworder, 'velocity_x', rloworderScalar)
-        call euler_getVariable(rsolution, 'velocity_x', rsolutionScalar)
-        
-        call lsyssc_copyVector(rloworderScalar, rlbound)
-        call lsyssc_copyVector(rloworderScalar, rubound)
-        
-        ! Set pointers
-        call lsyssc_getbase_double(rlbound, p_Dlbound)
-        call lsyssc_getbase_double(rubound, p_Dubound)
-        call lsyssc_getbase_double(rloworderScalar, p_Dloworder)
-        call lsyssc_getbase_double(rsolutionScalar, p_Dsolution)
-
-        ! Compute correction factors
-        call checkFailsafe(p_IverticesAtEdge,&
-            rtimestep%dStep*real(ifailsafe, DP)/real(nfailsafe, DP),&
-            p_Dloworder, p_Dsolution, p_Dlbound, p_Dubound, p_Dbeta)
-        
-        ! Set pointers to global vector
-        call lsysbl_copyVector(rpredictor, rsolution)
-        call lsysbl_getbase_double(rsolution, p_Dsolution)
-        call lsyssc_getbase_double(&
-            rproblemLevel%Rafcstab(inviscidAFC)%RedgeVectors(1), p_Dalpha)
-        call lsyssc_getbase_double(&
-            rproblemLevel%Rafcstab(inviscidAFC)%RedgeVectors(2), p_Dflux)
-        call lsyssc_getbase_double(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-
-        ! Apply correction factors
-        call applyFailsafe(p_IverticesAtEdge,&
-            rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
-            rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
-            rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
-            p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Dsolution)
-      end do
-
-      ! Release auxiliary vector
-      call lsysbl_releaseVector(rpredictor)
-      call lsyssc_releaseVector(rlbound)
-      call lsyssc_releaseVector(rubound)
-      call lsyssc_releaseVector(rbeta)
-      call lsyssc_releaseVector(rloworderScalar)
-      call lsyssc_releaseVector(rsolutionScalar)
-    end if
-
-    ! Release auxiliary vector
-    call lsysbl_releaseVector(rloworder)
+!!$    ! Perform failsafe flux correction
+!!$    if (nfailsafe .gt. 0) then
+!!$      
+!!$      ! Make a copy of the flux corrected value
+!!$      call lsysbl_copyVector(rsolution, rpredictor)
+!!$      
+!!$      ! Initialisation
+!!$      call lsyssc_createVector(rbeta,&
+!!$          rproblemLevel%Rafcstab(inviscidAFC)%NEDGE, .true.)
+!!$
+!!$      ! Set pointers
+!!$      call lsyssc_getbase_double(rbeta, p_Dbeta)
+!!$      call afcstab_getbase_IverticesAtEdge(&
+!!$          rproblemLevel%Rafcstab(inviscidAFC), p_IverticesAtEdge)
+!!$      
+!!$      ! Failsafe steps
+!!$      do ifailsafe = 1, nfailsafe
+!!$        
+!!$        ! Get x-velocity
+!!$        call euler_getVariable(rloworder, 'velocity_x', rloworderScalar)
+!!$        call euler_getVariable(rsolution, 'velocity_x', rsolutionScalar)
+!!$        
+!!$        call lsyssc_copyVector(rloworderScalar, rlbound)
+!!$        call lsyssc_copyVector(rloworderScalar, rubound)
+!!$        
+!!$        ! Set pointers
+!!$        call lsyssc_getbase_double(rlbound, p_Dlbound)
+!!$        call lsyssc_getbase_double(rubound, p_Dubound)
+!!$        call lsyssc_getbase_double(rloworderScalar, p_Dloworder)
+!!$        call lsyssc_getbase_double(rsolutionScalar, p_Dsolution)
+!!$
+!!$        ! Compute correction factors
+!!$        call checkFailsafe(p_IverticesAtEdge,&
+!!$            rtimestep%dStep*real(ifailsafe, DP)/real(nfailsafe, DP),&
+!!$            p_Dloworder, p_Dsolution, p_Dlbound, p_Dubound, p_Dbeta)
+!!$        
+!!$        ! Set pointers to global vector
+!!$        call lsysbl_copyVector(rpredictor, rsolution)
+!!$        call lsysbl_getbase_double(rsolution, p_Dsolution)
+!!$        call lsyssc_getbase_double(&
+!!$            rproblemLevel%Rafcstab(inviscidAFC)%RedgeVectors(1), p_Dalpha)
+!!$        call lsyssc_getbase_double(&
+!!$            rproblemLevel%Rafcstab(inviscidAFC)%RedgeVectors(2), p_Dflux)
+!!$        call lsyssc_getbase_double(&
+!!$            rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+!!$
+!!$        ! Apply correction factors
+!!$        call applyFailsafe(p_IverticesAtEdge,&
+!!$            rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
+!!$            rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
+!!$            rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
+!!$            p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Dsolution)
+!!$      end do
+!!$
+!!$      ! Release auxiliary vector
+!!$      call lsysbl_releaseVector(rpredictor)
+!!$      call lsyssc_releaseVector(rlbound)
+!!$      call lsyssc_releaseVector(rubound)
+!!$      call lsyssc_releaseVector(rbeta)
+!!$      call lsyssc_releaseVector(rloworderScalar)
+!!$      call lsyssc_releaseVector(rsolutionScalar)
+!!$    end if
       
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)

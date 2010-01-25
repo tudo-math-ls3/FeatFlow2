@@ -2778,8 +2778,8 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_ITERATIVE)
 
-      ! Set pointer to low-order predictor
-      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1),&
@@ -3242,8 +3242,8 @@ contains
             AFCSTAB_FEMFCT_ITERATIVE,&
             AFCSTAB_FEMFCT_IMPLICIT)
 
-        ! Set pointer to low-order predictor
-        p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+        ! Set pointer to predictor
+        p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
         ! Compute low-order predictor ...
         if (ite .eq. 0) then
@@ -4199,8 +4199,8 @@ contains
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to low-order predictor
-    p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+    ! Set pointer to predictor
+    p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
     ! Compute the preconditioner
     call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
