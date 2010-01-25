@@ -359,7 +359,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -632,11 +632,11 @@ contains
       end select
 
     else
-      !$omp parallel do
-      do ieq = 1, neq
-        Dvalue(ieq) = 0.0_DP
-      end do
-      !$omp end parallel do
+      
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarInterleaveFormat')
+      call sys_halt()
+
     end if
 
   end subroutine euler_getVarInterleaveFormat
@@ -645,7 +645,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -918,12 +918,11 @@ contains
       end select
 
     else
-      !$omp parallel do
-      do ieq = 1, neq
-        Dvalue(ieq) = 0.0_DP
-      end do
-      !$omp end parallel do
 
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarBlockformat')
+      call sys_halt()
+      
     end if
 
   end subroutine euler_getVarBlockformat
