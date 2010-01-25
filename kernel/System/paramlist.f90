@@ -503,7 +503,9 @@ contains
   ! Loop through all values in the current section if there is
   ! an array-value. Release them.
   do i=size(rparlstSection%p_Rvalues),1,-1
-    deallocate(rparlstSection%p_Rvalues(i)%p_sentry)
+    if (associated(rparlstSection%p_Rvalues(i)%p_sentry)) then
+      deallocate(rparlstSection%p_Rvalues(i)%p_sentry)
+    end if
     if (rparlstSection%p_Rvalues(i)%nsize .gt. 0) then
       deallocate(rparlstSection%p_Rvalues(i)%p_SentryList)
     end if
