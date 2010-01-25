@@ -99,6 +99,12 @@
 !# 24.) sys_dequote
 !#      -> De-quote a string; remove any quotation marks
 !# 
+!# 25.) sys_stringToCharArray
+!#      -> Converts a string into a character array
+!#
+!# 26.) sys_charArrayToString
+!#      -> Converts a character array into a string
+!#
 !# </purpose>
 !##############################################################################
 
