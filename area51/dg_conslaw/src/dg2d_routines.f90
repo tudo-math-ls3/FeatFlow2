@@ -21,6 +21,7 @@ module dg2d_routines
     use linearformevaluation
     use domainintegration
     use linearsystemscalar
+    use feevaluation
     
 
     implicit none
@@ -860,6 +861,246 @@ contains
 
 
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    !****************************************************************************
+  
+!<subroutine>  
+  
+   subroutine dg2gmv(rvector,extraNodesPerEdge)
+
+!<description>
+
+  ! Output a DG vector to gmv format
+
+!</description>
+
+!<input>
+ 
+  ! The solution vector to output
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! Refinement level of the output grid (0 = No, n = n extra points on edge)
+  integer, intent(in) :: extraNodesPerEdge
+  
+    
+!</input>
+
+!<output>
+!</output>
+  
+!</subroutine>
+  ! local variables
+  
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  ! Space for the coordinates of the points on the reference element
+  real(dp), dimension(:,:), allocatable :: drefCoords
+  
+  ! The corner points of the cells on the reference element
+  integer, dimension(:,:), allocatable ::irefCornerNodesOfCell
+  
+  ! The coordinates of the real vertices (not on the reference element)
+  real(dp), dimension(:,:), allocatable :: dNodeCoords
+  
+  ! Vertices at element of the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  
+  ! Vertices at element of the triangulation
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  ! Maps element to corner vertices
+  integer, dimension(:,:), allocatable :: iCornerNodesOfCell
+  
+  integer :: nnodesOnRef, i, j, ncellsOnRef, icell, nnodes, iel, ibaseC, ibaseN, NEL, inode, ncells, iunit
+  
+  real(dp) :: dx, dy
+  
+  integer(I32) :: ctrafoType
+  
+  real(DP), dimension(:,:), allocatable :: Djac
+  
+  real(DP), dimension(:), allocatable :: Ddetj
+  
+  real(DP), dimension(:), allocatable :: dnodeValues
+  
+  
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvector%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+  
+  ! Get ointers to the data form the truangulation
+  call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+  call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
+                               p_DvertexCoords)
+
+  ! Get number of elements from the triangulation                               
+  NEL = p_rtriangulation%NEL
+  
+  ! First calculate the number of nodes on the reference element
+  nnodesOnRef = (2+extraNodesPerEdge)*(2+extraNodesPerEdge)
+
+  ! Allocate space for the coordinates of the nodes on the reference element
+  allocate(drefCoords(3,nnodesOnRef))
+
+  ! Calculate the coordinates of the nodes on the reference element
+  inode = 1
+  do i=1,2+extraNodesPerEdge
+    dy = -1.0_dp + (i-1)*2.0_dp/(1+extraNodesPerEdge)
+    do j=1,2+extraNodesPerEdge
+      dx = -1.0_dp + (j-1)*2.0_dp/(1+extraNodesPerEdge)
+      drefCoords(1,inode) = dx
+      drefCoords(2,inode) = dy
+      drefCoords(3,inode) = 0.0_dp
+      inode=inode+1
+    end do
+  end do
+
+
+  ! First calculate the number of cells on the reference element
+  ncellsOnRef = (1+extraNodesPerEdge)*(1+extraNodesPerEdge)
+
+  ! Allocate space for the array taking the corner nodes of the cells
+  ! on the reference element
+  allocate(irefCornerNodesOfCell(4,ncellsOnRef))
+
+  ! Calculate the array taking the corner nodes of the cells
+  ! on the reference element
+  icell = 1
+  do i=1,1+extraNodesPerEdge
+    do j=1,1+extraNodesPerEdge
+      irefCornerNodesOfCell(1,icell) = (j-1)*(2+extraNodesPerEdge)+(i  )
+      irefCornerNodesOfCell(2,icell) = (j-1)*(2+extraNodesPerEdge)+(i+1)
+      irefCornerNodesOfCell(3,icell) = (j  )*(2+extraNodesPerEdge)+(i+1)
+      irefCornerNodesOfCell(4,icell) = (j  )*(2+extraNodesPerEdge)+(i  )
+      icell=icell+1
+    end do
+  end do
+
+
+  ! Now calculate the total number of nodes to write to the gmv file
+  nnodes = nnodesOnRef * NEL
+
+  ! Allocate array for the coordinates of these nodes
+  allocate(dNodeCoords(3,nnodes))
+  
+  ! Get type of transformation
+  ctrafotype = p_rspatialDiscr%RelementDistr(1)%ctrafotype
+  
+  ! Allocate temp space for mapping
+  allocate(Djac(4,nnodesOnRef))
+  allocate(Ddetj(nnodesOnRef))
+
+  ! Calculate the real coordinates of the nodes
+  do iel = 1, NEL
+  
+    call trafo_calctrafo_mult (ctrafoType,nnodesOnRef,&
+                             p_DvertexCoords(:,p_IverticesAtElement(:,iel)),&
+                             drefCoords(1:2,:),Djac,Ddetj,&
+                             dNodeCoords(1:2,(iel-1)*nnodesOnRef+1:(iel)*nnodesOnRef))
+
+  end do
+  
+  ! Third coordinate is zero
+  dNodeCoords(3,:) = 0.0_DP
+
+  ! Deallocate temp space for mapping
+  deallocate(Djac)
+  deallocate(Ddetj)
+
+  ! Calculate the total number of cells
+  ncells = ncellsOnRef*NEL
+
+  ! Allocate space for the array taking the corner nodes of the cells
+  allocate(iCornerNodesOfCell(4,ncells))
+
+  ! Calculate the array taking the corner nodes of the cells
+  do iel=1,NEL
+    ibaseC = (iel-1)*ncellsOnRef
+    ibaseN = (iel-1)*nnodesOnRef
+    do i=1,ncellsOnRef
+      iCornerNodesOfCell(1,ibaseC+i) = irefCornerNodesOfCell(1,i)+ibaseN
+      iCornerNodesOfCell(2,ibaseC+i) = irefCornerNodesOfCell(2,i)+ibaseN
+      iCornerNodesOfCell(3,ibaseC+i) = irefCornerNodesOfCell(3,i)+ibaseN
+      iCornerNodesOfCell(4,ibaseC+i) = irefCornerNodesOfCell(4,i)+ibaseN
+    end do
+  end do
+  
+  
+  
+  ! Evaluate the values of the solution vector in the points
+  
+  allocate(dnodeValues(nnodes))
+  
+  do iel = 1, NEL
+    ibaseN = (iel-1)*nnodesOnRef
+    call fevl_evaluate_mult1 (DER_FUNC, dnodeValues(ibaseN:ibaseN+nnodesOnRef),&
+                              rvector, iel, drefCoords(1:2,:))
+  end do
+  
+  
+  
+  
+  
+  
+  ! ************ WRITE TO FILE PHASE *******************
+  
+  iunit = sys_getFreeUnit()
+  
+  open(iunit, file='./gmv/u2d.gmv')
+  
+  write(iunit,'(A)') 'gmvinput ascii'
+  
+  write(iunit,'(A,1X,I10)') 'nodes', nnodes
+  do j=1,3
+    do i=1,nnodes
+      write(iunit,'(E15.8)') dNodeCoords(j,i)
+    end do
+  end do
+
+  write(iunit,'(A,1X,I10)') 'cells',ncells
+  do i=1,ncells
+    write(iunit,'(A)')'quad 4'
+    write(iunit,'(4I8)') iCornerNodesOfCell(1:4,i)
+  end do
+
+write (iunit,'(A)') 'variable'  
+write (iunit,'(A,1X,I5)') trim('sol'),1
+do i=1,nnodes
+  write (iunit,'(E15.8)') dnodevalues(i)
+end do
+
+write (iunit,'(A)') 'endvars'
+
+
+write (iunit,'(A)') 'endgmv'
+close(iunit)
+
+
+  deallocate(drefCoords)
+  deallocate(irefCornerNodesOfCell)
+  deallocate(dNodeCoords)
+  deallocate(iCornerNodesOfCell)
+  deallocate(dnodeValues)
+
+end subroutine
 
 
 

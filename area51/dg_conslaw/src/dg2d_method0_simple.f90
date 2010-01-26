@@ -472,6 +472,9 @@ contains
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
 
     end do timestepping
+    
+    ! Output solution to gmv file
+    call dg2gmv(rsol,2)
 
 
 call lsyssc_getbase_double (rsol,p_Ddata)
