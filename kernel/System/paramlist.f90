@@ -2029,6 +2029,7 @@ contains
     if (present(nsubstrings)) then
       if (nsubstrings .gt. 0) then
         allocate(rsection%p_Rvalues(i)%p_SentryList(max(1,j),nsubstrings))
+        rsection%p_Rvalues(i)%p_SentryList(:,:) = ' '
         rsection%p_Rvalues(i)%nsize = nsubstrings
       else
         nullify(rsection%p_Rvalues(i)%p_SentryList)
@@ -2905,6 +2906,7 @@ contains
       end if
       
       allocate(rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList(ilensubf+2,nsubfiles-1))
+      rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList(:,:) = ' '
       do icurrentsubfile = 1,nsubfiles-1
         call sys_stringToCharArray('"'//trim(p_Ssubfiles(1+icurrentsubfile))//'"',&
           rparlist%p_Rsections(1)%p_Rvalues(iidxsubfiles)%p_SentryList(:,icurrentsubfile));
