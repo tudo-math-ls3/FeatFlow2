@@ -925,6 +925,7 @@ contains
         if (imovingFrame .ne. 0) then
           ! Moving frame formulation active. Add the frame velocity to the
           ! Dirichlet boundary conditions.
+          !sdfdfdf    Dvalues = Wert aus dem .dat file 
           Dvalues(1) = Dvalues(1) + rcollection%DquickAccess(5+icomponent-1)
         end if
     
