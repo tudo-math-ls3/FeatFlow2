@@ -120,7 +120,7 @@ ineumannBoundary = -1
 
 # Benchmark configuration:
 bdComponent1(4)=
-   1.0  0  0  'Dirichlet0'  'Dirichlet0'       # [0.0,1.0] : Dirichlet-0 boundary
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'       # [0.0,1.0] : Dirichlet-0 boundary
    2.0  3  1  'Dirichlet0'  'Dirichlet0'       # ]1.0,2.0[ : Neumann boundary = do-nothing
    3.0  3  1  'Dirichlet0'  'Dirichlet0'       # [2.0,3.0] : Dirichlet-0 boundary
    4.0  3  1  'Dirichlet0'  'Dirichlet0'       # [3.0,4.0] : parabolic profile in X, 0.0 in Y
