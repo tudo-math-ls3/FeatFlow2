@@ -416,10 +416,13 @@ endif
 ifeq ($(call match,$(ID),ia64-itanium2x2-linux-.*-mkl.*),yes)
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
-LIBDIR   := $(LIBDIR) -L$(subst :, -L, $(INTEL_MKL_LIB))
+# Note: Do not put whitespace between comma and the environment variable, because
+#       if you do, a string like "-L /path/to/mkl" is the result and that string
+#       won't make it into the command line.
+LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
 endif
-LIBS     := $(LIBS) -lmkl_lapack -lmkl -lguide -lpthread
-SBB_LIBS := $(SBB_LIBS) -lmkl_lapack -lmkl -lguide -lpthread
+LIBS     := $(LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
+SBB_LIBS := $(SBB_LIBS) -lmkl_lapack -lmkl_intel_thread -lmkl_core -lmkl_intel_lp64 -lguide -lpthread
 TOKEN5 := 1
 endif
 
