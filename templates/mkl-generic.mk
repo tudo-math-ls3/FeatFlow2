@@ -8,7 +8,9 @@
 
 ifneq ($(strip $(INTEL_MKL_LIB)),)
 # Split up string if multiple directories are given
-# Note: Do not put whitespace between comma and the environment variable!
+# Note: Do not put whitespace between comma and the environment variable, because
+#       if you do, a string like "-L /path/to/mkl" is the result and that string
+#       won't make it into the command line.
 LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
 endif
 
