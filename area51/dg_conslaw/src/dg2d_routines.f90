@@ -1051,7 +1051,7 @@ contains
   
   do iel = 1, NEL
     ibaseN = (iel-1)*nnodesOnRef
-    call fevl_evaluate_mult1 (DER_FUNC, dnodeValues(ibaseN:ibaseN+nnodesOnRef),&
+    call fevl_evaluate_mult1 (DER_FUNC, dnodeValues(ibaseN+1:ibaseN+nnodesOnRef),&
                               rvector, iel, drefCoords(1:2,:))
   end do
   

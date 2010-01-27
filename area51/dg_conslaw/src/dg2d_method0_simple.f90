@@ -134,10 +134,10 @@ contains
     
     integer :: ielementType
     
-    dt = 0.1_DP
-    ttfinal=1.0_DP
+    dt = 0.01_DP
+    ttfinal=0.01_DP
     
-    ielementType = EL_DG_T1_2D
+    ielementType = EL_DG_T2_2D
     
     
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 1
+    NLMAX = 2
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -474,7 +474,7 @@ contains
     end do timestepping
     
     ! Output solution to gmv file
-    call dg2gmv(rsol,2)
+    call dg2gmv(rsol,3)
 
 
 call lsyssc_getbase_double (rsol,p_Ddata)
