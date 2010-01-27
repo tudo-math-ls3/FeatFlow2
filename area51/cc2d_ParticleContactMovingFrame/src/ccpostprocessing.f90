@@ -1331,15 +1331,8 @@ contains
     ! In this case, the postprocessing data must be modified by the
     ! moving frame velocity.
     if (imovingFrame .ne. 0) then
-    
       ! Get the velocity and acceleration from the callback routine.
       call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
-
-      ! Subtract the moving frame velocity from the postprocessing
-      ! data.
-      call lsyssc_addConstant (rprjVector%RvectorBlock(1),-Dvelocity(1))
-      call lsyssc_addConstant (rprjVector%RvectorBlock(2),-Dvelocity(2))
-    
     end if
 
     ! Write the velocity field
