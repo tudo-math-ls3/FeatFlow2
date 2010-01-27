@@ -1396,23 +1396,26 @@ contains
     call lsyssc_getbase_double (rprjVector%RvectorBlock(1),p_Ddata)
     call lsyssc_getbase_double (rprjVector%RvectorBlock(2),p_Ddata2)
     
-    ! Is the moving-frame formulatino active?
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-        'imovingFrame',imovingFrame,0)
-        
-    ! In this case, the postprocessing data must be modified by the
-    ! moving frame velocity.
-    if (imovingFrame .ne. 0) then
+    ! Moving frame velocity subtraction deactivated, gives pictures
+    ! that can hardly be interpreted.
     
-      ! Get the velocity and acceleration from the callback routine.
-      call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
-
-      ! Subtract the moving frame velocity from the postprocessing
-      ! data.
-      call lsyssc_addConstant (rprjVector%RvectorBlock(1),-Dvelocity(1))
-      call lsyssc_addConstant (rprjVector%RvectorBlock(2),-Dvelocity(2))
-    
-    end if
+!    ! Is the moving-frame formulatino active?
+!    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+!        'imovingFrame',imovingFrame,0)
+!        
+!    ! In this case, the postprocessing data must be modified by the
+!    ! moving frame velocity.
+!    if (imovingFrame .ne. 0) then
+!    
+!      ! Get the velocity and acceleration from the callback routine.
+!      call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+!
+!      ! Subtract the moving frame velocity from the postprocessing
+!      ! data.
+!      call lsyssc_addConstant (rprjVector%RvectorBlock(1),-Dvelocity(1))
+!      call lsyssc_addConstant (rprjVector%RvectorBlock(2),-Dvelocity(2))
+!    
+!    end if
 
     ! Write the velocity field
 

@@ -393,6 +393,7 @@ contains
   !  8 = Q1~(EB30) / Q1~(EB30) / Q0
   ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
   ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
+  ! 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
   ! 20 = Q1        / Q1        / Q1
   ! 30 = P1~(E020) / P1~(E020) / P0
   integer, intent(in) :: ielementType
@@ -488,6 +489,11 @@ contains
       ieltypeP = EL_QP1
       bquadallowed = .true.
 
+    case (12)
+      ieltypeUV = EL_Q2
+      ieltypeP = EL_QP1NP
+      bquadallowed = .true.
+
     case (20)
       ieltypeUV = EL_Q1
       ieltypeP = EL_Q1
@@ -579,6 +585,7 @@ contains
   !  8 = Q1~(EB30) / Q1~(EB30) / Q0
   ! 10 = Q2~(EB50) / Q2~(EB50) / QP1
   ! 11 = Q2~(EM50) / Q2~(EM50) / QP1
+  ! 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
   ! 20 = Q1        / Q1        / Q1
   ! 30 = P1~(E020) / P1~(E020) / P0
   integer, intent(in) :: ielementType
@@ -648,6 +655,10 @@ contains
     case (11)
       ieltypeUV = EL_EM50
       ieltypeP = EL_QP1
+
+    case (12)
+      ieltypeUV = EL_Q2
+      ieltypeP = EL_QP1NP
 
     case (20)
       ieltypeUV = EL_Q1

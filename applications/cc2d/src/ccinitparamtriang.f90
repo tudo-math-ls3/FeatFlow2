@@ -35,6 +35,7 @@ module ccinitparamtriang
   use nonlinearsolver
   use paramlist
   use statistics
+  use meshmodification
   
   use collection
   use convection
@@ -67,6 +68,7 @@ contains
 
   ! local variables
   integer :: i,ilvmin,ilvmax,iconvertToTriangleMesh
+  real(DP) :: ddisturbMeshFactor
   
     ! Variable for a filename:  
     character(LEN=SYS_STRLEN) :: sString
@@ -101,6 +103,9 @@ contains
     
     call parlst_getvalue_int (rproblem%rparamList,'PARAMTRIANG',&
                               'iconvertToTriangleMesh',iconvertToTriangleMesh,0)
+    
+    call parlst_getvalue_double (rproblem%rparamList,'PARAMTRIANG',&
+                                 'ddisturbMeshFactor',ddisturbMeshFactor,0.0_DP)
     
     ! Read in the parametrisation of the boundary and save it to rboundary.
     call boundary_read_prm(rproblem%rboundary, sPrmFile)
@@ -141,6 +146,13 @@ contains
       call tria_compress2LevelOrdHierarchy (rproblem%RlevelInfo(i+1)%rtriangulation,&
           rproblem%RlevelInfo(i)%rtriangulation)
     end do
+    
+    if (ddisturbMeshFactor .gt. 0.0_DP) then
+      ! Use the mesh disturbance to disturb the fine mesh -- and
+      ! with that all coarser meshes as they are connected.
+      call meshmod_disturbMesh (rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation,&
+          ddisturbMeshFactor)
+    end if
     
     ! Gather statistics
     call stat_stopTimer(rtimer)
