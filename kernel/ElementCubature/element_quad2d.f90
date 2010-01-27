@@ -33,6 +33,7 @@ module element_quad2d
   public :: elem_Q2_mult 
   public :: elem_Q2_sim 
   public :: elem_QP1 
+  public :: elem_QP1NP
   public :: elem_EM30 
   public :: elem_EM30_mult 
   public :: elem_EM30_sim 
@@ -1884,6 +1885,212 @@ contains
     Dbas(1,DER_DERIV_Y) = 0.0_DP
     Dbas(2,DER_DERIV_Y) = -dxj * Djac(3)
     Dbas(3,DER_DERIV_Y) = dxj * Djac(1) 
+  
+  end subroutine 
+
+!**************************************************************************
+! Element subroutines for nonparametric QP1 element.
+! The routines are defines with the F95 PURE statement as they work 
+! only on the parameters; helps some compilers in optimisation.
+ 
+!<subroutine>  
+
+  pure subroutine elem_QP1NP (celement, Dcoords, Djac, ddetj, Bder, &
+                            Dpoint, Dbas)
+
+  !<description>
+  ! This subroutine calculates the values of the basic functions of the
+  ! finite element at the given point on the reference element. 
+  !</description>
+
+  !<input>
+
+  ! Element type identifier. Must be =EL_QP1NP.
+  integer(I32), intent(in)  :: celement
+  
+  ! Array with coordinates of the corners that form the real element.
+  ! DIMENSION(#space dimensions,NVE)
+  ! Dcoords(1,.)=x-coordinates,
+  ! Dcoords(2,.)=y-coordinates.
+  real(DP), dimension(:,:), intent(in) :: Dcoords
+  
+  ! Values of the Jacobian matrix that defines the mapping between the
+  ! reference element and the real element.
+  !  Djac(1) = J(1,1)
+  !  Djac(2) = J(2,1)
+  !  Djac(3) = J(1,2)
+  !  Djac(4) = J(2,2)
+  ! Remark: Only used for calculating derivatives; can be set to 0.0
+  ! when derivatives are not used.
+  real(DP), dimension(:), intent(in) :: Djac
+  
+  ! Determinant of the mapping from the reference element to the real
+  ! element.
+  ! Remark: Only used for calculating derivatives; can be set to 1.0
+  ! when derivatives are not needed. Must not be set to 0.0!
+  real(DP), intent(in) :: ddetj
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in) :: Bder
+  
+  ! Cartesian coordinates of the evaluation point on reference element.
+  ! Dpoint(1) = x-coordinate,
+  ! Dpoint(2) = y-coordinate
+  real(DP), dimension(2), intent(in) :: Dpoint
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC) defines the value of the i-th 
+  !   basis function of the finite element in the point (dx,dy) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx) is undefined.
+  real(DP), dimension(:,:), intent(out) :: Dbas
+!</output>
+
+! </subroutine>
+
+    ! The element is given the function value and the X- and Y-derivative
+    ! in the midpoint of the reference element.
+    ! That means: p(z1,z2) = a*1 + b*z1 + c*z2, coefficients (a,b,c).
+    !
+    ! The element is nonparametric, i.e. the coordinate system is element
+    ! dependent. The point (z1,z2) = K(x1,x2) is the representation of the 
+    ! point (x1,x2) in the new coordinate system. The mapping K() maps
+    ! a (x1,x2) to the normalised coordinate system defined by the midpoints
+    ! of the edges.
+
+    ! This element clearly works only with standard quadrilaterals
+    integer, parameter :: NVE = 4
+
+    ! auxiliary variables  
+    real(DP) :: dx, dy, dxj
+    real(DP),dimension(4) :: DXM,DYM,DLX,DLY
+    real(dp) :: D1,D2,CA1,CA2,CB1,CB2
+
+    integer :: IVE
+    
+    ! Clear the output array
+    !Dbas = 0.0_DP
+    
+    ! Calculate the edge midpoints and length of edges: 
+    !  DXM(:) := X-coordinates of midpoints
+    !  DYM(:) := Y-coordinates of midpoints
+    !  DLX(:) := length of each edge in X-direction
+    !  DLY(:) := length of each edge in Y-direction
+    ! So SQRT(DLX(:)**2+DLY(:)**2) = length of the edges.
+    
+    do IVE=1,NVE
+      DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,mod(IVE,4)+1))
+      DYM(IVE)=0.5_DP*(Dcoords(2,IVE)+Dcoords(2,mod(IVE,4)+1))
+      DLX(IVE)=0.5_DP*(Dcoords(1,mod(IVE,4)+1)-Dcoords(1,IVE))
+      DLY(IVE)=0.5_DP*(Dcoords(2,mod(IVE,4)+1)-Dcoords(2,IVE))
+    end do
+
+    ! Calculate the scaling factors for the local coordinate system.
+    !  D1 := 1 / ||xi||_2
+    !  D2 := 1 / ||eta||_2
+    
+    D1 = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+    D2 = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+    
+    ! Calculate the vector eta = (CA1,CB1); these numbers coincide
+    ! with the coefficients of the polynomial F2(x,y) := m2(r(x,y))
+    CA1 = (DXM(2)-DXM(4)) * D1
+    CB1 = (DYM(2)-DYM(4)) * D1
+    
+    ! Calculate the vector xi = (CA2,CB2); these numbers coincide
+    ! with the coefficients of the polynomial F3(x,y) := m3(r(x,y))
+    CA2 = (DXM(3)-DXM(1)) * D2
+    CB2 = (DYM(3)-DYM(1)) * D2
+
+    ! Our basis functions are as follows:
+    !
+    ! P1(z1,z2) = a1 + b1*z1 + b2*z2 = 1
+    ! P2(z1,z2) = a1 + b1*z1 + b2*z2 = z1
+    ! P3(z1,z2) = a1 + b1*z1 + b2*z2 = z2
+    !
+    ! with (z1,z2) the transformed (x,y) in the new coordinate system.
+    ! We define here Pi on the reference element and transform the point
+    ! (x,y) to (z1,z2) using a linear transformation.
+    !
+    ! Let (eta,xi) be the normalised vectors defined by connecting
+    ! opposite midpoints on the real element:
+    !
+    !   ^ xi             +---------X--------+          
+    !   |               /  (x,y)   ^         \                               .
+    !   |              /  O        |vec_2     \                              .
+    !   |             X--------____|___        \                             .
+    !   |            /             |   -------->X                            .
+    !   |           /              |     vec_1   \                           .
+    !   |          /               |              \                          .
+    !   |         +----_____       |               \                         .
+    !   |                   -----__X__              \                        .
+    !   |                              -----_____    \                       .
+    !   |                                        -----+
+    !   |
+    !   |
+    !   X--------________          
+    ! (0,0)              --------________            
+    !                                    ---> eta
+    !
+    ! (created by normalising vec_1 and vec_2 here)
+    !
+    ! The point (x,y) is now transferred to the new refrence element
+    ! defined by (eta,xi) using a simple bilinear mapping from the
+    ! real element to the reference element around the origin.
+    ! The edge midpoints on the reference element are (eta,0), (-eta,0),
+    ! (0,xi), (0,-xi)!
+    dx = 2.0_DP*D1*(Dpoint(1)-0.5_DP*(DXM(1)+DXM(3)))
+    dy = 2.0_DP*D2*(Dpoint(2)-0.5_DP*(DYM(1)+DYM(3)))
+    
+    ! Using eta=(CA1,CB1) and xi=(CA2,CB2), we get the coordinates in the
+    ! new coordinate system by using
+    !
+    ! ( z1 ) = (eta xi) ( dx ) = ( CA1 CA2 ) ( dx )
+    ! ( z2 )   (      ) ( dy )   ( CB1 CB2 ) ( dy )
+    !
+    ! These values have to be returned by Dbas(1,*) = P1(*), Dbas(2,*) = P2(*),
+    ! Dbas(3,*) = P3(*).
+    
+    Dbas(1,DER_FUNC) = 1
+    Dbas(2,DER_FUNC) = CA1*dx + CA2*dy
+    Dbas(3,DER_FUNC) = CB1*dx + CB2*dy
+    
+    ! 1st X- and Y-derivative on the reference element are...
+    
+    ! Dhelp(1,1) = CA1   ! (CA1*dx + CA2*dy)/dx = CA1
+    ! Dhelp(2,1) = CB1   ! (CB1*dx + CB2*dy)/dx = CB1
+
+    ! Dhelp(1,2) = CA2   ! (CA1*dx + CA2*dy)/dy = CA2
+    ! Dhelp(2,2) = CB2   ! (CB1*dx + CB2*dy)/dy = CB2
+  
+    ! Use them to calculate the derivative in the cubature point
+    ! on the real element. 
+  
+    dxj = 1.0_DP/ddetj
+    
+    ! X-derivatives on current element
+    ! Dbas(1,DER_DERIV_X) = 0
+    ! Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(1,1) - Djac(2) * Dhelp(1,2))
+    ! Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
+    Dbas(1,DER_DERIV_X) = 0.0_DP
+    Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * CA1 - Djac(2) * CA2)
+    Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * CB1 - Djac(2) * CB2)
+    
+    ! y-derivatives on current element
+    ! Dbas(1,DER_DERIV_Y) = 0
+    ! Dbas(2,DER_DERIV_Y) = dxj * (-Djac(3) * Dhelp(1,1) + Djac(1) * Dhelp(1,2))
+    ! Dbas(3,DER_DERIV_Y) = dxj * (-Djac(3) * Dhelp(2,1) + Djac(1) * Dhelp(2,2))
+    Dbas(1,DER_DERIV_Y) = 0.0_DP
+    Dbas(2,DER_DERIV_Y) = dxj * (-Djac(3) * CA1 + Djac(1) * CA2)
+    Dbas(3,DER_DERIV_Y) = dxj * (-Djac(3) * CB1 + Djac(1) * CB2)
   
   end subroutine 
 

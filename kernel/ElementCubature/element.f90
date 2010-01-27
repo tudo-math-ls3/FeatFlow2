@@ -397,6 +397,10 @@ module element
   ! derivatives.
   integer(I32), parameter, public :: EL_QP1     = EL_2D + 21
   integer(I32), parameter, public :: EL_QP1_2D  = EL_QP1
+  
+  ! QP1-element, nonparametric
+  integer(I32), parameter, public :: EL_QP1NP    = EL_QP1 + EL_NONPARAMETRIC
+  integer(I32), parameter, public :: EL_QP1NP_2D = EL_QP1NP
 
   ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
   ! nonconformal, parametric, nonparametric).
@@ -731,6 +735,8 @@ contains
       elem_igetID = EL_Q3_2D
     else if (selem .eq. "EL_QP1" .or. selem .eq. "EL_QP1_2D") then
       elem_igetID = EL_QP1_2D
+    else if (selem .eq. "EL_QP1NP" .or. selem .eq. "EL_QP1NP_2D") then
+      elem_igetID = EL_QP1NP_2D
     else if (selem .eq. "EL_Q1T" .or. selem .eq. "EL_Q1T_2D" .or. &
              selem .eq. "EL_E030" .or. selem .eq. "EL_E030_2D") then
       elem_igetID = EL_E030_2D
@@ -1241,6 +1247,9 @@ contains
           EL_DG_T0_2D, EL_DG_T1_2D, EL_DG_T2_2D)
       ! These work on the reference quadrilateral
       elem_igetCoordSystem = TRAFO_CS_REF2DQUAD
+    case (EL_QP1NP)
+      ! EL_QP1NP works in real coordinates
+      elem_igetCoordSystem = TRAFO_CS_REAL2DQUAD
     case (EL_Q1 +EL_NONPARAMETRIC, &
           EL_Q1T+EL_NONPARAMETRIC, &
           EL_Q2T+EL_NONPARAMETRIC)
@@ -1838,6 +1847,8 @@ contains
         bwrapSim2 = .true.
       case (EL_QP1)
         call elem_QP1 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_QP1NP)
+        call elem_QP1NP (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30,EL_EM30_UNPIVOTED,EL_EM30_UNSCALED)
         call elem_EM30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM30_NEW)
@@ -2039,6 +2050,9 @@ contains
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_QP1)
       call elem_QP1 (celement, revalElement%Dcoords, revalElement%Djac, &
+          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+    case (EL_QP1NP)
+      call elem_QP1NP (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30 (celement, revalElement%Dcoords, revalElement%Djac, &
