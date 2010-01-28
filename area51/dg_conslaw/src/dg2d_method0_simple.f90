@@ -134,10 +134,10 @@ contains
     
     integer :: ielementType
     
-    dt = 0.01_DP
-    ttfinal=0.01_DP
+    dt = 0.1_DP
+    ttfinal=1.0_DP
     
-    ielementType = EL_DG_T2_2D
+    ielementType = EL_DG_T1_2D
     
     
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 2
+    NLMAX = 1
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -156,10 +156,10 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD2x2.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD2x2.tri', rboundary)
      
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -227,13 +227,13 @@ contains
     call lsyssc_duplicateMatrix(rmatrixMC, rmatrixCX,&
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
-    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCX, DER_DERIV_X, DER_FUNC)
-
+    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCX, DER_FUNC, DER_DERIV_X)
+    
     ! Now we do the same for CY
     call lsyssc_duplicateMatrix(rmatrixMC, rmatrixCY,&
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
-    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCY, DER_DERIV_Y, DER_FUNC)
+    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCY, DER_FUNC, DER_DERIV_Y)
 
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -250,7 +250,6 @@ contains
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsoltemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhstemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolUp ,.true.,ST_DOUBLE)
-
                                  
     ! Test the new DG edgebased routine                                 
     call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
@@ -400,6 +399,9 @@ contains
        call lsyssc_copyVector(rsol,rsoltemp)
        
        
+!       call lsyssc_getbase_double (rsoltemp,p_Ddata)
+!       p_Ddata(1)=1.0_DP
+       
        ! Step 1/3
        
        ! Create RHS-Vector
@@ -408,6 +410,10 @@ contains
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
+                                              
+       call lsyssc_getbase_double (rrhs,p_Ddata)
+    write(*,*) p_Ddata
+    pause
                                               
        
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -420,6 +426,9 @@ contains
        
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
+       
+       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
+       !call lsyssc_copyVector (rsoltemp,rsol)
        
        
        ! Step 2/3
@@ -463,7 +472,6 @@ contains
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
        call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
-       
     
        ! Go on to the next time step
        ttime = ttime + dt
@@ -476,11 +484,6 @@ contains
     ! Output solution to gmv file
     call dg2gmv(rsol,3)
 
-
-call lsyssc_getbase_double (rsol,p_Ddata)
-       write(*,*) p_Ddata
-       pause
-    
     
 !    
 !    ! Finally solve the system. As we want to solve Ax=b with

@@ -159,8 +159,7 @@ contains
       ! Allocate the edgelist
       allocate(p_IedgeList(NMT))
       
-      ! All edges (the number of the first edge is NVT+1)
-      !forall (iedge = 1:NMT) p_IedgeList(iedge)=NVT+iedge
+      ! All edges
       forall (iedge = 1:NMT) p_IedgeList(iedge)=iedge
       
       ! Allocate space for local edge numbers
@@ -693,7 +692,7 @@ contains
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
             daux1 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp,iel)
-            daux2 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel)
+            daux2 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
 
             ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
@@ -717,7 +716,7 @@ contains
               
               if(IelementList(2,IELset+iel-1).ne.0) then
                 DlocalData(2,idofe) = DlocalData(2,idofe)+&
-                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
+                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,ncubp-icubp+1,iel)*daux2
               end if
              
             end do ! idofe
