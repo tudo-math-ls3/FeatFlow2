@@ -538,9 +538,6 @@ contains
       if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
         derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
-        call pperr_scalar (rsolution%RvectorBlock(3),PPERR_H1ERROR,Derr(3),&
-                          ffunction_TargetP,rproblem%rcollection)
-
         call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       else
@@ -548,6 +545,9 @@ contains
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
       end if
       
+      call pperr_scalar (rsolution%RvectorBlock(3),PPERR_H1ERROR,Derr(3),&
+                        ffunction_TargetP,rproblem%rcollection)
+
       if (Derr(3) .ne. -1.0_DP) then
         derrorP = sqrt(Derr(3))
 
