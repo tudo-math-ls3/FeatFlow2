@@ -2413,6 +2413,9 @@ contains
     do i=1,j
       schararray(i) = sstring(i:i)
     end do
+    
+    ! Fill up the rest with spaces. This emulates a string copy.
+    schararray(j+1:) = ' '
   
   end subroutine
 
