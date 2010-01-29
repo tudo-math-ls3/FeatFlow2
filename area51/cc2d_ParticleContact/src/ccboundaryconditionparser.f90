@@ -640,11 +640,13 @@ contains
 !</subroutine>
 
     ! local variables
-    integer, dimension(:), pointer :: p_Iedges, p_IedgesLocal
+    integer, dimension(:), pointer :: p_Iedges, p_IedgesLocal,p_IallEdges
+    real(DP), dimension(:,:), pointer :: p_Dcoord
     integer, dimension(:,:), pointer :: p_IedgesAtElement
-    integer :: i, j, icount, hedgeslocal
+    integer, dimension(:,:), pointer :: p_IvertAtEdge
+    integer :: i, j, icount, hedgeslocal,iv1,iv2,iin1,iin2
     integer :: ibdComponent,isegment,iintervalEnds
-    integer :: ibctyp
+    integer :: ibctyp,inedgesfb
     real(DP) :: dvalue,dpar1,dpar2
     character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
     
@@ -657,24 +659,73 @@ contains
     ! A pointer to the section with the expressions and the boundary conditions
     type(t_parlstSection), pointer :: p_rbdcond
     
+    type(t_geometryObject), pointer :: p_rgeometryObject
+    
+    type(t_particleCollection), pointer :: p_rparticleCollection
+    !
+    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject     
+    
+    allocate(p_IallEdges(rtriangulation%NMT))
+    
+    ! number of edges in the fictitious domain
+    inedgesfb = 0
+    
     ! Get the domain from the problem structure
     p_rboundary => rproblem%rboundary
     
+    call storage_getbase_double2D (rtriangulation%h_DvertexCoords,&
+        p_Dcoord)
+    
     call storage_getbase_int2d(rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    
+
+    
+    call storage_getbase_int2D (rtriangulation%h_IverticesAtEdge,&
+        p_IvertAtEdge)
+    
+    ! loop over all edges
+    do i=1,rtriangulation%NMT
+      iv1=p_IvertAtEdge(1,i)  
+      iv2=p_IvertAtEdge(2,i)
+      
+      if(sqrt((0.2_dp-p_Dcoord(1,iv1))**2+(0.2_dp-p_Dcoord(2,iv1))**2) .le. 0.05_dp)then
+        iin1=1
+      else
+        iin1=0
+      end if
+
+      if(sqrt((0.2_dp-p_Dcoord(1,iv2))**2+(0.2_dp-p_Dcoord(2,iv2))**2) .le. 0.051_dp)then
+        iin2=1
+      else
+        iin2=0
+      end if
+      
+!      call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv1), iin1)      
+!      call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv2), iin2)      
+      
+      if((iin1 .eq. 1) .and. (iin2 .eq. 1))then
+        p_IallEdges(inedgesfb+1)=i
+        inedgesfb=inedgesfb+1
+      end if
+    end do
+    
 
     ! Allocate memory for the edges. We have at most as many edges as
-    ! there are on the boudary.
-    call storage_new ('cc_getDirichletEdges','hedges',rtriangulation%NMBD,&
+    ! there are on the boudnary.
+    call storage_new ('cc_getDirichletEdges','hedges',rtriangulation%NMBD+inedgesfb,&
         ST_INT,hedges,ST_NEWBLOCK_NOINIT)
-    ncount = 0
+
     call storage_getbase_int (hedges, p_Iedges)
 
     ! Allocate another array for local edge numbers.
-    call storage_new ('cc_getDirichletEdges','hedgeslocal',rtriangulation%NMBD,&
+    call storage_new ('cc_getDirichletEdges','hedgeslocal',rtriangulation%NMBD+inedgesfb,&
         ST_INT,hedgeslocal,ST_NEWBLOCK_NOINIT)
     ncount = 0
+
     call storage_getbase_int (hedgeslocal, p_Iedgeslocal)
-    
+   
     ! Get the section describing the BC's.
     call parlst_querysection(rproblem%rparamList, 'BDCONDITIONS', p_rbdcond) 
     
@@ -748,10 +799,15 @@ contains
       
     end do
     
+    p_Iedges(ncount+1:ncount+1+inedgesfb)=&
+    p_IallEdges(1:inedgesfb)
+    
+    deallocate(p_IallEdges)
     ! Release unused memory
     call storage_free (hedgeslocal)
-    if (ncount .gt. 0) then
-      call storage_realloc ("cc_getDirichletEdges", ncount, hedges, ST_NEWBLOCK_NOINIT, .true.)
+    if ((ncount .gt. 0).or.(inedgesfb .gt. 0)) then
+      call storage_realloc ("cc_getDirichletEdges", ncount+inedgesfb, hedges, ST_NEWBLOCK_NOINIT, .true.)
+      !call storage_realloc ("cc_getDirichletEdges", ncount, hedges, ST_NEWBLOCK_NOINIT, .true.)
     else
       call storage_free (hedges)
     end if
