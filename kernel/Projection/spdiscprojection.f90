@@ -402,6 +402,14 @@ contains
                             OU_CLASS_ERROR,OU_MODE_STD,&
                             'spdp_projectSolutionScalar')  
           call sys_halt()
+
+      case (EL_Q2_3D)
+        ! Rather easy. Take the first NVT elements of the Q2-vector
+        ! as values in the corners of Q1.
+        call lsyssc_getbase_double (rsourceVector,p_Dsource)
+        call lsyssc_getbase_double (rdestVector,p_Ddest)
+        call lalg_copyVectorDble (p_Dsource(1:size(p_Ddest)),p_Ddest)
+
       end select
 
     case default

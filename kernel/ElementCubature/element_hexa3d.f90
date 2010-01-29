@@ -40,7 +40,8 @@ module element_hexa3d
   public :: elem_EM30_3D_sim 
   public :: elem_eval_Q1_3D
   public :: elem_eval_Q2_3D
-  public :: elem_eval_QP1_3D 
+  public :: elem_eval_QP1_3D
+  public :: elem_eval_QP1NP_3D
   public :: elem_eval_E030_3D 
   public :: elem_eval_E031_3D 
   public :: elem_eval_EM30_3D 
@@ -4138,6 +4139,241 @@ contains
           
     end if
 
+  end subroutine
+
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_QP1NP_3D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+  !
+  ! QP1 element, nonparametric version.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+    ! Element Description
+    ! -------------------
+    ! The QP1_3D element is specified by four polynomials per element.
+    !
+    ! The basis polynomials are constructed from the following set of monomials:
+    ! { 1, x, y, z }
+    !
+    ! As the QP1 element is discontinous, the basis polynomials do not have to
+    ! fulfill any special conditions - they are simply defined as:
+    !
+    !  P1 (x,y,z) = 1
+    !  P2 (x,y,z) = x
+    !  P3 (x,y,z) = y
+    !  P4 (x,y,z) = z
+
+    ! This element clearly works only with standard quadrilaterals
+    integer, parameter :: NVE = 8
+    integer, parameter :: NFACES = 6
+
+    ! Local variables
+    real(DP) :: ddet
+    integer :: i,j,iface
+    real(dp) :: CA1,CA2,CA3,CB1,CB2,CB3,CC1,CC2,CC3
+    real(DP),dimension(NFACES) :: DXM,DYM,DZM
+    real(dp) :: dx,dy,dz
+    real(DP),dimension(3,3) :: cg
+    
+    ! Ordering of the vertices.
+    integer, dimension(4,NFACES), parameter :: IverticesHexa =&
+             reshape((/1,2,3,4, 1,5,6,2, 2,6,7,3,&
+                       3,7,8,4, 1,4,8,5, 5,8,7,6/), (/4,NFACES/))
+
+    ! Loop through all elements
+    do j = 1, reval%nelements
+    
+      ! Loop through all points on the current element
+      do i = 1, reval%npointsPerElement
+
+        ! Calculate the face midpoints and length of edges: 
+        !  DXM(:) := X-coordinates of midpoints
+        !  DYM(:) := Y-coordinates of midpoints
+        !  DLX(:) := length of each edge in X-direction
+        !  DLY(:) := length of each edge in Y-direction
+        ! So SQRT(DLX(:)**2+DLY(:)**2) = length of the edges.
+        
+        do iface=1,NFACES
+          DXM(iface)=0.25_DP*(reval%p_Dcoords(1,IverticesHexa(1,iface),j) &
+                             +reval%p_Dcoords(1,IverticesHexa(2,iface),j) &
+                             +reval%p_Dcoords(1,IverticesHexa(3,iface),j) &
+                             +reval%p_Dcoords(1,IverticesHexa(4,iface),j))
+          DYM(iface)=0.25_DP*(reval%p_Dcoords(2,IverticesHexa(1,iface),j) &
+                             +reval%p_Dcoords(2,IverticesHexa(2,iface),j) &
+                             +reval%p_Dcoords(2,IverticesHexa(3,iface),j) &
+                             +reval%p_Dcoords(2,IverticesHexa(4,iface),j))
+          DZM(iface)=0.25_DP*(reval%p_Dcoords(3,IverticesHexa(1,iface),j) &
+                             +reval%p_Dcoords(3,IverticesHexa(2,iface),j) &
+                             +reval%p_Dcoords(3,IverticesHexa(3,iface),j) &
+                             +reval%p_Dcoords(3,IverticesHexa(4,iface),j))
+        end do
+        
+        ! Calculate the vectors realising the local coordinate system.
+        !
+        ! eta
+        CA1 = (DXM(3)-DXM(5))
+        CB1 = (DYM(3)-DYM(5))
+        CC1 = (DZM(3)-DZM(5))
+
+        ! xi
+        CA2 = (DXM(4)-DXM(2))
+        CB2 = (DYM(4)-DYM(2))
+        CC2 = (DZM(4)-DZM(2))
+
+        ! tau
+        CA3 = (DXM(6)-DXM(1))
+        CB3 = (DYM(6)-DYM(1))
+        CC3 = (DZM(6)-DZM(1))
+
+        ! Our basis functions are as follows:
+        !
+        ! P1(z1,z2,z3) = a1 + b1*z1 + b2*z2 + b3*z3 = 1
+        ! P2(z1,z2,z3) = a1 + b1*z1 + b2*z2 + b3*z3 = z1
+        ! P3(z1,z2,z3) = a1 + b1*z1 + b2*z2 + b3*z3 = z2
+        !
+        ! with (z1,z2) the transformed (x,y) in the new coordinate system.
+        ! The Pi are defined on the reference element and a linear
+        ! mapping sigma:[0,1]^2->R^2 is used to map all the midpoints
+        ! from the reference element to the real element:
+        !
+        !  sigma(0,0,0) = m
+        !  sigma(1,0,0) = m + eta/2
+        !  sigma(0,1,0) = m + xi/2
+        !  sigma(0,0,1) = m + tau/2
+        !
+        !         ^                                       ^
+        !   +-----X-----+                        +--------m3--------+
+        !   |     |     |                       /         |          \           
+        !   |     |     |       sigma      ___ /          |           \          
+        ! --X-----+-----X-->   ------->       m4--------__|m____       \         
+        !   |     |     |                    /             |    --------m2->
+        !   |     |     |                   /              |             \       
+        !   +-----X-----+                  /               |              \      
+        !         |                       +----_____       |               \     
+        !                                           -----__m1_              \    
+        !                                                  |   -----_____    \   
+        !                                                                -----+
+        !
+        ! The basis functions on the real element are defined as
+        !
+        !  Phi_i(x,y) = Pi(sigma^-1(x,y))
+        !
+        ! Because sigma is linear, we can calculate the inverse by hand.
+        ! sigma is given by the formula
+        !
+        !   sigma(z1,z2) = m + 1/2 (eta1 xi1 tau1) (z1) = m + 1/2 (CA1 CA2 CA3) (z1)
+        !                          (eta2 xi2 tau2) (z2)           (CB1 CB2 CB3) (z2)
+        !                          (eta2 xi2 tau3) (z3)           (CC1 CC2 CC3) (z3)
+        !
+        ! so the inverse mapping is
+        !
+        !  sigma^-1(z1,z2) = [1/2*(CA1 CA2 CA3)]^-1 * (x - xm)
+        !                    [    (CB1 CB2 CB3)]      (y - ym)
+        !                    [    (CC1 CC2 CC3)]      (z - zm)
+        !
+        !                  = 2/det * [cg11 cg12 cg13] * (x - xm)
+        !                            [cg21 cg22 cg23]   (y - ym)
+        !                            [cg31 cg32 cg33]   (z - zm)
+        !
+        ! with
+        !  cg11 = CB2 * CC3 - CB3 * CC2
+        !  cg12 = -CA2 * CC3 + CA3 * CC2
+        !  cg13 = CA2 * CB3 - CA3 * CB2
+        !  cg21 = -CB1 * CC3 + CB3 * CC1
+        !  cg22 = CA1 * CC3 - CA3 * CC1
+        !  cg23 = -CA1 * CB3 + CA3 * CB1
+        !  cg31 = CB1 * CC2 - CB2 * CC1
+        !  cg32 = -CA1 * CC2 + CA2 * CC1
+        !  cg33 = CA1 * CB2 - CA2 * CB1
+        !
+        ! and lambda = determinant of the matrix.
+        !
+        ! So in the first step, calculate (x-xm) and (y-ym).
+        dx = (reval%p_DpointsRef(1,i,j)-0.5_DP*(DXM(3)+DXM(5)))
+        dy = (reval%p_DpointsRef(2,i,j)-0.5_DP*(DYM(3)+DYM(5)))
+        dz = (reval%p_DpointsRef(3,i,j)-0.5_DP*(DZM(3)+DZM(5)))
+
+        ! Calculate the scaled inverse of the determinant of the matrix.
+        ddet = 2.0_DP / (CA1 * CB2 * CC3 - CA1 * CB3 * CC2 - CB1 * CA2 * CC3 + &
+                         CB1 * CA3 * CC2 + CC1 * CA2 * CB3 - CC1 * CA3 * CB2)
+
+        ! Calculate the coefficients of the inverse matrix.
+        cg(1,1) = ddet*(CB2 * CC3 - CB3 * CC2)
+        cg(1,2) = ddet*(-CA2 * CC3 + CA3 * CC2)
+        cg(1,3) = ddet*(CA2 * CB3 - CA3 * CB2)
+        cg(2,1) = ddet*(-CB1 * CC3 + CB3 * CC1)
+        cg(2,2) = ddet*(CA1 * CC3 - CA3 * CC1)
+        cg(2,3) = ddet*(-CA1 * CB3 + CA3 * CB1)
+        cg(3,1) = ddet*(CB1 * CC2 - CB2 * CC1)
+        cg(3,2) = ddet*(-CA1 * CC2 + CA2 * CC1)
+        cg(3,3) = ddet*(CA1 * CB2 - CA2 * CB1)
+
+        ! Evaluate basis functions: cg * (dx,dy,dz)
+        Dbas(1,DER_FUNC3D,i,j) = 1.0_DP
+        Dbas(2,DER_FUNC3D,i,j) = cg(1,1)*dx+cg(1,2)*dy+cg(1,3)*dz
+        Dbas(3,DER_FUNC3D,i,j) = cg(2,1)*dx+cg(2,2)*dy+cg(2,3)*dz 
+        Dbas(4,DER_FUNC3D,i,j) = cg(3,1)*dx+cg(3,2)*dy+cg(3,3)*dz
+
+        ! X-derivatives on real element
+        Dbas(1,DER_DERIV3D_X,i,j) = 0.0_DP
+        Dbas(2,DER_DERIV3D_X,i,j) = cg(1,1)
+        Dbas(3,DER_DERIV3D_X,i,j) = cg(2,1)
+        Dbas(4,DER_DERIV3D_X,i,j) = cg(3,1)
+                                              
+        ! Y-derivatives on real element       
+        Dbas(1,DER_DERIV3D_Y,i,j) = 0.0_DP    
+        Dbas(2,DER_DERIV3D_Y,i,j) = cg(1,2)
+        Dbas(3,DER_DERIV3D_Y,i,j) = cg(2,2)
+        Dbas(4,DER_DERIV3D_Y,i,j) = cg(3,2)
+                                              
+        ! Z-derivatives on real element       
+        Dbas(1,DER_DERIV3D_Z,i,j) = 0.0_DP    
+        Dbas(2,DER_DERIV3D_Z,i,j) = cg(1,3)
+        Dbas(3,DER_DERIV3D_Z,i,j) = cg(2,3)
+        Dbas(4,DER_DERIV3D_Z,i,j) = cg(3,3)
+      
+      end do ! i
+
+    end do ! j
+        
   end subroutine
 
   !************************************************************************

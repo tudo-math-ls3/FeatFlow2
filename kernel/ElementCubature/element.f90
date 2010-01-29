@@ -509,6 +509,9 @@ module element
   ! ID of discontinous parametric linear hexahedron FE, P1
   integer(I32), parameter, public :: EL_QP1_3D  = EL_3D + 21
 
+  ! ID of discontinous parametric linear hexahedron FE, P1, nonparametric
+  integer(I32), parameter, public :: EL_QP1NP_3D  = EL_QP1_3D + EL_NONPARAMETRIC
+
 !</constantblock>
 
 !<constantblock description="Special 2D element variants.">
@@ -785,6 +788,8 @@ contains
       elem_igetID = EL_Q2_3D
     else if (selem .eq. "EL_QP1_3D") then
       elem_igetID = EL_QP1_3D
+    else if (selem .eq. "EL_QP1NP_3D") then
+      elem_igetID = EL_QP1NP_3D
     else if (selem .eq. "EL_Q1T_3D" .or. selem .eq. "EL_E031_3D") then
       elem_igetID = EL_E031_3D
     else if (selem .eq. "EL_E030_3D") then
@@ -1272,6 +1277,9 @@ contains
       elem_igetCoordSystem = TRAFO_CS_REF3DPRISM
     case (EL_Q1T_3D+EL_NONPARAMETRIC,&
           EL_Q2T_3D+EL_NONPARAMETRIC)
+      ! EM30, EM50; these work in real coordinates
+      elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
+    case (EL_QP1NP_3D)
       ! EM30, EM50; these work in real coordinates
       elem_igetCoordSystem = TRAFO_CS_REAL3DHEXA
       
@@ -1885,7 +1893,7 @@ contains
         call elem_Q1_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_Q2_3D)
         bwrapSim2 = .true.
-      case (EL_QP1_3D)
+      case (EL_QP1_3D,EL_QP1NP_3D)
         bwrapSim2 = .true.
       case (EL_Y0_3D)
         call elem_Y0_3D (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
@@ -2782,6 +2790,9 @@ contains
     
     case (EL_QP1_3D)
       call elem_eval_QP1_3D(celement, revalElementSet, Bder, Dbas)
+
+    case (EL_QP1NP_3D)
+      call elem_eval_QP1NP_3D(celement, revalElementSet, Bder, Dbas)
 
     case (EL_EM30_3D)
       call elem_EM30_3D_sim (celement, revalElementSet%p_Dcoords, &

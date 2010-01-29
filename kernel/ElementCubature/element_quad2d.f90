@@ -1971,7 +1971,7 @@ contains
 
     ! auxiliary variables  
     real(DP) :: dx, dy, dxj
-    real(DP),dimension(4) :: DXM,DYM,DLX,DLY
+    real(DP),dimension(4) :: DXM,DYM
     real(dp) :: CA1,CA2,CB1,CB2 !,D1,D2
 
     integer :: IVE
@@ -1989,8 +1989,6 @@ contains
     do IVE=1,NVE
       DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,mod(IVE,4)+1))
       DYM(IVE)=0.5_DP*(Dcoords(2,IVE)+Dcoords(2,mod(IVE,4)+1))
-      DLX(IVE)=0.5_DP*(Dcoords(1,mod(IVE,4)+1)-Dcoords(1,IVE))
-      DLY(IVE)=0.5_DP*(Dcoords(2,mod(IVE,4)+1)-Dcoords(2,IVE))
     end do
 
     ! Calculate the scaling factors for the local coordinate system.
@@ -2052,7 +2050,7 @@ contains
     !  sigma^-1(z1,z2) = [1/2*(CA1 CA2)]^-1 * (x - xm)
     !                    [    (CB1 CB2)]      (y   ym)
     !
-    !                  = 2*lambda ( CB2*(x-xm) - CB1*(y-ym) )
+    !                  = 2/lambda ( CB2*(x-xm) - CB1*(y-ym) )
     !                             ( CA1*(y-ym) - CA2*(x-xm) )
     !
     !  with lambda = determinant of the matrix.
