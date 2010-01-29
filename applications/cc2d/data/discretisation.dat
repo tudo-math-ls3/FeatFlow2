@@ -212,7 +212,7 @@ imovingFrame = 0
 # (QP1  = Quadrilateral discontinuous P1 element)
 # (E020 = non-conforming Crouzeix-Raviart element)
 
-ielementType = 12
+ielementType = 3
 
 # ------------------------------------------------------------------------
 
