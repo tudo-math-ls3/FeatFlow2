@@ -1972,7 +1972,7 @@ contains
     ! auxiliary variables  
     real(DP) :: dx, dy, dxj
     real(DP),dimension(4) :: DXM,DYM,DLX,DLY
-    real(dp) :: D1,D2,CA1,CA2,CB1,CB2
+    real(dp) :: CA1,CA2,CB1,CB2 !,D1,D2
 
     integer :: IVE
     
@@ -1994,22 +1994,19 @@ contains
     end do
 
     ! Calculate the scaling factors for the local coordinate system.
-    !  D1 := 1 / ||xi||_2
-    !  D2 := 1 / ||eta||_2
+    !  D1 := 1 / ||vec_1||_2
+    !  D2 := 1 / ||vec_2||_2
+    !D1 = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+    !D2 = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
     
-    D1 = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
-    D2 = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+    ! Calculate the vector eta = (CA1,CB1)
+    CA1 = (DXM(2)-DXM(4)) ! * D1
+    CB1 = (DYM(2)-DYM(4)) ! * D1
     
-    ! Calculate the vector eta = (CA1,CB1); these numbers coincide
-    ! with the coefficients of the polynomial F2(x,y) := m2(r(x,y))
-    CA1 = (DXM(2)-DXM(4)) * D1
-    CB1 = (DYM(2)-DYM(4)) * D1
+    ! Calculate the vector xi = (CA2,CB2)
+    CA2 = (DXM(3)-DXM(1)) ! * D2
+    CB2 = (DYM(3)-DYM(1)) ! * D2
     
-    ! Calculate the vector xi = (CA2,CB2); these numbers coincide
-    ! with the coefficients of the polynomial F3(x,y) := m3(r(x,y))
-    CA2 = (DXM(3)-DXM(1)) * D2
-    CB2 = (DYM(3)-DYM(1)) * D2
-
     ! Our basis functions are as follows:
     !
     ! P1(z1,z2) = a1 + b1*z1 + b2*z2 = 1
@@ -2017,80 +2014,78 @@ contains
     ! P3(z1,z2) = a1 + b1*z1 + b2*z2 = z2
     !
     ! with (z1,z2) the transformed (x,y) in the new coordinate system.
-    ! We define here Pi on the reference element and transform the point
-    ! (x,y) to (z1,z2) using a linear transformation.
+    ! The Pi are defined on the reference element and a linear
+    ! mapping sigma:[0,1]^2->R^2 is used to map all the midpoints
+    ! from the reference element to the real element:
     !
-    ! Let (eta,xi) be the normalised vectors defined by connecting
-    ! opposite midpoints on the real element:
+    !  sigma(0,0) = m
+    !  sigma(1,0) = m2 = m + eta/2
+    !  sigma(0,1) = m3 = m + xi/2
+    !  sigma(-1,0) = m4 = m - eta/2
+    !  sigma(0,-1) = m1 = m - xi/2
     !
-    !   ^ xi             +---------X--------+          
-    !   |               /  (x,y)   ^         \                               .
-    !   |              /  O        |vec_2     \                              .
-    !   |             X--------____|___        \                             .
-    !   |            /             |   -------->X                            .
-    !   |           /              |     vec_1   \                           .
-    !   |          /               |              \                          .
-    !   |         +----_____       |               \                         .
-    !   |                   -----__X__              \                        .
-    !   |                              -----_____    \                       .
-    !   |                                        -----+
-    !   |
-    !   |
-    !   X--------________          
-    ! (0,0)              --------________            
-    !                                    ---> eta
+    !         ^                                       ^
+    !   +-----X-----+                        +--------m3--------+
+    !   |     |     |                       /         |          \           
+    !   |     |     |       sigma      ___ /          |           \          
+    ! --X-----+-----X-->   ------->       m4--------__|m____       \         
+    !   |     |     |                    /             |    --------m2->
+    !   |     |     |                   /              |             \       
+    !   +-----X-----+                  /               |              \      
+    !         |                       +----_____       |               \     
+    !                                           -----__m1_              \    
+    !                                                  |   -----_____    \   
+    !                                                                -----+
     !
-    ! (created by normalising vec_1 and vec_2 here)
+    ! The basis functions on the real element are defined as
     !
-    ! The point (x,y) is now transferred to the new refrence element
-    ! defined by (eta,xi) using a simple bilinear mapping from the
-    ! real element to the reference element around the origin.
-    ! The edge midpoints on the reference element are (eta,0), (-eta,0),
-    ! (0,xi), (0,-xi)!
-    dx = 2.0_DP*D1*(Dpoint(1)-0.5_DP*(DXM(1)+DXM(3)))
-    dy = 2.0_DP*D2*(Dpoint(2)-0.5_DP*(DYM(1)+DYM(3)))
+    !  Phi_i(x,y) = Pi(sigma^-1(x,y))
+    !
+    ! Because sigma is linear, we can calculate the inverse by hand.
+    ! sigma is given by the formula
+    !
+    !   sigma(z1,z2) = m + 1/2 (eta1 xi1) (z1) = m + 1/2 (CA1 CA2) (z1)
+    !                          (eta2 xi2) (z2)           (CB1 CB2) (z2)
+    !
+    ! so the inverse mapping is
+    !
+    !  sigma^-1(z1,z2) = [1/2*(CA1 CA2)]^-1 * (x - xm)
+    !                    [    (CB1 CB2)]      (y   ym)
+    !
+    !                  = 2*lambda ( CB2*(x-xm) - CB1*(y-ym) )
+    !                             ( CA1*(y-ym) - CA2*(x-xm) )
+    !
+    !  with lambda = determinant of the matrix.
+    !
+    ! So in the first step, calculate (x-xm) and (y-ym).
+    dx = (Dpoint(1)-0.5_DP*(DXM(1)+DXM(3)))
+    dy = (Dpoint(2)-0.5_DP*(DYM(1)+DYM(3)))
     
-    ! Using eta=(CA1,CB1) and xi=(CA2,CB2), we get the coordinates in the
-    ! new coordinate system by using
+    ! Now calculate the (inverse of the) Jacobian determinant of the linear mapping.
+    dxj = 2.0_DP/(CA1*CB2 - CB1*CA2)
+    
+    ! and calculate the corresponding (eta,xi) = sigma^-1(x,y) of that.
+    ! eta is then our first basis function, xi our 2nd:
     !
-    ! ( z1 ) = (eta xi) ( dx ) = ( CA1 CA2 ) ( dx )
-    ! ( z2 )   (      ) ( dy )   ( CB1 CB2 ) ( dy )
-    !
-    ! These values have to be returned by Dbas(1,*) = P1(*), Dbas(2,*) = P2(*),
-    ! Dbas(3,*) = P3(*).
+    !  Phi1(x,y) = 1
+    !  Phi2(x,y) = 2/lambda ( CB2(x-xm) - CB1(y-ym) )
+    !  Phi3(x,y) = 2/lambda ( CA1(y-ym) - CA2(x-xm) )
     
     Dbas(1,DER_FUNC) = 1
-    Dbas(2,DER_FUNC) = CA1*dx + CA2*dy
-    Dbas(3,DER_FUNC) = CB1*dx + CB2*dy
-    
-    ! 1st X- and Y-derivative on the reference element are...
-    
-    ! Dhelp(1,1) = CA1   ! (CA1*dx + CA2*dy)/dx = CA1
-    ! Dhelp(2,1) = CB1   ! (CB1*dx + CB2*dy)/dx = CB1
-
-    ! Dhelp(1,2) = CA2   ! (CA1*dx + CA2*dy)/dy = CA2
-    ! Dhelp(2,2) = CB2   ! (CB1*dx + CB2*dy)/dy = CB2
+    Dbas(2,DER_FUNC) = dxj * (CB2*dx - CB1*dy)
+    Dbas(3,DER_FUNC) = dxj * (CA1*dy - CA2*dx)
   
-    ! Use them to calculate the derivative in the cubature point
-    ! on the real element. 
-  
-    dxj = 1.0_DP/ddetj
-    
-    ! X-derivatives on current element
-    ! Dbas(1,DER_DERIV_X) = 0
-    ! Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(1,1) - Djac(2) * Dhelp(1,2))
-    ! Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * Dhelp(2,1) - Djac(2) * Dhelp(2,2))
+    ! Using these definitions, we can also calculate the derivative directly.
+    !
+    ! X-derivatice
     Dbas(1,DER_DERIV_X) = 0.0_DP
-    Dbas(2,DER_DERIV_X) = dxj * (Djac(4) * CA1 - Djac(2) * CA2)
-    Dbas(3,DER_DERIV_X) = dxj * (Djac(4) * CB1 - Djac(2) * CB2)
+    Dbas(2,DER_DERIV_X) = dxj * CB2
+    Dbas(3,DER_DERIV_X) = -dxj * CA2
     
-    ! y-derivatives on current element
-    ! Dbas(1,DER_DERIV_Y) = 0
-    ! Dbas(2,DER_DERIV_Y) = dxj * (-Djac(3) * Dhelp(1,1) + Djac(1) * Dhelp(1,2))
-    ! Dbas(3,DER_DERIV_Y) = dxj * (-Djac(3) * Dhelp(2,1) + Djac(1) * Dhelp(2,2))
+    ! Y-derivative
     Dbas(1,DER_DERIV_Y) = 0.0_DP
-    Dbas(2,DER_DERIV_Y) = dxj * (-Djac(3) * CA1 + Djac(1) * CA2)
-    Dbas(3,DER_DERIV_Y) = dxj * (-Djac(3) * CB1 + Djac(1) * CB2)
+    Dbas(2,DER_DERIV_Y) = -dxj * CB1
+    Dbas(3,DER_DERIV_Y) = dxj * CA1
   
   end subroutine 
 
