@@ -343,6 +343,7 @@ contains
     call collct_deletevalue (p_rproblem%rcollection, 'mini')
     call collct_deletevalue (p_rproblem%rcollection, 'particles')
     call geom_releaseParticleCollct(p_rproblem%rparticleCollection)
+    call storage_free(p_rproblem%h_DedgesAtBoundary)    
     
     
     ! Print some statistical data about the collection - anything forgotten?
