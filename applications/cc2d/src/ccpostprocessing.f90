@@ -493,7 +493,7 @@ contains
       call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
                          ffunction_TargetY,rproblem%rcollection)
                          
-      derrorVel = sqrt(0.5_DP*(Derr(1)**2+Derr(2)**2))
+      derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
       call pperr_scalar (rsolution%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
                          ffunction_TargetP,rproblem%rcollection)
@@ -535,10 +535,28 @@ contains
       call pperr_scalar (rsolution%RvectorBlock(2),PPERR_H1ERROR,Derr(2),&
                          ffunction_TargetY,rproblem%rcollection)
                          
-      derrorVel = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+      if ((Derr(1) .ne. -1.0_DP) .and. (Derr(2) .ne. -1.0_DP)) then
+        derrorVel = sqrt(Derr(1)**2+Derr(2)**2)
 
-      call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)),&
-          coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+        call pperr_scalar (rsolution%RvectorBlock(3),PPERR_H1ERROR,Derr(3),&
+                          ffunction_TargetP,rproblem%rcollection)
+
+        call output_line ('||u-reference||_H1 = '//trim(sys_sdEP(derrorVel,15,6)),&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      else
+        call output_line ('||u-reference||_H1 = not available',&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      end if
+      
+      if (Derr(3) .ne. -1.0_DP) then
+        derrorP = sqrt(Derr(3))
+
+        call output_line ('||p-reference||_H1 = '//trim(sys_sdEP(derrorP,15,6)),&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      else
+        call output_line ('||p-reference||_H1 = not available',&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
+      end if
       
       call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
       
