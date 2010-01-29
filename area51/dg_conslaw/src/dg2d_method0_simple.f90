@@ -134,8 +134,8 @@ contains
     
     integer :: ielementType
     
-    dt = 0.1_DP
-    ttfinal=1.0_DP
+    dt = 0.01_DP
+    ttfinal=2.0_DP
     
     ielementType = EL_DG_T1_2D
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 1
+    NLMAX = 2
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -234,6 +234,9 @@ contains
          LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
 
     if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCY, DER_FUNC, DER_DERIV_Y)
+    
+    call lsyssc_scaleMatrix (rmatrixCX,4.0_dp)
+    call lsyssc_scaleMatrix (rmatrixCY,4.0_dp)
 
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -251,10 +254,10 @@ contains
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhstemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolUp ,.true.,ST_DOUBLE)
                                  
-    ! Test the new DG edgebased routine                                 
-    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
-                                              redge,rsol,&
-                                              flux_dg_buildVectorScEdge2D_sim)
+!    ! Test the new DG edgebased routine                                 
+!    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+!                                              redge,rsol,&
+!                                              flux_dg_buildVectorScEdge2D_sim)
                                  
     
     ! The linear solver only works for block matrices/vectors - but above,
@@ -394,13 +397,10 @@ contains
        
        
        
-       
+!       call lsyssc_getbase_double (rsol,p_Ddata)
+!       p_Ddata(1)=0.0_DP       
        
        call lsyssc_copyVector(rsol,rsoltemp)
-       
-       
-!       call lsyssc_getbase_double (rsoltemp,p_Ddata)
-!       p_Ddata(1)=1.0_DP
        
        ! Step 1/3
        
@@ -410,11 +410,6 @@ contains
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
-                                              
-       call lsyssc_getbase_double (rrhs,p_Ddata)
-    write(*,*) p_Ddata
-    pause
-                                              
        
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
@@ -426,6 +421,12 @@ contains
        
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
+
+
+!              call lsyssc_getbase_double (rsol,p_Ddata)
+!    write(*,*) p_Ddata
+!    pause
+    
        
        ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
        !call lsyssc_copyVector (rsoltemp,rsol)

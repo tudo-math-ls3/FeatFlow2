@@ -582,7 +582,7 @@ contains
      
      do iel = 1,IELmax-IELset+1
       if(IelementList(2,IELset+iel-1).eq.0) then
-        DsolVals(1:ncubp,2,iel) = 1.0_DP
+        DsolVals(1:ncubp,2,iel) = 0.01_DP
       end if
       
     end do
@@ -738,6 +738,9 @@ contains
                        p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) +&
                        DlocalData(2,idofe)
         end do
+        
+!        write(*,*) 'innen :', DlocalData(1,1:indof),'***'
+!        write(*,*) 'aussen:', DlocalData(2,1:indof),'***'
 
       end do ! iel
 
