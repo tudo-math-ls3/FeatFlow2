@@ -146,7 +146,7 @@ contains
     ! structure for global access.
     call cc_initParameters (p_rproblem)
     
-    p_rproblem%iParticles = 2
+    p_rproblem%iParticles = 10
     
     allocate(p_rproblem%dDistMatrix(p_rproblem%iParticles,p_rproblem%iParticles))
     
@@ -157,9 +157,6 @@ contains
       call geom_initParticleCollct(rparticleCollection,rParticleDescriptor)
       
       deallocate(rParticleDescriptor%pparameters)
-      
-    rparticleCollection%p_rParticles(1)%dtransVelX=0.2_dp
-    rparticleCollection%p_rParticles(2)%dtransVelX=-0.2_dp
     ! we put the geometry object into the collection
     ! to make it easily accessible
     call collct_setvalue_particles(p_rproblem%rcollection, 'particles',&
@@ -351,6 +348,7 @@ contains
     call collct_deletevalue (p_rproblem%rcollection, 'mini')
     call collct_deletevalue (p_rproblem%rcollection, 'particles')
     call geom_releaseParticleCollct(rparticleCollection)
+    call storage_free(p_rproblem%h_DedgesAtBoundary)
     
     
     ! Print some statistical data about the collection - anything forgotten?

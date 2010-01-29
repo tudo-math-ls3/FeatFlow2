@@ -51,11 +51,9 @@ module ccinitgeneralparameters
   
 contains
 
-  ! ***************************************************************************
-
+! ***************************************************************************
+  
 !<subroutine>
-
-
 subroutine cc_initParticleDescriptor(rPDescriptor)
   
 !<description>
@@ -69,26 +67,74 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
 
 !</subroutine>
   ! locals
-  integer :: i
+  integer :: i,j,m,n
   real(dp) :: dx,dy,drho,drad
+  real(dp) :: x,y,e,h,dia,rem,quot,alpha
   
-  rPDescriptor%iparticles=2
+  rPDescriptor%iparticles=10
   
   allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
-  drad = 0.225_dp
+!   drad = 0.05_dp
+  drad = 0.09_dp
   drho = 1.25_dp
-  dx = 0.75_dp
+!   dx = 0.2_dp
+!   dy = 0.2_dp
+  dx = 1.0_dp
   dy = 1.0_dp
   
+  n = rPDescriptor%iparticles
+  dia = 2*drad
+  e = 0.15_dp ! minimum distance between particles and wall
+  h = 1.0_dp ! height to start
+
+  ! increment of x and y
+  x = 0.0_dp + (drad + e) ! 0.0_dp is the left x-boundary value
+  y = 6.0_dp - (drad + e + h) ! 6.0_dp is the upper y-boundary value
+
+  rPDescriptor%pparameters(1,1) = x
+  rPDescriptor%pparameters(2,1) = y
+
+  m = 0
+  do i = 2,n
+    x = x + (dia+e)
+    rPDescriptor%pparameters(1,i) = x
+    rPDescriptor%pparameters(2,i) = y
+    m = m + 1;
+    if ((2.0_dp-(x+drad)) .lt. e) then ! 2.0_dp is the right x-boundary value
+        exit
+    end if
+  end do
+
+  rem = mod(n,m) ! remainder
+  quot = (n-rem)/m ! quotient
+  alpha = 1.0_dp ! starting increment for alternate line
+
+  do i = 2,quot
+    y = y -(dia+e)
+      do j = 1,m
+        rPDescriptor%pparameters(1,j + (i-1)*m) = &
+        rPDescriptor%pparameters(1,j) - (1.0_dp + (-1.0_dp)**(i))/2*(-alpha*e)
+!         rPDescriptor%pparameters(1,j + (i-1)*m) = &
+!         rPDescriptor%pparameters(1,j)
+        rPDescriptor%pparameters(2,j + (i-1)*m) = y
+      end do
+  end do
+
+  do i = 1,rem
+    rPDescriptor%pparameters(1,m*quot + i) = &
+    rPDescriptor%pparameters(1,i) - (1.0_dp + (-1.0_dp)**(quot+1))/2*(-alpha*e)
+!     rPDescriptor%pparameters(1,m*quot + i) = &
+!     rPDescriptor%pparameters(1,i);
+    rPDescriptor%pparameters(2,m*quot + i) = y - (dia + e)
+  end do
+  
   do i=1,rPDescriptor%iparticles
-    rPDescriptor%pparameters(1,i)= dx
-    rPDescriptor%pparameters(2,i)= dy
     rPDescriptor%pparameters(3,i)= drad
     rPDescriptor%pparameters(4,i)= drho
-    dx = dx + 2*drad + 0.2_dp
-    dy = dy ! + 0.5_dp
   end do
+  
+
   
 end subroutine ! end cc_initParticleDescriptor
 
