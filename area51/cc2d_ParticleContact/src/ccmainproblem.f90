@@ -146,7 +146,7 @@ contains
     ! structure for global access.
     call cc_initParameters (p_rproblem)
     
-    p_rproblem%iParticles = 10
+    p_rproblem%iParticles = 1
     
     allocate(p_rproblem%dDistMatrix(p_rproblem%iParticles,p_rproblem%iParticles))
     
@@ -155,7 +155,7 @@ contains
       
       ! initialize the particles
       call geom_initParticleCollct(rparticleCollection,rParticleDescriptor)
-      
+      rparticleCollection%p_rParticles(1)%dtransVelX=0.05_dp
       deallocate(rParticleDescriptor%pparameters)
     ! we put the geometry object into the collection
     ! to make it easily accessible

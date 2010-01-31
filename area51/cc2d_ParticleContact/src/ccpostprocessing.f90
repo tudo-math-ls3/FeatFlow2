@@ -217,7 +217,7 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
-      dtimePrev,rvector,dtime,rpostprocessing)
+      dtimePrev,rvector,dtime,istep,rpostprocessing)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -246,6 +246,9 @@ contains
 
   ! Time of the current timestep.
   real(dp), intent(in) :: dtime
+  
+  ! Number of the timestep. =0: initial solution
+  integer, intent(in) :: istep
 !</input>
 
 !</subroutine>
@@ -255,14 +258,42 @@ contains
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     real(DP) :: dtimeDifferenceFilm, dpptime
     integer :: itime1,itime2,iinterpolateSolutionUCD,iinterpolateSolutionFilm
+    integer :: iwriteSolDeltaSteps
     type(t_vectorBlock) :: rintVector
-    real(dp) :: dweight
+    real(dp) :: dweight,dwriteSolDeltaTime
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
 
-    ! Write the raw solution
-    call cc_writeSolution (rproblem,rvector,dtime)
+    ! Think about writing out the solution...
+    call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'dwriteSolDeltaTime', dwriteSolDeltaTime, 0.0_DP)
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-DISCRETISATION', &
+        'iwriteSolDeltaSteps', iwriteSolDeltaSteps, 1)
+    if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
+    
+    ! Figure out if we have to write the solution. This is the case if
+    ! 1.) Precious and current time is the same or
+    ! 2.) The solution crossed the next timestep.
+  
+    if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
+      itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+      itime2 = int((dtime-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
+    else
+      itime1 = 0
+      itime2 = 1
+    end if
+  
+    if (itime1 .ne. itime2) then
+      ! Write the raw solution
+      call cc_writeSolution (rproblem,rvector,dtime)
+    else
+      ! The second option is that the timestep matches.
+      if (mod(istep,iwriteSolDeltaSteps) .eq. 0) then
+        ! Write the raw solution
+        call cc_writeSolution (rproblem,rvector,dtime)
+      end if
+    end if    
     
     if(rproblem%iParticles .gt. 0)then    
     ! Drag/Lift Calculation
@@ -282,8 +313,8 @@ contains
     call cc_errorAnalysis (rvector,rproblem)
     
     ! move the particle
-    !call cc_updateParticlePosition(rproblem,rproblem%rtimedependence%dtimestep)
-    call cc_moveParticles(rproblem,rproblem%rtimedependence%dtimestep)
+    call cc_updateParticlePosition(rproblem,rproblem%rtimedependence%dtimestep)
+    !call cc_moveParticles(rproblem,rproblem%rtimedependence%dtimestep)
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     !
     ! In a nonstationary simulation, first check if we are allowed
@@ -1144,6 +1175,8 @@ contains
     
     type(t_geometryObject), pointer :: p_rgeometryObject
     
+    type(t_geometryObject) :: rgeometryObject1
+    
     real(DP), dimension(:,:), pointer :: p_Dvertices 
     
     integer, dimension(64) :: iconnect
@@ -1154,6 +1187,7 @@ contains
     real(dp), dimension(:,:), pointer :: p_DbdyEdg
     real(DP), dimension(:,:), pointer :: p_Dcoord
     real(DP), dimension(:), pointer   :: p_Ddata3   
+    real(DP), dimension(:), pointer   :: p_Ddata4   
        
     
     call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
@@ -1384,22 +1418,40 @@ contains
       
     end if
     
+    
+    allocate(p_Ddata3(p_rtriangulation%NVT))        
+    allocate(p_Ddata4(p_rtriangulation%NVT))            
     if(rproblem%iParticles .gt. 0)then
       p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
       do ipart=1,p_rparticleCollection%nparticles
         p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
         
         call geom_polygonise(p_rgeometryObject,ipolyHandle)
-        
         ! Get the vertices
         call storage_getbase_double2D(ipolyHandle, p_Dvertices)
-        
         call ucd_addPolygon(rexport,p_Dvertices,ipart+1)
         call storage_free(ipolyHandle)
         ipolyHandle = ST_NOHANDLE
+        ! postprocess forces        
+        do iloop=1,p_rtriangulation%NVT
+          call geom_isInGeometry (p_rgeometryObject, (/p_Dcoord(1,iloop),p_Dcoord(2,iloop)/), iin)
+          if(iin .eq. 1)then
+            p_Ddata3(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)          
+            p_Ddata4(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)          
+          else
+            p_Ddata3(iloop)=0.0_dp          
+            p_Ddata4(iloop)=0.0_dp          
+          end if
+        end do
+        
       end do
     end if
     
+    call ucd_addVarVertBasedVec (rexport,'forcewall',&
+        p_Ddata3(1:p_rtriangulation%NVT),p_Ddata4(1:p_rtriangulation%NVT))
+    
+    deallocate(p_Ddata3)
+    deallocate(p_Ddata4)
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -2413,7 +2465,8 @@ contains
         end if
       
       end do
-      
+      p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)=FWx
+      p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)=FWy
 
       !----------------------------------------------------------------------------------------   
       !                        CALCULATE PARTICLE REPULSIVE FORCES

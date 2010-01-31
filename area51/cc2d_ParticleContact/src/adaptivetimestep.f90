@@ -38,12 +38,17 @@ module adaptivetimestep
   use genoutput
   use paramlist
   use timestepping
+  use collection  
     
   implicit none
   
 !<constants>
 
 !<constantblock description="Identifiers for the type of the adaptive time stepping.">
+
+  ! User defined time stepping. The module calls a callback routine to calculate
+  ! the timestep size.
+  integer, parameter :: TADTS_USERDEF = -1
 
   ! Fixed time step size, no adaptive time stepping.
   integer, parameter :: TADTS_FIXED = 0
@@ -369,9 +374,9 @@ contains
 
 !<function>
 
-  pure real(DP) function adtstp_calcTimeStep (radTimeStepping, derrorIndicator, &
+  real(DP) function adtstp_calcTimeStep (radTimeStepping, derrorIndicator, &
                            dtimeInit,dtime,dtimeStep, itimeApproximationOrder, &
-                           isolverStatus,irepetitionCounter) &
+                           isolverStatus,irepetitionCounter,fcalcTimestep,rcollection) &
                 result(dnewTimeStep)
   
 !<description>
@@ -430,6 +435,25 @@ contains
   ! >0: if the current time step is calculated more than once because
   !     it had to be repeated.
   integer, intent(in)                      :: irepetitionCounter
+  
+  ! OPTIONAL: Callback routine that calculates the timestep size.
+  ! Has to be provided for user defined time stepping.
+  interface 
+    subroutine fcalcTimestep (dtstep,dtimeInit,dtime,isolverStatus,rcollection)
+      ! This routine must change dtstep to the new timestep size.
+      use fsystem
+      use collection
+      real(dp), intent(inout) :: dtstep ! Timestep to use
+      real(dp), intent(in) :: dtimeInit ! Initial time
+      real(dp), intent(in) :: dtime     ! Current simulation time
+      integer, intent(in) :: isolverStatus ! Status of the solver, see above
+      type(t_collection), intent(in), optional :: rcollection
+    end subroutine
+  end interface
+  optional :: fcalcTimestep
+  
+  ! OPTIONAL: Collection structure. Passed to the callback routine.
+  type(t_collection), intent(in), optional :: rcollection
 !</input>
 
 !<result>
@@ -446,6 +470,12 @@ contains
     dnewTimeStep = dtimeStep
     
     if (radTimeStepping%ctype .eq. TADTS_FIXED) return
+    
+    if (radTimeStepping%ctype .eq. TADTS_USERDEF) then
+      ! Call the user defined routine and return
+      call fcalcTimestep (dnewTimeStep,dtimeInit,dtime,isolverStatus,rcollection)
+      return
+    end if
     
     ! Check if we can use time analysis...
     if (iand(isolverStatus,3_I32) .ne. 0) then
