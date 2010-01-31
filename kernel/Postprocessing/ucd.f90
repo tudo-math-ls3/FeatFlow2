@@ -1088,6 +1088,10 @@ contains
     if (associated(rexport%p_ScellMaterials)) deallocate(rexport%p_ScellMaterials)
     if (associated(rexport%p_Scomments))      deallocate(rexport%p_Scomments)
     
+    if(rexport%hpolygonMaterial .ne. ST_NOHANDLE) call storage_free(rexport%hpolygonMaterial)
+    
+    
+    
     if (associated(rexport%p_Hvariables)) then
       do i=1,rexport%nvariables
         if (rexport%p_Hvariables(i) .ne. ST_NOHANDLE) &
@@ -1123,6 +1127,7 @@ contains
     rexport%nvectors          = 0
     rexport%nvariables        = 0
     rexport%npolygons         = 0
+    rexport%nsurfTri          = 0
     
     ! Release all tracer information
     call ucd_removeTracers (rexport)
