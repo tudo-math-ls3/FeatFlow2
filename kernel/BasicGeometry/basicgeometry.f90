@@ -20,6 +20,15 @@
 !#  3.) bgeom_transformBackPoint2D
 !#      -> Transforms a 2D point with world coordinates to coordinates relative
 !#         to a given coordinate system.
+!#
+!#  4.) bgeom_transformPoint3D
+!#      -> Transforms a 3D point with coordinates relative to a given 
+!#         coordinate system to world coordinates.
+!#
+!#  5.) bgeom_transformBackPoint3D
+!#      -> Transforms a 3D point with world coordinates to coordinates relative
+!#         to a given coordinate system.
+
 !# </purpose>
 !##############################################################################
 
@@ -172,6 +181,8 @@ module basicgeometry
   public :: bgeom_initCoordSys3D
   public :: bgeom_transformPoint2D
   public :: bgeom_transformBackPoint2D
+  public :: bgeom_transformPoint3D
+  public :: bgeom_transformBackPoint3D
   
 contains
 
@@ -453,5 +464,165 @@ contains
 
   ! ***************************************************************************
   
+!<subroutine>
+
+  pure subroutine bgeom_transformPoint3D(rcoordSys, DpointIn, DpointOut)
+
+!<description>
+  ! Transforms a 3D point in model coordinates to world coordinates
+  ! This routine may be inefficient if a large number of of points is to
+  ! be transformed. Then a matrix based transformation would be more efficient.
+  ! But this would require a rewriting of the mechanism how routines, that call
+  ! this function(i.e. geom_isingeometry) work. 
+!</description>
+
+!<input>
+  ! The 3D coordinate system that is to be applied to the given point.
+  type(t_coordinateSystem3D),  intent(in)  :: rcoordSys
+
+  ! The 3D point that is to be transformed.
+  real(DP), dimension(:),      intent(in)  :: DpointIn
+!</input>
+
+!<output>
+  ! The transformed 3D point.
+  real(DP), dimension(:),      intent(out) :: DpointOut
+!</output>
+
+!</subroutine>
+
+  real(dp) :: sx,sy,sz,cx,cy,cz,x1,y1,z1,x2,y2,z2
+  
+  ! Check if the rotation of the coordinate system is non-zero.
+  if (rcoordSys%drotationX .ne. 0.0_DP) then
+
+    ! setup
+    sx = sin(rcoordSys%drotationX)             
+    cx = cos(rcoordSys%drotationX)
+    sy = sin(rcoordSys%drotationY)
+    cy = cos(rcoordSys%drotationY)
+    sz = sin(rcoordSys%drotationZ)
+    cz = cos(rcoordSys%drotationZ)
+
+    x1 =  DpointIn(1) * cz +  DpointIn(2) * sz  
+    y1 =  DpointIn(2) * cz -  DpointIn(1) * sz
+    z1 =  DpointIn(3)
+    x2 = x1 * cy + z1 * sy
+    y2 = z1
+    z2 = z1 * cy - x1 * sy
+    DpointOut(1) = x2
+    DpointOut(2) = y2 * cx + z1 * sx
+    DpointOut(3) = z2 * cx - x1 * sx
+
+  else
+
+    ! No rotation in the coordinate system, so simply copy the input coords.
+    DpointOut(1) = DpointIn(1)
+    DpointOut(2) = DpointIn(2)
+    DpointOut(3) = DpointIn(3)      
+
+  end if
+
+  ! Now scale the given coordinates by the scaling factor and translate them
+  ! by the origin of our coordinate system.
+  DpointOut(1) = (rcoordSys%dscalingFactor * DpointOut(1)) + &
+                  rcoordSys%Dorigin(1)
+  DpointOut(2) = (rcoordSys%dscalingFactor * DpointOut(2)) + &
+                  rcoordSys%Dorigin(2)
+  DpointOut(3) = (rcoordSys%dscalingFactor * DpointOut(3)) + &
+                  rcoordSys%Dorigin(3)
+
+  ! That is it!
+
+  end subroutine
+
+  ! ***************************************************************************  
+  
+!<subroutine>
+
+  pure subroutine bgeom_transformBackPoint3D(rcoordSys, DpointIn, DpointOut)
+
+!<description>
+  ! Transform a 3d point from world coordinates to model coordinates
+!</description>
+
+!<input>
+  ! The 3D coordinate system of our input point.
+  type(t_coordinateSystem3D), intent(in)  :: rcoordSys
+
+  ! The 3D point that is to be transformed, relative to the given coordinate
+  ! system.
+  real(DP), dimension(:),     intent(in)  :: DpointIn
+!</input>
+
+!<output>
+  ! The transformed 3D point, in world coordinates.
+  real(DP), dimension(:),     intent(out) :: DpointOut
+!</output>
+
+!</subroutine>
+
+  ! local variables
+  real(DP) :: X,Y,Z
+    
+  real(dp) :: sx,sy,sz,cx,cy,cz,x1,y1,z1,x2,y2,z2
+  
+  ! Translate the given point by the negatives of our coordinate system
+  ! origin.
+  X = DpointIn(1) - rcoordSys%Dorigin(1)
+  Y = DpointIn(2) - rcoordSys%Dorigin(2)
+  Z = DpointIn(3) - rcoordSys%Dorigin(3)
+
+  ! Now scale the point by the inverse of our coordinate system sclaing
+  ! factor, of course only if it is non-zero ...
+  if (rcoordSys%dscalingFactor .ne. 0.0_DP) then
+
+    X = X / rcoordSys%dscalingFactor
+    Y = Y / rcoordSys%dscalingFactor
+    Z = Z / rcoordSys%dscalingFactor    
+
+  else
+
+    ! ... or set the result to zero and exit subroutine otherwise.
+    DpointOut(1) = 0.0_DP
+    DpointOut(2) = 0.0_DP
+    DpointOut(3) = 0.0_DP
+    return
+
+  endif
+  
+  ! Check if the rotation of the coordinate system is non-zero.
+  if (rcoordSys%drotationX .ne. 0.0_DP) then
+
+    ! setup
+    sx = sin(-rcoordSys%drotationX)             
+    cx = cos(-rcoordSys%drotationX)
+    sy = sin(-rcoordSys%drotationY)
+    cy = cos(-rcoordSys%drotationY)
+    sz = sin(-rcoordSys%drotationZ)
+    cz = cos(-rcoordSys%drotationZ)
+
+    x1 =  X * cz + Y * sz  
+    y1 =  Y * cz - X * sz
+    z1 =  Z
+    x2 = x1 * cy + z1 * sy
+    y2 = z1
+    z2 = z1 * cy - x1 * sy
+    DpointOut(1) = x2
+    DpointOut(2) = y2 * cx + z1 * sx
+    DpointOut(3) = z2 * cx - x1 * sx
+
+  else
+
+    ! No rotation in the coordinate system, so simply copy the input coords.
+    DpointOut(1) = X
+    DpointOut(2) = Y
+    DpointOut(3) = Z
+
+  end if
+
+  end subroutine
+  
+  ! ***************************************************************************
 
 end module

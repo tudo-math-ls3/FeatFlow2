@@ -268,6 +268,9 @@ module geometry
   
   ! Sphere object
   integer, parameter, public :: GEOM_SPHERE    = 11
+
+  ! Ellipsoid object
+  integer, parameter, public :: GEOM_ELLIPSOID = 12
   
 
 !</constantblock>
@@ -435,6 +438,23 @@ module geometry
 
 !<typeblock>
 
+  ! This structure realises the subnode for the ellipsoid object.
+  type t_geometryEllipsoid
+    
+    ! an ellipsoid is defined by 3 radii along the x,y,z axis
+    real(DP), dimension(3) :: Dradii = (/0.0_dp,0.0_dp,0.0_dp/)
+    
+  end type
+  
+  public :: t_geometryEllipsoid
+  
+!</typeblock>
+  
+! *****************************************************************************
+
+
+!<typeblock>
+
   ! This structure realises the subnode for the rectangle object.
   type t_geometryRectangle
   
@@ -523,6 +543,9 @@ module geometry
     ! Structure for the sphere object
     type(t_geometrySphere)     :: rsphere
     
+    ! Structure for the sphere object
+    type(t_geometryEllipsoid)  :: rellipsoid
+    
   end type
   
 !</typeblock>
@@ -590,6 +613,10 @@ module geometry
     real(dp), dimension(2) :: dTorque = 0
     real(dp)               :: dFWall = 0
     real(dp), dimension(2) :: dAccel  = 0
+    real(dp), dimension(2) :: pForceX = 0
+    real(dp), dimension(2) :: pForceY = 0
+    real(dp), dimension(2) :: pTorque = 0          
+    real(dp), dimension(2) :: rForceWall = 0              
   
   end type
 
@@ -816,6 +843,13 @@ module geometry
     module procedure geom_init_sphere_direct
   end interface
 
+  interface geom_init_ellipsoid
+    module procedure geom_init_ellipsoid_indirect
+    module procedure geom_init_ellipsoid_direct
+  end interface
+  
+  
+
   public :: geom_init_circle
   public :: geom_init_square
   public :: geom_init_ellipse
@@ -839,6 +873,9 @@ module geometry
   public :: geom_releaseParticleCollct
   public :: geom_releaseParticleCollct3D
   public :: geom_triangulateSphere
+  public :: geom_init_ellipsoid
+  public :: geom_triangulateEllipsoid
+  
   
 contains
 
@@ -5480,6 +5517,177 @@ end subroutine
   end subroutine
   
 ! ***************************************************************************    
+
+!<subroutine>
+
+  subroutine geom_init_ellipsoid_indirect(rgeomObject, rcoordSys, dRadii, &
+                                       binverted)
+
+!<description>
+  ! Creates a t_geometryEllipsoid representing an ellipsoid
+!</description>
+
+!<input>
+  ! A 3D coordinate system for the ellipsoid.
+  type(t_coordinateSystem3D),  intent(in)  :: rcoordSys
+  
+  ! A radius for the sphere.
+  real(DP),dimension(3),       intent(in)  :: dRadii
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  logical, optional,           intent(in)  :: binverted
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),      intent(out) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 3D.
+    rgeomObject%ndimension = NDIM3D
+    
+    ! We want a circle.
+    rgeomObject%ctype = GEOM_ELLIPSOID
+    
+    ! Store the coordinate system.
+    rgeomObject%rcoord3D = rcoordSys
+    
+    ! Is our object inverted?
+    if (present(binverted)) then
+      rgeomObject%binverted = binverted
+    else
+      rgeomObject%binverted = .false.
+    end if
+    
+    ! Store the radius of the sphere
+    rgeomObject%rellipsoid%dRadii(:) = dRadii(:)
+    
+    ! That's it!
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_init_ellipsoid_direct(rgeomObject, dRadii, Dorigin, &
+                                        drotation, dscalingFactor, binverted)
+
+!<description>
+  ! Creates a t_geometryObject representing an ellipsoid.
+!</description>
+
+!<input>
+  ! A radius for the sphere.
+  real(DP),dimension(3),       intent(in)  :: dRadii
+  
+  ! OPTIONAL: The origin of the sphere.
+  ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
+  
+  ! OPTIONAL: The rotation of the sphere.
+  ! Is set to 0.0_DP if not given.
+  real(DP), optional,                intent(in)  :: drotation
+  
+  ! OPTIONAL: The scaling factor of the sphere.
+  ! Is set to 1.0_DP if not given.
+  real(DP), optional,                intent(in)  :: dscalingFactor
+  
+  ! OPTIONAL: A boolean telling us whether the object is inverted.
+  ! Is set to .FALSE. if not given.
+  logical, optional,                 intent(in)  :: binverted
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),            intent(out) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 3D.
+    rgeomObject%ndimension = NDIM3D
+    
+    ! We want a sphere.
+    rgeomObject%ctype = GEOM_ELLIPSOID
+    
+    ! Now we need to create the coordinate system.
+    call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
+                               0.0_dp,dscalingFactor)
+    
+    ! Is our object inverted?
+    if (present(binverted)) then
+      rgeomObject%binverted = binverted
+    else
+      rgeomObject%binverted = .false.
+    end if
+    
+    ! Store the radius of the sphere
+    rgeomObject%rellipsoid%dRadii(:) = dRadii(:)
+    
+    ! That's it!
+  
+  end subroutine
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  subroutine geom_ellipsoid_isInGeometry (rgeomObject, Dcoords, iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the ellipsoid or not.
+  !
+  ! iisInObject is set to 0 if the point is outside the ellipsoid, it is set
+  ! to 1 if it is inside the ellipsoid and is set to -1 if the point is inside
+  ! the ellipsoid and the ellipsoid is inverted.
+!</description>
+
+!<input>
+  ! The circle against that the point is to be tested.
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  real(DP), dimension(:), intent(in)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  integer,           intent(out) :: iisInObject
+!</output>
+
+!</subroutine>
+
+  ! We need one local variable for distance calculation
+  real(DP) :: ddistance,dvalue
+  real(DP), dimension(NDIM3D) :: Dpoint,Dtrans
+  Dpoint(:)=Dcoords(:)
+  
+  call bgeom_transformBackPoint3D(rgeomObject%rcoord3D, Dpoint, Dtrans)
+  
+  dvalue= (Dtrans(1)/rgeomObject%rellipsoid%dRadii(1))**2 + &
+          (Dtrans(2)/rgeomObject%rellipsoid%dRadii(2))**2 + &
+          (Dtrans(1)/rgeomObject%rellipsoid%dRadii(3))**2 - 1.0_dp
+          
+  if(dvalue .le. 0.0_dp)then
+    iisinobject=1
+  else
+    iisinobject=0
+  end if
+  
+    ! That's it
+    
+  end subroutine
+  
+! ***************************************************************************    
   
   subroutine geom_triangulate(rgeomObject, hpolyHandle, bconvertToWorld)
                               
@@ -5512,6 +5720,8 @@ end subroutine
     select case(rgeomObject%ctype)
     case (GEOM_SPHERE)
       call geom_triangulateSphere(rgeomObject,30,30,hpolyHandle)
+    case (GEOM_ELLIPSOID)
+      call geom_triangulateEllipsoid(rgeomObject,30,30,hpolyHandle)      
     case default
       call output_line ('Unsupported geometry type for triangulation.!', &
           OU_CLASS_ERROR,OU_MODE_STD,'geom_triangulate')
@@ -5650,9 +5860,137 @@ end subroutine
   
   end subroutine geom_triangulateSphere
 
+! ***************************************************************************
+
+!<subroutine>
+  subroutine geom_triangulateEllipsoid(rgeomObject,slices,stacks,iHandle)
+!<description>
+  ! 
+!</description>
+
+!<input>
+  ! The sphere to be triangulated
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  integer, intent(in) :: slices
+  integer, intent(in) :: stacks  
+  integer,dimension(3), intent(inout) :: iHandle  
+!</input>
+
+
+!</subroutine>
+  ! local variables
+  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad
+  integer  :: i,j,iverts,ive,itriangles,stacks2,index,ioffset
+  real(dp), dimension(:,:), pointer :: p_Dvertices
+  integer, dimension(:,:), pointer :: p_Itriangles
+  integer, dimension(:), pointer :: p_Idata
+  real(dp), dimension(3) :: DPoint,dradii
+  integer, dimension(2) :: Isize  
+  
+  !
+  dradii(:)=rgeomObject%rellipsoid%dRadii(:)
+  stacks2 = 2*stacks
+  !
+  halfpi = SYS_PI/2.0_dp
+  dphi   = SYS_PI/real(slices)
+  dtheta = SYS_PI/real(stacks)
+
+  itriangles = 2 * stacks2 + (slices-2)*stacks2*2
+  iverts = 2 + (slices-1) * (2*stacks)
+  ! not good!
+  ! allocate memory
+  Isize=(/NDIM3D,iverts/)
+  call storage_new('geom_triangulateEllipsoid', 'iHandle(1)', Isize, &
+                     ST_DOUBLE, iHandle(1), ST_NEWBLOCK_NOINIT)
+
+  Isize=(/GEOM_VERTICES_TRIANGLE,itriangles/)
+  call storage_new('geom_triangulateEllipsoid', 'iHandle(2)', Isize, &
+                     ST_INT, iHandle(2), ST_NEWBLOCK_NOINIT)
+
+  call storage_new('geom_triangulateEllipsoid', 'iHandle(3)', 2, &
+                     ST_INT, iHandle(3), ST_NEWBLOCK_NOINIT)
+
+                     
+  call storage_getbase_double2D(iHandle(1), p_Dvertices)                     
+  
+  call storage_getbase_int2D(iHandle(2), p_Itriangles)                       
+  
+  call storage_getbase_int(iHandle(3), p_Idata)   
+  
+  p_Idata(1)= iverts
+  p_Idata(2)= itriangles                    
+  
+  call ellipsoidValue(halfpi,0.0_dp,DPoint,dradii)
+  p_Dvertices(:,1)=DPoint(:)  
+  
+  call ellipsoidValue(-1.0_dp*halfpi,0.0_dp,DPoint,dradii)
+  p_Dvertices(:,iverts)=DPoint(:)  
+  
+  ive=1
+  phi  = halfpi-dphi
+  ! assign the top
+  do i=1,slices-1
+    theta = 0.0_dp
+    do j=1,2*stacks
+      ive=ive+1
+      call ellipsoidValue(phi,theta,DPoint,dradii)
+      p_Dvertices(:,ive)=DPoint(:)
+      theta=theta+dtheta
+    end do
+    phi=phi-dphi
+  end do
+
+  ! top fan  
+  do i=0,stacks2-1
+    p_Itriangles(1,i+1)=0
+    p_Itriangles(2,i+1)=1+i
+    p_Itriangles(3,i+1)=1+mod(i+1,stacks2)
+  end do
+
+
+  !add body
+  ioffset=stacks2+1
+  do i=0,(slices-3)
+    index=1+i*stacks2
+    do j=0,stacks2-1
+      p_Itriangles(1,ioffset)=index+j
+      p_Itriangles(2,ioffset)=index+stacks2+j
+      p_Itriangles(3,ioffset)=index+mod((j+1),stacks2)      
+      
+      p_Itriangles(1,ioffset+1)=index+mod((j+1),stacks2)
+      p_Itriangles(2,ioffset+1)=index+stacks2+j
+      p_Itriangles(3,ioffset+1)=index+stacks2+mod((j+1),stacks2)
+      ioffset=ioffset+2
+    end do
+  end do
+  
+  ! bottom fan  
+  index = (iverts-1) - stacks2
+  do i=0,(stacks2-1)
+    p_Itriangles(1,ioffset)=(iverts-1)
+    p_Itriangles(2,ioffset)=index+mod((i+1),stacks2)
+    p_Itriangles(3,ioffset)=index+i
+    ioffset=ioffset+1
+  end do
+
+  contains
+  
+    subroutine ellipsoidValue(Dphi1,Dtheta1,DP1,rad3)
+    real(dp),intent(in) :: Dphi1
+    real(dp),intent(in) :: Dtheta1
+    real(dp), dimension(3),intent(in) :: rad3
+    real(dp), dimension(3),intent(inout) :: DP1
+    
+    DP1(1)= rad3(1)*cos(Dphi1)*cos(Dtheta1)
+    DP1(2)= rad3(2)*cos(Dphi1)*sin(Dtheta1)
+    DP1(3)= rad3(3)*sin(Dphi1)
+    
+    end subroutine ellipsoidValue
+  
+  
+  end subroutine geom_triangulateEllipsoid
+
 ! ***************************************************************************  
-
-
 
 !<subroutine>  
   subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy)
