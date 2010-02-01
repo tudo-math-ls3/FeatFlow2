@@ -204,6 +204,7 @@ imovingFrame = 0
 # 10 = Q2~(EB50) / Q2~(EB50) / QP1
 # 11 = Q2~(EM50) / Q2~(EM50) / QP1
 # 12 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric)
+# 13 = Q2 (E013) / Q2 (E013) / QP1 (nonparametric, solves local system; slower than 12 but more stable)
 # 20 = Q1        / Q1        / Q1 (unstabilised!)
 # 30 = P1~(E020) / P1~(E020) / P0 
 
