@@ -1970,120 +1970,276 @@ contains
     integer, parameter :: NVE = 4
 
     ! auxiliary variables  
-    real(DP) :: dx, dy, dxj
+    real(DP) :: dx, dy, dxj, dmx, dmy
     real(DP),dimension(4) :: DXM,DYM
-    real(dp) :: CA1,CA2,CB1,CB2 !,D1,D2
+    real(dp) :: deta1,dxi1,deta2,dxi2,dnormeta,dnormxi
+    real(dp), dimension(3,3) :: Da,Db
+    logical :: bsuccess
 
     integer :: IVE
     
-    ! Clear the output array
-    !Dbas = 0.0_DP
+    if (iand(celement,int(2**17,I32)) .eq. 0) then
     
-    ! Calculate the edge midpoints and length of edges: 
-    !  DXM(:) := X-coordinates of midpoints
-    !  DYM(:) := Y-coordinates of midpoints
-    !  DLX(:) := length of each edge in X-direction
-    !  DLY(:) := length of each edge in Y-direction
-    ! So SQRT(DLX(:)**2+DLY(:)**2) = length of the edges.
+      ! QP1-element with linear mapping to a reference element.
     
-    do IVE=1,NVE
-      DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,mod(IVE,4)+1))
-      DYM(IVE)=0.5_DP*(Dcoords(2,IVE)+Dcoords(2,mod(IVE,4)+1))
-    end do
+      ! Clear the output array
+      !Dbas = 0.0_DP
+      
+      ! Calculate the edge midpoints of edges: 
+      !  DXM(:) := X-coordinates of midpoints
+      !  DYM(:) := Y-coordinates of midpoints
+      do IVE=1,NVE
+        DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,mod(IVE,4)+1))
+        DYM(IVE)=0.5_DP*(Dcoords(2,IVE)+Dcoords(2,mod(IVE,4)+1))
+      end do
 
-    ! Calculate the scaling factors for the local coordinate system.
-    !  D1 := 1 / ||vec_1||_2
-    !  D2 := 1 / ||vec_2||_2
-    !D1 = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
-    !D2 = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+      ! Calculate the scaling factors for the local coordinate system.
+      !  dnormeta := 1 / ||vec_1||_2
+      !  dnormxi := 1 / ||vec_2||_2
+      !dnormeta = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+      !dnormxi = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+      
+      ! Calculate the vector eta = (deta1,deta2)
+      deta1 = (DXM(2)-DXM(4)) ! * dnormeta
+      deta2 = (DYM(2)-DYM(4)) ! * dnormeta
+      
+      ! Calculate the vector xi = (dxi1,dxi2)
+      dxi1 = (DXM(3)-DXM(1)) ! * dnormxi
+      dxi2 = (DYM(3)-DYM(1)) ! * dnormxi
+      
+      ! Our basis functions are as follows:
+      !
+      ! P1(z1,z2) = a1 + b1*z1 + b2*z2 = 1
+      ! P2(z1,z2) = a1 + b1*z1 + b2*z2 = z1
+      ! P3(z1,z2) = a1 + b1*z1 + b2*z2 = z2
+      !
+      ! with (z1,z2) the transformed (x,y) in the new coordinate system.
+      ! The Pi are defined on the reference element and a linear
+      ! mapping sigma:[0,1]^2->R^2 is used to map all the midpoints
+      ! from the reference element to the real element:
+      !
+      !  sigma(0,0) = m
+      !  sigma(1,0) = m2 = m + eta/2
+      !  sigma(0,1) = m3 = m + xi/2
+      !  sigma(-1,0) = m4 = m - eta/2
+      !  sigma(0,-1) = m1 = m - xi/2
+      !
+      !         ^                                       ^
+      !   +-----X-----+                        +--------m3--------+
+      !   |     |     |                       /         |          \           
+      !   |     |     |       sigma      ___ /          |           \          
+      ! --X-----+-----X-->   ------->       m4--------__|m____       \         
+      !   |     |     |                    /             |    --------m2->
+      !   |     |     |                   /              |             \       
+      !   +-----X-----+                  /               |              \      
+      !         |                       +----_____       |               \     
+      !                                           -----__m1_              \    
+      !                                                  |   -----_____    \   
+      !                                                                -----+
+      !
+      ! The basis functions on the real element are defined as
+      !
+      !  Phi_i(x,y) = Pi(sigma^-1(x,y))
+      !
+      ! Because sigma is linear, we can calculate the inverse by hand.
+      ! sigma is given by the formula
+      !
+      !   sigma(z1,z2) = m + 1/2 (eta1 xi1) (z1) = m + 1/2 (deta1 dxi1) (z1)
+      !                          (eta2 xi2) (z2)           (deta2 dxi2) (z2)
+      !
+      ! so the inverse mapping is
+      !
+      !  sigma^-1(z1,z2) = [1/2*(deta1 dxi1)]^-1 * (x - xm)
+      !                    [    (deta2 dxi2)]      (y   ym)
+      !
+      !                  = 2/lambda ( dxi2*(x-xm) - deta2*(y-ym) )
+      !                             ( deta1*(y-ym) - dxi1*(x-xm) )
+      !
+      !  with lambda = determinant of the matrix.
+      !
+      ! So in the first step, calculate (x-xm) and (y-ym).
+      dx = (Dpoint(1)-0.5_DP*(DXM(1)+DXM(3)))
+      dy = (Dpoint(2)-0.5_DP*(DYM(1)+DYM(3)))
+      
+      ! Now calculate the (inverse of the) Jacobian determinant of the linear mapping.
+      dxj = 2.0_DP/(deta1*dxi2 - deta2*dxi1)
+      
+      ! and calculate the corresponding (eta,xi) = sigma^-1(x,y) of that.
+      ! eta is then our first basis function, xi our 2nd:
+      !
+      !  Phi1(x,y) = 1
+      !  Phi2(x,y) = 2/lambda ( dxi2(x-xm) - deta2(y-ym) )
+      !  Phi3(x,y) = 2/lambda ( deta1(y-ym) - dxi1(x-xm) )
+      
+      Dbas(1,DER_FUNC) = 1
+      Dbas(2,DER_FUNC) = dxj * (dxi2*dx - deta2*dy)
+      Dbas(3,DER_FUNC) = dxj * (deta1*dy - dxi1*dx)
     
-    ! Calculate the vector eta = (CA1,CB1)
-    CA1 = (DXM(2)-DXM(4)) ! * D1
-    CB1 = (DYM(2)-DYM(4)) ! * D1
+      ! Using these definitions, we can also calculate the derivative directly.
+      !
+      ! X-derivative
+      Dbas(1,DER_DERIV_X) = 0.0_DP
+      Dbas(2,DER_DERIV_X) = dxj * dxi2
+      Dbas(3,DER_DERIV_X) = -dxj * dxi1
+      
+      ! Y-derivative
+      Dbas(1,DER_DERIV_Y) = 0.0_DP
+      Dbas(2,DER_DERIV_Y) = -dxj * deta2
+      Dbas(3,DER_DERIV_Y) = dxj * deta1
+      
+    else
     
-    ! Calculate the vector xi = (CA2,CB2)
-    CA2 = (DXM(3)-DXM(1)) ! * D2
-    CB2 = (DYM(3)-DYM(1)) ! * D2
+      ! QP1-element defining the basis functions directly on the
+      ! real element.
+      
+      ! Calculate the edge midpoints:
+      !  DXM(:) := X-coordinates of midpoints
+      !  DYM(:) := Y-coordinates of midpoints
+      do IVE=1,NVE
+        DXM(IVE)=0.5_DP*(Dcoords(1,IVE)+Dcoords(1,mod(IVE,4)+1))
+        DYM(IVE)=0.5_DP*(Dcoords(2,IVE)+Dcoords(2,mod(IVE,4)+1))
+      end do
+
+      ! Calculate the scaling factors for the local coordinate system.
+      !  dnormeta := 1 / ||vec_1||_2
+      !  dnormxi := 1 / ||vec_1||_2
+      dnormeta = 1.0_DP / sqrt((DXM(2)-DXM(4))**2+(DYM(2)-DYM(4))**2)
+      dnormxi = 1.0_DP / sqrt((DXM(1)-DXM(3))**2+(DYM(1)-DYM(3))**2)
+      
+      ! Calculate the vector eta = (deta1,deta2)
+      deta1 = (DXM(2)-DXM(4)) * dnormeta
+      deta2 = (DYM(2)-DYM(4)) * dnormeta
+      
+      ! Calculate the vector xi = (dxi1,dxi2)
+      dxi1 = (DXM(3)-DXM(1)) * dnormxi
+      dxi2 = (DYM(3)-DYM(1)) * dnormxi
+      
+      ! eta/xi define the new coordinate system.
+      ! An arbitrary point (x,y) is projected to this coordinate
+      ! system using scalar products:
+      !
+      !  (z1) = sigma(x1,x2) = ( <eta,(x1,x2)> ) = ( eta_1*x1 + eta_2*x2 )
+      !  (z2)                  ( <xi, (x1,x2)> )   ( xi_1*x1  + xi_2*x2  )
+      !
+      !                      = ( eta_1 eta_2 ) ( x1 )
+      !                        ( xi_1  xi_2  ) ( x2 )
+      !
+      ! A general linear polynomial in (eta,xi) has the following form:
+      !
+      !  p(z1,z2) = a + b*z1 + c*z2
+      !
+      ! The three local basis functions m1, m2 and m3 of the QP1 approach 
+      ! are defined by the following restrictions:
+      !
+      !  m1(0,0) = 1, m1_z1(0,0) = 0, m1_z2(0,0) = 0
+      !  m2(0,0) = 0, m2_z1(0,0) = 1, m2_z2(0,0) = 0
+      !  m3(0,0) = 0, m3_z1(0,0) = 0, m3_z2(0,0) = 1
+      ! 
+      ! (with _z1 and _z2 defining the 1st derivative in direction z1 or
+      ! z2,resp.)
+      ! Necessarily, our local basis functions in (xi,eta) are defined as follows:
+      !
+      !  m1(z1,z2) = 1
+      !  m2(z1,z2) = z1
+      !  m3(z1,z2) = z2
+      ! 
+      ! By concatenation with sigma, one receives the basis polynomials
+      ! on the real element:
+      !
+      !  F1(x1,x2) = m1(sigma(x1,x2)) = 1
+      !  F2(x1,x2) = m2(sigma(x1,x2)) = eta_1*x1 + eta_2*x2
+      !  F3(x1,x2) = m3(sigma(x1,x2)) = xi_1*x1  + xi_2*x2
+      !
+      ! Each of the three basis functions on the real element is a linear
+      ! combination of these three basis polynomials:
+      !
+      !  Pi(x1,x2) = ai F1(x1,y1)  +  bi F2(x1,x2)  +  ci F3(x1,x2)
+      !            = ai  +  bi (eta_1*x1 + eta_2*x2)  +  ci (xi_1*x1  + xi_2*x2)
+      !
+      ! i.e.
+      !
+      !  P1(x1,x2) = a1 F1(x1,y1)  +  b1 F2(x1,x2)  +  c1 F3(x1,x2)
+      !  P2(x1,x2) = a2 F1(x1,y1)  +  b2 F2(x1,x2)  +  c2 F3(x1,x2)
+      !  P3(x1,x2) = a3 F1(x1,y1)  +  b3 F2(x1,x2)  +  c3 F3(x1,x2)
+      !
+      ! Here Pi satisfies the following restrictions in the midpoint
+      ! (xm,ym) of the element:
+      !
+      !  P1(xm) = 1, P1|eta(xm) = 0, P1|xi(xm) = 0
+      !  P2(xm) = 0, P2|eta(xm) = 1, P2|xi(xm) = 0
+      !  P3(xm) = 0, P3|eta(xm) = 0, P3|xi(xm) = 1
+      !
+      ! We need the directional derivative of Pi which is luckily constant:
+      !
+      !  DPi(x,y) = ( ai F1_x1(x1,y1)  +  bi F2_x1(x1,x2)  +  ci F3_x1(x1,x2) )
+      !             ( ai F1_x2(x1,y1)  +  bi F2_x2(x1,x2)  +  ci F3_x2(x1,x2) )
+      !
+      !           = ( bi eta_1 + ci xi_1 )
+      !             ( bi eta_2 + ci xi_2 )
+      !
+      !  DPi * eta = bi eta_1^2  +  ci xi_1 eta_1  +  bi eta_2^2     +  ci xi_2 eta_2
+      !            = bi (eta_1^2 + eta_2^2)        +  ci (eta_1 xi_1 + eta_2 xi_2 )
+      !
+      !  DPi * xi  = bi eta_1 xi_1  +  ci xi_1^2   +  bi eta_2 xi_2  +  ci xi_2^2
+      !            = bi (eta_1 xi_1 + eta_2 xi_2)  +  ci (xi_1^2 + xi_2^2)
+      !
+      ! The restrictions give us a linear system for the ai, bi and ci:
+      !
+      !  ( 1     (eta_1*x1 + eta_2*x2)      (xi_1*x1  + xi_2*x2) ) ( a1 a2 a3 ) = ( 1  0  0 )
+      !  ( 0       (eta_1^2 + eta_2^2) (eta_1 xi_1 + eta_2 xi_2) ) ( b1 b2 b3 )   ( 0  1  0 )
+      !  ( 0 (eta_1 xi_1 + eta_2 xi_2)         (xi_1^2 + xi_2^2) ) ( c1 c2 c3 )   ( 0  0  1 )
+      !
+      !   ^^^^^^^^^^^^^^^^^^^^^^^ =: A ^^^^^^^^^^^^^^^^^^^^^^^^^^   ^^ =:B ^^^ 
+      !
+      ! Calculate the representation of the element midpoint by scalar products 
+      ! and set up the linear system:
+      
+      dmx = 0.5_DP*(DXM(4)+DXM(2))
+      dmy = 0.5_DP*(DXM(1)+DXM(3))
+      dx = deta1*dmx + deta2*dmy
+      dy = dxi1*dmx + dxi2*dmy
+      
+      Da(1,1) = 1.0_DP
+      Da(2,1) = 0.0_DP
+      Da(3,1) = 0.0_DP
+      
+      Da(1,2) = deta1*dx + deta2*dy
+      Da(2,2) = deta1**2 + deta2**2
+      Da(3,2) = deta1*dxi1 + deta2*dxi2
+      
+      Da(1,3) = dxi1*dx + dxi2*dy
+      Da(2,3) = Da(3,2)
+      Da(3,3) = dxi1**2 + dxi2**2
+
+      ! Solve the system to get the coefficients.
+      call mprim_invert3x3MatrixDirectDble(Da,Db,bsuccess)
+      
+      ! Use the calculated coefficients to calculate the values of the
+      ! basis functions. Take the the point and transform it into
+      ! the coordinate system specified by eta and xi:
+      
+      dx = deta1*Dpoint(1) + deta2*Dpoint(2)
+      dy = dxi1*Dpoint(1) + dxi2*Dpoint(2)
+      
+      ! Ok, 1st basis function is clear -- it is constant (as eta/xi are
+      ! assumed to be linearly independent and the directional derivatives
+      ! are zero). The others have to be calculated using the above coefficients
+      ! in Db.
+      Dbas(1,DER_FUNC) = 1.0_DP
+      Dbas(2,DER_FUNC) = Db(2,2)*dx + Db(3,2)*dy ! + Db(1,2), but this is zero
+      Dbas(3,DER_FUNC) = Db(2,3)*dx + Db(3,3)*dy ! + Db(1,3), but this is zero
     
-    ! Our basis functions are as follows:
-    !
-    ! P1(z1,z2) = a1 + b1*z1 + b2*z2 = 1
-    ! P2(z1,z2) = a1 + b1*z1 + b2*z2 = z1
-    ! P3(z1,z2) = a1 + b1*z1 + b2*z2 = z2
-    !
-    ! with (z1,z2) the transformed (x,y) in the new coordinate system.
-    ! The Pi are defined on the reference element and a linear
-    ! mapping sigma:[0,1]^2->R^2 is used to map all the midpoints
-    ! from the reference element to the real element:
-    !
-    !  sigma(0,0) = m
-    !  sigma(1,0) = m2 = m + eta/2
-    !  sigma(0,1) = m3 = m + xi/2
-    !  sigma(-1,0) = m4 = m - eta/2
-    !  sigma(0,-1) = m1 = m - xi/2
-    !
-    !         ^                                       ^
-    !   +-----X-----+                        +--------m3--------+
-    !   |     |     |                       /         |          \           
-    !   |     |     |       sigma      ___ /          |           \          
-    ! --X-----+-----X-->   ------->       m4--------__|m____       \         
-    !   |     |     |                    /             |    --------m2->
-    !   |     |     |                   /              |             \       
-    !   +-----X-----+                  /               |              \      
-    !         |                       +----_____       |               \     
-    !                                           -----__m1_              \    
-    !                                                  |   -----_____    \   
-    !                                                                -----+
-    !
-    ! The basis functions on the real element are defined as
-    !
-    !  Phi_i(x,y) = Pi(sigma^-1(x,y))
-    !
-    ! Because sigma is linear, we can calculate the inverse by hand.
-    ! sigma is given by the formula
-    !
-    !   sigma(z1,z2) = m + 1/2 (eta1 xi1) (z1) = m + 1/2 (CA1 CA2) (z1)
-    !                          (eta2 xi2) (z2)           (CB1 CB2) (z2)
-    !
-    ! so the inverse mapping is
-    !
-    !  sigma^-1(z1,z2) = [1/2*(CA1 CA2)]^-1 * (x - xm)
-    !                    [    (CB1 CB2)]      (y   ym)
-    !
-    !                  = 2/lambda ( CB2*(x-xm) - CB1*(y-ym) )
-    !                             ( CA1*(y-ym) - CA2*(x-xm) )
-    !
-    !  with lambda = determinant of the matrix.
-    !
-    ! So in the first step, calculate (x-xm) and (y-ym).
-    dx = (Dpoint(1)-0.5_DP*(DXM(1)+DXM(3)))
-    dy = (Dpoint(2)-0.5_DP*(DYM(1)+DYM(3)))
+      ! X-derivative
+      Dbas(1,DER_DERIV_X) = 0.0_DP
+      Dbas(2,DER_DERIV_X) = Db(2,2)*deta1 + Db(3,2)*dxi1
+      Dbas(3,DER_DERIV_X) = Db(2,3)*deta1 + Db(3,3)*dxi1
+      
+      ! Y-derivative
+      Dbas(1,DER_DERIV_Y) = 0.0_DP
+      Dbas(2,DER_DERIV_Y) = Db(2,2)*deta2 + Db(3,2)*dxi2
+      Dbas(3,DER_DERIV_Y) = Db(2,3)*deta2 + Db(3,3)*dxi2
     
-    ! Now calculate the (inverse of the) Jacobian determinant of the linear mapping.
-    dxj = 2.0_DP/(CA1*CB2 - CB1*CA2)
-    
-    ! and calculate the corresponding (eta,xi) = sigma^-1(x,y) of that.
-    ! eta is then our first basis function, xi our 2nd:
-    !
-    !  Phi1(x,y) = 1
-    !  Phi2(x,y) = 2/lambda ( CB2(x-xm) - CB1(y-ym) )
-    !  Phi3(x,y) = 2/lambda ( CA1(y-ym) - CA2(x-xm) )
-    
-    Dbas(1,DER_FUNC) = 1
-    Dbas(2,DER_FUNC) = dxj * (CB2*dx - CB1*dy)
-    Dbas(3,DER_FUNC) = dxj * (CA1*dy - CA2*dx)
-  
-    ! Using these definitions, we can also calculate the derivative directly.
-    !
-    ! X-derivatice
-    Dbas(1,DER_DERIV_X) = 0.0_DP
-    Dbas(2,DER_DERIV_X) = dxj * CB2
-    Dbas(3,DER_DERIV_X) = -dxj * CA2
-    
-    ! Y-derivative
-    Dbas(1,DER_DERIV_Y) = 0.0_DP
-    Dbas(2,DER_DERIV_Y) = -dxj * CB1
-    Dbas(3,DER_DERIV_Y) = dxj * CA1
+    end if
   
   end subroutine 
 
@@ -4534,11 +4690,11 @@ contains
   CB3 = 2.0_DP*(CA1*CB1-CA2*CB2)
   CC3 = CB1**2-CB2**2
   
-  ! Calculate the matrix V (=A) with vij = int_ei Fj (x,y) d(x,y).
+  ! Calculate the matrix V (=A) with vij = Fj (m_i).
   ! Loop over the edges.
   do IA = 1,NVE
     ! Set up the coefficients of the linear system to calculate ai, bi, ci and di.
-    ! Use the X- and Y-coordinates of the midpointof every edge to evaluate
+    ! Use the X- and Y-coordinates of the midpoint of every edge to evaluate
     ! the Fi.
     A(1,IA)=F1(DXM(IA),DYM(IA),CA1,CB1,CA2,CB2,CA3,CB3,CC3)
     A(2,IA)=F2(DXM(IA),DYM(IA),CA1,CB1,CA2,CB2,CA3,CB3,CC3)
