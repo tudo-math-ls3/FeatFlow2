@@ -2193,19 +2193,22 @@ contains
 !   ( z1 ) := r(x,y) := ( k11 k12 ) ( x ) 
 !   ( z2 )              ( k21 k22 ) ( y )
 !
-! This mapping should fulfill:
+! Now remember, that eta/xi has length = 1. Then, we can get the new
+! coordinates of (x,y) by using scalar products:
 !
-!   ( eta_1 ) = ( k11 k12 ) ( 1 ) 
-!   ( eta_2 )   ( k21 k22 ) ( 0 )
-!  
-!   ( xi_1 ) = ( k11 k12 ) ( 0 ) 
-!   ( xi_2 )   ( k21 k22 ) ( 1 )
+!   z1 = < eta, (x,y) >
+!   z2 = < xi, (x,y) >
 !
-! so that the vector eta has the coordinates (1,0) and xi the coordinates
-! (0,1). This simply means:
+! This is a linear (not bilinear!) mapping of (x,y) into
+! the new coordinate system.
 !
-!   r(x,y) = ( eta_1 xi_1 ) ( x )  =  ( eta_1 x  +  xi_1 y ) 
-!            ( eta_2 xi_2 ) ( y )     ( eta_2 x  +  xi_2 y )
+! So we end up with:
+!
+!   ( z1 ) := r(x,y) := ( eta_1 eta_2 ) ( x ) 
+!   ( z2 )              ( xi_1  xi_2  ) ( y )
+!
+!                     =  ( eta_1 x  +  eta_2 y ) 
+!                        ( xi_1 x   +  xi_2 y )
 !
 ! Then, we set up the local basis functions in terms of xi and eta,
 ! i.e. in the coordinate space of the new coordinate system, 
@@ -2229,12 +2232,12 @@ contains
 ! which are defined as functions at the bottom of this routine:
 !
 !  F1(x,y) := m1(r(x,y)) = 1
-!  F2(x,y) := m2(r(x,y)) = eta_1 x  +  xi_1 y
-!  F3(x,y) := m3(r(x,y)) = eta_2 x  +  xi_2 y
-!  F4(x,y) := m4(r(x,y)) = ( eta_1 x + xi_1 y )^2 - ( eta_2 x + xi_2 y )^2
-!                        =           ( eta_1^2 - eta_2^2 ) x^2 
-!                          + 2 ( eta_1 xi_1 - eta_2 xi_2 ) x y
-!                          +           ( xi_1^2 - xi_2^2 ) y^2
+!  F2(x,y) := m2(r(x,y)) = eta_1 x + eta_2 y
+!  F3(x,y) := m3(r(x,y)) = xi_1 x  + xi_2 y
+!  F4(x,y) := m4(r(x,y)) = ( eta_1 x  +  eta_2 y )^2 - ( xi_1 x  +  xi_2 y )^2
+!                        =            ( eta_1^2 - xi_1^2 ) x^2 
+!                          + 2 ( eta_1 eta_2 - xi_1 xi_2 ) x y
+!                          +          ( eta_2^2 - xi_2^2 ) y^2
 !
 ! So the polynomials have now the form:
 !
@@ -2262,7 +2265,9 @@ contains
 !   ( . . . . ) ( c1 c2 c3 c4 )   ( 0 0 1 0 )
 !   ( . . . . ) ( d1 d2 d3 d4 )   ( 0 0 0 1 )
 !
-! So to get all the coefficients, one has to calculate V^-1 !
+!               ^^^^^ =:B ^^^^^
+!
+! So to get all the coefficients, one has to calculate B = V^-1 !
 ! The entries of the matrix V = {v_ij} are defined (because of the linearity
 ! of the integral) as
 !
@@ -2426,7 +2431,7 @@ contains
   !CALL INVERT(A,F,CKH,0)
   call mprim_invertMatrixPivotDble(A,4,bsuccess)
 
-  ! Ok, the coefficients ai, bi, ci, di are calculated.
+  ! Ok, the coefficients ai, bi, ci, di of the matrix B are calculated.
   ! The next point is: We want to evaluate the polynoms Pi(r(.))
   ! in the point (x,y) which is specified as input parameter to this routine!
   !
