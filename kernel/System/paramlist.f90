@@ -2665,12 +2665,12 @@ contains
 
 !<subroutine>
   
-  subroutine parlst_readfromfile (rparlist, sfilename, sdirectory, bexpandVars)
+  subroutine parlst_readfromfile (rparlist, sfile, sdirectory, bexpandVars)
   
 !<description>
   
   ! This routine parses a text file for data of the INI-file form.
-  ! sfilename must be the name of a file on the hard disc.
+  ! sfile must be the name of a file on the hard disc.
   ! The file may have references to subfiles in the unnamed section:
   ! If there is a parameter "simportdatafiles(n)" present in the
   ! unnamed section, the routine expects a list of filenames in this
@@ -2681,7 +2681,7 @@ contains
   ! Sub-files specified in the main file are searched in the following
   ! directories:
   ! 1.) sdirectory (if specified)
-  ! 2.) the directory that contains sfilename (if sfilename specifies
+  ! 2.) the directory that contains sfile (if sfile specifies
   !     a directory)
   ! 3.) current directory
   !
@@ -2706,10 +2706,10 @@ contains
 !<input>
   
   ! The filename of the file to read.
-  character(LEN=*), intent(in) :: sfilename
+  character(LEN=*), intent(in) :: sfile
   
   ! OPTIONAL: Directory containing other data files in case
-  ! the main file sfilename contains references to subfiles.
+  ! the main file sfile contains references to subfiles.
   character(LEN=*), intent(in), optional :: sdirectory
   
   ! OPTIONAL: Expand references to subvariables.
@@ -2724,19 +2724,19 @@ contains
     character(LEN=PARLST_LENLINEBUF), dimension(:), pointer :: p_Ssubfiles,p_SsubfilesTemp
     character(LEN=PARLST_LENLINEBUF) :: sstring,smainfile
     integer :: nsubfiles,nnewsubfiles,j,ilensubf
-    logical :: bexists,bmainpath
-    character(LEN=PARLST_LENLINEBUF) :: smainpath
+    logical :: bexists,bmainpath,babsolute
+    character(LEN=PARLST_LENLINEBUF) :: smainpath,sfilepath,sfilename
 
     ! Filename/path of the master dat file.
     ! Search at first in the specified path.
     bexists = .false.
     if (present(sdirectory)) then
-      smainfile = trim(sdirectory)//"/"//sfilename
+      smainfile = trim(sdirectory)//"/"//sfile
       inquire(file=smainfile, exist=bexists)
     end if
     
     if (.not. bexists) then
-      smainfile = sfilename
+      smainfile = sfile
       inquire(file=smainfile, exist=bexists)
     end if
     
@@ -2745,11 +2745,12 @@ contains
       return
     end if
     
-    ! Get the main path of the file.
+    ! Get the main path/name of the file.
     call io_pathExtract (smainfile, smainpath)
     bmainpath = smainpath .ne. ""
 
     ! Create a list of files to be read.
+    ! They contain filenames including the directory.
     allocate(p_Ssubfiles(1))
     p_Ssubfiles(1) = smainfile
     
@@ -2765,35 +2766,47 @@ contains
       ! Get the filename including the path. 
       bexists = .false.
       
-      ! 1.) Search in the directory "directory+filename" -- if sdirectory is specified.
+      call io_pathExtract (trim(p_Ssubfiles(icurrentsubfile)), sfilepath, sfilename, babsolute)
       
-      if (present(sdirectory)) then
-        ! First search in the specified directory.
-        sstring = trim(sdirectory)//"/"//trim(p_Ssubfiles(icurrentsubfile))
-        inquire(file=sstring, exist=bexists)
-      end if
-
-      ! 2.) Search in the directory "smainfile+sfilename":
-
-      if (bmainpath .and. (.not. bexists)) then
-        ! If no directory is specified or if no file was found there,
-        ! directly search for the file without specifying the
-        ! directory. So we will also find files where an absolute
-        ! path is specified.
-        sstring = trim(smainpath)//"/"//trim(p_Ssubfiles(icurrentsubfile))
-        inquire(file=sstring, exist=bexists)
-      end if
-      
-      ! 3.) Search directly for the file "sfilename", assuming it contains
-      !     a directory specification.
-      
-      if (.not. bexists) then
-        ! If no directory is specified or if no file was found there,
-        ! directly search for the file without specifying the
-        ! directory. So we will also find files where an absolute
-        ! path is specified.
+      if (babsolute) then
+        ! Ok, we have an absolute path given. Test it.
         sstring = trim(p_Ssubfiles(icurrentsubfile))
         inquire(file=sstring, exist=bexists)
+      else
+        ! Path is relative -- a little bit more complicated.
+        ! Is there a directory given?
+        if (sfilepath .ne. "") then
+          ! Directory specified. We add "sdirectory" if we have it.
+          if (present(sdirectory)) then
+            sstring = trim(sdirectory)//"/"//trim(sfilepath)//"/"//trim(sfilename)
+            inquire(file=sstring, exist=bexists)
+          end if
+        
+          if (.not. bexists) then
+            ! No, not there. Then take the path directly.
+            sstring = trim(sfilepath)//"/"//trim(sfilename)
+            inquire(file=sstring, exist=bexists)
+          end if
+
+          if (bmainpath .and. (.not. bexists)) then
+            ! No, not there. Add the master directory and test there.
+            sstring = trim(smainpath)//"/"//trim(sfilepath)//"/"//trim(sfilename)
+            inquire(file=sstring, exist=bexists)
+          end if
+        else
+          ! No directory given. Then we search in the directory
+          ! of the master file...
+          if (bmainpath .and. (.not. bexists)) then
+            sstring = trim(smainpath)//"/"//trim(sfilename)
+            inquire(file=sstring, exist=bexists)
+          end if
+          
+          ! And in the current directory.
+          if (.not. bexists) then
+            sstring = trim(sfilename)
+            inquire(file=sstring, exist=bexists)
+          end if
+        end if
       end if
       
       if (bexists) then
@@ -3726,10 +3739,10 @@ contains
         ! Now copy back and replace the variable by the stuff from the
         ! parameter list.
         if (ivalue .eq. 0) then
-          call parlst_getvalue_string (rparlist, ssection, sname, sdata)
+          call parlst_getvalue_string (rparlist, ssection, sname, sdata, bdequote=.true.)
         else
           call parlst_getvalue_string (rparlist, ssection, sname, sdata, &
-              isubstring=ivalue)
+              isubstring=ivalue, bdequote=.true.)
         end if
         sstring = sbuffer(1:istart-1)//trim(sdata)//sbuffer(iend+1:)
         

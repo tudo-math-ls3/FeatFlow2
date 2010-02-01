@@ -337,7 +337,7 @@ contains
 
   !<subroutine>
 
-  subroutine io_pathExtract (sfile, sfilepath, sfilename)
+  subroutine io_pathExtract (sfile, sfilepath, sfilename, babsolute)
   
   !<description>
     ! Extracts the path of a file from a path+filename string.
@@ -349,18 +349,23 @@ contains
   !</input>
   
   !<output>
-    ! Receives the directory that contains the specific file, 
+    ! OPTIONAL: Receives the directory that contains the specific file, 
     ! or "" if no directory was specified in sfile.
-    character(len=*), intent(out) :: sfilepath
+    character(len=*), intent(out), optional :: sfilepath
 
     ! OPTIONAL: Receives the name of the file without a probably preceding
     ! directory string.
     character(len=*), intent(out), optional :: sfilename
+    
+    ! OPTINOAL: Returns TRUE if the path specification in sfile points to an
+    ! absolute path. Returns FALSE if the path in sfile is relative.
+    logical, intent(out), optional :: babsolute
   !</output>
   
   !</subroutine>
   
     integer :: i
+    character(len=10) :: ssubpath
   
     ! Find the last "/" or "\" in sfile.                                (!" cpp fix)
     ! Note that we specified "\\" and not "\" because the PGI compiler  (!" cpp fix)
@@ -371,12 +376,30 @@ contains
     i = scan(sfile,"/\\",.true.)
     if (i .ne. 0) then
       ! Directory ends at position i.
-      sfilepath = sfile(1:i-1)
+      if (present(sfilepath)) sfilepath = sfile(1:i-1)
       if (present(sfilename)) sfilename = sfile(i+1:)
     else
       ! No directory specified.
-      sfilepath = ""
+      if (present(sfilepath)) sfilepath = ""
       if (present(sfilename)) sfilename = sfile
+    end if
+    
+    if (present(babsolute)) then
+      ! Take a look if this is an absolute or relative path.
+      i = scan(trim(adjustl(sfile)),"/\\",.false.)
+      babsolute = i .eq. 1
+      
+      ! In Windows environments, the path is also absolute if
+      ! a volume descriptor like "C:" precedes the (back-)slash.
+      if (.not. babsolute) then
+        if (i .eq. 3) then
+          ! Extract the first 10 characters and check
+          ssubpath = trim(adjustl(sfile))
+          if (ssubpath(2:2) .eq. ":") then
+            babsolute = .true.
+          end if
+        end if
+      end if
     end if
   
   end subroutine
