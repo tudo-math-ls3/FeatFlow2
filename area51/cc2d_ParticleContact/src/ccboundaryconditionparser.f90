@@ -646,7 +646,7 @@ contains
     integer, dimension(:,:), pointer :: p_IvertAtEdge
     integer :: i, j, icount, hedgeslocal,iv1,iv2,iin1,iin2
     integer :: ibdComponent,isegment,iintervalEnds
-    integer :: ibctyp,inedgesfb
+    integer :: ibctyp,inedgesfb,ipart
     real(DP) :: dvalue,dpar1,dpar2
     character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2
     
@@ -665,7 +665,7 @@ contains
     !
     p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
-    p_rgeometryObject => p_rparticleCollection%p_rParticles(1)%rgeometryObject     
+
     
     allocate(p_IallEdges(rtriangulation%NMT))
     
@@ -690,25 +690,20 @@ contains
       iv1=p_IvertAtEdge(1,i)  
       iv2=p_IvertAtEdge(2,i)
       
-      if(sqrt((0.2_dp-p_Dcoord(1,iv1))**2+(0.2_dp-p_Dcoord(2,iv1))**2) .le. 0.05_dp)then
-        iin1=1
-      else
-        iin1=0
-      end if
-
-      if(sqrt((0.2_dp-p_Dcoord(1,iv2))**2+(0.2_dp-p_Dcoord(2,iv2))**2) .le. 0.051_dp)then
-        iin2=1
-      else
-        iin2=0
-      end if
+      do ipart=1,p_rparticleCollection%nparticles
       
-!      call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv1), iin1)      
-!      call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv2), iin2)      
+        p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject     
+        
+        call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv1), iin1)      
+        call geom_isInGeometry (p_rgeometryObject, p_Dcoord(:,iv2), iin2)      
+        
+        if((iin1 .eq. 1) .and. (iin2 .eq. 1))then
+          p_IallEdges(inedgesfb+1)=i
+          inedgesfb=inedgesfb+1
+          exit
+        end if
+      end do
       
-      if((iin1 .eq. 1) .and. (iin2 .eq. 1))then
-        p_IallEdges(inedgesfb+1)=i
-        inedgesfb=inedgesfb+1
-      end if
     end do
     
 
@@ -799,8 +794,10 @@ contains
       
     end do
     
-    p_Iedges(ncount+1:ncount+1+inedgesfb)=&
-    p_IallEdges(1:inedgesfb)
+    if(inedgesfb .gt. 0)then
+      p_Iedges(ncount+1:ncount+1+inedgesfb)=&
+      p_IallEdges(1:inedgesfb)
+    end if
     
     deallocate(p_IallEdges)
     ! Release unused memory
