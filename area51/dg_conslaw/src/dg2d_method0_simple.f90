@@ -86,7 +86,7 @@ contains
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge
+    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
@@ -134,10 +134,10 @@ contains
     
     integer :: ielementType
     
-    dt = 0.01_DP
-    ttfinal=2.0_DP
+    dt = 0.005_DP
+    ttfinal=0.5_DP
     
-    ielementType = EL_DG_T1_2D
+    ielementType = EL_DG_T2_2D
     
     
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 2
+    NLMAX = 5
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -235,8 +235,8 @@ contains
 
     if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCY, DER_FUNC, DER_DERIV_Y)
     
-    call lsyssc_scaleMatrix (rmatrixCX,4.0_dp)
-    call lsyssc_scaleMatrix (rmatrixCY,4.0_dp)
+    !call lsyssc_scaleMatrix (rmatrixCX,4.0_dp)
+    !call lsyssc_scaleMatrix (rmatrixCY,4.0_dp)
 
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -385,6 +385,17 @@ contains
     
     
     
+    ! Now set the initial conditions via L2 projection
+    rlinformIC%itermCount = 1
+    rlinformIC%Idescriptors(1) = DER_FUNC2D
+    call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
+                                  coeff_RHS_IC)
+    call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
+    
+    
+    
+    
+    
     ttime = 0.0_DP
 
     timestepping: do
@@ -407,7 +418,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        
@@ -437,7 +448,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -458,7 +469,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)

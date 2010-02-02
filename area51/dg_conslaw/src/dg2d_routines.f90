@@ -314,7 +314,7 @@ contains
     ! local data of every processor when using OpenMP
     integer :: IELset,IELmax,ibdc,k
     integer :: iel,icubp,ialbet,ia,idofe
-    real(DP) :: domega,daux1,daux2,dlen
+    real(DP) :: domega1,domega2,daux1,daux2,dlen
     real(DP) :: dval1, dval2
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), dimension(2), target :: rlocalVectorAssembly
@@ -582,7 +582,7 @@ contains
      
      do iel = 1,IELmax-IELset+1
       if(IelementList(2,IELset+iel-1).eq.0) then
-        DsolVals(1:ncubp,2,iel) = 0.01_DP
+        DsolVals(1:ncubp,2,iel) = 0.0_DP
       end if
       
     end do
@@ -668,7 +668,8 @@ contains
           ! Calculate the current weighting factor in the cubature
           ! formula in that cubature point.
 
-          domega = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+          domega1 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
+          domega2 = dlen * rlocalVectorAssembly(1)%p_Domega(icubp)
 
           
           ! Loop over the additive factors in the bilinear form.
@@ -691,9 +692,9 @@ contains
             ! This gives the actual value to multiply the
             ! function value with before summing up to the integral.
             ! Get the precalculated coefficient from the coefficient array.
-            daux1 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp,iel)
-            daux2 = domega * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
-
+            daux1 = domega1 * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,icubp        ,iel)
+            daux2 = domega2 * rlocalVectorAssembly(1)%p_Dcoefficients(ialbet,ncubp-icubp+1,iel) *(-1.0_dp)
+            
             ! Now loop through all possible combinations of DOF`s
             ! in the current cubature point. 
 
@@ -716,7 +717,7 @@ contains
               
               if(IelementList(2,IELset+iel-1).ne.0) then
                 DlocalData(2,idofe) = DlocalData(2,idofe)+&
-                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,ncubp-icubp+1,iel)*daux2
+                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
               end if
              
             end do ! idofe
@@ -739,20 +740,7 @@ contains
                        DlocalData(2,idofe)
         end do
         
-!        write(*,*) 'innen :', DlocalData(1,1:indof),'***'
-!        write(*,*) 'aussen:', DlocalData(2,1:indof),'***'
-
       end do ! iel
-
-
-
-
-
-
-
-
-
-
 
     end do ! IELset
     
