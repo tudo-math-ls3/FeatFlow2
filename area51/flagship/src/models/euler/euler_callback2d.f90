@@ -234,7 +234,6 @@ module euler_callback2d
   public :: euler_calcBoundaryvalues2d
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
-  public :: euler_limitEdgewiseVelocity2D
 
 contains
 
