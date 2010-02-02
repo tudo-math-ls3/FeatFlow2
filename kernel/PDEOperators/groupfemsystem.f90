@@ -130,6 +130,7 @@ module groupfemsystem
 
   use afcstabilisation
   use basicgeometry
+  use collection
   use fsystem
   use genoutput
   use linearalgebra
@@ -4511,8 +4512,10 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildVecFCTBlock(rlumpedMassMatrix,&
-      rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
-      fcb_calcFluxTransformation, fcb_calcDiffTransformation)
+      rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed, &
+      fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -4542,10 +4545,23 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: number of transformed variables
+    ! If not present, then the number of variables
+    ! NVARtransformed is taken from the stabilisation structure
+    integer, intent(in), optional :: NVARtransformed
+    
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
     optional :: fcb_calcFluxTransformation
     optional :: fcb_calcDiffTransformation
+
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_groupfemcallback.inc'
+    optional :: fcb_calcADIncrements
+    optional :: fcb_calcBounds
+    optional :: fcb_limitNodal
+    optional :: fcb_limitEdgewise
+    optional :: fcb_calcCorrection
 !</input>
 
 !<inputoutput>
@@ -4554,7 +4570,10 @@ contains
 
     ! divergence vector
     type(t_vectorBlock), intent(inout) :: ry
-    !</inputoutput>
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
 !</subroutine>
 
     ! local variables
@@ -4562,13 +4581,16 @@ contains
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer :: nvariable
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
       call gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
           rafcstab, rx%RvectorBlock(1), dscale, bclear,&
-          ioperationSpec, ry%RvectorBlock(1),&
-          fcb_calcFluxTransformation, fcb_calcDiffTransformation)
+          ioperationSpec, ry%RvectorBlock(1), NVARtransformed,&
+          fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+          fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+          fcb_limitEdgewise, fcb_calcCorrection, rcollection)
       return
     end if
 
@@ -4601,6 +4623,13 @@ contains
     !    4.2) Compute the raw antidiffusive fluxes for a different set of
     !         variables and limit them by the precomputed correction factors.
     !-------------------------------------------------------------------------
+
+    ! Determine number of transformed variables (if any)
+    if (present(NVARtransformed)) then
+      nvariable = NVARtransformed
+    else
+      nvariable = rafcstab%NVARtransformed
+    end if
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA) .ne. 0) then
       !-------------------------------------------------------------------------
@@ -4649,33 +4678,48 @@ contains
       end if
 
       ! Compute sums of antidiffusive increments
-      if (present(fcb_calcFluxTransformation) .and.&
-          present(fcb_calcDiffTransformation)) then
-        if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+      if (rafcstab%bprelimiting) then
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+
+        if (present(fcb_calcADIncrements)) then
+          ! User-supplied callback routine
+          call fcb_calcADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doPreADIncrementsTransformed(p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              rafcstab%NVARtransformed, p_Dx,&
-              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              p_Dx, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
         else
-          call doADIncrementsTransformed(p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              rafcstab%NVARtransformed, p_Dx,&
-              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
-        end if
-      else
-        if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+          ! Standard routine without flux transformation
           call doPreADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+        end if
+        
+      else
+
+        if (present(fcb_calcADIncrements)) then
+          ! User-supplied callback routine
+          call fcb_calcADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation, rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
+          call doADIncrementsTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              nvariable, p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         else
+          ! Standard routine without flux transformation
           call doADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         end if
       end if
-
+        
       ! Set specifiers
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS)
     end if
@@ -4700,17 +4744,25 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorQm, p_Dqm)
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
-      ! Compute local bounds
-      if (present(fcb_calcDiffTransformation)) then
+       ! Compute local bounds
+      if (present(fcb_calcBounds)) then
+        ! User-supplied callback routine
+        call fcb_calcBounds(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+            rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm,&
+            fcb_calcDiffTransformation, rcollection)
+      elseif (present(fcb_calcDiffTransformation)) then
+        ! Standard routine with difference transformation
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            rafcstab%NVARtransformed, p_Dx, p_Dqp, p_Dqm)
+            nvariable, p_Dx, p_Dqp, p_Dqm)
+        ! Standard routine without difference transformation
       else
         call doBounds(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             p_Dx, p_Dqp, p_Dqm)
       end if
-
+      
       ! Set specifiers
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)
     end if
@@ -4739,11 +4791,17 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call doLimitNodal(rafcstab%NEQ, rafcstab%NVARtransformed,&
+      if (present(fcb_limitNodal)) then
+        ! User-supplied callback routine
+        call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale,&
+            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
+      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        ! Standard routine without constraints
+        call doLimitNodal(rafcstab%NEQ, nvariable,&
             dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
-        call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVARtransformed,&
+        ! Standard routine with constraints
+        call doLimitNodalConstrained(rafcstab%NEQ, nvariable,&
             dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
@@ -4786,12 +4844,20 @@ contains
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
 
-        if (present(fcb_calcFluxTransformation)) then
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              rafcstab%NVAR, nvariable, p_Dx,&
               p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
+          ! Standard routine without flux transformation
           call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
@@ -4799,17 +4865,24 @@ contains
 
       else
 
-        if (present(fcb_calcFluxTransformation)) then
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation, rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              rafcstab%NVAR, nvariable, p_Dx,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
+          ! Standard routine without flux transformation
           call doLimitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
-
       end if
 
       ! Set specifier
@@ -4856,13 +4929,32 @@ contains
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-        call doCorrectScaleByMass(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+        
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha, p_Dflux,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dy, p_ML,rcollection)
+        else
+          ! Standard routine
+          call doCorrectScaleByMass(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+        end if
+        
       else
-        call doCorrect(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_Dalpha, p_Dflux, p_Dy)
+
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha, p_Dflux,&
+              rafcstab%NEQ, rafcstab%NVAR, p_Dy, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doCorrect(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              dscale, p_Dalpha, p_Dflux, p_Dy)
+        end if
       end if
     end if
 
@@ -4948,10 +5040,6 @@ contains
         ! Compute transformed fluxes
         call fcb_calcFluxTransformation(&
             Dx(i,:), Dx(j,:), Diff, F_ij, F_ji)
-
-        ! Compute transformed solution difference
-        call fcb_calcDiffTransformation(&
-            Dx(i,:), Dx(j,:), Diff)
 
         ! Compute the sums of positive/negative antidiffusive increments
         Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
@@ -5479,8 +5567,10 @@ contains
 !<subroutine>
 
   subroutine gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
-      rafcstab, rx, dscale, bclear, ioperationSpec, ry,&
-      fcb_calcFluxTransformation, fcb_calcDiffTransformation)
+      rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed,&
+      fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+      fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
+      fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
 !<description>
     ! This subroutine assembles the divergence vector for nonlinear
@@ -5551,10 +5641,23 @@ contains
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
 
+    ! OPTIONAL: number of transformed variables
+    ! If not present, then the number of variables
+    ! NVARtransformed is taken from the stabilisation structure
+    integer, intent(in), optional :: NVARtransformed
+
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
     optional :: fcb_calcFluxTransformation
     optional :: fcb_calcDiffTransformation
+
+    ! OPTIONAL: callback functions to overwrite the standard operations
+    include 'intf_groupfemcallback.inc'
+    optional :: fcb_calcADIncrements
+    optional :: fcb_calcBounds
+    optional :: fcb_limitNodal
+    optional :: fcb_limitEdgewise
+    optional :: fcb_calcCorrection
 !</input>
 
 !<inputoutput>
@@ -5563,6 +5666,9 @@ contains
 
     ! divergence vector
     type(t_vectorScalar), intent(inout) :: ry
+
+    ! OPTIONAL collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -5571,6 +5677,7 @@ contains
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux,p_Dflux0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    integer :: nvariable
 
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
@@ -5602,6 +5709,12 @@ contains
     !         variables and limit them by the precomputed correction factors.
     !-------------------------------------------------------------------------
 
+    ! Determine number of transformed variables (if any)
+    if (present(NVARtransformed)) then
+      nvariable = NVARtransformed
+    else
+      nvariable = rafcstab%NVARtransformed
+    end if
 
     if (iand(ioperationSpec, AFCSTAB_FCTALGO_INITALPHA) .ne. 0) then
       !-------------------------------------------------------------------------
@@ -5651,30 +5764,45 @@ contains
       end if
 
       ! Compute sums of antidiffusive increments
-      if (present(fcb_calcFluxTransformation) .and.&
-          present(fcb_calcDiffTransformation)) then
-        if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+      if (rafcstab%bprelimiting) then
+        call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
+
+        if (present(fcb_calcADIncrements)) then
+          ! User-supplied callback routine
+          call fcb_calcADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doPreADIncrementsTransformed(p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              rafcstab%NVARtransformed, p_Dx,&
-              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
-        else
-          call doADIncrementsTransformed(p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              rafcstab%NVARtransformed, p_Dx,&
-              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
-        end if
-      else
-        if (rafcstab%bprelimiting) then
-          call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
-          call doPreADIncrements(p_IverticesAtEdge,&
-              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               p_Dx, p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
         else
+          ! Standard routine without flux transformation
+          call doPreADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_Dflux, p_Dflux0, p_Dalpha, p_Dpp, p_Dpm)
+        end if
+        
+      else
+        
+        if (present(fcb_calcADIncrements)) then
+          ! User-supplied callback routine
+          call fcb_calcADIncrements(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation, rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
+          call doADIncrementsTransformed(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              nvariable, p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+        else
+          ! Standard routine without flux transformation
           call doADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-              p_Dx, p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
+              p_Dflux, p_Dalpha, p_Dpp, p_Dpm)
         end if
       end if
 
@@ -5703,10 +5831,18 @@ contains
       call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
       ! Compute local bounds
-      if (present(fcb_calcDiffTransformation)) then
+      if (present(fcb_calcBounds)) then
+        ! User-supplied callback routine
+        call fcb_calcBounds(p_IverticesAtEdge,&
+            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+            rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dqp, p_Dqm,&
+            fcb_calcDiffTransformation, rcollection)
+      elseif (present(fcb_calcDiffTransformation)) then
+        ! Standard routine with difference transformation
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            rafcstab%NVARtransformed, p_Dx, p_Dqp, p_Dqm)
+            nvariable, p_Dx, p_Dqp, p_Dqm)
+        ! Standard routine without difference transformation
       else
         call doBounds(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
@@ -5741,11 +5877,17 @@ contains
       call lsyssc_getbase_double(rafcstab%p_rvectorRm, p_Drm)
 
       ! Compute nodal correction factors
-      if (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
-        call doLimitNodal(rafcstab%NEQ, rafcstab%NVARtransformed,&
+      if (present(fcb_limitNodal)) then
+        ! User-supplied callback routine
+        call fcb_limitNodal(rafcstab%NEQ, nvariable, dscale,&
+            p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, rcollection)
+      elseif (rafcstab%ctypeAFCstabilisation .eq. AFCSTAB_FEMFCT_IMPLICIT) then
+        ! Standard routine without constraints
+        call doLimitNodal(rafcstab%NEQ, nvariable,&
             dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       else
-        call doLimitNodalConstrained(rafcstab%NEQ, rafcstab%NVARtransformed,&
+        ! Standard routine with constraints
+        call doLimitNodalConstrained(rafcstab%NEQ, nvariable,&
             dscale, p_ML, p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm)
       end if
 
@@ -5788,12 +5930,20 @@ contains
         ! Special treatment for semi-implicit FEM-FCT algorithm
         call lsyssc_getbase_double(rafcstab%p_rvectorPrelimit, p_Dflux0)
 
-        if (present(fcb_calcFluxTransformation)) then
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              rafcstab%NVAR, nvariable, p_Dx,&
               p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
+          ! Standard routine without flux transformation
           call doLimitEdgewiseConstrained(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux0, p_Dflux, p_Drp, p_Drm, p_Dalpha)
@@ -5801,17 +5951,24 @@ contains
 
       else
 
-        if (present(fcb_calcFluxTransformation)) then
+        if (present(fcb_limitEdgewise)) then
+          ! User-supplied callback routine
+          call fcb_limitEdgewise(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
+              p_Dalpha, fcb_calcFluxTransformation, rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation)) then
+          ! Standard routine with flux transformation
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
-              rafcstab%NVAR, rafcstab%NVARtransformed, p_Dx,&
+              rafcstab%NVAR, nvariable, p_Dx,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         else
+          ! Standard routine without flux transformation
           call doLimitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
               p_Dflux, p_Drp, p_Drm, p_Dalpha)
         end if
-
       end if
 
       ! Set specifier
@@ -5858,13 +6015,32 @@ contains
       ! Apply antidiffusive fluxes
       if (iand(ioperationSpec, AFCSTAB_FCTALGO_SCALEBYMASS) .ne. 0) then
         call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
-        call doCorrectScaleByMass(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+        
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha, p_Dflux,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dy, p_ML,rcollection)
+        else
+          ! Standard routine
+          call doCorrectScaleByMass(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              dscale, p_ML, p_Dalpha, p_Dflux, p_Dy)
+        end if
+        
       else
-        call doCorrect(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            dscale, p_Dalpha, p_Dflux, p_Dy)
+
+        if (present(fcb_calcCorrection)) then
+          ! User-supplied callback routine
+          call fcb_calcCorrection(p_IverticesAtEdge, rafcstab%NEDGE,&
+              rafcstab%NEQ, rafcstab%NVAR, dscale, p_Dalpha, p_Dflux,&
+              rafcstab%NVAR, rafcstab%NEQ, p_Dy, rcollection=rcollection)
+        else
+          ! Standard routine
+          call doCorrect(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              dscale, p_Dalpha, p_Dflux, p_Dy)
+        end if
       end if
     end if
     
@@ -5877,9 +6053,8 @@ contains
     ! antidiffusive fluxes without transformation and prelimiting
 
     subroutine doADIncrements(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dx, Dflux, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -5965,9 +6140,8 @@ contains
     ! antidiffusive fluxes without transformation and with prelimiting
 
     subroutine doPreADIncrements(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dx, Dflux, Dflux0, Dalpha, Dpp, Dpm)
+        NEDGE, NEQ, NVAR, Dflux, Dflux0, Dalpha, Dpp, Dpm)
 
-      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
@@ -6902,7 +7076,7 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
@@ -7589,7 +7763,7 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha

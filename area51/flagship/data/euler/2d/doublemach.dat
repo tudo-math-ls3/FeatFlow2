@@ -83,14 +83,13 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(4) = 
+slimitingvariable(3) = 
   density
-  energy
-  momentum_x
-  momentum_y
+  pressure
+  velocity
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -186,7 +185,7 @@ errorestimator = ErrorEstimator
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -204,7 +203,7 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/doublemach_fct_density_energy_momentum_noprelimit_NLEV8
+sucdsolution = out/doublemach_fct_density_pressure_velocity_NLEV7
 
 # file for UCD output of error
 sucderror = 
@@ -256,13 +255,13 @@ dinitialTime = 0.0
 dfinalTime = 0.2
 
 # initial time step size
-dinitialStep = 5e-5
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 5e-5
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 5e-5
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -304,10 +303,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce

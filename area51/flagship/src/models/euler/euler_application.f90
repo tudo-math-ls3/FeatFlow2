@@ -598,7 +598,7 @@ contains
     integer :: templateMatrix,systemMatrix,jacobianMatrix,consistentMassMatrix
     integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
-    integer :: imatrixFormat,ivar,jvar,nvariable
+    integer :: imatrixFormat,ivar,jvar,ivariable,nvariable,nvartransformed
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -1070,27 +1070,30 @@ contains
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
 
-        ! Get number of limiting variables
+        ! Get number of expressions for limiting variables
         nvariable = max(1,&
             parlst_querysubstrings(rparlist,&
             ssectionName, 'slimitingvariable'))
         
         ! Initialise number of limiting variables
-        if (nvariable .eq. 1) then
+        nvartransformed = 1
+
+        ! Determine maximum number of limiting variables in a single set
+        do ivariable = 1, nvariable
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=1)
-          nvariable = euler_getNVARtransformed(&
-              rproblemLevel, slimitingvariable)
-        else
-          nvariable = 1
-        end if
-        
+              slimitingvariable, isubstring=ivariable)
+          nvartransformed = max(nvartransformed,&
+              euler_getNVARtransformed(rproblemLevel, slimitingvariable))
+        end do
+
+        ! Initialise stabilisation structure
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC), nvariable)
+            rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
 
       else
+        ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(templateMatrix))

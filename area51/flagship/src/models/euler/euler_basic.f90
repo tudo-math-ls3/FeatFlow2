@@ -266,6 +266,14 @@ contains
 
       NVARtransformed = 2
 
+    elseif (svariables .eq. 'momentum') then
+
+      NVARtransformed = rproblemLevel%rtriangulation%ndim
+
+    elseif (svariables .eq. 'velocity') then
+
+      NVARtransformed = rproblemLevel%rtriangulation%ndim
+
     else
 
       NVARtransformed = 1
