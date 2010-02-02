@@ -10064,7 +10064,7 @@ contains
   ! inverse of the transformation matrix (in each point) as
   ! stated above.
 !  if ((Bder(DER_DERIV_X)) .or. (Bder(DER_DERIV_Y))) then
-    dxj = 0.25E0_DP / ddetj
+    dxj = 1.0E0_DP / ddetj          !!!!!!!!!!!! 0.25E0_DP / ddetj
     
     ! x- and y-derivatives on reference element
     Dhelp(1,1) = 0.0_DP
@@ -10161,7 +10161,7 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(4,NDIM2D,npoints) :: Dhelp
+  real(DP), dimension(3,NDIM2D,npoints) :: Dhelp
 
   real(DP),dimension(npoints) :: dxj !auxiliary variable
   
@@ -10185,16 +10185,16 @@ contains
   
   !if x-or y-derivatives are desired
 !  IF ((Bder(DER_DERIV_X)) .OR. (Bder(DER_DERIV_Y))) THEN
-    Dxj(:) = 0.25E0_DP / Ddetj(1:npoints)
+    Dxj(:) = 1.0E0_DP / Ddetj(1:npoints)        !!!!!!!!!!Dxj(:) = 0.25E0_DP / Ddetj(1:npoints)
     
     !x- and y-derivatives on reference element
     do i=1,npoints
       Dhelp(1,1,i) = 0.0_DP
-      Dhelp(2,1,i) = 0.1_DP
+      Dhelp(2,1,i) = 1.0_DP
       Dhelp(3,1,i) = 0.0_DP
       Dhelp(1,2,i) = 0.0_DP
       Dhelp(2,2,i) = 0.0_DP
-      Dhelp(3,2,i) = 0.1_DP
+      Dhelp(3,2,i) = 1.0_DP
     end do
       
     !x-derivatives on current element
@@ -10203,7 +10203,6 @@ contains
         Dbas(1,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(1,1,i) - Djac(2,i) * Dhelp(1,2,i))
         Dbas(2,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(2,1,i) - Djac(2,i) * Dhelp(2,2,i))
         Dbas(3,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(3,1,i) - Djac(2,i) * Dhelp(3,2,i))
-        Dbas(4,DER_DERIV_X,i) = dxj(i) * (Djac(4,i) * Dhelp(4,1,i) - Djac(2,i) * Dhelp(4,2,i))
 !      END DO
 !    ENDIF
     
@@ -10213,7 +10212,6 @@ contains
         Dbas(1,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(1,1,i) - Djac(1,i) * Dhelp(1,2,i))
         Dbas(2,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(2,1,i) - Djac(1,i) * Dhelp(2,2,i))
         Dbas(3,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(3,1,i) - Djac(1,i) * Dhelp(3,2,i))
-        Dbas(4,DER_DERIV_Y,i) = -dxj(i) * (Djac(3,i) * Dhelp(4,1,i) - Djac(1,i) * Dhelp(4,2,i))
       end do
 !    ENDIF
 !  ENDIF
@@ -10306,7 +10304,7 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(4,NDIM2D,npoints) :: Dhelp
+  real(DP), dimension(3,NDIM2D,npoints) :: Dhelp
 
   real(DP),dimension(npoints) :: dxj !auxiliary variable
   
@@ -10342,7 +10340,7 @@ contains
   
     !$omp parallel do default(shared) private(i,dxj,Dhelp)
     do j=1,nelements
-      Dxj(:) = 0.25E0_DP / Ddetj(1:npoints,j)
+      Dxj(:) = 1.0E0_DP / Ddetj(1:npoints,j)                !!!!!!!!! Dxj(:) = 0.25E0_DP / Ddetj(1:npoints,j)
       
       !x- and y-derivatives on reference element
       do i=1,npoints
@@ -10454,7 +10452,7 @@ contains
 ! </subroutine>
 
   !auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,5) :: Dhelp
+  real(DP), dimension(6,5) :: Dhelp
   real(DP) :: dx,dy
 
   integer :: idof
@@ -10734,7 +10732,7 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,5,npoints) :: Dhelp
+  real(DP), dimension(6,5,npoints) :: Dhelp
   real(DP) :: dx,dy
   real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variable
   
@@ -11044,7 +11042,7 @@ contains
 ! </subroutine>
 
   ! auxiliary vector containing the first derivatives on the reference element
-  real(DP), dimension(9,5,npoints) :: Dhelp
+  real(DP), dimension(6,5,npoints) :: Dhelp
   real(DP) :: dx,dy
   real(DP),dimension(npoints) :: Dxj,Dxjs,Dc1,Dc2,Dc3 !auxiliary variables
   
