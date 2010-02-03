@@ -72,22 +72,22 @@ subroutine cc_initParticleDescriptor(rPDescriptor)
   integer :: i
   real(dp) :: dx,dy,drho,drad
   
-  rPDescriptor%iparticles=1
+  rPDescriptor%iparticles=2
   
   allocate(rPDescriptor%pparameters(4,rPDescriptor%iparticles))
   
-  drad = 0.225_dp
+  drad = 0.05_dp
   drho = 1.25_dp
-  dx = 1.0_dp
-  dy = 2.0_dp
+  dx = 0.945_dp
+  dy = 0.25_dp
   
   do i=1,rPDescriptor%iparticles
     rPDescriptor%pparameters(1,i)= dx
     rPDescriptor%pparameters(2,i)= dy
     rPDescriptor%pparameters(3,i)= drad
     rPDescriptor%pparameters(4,i)= drho
-    dx = dx + 2*drad + 0.2_dp
-    dy = dy ! + 0.5_dp
+    dx = dx + 2*drad +0.01_dp
+    dy = dy !+ 2*drad +0.01_dp !+ 0.025_dp
   end do
   
 end subroutine ! end cc_initParticleDescriptor

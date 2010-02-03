@@ -1614,6 +1614,8 @@ contains
   ! Default implementation: Velocity and acceleration is zero in all dimensinons.
   Dvelocity(1) = 0.0_DP
   Dvelocity(2) = -p_rparticleCollection%p_rParticles(1)%dtransVelY
+  !Dvelocity(2) = -p_rparticleCollection%p_rParticles(ipart)%dAccel(1)
+   
   
   Dacceleration(1) = 0.0_DP
   Dacceleration(2) = -p_rparticleCollection%p_rParticles(1)%dAccel(1)/dtimestep                      
@@ -1767,14 +1769,13 @@ contains
 
 !        Revaluation(1)%p_Dvalues (idx,1) = rcollection%Dquickaccess(10) + lvx
 !        Revaluation(2)%p_Dvalues (idx,1) = rcollection%Dquickaccess(11) + lvy
-
         Revaluation(1)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelX + lvx
-!        Revaluation(2)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelY + lvy
-!        Revaluation(2)%p_Dvalues (idx,1) = lvy        
-
+        if(ipart .eq. 1)then
+          Revaluation(2)%p_Dvalues (idx,1) = 0.0_dp        
+        else
+          Revaluation(2)%p_Dvalues (idx,1) = p_rparticleCollection%p_rParticles(ipart)%dtransVelY + lvy
+        end if
 !        Revaluation(1)%p_Dvalues (idx,1) = 0.0_dp !dspeed
-         Revaluation(2)%p_Dvalues (idx,1) = 0.0_dp
-
         
       end if
       

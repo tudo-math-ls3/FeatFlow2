@@ -1158,6 +1158,7 @@ contains
     real(dp), dimension(:,:), pointer :: p_DbdyEdg
     real(DP), dimension(:,:), pointer :: p_Dcoord
     real(DP), dimension(:), pointer   :: p_Ddata3   
+    real(DP), dimension(:), pointer   :: p_Ddata4   
        
     
     call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
@@ -1381,6 +1382,9 @@ contains
       
     end if
     
+    allocate(p_Ddata3(p_rtriangulation%NVT))        
+    allocate(p_Ddata4(p_rtriangulation%NVT))            
+    
     if(rproblem%iParticles .gt. 0)then
       p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
       do ipart=1,p_rparticleCollection%nparticles
@@ -1396,6 +1400,29 @@ contains
         ipolyHandle = ST_NOHANDLE
       end do
     end if
+
+
+
+    do iloop=1,p_rtriangulation%NVT
+      do ipart=1,p_rparticleCollection%nparticles
+        p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
+        call geom_isInGeometry (p_rgeometryObject, (/p_Dcoord(1,iloop),p_Dcoord(2,iloop)/), iin)
+        if(iin .eq. 1)then
+          p_Ddata3(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)          
+          p_Ddata4(iloop)=p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)
+          exit          
+        else
+          p_Ddata3(iloop)=0.0_dp          
+          p_Ddata4(iloop)=0.0_dp          
+        end if
+      end do
+    end do    
+    
+    call ucd_addVarVertBasedVec (rexport,'forcaparticle',&
+        p_Ddata3(1:p_rtriangulation%NVT),p_Ddata4(1:p_rtriangulation%NVT))
+    
+    deallocate(p_Ddata3)
+    deallocate(p_Ddata4)
     
     
     ! Write the file to disc, that is it.
@@ -2322,391 +2349,6 @@ contains
 ! ***************************************************************************  
   
 !<subroutine>
-  subroutine cc_updateParticlePosition(rproblem,dtimestep)
-!<description>
-  ! 
-!</description>
-
-!<inputoutput>
-  type(t_problem), intent(INOUT) :: rproblem
-  real(dp), intent(in) :: dtimestep
-!</inputoutput>
-
-!</subroutine>
-
-    ! local variables
-    integer :: ipart,i,iedge1,iedge2,iseg,jpart
-    real(DP) :: ah1,ah2,ah3,dvelx,dvely,dvelz,dmasssl,ddmasssl,dvolume,dimomir
-    real(DP) :: dfx,dfy,length
-    real(DP) :: dCenterX,dCenterY,dCenterXold,dCenterYold,domega,CenterX2,CenterY2
-    type(t_geometryObject), pointer :: p_rgeometryObject,p_rgeometryObject2
-    
-    ! this structure holds all the particles used in the application
-    type(t_particleCollection), pointer :: p_rparticleCollection
-    
-    ! parameters for collision
-    real(DP) :: eps1,eps2,pdist, ddist, deltaMesh, FWx,FWy
-    real(dp) :: ew1,ew2,dwall,t,FPx,FPy,dprad,dprad2
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation), pointer :: p_rtriangulation
-    real(DP), dimension(:,:), pointer :: p_Dcoords
-    integer, dimension(:,:), pointer :: p_Iedges    
-    real(DP), dimension(2) :: Dp1,Dp2,DpointA,DX,Dnormal,r,DV
-    real(dp), dimension(:,:), pointer :: p_DbdyEdg   
-    real(dp),dimension(:),pointer :: Ddistances
-    call cc_calcDistPart(rproblem,dtimestep)
-    
-    call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
-    
-    p_rtriangulation => rproblem%RlevelInfo(rproblem%NLMAX)%rtriangulation
-    
-    call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords, p_Dcoords)
-    call storage_getbase_int2D(p_rtriangulation%h_IverticesAtEdge, p_Iedges)
-    
-    iedge1=p_Iedges(1,1)
-    iedge2=p_Iedges(2,1)
-    
-    Dp1(:)=p_Dcoords(:,iedge1)
-    Dp2(:)=p_Dcoords(:,iedge2)
-    
-    deltaMesh=sqrt((Dp1(1)-Dp2(1))**2 + (Dp1(2)-Dp2(2))**2)
-
-    deltaMesh = 0.015625_dp
-    
-    ! deltaMesh^2
-    eps1 = deltaMesh**2
-    
-    ! deltaMesh
-    eps2 = deltaMesh
-    
-    pdist = 0.5_dp * deltaMesh
-    
-    ew1=0.5_dp*(1.0_dp/eps1)
-    ew2=0.5_dp*(1.0_dp/eps2)
-
-    p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
-
-    ! loop over all the particles and move eac of them
-    ! individually
-    do ipart=1,p_rparticleCollection%nparticles
-  
-      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject    
-    
-      ! position
-      dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
-      dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
-      
-      ! old position
-      dCenterXold=p_rgeometryObject%rcoord2D%Dorigin(1)
-      dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
-      
-      ! some physical parameters
-      dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
-      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume 
-      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume 
-      
-      ! Calculate the moment of inertia by formula,
-      ! this formula is valid only for a circle
-      ! note: for other shaped an approximation can
-      ! be calculated by the routine cc_torque:
-      ! there we calculated :int_Particle |r|^2 dParticle
-      ! the moment of inertia can then be calculated by
-      ! int_Particle [(COG_particle - X) .perpdot. u] dParticle / int_Particle |r|^2 dParticle
-      ! The part : "int_Particle [(COG_particle - X) .perpdot. u] dParticle"
-      ! we already calculated earlier; so we just need to divide...
-      ! moment of inertia 
-      dimomir  = &
-      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
-      
-      ! Mean resistance forces for the given time step
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
-
-      allocate(Ddistances(rproblem%isegments))
-      FWy=0.0_dp
-      FWx=0.0_dp
-      !----------------------------------------------------------------------------------------   
-      !                        CALCULATE WALL REPULSIVE FORCES
-      !---------------------------------------------------------------------------------------- 
-      do iseg=1,rproblem%isegments
-      
-        Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
-        Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
-        DpointA(1)=dCenterX
-        DpointA(2)=dCenterY
-        call gaux_calcDistPEdg2D(DpointA,Dp1,Dp2,ddist,t)
-        
-        DX(1)=Dp1(1)+t*(Dp2(1)-Dp1(1))
-        DX(2)=Dp1(2)+t*(Dp2(2)-Dp1(2))
-        Ddistances(iseg)=ddist
-        call output_line ('SegmentNo: = '//trim(sys_si(iseg,2)) )
-        dwall=1.5_dp  
-        if(ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist)then
-          FWx=FWx+0.0_dp
-          FWy=FWy+0.0_dp
-          call output_line ('Case 1: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 1: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        elseif((ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad).and. &
-               (ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist))then
-          FWx=FWx+&
-          (1.0_dp/eps1)*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
-          FWy=FWy+&
-          (1.0_dp/eps1)*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
-          call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        elseif(ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad)then
-          FWx=FWx+&
-          (1.0_dp/eps1)*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
-          FWy=FWy+&
-          (1.0_dp/eps1)*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
-          call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 3: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        end if
-      
-      end do
-      
-
-      !----------------------------------------------------------------------------------------   
-      !                        CALCULATE PARTICLE REPULSIVE FORCES
-      !---------------------------------------------------------------------------------------- 
-      !initialize the forces for this particle by 0!
-      FPx = 0.0_dp     
-      FPy = 0.0_dp     
-      do jpart=1,p_rparticleCollection%nparticles
-        p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        ddist=rproblem%dDistMatrix(ipart,jpart)
-        dprad=p_rparticleCollection%p_rParticles(ipart)%drad
-        dprad2=p_rparticleCollection%p_rParticles(jpart)%drad
-        CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
-        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
-        if(ddist .gt. (dprad+dprad2+pdist))then
-          FPx = FPx + 0.0_dp
-          FPy = FPy + 0.0_dp
-          call output_line ('Case 1: CollforcesX: = '//trim(sys_sdEP(0.0_dp,15,6)) )
-          call output_line ('Case 1: CollforcesY: = '//trim(sys_sdEP(0.0_dp,15,6)) )          
-        elseif((ddist .ge. dprad+dprad2).and.(ddist .le. dprad+dprad2+pdist))then
-          FPx = FPx + (1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2
-          FPy = FPy + (1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2
-          call output_line ('Case 2: CollforcesX: = '//trim(sys_sdEP(&
-          -(1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )
-          call output_line ('Case 2: CollforcesY: = '//trim(sys_sdEP(&
-          -(1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )          
-        elseif(ddist .le. dprad+dprad2)then
-          FPx = FPx + (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist)
-          FPy = FPy + (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist)
-          call output_line ('Case 3: CollforcesX: = '//trim(sys_sdEP(&
-          (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist),15,6)) )
-          call output_line ('Case 3: CollforcesY: = '//trim(sys_sdEP(&
-          (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist),15,6)) )          
-        end if
-      
-      end do
-      
-      !----------------------------------------------------------------------------------------   
-      !               CALCULATE CHANGE IN TRANSLATIONAL AND ANGULAR VELOCITY
-      !----------------------------------------------------------------------------------------   
-      ! Velocity difference for the given time step
-      dvelx   = dtimestep*(FPx+FWx+1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
-      dvely   = dtimestep*(FPy+FWy+1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
-      !dvely   = dtimestep*(FWy+1.0_dp*dfy+ddmasssl*0.0_dp)/dmasssl
-   
-      ! integrate the torque to get the angular velocity
-      ! avel_new=time * 0.5*(torque_old + torque_new)/dimomir
-      domega = dtimestep*0.5_dp*(p_rparticleCollection%p_rParticles(ipart)%dTorque(2) &
-               + p_rparticleCollection%p_rParticles(ipart)%dTorque(1)) /dimomir
-
-      !----------------------------------------------------------------------------------------   
-      !                          UPDATE THE TORQUE
-      !----------------------------------------------------------------------------------------   
-      ! set the new values for the torque
-      ! torque_old=torque_new
-      p_rparticleCollection%p_rParticles(ipart)%dTorque(2)= &
-      p_rparticleCollection%p_rParticles(ipart)%dTorque(1)
-      
-      !----------------------------------------------------------------------------------------   
-      !                          UPDATE THE ANGLES AND ANGULAR VELOCITY
-      !----------------------------------------------------------------------------------------   
-      ! 
-      ! a_new = a_old + time*(avel_old + 0.5*avel_new)
-      ! Overwrite rotation angle
-      p_rgeometryObject%rcoord2D%drotation = &
-      p_rgeometryObject%rcoord2D%drotation + &
-      dtimestep * (p_rparticleCollection%p_rParticles(ipart)%dangVelocity + 0.5_dp*domega)
-      
-      ! Recalculate SIN and COS values of angle
-      p_rgeometryObject%rcoord2D%dsin_rotation = sin(p_rgeometryObject%rcoord2D%drotation)
-      p_rgeometryObject%rcoord2D%dcos_rotation = cos(p_rgeometryObject%rcoord2D%drotation)
-      
-      ! Update the angular velocity
-      ! avel_new = avel_old + avel_new
-      p_rparticleCollection%p_rParticles(ipart)%dangVelocity= &
-      p_rparticleCollection%p_rParticles(ipart)%dangVelocity + domega
-    
-      !----------------------------------------------------------------------------------------   
-      !                          UPDATE THE FORCES
-      !----------------------------------------------------------------------------------------   
-      ! save the old forces for the next time step
-      p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) = &
-      p_rparticleCollection%p_rParticles(ipart)%rResForceX(1)      
-
-      p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) = &
-      p_rparticleCollection%p_rParticles(ipart)%rResForceY(1)      
-      
-      !----------------------------------------------------------------------------------------   
-      !                          UPDATE THE PARTICLE POSITION
-      !----------------------------------------------------------------------------------------   
-      ! update the position of the x-center
-      dCenterX = dCenterX + dtimestep * &
-      (p_rparticleCollection%p_rParticles(ipart)%dtransVelX+0.5_dp*dvelx)
-
-      ! update the position of the geometry object
-      p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
-      
-      ! if we are dealing with the reference particle
-      ! update the position of the y-center
-      dCenterY = dCenterY + dtimestep * &
-      (p_rparticleCollection%p_rParticles(ipart)%dtransVelY + &
-      0.5_dp*dvely)
-      p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
-
-
-      !----------------------------------------------------------------------------------------   
-      !                          UPDATE THE PARTICLE VELOCITY
-      !----------------------------------------------------------------------------------------   
-      ! save old velocity
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelXold=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelYold=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
-      ! save the current velocity
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
-      
-      
-      !----------------------------------------------------------------------------------------   
-      !                          Collision with walls
-      !----------------------------------------------------------------------------------------
-      do iseg=1,rproblem%isegments
-        
-        if( Ddistances(iseg) .lt. p_rparticleCollection%p_rParticles(ipart)%drad )then
-        
-          DV(1)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-          DV(2)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
-        
-          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
-          Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)        
-        
-          Dnormal(1)=-1.0_dp*(Dp2(2)-Dp1(2))
-          Dnormal(2)= (Dp2(2)-Dp1(2))    
-          
-          length=sqrt(Dnormal(1)**2 + Dnormal(2)**2)
-          
-          r(:)=DV(:)-2.0_dp*Dnormal(:)*(Dnormal(1)*DV(1)+Dnormal(2)*DV(2))
-
-          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.984*r(1)
-          
-          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.984*r(2)
-          
-          p_rgeometryObject%rcoord2D%Dorigin(:)=&
-          p_rgeometryObject%rcoord2D%Dorigin(:) + &
-          (p_rparticleCollection%p_rParticles(ipart)%drad-Ddistances(iseg)) * Dnormal(:)
-          
-        end if
-      end do
-!                Particles[i].m_vVelocity.y -= 0.98f * dT;
-!                Particles[i].Center() += Particles[i].m_vVelocity;
-!
-!                        if( fabs(Particles[i].Center().y - g_UnitCube1.Ymin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().y = g_UnitCube1.Ymin()+0.4f;
-!                                Particles[i].m_vVelocity.y=-0.84f * Particles[i].m_vVelocity.y;
-!                                Particles[i].m_vVelocity.x=0.994f * Particles[i].m_vVelocity.x;
-!                                Particles[i].m_vVelocity.z=0.994f * Particles[i].m_vVelocity.z;
-!								
-!								CVector3f vPoint(Particles[i].Center().x,g_UnitCube1.Ymin(),Particles[i].Center().z);
-!								CVector3f collnormal=(Particles[0].Center()-vPoint);
-!								collnormal.Normalize();
-!								Real relVel = Particles[i].m_vVelocity * collnormal;
-!								cout<<"Velocity along normal"<<relVel<<endl;
-!								cout<<"gravity * dT"<<0.98f * dT<<endl;
-!								if(relVel < (0.98f * dT))
-!								{
-!								  Particles[i].m_vVelocity=CVector3f(0,0,0);
-!								  Particles[i].m_iStat = 1;
-!								}//end if
-!								
-!
-!                        }
-!
-!                        if( fabs(Particles[i].Center().x - g_UnitCube1.Xmin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().x = g_UnitCube1.Xmin()+0.4f;
-!                                Particles[i].m_vVelocity.x=-0.84f * Particles[i].m_vVelocity.x;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().x - g_UnitCube1.Xmax()) < 0.4f)
-!                        {
-!                                Particles[i].Center().x = g_UnitCube1.Xmax()-0.4f;
-!                                Particles[i].m_vVelocity.x=-0.84f * Particles[i].m_vVelocity.x;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().z - g_UnitCube1.Zmax()) < 0.4f)
-!                        {
-!                                Particles[i].Center().z = g_UnitCube1.Zmax()+0.4f;
-!                                Particles[i].m_vVelocity.z=-0.84f * Particles[i].m_vVelocity.z;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().z - g_UnitCube1.Zmin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().z = g_UnitCube1.Zmin() - 0.4f;
-!                                Particles[i].m_vVelocity.z=-0.84f * Particles[i].m_vVelocity.z;
-!                        }
-      
-      
-      !----------------------------------------------------------------------------------------   
-      !                          SCREEN OUTPUT
-      !----------------------------------------------------------------------------------------   
-      ! Output some values to get some readable stuff on the
-      ! the screen
-      call output_line('--------------------------')
-      call output_line ('torque force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('torque force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('drag force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('drag force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('lift force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('lift force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('DAngVel = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dangVelocity,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('dCenterX = '//trim(sys_sdEP(dCenterX,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('dCenterY = '//trim(sys_sdEP(dCenterY,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('VelocityX new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelX,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('VelocityY new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelY,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('VelocityX old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelXold,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('VelocityY old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelYold,15,6)) )
-      call output_line('--------------------------')
-      
-      deallocate(Ddistances)
-      
-    end do ! end ipart
-    
-  end subroutine
-
-! ***************************************************************************  
-  
-!<subroutine>
   subroutine cc_Particle(cderivative,rdiscretisation, &
                 nelements,npointsPerElement,Dpoints, &
                 IdofsTest,rdomainIntSubset,&
@@ -2933,8 +2575,10 @@ contains
     
     pdist = 0.5_dp * deltaMesh
     
-    ew1=0.5_dp*(1.0_dp/eps1)
-    ew2=0.5_dp*(1.0_dp/eps2)
+    !pdist = deltaMesh
+    
+    ew1=(1.0_dp/eps1)
+    ew2=(1.0_dp/eps2)
 
     p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
@@ -2998,23 +2642,23 @@ contains
         if(ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist)then
           FWx=FWx+0.0_dp
           FWy=FWy+0.0_dp
-          call output_line ('Case 1: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 1: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+!          call output_line ('Case 1: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+!          call output_line ('Case 1: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
         elseif((ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad).and. &
                (ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist))then
           FWx=FWx+&
-          (1.0_dp/eps1)*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
+          ew1*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
           FWy=FWy+&
-          (1.0_dp/eps1)*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
-          call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+          ew1*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
+!          call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+!          call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
         elseif(ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad)then
           FWx=FWx+&
-          (1.0_dp/eps1)*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
+          ew2*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
           FWy=FWy+&
-          (1.0_dp/eps1)*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
-          call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 3: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+          ew2*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
+!          call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+!          call output_line ('Case 3: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
         end if
       
       end do
@@ -3027,38 +2671,50 @@ contains
       FPx = 0.0_dp     
       FPy = 0.0_dp     
       do jpart=1,p_rparticleCollection%nparticles
+      if(ipart .eq. jpart)cycle
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
         ddist=rproblem%dDistMatrix(ipart,jpart)
         dprad=p_rparticleCollection%p_rParticles(ipart)%drad
         dprad2=p_rparticleCollection%p_rParticles(jpart)%drad
         CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
         CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
+        call output_line ('Combi: = '//trim(sys_si(ipart,2))//trim(sys_si(jpart,2)) )
+        call output_line ('Dist: = '//trim(sys_sdEP(ddist,15,6)) )
+        call output_line ('dprad+dprad2: = '//trim(sys_sdEP(dprad+dprad2,15,6)) )
+        call output_line ('dprad+dprad2+pdist: = '//trim(sys_sdEP(dprad+dprad2+pdist,15,6)) )
         if(ddist .gt. (dprad+dprad2+pdist))then
           FPx = FPx + 0.0_dp
           FPy = FPy + 0.0_dp
-          call output_line ('Case 1: CollforcesX: = '//trim(sys_sdEP(0.0_dp,15,6)) )
-          call output_line ('Case 1: CollforcesY: = '//trim(sys_sdEP(0.0_dp,15,6)) )          
+!          call output_line ('Case 1: CollforcesX: = '//trim(sys_sdEP(0.0_dp,15,6)) )
+!          call output_line ('Case 1: CollforcesY: = '//trim(sys_sdEP(0.0_dp,15,6)) )          
         elseif((ddist .ge. dprad+dprad2).and.(ddist .le. dprad+dprad2+pdist))then
-          FPx = FPx + (1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2
-          FPy = FPy + (1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2
+          FPx = FPx - ew1 * (dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2
+          FPy = FPy - ew1 * (dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2
+          call output_line ('Combi: = '//trim(sys_si(ipart,2))//trim(sys_si(jpart,2)) )
           call output_line ('Case 2: CollforcesX: = '//trim(sys_sdEP(&
-          -(1.0_dp/eps1)*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )
+          -ew1*(dCenterX-CenterX2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )
           call output_line ('Case 2: CollforcesY: = '//trim(sys_sdEP(&
-          -(1.0_dp/eps1)*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )          
+          -ew1*(dCenterY-CenterY2)*(dprad+dprad2+pdist-ddist)**2,15,6)) )          
         elseif(ddist .le. dprad+dprad2)then
-          FPx = FPx + (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist)
-          FPy = FPy + (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist)
+          FPx = FPx + ew2 * (dCenterX-CenterX2)*(dprad+dprad2-ddist)
+          FPy = FPy + ew2 * (dCenterY-CenterY2)*(dprad+dprad2-ddist)
+          call output_line ('Combi: = '//trim(sys_si(ipart,2))//trim(sys_si(jpart,2)) )
           call output_line ('Case 3: CollforcesX: = '//trim(sys_sdEP(&
-          (1.0_dp/eps2)*(dCenterX-CenterX2)*(dprad+dprad2-ddist),15,6)) )
+          ew2*(dCenterX-CenterX2)*(dprad+dprad2-ddist),15,6)) )
           call output_line ('Case 3: CollforcesY: = '//trim(sys_sdEP(&
-          (1.0_dp/eps2)*(dCenterY-CenterY2)*(dprad+dprad2-ddist),15,6)) )          
+          ew2*(dCenterY-CenterY2)*(dprad+dprad2-ddist),15,6)) )          
         end if
       
       end do
+      FPx = 2.5_dp*FPx
+      FPy = 2.5_dp*FPy
+      p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)=FPx
+      p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)=FPy
       
       !----------------------------------------------------------------------------------------   
       !               CALCULATE CHANGE IN TRANSLATIONAL AND ANGULAR VELOCITY
       !----------------------------------------------------------------------------------------   
+      call output_line ('drag force X = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(2),15,6)) )      
       ! Velocity difference for the given time step
       dvelx   = dtimestep*(FPx+FWx+1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
       dvely   = dtimestep*(FPy+FWy+1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
@@ -3119,14 +2775,17 @@ contains
       ! update the x-position of the geometry object
       p_rgeometryObject%rcoord2D%Dorigin(1)=dCenterX
       
-      ! if we are dealing with the reference particle
-      ! update the position of the y-center
-!      dCenterY = dCenterY + dtimestep * &
-!      (p_rparticleCollection%p_rParticles(ipart)%dtransVelY + &
-!      0.5_dp*dvely)
-      ! update the y-position of the geometry object
-      !p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
-
+      if(ipart .eq. 1)then
+      else
+        ! if we are dealing with the reference particle
+        ! update the position of the y-center
+        dCenterY = dCenterY + dtimestep * &
+        (p_rparticleCollection%p_rParticles(ipart)%dtransVelY    + &
+         -0.5_dp*p_rparticleCollection%p_rParticles(1)%dAccel(1) + &
+         0.5_dp*dvely)
+        ! update the y-position of the geometry object
+        p_rgeometryObject%rcoord2D%Dorigin(2)=dCenterY
+      end if
 
       !----------------------------------------------------------------------------------------   
       !                          UPDATE THE PARTICLE VELOCITY
@@ -3137,9 +2796,14 @@ contains
       ! save the current velocity
       p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
       p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
-      
+      if(ipart .eq. 1)then
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
+      else
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely - &
+        p_rparticleCollection%p_rParticles(1)%dAccel(1)
+      end if
       
       !----------------------------------------------------------------------------------------   
       !                          Collision with walls
@@ -3226,33 +2890,33 @@ contains
       !----------------------------------------------------------------------------------------   
       ! Output some values to get some readable stuff on the
       ! the screen
-      call output_line('--------------------------')
-      call output_line ('torque force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('torque force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('drag force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('drag force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('lift force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(1),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('lift force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(2),15,6)) )
-      call output_line('--------------------------')
-      call output_line ('DAngVel = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dangVelocity,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('dCenterX = '//trim(sys_sdEP(dCenterX,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('dCenterY = '//trim(sys_sdEP(dCenterY,15,6)) )
-      call output_line('--------------------------')
+!      call output_line('--------------------------')
+!      call output_line ('torque force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(1),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('torque force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dTorque(2),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('drag force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(1),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('drag force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceX(2),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('lift force new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(1),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('lift force old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%rResForceY(2),15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('DAngVel = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dangVelocity,15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('dCenterX = '//trim(sys_sdEP(dCenterX,15,6)) )
+!      call output_line('--------------------------')
+!      call output_line ('dCenterY = '//trim(sys_sdEP(dCenterY,15,6)) )
+!      call output_line('--------------------------')
       call output_line ('VelocityX new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelX,15,6)) )
       call output_line('--------------------------')
-      call output_line ('VelocityY new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelY,15,6)) )
-      call output_line('--------------------------')
+!      call output_line ('VelocityY new = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelY,15,6)) )
+!      call output_line('--------------------------')
       call output_line ('VelocityX old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelXold,15,6)) )
-      call output_line('--------------------------')
-      call output_line ('VelocityY old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelYold,15,6)) )
-      call output_line('--------------------------')
+!      call output_line('--------------------------')
+!      call output_line ('VelocityY old = '//trim(sys_sdEP(p_rparticleCollection%p_rParticles(ipart)%dtransVelYold,15,6)) )
+!      call output_line('--------------------------')
       
       deallocate(Ddistances)
       
