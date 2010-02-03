@@ -795,8 +795,11 @@ contains
     end do
     
     if(inedgesfb .gt. 0)then
-      p_Iedges(ncount+1:ncount+1+inedgesfb)=&
-      p_IallEdges(1:inedgesfb)
+      do i=1,inedgesfb
+        p_Iedges(ncount+i)=p_IallEdges(i)      
+      end do
+!      p_Iedges(ncount+1:ncount+1+inedgesfb)=&
+!      p_IallEdges(1:inedgesfb)
     end if
     
     deallocate(p_IallEdges)
