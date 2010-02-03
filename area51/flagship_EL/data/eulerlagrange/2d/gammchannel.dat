@@ -54,7 +54,7 @@ nPart = 50
 
 # bruteforce	Brute force method
 # raytrace2D	Raytracing method in 2D
-# midpoint	Find element with the nearest midpoint
+# midpoint		Find element with the nearest midpoint
 search = midpoint
 
 #-------------------------------------------------------------------------------
@@ -63,7 +63,7 @@ search = midpoint
 
 # minimum particle-position in x-direction
 xmin = 1d-4
-# maximim particle-position in x-direction
+# maximum particle-position in x-direction
 xmax = 1d-2
 # minimum particle-position in y-direction
 ymin = 0.0
@@ -97,7 +97,6 @@ veloparty = 0
 
 # 0 = ideal wall collision
 # 1 = slip condition
-# 2 = 
 boundbehav = 0
 
 
@@ -137,7 +136,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -263,10 +262,10 @@ istabilisation = 1
 # 1 = GMV
 # 2 = AVS
 # 3 = VTK
-iformatUCD = 1
+iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.1
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel
@@ -275,11 +274,12 @@ sucdsolution = out/gammchannel
 sucderror = out/gammchannel_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
+ velo_part
 
 
 ################################################################################
@@ -312,13 +312,13 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 1e-3
@@ -327,7 +327,7 @@ dinitialStep = 1e-3
 dminStep = 1e-3
 
 # upper bound for the admissible time step
-dmaxStep = 1e-1
+dmaxStep = 1e-3
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -503,7 +503,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 15
+nmaxIterations = 25
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -545,7 +545,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 1e-2
@@ -681,7 +681,7 @@ sprecondName = LinearPrecond
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 99
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -712,7 +712,7 @@ nkrylov = 15
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 1e-2

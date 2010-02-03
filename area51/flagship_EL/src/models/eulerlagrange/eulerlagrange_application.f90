@@ -356,7 +356,7 @@ contains
     ! Solution algorithm
     !---------------------------------------------------------------------------
 
-    if (rtimestep%dfinalTime .ge. rtimestep%dinitialTime) then    !später .gt. anstatt .ge.
+    if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then    
       
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist, 'eulerlagrange', 'algorithm', algorithm)
@@ -387,7 +387,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Euler-Lagrange
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,rtimestep,rcollection,rParticles)
+        call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -472,6 +472,9 @@ contains
     call storage_free (rParticles%h_mass)
     call storage_free (rParticles%h_midpoints_el)
     call storage_free (rParticles%h_alpha_n)
+    call storage_free (rParticles%h_bdy_check)
+    call storage_free (rParticles%h_bdy_time)
+    call storage_free (rParticles%h_PartVol)
 
   end subroutine eulerlagrange_app
 
@@ -1498,6 +1501,34 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
+          elseif (trim(cvariable) .eq. 'velo_part') then
+            
+            ! Special treatment of velocity vector
+            select case(ndim)
+            case (NDIM1D)
+              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+                  'velo_part_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata1)
+
+            case (NDIM2D)
+              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata1)
+              call eulerlagrange_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
+                  p_Ddata1, p_Ddata2)
+
+            case (NDIM3D)
+              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+                  'velo_part_x', p_Dsolution, p_Ddata1)
+              call eulerlagrange_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+                  'velo_part_y', p_Dsolution, p_Ddata2)
+              call eulerlagrange_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+                  'velo_part_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+
           else
 
             ! Standard treatment for scalar quantity
@@ -1569,6 +1600,9 @@ contains
       call lsyssc_releaseVector(rvector3)
       
     end if
+    
+    
+    call ucd_settracers(rexport,reshape((/0.001_dp,0.002_dp,0.003_dp,0.004_dp/),(/2,2/)))
 
     ! Write UCD file
     call ucd_write  (rexport)
