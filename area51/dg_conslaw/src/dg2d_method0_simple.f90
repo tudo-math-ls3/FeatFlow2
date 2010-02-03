@@ -135,9 +135,9 @@ contains
     integer :: ielementType
     
     dt = 0.005_DP
-    ttfinal=0.5_DP
+    ttfinal=0.005_DP
     
-    ielementType = EL_DG_T2_2D
+    ielementType = EL_DG_T1_2D
     
     
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 5
+    NLMAX = 2
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -360,7 +360,7 @@ contains
     call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     
     ! Set the output level of the solver to 2 for some output
-    p_rsolverNode%ioutputLevel = 2
+    p_rsolverNode%ioutputLevel = 0
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
@@ -418,7 +418,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        
@@ -448,7 +448,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -469,7 +469,7 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
-       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G2_1D, .true.,&
+       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -484,6 +484,8 @@ contains
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
        call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
+       ! Limit the solution vector
+       call dg_linearLimiter (rsol)
     
        ! Go on to the next time step
        ttime = ttime + dt
