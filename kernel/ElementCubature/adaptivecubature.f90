@@ -17,7 +17,7 @@
 !#
 !# The following subroutines can be found here:
 !#
-!# 1.) adcub_determineCubature
+!# 1.) adcub_determineSummedCubature
 !#     -> Analyses a function and determines an id for an adaptive cubature
 !#        formula
 !#
