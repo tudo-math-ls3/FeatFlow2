@@ -227,6 +227,12 @@
 !#
 !# 67.) lsysbl_assignDiscreteFBC
 !#      -> Assigns discrete fictitious boundary conditions to a matrix/vector
+!#
+!# 68.) lsysbl_convertScalarBlockVector
+!#      -> Converts a scalar vector (in interleaved format) into block vector
+!#
+!# 69.) lsysbl_convertBlockScalarVector
+!#      -> Converts a block vector into scalar vector (in interleaved format)
 !# </purpose>
 !##############################################################################
 
@@ -533,6 +539,8 @@ module linearsystemblock
   public :: lsysbl_synchroniseSortVecVec
   public :: lsysbl_synchroniseSortMatVec
   public :: lsysbl_createscalarfromvec
+  public :: lsysbl_convertScalarBlockVector
+  public :: lsysbl_convertBlockScalarVector
     
 contains
 
@@ -7385,5 +7393,254 @@ contains
     end if
 
   end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_convertScalarBlockVector(rvectorScalar, rvectorBlock)
+
+!<description>
+  ! This subroutine converts a scalar vector (in interleaved format)
+  ! into a true block vector and copies the data. Note that the block
+  ! vector will be created if it is empty or not compatible.
+!</description>
+
+!<input>
+  ! Scalar vector
+  type(t_vectorScalar), intent(in) :: rvectorScalar
+!</input>
+
+!<inputoutput>
+  ! Block vector
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_DdataSrc, p_DdataDest
+    real(SP), dimension(:), pointer :: p_FdataSrc, p_FdataDest
+    integer :: iblock
+
+    ! Check if scalar vector contains data
+    if (rvectorScalar%NEQ .eq. 0) return
+
+    ! Check if block vector is compatible with the scalar vector
+    if (rvectorBlock%nblocks .ne. rvectorScalar%NVAR) then
+      call lsysbl_releaseVector(rvectorBlock)
+    else
+      do iblock = 1 , rvectorBlock%nblocks
+        if ((rvectorBlock%RvectorBlock(iblock)%NVAR .ne. 1) .or.&
+            (rvectorBlock%RvectorBlock(iblock)%NEQ  .ne. rvectorScalar%NEQ)) then
+          call lsysbl_releaseVector(rvectorBlock)
+          exit
+        end if
+      end do
+    end if
+    
+    ! Create block vector according to the structure of the scalar vector    
+    if (rvectorBlock%NEQ .eq. 0) then
+      call lsysbl_createVectorBlock(rvectorBlock, rvectorScalar%NEQ,&
+          rvectorScalar%NVAR, .false., rvectorScalar%cdataType)
+
+      ! Attach spatial discretisation structure of the source vector
+      ! to each scalar subvector of the block vector
+      do iblock = 1, rvectorBlock%nblocks
+        rvectorBlock%RvectorBlock(iblock)%p_rspatialDiscr =>&
+            rvectorScalar%p_rspatialDiscr
+      end do
+    end if
+    
+    ! What data type are we?
+    select case(rvectorScalar%cdataType)
+      
+    case(ST_DOUBLE)
+      call lsyssc_getbase_double(rvectorScalar, p_DdataSrc)
+      call lsysbl_getbase_double(rvectorBlock, p_DdataDest)
+      call do_convertDble(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+          p_DdataSrc, p_DdataDest)
+
+    case(ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar, p_FdataSrc)
+      call lsysbl_getbase_single(rvectorBlock, p_FdataDest)
+      call do_convertSngl(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+          p_FdataSrc, p_FdataDest)
+
+    case default
+      call output_line ('Unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_convertScalarBlockVector')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the real conversion routines follow.
+
+    !**************************************************************
+    ! Conversion in double precision
+
+    subroutine do_convertDble(NEQ, NVAR, DdataSrc, DdataDest)
+
+      integer, intent(in) :: NEQ, NVAR
+      real(DP), dimension(NVAR,NEQ), intent(in) :: DdataSrc
+      real(DP), dimension(NEQ,NVAR), intent(out) :: DdataDest
+      
+      ! local variables
+      integer :: ivar,ieq
+
+      !$omp parallel do
+      do ivar = 1, NVAR
+        do ieq = 1, NEQ
+          DdataDest(ieq,ivar) = DdataSrc(ivar,ieq)
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine do_convertDble
+
+    !**************************************************************
+    ! Conversion in single precision
+
+    subroutine do_convertSngl(NEQ, NVAR, FdataSrc, FdataDest)
+
+      integer, intent(in) :: NEQ, NVAR
+      real(SP), dimension(NVAR,NEQ), intent(in) :: FdataSrc
+      real(SP), dimension(NEQ,NVAR), intent(out) :: FdataDest
+      
+      ! local variables
+      integer :: ivar,ieq
+
+      !$omp parallel do
+      do ivar = 1, NVAR
+        do ieq = 1, NEQ
+          FdataDest(ieq,ivar) = FdataSrc(ivar,ieq)
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine do_convertSngl
+
+  end subroutine lsysbl_convertScalarBlockVector
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsysbl_convertBlockScalarVector(rvectorBlock, rvectorScalar)
+
+!<description>
+  ! This subroutine converts a block vector into a scalar vector
+  ! (in interleaved format) and copies the data. Note that the scalar
+  ! vector must be allocated and compatible with the block vector.
+  ! This routine does not create the scalar vector since it may be
+  ! a part of a block vector, and hence, it does not own its memory.
+!</description>
+
+!<input>
+  ! Block vector
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+!</input>
+
+!<inputoutput>
+  ! Scalar vector
+  type(t_vectorScalar), intent(inout) :: rvectorScalar
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:), pointer :: p_DdataSrc, p_DdataDest
+    real(SP), dimension(:), pointer :: p_FdataSrc, p_FdataDest
+    integer :: iblock
+
+    ! Check if block vector contains data
+    if (rvectorBlock%NEQ .eq. 0) return
+    
+    ! Check if scalar vector is compatible with the block vector
+    if (rvectorScalar%NVAR .ne. rvectorBlock%nblocks) then
+      call output_line ('Scalar vector is not compatible with block vector!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_convertBlockScalarVector')
+      call sys_halt()
+    end if 
+
+    ! Check if block vector is compatible to interleaved format
+    do iblock = 1, rvectorBlock%nblocks
+      if ((rvectorBlock%RvectorBlock(iblock)%NVAR .ne. 1) .or.&
+          (rvectorBlock%RvectorBlock(iblock)%NEQ .ne. rvectorScalar%NEQ)) then
+        call output_line ('Block vector cannot be stored in interleaved format!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_convertBlockScalarVector')
+        call sys_halt()
+      end if
+    end do
+
+    ! What data type are we?
+    select case(rvectorBlock%cdataType)
+      
+    case(ST_DOUBLE)
+      call lsyssc_getbase_double(rvectorScalar, p_DdataDest)
+      call lsysbl_getbase_double(rvectorBlock, p_DdataSrc)
+      call do_convertDble(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+          p_DdataSrc, p_DdataDest)
+
+    case(ST_SINGLE)
+      call lsyssc_getbase_single(rvectorScalar, p_FdataDest)
+      call lsysbl_getbase_single(rvectorBlock, p_FdataSrc)
+      call do_convertSngl(rvectorScalar%NEQ, rvectorScalar%NVAR,&
+          p_FdataSrc, p_FdataDest)
+
+    case default
+      call output_line ('Unsupported data type!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'lsysbl_convertBlockScalarVector')
+      call sys_halt()
+    end select
+    
+  contains
+
+    ! Here, the real conversion routines follow.
+
+    !**************************************************************
+    ! Conversion in double precision
+
+    subroutine do_convertDble(NEQ, NVAR, DdataSrc, DdataDest)
+
+      integer, intent(in) :: NEQ, NVAR
+      real(DP), dimension(NEQ,NVAR), intent(in) :: DdataSrc
+      real(DP), dimension(NVAR,NEQ), intent(out) :: DdataDest
+      
+      ! local variables
+      integer :: ivar,ieq
+
+      !$omp parallel do
+      do ieq = 1, NEQ
+        do ivar = 1, NVAR
+          DdataDest(ivar,ieq) = DdataSrc(ieq,ivar)
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine do_convertDble
+
+    !**************************************************************
+    ! Conversion in single precision
+
+    subroutine do_convertSngl(NEQ, NVAR, FdataSrc, FdataDest)
+
+      integer, intent(in) :: NEQ, NVAR
+      real(SP), dimension(NEQ,NVAR), intent(in) :: FdataSrc
+      real(SP), dimension(NVAR,NEQ), intent(out) :: FdataDest
+      
+      ! local variables
+      integer :: ivar,ieq
+
+      !$omp parallel do
+      do ieq = 1, NEQ
+        do ivar = 1, NVAR
+          FdataDest(ivar,ieq) = FdataSrc(ieq,ivar)
+        end do
+      end do
+      !$omp end parallel do
+
+    end subroutine do_convertSngl
+
+  end subroutine lsysbl_convertBlockScalarVector
 
 end module
