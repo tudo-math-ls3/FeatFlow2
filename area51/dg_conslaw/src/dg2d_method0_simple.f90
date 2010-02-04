@@ -135,7 +135,7 @@ contains
     integer :: ielementType
     
     dt = 0.005_DP
-    ttfinal=0.005_DP
+    ttfinal= 1.0_DP
     
     ielementType = EL_DG_T1_2D
     
@@ -148,7 +148,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 2
+    NLMAX = 8
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -432,6 +432,9 @@ contains
        
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
+       
+              ! Limit the solution vector
+       call dg_linearLimiter (rsoltemp)
 
 
 !              call lsyssc_getbase_double (rsol,p_Ddata)
@@ -462,6 +465,9 @@ contains
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
        call lsyssc_vectorLinearComb (rsol,rsolUp,0.75_DP,0.25_DP,rsoltemp)
+       
+              ! Limit the solution vector
+       call dg_linearLimiter (rsoltemp)
 
 
        ! Step 3/3
@@ -495,8 +501,50 @@ contains
 
     end do timestepping
     
+    
+    
+    
+    
+    
+    
+    
+!    
+!    
+!    
+!    
+!    call lsyssc_copyVector(rsol,rsoltemp)
+!    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+!                                              rrhs,rsolTemp,&
+!                                              flux_dg_buildVectorScEdge2D_sim)
+!       
+!       call lsyssc_scaleVector (rrhs,-1.0_DP)
+!       ! Then add the convection terms
+!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+!       
+!       ! Solve for solution update
+!       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+!       
+!       ! Get new temp solution
+!       call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
+!    call lsyssc_copyVector(rsoltemp,rsol)
+!    
+!    
+!    
+!    
+!    
+!    
+    
+    
+    
+    
+    
+    
     ! Output solution to gmv file
-    call dg2gmv(rsol,3)
+    call dg2gmv(rsol,0)
+    
+    ! And output the steady projection
+    call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
 
     
 !    

@@ -20,8 +20,24 @@ module dg2d_routines
     use collection
     use linearformevaluation
     use domainintegration
-    use linearsystemscalar
     use feevaluation
+    
+  use stdoperators
+  use genoutput
+  use linearsolver
+  use boundary
+  use filtersupport
+  use matrixfilters
+  use vectorfilters
+  use discretebc
+  use bcassembly
+  use pprocerror
+  use genoutput
+  
+  use ucd
+  
+    
+  use poisson2d_callback
     
 
     implicit none
@@ -1154,7 +1170,7 @@ end subroutine
   integer :: iidx, nvert, ivert, ineighbour, ineighElm
   integer, dimension(4) :: IhomeIndex
   
-  real(dp) :: dui, ddu, dalpha, dalphatemp, duimax, duimin, duc
+  real(dp) :: dui, ddu, dalpha, dalphatemp, duc
   
   integer, dimension(3) :: IdofGlob
   
@@ -1210,7 +1226,9 @@ end subroutine
     do ivt = 1, NVE
       nvt = p_IverticesAtElement(ivt,iel)
       duimax(nvt) = max(duc,duimax(nvt))
-      duimin(nvt) = max(duc,duimin(nvt))
+      duimin(nvt) = min(duc,duimin(nvt))
+    end do
+    
   end do
 
                                
@@ -1248,61 +1266,32 @@ end subroutine
       nvert = p_IverticesAtElement(ivert, iel)
       
       ! The second point we want to evaluate the solution in, is in the corner of the mother element
-      Dpoints(1,2) = p_DvertexCoords(1,nvert)
-      Dpoints(2,2) = p_DvertexCoords(1,nvert)
-      Ielements(2) = iel
-			
-			! We have already 2 points to evaluate
-			iidx = 2
-			
-      ! Loop over the elements containing the vertex
-      do ineighbour = 1, (p_IelementsAtVertexIdx(nvert+1)-p_IelementsAtVertexIdx(nvert))		
-      
-        ineighElm = p_IelementsAtVertex(p_IelementsAtVertexIdx(nvert)+ineighbour-1)
-        
-        ! Get midpoint of the element
-        xc = &
-         (p_DvertexCoords(1,p_IverticesAtElement(1,ineighElm))+&
-          p_DvertexCoords(1,p_IverticesAtElement(2,ineighElm))+&
-          p_DvertexCoords(1,p_IverticesAtElement(3,ineighElm))+&
-          p_DvertexCoords(1,p_IverticesAtElement(4,ineighElm)))/4.0_dp
-
-        yc = &
-         (p_DvertexCoords(2,p_IverticesAtElement(1,ineighElm))+&
-          p_DvertexCoords(2,p_IverticesAtElement(2,ineighElm))+&
-          p_DvertexCoords(2,p_IverticesAtElement(3,ineighElm))+&
-          p_DvertexCoords(2,p_IverticesAtElement(4,ineighElm)))/4.0_dp
-          
-        iidx = iidx +1
-         
-        Dpoints(1,iidx) = xc
-        Dpoints(2,iidx) = yc
-        Ielements(iidx) = ineighElm
-        
-      end do ! ineighbour
-
-      ! Evaluate the solution
-      call fevl_evaluate (DER_FUNC, Dvalues(1:iidx), rvector, Dpoints(1:2,1:iidx), &
-                          Ielements(1:iidx))
+      Dpoints(1,1+ivert) = p_DvertexCoords(1,nvert)
+      Dpoints(2,1+ivert) = p_DvertexCoords(1,nvert)
+      Ielements(1+ivert) = iel
+	  end do
+	  
+    ! Evaluate the solution
+    call fevl_evaluate (DER_FUNC, Dvalues(1:5), rvector, Dpoints(1:2,1:5), &
+                          Ielements(1:5))
       
      ! Start calculating the limiting factor
-      duc = Dvalues(1)
-      dui = Dvalues(2)
+     duc = Dvalues(1)
+      
+    do ivert = 1, NVE  
+      dui = Dvalues(1+ivert)
       ddu = dui-duc
+      nvert = p_IverticesAtElement(ivert, iel)
             
       ! Find the maximum/minimum value of the solution in the centroids
       ! of all elements containing this vertex
       if (ddu > 0.0_dp) then
-        duimax = maxval(Dvalues(3:iidx))
-        dalphatemp = min(1.0_dp, (duimax-duc)/ddu)
+        dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
       elseif (ddu < 0.0_dp) then
-        duimin = minval(Dvalues(3:iidx))
-        dalphatemp = min(1.0_dp, (duimin-duc)/ddu)      
+        dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
       else ! (dui==duc)
         dalphatemp = 1.0_dp
       end if
-      
-      if ( iidx < 6) dalphatemp = 1.0_dp
       
       dalpha = min(dalphatemp,dalpha)
 
@@ -1324,8 +1313,213 @@ end subroutine
 
   
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  subroutine dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+  
+  
+  
+  
+  
+  
+  
+  
+  
+      ! An object for saving the domain:
+    type(t_boundary), intent(in) :: rboundary
+    
+    ! An object for saving the triangulation on the domain
+    type(t_triangulation), intent(in) :: rtriangulation
+    
+    type(t_vectorBlock),intent(in), target :: rsolBlock
 
 
 
+
+    ! An object specifying the discretisation.
+    ! This contains also information about trial/test functions,...
+    type(t_blockDiscretisation) :: rdiscretisation
+    
+    ! A bilinear and linear form describing the analytic problem to solve
+    type(t_bilinearForm) :: rform
+    type(t_linearForm) :: rlinform
+    
+    ! A scalar matrix and vector. The vector accepts the RHS of the problem
+    ! in scalar form.
+    type(t_matrixScalar) :: rmatrixMC
+
+    ! A block matrix and a couple of block vectors. These will be filled
+    ! with data for the linear solver.
+    type(t_matrixBlock) :: rmatrixBlock
+    type(t_vectorBlock) :: rsolSteadyBlock,rrhsBlock,rtempBlock
+    
+    type(t_vectorScalar) :: rrhs,rsolSteady,rtemp
+
+    ! A solver node that accepts parameters for the linear solver    
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+
+    ! An array for the system matrix(matrices) during the initialisation of
+    ! the linear solver.
+    type(t_matrixBlock), dimension(1) :: Rmatrices
+    
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    type(t_collection) :: rcollection
+    
+    type(t_filterChain), dimension(1), target :: RfilterChain
+    
+    type(t_ucdExport) :: rexport
+    
+    integer :: ielementtype
+    
+    integer :: ierror
+  
+  
+  
+   ielementtype = EL_Q1
+  
+      ! Now we can start to initialise the discretisation. At first, set up
+    ! a block discretisation structure that specifies the blocks in the
+    ! solution vector. In this simple problem, we only have one block.
+    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+                                 rtriangulation, rboundary)
+    
+    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+    ! structures for every component of the solution vector.
+    ! Initialise the first element of the list to specify the element
+    ! and cubature rule for this solution component:
+    call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+                                   ielementType,CUB_G3X3,rtriangulation, rboundary)
+                 
+    ! Now as the discretisation is set up, we can start to generate
+    ! the structure of the system matrix which is to solve.
+    ! We create a scalar matrix, based on the discretisation structure
+    ! for our one and only solution component.
+    call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
+                                     LSYSSC_MATRIX9,rmatrixMC,&
+                                     rdiscretisation%RspatialDiscr(1),&
+                                     BILF_MATC_EDGEBASED)
+    
+    ! And now to the entries of the matrix. For assembling of the entries,
+    ! we need a bilinear form, which first has to be set up manually.
+    ! We specify the bilinear form (grad Psi_j, grad Phi_i) for the
+    ! scalar system matrix in 2D.
+
+    rform%itermCount = 1
+    rform%Idescriptors(1,1) = DER_FUNC
+    rform%Idescriptors(2,1) = DER_FUNC
+    
+    ! In the standard case, we have constant coefficients:
+    rform%ballCoeffConstant = .true.
+    rform%BconstantCoeff = .true.
+    rform%Dcoefficients(1)  = 1.0 
+    rform%Dcoefficients(2)  = 1.0 
+
+    ! Now we can build the matrix entries.
+    ! We specify the callback function coeff_Laplace for the coefficients.
+    ! As long as we use constant coefficients, this routine is not used.
+    ! By specifying ballCoeffConstant = BconstantCoeff = .FALSE. above,
+    ! the framework will call the callback routine to get analytical
+    ! data.
+    call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_Laplace_2D)
+    
+    
+    
+    
+    
+    
+    
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhs ,.true.,ST_DOUBLE)
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolSteady ,.true.,ST_DOUBLE)
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rtemp ,.true.,ST_DOUBLE)
+                                 
+
+    call lsysbl_createMatFromScalar (rmatrixMC,rmatrixBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rsolSteady,rsolSteadyBlock,rdiscretisation)
+    
+    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
+    !call lsysbl_createVecFromScalar (rtemp,rtempBlock,rdiscretisation)
+    
+    
+    
+    
+    rcollection%p_rvectorQuickAccess1 => rsolBlock
+    
+    
+    
+    
+    
+    ! Now set the initial conditions via L2 projection
+    rlinform%itermCount = 1
+    rlinform%Idescriptors(1) = DER_FUNC2D
+    call linf_buildVectorScalar2 (rlinform, .true., rrhs,&
+                                  coeff_Steadyproj, rcollection)
+                                  
+                                  
+                                  
+                                  
+                                  
+    nullify(p_rpreconditioner)
+    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    
+    ! Set the output level of the solver to 2 for some output
+    p_rsolverNode%ioutputLevel = 0
+    
+    ! Attach the system matrix to the solver.
+    ! First create an array with the matrix data (on all levels, but we
+    ! only have one level here), then call the initialisation 
+    ! routine to attach all these matrices.
+    ! Remark: Do not make a call like
+    !    CALL linsol_setMatrices(p_RsolverNode,(/p_rmatrix/))
+    ! This does not work on all compilers, since the compiler would have
+    ! to create a temp array on the stack - which does not always work!
+    Rmatrices = (/rmatrixBlock/)
+    call linsol_setMatrices(p_RsolverNode,Rmatrices)
+    
+        ! Initialise structure/data of the solver. This allows the
+    ! solver to allocate memory / perform some precalculation
+    ! to the problem.
+    call linsol_initStructure (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    call linsol_initData (p_rsolverNode, ierror)
+    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+                                  
+    call linsol_solveAdaptively (p_rsolverNode,rsolSteadyBlock,rrhsBlock,rtempBlock)
+    
+  
+    ! Start UCD export to GMV file:
+    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       './gmv/steady.gmv')
+    
+    call lsyssc_getbase_double (rsolSteadyBlock%RvectorBlock(1),p_Ddata)
+    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    
+    ! Write the file to disc, that is it.
+    call ucd_write (rexport)
+    call ucd_release (rexport)
+    
+    call spdiscr_releaseBlockDiscr(rdiscretisation)
+
+
+  end subroutine
     
 end module
