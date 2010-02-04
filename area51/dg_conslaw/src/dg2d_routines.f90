@@ -1126,7 +1126,7 @@ end subroutine
 
   ! local variables, used by all processors
   real(DP), dimension(:), pointer :: p_Ddata
-  integer :: indof, NEL, iel, NVE
+  integer :: indof, NEL, iel, NVE, ivt, NVT
     
   ! The underlying triangulation
   type(t_triangulation), pointer :: p_rtriangulation
@@ -1147,6 +1147,8 @@ end subroutine
   integer, dimension(:,:), pointer :: p_IverticesAtElement
   integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
   real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  real(dp), dimension(:), allocatable :: duimax, duimin
   
   real(dp) :: xc,yc
   integer :: iidx, nvert, ivert, ineighbour, ineighElm
@@ -1188,6 +1190,28 @@ end subroutine
    ! Set pointer to vertices at element
    call storage_getbase_int2D(&
         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+        
+  NVT = p_rtriangulation%NVT
+  
+  allocate(duimax(NVT),duimin(NVT))
+  
+  duimax= -SYS_MAXREAL
+  duimin=  SYS_MAXREAL
+  
+  do iel = 1, NEL
+    
+    ! Get global DOFs of the element
+    call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+    
+    duc = p_Ddata(IdofGlob(1))
+    
+    NVE = 4
+    
+    do ivt = 1, NVE
+      nvt = p_IverticesAtElement(ivt,iel)
+      duimax(nvt) = max(duc,duimax(nvt))
+      duimin(nvt) = max(duc,duimin(nvt))
+  end do
 
                                
   do iel = 1, NEL
@@ -1213,89 +1237,77 @@ end subroutine
     Dpoints(2,1) = yc
     Ielements(1) = iel
     
-    
+    ! Initialise the limiting factor
+    dalpha = 1.0_dp
     
     ! Now start to set the points, where to evaluate the solution
-    iidx = 1
     
     ! Loop over the vertices of the element
     do ivert = 1, NVE
 		
       nvert = p_IverticesAtElement(ivert, iel)
+      
+      ! The second point we want to evaluate the solution in, is in the corner of the mother element
+      Dpoints(1,2) = p_DvertexCoords(1,nvert)
+      Dpoints(2,2) = p_DvertexCoords(1,nvert)
+      Ielements(2) = iel
 			
-			Isep(ivert) = iidx + 1
+			! We have already 2 points to evaluate
+			iidx = 2
 			
       ! Loop over the elements containing the vertex
       do ineighbour = 1, (p_IelementsAtVertexIdx(nvert+1)-p_IelementsAtVertexIdx(nvert))		
-		
-        iidx = iidx +1
       
         ineighElm = p_IelementsAtVertex(p_IelementsAtVertexIdx(nvert)+ineighbour-1)
-              
-        Dpoints(1,iidx) = p_DvertexCoords(1,ineighElm)
-        Dpoints(2,iidx) = p_DvertexCoords(2,ineighElm)
+        
+        ! Get midpoint of the element
+        xc = &
+         (p_DvertexCoords(1,p_IverticesAtElement(1,ineighElm))+&
+          p_DvertexCoords(1,p_IverticesAtElement(2,ineighElm))+&
+          p_DvertexCoords(1,p_IverticesAtElement(3,ineighElm))+&
+          p_DvertexCoords(1,p_IverticesAtElement(4,ineighElm)))/4.0_dp
+
+        yc = &
+         (p_DvertexCoords(2,p_IverticesAtElement(1,ineighElm))+&
+          p_DvertexCoords(2,p_IverticesAtElement(2,ineighElm))+&
+          p_DvertexCoords(2,p_IverticesAtElement(3,ineighElm))+&
+          p_DvertexCoords(2,p_IverticesAtElement(4,ineighElm)))/4.0_dp
+          
+        iidx = iidx +1
+         
+        Dpoints(1,iidx) = xc
+        Dpoints(2,iidx) = yc
         Ielements(iidx) = ineighElm
-      
-        if (ineighElm .eq. iel) then
-          Ihomeindex(ivert) = iidx
-        end if
-      
-				
+        
       end do ! ineighbour
 
-    end do ! ivert
-    
-    Isep(ivert) = iidx+1
-    
-    ! Evaluate the solution
-    call fevl_evaluate (DER_FUNC, Dvalues(1:Isep(5)-1), rvector, Dpoints(1:2,1:Isep(5)-1), &
-                        Ielements(1:Isep(5)-1))
-    
-    ! Now we have the value of the solution in
-    ! * the center of our element: Dvalues(1)
-    ! * the i-th vertex in all elements, in which this vertex lies : Dvalues(2+(i-1)*4:i*4+1)
-    !   where the value from our home-element can be found in Dvalues(IhomeIndex(i))
-    
-    
-    ! We can start limiting
-    
-    ! Get value in the center
-    duc = Dvalues(1)
-    
-    ! Initialise the correction factor
-    dalpha = 1.0_dp
-    
-    ! Walk over all vertices
-    do ivert = 1, NVE
-      ! Get the difference of the solution in the element in the vertex - the value in the center
-      dui = Dvalues(IhomeIndex(ivert))
-      ddu = dui - duc
+      ! Evaluate the solution
+      call fevl_evaluate (DER_FUNC, Dvalues(1:iidx), rvector, Dpoints(1:2,1:iidx), &
+                          Ielements(1:iidx))
       
-      ! Twst, if there are any neighbour elements
-      if ((Isep(ivert+1)-1-Isep(ivert)).eq.0) then
-        ! No, set limiting factor to 1
-        dalphatemp = 1.0_dp
-      else
-      ! Yes, there are neighbouring elements
-      ! Find the maximum/minimum value of the solution in that vertex
+     ! Start calculating the limiting factor
+      duc = Dvalues(1)
+      dui = Dvalues(2)
+      ddu = dui-duc
+            
+      ! Find the maximum/minimum value of the solution in the centroids
+      ! of all elements containing this vertex
       if (ddu > 0.0_dp) then
-        Dvalues(IhomeIndex(ivert))= -SYS_MAXREAL
-        duimax = maxval(Dvalues(Isep(ivert):Isep(ivert+1)-1))
+        duimax = maxval(Dvalues(3:iidx))
         dalphatemp = min(1.0_dp, (duimax-duc)/ddu)
-      
       elseif (ddu < 0.0_dp) then
-        Dvalues(IhomeIndex(ivert))= SYS_MAXREAL
-        duimin = minval(Dvalues(Isep(ivert):Isep(ivert+1)-1))
+        duimin = minval(Dvalues(3:iidx))
         dalphatemp = min(1.0_dp, (duimin-duc)/ddu)      
       else ! (dui==duc)
         dalphatemp = 1.0_dp
       end if
       
-      end if
+      if ( iidx < 6) dalphatemp = 1.0_dp
       
       dalpha = min(dalphatemp,dalpha)
-      
-    end do !ivert
+
+    end do ! ivert
+    
     
     ! Now we have the limitingfactor dalpha
     ! We need to multiply it with the corresponding DOFs
@@ -1307,6 +1319,9 @@ end subroutine
     p_Ddata(IdofGlob(2:3)) = p_Ddata(IdofGlob(2:3))*dalpha
     
   end do ! iel
+  
+  deallocate(duimax,duimin)
+
   
   end subroutine
 
