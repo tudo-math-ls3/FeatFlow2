@@ -105,6 +105,7 @@ module euler_application
   use boundary
   use boundaryfilter
   use collection
+  use cubature
   use derivatives
   use element
   use euler_basic
@@ -129,6 +130,7 @@ module euler_application
   use pprocindicator
   use pprocsolution
   use problem
+  use scalarpde
   use solveraux
   use spatialdiscretisation
   use statistics
@@ -306,6 +308,10 @@ contains
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
+!!$    ! Hack to enforce single grid solver
+!!$    call solver_setMinimumMultigridlevel(rsolver,&
+!!$        solver_getMaximumMultigridlevel(rsolver))
+
     ! Initialize the individual problem levels
     call euler_initAllProblemLevels(rparlist, 'euler',&
         rproblem, rcollection)
@@ -354,8 +360,6 @@ contains
         call euler_outputSolution(rparlist, 'euler',&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
-
-        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -1195,13 +1199,19 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_linearForm) :: rform
+    type(t_vectorBlock) :: rvectorBlock
+    type(t_matrixScalar), target :: rmatrix
+    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression
-    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim
+    integer :: isolutiontype, nexpression, ccubType, nsummedCubType
+    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
+    integer :: lumpedMassMatrix
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1214,7 +1224,11 @@ contains
       call lsysbl_clearVector(rvector)
 
 
-    case (SOLUTION_ANALYTIC)
+    case (SOLUTION_ANALYTIC_POINTVALUE)
+
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of an analytical expression
+      !-------------------------------------------------------------------------
 
       ! Initialize total number of expressions
       nexpression = 0
@@ -1284,6 +1298,129 @@ contains
         nexpression = nexpression + nvar
 
       end do   ! iblock
+
+
+    case (SOLUTION_ANALYTIC_CONSERVATIVE)
+
+      !-------------------------------------------------------------------------
+      ! Initialize the FE-function by the L2-projection of the analytical data
+      !-------------------------------------------------------------------------
+
+      ! Initialize total number of expressions
+      nexpression = 0
+      
+      ! Compute total number of expressions
+      do iblock = 1, rvector%nblocks
+        nexpression = nexpression + rvector%RvectorBlock(iblock)%NVAR
+      end do
+
+      ! Check if array of solution names is available
+      if (parlst_querysubstrings(rparlist, ssectionName,&
+          'ssolutionname') .lt. nexpression) then
+        call output_line('Invalid number of expressions!',&
+            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+        call sys_halt()
+      end if
+      
+      ! Get the number of refinement levels for summed cubature formula
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'nsummedcubtype', nsummedCubType)
+      
+      ! Set up the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Attach the simulation time and the name of the 
+      ! function parser to the collection structure
+      rcollection%DquickAccess(1) = dtime
+      rcollection%SquickAccess(1) = "rfparser"
+      
+      !  Initialize number of expressions
+      nexpression = 0
+
+      ! Loop over all blocks of the global solution vector
+      do iblock = 1, rvector%nblocks
+        
+        ! Set pointer to spatial discretisation
+        p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
+
+        ! Enforce using summed cubature formula to obtain accurate results
+        do i = 1, p_rspatialDiscr%inumFESpaces
+          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+              cub_getSummedCubType(&
+              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
+        end do
+        
+        ! Scalar vectors in interleaved format have to be treated differently
+        if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
+
+          ! Set the number of the scalar subvector to the collection structure
+          rcollection%IquickAccess(1) = nexpression + 1
+          
+          ! Assemble the linear form for the scalar subvector
+          call linf_buildVectorScalar2(rform, .true.,&
+              rvector%RvectorBlock(iblock), euler_coeffVectorAnalytic, rcollection)
+
+          ! Increase number of processed expressions
+          nexpression = nexpression + 1
+        else
+
+          ! Convert scalar vector in interleaved format to true block vector
+          call lsysbl_convertScalarBlockVector(&
+              rvector%RvectorBlock(iblock), rvectorBlock)
+
+          ! Loop over all blocks
+          do ivar = 1, rvectorBlock%nblocks
+
+            ! Set the number of the scalar subvector to the collection structure
+            rcollection%IquickAccess(1) = nexpression + ivar
+
+            ! Assemble the linear form for the scalar subvector
+            call linf_buildVectorScalar2(rform, .true.,&
+                rvectorBlock%RvectorBlock(ivar), euler_coeffVectorAnalytic,&
+                rcollection)
+          end do
+
+          ! Convert block vector back to scalar vector in interleaved format
+          call lsysbl_convertBlockScalarVector(&
+              rvectorBlock,rvector%RvectorBlock(iblock))
+          
+          ! Increase number of processed expressions
+          nexpression = nexpression + rvectorBlock%nblocks
+          
+          ! Release temporal block vector
+          call lsysbl_releaseVector(rvectorBlock)
+        end if
+        
+        ! Scale by the row-sum lumped mass matrix to obtain the L2-projection
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+        if (lumpedMassMatrix .gt. 0) then
+          p_rmatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+        else
+          call bilf_createMatrixStructure(&
+              rvector%p_rblockDiscr%RspatialDiscr(iblock),&
+              LSYSSC_MATRIX9, rmatrix)
+          call stdop_assembleSimpleMatrix(&
+              rmatrix, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+          call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
+          p_rmatrix => rmatrix
+        end if
+        
+        ! Compute the lumped L2-projection
+        call lsyssc_invertedDiagMatVec(p_rmatrix, rvector%RvectorBlock(iblock),&
+            1.0_DP, rvector%RvectorBlock(iblock))
+        
+        ! Release temporal matrix (if any)
+        call lsyssc_releaseMatrix(rmatrix)
+
+        ! Reset cubature formula to standard value
+        do i = 1, p_rspatialDiscr%inumFESpaces
+          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+              cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
+        end do
+        
+      end do
 
 
     case DEFAULT
@@ -2482,6 +2619,8 @@ contains
 
   subroutine euler_projectSolution(rsourceVector, rdestVector)
 
+    use analyticprojection
+
 !<description>
     ! This subroutine performs conservative projection of the given solution
     ! stored in rsourceVector to another FE-space and stores the result in
@@ -2490,7 +2629,7 @@ contains
 
 !<input>
     ! Source vector
-    type(t_vectorBlock), intent(in) :: rsourceVector
+    type(t_vectorBlock), intent(inout), target :: rsourceVector
 !</input>
 
 !<inputoutput>
@@ -2499,10 +2638,115 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! local variables
+    type(t_linearForm) :: rform
+    type(t_collection) :: rcollection
+    type(t_matrixScalar) :: rmatrix1,rmatrix2
+    type(t_vectorScalar) :: rvector
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP) :: dmass1, dmass2
+    integer :: iblock
+
+!!$    type(t_configL2ProjectionByMass) :: rL2ProjectionConfig
+    
+    ! Set up the linear form
+    rform%itermCount = 1
+    rform%Idescriptors(1) = DER_FUNC
+
+!!$    rL2ProjectionConfig%cpreconditioner=2
+
+    ! Set up the collection structure
+    call collct_init(rcollection)
+    rcollection%IquickAccess(1) = SYSTEM_BLOCKFORMAT
+        rcollection%p_rvectorQuickAccess1 => rsourceVector
+    
+    ! Assemble the linear form for destination vector
+    do iblock = 1, rdestVector%nblocks
+      
+!!$      ! Create sparsity pattern of mass matrices
+!!$      call bilf_createMatrixStructure(&
+!!$          rdestVector%p_rblockDiscr%RspatialDiscr(1),&
+!!$          LSYSSC_MATRIX9, rmatrix1)
+!!$
+!!$      ! Create mass matrices
+!!$      call stdop_assembleSimpleMatrix(rmatrix1, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+!!$      
+!!$      ! Duplicate the matrix
+!!$      call lsyssc_copyMatrix(rmatrix1, rmatrix2)
+!!$
+!!$      ! Compute the lumped mass matrices
+!!$      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
+!!$
+!!$      ! Set the number of the scalar subvector to the collection structure
+!!$      rcollection%IquickAccess(2) = iblock
+!!$
+!!$      ! Perform consistent L2-projection
+!!$      call anprj_analytL2projectionByMass(rdestVector%RvectorBlock(iblock),&
+!!$          rmatrix1, euler_coeffVectorFE, rcollection, rL2ProjectionConfig,&
+!!$          rmatrix2)
+!!$
+!!$
+!!$      ! Release matrices
+!!$      call lsyssc_releaseMatrix(rmatrix1)
+!!$      call lsyssc_releaseMatrix(rmatrix2)
 
 
-    print *, "here"
-    stop
+      
+      ! Create sparsity pattern of mass matrices
+      call bilf_createMatrixStructure(&
+          rsourceVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix1)
+      call bilf_createMatrixStructure(&
+          rdestVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix2)
+
+      ! Create mass matrices
+      call stdop_assembleSimpleMatrix(rmatrix1, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      call stdop_assembleSimpleMatrix(rmatrix2, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      
+      ! Compute the lumped mass matrices
+      call lsyssc_lumpMatrixScalar(rmatrix1, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
+
+      ! Set the number of the scalar subvector to the collection structure
+      rcollection%IquickAccess(2) = iblock
+      
+      ! Assemble the linear form for the scalar subvector
+      call linf_buildVectorScalar2(rform, .true.,&
+          rdestVector%RvectorBlock(iblock), euler_coeffVectorFE, rcollection)
+
+      ! Compute the lumped L2-projection
+      call lsyssc_invertedDiagMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          1.0_DP, rdestVector%RvectorBlock(iblock))
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rsourceVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix1, rsourceVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass1 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rdestVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass2 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      print *, "Density mass", dmass1, dmass2
+      
+      ! Release matrices
+      call lsyssc_releaseMatrix(rmatrix1)
+      call lsyssc_releaseMatrix(rmatrix2)
+
+    end do
+    
+    ! Release the collection structure
+    call collct_done(rcollection)
 
   end subroutine euler_projectSolution
 

@@ -75,10 +75,13 @@ module euler_basic
 !<constantblock description="Global type of initial solution">
 
   ! zero initial solution
-  integer, parameter, public :: SOLUTION_ZERO     = 0
+  integer, parameter, public :: SOLUTION_ZERO                  = 0
 
-  ! analytical initial solution
-  integer, parameter, public :: SOLUTION_ANALYTIC = 1
+  ! analytical initial solution given pointwise
+  integer, parameter, public :: SOLUTION_ANALYTIC_POINTVALUE   = 1
+
+  ! analytical initial solution given in conservative form
+  integer, parameter, public :: SOLUTION_ANALYTIC_CONSERVATIVE = 2
 
 !</constantblock>
 
