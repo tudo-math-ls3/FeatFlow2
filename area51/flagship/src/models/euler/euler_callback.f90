@@ -57,6 +57,14 @@
 !# 11.) euler_limitEdgewiseMomentum
 !#      -> Performs synchronized flux correction for the momentum
 !#
+!# 12.) euler_coeffVectorFE
+!#      -> Callback routine for the evaluation of linear forms
+!#         using a given FE-solution for interpolation
+!#
+!# 13.) euler_coeffVectorAnalytic
+!#      -> Callback routine for the evaluation of linear forms
+!#         using a given FE-solution for interpolation
+!#
 !# Frequently asked questions?
 !#
 !# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
@@ -115,6 +123,8 @@ module euler_callback
   public :: euler_calcCorrectionFCT
   public :: euler_limitEdgewiseVelocity
   public :: euler_limitEdgewiseMomentum
+  public :: euler_coeffVectorFE
+  public :: euler_coeffVectorAnalytic
 
 contains
 
@@ -3553,4 +3563,270 @@ contains
 
   end subroutine euler_limitEdgewiseMomentum
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_coeffVectorFE(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use derivatives
+    use domainintegration
+    use feevaluation
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+    !
+    ! The following data must be passed to this routine in the collection in order 
+    ! to work correctly:
+    !
+    ! IquickAccess(1) = systemFormat
+    ! IquickAccess(2) = ivar
+    ! p_rvectorQuickAccess1 => evaluation solution vector
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP), dimension(:), pointer :: Ddata
+    integer :: isystemFormat,ivar,iel,ipoint
+    
+    if (.not. present(rcollection)) then
+      Dcoefficients(:,:,:) = 0.0_DP
+      return
+    end if
+
+    ! Get the parameters from the collection
+    isystemFormat = rcollection%IquickAccess(1)
+    ivar = rcollection%IquickAccess(2)
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    
+    ! What type of system format are we?
+    select case(isystemFormat)
+   
+    case(SYSTEM_INTERLEAVEFORMAT)
+      
+      print *, "Not available"
+      stop
+      
+    case(SYSTEM_BLOCKFORMAT)
+      
+      ! Allocate temporal array
+      allocate(Ddata(npointsPerElement))
+      
+      ! Loop over all elements
+      do iel = 1, nelements
+        
+        ! Evaluate solution in cubature points
+        call fevl_evaluate(DER_FUNC, Ddata,&
+            p_rvector%RvectorBlock(ivar), Dpoints(:,:,iel))
+        
+        ! Loop over all cubature points
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(1,ipoint,iel) = Ddata(ipoint)
+        end do
+      end do
+      
+      ! Deallocate temporal array
+      deallocate(Ddata)
+
+    case default
+      call output_line ('Invalid system format!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorFE')
+      call sys_halt()
+    end select
+    
+  end subroutine euler_coeffVectorFE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_coeffVectorAnalytic(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fparser
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+    !
+    ! The following data must be passed to this routine in the collection in order 
+    ! to work correctly:
+    !
+    ! DquickAccess(1)          = dtime % simulation time
+    ! IquickAccess(itermCount) = icomp % number of the function to be evaluated
+    ! SquickAccess(1)          = name of the function parser
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
+    integer :: itermCount, ipoint, iel, ndim, icomp
+    
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
+    dtime  = rcollection%DquickAccess(1)
+
+    ! Loop over all components of the linear form
+    do itermCount = 1, ubound(Dcoefficients,1)
+
+      ! Moreover, this subroutine assumes the quick access integer
+      ! 'itermCount' holds the number of the function to be evaluated
+      icomp = rcollection%IquickAccess(itermCount)
+
+      if (dtime < 0.0) then
+        
+        ! Evaluate all coefficients using the function parser
+        do iel = 1, nelements
+          call fparser_evalFunction(p_rfparser, icomp, 2,&
+              Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
+        end do
+
+      else
+
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
+                Dcoefficients(itermCount,ipoint,iel))
+          end do
+        end do
+
+      end if
+
+    end do ! itermCount
+    
+  end subroutine euler_coeffVectorAnalytic
+  
 end module euler_callback
