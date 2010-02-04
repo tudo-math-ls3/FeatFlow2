@@ -4348,8 +4348,8 @@ contains
 
         ! Evaluate all coefficients using the function parser
         do iel = 1, nelements
-          call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:&
-              ,iel), Dcoefficients(itermCount,:,iel))
+          call fparser_evalFunction(p_rfparser, icomp, 2,&
+              Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
         end do
 
       else
