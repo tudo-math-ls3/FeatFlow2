@@ -85,6 +85,9 @@
 !#      -> Solves the primal formulation of the time-dependent
 !#         compressible Euler equations.
 !#
+!# 12.) euler_projectSolution
+!#      -> Performs conservative projection of the solution from
+!#         a given FE-space to another FE-space
 !#
 !# The following auxiliary routines are available:
 !#
@@ -351,6 +354,8 @@ contains
         call euler_outputSolution(rparlist, 'euler',&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
+        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -2471,6 +2476,35 @@ contains
 
   end subroutine euler_solveTransientPrimal
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_projectSolution(rsourceVector, rdestVector)
+
+!<description>
+    ! This subroutine performs conservative projection of the given solution
+    ! stored in rsourceVector to another FE-space and stores the result in
+    ! rdestVector. An FCT algorithm is used ensure monotonicity preservation.
+!</description>
+
+!<input>
+    ! Source vector
+    type(t_vectorBlock), intent(in) :: rsourceVector
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: rdestVector
+!</inputoutput>
+!</subroutine>
+
+
+
+    print *, "here"
+    stop
+
+  end subroutine euler_projectSolution
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES

@@ -33,6 +33,9 @@
 !#     fixed (it was based on the fluxes but now it has to be based on the
 !#     edgewise correciton factors).
 !#
+!# 5.) Modify Z-pinch application so that it uses the new implementation
+!#     of the linearized FCT algorithm with failsafe strategy.
+!#
 !# </purpose>
 !##############################################################################
 

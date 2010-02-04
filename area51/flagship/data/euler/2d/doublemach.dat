@@ -203,7 +203,7 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/doublemach_fct_density_pressure_velocity_NLEV7
+sucdsolution = out/dmr
 
 # file for UCD output of error
 sucderror = 
@@ -252,16 +252,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.2
+dfinalTime = 0.01
 
 # initial time step size
-dinitialStep = 1e-4
+dinitialStep = 1e-3
 
 # lower bound for the admissible time step
-dminStep = 1e-4
+dminStep = 1e-3
 
 # upper bound for the admissible time step
-dmaxStep = 1e-4
+dmaxStep = 1e-3
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -303,10 +303,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
