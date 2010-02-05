@@ -174,6 +174,9 @@ module timestepping
     ! "isubstep=1", i.e. the beginning of the 'macrostep'.
     real(DP)                 :: dtimeMacrostep
     
+    ! Length of the previous timestep. =0 if there was no previous timestep.
+    real(DP)                 :: dtlaststep
+    
     ! Length of the next time step
     real(DP)                 :: dtstep
     
@@ -334,6 +337,7 @@ contains
     rtstepScheme%isubstep         = 1
     rtstepScheme%dcurrentTime     = dtime
     rtstepScheme%dtimeMacrostep   = dtime
+    rtstepScheme%dtlaststep       = 0.0_DP
     
     if (ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
       
@@ -502,6 +506,9 @@ contains
 !</inputoutput>
 
 !</subroutine>
+
+    ! Remember the last step length.
+    rtstepScheme%dtlaststep = rtstepScheme%dtstep
 
     ! Update simulation time and weights, right after each other.
     call timstp_nextSubstepTime (rtstepScheme)
