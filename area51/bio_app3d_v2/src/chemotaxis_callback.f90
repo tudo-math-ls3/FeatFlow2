@@ -771,7 +771,7 @@ END IF
 !       else
     ! this represents the fct. f for 2c=u=2*(x-1)x(y-1)y
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x-x) (6y-6y+1)+(y-y) (6x-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep*( -2.0_DP * SCALE_U *D_1*( Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP)+Dpoints(1,:,:)*&
                                                 ( Dpoints(1,:,:)-1.0_DP) )&
                                         + CHI * SCALE_C * SCALE_U * ( ( ( Dpoints(1,:,:)**2 - Dpoints(1,:,:) )**2) *&
@@ -1883,7 +1883,7 @@ END IF
 
     ! this represents the fct. f for u=2c=2*(x-1)x(y-1)yexp(t)
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x-x) (6y-6y+1)+(y-y) (6x-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep *  (2*Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP) *&
                                                  Dpoints(1,:,:) * ( Dpoints(1,:,:) - 1.0_DP )*dexp(DTIME) &
                                     -4.0_DP * D_1 * dexp(DTIME)*&
@@ -3070,7 +3070,7 @@ END IF
     ! local variables
 
     ! constants of the PDE
-    real(DP) :: PHI
+    real(DP) :: PHI, dtstep
     integer :: icub, iel
 
     ! This array contains the output of the FE evaluations, e.g. the values which
@@ -3081,7 +3081,8 @@ END IF
     type(t_vectorScalar) :: rvector
 
     ! Setting the params contained in the collection
-    PHI = rcollection%DquickAccess(1)
+    dtstep = rcollection%DquickAccess(1)
+    PHI = rcollection%DquickAccess(2)
 
     ! Fetching the vector
 !    rvector = rcollection%p_rvectorQuickAccess1 
@@ -3098,7 +3099,7 @@ END IF
     
    DO iel = 1, nelements
         DO icub = 1, npointsPerElement
-            Dcoefficients(1,icub,iel) = PHI*DvaluesFevl(1,icub,iel) 
+            Dcoefficients(1,icub,iel) = dtstep*PHI*DvaluesFevl(1,icub,iel) 
         END DO
     END DO
 
@@ -3217,8 +3218,16 @@ END IF
             y=Dpoints(2,icub,iel)
             z=Dpoints(3,icub,iel)
             ! laplacian
-            Dcoefficients(1,icub,iel) = - dtstep*( - 2_DP  &
-                                                   + convecRelaxation*(- 16_DP + 2*x) ) 
+            ! For the linear test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x+y+z
+!             Dcoefficients(1,icub,iel) = dtstep* (-convecRelaxation)
+            ! For the andriy test-case
+            ! eg. u_analytic = x*(16-x)
+            !      c_analytic = x+y+z
+            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + convecRelaxation*(16_DP-2_DP*x))
+            
+            !16_DP + 2*x) )
             !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
             !                                    2*x*(x-16_DP)*z*(z-16_DP)+ & 
             !                                    2*x*(x-16_DP)*y*(y-16_DP))!- &
@@ -3325,22 +3334,55 @@ END IF
     
     ! This array contains the output of the FE evaluations, e.g. the values which
     ! we ' ll deriving the Dvalues with 
-    real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl
+    real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl1, DvaluesFevl2
 
     ! This is the vector which is of interest
-    type(t_vectorScalar) :: rvector
- 
+    type(t_vectorScalar):: rvector, ranalytCell
+
     real(DP) :: PHI
+    ! some variables for error-ctrl
+    real(DP) :: error_max, error
     
     PHI = rcollection%DquickAccess(1)
     
+!     rvector = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
+    ranalytCell = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
+
+    ! Alllocate some memory for the array, since it'll be written by
+    ! the fevl calls
+!     allocate(DvaluesFevl1(1,npointsPerElement , nelements))
+    allocate(DvaluesFevl2(1,npointsPerElement , nelements))
+
+    ! Fetching the values of rvector in the cubature pts.
+!     call fevl_evaluate_sim4(rvector, &
+!                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl1, 1)
+    call fevl_evaluate_sim4(ranalytCell, &
+                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl2, 1)
+    error_max = 0_DP
     ! laplacian
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
             z=Dpoints(3,icub,iel)
-            Dcoefficients(1,icub,iel) = - ( -(x + y + z) + PHI*x*(16_DP - x) )
+            
+            ! For the c^2 test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x*x+y+z
+!             Dcoefficients(1,icub,iel) = ( -2 + (x**2 + y + z) - PHI*(16_DP - x) )
+            ! For the linear test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x+y+z
+!             Dcoefficients(1,icub,iel) = - ( -(x + y + z) + PHI*(16_DP - x) )
+            ! For the andriy test-case
+            ! eg. u_analytic = x * (16-x)
+            !      c_analytic = x+y+z
+!             error = DvaluesFevl2(1,icub, iel) - DvaluesFevl1(1,icub, iel)
+!             if (abs(error) >= abs(error_max)) then 
+!                 error_max = error 
+!             end if
+            Dcoefficients(1,icub,iel) = (x + y + z) -PHI* DvaluesFevl2(1,icub, iel)
+
             !Dcoefficients(1,icub,iel) = - ( -(x + y + z) )
             !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 
             !                            2*x*(x-16_DP)*z*(z-16_DP)- & 
@@ -3350,6 +3392,13 @@ END IF
             !Dcoefficients(1,icub,iel) = x + y + z + x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)                                        
         END DO
     END DO
+
+!             print*,'############################################################################'
+!             print*,'maximal error while projecting: ',error_max
+!             print*,'############################################################################'
+
+!     deallocate(DvaluesFevl1)
+    deallocate(DvaluesFevl2)
  
   end subroutine
   !end of coeff_hillenX_RHS_rfc
@@ -5521,12 +5570,21 @@ END IF
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
+                ! RS: take the analytic solution c_analytic = x+y+z => grad(c_analytic) = (1,1,1)^T
+!             Dcoefficients(1,icub,iel) = convecRelaxation*CHI
+                ! RS: take the computed solution of c_num = c_n+1
             Dcoefficients(1,icub,iel) = convecRelaxation*CHI*DvaluesFevl(1,icub,iel) 
             !Dcoefficients(1,icub,iel) =   CHI
             ! second term
+                ! RS: take the analytic solution c_analytic = x+y+z => grad(c_analytic) = (1,1,1)^T
+!             Dcoefficients(2,icub,iel) = convecRelaxation*CHI
+                ! RS: take the computed solution of c_num = c_n+1
             Dcoefficients(2,icub,iel) = convecRelaxation*CHI*DvaluesFevl(2,icub,iel) 
             !Dcoefficients(2,icub,iel) =   CHI
             ! third term
+                ! RS: take the analytic solution c_analytic = x+y+z => grad(c_analytic) = (1,1,1)^T
+!             Dcoefficients(3,icub,iel) = convecRelaxation*CHI
+                ! RS: take the computed solution of c_num = c_n+1
             Dcoefficients(3,icub,iel) = convecRelaxation*CHI*DvaluesFevl(3,icub,iel)             
             !Dcoefficients(3,icub,iel) =   CHI
         END DO
@@ -6515,9 +6573,9 @@ END IF
 !             END IF
 !             call fevl_evaluate_sim4 (uvector, rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
 !       else
-    ! this represents the fct. f for 2c=u=2*(x-1)x(y-1)y
+    ! this represents the function f for 2c=u=2*(x-1)x(y-1)y
     ! returning the analytical computed RHS for the  solution (e.g. cell density )PDE
-    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x²-x)² (6y²-6y+1)+(y²-y)² (6x²-6x+1 ) ] }
+    !-dtstep * { 4 ( y(y-1)+x(x-1) )  +  CHI [ (x-x) (6y-6y+1)+(y-y) (6x-6x+1 ) ] }
     Dcoefficients (1,:,:) = dtstep*( -2.0_DP * SCALE_U *( Dpoints(2,:,:)*( Dpoints(2,:,:)-1.0_DP)+Dpoints(1,:,:)*&
                                                 ( Dpoints(1,:,:)-1.0_DP) )&
                                         + CHI * SCALE_C * SCALE_U * ( ( ( Dpoints(1,:,:)**2 - Dpoints(1,:,:) )**2) *&
@@ -6641,6 +6699,13 @@ END IF
 
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement             
+            ! For the linear test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x+y+z
+!             Dvalues( icub, iel ) = ( 16_DP - Dpoints(1,icub,iel))
+            ! For the andriy test-case
+            ! eg. u_analytic = x * (16-x)
+            !      c_analytic = x+y+z
             Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 16_DP - Dpoints(1,icub,iel))
         END DO
     END DO
@@ -6733,6 +6798,9 @@ END IF
 
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement             
+                !RS: c^2 test-case
+!             Dvalues(icub, iel) = Dpoints(1,icub,iel)**2+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
+                !RS: andriy and linear test-case
             Dvalues(icub, iel) = Dpoints(1,icub,iel)+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
         END DO
     END DO
@@ -6756,6 +6824,13 @@ END IF
         ! setting for analytical solution
         
         !func_result = 0.0_DP
+        ! For the linear test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x+y+z
+!         func_result = (16_DP-x)
+        ! For the andriy test-case
+            ! eg. u_analytic = x * (16-x)
+            !      c_analytic = x+y+z
         func_result = x*(16_DP-x)
         
         !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
@@ -6786,6 +6861,9 @@ END IF
         !func_result = 0_DP
         
         !func_result = 0.0_DP
+            ! RS: c^2 test-case
+!         func_result = x**2+y+z
+            ! RS: andriy and linear test-case
         func_result = x+y+z
         
         !func_result = -x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
@@ -6885,6 +6963,14 @@ END IF
     
     !!!!! set boundary conditions to nothins !!!!!
     !Dvalues(1) = 0.0_DP
+    
+    ! For the linear test-case
+            ! eg. u_analytic = (16-x)
+            !      c_analytic = x+y+z
+!     Dvalues(1) = ( 16_DP - Dcoords(1) )
+    ! For the andriy test-case
+            ! eg. u_analytic = x * (16-x)
+            !      c_analytic = x+y+z
     Dvalues(1) = Dcoords(1)*( 16_DP - Dcoords(1) )
     !Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
 
@@ -6979,10 +7065,429 @@ END IF
     y=Dcoords(2)
     z=Dcoords(3)
     !Dvalues(1) = 0.0_DP
+    ! For the c^2 test-case
+    ! eg. u_analytic = (16-x)
+    !      c_analytic = x**2+y+z
+!     Dvalues(1) = x**2 + y + z
+    ! For the andriy and linear test-case
+    ! eg. u_analytic = x*(16-x) resp. (16-x)
+    !      c_analytic = x+y+z
     Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)    
     !Dvalues(1)=x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
 
   end subroutine
   !end of getBoundaryValuesMR_chemo   
+    
+    
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! subroutines for analytical evalution !!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  subroutine ffunction_Target_Chemo (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! If the analytical solution is unknown, this routine does not make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtime,dtimeMax
+    integer :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
+    else
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    end if
+
+    !Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+    Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
+    
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    ! END IF
+
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! end subroutines for analytical evalution !!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Chemo  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! subroutines for analytical evalution !!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  subroutine ffunction_Target_Cells (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! If the analytical solution is unknown, this routine does not make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtime,dtimeMax
+    integer :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
+    else
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    end if
+
+    Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+    !Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
+    
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    ! END IF
+
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! end subroutines for analytical evalution !!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_Cells  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! subroutines for analytical evalution !!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  subroutine ffunction_Target_ChemoH1 (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! If the analytical solution is unknown, this routine does not make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtime,dtimeMax
+    integer :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
+    else
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    end if
+
+   IF (cderivative .EQ. DER_FUNC3D) THEN
+     !Dvalues(:,:) = 4.0_DP*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+     Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
+   ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
+     Dvalues(:,:) = 1.0_DP
+   ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
+     Dvalues(:,:) = 1.0_DP
+   ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
+     Dvalues(:,:) = 1.0_DP
+   END IF     
+     
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    ! END IF
+
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! end subroutines for analytical evalution !!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_ChemoH1  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! subroutines for analytical evalution !!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  subroutine ffunction_Target_CellsH1 (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! If the analytical solution is unknown, this routine does not make sense.
+  ! In this case, error analysis should be deactivated in the .DAT files!
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! A pointer to a collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+    ! local variables
+    real(DP) :: dtime,dtimeMax
+    integer :: itimedependence
+
+    ! In a nonstationary simulation, one can get the simulation time
+    ! with the quick-access array of the collection.
+    if (present(rcollection)) then
+      dtime = rcollection%Dquickaccess(1)
+      dtimeMax = rcollection%Dquickaccess(3)
+      itimedependence = rcollection%Iquickaccess(1)
+    else
+      itimedependence = 0
+      dtime = 0.0_DP
+      dtimeMax = 0.0_DP
+    end if
+
+   IF (cderivative .EQ. DER_FUNC3D) THEN
+     Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+   ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
+     Dvalues(:,:) = 16_DP - 2*Dpoints(1,:,:)
+   ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
+     Dvalues(:,:) = 0.0_DP
+   ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
+     Dvalues(:,:) = 0.0_DP
+   END IF     
+
+    !Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+    !Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
+    
+    ! Example:
+    ! IF (cderivative .EQ. DER_FUNC) THEN
+    !   Dvalues(:,:) = (-dtime**2/100.+dtime/5.)*(-Dpoints(2,:,:))
+    ! END IF
+
+  end subroutine
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+  !!!!!!!!!!!!!!!! end subroutines for analytical evalution !!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!  ffunction_Target_CellsH1  !!!!!!!!!!!!!!!!!!!!!!! 
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     
 end module

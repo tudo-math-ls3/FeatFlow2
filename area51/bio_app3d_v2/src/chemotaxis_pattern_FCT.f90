@@ -238,7 +238,7 @@ module chemotaxis_pattern_FCT
         integer :: gmvfolder, checkneg
                     
         ! error analysis
-        real(DP) :: uerror, cerror, tol
+        real(DP) :: uerror, cerror, tol, Derr_chemoL2, Derr_cellsL2, Derr_chemoH1, Derr_cellsH1    
 
         ! error-norm constant
         ! To be set in the .dat file
@@ -504,8 +504,8 @@ module chemotaxis_pattern_FCT
             !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                       
                             
             !********** we calculate the rhs of c^n = M c^n + \Delta t f_c ******!
-            call chemo_initrhsC_forCoupling ( rchemoattract, rrhschemo_notCoupled, rcell, rdiscretisation,&
-                                    rmassmatrix, dtstep, PHI, rfc)
+            call chemo_initrhsC_forCoupling ( rchemoattract, rrhschemo_notCoupled, rcell, ranalytCell,&
+                                     rdiscretisation, rmassmatrix, dtstep, PHI, rfc)
                                     
             !********** we calculate the rhs of u^n = M u^n + \Delta t f_u ******!
             ! Now form the actual RHS by matrix vector multiplication: rrhscell = rmatrix_lumped * u_{old}
@@ -532,8 +532,21 @@ module chemotaxis_pattern_FCT
                 
                 ! set coupled rhschemo    
                 call lsyssc_copyVector(rrhschemo_notCoupled, rrhschemo)
-                call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
-                !call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+!                 call lsyssc_scalarMatVec(rtempLump, rcell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+
+                ! RS: trying to set it up via a linear-form
+                ! e.g. invoke the linf_buildVectorScalar with rcell as the coefficient
+!                 call collct_init (rcollection)
+!                 call collct_setvalue_vecsca ( rcollection , 'cbvector' , rcell , .true.)
+!                 rcollection%DquickAccess(1) = dtstep
+!                 rcollection%DquickAccess(2) = PHI
+!                 call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
+!                                                 rlinform, .false., rrhschemo, coeff_hillenX_RHS_c, rcollection)
+!                 call collct_done(rcollection)
+!                 ! <--- This actually doesn't any good :(
+
+                call lsyssc_scalarMatVec(rmassmatrix, rcell, rrhschemo, dtstep*PHI, 1.0_DP)
+!                 call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
                                 
                 rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
                 rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
@@ -634,17 +647,6 @@ module chemotaxis_pattern_FCT
         !!!!! end of the coupledloop  !!!!!
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             
-            !!!!!!! calculate the norm of |analyt - numeric|                
-            ! calculate the difference: (c_analyt - c_numeric)
-            call lsyssc_vectorLinearComb (ranalytChemo,rchemoattract,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
-            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
-            print *,' >>>>>>>>>>  Norms_chemo_diff=', dnorm 
-            ! calculate the difference: (u_analyt - u_numeric)
-            call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
-            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
-            print *,' >>>>>>>>>>  Norms_cells_diff=', dnorm 
-           
-            
             ! STEP 2.7: Postprocessing
             ! That's it, rcellBlock now contains our solution. We can now start the postprocessing.     
             if(OUTPUT .eq. 1) then
@@ -700,8 +702,41 @@ module chemotaxis_pattern_FCT
                     
             ! We  compute the norm of the difference between two successive timesteps. 
             ! (a basic error control below...)
+            cerror = lalg_errorNormDble (p_cold,p_chemodata, CTRLNORM ) 
+            cerror=cerror/dtstep
             uerror = lalg_errorNormDble (p_uold,p_vectordata, CTRLNORM ) 
+            uerror=uerror/dtstep            
+            print *,' ############  Rel_chemo_diff=', cerror 
+            print *,' ############  Rel_cells_diff=', uerror 
+            
+            !!!!!!! calculate the norm of |analyt - numeric|                
+            ! calculate the difference: (c_analyt - c_numeric)
+            call lsyssc_vectorLinearComb (ranalytChemo,rchemoattract,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
+            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
+            print*,''
+            print *,' >>>>>>>>>>  Norms_chemo_diff=', dnorm 
+            ! calculate the difference: (u_analyt - u_numeric)
+            call lsyssc_vectorLinearComb (ranalytCell,rcell,1.0_DP/dtstep,-1.0_DP/dtstep,rtempAnalyt)      
+            dnorm = lsyssc_vectorNorm (rtempAnalyt, LINALG_NORML2)               
+            print *,' >>>>>>>>>>  Norms_cells_diff=', dnorm 
+            print*,''
 
+            ! here I calculate the analytical L_2 error
+            call pperr_scalar (rchemoattract,PPERR_L2ERROR,Derr_chemoL2,&
+                        ffunction_Target_Chemo)                              
+            call pperr_scalar (rcell,PPERR_L2ERROR,Derr_cellsL2,&
+                        ffunction_Target_Cells)                              
+            print *,' ===========  Diff_L2_chemo=', Derr_chemoL2
+            print *,' ===========  Diff_L2_cells=', Derr_cellsL2
+
+            ! here I calculate the analytical H_1 error
+            call pperr_scalar (rchemoattract,PPERR_H1ERROR,Derr_chemoH1,&
+                        ffunction_Target_ChemoH1)                              
+            call pperr_scalar (rcell,PPERR_H1ERROR,Derr_cellsH1,&
+                        ffunction_Target_CellsH1)                              
+            print *,' \\\\\\\\\\\  Diff_H1_chemo=', Derr_chemoH1
+            print *,' \\\\\\\\\\\  Diff_H1_cells=', Derr_cellsH1
+            
             ! time statistics
             call cpu_time(time_stop)
             time_accum = time_accum+( time_stop-time_start )
@@ -1282,9 +1317,9 @@ module chemotaxis_pattern_FCT
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Constructing the RHS of the chemoattractant part
     subroutine chemo_initrhsC_forCoupling  ( rchemoattract, rhschemo_notCoupled, rcell, &
-                                rdiscretisation, rmassmatrix,  dtstep,  PHI, rfc)
+                                ranalytCell, rdiscretisation, rmassmatrix,  dtstep,  PHI, rfc)
 
-        type(t_vectorScalar) , intent(INOUT) :: rchemoattract , rcell
+        type(t_vectorScalar) , intent(INOUT) :: rchemoattract , rcell, ranalytCell
 
         type(t_matrixScalar) , intent(IN) :: rmassmatrix
         type(t_matrixScalar) :: rlumpedmass 
@@ -1326,6 +1361,8 @@ module chemotaxis_pattern_FCT
 
         ! Here I embed the (analytical) term F_c!
         call collct_init (rcollection)        
+!         call collct_setvalue_vecsca ( rcollection , 'cbvector1' , rcell , .true.)
+        call collct_setvalue_vecsca ( rcollection , 'cbvector2' , ranalytCell , .true.)
         rcollection%DquickAccess(1) = PHI    
         rlinform%itermCount = 1
         rlinform%Idescriptors(1) = DER_FUNC3D
@@ -1543,6 +1580,7 @@ module chemotaxis_pattern_FCT
             
             ! Adding the diffusion-part of the model, since this can also be non-linear
             ! we use the callback function coeff_hillen_laplace
+            rcollection%DquickAccess(1) = dtstep
             rcollection%DquickAccess(2) = D_1
             rcollection%DquickAccess(3) = N            
             rform%itermCount = 3
@@ -1812,7 +1850,7 @@ module chemotaxis_pattern_FCT
     !!!!!   begin of chemo_fct_lim subroutine  !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! Here we set up the antidiffusive fluxes as well as the diff.limiters
-    ! This routine should follow the ideas of D.Kuzmins and M.Möllers "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
+    ! This routine should follow the ideas of D.Kuzmins and M.Mï¿½lers "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
     subroutine chemo_fct_lim ( rdiscretisation, rvector, kedge, dedge, nedge, aedge_mass,&
                                 rlumpedmatrix, rlaplace, rK, dtstep )
                             
