@@ -598,7 +598,7 @@ contains
     call output_line ('Starting postprocessing of initial solution...')
     call cc_postprocessingNonstat (rproblem,&
         rvector,rproblem%rtimedependence%dtimeInit,&
-        rvector,rproblem%rtimedependence%dtimeInit,0,rpostprocessing)
+        rvector,rproblem%rtimedependence%dtimeInit,0,rpostprocessing,rtimestepping)
 
     
     ! Reset counter of current macro step repetitions.
@@ -1110,7 +1110,7 @@ contains
         call cc_postprocessingNonstat (rproblem,&
             roldSolution,doldtime,&
             rvector,rproblem%rtimedependence%dtime,&
-            rproblem%rtimedependence%itimeStep,rpostprocessing)
+            rproblem%rtimedependence%itimeStep,rpostprocessing,rtimeStepping)
         
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Analysing time derivative...',&
