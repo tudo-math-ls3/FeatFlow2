@@ -87,7 +87,7 @@ module ccpostprocessing
   use cccallback
   use geometryaux
   use analyticprojection
-  
+  use timestepping
   implicit none
   
 !<types>
@@ -217,7 +217,7 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
-      dtimePrev,rvector,dtime,istep,rpostprocessing)
+      dtimePrev,rvector,dtime,istep,rpostprocessing,rtimestepping)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -249,6 +249,9 @@ contains
   
   ! Number of the timestep. =0: initial solution
   integer, intent(in) :: istep
+  
+  type (t_explicitTimeStepping), intent(in) ::rtimestepping  
+  
 !</input>
 
 !</subroutine>
@@ -313,8 +316,8 @@ contains
     call cc_errorAnalysis (rvector,rproblem)
     
     ! move the particle
-    call cc_updateParticlePosition(rproblem,rproblem%rtimedependence%dtimestep)
-    !call cc_moveParticles(rproblem,rproblem%rtimedependence%dtimestep)
+    !call cc_updateParticlePosition(rproblem,rtimestepping%dtstep)
+    call cc_moveParticles(rproblem,rtimestepping%dtlaststep)
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     !
     ! In a nonstationary simulation, first check if we are allowed
@@ -2384,6 +2387,8 @@ contains
     ew2=0.5_dp*(1.0_dp/eps2)
 
     p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
+
+    p_rparticleCollection%dtime = 0.05_dp
 
     ! loop over all the particles and move eac of them
     ! individually
