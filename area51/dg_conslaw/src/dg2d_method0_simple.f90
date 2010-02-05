@@ -123,6 +123,8 @@ contains
     ! Error of FE function to reference function
     real(DP) :: derror
     
+    integer :: ilimiting
+    
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
@@ -135,11 +137,12 @@ contains
     integer :: ielementType
     
     dt = 0.005_DP
-    ttfinal= 1.0_DP
+    ttfinal = 0.1_DP
     
     ielementType = EL_DG_T1_2D
     
     
+    ilimiting = 0
     
         
     vel(1)=1.0_DP
@@ -148,7 +151,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 8
+    NLMAX = 6
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -434,7 +437,7 @@ contains
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
        
               ! Limit the solution vector
-       call dg_linearLimiter (rsoltemp)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 
 
 !              call lsyssc_getbase_double (rsol,p_Ddata)
@@ -467,7 +470,7 @@ contains
        call lsyssc_vectorLinearComb (rsol,rsolUp,0.75_DP,0.25_DP,rsoltemp)
        
               ! Limit the solution vector
-       call dg_linearLimiter (rsoltemp)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 
 
        ! Step 3/3
@@ -491,7 +494,7 @@ contains
        call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
        ! Limit the solution vector
-       call dg_linearLimiter (rsol)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
     
        ! Go on to the next time step
        ttime = ttime + dt
@@ -537,7 +540,7 @@ contains
     
     
     
-    
+    !call dg_linearLimiter (rsol)
     
     
     ! Output solution to gmv file

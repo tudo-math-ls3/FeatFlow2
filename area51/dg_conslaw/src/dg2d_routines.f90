@@ -1166,6 +1166,8 @@ end subroutine
   
   real(dp), dimension(:), allocatable :: duimax, duimin
   
+  integer, dimension(:), pointer :: p_IverticesAtBoundary
+  
   real(dp) :: xc,yc
   integer :: iidx, nvert, ivert, ineighbour, ineighElm
   integer, dimension(4) :: IhomeIndex
@@ -1175,6 +1177,8 @@ end subroutine
   integer, dimension(3) :: IdofGlob
   
   integer, dimension(5) :: Isep
+  
+  integer :: NVBD
 
   ! Get pointer to the solution data
   call lsyssc_getbase_double (rvector,p_Ddata)
@@ -1188,6 +1192,9 @@ end subroutine
   ! Get number of elements
   NEL = p_rtriangulation%NEL
   
+  ! Number of vertives at boundary
+  NVBD = p_rtriangulation%NVBD
+  
   ! Get pointers to the data form the triangulation
   call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
                                p_IverticesAtElement)
@@ -1196,7 +1203,9 @@ end subroutine
   call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
                                p_IelementsAtVertex) 
   call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
-                               p_IelementsAtVertexIdx)                               
+                               p_IelementsAtVertexIdx)
+  call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
+                               p_IverticesAtBoundary)                               
                                
                                
    ! Set pointer to coordinate vector
@@ -1229,13 +1238,37 @@ end subroutine
       duimin(nvt) = min(duc,duimin(nvt))
     end do
     
+    
+!    NVE = 4
+!    
+!    do ivt = 1, NVE
+!      nvt = p_IverticesAtElement(ivt,iel)
+!      Dpoints(1,ivt) = p_DvertexCoords(1,nvt)
+!      Dpoints(2,ivt) = p_DvertexCoords(2,nvt)
+!      Ielements(ivt) = iel
+!    end do
+!    
+!    call fevl_evaluate (DER_FUNC, Dvalues(1:4), rvector, Dpoints(1:2,1:4), &
+!                          Ielements(1:4))
+!   do ivt = 1, NVE
+!      nvt = p_IverticesAtElement(ivt,iel)
+!      duimax(nvt) = max(duimax(nvt),Dvalues(ivt))
+!      duimin(nvt) = min(duimin(nvt),Dvalues(ivt))
+!    end do
+    
+    
+  end do
+  
+  do ivt = 1, NVBD
+    duimax(p_IverticesAtBoundary(ivt)) = 100000000.0_DP
+    duimin(p_IverticesAtBoundary(ivt)) = -100000000.0_DP
   end do
 
                                
   do iel = 1, NEL
   
     ! Get number of corner vertices
-    NVE = 4;
+    NVE = 4
     
     ! Get midpoint of the element
     xc = &
@@ -1294,6 +1327,7 @@ end subroutine
       end if
       
       dalpha = min(dalphatemp,dalpha)
+      
 
     end do ! ivert
     
@@ -1504,6 +1538,8 @@ end subroutine
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
                                   
     call linsol_solveAdaptively (p_rsolverNode,rsolSteadyBlock,rrhsBlock,rtempBlock)
+    
+    
     
   
     ! Start UCD export to GMV file:
