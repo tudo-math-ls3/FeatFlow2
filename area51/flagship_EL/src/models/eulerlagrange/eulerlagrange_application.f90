@@ -346,7 +346,8 @@ contains
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Euler-Lagrange
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    call eulerlagrange_init(rparlist,rproblem%p_rproblemLevelMax,rsolution,rtimestep,rcollection,rParticles)
+    call eulerlagrange_init(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolution,&
+                            rtimestep,rcollection,rParticles)
     
     ! Stop time measurement for pre-processing
     call stat_stopTimer(rtimerPrePostprocess)
@@ -378,7 +379,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call eulerlagrange_solveTransientPrimal(rparlist, 'eulerlagrange',&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
-            rsolutionPrimal, rcollection)
+            rsolutionPrimal, rcollection,rParticles)
 
         call eulerlagrange_outputSolution(rparlist, 'eulerlagrange', rproblem&
             %p_rproblemLevelMax, rsolutionPrimal, dtime=rtimestep&
@@ -387,7 +388,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Euler-Lagrange
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
+        !call eulerlagrange_step(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -2127,7 +2128,7 @@ contains
 !<subroutine>
 
   subroutine eulerlagrange_solveTransientPrimal(rparlist, ssectionName,&
-      rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection)
+      rbdrCond, rproblem, rtimestep, rsolver, rsolution, rcollection,rParticles)
 
 !<description>
       ! This subroutine solves the transient primal compressible eulerlagrange equations
@@ -2164,7 +2165,9 @@ contains
     type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! collection structure
-    type(t_collection), intent(inout) :: rcollection    
+    type(t_collection), intent(inout) :: rcollection   
+    
+    type(t_Particles), intent(inout) :: rParticles 
 !</inputoutput>
 !</subroutine>
 
@@ -2555,6 +2558,12 @@ contains
         call stat_stopTimer(p_rtimerAssemblyCoeff)
 
       end if
+      
+      !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      ! Euler-Lagrange (compute particle phase)
+      !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      call eulerlagrange_step(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolution,&
+            rtimestep,rcollection,rParticles)
 
     end do timeloop
 

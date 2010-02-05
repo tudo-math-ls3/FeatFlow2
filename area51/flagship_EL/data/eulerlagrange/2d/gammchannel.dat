@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 50
+nPart = 500
 
 
 #-------------------------------------------------------------------------------
@@ -64,32 +64,32 @@ search = midpoint
 # minimum particle-position in x-direction
 xmin = 1d-4
 # maximum particle-position in x-direction
-xmax = 1d-2
+xmax = 1d-3
 # minimum particle-position in y-direction
-ymin = 0.0
+ymin = 0.5d-3
 # maximum particle-position in y-direction
-ymax = 1d-4
+ymax = 1d-1
 
 #-------------------------------------------------------------------------------
 # mass and diameter of the particle
 #-------------------------------------------------------------------------------
 
 # particle-mass
-particlemass = 1d-12
+particlemass = 1d-15
 
 # particle-diameter
-particlediam = 1d-12
+particlediam = 1d-10
 
 
 #-------------------------------------------------------------------------------
 # velocity of the particles
 #-------------------------------------------------------------------------------
 
-# particle-mass
-velopartx = 0
+# velocity in x-direction
+velopartx = 0d0
 
-# particle-diameter
-veloparty = 0
+# velocity in y-direction
+veloparty = 0d0
 
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
@@ -318,7 +318,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.1
+dfinalTime = 0.5
 
 # initial time step size
 dinitialStep = 1e-3
