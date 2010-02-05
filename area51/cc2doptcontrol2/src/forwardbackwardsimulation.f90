@@ -3724,6 +3724,10 @@ contains
           
         end if
 
+        ! ite may be maxite+1 in case the loop passed through.
+        rsimSolver%nnonlinearIterations = rsimSolver%nnonlinearIterations + &
+            max(ite,rsimsolver%rnonlinearIteration%nmaxIterations)
+        
         ! Nonlinear loop finished. Now save the solution or stop incase of an error.
 
         if (blocalsuccess) then
@@ -4031,10 +4035,6 @@ contains
     rsimSolver%dtimeDefectCalculation = rsimSolver%dtimeDefectCalculation + &
         rtimerDefectCalc%delapsedReal
 
-    ! ite may be maxite+1 in case the loop passed through.
-    rsimSolver%nnonlinearIterations = rsimSolver%nnonlinearIterations + &
-        max(ite,rsimsolver%rnonlinearIteration%nmaxIterations)
-    
     if (present(bsuccess)) then
       bsuccess = blocalsuccess
     end if

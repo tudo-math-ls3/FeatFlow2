@@ -644,15 +644,16 @@ contains
       ! Discretise the X-velocity part:
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-                rrhsDiscrete%RvectorBlock(1),user_coeff_RHS_x,rcollection)
+                rrhsDiscrete%RvectorBlock(1),user_coeff_RHSprimal_x,rcollection)
 
       ! And the Y-velocity part:
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
-                rrhsDiscrete%RvectorBlock(2),user_coeff_RHS_y,rcollection)
+                rrhsDiscrete%RvectorBlock(2),user_coeff_RHSprimal_y,rcollection)
                                   
-      ! The RHS terms for the dual equation are calculated similarly using
-      ! the desired 'target' flow field.
+      ! The RHS terms for the dual equation are calculated using
+      ! the desired 'target' flow field plus the coefficients of the
+      ! dual RHS -- which are normally zero.
       !
       ! Discretise the X-velocity part:
       call linf_buildVectorScalar (&
@@ -671,13 +672,13 @@ contains
       ! Evaluate the RHS using the analytical definition.
       call ansol_prepareEval (rrhs,rcollection,"RHS",dtime)
       
-      ! Discretise the X-velocity part:
+      ! Discretise the primal X-velocity part:
       rcollection%IquickAccess(1) = 1
       call linf_buildVectorScalar (&
           p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
           rrhsDiscrete%RvectorBlock(1),trhsevl_evalFunction,rcollection)
 
-      ! And the Y-velocity part:
+      ! And the primal Y-velocity part:
       rcollection%IquickAccess(1) = 2
       call linf_buildVectorScalar (&
           p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
@@ -713,6 +714,48 @@ contains
       call lsyssc_scaleVector (rrhsDiscrete%RvectorBlock(4),-1.0_DP)
       call lsyssc_scaleVector (rrhsDiscrete%RvectorBlock(5),-1.0_DP)
     end if
+
+    ! Now there may exist a 'real' dual RHS (ehich is usually only the case
+    ! for analytical test functions). we have to add these to the dual
+    ! RHS vectors. This will compute the real dual RHS "f_dual - z".
+    if (rrhs%ctype .eq. ANSOL_TP_ANALYTICAL) then
+    
+      ! Evaluate the RHS using the user defined callback functions
+      call user_initCollectForAssembly (rglobalData,dtime,rcollection)
+
+      ! Discretise the X-velocity part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
+                rrhsDiscrete%RvectorBlock(4),user_coeff_RHSdual_x,rcollection)
+      
+      ! And the Y-velocity part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
+                rrhsDiscrete%RvectorBlock(5),user_coeff_RHSdual_y,rcollection)
+
+      call user_doneCollectForAssembly (rglobalData,rcollection)
+                
+    else
+    
+      ! Evaluate the RHS using the analytical definition.
+      call ansol_prepareEval (rrhs,rcollection,"RHS",dtime)
+      
+      ! Discretise the dual X-velocity part:
+      rcollection%IquickAccess(1) = 4
+      call linf_buildVectorScalar (&
+          p_rdiscretisation%RspatialDiscr(4),rlinform,.false.,&
+          rrhsDiscrete%RvectorBlock(4),trhsevl_evalFunction,rcollection)
+
+      ! And the dual Y-velocity part:
+      rcollection%IquickAccess(1) = 5
+      call linf_buildVectorScalar (&
+          p_rdiscretisation%RspatialDiscr(5),rlinform,.false.,&
+          rrhsDiscrete%RvectorBlock(5),trhsevl_evalFunction,rcollection)
+
+      call ansol_doneEval (rcollection,"RHS")
+    
+    end if
+
 
     ! The third subvector must be zero initially - as it represents the RHS of
     ! the equation "div(u) = 0".

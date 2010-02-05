@@ -1628,7 +1628,7 @@ contains
     ! local variables
     integer :: ctype,iid
     real(dp) :: dstartTime,dtimeMax
-    character(len=SYS_STRLEN), dimension(6) :: Sexpressions
+    character(len=PARLST_LENLINEBUF), dimension(6) :: Sexpressions
     character(len=SYS_STRLEN) :: smesh,sflowFile
     integer :: ilevel,ielementType,idelta
     integer :: ntimesteps

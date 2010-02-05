@@ -171,7 +171,7 @@ contains
     integer, dimension(2) :: IminIndex,imaxIndex
     integer, dimension(NDIM2D) :: IvelComp
     real(DP) :: dvalue,dpar1,dpar2
-    character(LEN=PARLST_MLDATA) :: cstr,cexpr,sbdex1,sbdex2,sbdex3,sbdex4
+    character(LEN=PARLST_LENLINEBUF) :: cstr,cexpr,sbdex1,sbdex2,sbdex3,sbdex4
     character(LEN=PARLST_MLNAME) :: cname
     integer, dimension(NDIM2D) :: IvelEqns
     type(t_collection) :: rlocalCollection
@@ -1022,7 +1022,7 @@ contains
 
       ! local variables
       real(DP) :: d,dx,dy
-      character(LEN=PARLST_MLDATA) :: sexpr
+      character(LEN=PARLST_LENLINEBUF) :: sexpr
       real(DP), dimension(size(SEC_EXPRVARIABLES)) :: Rval
       
       select case (ityp)
