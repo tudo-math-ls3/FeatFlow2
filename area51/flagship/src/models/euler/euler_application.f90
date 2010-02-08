@@ -362,21 +362,21 @@ contains
             dtime=rtimestep%dTime)
 
 
-        ! BEGIN DEBUG
-        call lsysbl_createVectorBlock(&
-            rproblem%p_rproblemLevelMin%Rdiscretisation(1),&
-            rsolutionDual, .false., ST_DOUBLE)
-        if (rproblem%p_rproblemLevelMin%Rdiscretisation(1)%ncomponents .ne.&
-            euler_getNVAR(rproblem%p_rproblemLevelMin)) then
-          rsolutionDual%RvectorBlock(1)%NVAR = euler_getNVAR(rproblem%p_rproblemLevelMin)
-          call lsysbl_resizeVectorBlock(rsolutionDual,&
-              rsolutionDual%NEQ*euler_getNVAR(rproblem%p_rproblemLevelMin), .false., .false.)
-        end if
-        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
-        call euler_outputSolution(rparlist, 'euler',&
-            rproblem%p_rproblemLevelMin, rsolutionDual,&
-            dtime=rtimestep%dTime)
-        ! END DEBUG
+!!$        ! BEGIN DEBUG
+!!$        call lsysbl_createVectorBlock(&
+!!$            rproblem%p_rproblemLevelMin%Rdiscretisation(1),&
+!!$            rsolutionDual, .false., ST_DOUBLE)
+!!$        if (rproblem%p_rproblemLevelMin%Rdiscretisation(1)%ncomponents .ne.&
+!!$            euler_getNVAR(rproblem%p_rproblemLevelMin)) then
+!!$          rsolutionDual%RvectorBlock(1)%NVAR = euler_getNVAR(rproblem%p_rproblemLevelMin)
+!!$          call lsysbl_resizeVectorBlock(rsolutionDual,&
+!!$              rsolutionDual%NEQ*euler_getNVAR(rproblem%p_rproblemLevelMin), .false., .false.)
+!!$        end if
+!!$        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
+!!$        call euler_outputSolution(rparlist, 'euler',&
+!!$            rproblem%p_rproblemLevelMin, rsolutionDual,&
+!!$            dtime=rtimestep%dTime)
+!!$        ! END DEBUG
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -1410,9 +1410,8 @@ contains
         ! Enforce using summed cubature formula to obtain accurate results
         do i = 1, p_rspatialDiscr%inumFESpaces
           p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getSummedCubType(CUB_G1_T, nsummedCubType)
-              !cub_getSummedCubType(&
-              !p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
+              cub_getSummedCubType(&
+              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
         end do
         
         ! Scalar vectors in interleaved format have to be treated differently
