@@ -425,7 +425,8 @@ contains
       rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
       
 
-    case (AFCSTAB_FEMFCT_LINEARISED)
+    case (AFCSTAB_FEMFCT_LINEARISED,&
+          AFCSTAB_FEMFCT_MASS)
       
       ! Handle for IverticesAtEdge
       Isize = (/4, rafcstab%NEDGE/)
@@ -11658,9 +11659,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildFluxFCTBlock(rlumpedMassMatrix,&
-      rafcstab, rx1, rx2, theta, tstep, dscale, binit,&
-      rconsistentMassMatrix)
+  subroutine gfsc_buildFluxFCTBlock(rafcstab, rx1, rx2, theta, tstep, dscale,&
+      binit, rconsistentMassMatrix)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for FEM-FCT schemes.
@@ -11670,9 +11670,6 @@ contains
 !</description>
 
 !<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
     ! solution vectors
     type(t_vectorBlock), intent(in) :: rx1, rx2
 
@@ -11709,9 +11706,8 @@ contains
       
     else
 
-      call gfsc_buildFluxFCTScalar(rlumpedMassMatrix,&
-          rafcstab, rx1%RvectorBlock(1), rx2%RvectorBlock(1),&
-          theta, tstep, dscale, binit, rconsistentMassMatrix)
+      call gfsc_buildFluxFCTScalar(rafcstab, rx1%RvectorBlock(1),&
+          rx2%RvectorBlock(1), theta, tstep, dscale, binit, rconsistentMassMatrix)
 
     end if
     
@@ -11721,18 +11717,14 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildFluxFCTScalar(rlumpedMassMatrix,&
-      rafcstab, rx1, rx2, theta, tstep, dscale, binit,&
-      rconsistentMassMatrix)
+  subroutine gfsc_buildFluxFCTScalar(rafcstab, rx1, rx2, theta, tstep, dscale,&
+      binit, rconsistentMassMatrix)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for FEM-FCT schemes.
 !</description>
 
 !<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
     ! solution vectors
     type(t_vectorScalar), intent(in) :: rx1, rx2
 
@@ -11762,7 +11754,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_Dx1,p_Dx2
+    real(DP), dimension(:), pointer :: p_MC,p_Dx1,p_Dx2
     real(DP), dimension(:), pointer :: p_Dalpha,p_Dflux0,p_Dflux
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
 
@@ -11785,7 +11777,6 @@ contains
     ! Set pointers
     call lsyssc_getbase_double(rx1, p_Dx1)
     call lsyssc_getbase_double(rx2, p_Dx2)
-    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
     call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
 
@@ -11959,6 +11950,34 @@ contains
       
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+      
+
+    case (AFCSTAB_FEMFCT_MASS)
+      
+      !-------------------------------------------------------------------------
+      ! FEM-FCT algorithm for mass antidiffusion
+      !-------------------------------------------------------------------------
+      
+      if (present(rconsistentMassMatrix)) then
+        
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+
+        ! There are only initial fluxes. Note that the second solution
+        ! vector is "scaled" by zero, and hence, it can be arbitrary
+        call doFluxesConsMass(p_IverticesAtEdge,&
+            p_DcoefficientsAtEdge, rafcstab%NEDGE, p_MC, p_Dx1, p_Dx1,&
+            dscale, 0.0_DP, p_Dflux)
+        
+        ! Set specifiers for raw antidiffusive fluxes
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+        
+      else
+        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+        call sys_halt()
+      end if
       
       
     case default

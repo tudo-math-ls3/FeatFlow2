@@ -108,6 +108,9 @@ module afcstabilisation
   ! Stabilisation of characteristic FEM-FCT type
   integer, parameter, public :: AFCSTAB_FEMFCT_CHARACTERISTIC = 14
 
+  ! Stabilisation of FEM-FCT type for mass antidiffusion
+  integer, parameter, public :: AFCSTAB_FEMFCT_MASS           = 15
+
   ! Stabilisation of FEM-TVD type for convection operators
   integer, parameter, public :: AFCSTAB_FEMTVD                = 20
 
@@ -380,6 +383,7 @@ contains
         (    istabilisation .ne. AFCSTAB_FEMFCT_IMPLICIT)   .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_LINEARISED) .and. &
         (    istabilisation .ne. AFCSTAB_FEMFCT_ITERATIVE)  .and. &
+        (    istabilisation .ne. AFCSTAB_FEMFCT_MASS)       .and. &
         (    istabilisation .ne. AFCSTAB_FEMTVD)            .and. &
         (    istabilisation .ne. AFCSTAB_FEMGP)             .and. &
         (    istabilisation .ne. AFCSTAB_DMP)               .and. &

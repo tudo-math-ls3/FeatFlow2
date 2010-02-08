@@ -2788,14 +2788,12 @@ contains
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
         call gfsc_buildFluxFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, rsolution, rtimestep%theta,&
             rtimestep%dStep, 1.0_DP, .true.,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
       else
         call gfsc_buildFluxFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             rsolution, rsolution, rtimestep%theta,&
             rtimestep%dStep, 1.0_DP, .true.)
@@ -3270,14 +3268,12 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rsolution, rtimestep%theta,&
               rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rsolution, rtimestep%theta,&
               rtimestep%dStep, 1.0_DP, (ite .eq. 0))
@@ -4218,14 +4214,12 @@ contains
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
       call gfsc_buildFluxFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC),&
           p_rpredictor, rsolution, rtimestepAux%theta,&
           rtimestepAux%dStep, 1.0_DP, .true.,&
           rproblemLevel%Rmatrix(consistentMassMatrix))
     else
       call gfsc_buildFluxFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC),&
           p_rpredictor, rsolution, rtimestepAux%theta,&
           rtimestepAux%dStep, 1.0_DP, .true.)

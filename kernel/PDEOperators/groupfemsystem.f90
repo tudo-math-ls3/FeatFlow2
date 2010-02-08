@@ -433,7 +433,8 @@ contains
       end if
 
 
-    case (AFCSTAB_FEMFCT_LINEARISED)
+    case (AFCSTAB_FEMFCT_LINEARISED,&
+          AFCSTAB_FEMFCT_MASS)
 
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
@@ -656,7 +657,8 @@ contains
       end if      
       
 
-    case (AFCSTAB_FEMFCT_LINEARISED)
+    case (AFCSTAB_FEMFCT_LINEARISED,&
+          AFCSTAB_FEMFCT_MASS)
 
       ! Handle for IverticesAtEdge: (/i,j,ij,ji/)
       Isize = (/4, rafcstab%NEDGE/)
@@ -7057,6 +7059,45 @@ contains
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
 
 
+    case (AFCSTAB_FEMFCT_MASS)
+
+      !-------------------------------------------------------------------------
+      ! FEM-FCT algorithm for mass antidiffusion
+      !-------------------------------------------------------------------------
+
+      if (present(rconsistentMassMatrix)) then
+
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+
+        ! What kind of matrix are we?
+        select case(rconsistentMassMatrix%cmatrixFormat)
+        case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+          !---------------------------------------------------------------------
+          ! Matrix format 7 and 9
+          !---------------------------------------------------------------------
+
+          call doFluxesMat79ConsMass(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_MC, p_Dx1, dscale, p_Dflux)
+
+        case DEFAULT
+          call output_line('Unsupported matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
+          call sys_halt()
+        end select
+
+        ! Set specifiers for raw antidiffusive fluxes
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+        
+      else
+        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
+        call sys_halt()
+      end if
+
+
     case default
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTBlock')
@@ -7090,6 +7131,40 @@ contains
       !$omp end parallel do
 
     end subroutine doCombineFluxes
+
+    !**************************************************************
+    ! Assemble raw antidiffusive mass fluxes.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doFluxesMat79ConsMass(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Dx,dscale, Dflux)
+
+      real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: MC
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
+
+      ! local variables
+      integer :: iedge,ij,i,j
+      
+      ! Loop over all edges
+      !$omp paralle do private(i,j,ij)
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+
+        ! Compute the raw antidiffusives fluxes
+        Dflux(:,iedge) = dscale*MC(ij)*(Dx(i,:)-Dx(j,:))
+      end do
+      !$omp end parallel do
+
+    end subroutine doFluxesMat79ConsMass
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes with contribution
@@ -7738,7 +7813,46 @@ contains
       ! Set specifiers for raw antidiffusive fluxes
       rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
 
+      
+    case (AFCSTAB_FEMFCT_MASS)
 
+      !-------------------------------------------------------------------------
+      ! FEM-FCT algorithm for mass antidiffusion
+      !-------------------------------------------------------------------------
+
+      if (present(rconsistentMassMatrix)) then
+
+        ! Set pointers
+        call lsyssc_getbase_double(rafcstab%p_rvectorFlux, p_Dflux)
+        call lsyssc_getbase_double(rconsistentMassMatrix, p_MC)
+
+        ! What kind of matrix are we?
+        select case(rconsistentMassMatrix%cmatrixFormat)
+        case(LSYSSC_MATRIX7, LSYSSC_MATRIX9)
+          !---------------------------------------------------------------------
+          ! Matrix format 7 and 9
+          !---------------------------------------------------------------------
+
+          call doFluxesMat79ConsMass(p_IverticesAtEdge,&
+              rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
+              p_MC, p_Dx1, dscale, p_Dflux)
+
+        case DEFAULT
+          call output_line('Unsupported matrix format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
+          call sys_halt()
+        end select
+        
+        ! Set specifiers for raw antidiffusive fluxes
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES)
+
+      else
+        call output_line('Unable to compute mass antidiffusion without mass matrix!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
+        call sys_halt()
+      end if
+
+      
     case default
       call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildFluxFCTScalar')
@@ -7772,6 +7886,40 @@ contains
       !$omp end parallel do
 
     end subroutine doCombineFluxes
+
+    !**************************************************************
+    ! Assemble raw antidiffusive mass fluxes.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doFluxesMat79ConsMass(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, MC, Dx,dscale, Dflux)
+
+      real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
+      real(DP), dimension(:), intent(in) :: MC
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, intent(in) :: NEDGE,NEQ,NVAR
+
+      real(DP), dimension(NVAR,NEDGE), intent(out) :: Dflux
+
+      ! local variables
+      integer :: iedge,ij,i,j
+      
+      ! Loop over all edges
+      !$omp paralle do private(i,j,ij)
+      do iedge = 1, NEDGE
+
+        ! Get node numbers and matrix positions
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        ij = IverticesAtEdge(3, iedge)
+
+        ! Compute the raw antidiffusives fluxes
+        Dflux(:,iedge) = dscale*MC(ij)*(Dx(:,i)-Dx(:,j))
+      end do
+      !$omp end parallel do
+
+    end subroutine doFluxesMat79ConsMass
 
     !**************************************************************
     ! Assemble raw antidiffusive fluxes with contribution

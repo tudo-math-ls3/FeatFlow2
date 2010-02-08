@@ -308,9 +308,9 @@ contains
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
-!!$    ! Hack to enforce single grid solver
-!!$    call solver_setMinimumMultigridlevel(rsolver,&
-!!$        solver_getMaximumMultigridlevel(rsolver))
+    ! Hack to enforce single grid solver
+    call solver_setMinimumMultigridlevel(rsolver,&
+        solver_getMaximumMultigridlevel(rsolver))
 
     ! Initialize the individual problem levels
     call euler_initAllProblemLevels(rparlist, 'euler',&
@@ -360,6 +360,23 @@ contains
         call euler_outputSolution(rparlist, 'euler',&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
+
+
+        ! BEGIN DEBUG
+        call lsysbl_createVectorBlock(&
+            rproblem%p_rproblemLevelMin%Rdiscretisation(1),&
+            rsolutionDual, .false., ST_DOUBLE)
+        if (rproblem%p_rproblemLevelMin%Rdiscretisation(1)%ncomponents .ne.&
+            euler_getNVAR(rproblem%p_rproblemLevelMin)) then
+          rsolutionDual%RvectorBlock(1)%NVAR = euler_getNVAR(rproblem%p_rproblemLevelMin)
+          call lsysbl_resizeVectorBlock(rsolutionDual,&
+              rsolutionDual%NEQ*euler_getNVAR(rproblem%p_rproblemLevelMin), .false., .false.)
+        end if
+        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
+        call euler_outputSolution(rparlist, 'euler',&
+            rproblem%p_rproblemLevelMin, rsolutionDual,&
+            dtime=rtimestep%dTime)
+        ! END DEBUG
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -1199,10 +1216,11 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
     type(t_vectorBlock) :: rvectorBlock
-    type(t_matrixScalar), target :: rmatrix
-    type(t_matrixScalar), pointer :: p_rmatrix
+    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
@@ -1211,7 +1229,8 @@ contains
     character(LEN=SYS_STRLEN) :: ssolutionName
     integer :: isolutiontype, nexpression, ccubType, nsummedCubType
     integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
-    integer :: lumpedMassMatrix
+    integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
+
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1220,8 +1239,23 @@ contains
     ! How should the solution be initialized?
     select case(isolutionType)
     case (SOLUTION_ZERO)
+      
+      !-------------------------------------------------------------------------
       ! Initialize solution by zeros
+      !-------------------------------------------------------------------------
+      
       call lsysbl_clearVector(rvector)
+
+      
+    case (SOLUTION_GRAYMAP)
+      
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of a graymap image
+      !-------------------------------------------------------------------------
+
+      call output_line('Initialization if solution by graymap image is not yet supported!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+      call sys_halt()
 
 
     case (SOLUTION_ANALYTIC_POINTVALUE)
@@ -1300,12 +1334,41 @@ contains
       end do   ! iblock
 
 
-    case (SOLUTION_ANALYTIC_CONSERVATIVE)
+    case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
+          SOLUTION_ANALYTIC_L2_LUMPED)
 
       !-------------------------------------------------------------------------
       ! Initialize the FE-function by the L2-projection of the analytical data
       !-------------------------------------------------------------------------
 
+      ! Retrieve the lumped and consistent mass matrices from the
+      ! problem level structure or recompute them on-the-fly.
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'consistentMassMatrix', consistentMassMatrix)
+      
+      if (consistentMassMatrix .gt. 0) then
+        p_rconsistentMassMatrix => rproblemLevel%Rmatrix(consistentMassMatrix)
+      else
+        call bilf_createMatrixStructure(&
+            rvector%p_rblockDiscr%RspatialDiscr(1),&
+            LSYSSC_MATRIX9, rconsistentMassMatrix)
+        call stdop_assembleSimpleMatrix(&
+            rconsistentMassMatrix, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+        p_rconsistentMassMatrix => rconsistentMassMatrix
+      end if
+      
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      
+      if (lumpedMassMatrix .gt. 0) then
+        p_rlumpedMassMatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+      else
+        call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
+            rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
+        call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
+        p_rlumpedMassMatrix => rlumpedMassMatrix
+      end if
+      
       ! Initialize total number of expressions
       nexpression = 0
       
@@ -1392,43 +1455,62 @@ contains
           call lsysbl_releaseVector(rvectorBlock)
         end if
         
-        ! Scale by the row-sum lumped mass matrix to obtain the L2-projection
-        call parlst_getvalue_int(rparlist,&
-            ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-        if (lumpedMassMatrix .gt. 0) then
-          p_rmatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
-        else
-          call bilf_createMatrixStructure(&
-              rvector%p_rblockDiscr%RspatialDiscr(iblock),&
-              LSYSSC_MATRIX9, rmatrix)
-          call stdop_assembleSimpleMatrix(&
-              rmatrix, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
-          call lsyssc_lumpMatrixScalar(rmatrix, LSYSSC_LUMP_DIAG)
-          p_rmatrix => rmatrix
-        end if
-        
         ! Compute the lumped L2-projection
-        call lsyssc_invertedDiagMatVec(p_rmatrix, rvector%RvectorBlock(iblock),&
-            1.0_DP, rvector%RvectorBlock(iblock))
+        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
         
-        ! Release temporal matrix (if any)
-        call lsyssc_releaseMatrix(rmatrix)
-
         ! Reset cubature formula to standard value
         do i = 1, p_rspatialDiscr%inumFESpaces
           p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
               cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
         end do
-        
       end do
+      
+      !-------------------------------------------------------------------------
+      ! Restore contribution of the consistent mass matrix of the L2-projection
+      !-------------------------------------------------------------------------
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
 
+        ! Get parameters from parameter list
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
+        
+        ! Initialise stabilisation structure by hand
+        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%bprelimiting = .false.
+        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        call gfsys_initStabilisation(&
+            rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
+        
+        ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
+        ! callback function for assembling the antidiffusive fluxes since it 
+        ! will not be used for assembling antidiffusive mass fluxes !!!
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(consistentMassMatrix:consistentMassMatrix),&
+            rafcstab, rvector, rvector, euler_calcFluxFCTScalarDiss1d,&
+            0.0_DP, 0.0_DP, 1.0_DP, .true.,&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+        
+        ! Apply flux correction to solution profile
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), rafcstab, rvector, 1._DP,&
+            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+        
+        ! Release stabilisation structure
+        call afcstab_releaseStabilisation(rafcstab)
+      end if
+      
+      ! Release temporal matrices (if any)
+      call lsyssc_releaseMatrix(rconsistentMassMatrix)
+      call lsyssc_releaseMatrix(rlumpedMassMatrix)
+      
 
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
       call sys_halt()
     end select
-
+    
   end subroutine euler_initSolution
 
   !*****************************************************************************
@@ -2618,9 +2700,7 @@ contains
 !<subroutine>
 
   subroutine euler_projectSolution(rsourceVector, rdestVector)
-
-    use analyticprojection
-
+    
 !<description>
     ! This subroutine performs conservative projection of the given solution
     ! stored in rsourceVector to another FE-space and stores the result in
@@ -2646,51 +2726,18 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP) :: dmass1, dmass2
     integer :: iblock
-
-!!$    type(t_configL2ProjectionByMass) :: rL2ProjectionConfig
     
     ! Set up the linear form
     rform%itermCount = 1
     rform%Idescriptors(1) = DER_FUNC
-
-!!$    rL2ProjectionConfig%cpreconditioner=2
-
+    
     ! Set up the collection structure
     call collct_init(rcollection)
     rcollection%IquickAccess(1) = SYSTEM_BLOCKFORMAT
-        rcollection%p_rvectorQuickAccess1 => rsourceVector
+    rcollection%p_rvectorQuickAccess1 => rsourceVector
     
     ! Assemble the linear form for destination vector
     do iblock = 1, rdestVector%nblocks
-      
-!!$      ! Create sparsity pattern of mass matrices
-!!$      call bilf_createMatrixStructure(&
-!!$          rdestVector%p_rblockDiscr%RspatialDiscr(1),&
-!!$          LSYSSC_MATRIX9, rmatrix1)
-!!$
-!!$      ! Create mass matrices
-!!$      call stdop_assembleSimpleMatrix(rmatrix1, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
-!!$      
-!!$      ! Duplicate the matrix
-!!$      call lsyssc_copyMatrix(rmatrix1, rmatrix2)
-!!$
-!!$      ! Compute the lumped mass matrices
-!!$      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
-!!$
-!!$      ! Set the number of the scalar subvector to the collection structure
-!!$      rcollection%IquickAccess(2) = iblock
-!!$
-!!$      ! Perform consistent L2-projection
-!!$      call anprj_analytL2projectionByMass(rdestVector%RvectorBlock(iblock),&
-!!$          rmatrix1, euler_coeffVectorFE, rcollection, rL2ProjectionConfig,&
-!!$          rmatrix2)
-!!$
-!!$
-!!$      ! Release matrices
-!!$      call lsyssc_releaseMatrix(rmatrix1)
-!!$      call lsyssc_releaseMatrix(rmatrix2)
-
-
       
       ! Create sparsity pattern of mass matrices
       call bilf_createMatrixStructure(&

@@ -1494,14 +1494,20 @@ contains
 !</subroutine>
 
     ! local variables
-    type(t_fparser), pointer :: p_rfparser
     type(t_pgm) :: rpgm
+    type(t_afcstab) :: rafcstab
+    type(t_linearForm) :: rform
+    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+    type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: ssolutionname
-    integer :: isolutiontype
-    integer :: ieq, neq, ndim, icomp
+    integer :: isolutiontype, ccubType, nsummedCubType
+    integer :: ieq, neq, ndim, icomp, i
+    integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
 
 
     ! Get global configuration from parameter list
@@ -1511,11 +1517,45 @@ contains
     ! How should the solution be initialized?
     select case(isolutionType)
     case (SOLUTION_ZERO)
+
+      !-------------------------------------------------------------------------
       ! Initialize solution by zeros
+      !-------------------------------------------------------------------------
+
       call lsysbl_clearVector(rvector)
+      
+      
+    case (SOLUTION_GRAYMAP)
+      
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of a graymap image
+      !-------------------------------------------------------------------------
+
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'ssolutionname', ssolutionName)
+
+      ! Initialize solution from portable graymap image
+      call ppsol_readPGM(0, ssolutionName, rpgm)
+
+      ! Set pointers
+      call storage_getbase_double2D(rproblemLevel%rtriangulation&
+          %h_DvertexCoords, p_DvertexCoords)
+      call storage_getbase_double(rvector%h_Ddata, p_Ddata)
+
+      ! Initialize the solution by the image data
+      call ppsol_initArrayPGM_Dble(rpgm, p_DvertexCoords, p_Ddata)
+
+      ! Release portable graymap image
+      call ppsol_releasePGM(rpgm)
 
 
-    case (SOLUTION_ANALYTIC)
+    case (SOLUTION_ANALYTIC_POINTVALUE)
+
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of an analytical expression
+      !-------------------------------------------------------------------------
+      
       ! Get global configuration from parameter list
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'ssolutionname', ssolutionName)
@@ -1524,8 +1564,8 @@ contains
       p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
 
       ! Set pointer to vertex coordinates
-      call storage_getbase_double2D(rproblemLevel%rtriangulation&
-          %h_DvertexCoords, p_DvertexCoords)
+      call storage_getbase_double2D(&
+          rproblemLevel%rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
       ! Get number of spatial dimensions
       ndim = rproblemLevel%rtriangulation%ndim
@@ -1553,27 +1593,115 @@ contains
         call fparser_evalFunction(p_rfparser, icomp, Dvalue, p_Ddata(ieq))
       end do
 
+      
+    case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
+          SOLUTION_ANALYTIC_L2_LUMPED)
 
-    case (SOLUTION_GRAYMAP)
-      ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist,&
-          ssectionName, 'ssolutionname', ssolutionName)
+      !-------------------------------------------------------------------------
+      ! Initialize the FE-function by the L2-projection of the analytical data
+      !-------------------------------------------------------------------------
 
-      ! Initialize solution from portable graymap image
-      call ppsol_readPGM(0, ssolutionName, rpgm)
+      ! Retrieve the lumped and consistent mass matrices from the
+      ! problem level structure or recompute them on-the-fly.
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'consistentMassMatrix', consistentMassMatrix)
+      
+      if (consistentMassMatrix .gt. 0) then
+        p_rconsistentMassMatrix => rproblemLevel%Rmatrix(consistentMassMatrix)
+      else
+        call bilf_createMatrixStructure(&
+            rvector%p_rblockDiscr%RspatialDiscr(1),&
+            LSYSSC_MATRIX9, rconsistentMassMatrix)
+        call stdop_assembleSimpleMatrix(&
+            rconsistentMassMatrix, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+        p_rconsistentMassMatrix => rconsistentMassMatrix
+      end if
+      
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      
+      if (lumpedMassMatrix .gt. 0) then
+        p_rlumpedMassMatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+      else
+        call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
+            rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
+        call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
+        p_rlumpedMassMatrix => rlumpedMassMatrix
+      end if
 
-      ! Set pointers
-      call storage_getbase_double2D(rproblemLevel%rtriangulation&
-          %h_DvertexCoords, p_DvertexCoords)
-      call storage_getbase_double(rvector%h_Ddata, p_Ddata)
+      ! Get the number of refinement levels for summed cubature formula
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'nsummedcubtype', nsummedCubType)
+      
+      ! Set up the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Attach the simulation time and the name of the 
+      ! function parser to the collection structure
+      rcollection%DquickAccess(1) = dtime
+      rcollection%SquickAccess(1) = "rfparser"
 
-      ! Initialize the solution by the image data
-      call ppsol_initArrayPGM_Dble(rpgm, p_DvertexCoords, p_Ddata)
+      ! Set pointer to spatial discretisation
+      p_rspatialDiscr => rvector%RvectorBlock(1)%p_rspatialDiscr
 
-      ! Release portable graymap image
-      call ppsol_releasePGM(rpgm)
+      ! Enforce using summed cubature formula to obtain accurate results
+      do i = 1, p_rspatialDiscr%inumFESpaces
+        p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+            cub_getSummedCubType(&
+            p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
+      end do
 
+      ! Get the number of the component used for evaluating the initial solution
+      rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+      
+      ! Assemble the linear form for the scalar subvector
+      call linf_buildVectorScalar2(rform, .true.,&
+          rvector%RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
 
+      ! Compute the lumped L2-projection
+      call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+          rvector%RvectorBlock(1), 1.0_DP, rvector%RvectorBlock(1))
+
+      ! Reset cubature formula to standard value
+      do i = 1, p_rspatialDiscr%inumFESpaces
+        p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+            cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
+      end do
+
+      !-------------------------------------------------------------------------
+      ! Restore contribution of the consistent mass matrix of the L2-projection
+      !-------------------------------------------------------------------------
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
+
+        ! Get parameters from parameter list
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
+        
+        ! Initialise stabilisation structure by hand
+        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%bprelimiting = .false.
+        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
+        
+        ! Compute the raw antidiffusive mass fluxes
+        call gfsc_buildFluxFCT(rafcstab, rvector, rvector, 0.0_DP, 0.0_DP,&
+            1.0_DP, .true., rproblemLevel%Rmatrix(consistentMassMatrix))
+
+        ! Apply flux correction to solution profile
+        call gfsc_buildConvVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), rafcstab, rvector, 1._DP,&
+            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+
+        ! Release stabilisation structure
+        call afcstab_releaseStabilisation(rafcstab)
+      end if
+
+      ! Release temporal matrices (if any)
+      call lsyssc_releaseMatrix(rconsistentMassMatrix)
+      call lsyssc_releaseMatrix(rlumpedMassMatrix)
+
+      
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'transp_initSolution')
@@ -2133,7 +2261,7 @@ contains
     call parlst_getvalue_string(rparlist, ssectionName,&
         'sexacttargetfuncname', sexacttargetfuncname, '')
 
-    if ((iexactsolutiontype .ne. SOLUTION_ANALYTIC) .and.&
+    if ((iexactsolutiontype .ne. SOLUTION_ANALYTIC_POINTVALUE) .and.&
         (trim(sexacttargetfuncname) .eq. '')) then
 
       call output_lbrk()
@@ -2678,7 +2806,7 @@ contains
     !---------------------------------------------------------------------------
 
     select case(iexactsolutiontype)
-    case (SOLUTION_ANALYTIC)
+    case (SOLUTION_ANALYTIC_POINTVALUE)
 
       ! Get function parser from collection
       p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')

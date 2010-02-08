@@ -75,13 +75,19 @@ module euler_basic
 !<constantblock description="Global type of initial solution">
 
   ! zero initial solution
-  integer, parameter, public :: SOLUTION_ZERO                  = 0
+  integer, parameter, public :: SOLUTION_ZERO                   = 0
 
-  ! analytical initial solution given pointwise
-  integer, parameter, public :: SOLUTION_ANALYTIC_POINTVALUE   = 1
+  ! analytical solution: given by pointwise values
+  integer, parameter, public :: SOLUTION_ANALYTIC_POINTVALUE    = 1
 
-  ! analytical initial solution given in conservative form
-  integer, parameter, public :: SOLUTION_ANALYTIC_CONSERVATIVE = 2
+  ! graymap profile for solution
+  integer, parameter, public :: SOLUTION_GRAYMAP                = 2
+
+  ! analytical solution: given by consistent L2-projection
+  integer, parameter, public :: SOLUTION_ANALYTIC_L2_CONSISTENT = 3
+
+  ! analytical solution: given by lumped L2-projection
+  integer, parameter, public :: SOLUTION_ANALYTIC_L2_LUMPED     = 4
 
 !</constantblock>
 

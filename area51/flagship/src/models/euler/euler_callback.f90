@@ -65,6 +65,9 @@
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
+!# 14.) euler_calcMassFluxFCT
+!#      -> Calculates the antidiffusive mass flux for FCT algorithm
+!#
 !# Frequently asked questions?
 !#
 !# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
@@ -125,6 +128,7 @@ module euler_callback
   public :: euler_limitEdgewiseMomentum
   public :: euler_coeffVectorFE
   public :: euler_coeffVectorAnalytic
+  public :: euler_calcMassFluxFCT
 
 contains
 
@@ -3810,5 +3814,43 @@ contains
     end do ! itermCount
     
   end subroutine euler_coeffVectorAnalytic
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcMassFluxFCT(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+
+!<description>
+    ! This subroutine computes the raw antidiffusive mass fluxes
+    ! for FCT algorithms in arbitrary dimension
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
   
+    ! Compute raw antidiffusive mass fluxes
+    F_ij = dscale1*(U1_i-U1_j)
+    
+  end subroutine euler_calcMassFluxFCT
+
 end module euler_callback
