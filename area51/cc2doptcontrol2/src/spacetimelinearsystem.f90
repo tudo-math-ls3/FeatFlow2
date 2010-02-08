@@ -626,15 +626,15 @@ contains
         rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
         rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * 1.0_DP/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
-        rnonlinearSpatialMatrix%Dtheta(2,2) = 1.0_DP
+        rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
+        rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
         
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
-              real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+              dtheta*real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+              - dtheta*real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
           
           rnonlinearSpatialMatrix%Dnewton(1,1) = dnewton
           rnonlinearSpatialMatrix%DnewtonT(2,2) = &
@@ -651,17 +651,17 @@ contains
         ! Only difference to the usual diagonal: No coupling mass matrix
         ! from dual to the primal velocity.
         rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
-            (-dequationType)
+            (-dequationType) * dtheta 
         
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
             rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType)
+                ( dequationType) * dtheta 
             !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType)
+            !    ( dequationType) * dtheta 
             rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType)
+                (-dequationType) * dtheta 
 
             ! For Crank-Nicolson there appears a 2nd reactive term
             ! stemming from the next timestep.
@@ -678,11 +678,11 @@ contains
         
           if (dnewton .ne. 0.0_DP) then
             rnonlinearSpatialMatrix%DgammaT(2,1) = ddualPrimalCoupling * &
-                ( dequationType)
+                ( dequationType) * dtheta 
             !rnonlinearSpatialMatrix%Dgamma(2,1) = ddualPrimalCoupling * &
-            !    ( dequationType)
+            !    ( dequationType) * dtheta 
             rnonlinearSpatialMatrix%Dnewton(2,1) = ddualPrimalCoupling * &
-                (-dequationType)
+                (-dequationType) * dtheta 
           end if
         
         end if
