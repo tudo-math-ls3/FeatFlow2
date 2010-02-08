@@ -1410,8 +1410,9 @@ contains
         ! Enforce using summed cubature formula to obtain accurate results
         do i = 1, p_rspatialDiscr%inumFESpaces
           p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getSummedCubType(&
-              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
+              cub_getSummedCubType(CUB_G1_T, nsummedCubType)
+              !cub_getSummedCubType(&
+              !p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
         end do
         
         ! Scalar vectors in interleaved format have to be treated differently

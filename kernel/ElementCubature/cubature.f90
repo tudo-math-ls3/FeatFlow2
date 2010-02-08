@@ -639,25 +639,50 @@ contains
   
 !</function>
 
-    integer :: nreflevels
-  
-    ! Get the underlying cubature formula an dnumber of refinement levels.
-    nreflevels = cub_getRefLevels(ccubType)
-    
-    ! Based on this information, calculate the number of cubature points.
-    n = 0
-    select case (cub_getStdCubType(ccubType))
-      case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D,CUB_TRZ_1D)
-        ! One element is refined into two subelements
-        n = 2
-      case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D,CUB_TRZ_2D)
-        ! One element is refined into four subelements
-        n = 4
-      case default
-        call output_line ('Unsupported element.', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
-        call sys_halt()
+    integer :: ccubStd
+
+    ! Get the underlying cubature formula   
+    ccubStd = cub_getStdCubType(ccubType)
+
+    ! Get the shape of the element
+    select case(cub_igetShape(ccubStd))
+    case (BGEOM_SHAPE_LINE)
+      ! One element is refined into two subelements
+      n = 2
+
+    case (BGEOM_SHAPE_QUAD,BGEOM_SHAPE_TRIA)
+      ! One element is refined into four subelements
+      n = 4
+      
+    case (BGEOM_SHAPE_HEXA)
+      ! One element is refined into eight subelements
+      n = 8
+      
+    case default
+      call output_line ('Unsupported element.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
+      call sys_halt()
     end select
+
+!!$    integer :: nreflevels
+!!$  
+!!$    ! Get the underlying cubature formula an number of refinement levels.
+!!$    nreflevels = cub_getRefLevels(ccubType)
+!!$    
+!!$    ! Based on this information, calculate the number of cubature points.
+!!$    n = 0
+!!$    select case (cub_getStdCubType(ccubType))
+!!$      case (CUB_G1_1D,CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D,CUB_TRZ_1D)
+!!$        ! One element is refined into two subelements
+!!$        n = 2
+!!$      case (CUB_G1_2D,CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D,CUB_TRZ_2D)
+!!$        ! One element is refined into four subelements
+!!$        n = 4
+!!$      case default
+!!$        call output_line ('Unsupported element.', &
+!!$                          OU_CLASS_ERROR,OU_MODE_STD,'cub_getRefElements')
+!!$        call sys_halt()
+!!$    end select
   
   end function
 
@@ -683,7 +708,7 @@ contains
 !</function>
 
     integer(I32) :: cstdCubType
-    integer :: nreflevels
+    integer :: nreflevels,k
     
     ! Get the underlying cubature formula an dnumber of refinement levels.
     cstdCubType = cub_getStdCubType(ccubType)
@@ -780,29 +805,97 @@ contains
     ! calculate the number of cubature points.
     if (nreflevels .gt. 0) then
       select case (cstdCubType)
-        case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
+        case (CUB_G1_1D,CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
+          ! All points are inner points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is an element in 1D, so every refinement brings 2 new
+          ! elements.
+          n = n * (cub_getRefElements(ccubType))**nreflevels
+
+        case (CUB_G1_2D,CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
           ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
           ! This is a quad element in 2D, so every refinement brings 4 new
           ! elements.
           n = n * (cub_getRefElements(ccubType))**nreflevels
           
-        case (CUB_TRZ_2D)
-          ! Points are in the corners of the elements.
-          n = 4**nreflevels + 2*2**nreflevels + 1
-          
-        case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
+        case (CUB_G1_3D,CUB_G2_3D,CUB_G3_3D,CUB_G4_3D,CUB_G5_3D)
           ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
-          ! This is a quad element in 2D, so every refinement brings 2 new
+          ! This is a hexa element in 3D, so every refinement brings 8 new
           ! elements.
           n = n * (cub_getRefElements(ccubType))**nreflevels
-          
+
         case (CUB_TRZ_1D)
           ! Points are in the corners of the elements.
           n = 2**nreflevels + 1
           
+        case (CUB_TRZ_2D)
+          ! Points are in the corners of the elements.
+          n = 4**nreflevels + 2*2**nreflevels + 1
+
+        case (CUB_TRZ_3D)
+          ! Points are in the corners of the elements.
+          n = (2**nreflevels + 1) * (4**nreflevels + 2*2**nreflevels + 1)
+
+        case (CUB_G3_T)
+          ! Points are in the midpoints of the elements. The computation of
+          ! the total number of cubature points is more complicated for
+          ! triangles. The number of midpoints follows from the Euler formula:
+          !   "vertices - edges + (elements+1) = 2"
+          ! The number of centers is simply the number of elements.
+          ! So we first have to compute the number of vertices at the
+          ! corners which can be computed from the following summation
+          !    $sum_{i=0}^{k} ( sum_{j=0}^{k-i} 1 )$
+          ! where k=2^nreflevels. This formula follows from considering
+          ! all possible combinations of barycentric coordinates.
+          ! An explicit expression of this formula is as follows:
+          ! k*(k+1) - (1/2)*(k+1)^2 + (3/2)*k + 3/2
+          k = 2**nreflevels
+          n = k*(k+1) - ((k+1)**2)/2 + 3*k/2 + 3/2
+          ! Now compute the number of edges from Euler formula
+          n = n+4**nreflevels-1
+
+        case (CUB_G1_T,CUB_Collatz)
+          ! All points are inner points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is a triangle in 2D, so every refinement brings 4 new
+          ! elements.
+          n = n * (cub_getRefElements(ccubType))**nreflevels
+          
+        case (CUB_TRZ_T)
+          ! Points are in the corners of the elements. The computation of
+          ! the total number of cubature points is more complicated for
+          ! triangles. It can be computed from the following summation
+          !    $sum_{i=0}^{k} ( sum_{j=0}^{k-i} 1 )$
+          ! where k=2^nreflevels. This formula follows from considering
+          ! all possible combinations of barycentric coordinates.
+          ! An explicit expression of this formula is as follows:
+          ! k*(k+1) - (1/2)*(k+1)^2 + (3/2)*k + 3/2
+          k = 2**nreflevels
+          n = k*(k+1) - ((k+1)**2)/2 + 3*k/2 + 3/2
+
+        case (CUB_VMC)
+          ! Points are in the corners of the elements, in the midpoints
+          ! and in the center. The computation of the total number of
+          ! cubature points is more complicated for triangles.
+          ! It can be computed from the following summation
+          ! $sum_{i=0}^{k} ( sum_{j=0}^{k-i} 1 )$
+          ! where k=2^nreflevels. This formula follows from considering
+          ! all possible combinations of barycentric coordinates.
+          ! An explicit expression of this formula is as follows:
+          ! k*(k+1) - (1/2)*(k+1)^2 + (3/2)*k + 3/2
+          k = 2**nreflevels
+          n = k*(k+1) - ((k+1)**2)/2 + 3*k/2 + 3/2
+          
+          ! We still have to add the number of midpoints and centers.
+          ! The number of midpoints follows from the Euler formula:
+          !   "vertices - edges + (elements+1) = 2"
+          ! The number of centers is simply the number of elements.
+          n = 2*(n+4**nreflevels)-1
+
         case default
+          
           call output_line ('Unsupported summed cubature formula.', &
                             OU_CLASS_ERROR,OU_MODE_STD,'cub_igetNumPts')
           call sys_halt()
@@ -964,10 +1057,10 @@ contains
 
   ! Variables needed for summed cubature formulas.  
   integer(I32) :: cstdCubType
-  integer :: nreflevels,icubp,ncubpts
-  integer :: isubelement, nsubelements, isubx, isuby
+  integer :: nreflevels,icubp,ncubpts,nrefcubpts,icubpStart
+  integer :: isubelement, nsubelements, isubx, isuby, isubz
   real(DP) :: dweight,dedgelen
-  real(DP), dimension(:,:), allocatable :: DpointsLocal
+  real(DP), dimension(:,:), allocatable :: DpointsLocal,DpointsRef
   real(DP), dimension(:), allocatable :: DomegaLocal
   
     ! Get the underlying cubature formula an dnumber of refinement levels.
@@ -1176,8 +1269,60 @@ contains
       call cub_getCubature(cstdCubType, DpointsLocal, DomegaLocal)
       
       select case (cstdCubType)
-        case (CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
+        case (CUB_G1_1D,CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
           ! All points are innter points. Total number =
+          ! number per element * #elements in the reference element.
+          ! This is an element in 1D, so every refinement brings 2 new
+          ! elements.
+          nsubelements = cub_getRefElements(ccubType) ** nreflevels
+
+          ! Transfer the weights.
+          dweight = 1.0_DP/real(nsubelements,dp)
+          do isubelement = 1,nsubelements
+            do icubp = 1,ncubpts
+              Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
+            end do
+          end do
+          
+          ! Transfer the point coordinates.
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Length of the edge of every subelement.
+          ! Note that the reference element is [-1,1]^2 !
+          dedgelen = 2.0_DP/real(nsubelements,dp)
+          
+          do isubx = 0,nsubelements-1
+            do icubp = 1,ncubpts
+              Dpoints(1,isubx*ncubpts+icubp) = &
+                  DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                  + real(isubx,dp)*dedgelen
+            end do
+          end do
+          
+        case (CUB_TRZ_1D)
+          ! Points are in the corners of the (sub-)elements.
+          !
+          ! How many subelements do we have?
+          ! We have 2^nlevels elements in every dimension
+          nsubelements = 2**nreflevels
+          
+          ! Manually initialise the coordinates and weights.
+          dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
+          do isubx = 0,nsubelements
+            Dpoints(1,isubx+1) = &
+                real(isubx,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+          end do
+
+          do isubx = 1,nsubelements-1
+            Domega(isubx+1) = dweight*2.0_DP
+          end do
+          
+          Domega(1)              = dweight
+          Domega(nsubelements+1) = dweight
+
+        case (CUB_G1_2D,CUB_G2_2D,CUB_G3_2D,CUB_G4_2D,CUB_G5_2D)
+          ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
           ! This is a quad element in 2D, so every refinement brings 4 new
           ! elements.
@@ -1190,7 +1335,7 @@ contains
               Domega((isubelement-1)*ncubpts+icubp) = DomegaLocal(icubp)*dweight
             end do
           end do
-          
+
           ! Transfer the point coordinates.
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
@@ -1213,8 +1358,7 @@ contains
             end do
           end do
           
-        case (CUB_TRZ_2D)
-        
+        case (CUB_TRZ_2D)     
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
@@ -1250,10 +1394,10 @@ contains
           Domega(nsubelements*(nsubelements+1)+1)              = dweight
           Domega(nsubelements*(nsubelements+1)+nsubelements+1) = dweight
 
-        case (CUB_G2_1D,CUB_G3_1D,CUB_G4_1D,CUB_G5_1D)
-          ! All points are innter points. Total number =
+        case (CUB_G1_3D,CUB_G2_3D,CUB_G3_3D,CUB_G4_3D,CUB_G5_3D)
+          ! All points are inner points. Total number =
           ! number per element * #elements in the reference element.
-          ! This is a quad element in 2D, so every refinement brings 2 new
+          ! This is a hexa element in 3D, so every refinement brings 8 new
           ! elements.
           nsubelements = cub_getRefElements(ccubType) ** nreflevels
 
@@ -1273,42 +1417,393 @@ contains
           ! Note that the reference element is [-1,1]^2 !
           dedgelen = 2.0_DP/real(nsubelements,dp)
           
-          do isubx = 0,nsubelements-1
-            do icubp = 1,ncubpts
-              Dpoints(1,isubx*ncubpts+icubp) = &
-                  DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
-                  + real(isubx,dp)*dedgelen
+          do isubz = 0,nsubelements-1
+            do isuby = 0,nsubelements-1
+              do isubx = 0,nsubelements-1
+                do icubp = 1,ncubpts
+                  Dpoints(1,(isubz*nsubelements**2+&
+                             isuby*nsubelements+isubx)*ncubpts+icubp) = &
+                      DpointsLocal(1,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                      + real(isubx,dp)*dedgelen
+                  
+                  Dpoints(2,(isubz*nsubelements**2+&
+                             isuby*nsubelements+isubx)*ncubpts+icubp) = &
+                      DpointsLocal(2,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                      + real(isuby,dp)*dedgelen
+
+                  Dpoints(3,(isubz*nsubelements**2+&
+                             isuby*nsubelements+isubx)*ncubpts+icubp) = &
+                      DpointsLocal(3,icubp)*0.5_DP*dedgelen - 1.0_DP + 0.5_DP*dedgelen &
+                      + real(isubz,dp)*dedgelen
+                end do
+              end do
             end do
           end do
-          
-        case (CUB_TRZ_1D)
-        
+
+        case (CUB_TRZ_3D)     
           ! Points are in the corners of the (sub-)elements.
           !
           ! How many subelements do we have?
           ! We have 2^nlevels elements in every dimension
           nsubelements = 2**nreflevels
-          
+
           ! Manually initialise the coordinates and weights.
           dweight = 1.0_DP/real(cub_getRefElements(ccubType) ** nreflevels,dp)
-          do isubx = 0,nsubelements
-            Dpoints(1,isubx+1) = &
-                real(isubx,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
-          end do
-
-          do isubx = 1,nsubelements-1
-            Domega(isubx+1) = dweight*2.0_DP
+          do isubz = 0,nsubelements
+            do isuby = 0,nsubelements
+              do isubx = 0,nsubelements
+                Dpoints(1,isubz*(nsubelements+1)**2+&
+                          isuby*(nsubelements+1)+isubx+1) = &
+                    real(isubx,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+                Dpoints(2,isubz*(nsubelements+1)**2+&
+                          isuby*(nsubelements+1)+isubx+1) = &
+                    real(isuby,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+                Dpoints(3,isubz*(nsubelements+1)**2+&
+                          isuby*(nsubelements+1)+isubx+1) = &
+                    real(isubz,dp)*2.0_DP/real(nsubelements,dp)-1.0_DP
+              end do
+            end do
           end do
           
-          Domega(1)              = dweight
-          Domega(nsubelements+1) = dweight
+          ! all weights
+          do isubz = 1,nsubelements-1
+            do isuby = 1,nsubelements-1
+              do isubx = 1,nsubelements-1
+                Domega(isubz*(nsubelements+1)**2+&
+                       isuby*(nsubelements+1)+isubx+1) = dweight*8.0_DP
+              end do
+            end do
+          end do
 
-        case default
-          call output_line ('Unsupported element.', &
-                            OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubature')
-          call sys_halt()
-      end select
+          ! interior points at front face
+          do isuby = 1,nsubelements-1
+            do isubx = 1,nsubelements-1
+              Domega(isuby*(nsubelements+1)+isubx+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! interior points at backward face
+          do isuby = 1,nsubelements-1
+            do isubx = 1,nsubelements-1
+              Domega(nsubelements*(nsubelements+1)**2+&
+                     isuby*(nsubelements+1)+isubx+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! interior points at bottom face
+          do isubz = 1,nsubelements-1
+            do isubx = 1,nsubelements-1
+              Domega(isubz*(nsubelements+1)**2+isubx+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! interior points at top face
+          do isubz = 1,nsubelements-1
+            do isubx = 1,nsubelements-1
+              Domega(isubz*(nsubelements+1)**2+&
+                     nsubelements*(nsubelements+1)+isubx+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! interior points at left face
+          do isubz = 1,nsubelements-1
+            do isuby = 1,nsubelements-1
+              Domega(isubz*(nsubelements+1)**2+&
+                     isuby*(nsubelements+1)+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! interior points at right face
+          do isubz = 1,nsubelements-1
+            do isuby = 1,nsubelements-1
+              Domega(isubz*(nsubelements+1)**2+&
+                     isuby*(nsubelements+1)+nsubelements+1) = dweight*4.0_DP
+            end do
+          end do
+
+          ! boundary points at front face
+          do isuby = 1,nsubelements-1
+            Domega(isuby+1)                               = dweight*2.0_DP
+            Domega(nsubelements*(nsubelements+1)+isuby+1) = dweight*2.0_DP
+            Domega(isuby*(nsubelements+1)+1)              = dweight*2.0_DP
+            Domega(isuby*(nsubelements+1)+nsubelements+1) = dweight*2.0_DP
+          end do
+
+          ! boundary points at backward face
+          do isuby = 1,nsubelements-1
+            Domega(nsubelements*(nsubelements+1)**2+&
+                   isuby+1)                               = dweight*2.0_DP
+            Domega(nsubelements*(nsubelements+1)**2+&
+                   nsubelements*(nsubelements+1)+isuby+1) = dweight*2.0_DP
+            Domega(nsubelements*(nsubelements+1)**2+&
+                   isuby*(nsubelements+1)+1)              = dweight*2.0_DP
+            Domega(nsubelements*(nsubelements+1)**2+&
+                   isuby*(nsubelements+1)+nsubelements+1) = dweight*2.0_DP
+          end do
+          
+          ! boundary points at missing face in z-direction
+          do isubz = 1,nsubelements-1
+            Domega(isubz*(nsubelements+1)**2+1)              = dweight*2.0_DP
+            Domega(isubz*(nsubelements+1)**2+&
+                          nsubelements*(nsubelements+1)+1)   = dweight*2.0_DP
+            Domega(isubz*(nsubelements+1)**2+nsubelements+1) = dweight*2.0_DP
+            Domega(isubz*(nsubelements+1)**2+&
+                          nsubelements*(nsubelements+1)+&
+                          nsubelements+1)                    = dweight*2.0_DP
+          end do
+          
+          ! corner points
+          Domega(1)                                            = dweight
+          Domega(nsubelements+1)                               = dweight
+          Domega(nsubelements*(nsubelements+1)+1)              = dweight
+          Domega(nsubelements*(nsubelements+1)+nsubelements+1) = dweight
+          Domega(nsubelements*(nsubelements+1)**2+1)           = dweight
+          Domega(nsubelements*(nsubelements+1)**2+&
+                 nsubelements+1)                               = dweight
+          Domega(nsubelements*(nsubelements+1)**2+&
+                 nsubelements*(nsubelements+1)+1)              = dweight
+          Domega(nsubelements*(nsubelements+1)**2+&
+                 nsubelements*(nsubelements+1)+1)              = dweight
+          Domega(nsubelements*(nsubelements+1)**2+&
+                 nsubelements*(nsubelements+1)+nsubelements+1) = dweight
+
+      case (CUB_G3_T)
+        ! Points are in the midpoints of the (sub-)elements.
+        !
+        ! How many subelements do we have?
+        ! We have 2^nlevels elements in every barycentric dimension
+        nsubelements = 2**nreflevels
+
+        ! Manually initialise the coordinates.
+        icubp = 1
+        do isubz = 0, 2*nsubelements
+          if (mod(isubz,2).eq.0) then
+            do isuby = 1, 2*nsubelements-isubz, 2
+              Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(2*nsubelements,dp)-&
+                                        real(isubz,dp)/real(2*nsubelements,dp)
+              Dpoints(2,icubp) = real(isuby,dp)/real(2*nsubelements,dp)
+              Dpoints(3,icubp) = real(isubz,dp)/real(2*nsubelements,dp)
+              icubp = icubp+1
+            end do
+          else
+            do isuby = 0, 2*nsubelements-isubz
+              Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(2*nsubelements,dp)-&
+                                        real(isubz,dp)/real(2*nsubelements,dp)
+              Dpoints(2,icubp) = real(isuby,dp)/real(2*nsubelements,dp)
+              Dpoints(3,icubp) = real(isubz,dp)/real(2*nsubelements,dp)
+              icubp = icubp+1
+            end do
+          end if
+        end do
+        
+        ! Store number of cubature points on refined element
+        nrefcubpts = icubp-1
+
+        ! Manually initialise the weights.
+        dweight = 1.0_DP/(6.0_DP*real(nsubelements**2,dp))
+
+        ! all weights
+        do icubp = 1, nrefcubpts
+          Domega(icubp) = dweight*2.0_DP
+        end do
+
+        ! weights at the boundary
+        do isubelement = 1, nsubelements
+          Domega(isubelement)                         = dweight
+          Domega(3*nsubelements*(isubelement+1)-&
+                 (3*(isubelement+1)**2)/2+&
+                 (9*isubelement+3)/2-3*nsubelements)  = dweight
+          Domega(3*nsubelements*(isubelement+1)-&
+                 (3*(isubelement+1)**2)/2+&
+                 (13*isubelement+1)/2-5*nsubelements) = dweight
+        end do
+
+      case (CUB_G1_T,CUB_Collatz)
+        ! All points are inner points. Total number =
+        ! number per element * #elements in the reference element.
+        ! This is a triangle element in 2D, so every refinement brings 4 new
+        ! elements.
+        nsubelements = cub_getRefElements(ccubType) ** nreflevels
+        dweight = 1.0_DP/real(nsubelements,dp)
+
+        ! Initialise the number of cubature points
+        nrefcubpts = 0
+
+        ! Initialise the coordinates of the reference triangle
+        allocate(DpointsRef(3,3))
+        DpointsRef(:,1) = (/1.0_DP, 0.0_DP, 0.0_DP/)
+        DpointsRef(:,2) = (/0.0_DP, 1.0_DP, 0.0_DP/)
+        DpointsRef(:,3) = (/0.0_DP, 0.0_DP, 1.0_DP/)
+
+        ! Recursively initialise the coordinates and weights
+        call cub_auxTriangle(DpointsRef, DpointsLocal, DomegaLocal,&
+            dweight, ncubpts, nreflevels, Dpoints, Domega, nrefcubpts)
+        
+        ! Deallocate temporal memory
+        deallocate(DpointsRef)
+
+      case (CUB_TRZ_T)
+        ! Points are in the corners of the (sub-)elements.
+        !
+        ! How many subelements do we have?
+        ! We have 2^nlevels elements in every barycentric dimension
+        nsubelements = 2**nreflevels
+
+        ! Manually initialise the coordinates.
+        icubp = 1
+        do isubz = 0, nsubelements
+          do isuby = 0, nsubelements-isubz
+            Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(nsubelements,dp)-&
+                                      real(isubz,dp)/real(nsubelements,dp)
+            Dpoints(2,icubp) = real(isuby,dp)/real(nsubelements,dp)
+            Dpoints(3,icubp) = real(isubz,dp)/real(nsubelements,dp)
+            icubp = icubp+1
+          end do
+        end do
+
+        ! Store number of cubature points on refined element
+        nrefcubpts = icubp-1
+
+        ! Manually initialise the weights.
+        dweight = 1.0_DP/(6.0_DP*real(nsubelements**2,dp))
+
+        ! all weights
+        do icubp = 1, nrefcubpts
+          Domega(icubp) = dweight*6.0_DP
+        end do
+
+        ! weights at the boundary
+        do isubelement = 1, nsubelements
+          Domega(isubelement)                                       = dweight*3.0_DP
+          Domega(nsubelements*(isubelement+1)-((isubelement+1)**2)/2+&
+                 (5*isubelement+1)/2-nsubelements)                  = dweight*3.0_DP
+          Domega(nsubelements*(isubelement+1)-((isubelement+1)**2)/2+&
+                 (5*isubelement+1)/2-nsubelements+1)                = dweight*3.0_DP
+        end do
+
+        ! weights at the corners
+        Domega(1)              = dweight
+        Domega(nsubelements+1) = dweight
+        Domega(nrefcubpts)     = dweight
+
+      case (CUB_VMC)
+        ! Points are in the corners, midpoints and center of the (sub-)elements.
+        !
+        ! How many subelements do we have?
+        ! We have 2^nlevels elements in every barycentric dimension
+        nsubelements = 2**nreflevels
+        
+        ! Manually initialise the coordinates of the corners.
+        icubp = 1
+        do isubz = 0, nsubelements
+          do isuby = 0, nsubelements-isubz
+            Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(nsubelements,dp)-&
+                                      real(isubz,dp)/real(nsubelements,dp)
+            Dpoints(2,icubp) = real(isuby,dp)/real(nsubelements,dp)
+            Dpoints(3,icubp) = real(isubz,dp)/real(nsubelements,dp)
+            icubp = icubp+1
+          end do
+        end do
+
+        ! Store number of cubature points on refined element
+        nrefcubpts = icubp-1
+
+        ! Manually initialise the weights of the corners.
+        dweight = 2.0_DP/(30.0_DP*real(nsubelements**2,dp))
+
+        ! all weights
+        do icubp = 1, nrefcubpts
+          Domega(icubp) = dweight*6.0_DP
+        end do
+
+        ! weights at the boundary
+        do isubelement = 1, nsubelements
+          Domega(isubelement)                                       = dweight*3.0_DP
+          Domega(nsubelements*(isubelement+1)-((isubelement+1)**2)/2+&
+                 (5*isubelement+1)/2-nsubelements)                  = dweight*3.0_DP
+          Domega(nsubelements*(isubelement+1)-((isubelement+1)**2)/2+&
+                 (5*isubelement+1)/2-nsubelements+1)                = dweight*3.0_DP
+        end do
+
+        ! weights at the corners
+        Domega(1)              = dweight
+        Domega(nsubelements+1) = dweight
+        Domega(nrefcubpts)     = dweight
+
+        ! Manually initialise the coordinates of the midpoints.
+        do isubz = 0, 2*nsubelements
+          if (mod(isubz,2).eq.0) then
+            do isuby = 1, 2*nsubelements-isubz, 2
+              Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(2*nsubelements,dp)-&
+                                        real(isubz,dp)/real(2*nsubelements,dp)
+              Dpoints(2,icubp) = real(isuby,dp)/real(2*nsubelements,dp)
+              Dpoints(3,icubp) = real(isubz,dp)/real(2*nsubelements,dp)
+              icubp = icubp+1
+            end do
+          else
+            do isuby = 0, 2*nsubelements-isubz
+              Dpoints(1,icubp) = 1.0_DP-real(isuby,dp)/real(2*nsubelements,dp)-&
+                                        real(isubz,dp)/real(2*nsubelements,dp)
+              Dpoints(2,icubp) = real(isuby,dp)/real(2*nsubelements,dp)
+              Dpoints(3,icubp) = real(isubz,dp)/real(2*nsubelements,dp)
+              icubp = icubp+1
+            end do
+          end if
+        end do
+        
+        ! Store number of cubature points on refined element
+        icubpStart = nrefcubpts;   nrefcubpts = icubp-1
+
+        ! Manually initialise the weights.
+        dweight = 0.025_DP/real(nsubelements**2,dp)
+
+        ! all weights
+        do icubp = icubpStart+1, nrefcubpts
+          Domega(icubp) = dweight*2.0_DP
+        end do
+
+        ! weights at the boundary
+        do isubelement = 1, nsubelements
+          Domega(icubpStart+isubelement)              = dweight
+          Domega(icubpStart+3*nsubelements*(isubelement+1)-&
+                 (3*(isubelement+1)**2)/2+&
+                 (9*isubelement+3)/2-3*nsubelements)  = dweight
+          Domega(icubpStart+3*nsubelements*(isubelement+1)-&
+                 (3*(isubelement+1)**2)/2+&
+                 (13*isubelement+1)/2-5*nsubelements) = dweight
+        end do
+
+        ! Initialize the inner cubature points
+        nsubelements = cub_getRefElements(ccubType) ** nreflevels
+        dweight = 1.0_DP/real(nsubelements,dp)
+
+        ! Initialise the coordinates of the reference triangle
+        allocate(DpointsRef(3,3))
+        DpointsRef(:,1) = (/1.0_DP, 0.0_DP, 0.0_DP/)
+        DpointsRef(:,2) = (/0.0_DP, 1.0_DP, 0.0_DP/)
+        DpointsRef(:,3) = (/0.0_DP, 0.0_DP, 1.0_DP/)
+        
+        ! Initialise the local cubature point
+        DpointsLocal(1,1) = 1.0_DP/3.0_DP
+        DpointsLocal(2,1) = 1.0_DP/3.0_DP
+        DpointsLocal(3,1) = 1.0_DP/3.0_DP
+
+        ! Initialise the local weight
+        DomegaLocal(1) = 0.225_DP
+
+        ! Recursively initialise the coordinates and weights at the centroids
+        call cub_auxTriangle(DpointsRef, DpointsLocal, DomegaLocal,&
+            dweight, 1, nreflevels, Dpoints, Domega, nrefcubpts)
       
+        ! Deallocate temporal memory
+        deallocate(DpointsRef)
+
+      case default
+        call output_line ('Unsupported element.', &
+                          OU_CLASS_ERROR,OU_MODE_STD,'cub_getCubature')
+        call sys_halt()
+      end select
+        
       ! Release memory, that is it.
       
       deallocate(DomegaLocal)
@@ -1320,7 +1815,7 @@ contains
     
   contains
   
-  ! -------------------------------------------------------
+    ! -------------------------------------------------------
   
     pure subroutine cub_auxGaussLegendre(n,Dv,Dw)
     integer, intent(in) :: n
@@ -1391,6 +1886,66 @@ contains
       end select
       
     end subroutine cub_auxGaussLegendre
+
+    ! -------------------------------------------------------
+    
+    recursive subroutine cub_auxTriangle(DpointsRef, DpointsLocal,&
+        DomegaLocal, dweight, ncubpts, ireflevel, Dpoints, Domega, nrefcubpts)
+      real(DP), dimension(:,:), intent(in) :: DpointsRef
+      real(DP), dimension(:,:), intent(in) :: DpointsLocal
+      real(DP), dimension(:), intent(in)   :: DomegaLocal
+      real(DP), intent(in) :: dweight
+      integer, intent(in)  :: ncubpts, ireflevel
+      real(DP), dimension(:,:), intent(inout) :: Dpoints
+      real(DP), dimension(:), intent(inout)   :: Domega
+      integer, intent(inout) :: nrefcubpts
+
+      real(DP), dimension(3,3) :: DpointsAux
+
+      if (ireflevel .eq. 0) then
+
+        ! Manually initialise the coordinates and weights for the (sub-)element
+        do icubp = 1, ncubpts
+          Dpoints(:,nrefcubpts+icubp) = DpointsLocal(1,icubp)*DpointsRef(:,1)+&
+                                        DpointsLocal(2,icubp)*DpointsRef(:,2)+&
+                                        DpointsLocal(3,icubp)*DpointsRef(:,3)
+          Domega(nrefcubpts+icubp)    = DomegaLocal(icubp)*dweight
+        end do
+        nrefcubpts = nrefcubpts+ncubpts
+
+      else
+        
+        ! Recursively process the subelement in the center
+        DpointsAux(:,1) = (DpointsRef(:,1)+DpointsRef(:,2))/2.0_DP
+        DpointsAux(:,2) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
+        call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
+            dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
+
+        ! Recursively process the first outer subelement
+        DpointsAux(:,1) =  DpointsRef(:,1)
+        DpointsAux(:,2) = (DpointsRef(:,1)+DpointsRef(:,2))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,1)+DpointsRef(:,3))/2.0_DP
+        call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
+            dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
+
+        ! Recursively process the second outer subelement
+        DpointsAux(:,1) =  DpointsRef(:,2)
+        DpointsAux(:,2) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
+        call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
+            dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
+        
+        ! Recursively process the third outer subelement
+        DpointsAux(:,1) =  DpointsRef(:,3)
+        DpointsAux(:,2) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,2))/2.0_DP
+        call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
+            dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
+        
+      end if
+
+    end subroutine cub_auxTriangle
 
   end subroutine cub_getCubature
 

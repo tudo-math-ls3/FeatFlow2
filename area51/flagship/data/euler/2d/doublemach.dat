@@ -106,7 +106,7 @@ sfailsafevariable(3) =
 isolutiontype = 3
 
 # number of refinement levels for summed cubature formula
-nsummedcubtype = 1
+nsummedcubtype = 4
 
 # section name of initial solution
 ssolutionname(4) = 
