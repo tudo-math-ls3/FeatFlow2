@@ -1056,11 +1056,16 @@ contains
     
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
     
+      ! Upwind flux
       if (dvn.ge.0) then
         Dcoefficients(ipoint,iel) = dvn *DsolVals(ipoint,1,iel)
       else
         Dcoefficients(ipoint,iel) = dvn *DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel)
       end if
+      
+      ! Centered Flux
+      !Dcoefficients(ipoint,iel) = 0.5_dp* dvn *(DsolVals(ipoint,1,iel)+DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel))
+      
     end do ! ipoint
   end do ! iel
 
@@ -1151,6 +1156,7 @@ contains
       do ipoint = 1, size(Dcoefficients,2)
         Dcoefficients (1,ipoint,iel) = 0.1_dp*&
                  exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
+        Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
       end do
     end do
                     
