@@ -137,9 +137,9 @@ contains
     integer :: ielementType
     
     dt = 0.005_DP
-    ttfinal = 0.1_DP
+    ttfinal = 0.5_DP
     
-    ielementType = EL_DG_T1_2D
+    ielementType = EL_DG_T2_2D
     
     
     ilimiting = 0
@@ -438,7 +438,7 @@ contains
        
               ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
-
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
 
 !              call lsyssc_getbase_double (rsol,p_Ddata)
 !    write(*,*) p_Ddata
@@ -471,6 +471,7 @@ contains
        
               ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
 
 
        ! Step 3/3
@@ -495,6 +496,7 @@ contains
        
        ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsol)
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
     
        ! Go on to the next time step
        ttime = ttime + dt
@@ -544,7 +546,7 @@ contains
     
     
     ! Output solution to gmv file
-    call dg2gmv(rsol,0)
+    call dg2gmv(rsol,3)
     
     ! And output the steady projection
     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)

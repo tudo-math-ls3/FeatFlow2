@@ -598,7 +598,7 @@ contains
      ! Set values at boundary
      do iel = 1,IELmax-IELset+1
       if(IelementList(2,IELset+iel-1).eq.0) then
-        DsolVals(1:ncubp,2,iel) = 1.0_DP
+        DsolVals(1:ncubp,2,iel) = 0.0_DP
       end if
       
     end do
@@ -1259,10 +1259,10 @@ end subroutine
     
   end do
   
-  do ivt = 1, NVBD
-    duimax(p_IverticesAtBoundary(ivt)) = 100000000.0_DP
-    duimin(p_IverticesAtBoundary(ivt)) = -100000000.0_DP
-  end do
+!  do ivt = 1, NVBD
+!    duimax(p_IverticesAtBoundary(ivt)) = 100000000.0_DP
+!    duimin(p_IverticesAtBoundary(ivt)) = -100000000.0_DP
+!  end do
 
                                
   do iel = 1, NEL
@@ -1300,7 +1300,7 @@ end subroutine
       
       ! The second point we want to evaluate the solution in, is in the corner of the mother element
       Dpoints(1,1+ivert) = p_DvertexCoords(1,nvert)
-      Dpoints(2,1+ivert) = p_DvertexCoords(1,nvert)
+      Dpoints(2,1+ivert) = p_DvertexCoords(2,nvert)
       Ielements(1+ivert) = iel
 	  end do
 	  
@@ -1557,5 +1557,307 @@ end subroutine
 
 
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+    !****************************************************************************
+  
+!<subroutine>  
+  
+  subroutine dg_quadraticLimiter (rvector)
+
+!<description>
+
+  ! Limits the linear part of a dg_T1 element vector.
+
+!</description>
+
+!<input>
+!</input>
+
+!<inputoutput>
+
+  ! A vector to limit
+  type(t_vectorScalar), intent(inout) :: rvector  
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables, used by all processors
+  real(DP), dimension(:), pointer :: p_Ddata
+  integer :: indof, NEL, iel, NVE, ivt, NVT
+    
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  ! The coordinates of the points in which to evaluate the solution vector
+  real(dp), dimension(2,17) :: Dpoints
+  
+  ! The list of elements, in which these points can be found
+  integer, dimension(17) :: Ielements
+  
+  ! The values of the solution vector in the points
+  real(dp), dimension(17) :: Dvalues
+  
+  ! Pointers to some data from the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  real(dp), dimension(:), allocatable :: duimax, duimin
+  
+  integer, dimension(:), pointer :: p_IverticesAtBoundary
+  
+  real(dp) :: xc,yc
+  integer :: iidx, nvert, ivert, ineighbour, ineighElm
+  integer, dimension(4) :: IhomeIndex
+  
+  real(dp) :: dui, ddu, dalphatemp, duc
+  
+  integer, dimension(6) :: IdofGlob
+  
+  integer, dimension(5) :: Isep
+  
+  integer :: NVBD, ilim, ideriv
+  
+  
+  real(DP), dimension(:,:), allocatable :: Dalpha
+
+  ! Get pointer to the solution data
+  call lsyssc_getbase_double (rvector,p_Ddata)
+  
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvector%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+  
+  ! Get pointer to the data of the vector
+  
+  ! Get number of elements
+  NEL = p_rtriangulation%NEL
+  
+  ! Number of vertives at boundary
+  NVBD = p_rtriangulation%NVBD
+  
+  ! Get pointers to the data form the triangulation
+  call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+  call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
+                               p_DvertexCoords)
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
+                               p_IelementsAtVertex) 
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
+                               p_IelementsAtVertexIdx)
+  call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
+                               p_IverticesAtBoundary)                               
+                               
+                               
+   ! Set pointer to coordinate vector
+   call storage_getbase_double2D(&
+        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+   ! Set pointer to vertices at element
+   call storage_getbase_int2D(&
+        p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+        
+  NVT = p_rtriangulation%NVT
+  
+  allocate(Duimax(NVT),Duimin(NVT),Dalpha(3,NEL))
+  
+  Dalpha = 1.0_dp
+  
+  ! Now limit the x- and y- derivative and finally the linear part
+  
+  do ilim = 1, 3
+  
+    
+  
+    select case (ilim)
+      case (1)
+        ideriv = DER_DERIV_X
+      case (2)
+        ideriv = DER_DERIV_Y
+      case (3)
+        ideriv = DER_FUNC
+    end select
+  
+  
+  duimax= -SYS_MAXREAL
+  duimin=  SYS_MAXREAL
+  
+  do iel = 1, NEL
+    
+    ! Get number of corner vertices
+    NVE = 4
+    
+    ! Get midpoint of the element
+    xc = &
+         (p_DvertexCoords(1,p_IverticesAtElement(1,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(2,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(3,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(4,iel)))/4.0_dp
+
+    yc = &
+         (p_DvertexCoords(2,p_IverticesAtElement(1,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(3,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(4,iel)))/4.0_dp
+          
+    ! The first point we want to evaluate the solution in, is the midpoint of the element
+    Dpoints(1,1) = xc
+    Dpoints(2,1) = yc
+    Ielements(1) = iel
+    
+    ! Evaluate the solution
+    call fevl_evaluate (ideriv, Dvalues(1:1), rvector, Dpoints(1:2,1:1), &
+                          Ielements(1:1))
+                          
+    duc = Dvalues(1)
+    
+    do ivt = 1, NVE
+      nvt = p_IverticesAtElement(ivt,iel)
+      duimax(nvt) = max(duc,duimax(nvt))
+      duimin(nvt) = min(duc,duimin(nvt))
+    end do
+    
+    
+    
+  end do
+  
+
+                               
+  do iel = 1, NEL
+  
+    ! Get number of corner vertices
+    NVE = 4
+    
+    ! Get midpoint of the element
+    xc = &
+         (p_DvertexCoords(1,p_IverticesAtElement(1,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(2,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(3,iel))+&
+          p_DvertexCoords(1,p_IverticesAtElement(4,iel)))/4.0_dp
+
+    yc = &
+         (p_DvertexCoords(2,p_IverticesAtElement(1,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(3,iel))+&
+          p_DvertexCoords(2,p_IverticesAtElement(4,iel)))/4.0_dp
+          
+    ! The first point we want to evaluate the solution in, is the midpoint of the element
+    Dpoints(1,1) = xc
+    Dpoints(2,1) = yc
+    Ielements(1) = iel
+   
+    ! Now start to set the points, where to evaluate the solution
+    
+    ! Loop over the vertices of the element
+    do ivert = 1, NVE
+		
+      nvert = p_IverticesAtElement(ivert, iel)
+      
+      ! The second point we want to evaluate the solution in, is in the corner of the mother element
+      Dpoints(1,1+ivert) = p_DvertexCoords(1,nvert)
+      Dpoints(2,1+ivert) = p_DvertexCoords(2,nvert)
+      Ielements(1+ivert) = iel
+	  end do
+	  
+    ! Evaluate the solution
+    call fevl_evaluate (ideriv, Dvalues(1:5), rvector, Dpoints(1:2,1:5), &
+                          Ielements(1:5))
+      
+     ! Start calculating the limiting factor
+     duc = Dvalues(1)
+      
+    do ivert = 1, NVE  
+      dui = Dvalues(1+ivert)
+      ddu = dui-duc
+      nvert = p_IverticesAtElement(ivert, iel)
+            
+      ! Find the maximum/minimum value of the solution in the centroids
+      ! of all elements containing this vertex
+      if (ddu > 0.0_dp) then
+        dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
+      elseif (ddu < 0.0_dp) then
+        dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
+      else ! (dui==duc)
+        dalphatemp = 1.0_dp
+      end if
+      
+      Dalpha(ilim,iel) = min(dalphatemp,Dalpha(ilim,iel))
+      
+
+    end do ! ivert
+        
+  end do ! iel
+  
+  
+  
+  
+  select case (ilim)
+    case (2)
+  
+      ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
+      ! Get the Minimum and multiply it with the corresponding DOFs
+      do iel = 1, NEL  
+  
+        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
+      
+        ! Get global DOFs of the element
+        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+    
+    
+        ! Multiply the linear part of the solution vector with the correction factor
+        p_Ddata(IdofGlob(4:6)) = p_Ddata(IdofGlob(4:6))*Dalpha(1,iel)
+    
+      end do ! iel
+    
+    case (3)
+      do iel = 1, NEL  
+  
+        Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
+      
+        ! Get global DOFs of the element
+        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+    
+    
+        ! Multiply the linear part of the solution vector with the correction factor
+        p_Ddata(IdofGlob(2:3)) = p_Ddata(IdofGlob(2:3))*Dalpha(3,iel)
+    
+      end do ! iel
+      
+    end select
+  
+  end do ! ilim
+  
+  
+  
+  
+  
+  
+  deallocate(duimax,duimin,dalpha)
+
+  
+  end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
     
 end module

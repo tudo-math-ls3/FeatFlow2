@@ -1154,7 +1154,7 @@ contains
       end do
     end do
                     
-        Dcoefficients (1,:,:) =0.0_dp
+       ! Dcoefficients (1,:,:) =0.0_dp
 
   end subroutine
 
