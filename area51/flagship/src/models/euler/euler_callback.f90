@@ -2716,7 +2716,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
@@ -2724,7 +2723,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
@@ -2735,7 +2733,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
@@ -2743,7 +2740,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
@@ -2754,7 +2750,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
@@ -2762,7 +2757,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
@@ -2780,7 +2774,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
@@ -2788,7 +2781,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
@@ -2799,7 +2791,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
@@ -2807,7 +2798,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
@@ -2818,7 +2808,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
@@ -2826,7 +2815,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
@@ -2844,7 +2832,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
@@ -2852,7 +2839,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
@@ -2863,7 +2849,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
@@ -2871,7 +2856,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
@@ -2882,7 +2866,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
@@ -2890,7 +2873,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
