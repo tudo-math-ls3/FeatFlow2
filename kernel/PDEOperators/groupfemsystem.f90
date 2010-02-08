@@ -6653,9 +6653,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildFluxFCTBlock(rlumpedMassMatrix,&
-      RcoeffMatrices, rafcstab, rx1, rx2, fcb_calcFluxFCT,&
-      theta, tstep, dscale, binit, rconsistentMassMatrix)
+  subroutine gfsys_buildFluxFCTBlock(RcoeffMatrices, rafcstab, rx1, rx2,&
+      fcb_calcFluxFCT, theta, tstep, dscale, binit, rconsistentMassMatrix)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for FEM-FCT schemes.
@@ -6664,9 +6663,6 @@ contains
 !</description>
 
 !<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
@@ -6701,16 +6697,15 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
+    real(DP), dimension(:), pointer :: p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
     real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dflux0,p_Dflux,p_Dalpha
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
 
     ! Check if block vector contains only one block
     if ((rx1%nblocks .eq. 1) .and. (rx2%nblocks .eq. 1)) then
-      call gfsys_buildFluxFCTScalar(rlumpedMassMatrix,&
-          RcoeffMatrices, rafcstab, rx1%RvectorBlock(1),&
-          rx2%RvectorBlock(1), fcb_calcFluxFCT,&
+      call gfsys_buildFluxFCTScalar(RcoeffMatrices, rafcstab,&
+          rx1%RvectorBlock(1), rx2%RvectorBlock(1), fcb_calcFluxFCT,&
           theta, tstep, dscale, binit, rconsistentMassMatrix)
       return
     end if
@@ -6731,7 +6726,6 @@ contains
     ! Set pointers
     call lsysbl_getbase_double(rx1, p_Dx1)
     call lsysbl_getbase_double(rx2, p_Dx2)
-    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
     ! How many dimensions do we have?
@@ -6791,7 +6785,7 @@ contains
         ! Check if stabilisation provides raw antidiffusive fluxes
         if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
           call output_line('Stabilisation does not provide correction factors',&
-              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTScalar')
+              OU_CLASS_ERROR,OU_MODE_STD,'gfsc_buildFluxFCTBlock')
           call sys_halt()
         end if
 
@@ -7351,9 +7345,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildFluxFCTScalar(rlumpedMassMatrix,&
-      RcoeffMatrices, rafcstab, rx1, rx2, fcb_calcFluxFCT,&
-      theta, tstep, dscale, binit, rconsistentMassMatrix)
+  subroutine gfsys_buildFluxFCTScalar(RcoeffMatrices, rafcstab, rx1, rx2,&
+      fcb_calcFluxFCT, theta, tstep, dscale, binit, rconsistentMassMatrix)
 
 !<description>
     ! This subroutine assembles the raw antidiffusive fluxes for
@@ -7362,9 +7355,6 @@ contains
 !</description>
 
 !<input>
-    ! lumped mass matrix
-    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
-
     ! array of coefficient matrices C = (phi_i,D phi_j)
     type(t_matrixScalar), dimension(:), intent(in) :: RcoeffMatrices
 
@@ -7399,7 +7389,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_ML,p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
+    real(DP), dimension(:), pointer :: p_MC,p_DcoeffX,p_DcoeffY,p_DcoeffZ
     real(DP), dimension(:), pointer :: p_Dx1,p_Dx2,p_Dflux0,p_Dflux,p_Dalpha
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer :: ndim
@@ -7420,7 +7410,6 @@ contains
     ! Set pointers
     call lsyssc_getbase_double(rx1, p_Dx1)
     call lsyssc_getbase_double(rx2, p_Dx2)
-    call lsyssc_getbase_double(rlumpedMassMatrix, p_ML)
     call afcstab_getbase_IverticesAtEdge(rafcstab, p_IverticesAtEdge)
 
     ! How many dimensions do we have?
