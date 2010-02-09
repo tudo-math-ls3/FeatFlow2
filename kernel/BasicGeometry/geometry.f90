@@ -5433,9 +5433,15 @@ end subroutine
     ! We want a sphere.
     rgeomObject%ctype = GEOM_SPHERE
     
-    ! Now we need to create the coordinate system.
-    call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
-                               0.0_dp,dscalingFactor)
+    if(present(Dorigin))then
+      ! Now we need to create the coordinate system.
+      call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
+                                 0.0_dp,dscalingFactor)
+    else
+      ! Now we need to create the coordinate system.
+      call bgeom_initCoordSys3D (rgeomObject%rcoord3D, (/0.0_dp,0.0_dp,0.0_dp/), 0.0_dp,0.0_dp,&
+                                 0.0_dp,dscalingFactor)
+    end if
     
     ! Is our object inverted?
     if (present(binverted)) then
@@ -5749,7 +5755,7 @@ end subroutine
 
 !</subroutine>
   ! local variables
-  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad
+  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad,dx,dy,dz
   integer  :: i,j,iverts,ive,itriangles,stacks2,index,ioffset
   real(dp), dimension(:,:), pointer :: p_Dvertices
   integer, dimension(:,:), pointer :: p_Itriangles
@@ -5764,6 +5770,10 @@ end subroutine
   halfpi = SYS_PI/2.0_dp
   dphi   = SYS_PI/real(slices)
   dtheta = SYS_PI/real(stacks)
+  
+  dx=rgeomObject%rcoord3D%Dorigin(1)
+  dy=rgeomObject%rcoord3D%Dorigin(2)
+  dz=rgeomObject%rcoord3D%Dorigin(3)
 
   itriangles = 2 * stacks2 + (slices-2)*stacks2*2
   iverts = 2 + (slices-1) * (2*stacks)
@@ -5790,10 +5800,10 @@ end subroutine
   p_Idata(1)= iverts
   p_Idata(2)= itriangles                    
   
-  call sphereValue(halfpi,0.0_dp,DPoint,drad)
+  call sphereValue(halfpi,0.0_dp,DPoint,drad,dx,dy,dz)
   p_Dvertices(:,1)=DPoint(:)  
   
-  call sphereValue(-1.0_dp*halfpi,0.0_dp,DPoint,drad)
+  call sphereValue(-1.0_dp*halfpi,0.0_dp,DPoint,drad,dx,dy,dz)
   p_Dvertices(:,iverts)=DPoint(:)  
   
   ive=1
@@ -5803,7 +5813,7 @@ end subroutine
     theta = 0.0_dp
     do j=1,2*stacks
       ive=ive+1
-      call sphereValue(phi,theta,DPoint,drad)
+      call sphereValue(phi,theta,DPoint,drad,dx,dy,dz)
       p_Dvertices(:,ive)=DPoint(:)
       theta=theta+dtheta
     end do
@@ -5845,15 +5855,18 @@ end subroutine
 
   contains
   
-    subroutine sphereValue(Dphi1,Dtheta1,DP1,rad)
+    subroutine sphereValue(Dphi1,Dtheta1,DP1,rad,dcx,dcy,dcz)
     real(dp),intent(in) :: Dphi1
     real(dp),intent(in) :: Dtheta1
     real(dp),intent(in) :: rad
+    real(dp),intent(in) :: dcx
+    real(dp),intent(in) :: dcy
+    real(dp),intent(in) :: dcz
     real(dp), dimension(3),intent(inout) :: DP1
     
-    DP1(1)= rad*cos(Dphi1)*cos(Dtheta1)
-    DP1(2)= rad*cos(Dphi1)*sin(Dtheta1)
-    DP1(3)= rad*sin(Dphi1)
+    DP1(1)= dcx+rad*cos(Dphi1)*cos(Dtheta1)
+    DP1(2)= dcy+rad*cos(Dphi1)*sin(Dtheta1)
+    DP1(3)= dcz+rad*sin(Dphi1)
     
     end subroutine sphereValue
   
@@ -5879,7 +5892,7 @@ end subroutine
 
 !</subroutine>
   ! local variables
-  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad
+  real(dp) :: halfpi,dtheta,dphi,theta,phi,drad,dx,dy,dz
   integer  :: i,j,iverts,ive,itriangles,stacks2,index,ioffset
   real(dp), dimension(:,:), pointer :: p_Dvertices
   integer, dimension(:,:), pointer :: p_Itriangles
@@ -5889,6 +5902,11 @@ end subroutine
   
   !
   dradii(:)=rgeomObject%rellipsoid%dRadii(:)
+  
+  dx=rgeomObject%rcoord3D%Dorigin(1)
+  dy=rgeomObject%rcoord3D%Dorigin(2)
+  dz=rgeomObject%rcoord3D%Dorigin(3)
+  
   stacks2 = 2*stacks
   !
   halfpi = SYS_PI/2.0_dp
@@ -5920,10 +5938,10 @@ end subroutine
   p_Idata(1)= iverts
   p_Idata(2)= itriangles                    
   
-  call ellipsoidValue(halfpi,0.0_dp,DPoint,dradii)
+  call ellipsoidValue(halfpi,0.0_dp,DPoint,dradii,dx,dy,dz)
   p_Dvertices(:,1)=DPoint(:)  
   
-  call ellipsoidValue(-1.0_dp*halfpi,0.0_dp,DPoint,dradii)
+  call ellipsoidValue(-1.0_dp*halfpi,0.0_dp,DPoint,dradii,dx,dy,dz)
   p_Dvertices(:,iverts)=DPoint(:)  
   
   ive=1
@@ -5933,7 +5951,7 @@ end subroutine
     theta = 0.0_dp
     do j=1,2*stacks
       ive=ive+1
-      call ellipsoidValue(phi,theta,DPoint,dradii)
+      call ellipsoidValue(phi,theta,DPoint,dradii,dx,dy,dz)
       p_Dvertices(:,ive)=DPoint(:)
       theta=theta+dtheta
     end do
@@ -5975,15 +5993,18 @@ end subroutine
 
   contains
   
-    subroutine ellipsoidValue(Dphi1,Dtheta1,DP1,rad3)
+    subroutine ellipsoidValue(Dphi1,Dtheta1,DP1,rad3,dcx,dcy,dcz)
     real(dp),intent(in) :: Dphi1
     real(dp),intent(in) :: Dtheta1
+    real(dp),intent(in) :: dcx
+    real(dp),intent(in) :: dcy
+    real(dp),intent(in) :: dcz
     real(dp), dimension(3),intent(in) :: rad3
     real(dp), dimension(3),intent(inout) :: DP1
     
-    DP1(1)= rad3(1)*cos(Dphi1)*cos(Dtheta1)
-    DP1(2)= rad3(2)*cos(Dphi1)*sin(Dtheta1)
-    DP1(3)= rad3(3)*sin(Dphi1)
+    DP1(1)= dcx+rad3(1)*cos(Dphi1)*cos(Dtheta1)
+    DP1(2)= dcy+rad3(2)*cos(Dphi1)*sin(Dtheta1)
+    DP1(3)= dcz+rad3(3)*sin(Dphi1)
     
     end subroutine ellipsoidValue
   
