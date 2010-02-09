@@ -1502,10 +1502,13 @@ contains
             0.0_DP, 0.0_DP, 1.0_DP, .true.,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
         
+        ! Attach section name to collection structure
+        rcollection%SquickAccess(1) = ssectionName
+
         ! Apply flux correction to solution profile
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), rafcstab, rvector, 1._DP,&
-            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+        call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
+            rvector, rcollection, rafcstab)
         
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
@@ -2526,7 +2529,7 @@ contains
     !---------------------------------------------------------------------------
 
     timeloop: do
-
+exit
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call euler_outputSolution(rparlist, ssectionName,&
