@@ -80,6 +80,7 @@ module geometryaux
   public :: gaux_isInElement_hexa
   public :: gaux_calcDistPEdg2D
   public :: gaux_projectPointPlane
+  public :: gaux_isInElement_hexa_aligned
 contains
 
   ! ***************************************************************************
@@ -939,11 +940,15 @@ contains
   real(dp), dimension(3,6) :: dnormals
   real(DP), dimension(3,6) :: Dpv
   real(DP), dimension(3,1) :: DP1
-  real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6
+  real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6,length
+  real(DP) :: eps
+  integer :: i
   
   DP1(1,1)=dx
   DP1(2,1)=dy
   DP1(3,1)=dz
+  
+  eps=1e-10
   
   ! compute the face normals 1
   Dnormals(1,1) = ((Dpoints(2,4) - Dpoints(2,1)) * (Dpoints(3,2) - Dpoints(3,1))) &
@@ -1003,6 +1008,14 @@ contains
                 - ((Dpoints(2,7) - Dpoints(2,6)) * (Dpoints(1,5) - Dpoints(1,6)))
   
   
+  do i=1,6
+    length=sqrt(Dnormals(1,i)**2+Dnormals(2,i)**2+Dnormals(3,i)**2)
+    Dnormals(1,i)=Dnormals(1,i)/length
+    Dnormals(2,i)=Dnormals(2,i)/length
+    Dnormals(3,i)=Dnormals(3,i)/length
+  end do
+  
+  
   ! calculate all p-v
   Dpv(1:3,1)= DP1(1:3,1) - Dpoints(1:3,1) 
   
@@ -1023,13 +1036,13 @@ contains
   ddot5 = Dpv(1,5) * Dnormals(1,5) + Dpv(2,5) * Dnormals(2,5) + Dpv(3,5) * Dnormals(3,5)
   ddot6 = Dpv(1,6) * Dnormals(1,6) + Dpv(2,6) * Dnormals(2,6) + Dpv(3,6) * Dnormals(3,6)
   
-  if((ddot1 .le. 0.0001_dp).and.(ddot2 .le. 0.0001_dp).and.(ddot3 .le. 0.0001_dp).and.&
-     (ddot4 .le. 0.0001_dp).and.(ddot5 .le. 0.0001_dp).and.(ddot6 .le. 0.0001_dp))then
+  if((ddot1 .le. eps).and.(ddot2 .le. eps).and.(ddot3 .le. eps).and.&
+     (ddot4 .le. eps).and.(ddot5 .le. eps).and.(ddot6 .le. eps))then
     binside = .true.  
   else
     binside = .false.
   end if
-  
+ 
   end subroutine  
   
 !************************************************************************
@@ -1291,6 +1304,90 @@ contains
   end subroutine
 
 !************************************************************************
+
+  pure subroutine gaux_isInElement_hexa_aligned(dx,dy,dz,Dpoints,binside)
   
+!<description>
+  ! Checks whether a point (dx,dy,dz) is inside of a hexahedron
+  ! The subroutine is faster than the general subroutine
+  ! but it does not give correct results if the sides of the hexa
+  ! are not aligned with the coordinate axes
+!</description>
+
+!<input>
+  ! Point to check
+  real(DP), intent(in) :: dx,dy,dz
+  
+  ! Array with coordinates of the four corner points of the element.
+  ! The corners must be ordered in counterclockwise order!
+  !
+  ! Note: For performance reasons, this array is defined as
+  !   explicit array of dimension (3,8). As this deactivates array
+  !   checking in Fortran, the caller must take care to specify exactly
+  !   this type of array here!
+  real(DP), dimension(3,8), intent(in) :: Dpoints
+!</input>
+
+!<result>
+  ! TRUE if (dx,dy) is inside of the element. FALSE otherwise.
+  logical, intent(out) :: binside
+!</result>
+
+!</subroutine>
+  real(dp), dimension(3,6) :: dnormals
+  real(DP), dimension(3,6) :: Dpv
+  real(DP), dimension(3,1) :: DP1
+  real(DP) :: ddot1,ddot2,ddot3,ddot4,ddot5,ddot6,length
+  real(DP) :: xmin,xmax,ymin,ymax,zmin,zmax,eps
+  integer :: i
+  logical :: b2
+  
+  DP1(1,1)=dx
+  DP1(2,1)=dy
+  DP1(3,1)=dz
+  
+  eps=1e-10
+  
+  xmin=1e+32
+  xmax=-1e+32
+  ymin=1e+32
+  ymax=-1e+32
+  zmin=1e+32
+  zmax=-1e+32
+  
+  do i=1,8
+  
+    if(Dpoints(1,i).lt.xmin)then
+      xmin=Dpoints(1,i)
+    end if
+    if(Dpoints(1,i).gt.xmax)then
+      xmax=Dpoints(1,i)
+    end if
+
+    if(Dpoints(2,i).lt.ymin)then
+      ymin=Dpoints(2,i)
+    end if
+    if(Dpoints(2,i).gt.ymax)then
+      ymax=Dpoints(2,i)
+    end if
+
+    if(Dpoints(3,i).lt.zmin)then
+      zmin=Dpoints(3,i)
+    end if
+    if(Dpoints(3,i).gt.zmax)then
+      zmax=Dpoints(3,i)
+    end if
+    
+  end do
+  
+  if((dx .ge. xmin).and.(dx .le. xmax).and. &
+     (dy .ge. ymin).and.(dy .le. ymax).and. &
+     (dz .ge. zmin).and.(dz .le. zmax))then
+     binside=.true.
+  else
+     binside=.false.
+  end if
+  
+  end subroutine  
 
 end module
