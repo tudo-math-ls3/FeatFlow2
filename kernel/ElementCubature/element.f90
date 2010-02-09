@@ -2067,7 +2067,7 @@ contains
           revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
     case (EL_QP1NP,EL_QP1NPD)
       call elem_QP1NP (celement, revalElement%Dcoords, revalElement%Djac, &
-          revalElement%ddetj, Bder, revalElement%DpointRef, Dbas)
+          revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
     case (EL_EM30, EL_EM30_UNPIVOTED, EL_EM30_UNSCALED)
       call elem_EM30 (celement, revalElement%Dcoords, revalElement%Djac, &
           revalElement%ddetj, Bder, revalElement%DpointReal, Dbas)
