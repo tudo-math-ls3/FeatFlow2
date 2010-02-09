@@ -1709,7 +1709,7 @@ contains
         nrefcubpts = icubp-1
 
         ! Manually initialise the weights of the corners.
-        dweight = 2.0_DP/(30.0_DP*real(nsubelements**2,dp))
+        dweight = 0.025_DP/real(nsubelements**2,dp)
 
         ! all weights
         do icubp = 1, nrefcubpts
@@ -1755,7 +1755,7 @@ contains
         icubpStart = nrefcubpts;   nrefcubpts = icubp-1
 
         ! Manually initialise the weights.
-        dweight = 0.025_DP/real(nsubelements**2,dp)
+        dweight = 1.0_DP/(15.0_DP*real(nsubelements**2,dp))
 
         ! all weights
         do icubp = icubpStart+1, nrefcubpts
@@ -1917,8 +1917,8 @@ contains
         
         ! Recursively process the subelement in the center
         DpointsAux(:,1) = (DpointsRef(:,1)+DpointsRef(:,2))/2.0_DP
-        DpointsAux(:,2) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
-        DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
+        DpointsAux(:,2) = (DpointsRef(:,1)+DpointsRef(:,3))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
         call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
             dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
 
@@ -1931,8 +1931,8 @@ contains
 
         ! Recursively process the second outer subelement
         DpointsAux(:,1) =  DpointsRef(:,2)
-        DpointsAux(:,2) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
-        DpointsAux(:,3) = (DpointsRef(:,3)+DpointsRef(:,1))/2.0_DP
+        DpointsAux(:,2) = (DpointsRef(:,2)+DpointsRef(:,1))/2.0_DP
+        DpointsAux(:,3) = (DpointsRef(:,2)+DpointsRef(:,3))/2.0_DP
         call cub_auxTriangle(DpointsAux, DpointsLocal, DomegaLocal,&
             dweight, ncubpts, ireflevel-1, Dpoints, Domega, nrefcubpts)
         
