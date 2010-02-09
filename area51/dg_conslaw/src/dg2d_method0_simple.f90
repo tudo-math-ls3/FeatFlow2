@@ -36,6 +36,7 @@ module dg2d_method0_simple
   use genoutput
   use cubature
   use dg2d_routines
+  use collection
   
     
   use poisson2d_callback
@@ -86,7 +87,7 @@ contains
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC
+    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC, rlinformx, rlinformy
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
@@ -96,7 +97,7 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -136,8 +137,10 @@ contains
     
     integer :: ielementType
     
+    type(t_collection) :: rcollection
+    
     dt = 0.005_DP
-    ttfinal = 0.5_DP
+    ttfinal = 2*SYS_PI
     
     ielementType = EL_DG_T2_2D
     
@@ -151,7 +154,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 6
+    NLMAX = 4
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -159,10 +162,10 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD2x2.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD2x2.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
      
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -270,6 +273,7 @@ contains
     call lsysbl_createMatFromScalar (rmatrixMC,rmatrixBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rsol,rsolBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (rsolTemp,rsolTempBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rsolUp,rsolUpBlock,rdiscretisation)
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
@@ -397,6 +401,12 @@ contains
     
     
     
+    rlinformx%itermCount = 1
+    rlinformx%Idescriptors(1) = DER_DERIV_X
+    rlinformy%itermCount = 1
+    rlinformy%Idescriptors(1) = DER_DERIV_Y
+    
+    
     
     
     ttime = 0.0_DP
@@ -427,8 +437,21 @@ contains
        
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+       if(ielementType .ne. EL_DG_T0_2D) then
+       
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         
+         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
+                                       flux_one,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+      
+         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
+                                       flux_two,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+                                       
+       end if
        
        ! Solve for solution update
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
@@ -440,9 +463,6 @@ contains
        if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
 
-!              call lsyssc_getbase_double (rsol,p_Ddata)
-!    write(*,*) p_Ddata
-!    pause
     
        
        ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
@@ -459,9 +479,22 @@ contains
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+       if(ielementType .ne. EL_DG_T0_2D) then
        
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         
+         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
+                                       flux_one,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+      
+         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
+                                       flux_two,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+                                       
+       end if
+              
        ! Solve for solution update
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        
@@ -484,9 +517,22 @@ contains
                                               flux_dg_buildVectorScEdge2D_sim)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+       if(ielementType .ne. EL_DG_T0_2D) then
        
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         
+         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
+                                       flux_one,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+      
+         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
+         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
+                                       flux_two,rcollection)
+         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+                                       
+       end if
+              
        ! Solve for solution update
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        

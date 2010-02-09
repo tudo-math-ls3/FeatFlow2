@@ -1034,25 +1034,39 @@ contains
               Dcoefficients,&
               DsolVals,&
               normal,&
+              DpointsReal,&
               rcollection )
               
   use collection
   
-  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  !<input>
   real(DP), dimension(:,:,:), intent(in) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
+  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_collection), intent(inout), target, optional :: rcollection
+  !</input>
+  
+  !<output>
+  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  !</output>
 
 
   integer :: ipoint, iel
   real(dp), dimension(2) :: Dvel
-  real(DP) :: dvn
+  real(DP) :: dvn ,dx, dy
   
   Dvel(1)=1.0_DP
   Dvel(2)=1.0_DP
   
   do iel = 1, ubound(Dcoefficients,2)
+  
     do ipoint= 1, ubound(Dcoefficients,1)
+    
+      dx = DpointsReal(1,ipoint,iel)
+      dy = DpointsReal(2,ipoint,iel)
+      
+      Dvel(1)=0.5_DP-dy
+      Dvel(2)=dx-0.5_DP
     
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
     
@@ -1154,9 +1168,10 @@ contains
     
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)
-        Dcoefficients (1,ipoint,iel) = 0.1_dp*&
-                 exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
-        Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
+        !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
+        !         exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
+        !Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
+        Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
       end do
     end do
                     
@@ -1254,6 +1269,208 @@ contains
        ! Dcoefficients (1,:,:) =0.0_dp
 
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   ! ***************************************************************************
 
+!<subroutine>
+
+  subroutine flux_one (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint
+    real(DP) :: dvx, dvy, dx, dy
+    
+    do iel = 1, size(Dcoefficients,3)
+      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
+                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+    end do
+    
+    do iel = 1, size(Dcoefficients,3)
+      do ipoint = 1, size(Dcoefficients,2)
+      
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+      
+        dvx=0.5_DP-dy
+        dvy=dx-0.5_DP
+        
+        Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvx
+      end do
+    end do
+    
+  end subroutine
+
+
+
+
+
+   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine flux_two (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint
+    real(DP) :: dvx, dvy, dx, dy
+    
+    do iel = 1, size(Dcoefficients,3)
+      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
+                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+    end do
+    
+    do iel = 1, size(Dcoefficients,3)
+      do ipoint = 1, size(Dcoefficients,2)
+      
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+      
+        dvx=0.5_DP-dy
+        dvy=dx-0.5_DP
+        
+        Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvy
+      end do
+    end do
+    
+  end subroutine
 
 end module

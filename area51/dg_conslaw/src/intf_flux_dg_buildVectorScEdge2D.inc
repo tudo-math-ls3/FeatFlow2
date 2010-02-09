@@ -11,6 +11,7 @@
               Dcoefficients,&
               DsolVals,&
               normal,&
+              DpointsReal,&
               rcollection )
     
     use fsystem
@@ -33,15 +34,15 @@
   !</description>
     
   !<input>
-    real(DP), dimension(:,:), intent(out) :: Dcoefficients
   real(DP), dimension(:,:,:), intent(in) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
+  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_collection), intent(inout), target, optional :: rcollection
     
   !</input>
   
   !<output>
-    
+  real(DP), dimension(:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>

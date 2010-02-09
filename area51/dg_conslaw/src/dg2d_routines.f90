@@ -362,6 +362,11 @@ contains
     ! Number of edges
     integer :: NMT
     
+    ! Vertices per element
+    integer :: NVE
+    
+    integer :: ive
+    
     ! Pointer to Ielementsatedge in the triangulation
     integer, dimension(:,:), pointer :: p_IelementsAtEdge
     
@@ -370,6 +375,9 @@ contains
     
     ! Pointer to the vertex coordinates
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    
+    ! Pointer to IverticesAtEelement in the triangulation
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
     
     ! Array for the solution values in the cubature points
     real(DP), dimension(:,:,:), allocatable :: DsolVals
@@ -382,6 +390,27 @@ contains
     
     ! Temp variables for the coordinates of the vertices
     real(DP) :: dxl1, dxl2, dyl1, dyl2
+    
+    ! The Jacobian matrix of the mapping for each point.
+    ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
+    real(DP), dimension(:,:,:), allocatable :: Djac
+  
+    ! Jacobian determinants of the mapping for all the points from the
+    ! reference element to the real element.
+    ! DIMENSION(npointsPerEl,nelements)
+    real(DP), dimension(:,:), allocatable :: Ddetj
+  
+    ! Array receiving the coordinates of the points in DpointsRef,
+    ! mapped from the reference element to the real element.
+    ! If not specified, they are not computed.
+    ! DIMENSION(#space dimensions,npointsPerEl,nelements)
+    real(DP), dimension(:,:,:), allocatable :: DpointsReal
+    
+    ! The coordinates of the corner edges of the elements for the transformation
+    ! DIMENSION(#space dimensions,NVE,nelements)
+    real(DP), dimension(:,:,:), allocatable :: Dcoords
+    
+    integer(I32) :: ctrafotype
   
   
     ! Copy the assembly data to the local assembly data,
@@ -410,7 +439,12 @@ contains
     ! Get pointers to vertices at edge
     call storage_getbase_int2D(&
           rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
-          p_IverticesAtEdge)          
+          p_IverticesAtEdge)
+    
+    ! Get pointers to vertices at elements
+    call storage_getbase_int2D(&
+          rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
+          p_IverticesAtElement)   
     
     ! Get the elements adjacent to the given edges
     allocate(IelementList(3,size(IedgeList)))
@@ -426,15 +460,33 @@ contains
     call lsyssc_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly(1)%indof
     ncubp = rvectorAssembly(1)%ncubp
+    NVE = rvectorAssembly(1)%NVE
     
     ! Allocate space for the solution values in the cubature points
     allocate(DsolVals(ncubp,2,rlocalVectorAssembly(1)%nelementsPerBlock))
+    
+    ! Allocate space for the jacobi matrices in the cubature points
+    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+    
+    ! Allocate space for the determinants of the jacobi matrices in the cubature points
+    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+    
+    ! Allocate space for the integration points on the real elements
+    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     ! Allocate space for normal vectors
     allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
     
     ! Allocate space for edge length
     allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+    
+    ! The coordinates of the corner edges of the elements for the transformation
+    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
+      
+  
+  
+  
+  
    
 !    ! Get some more pointers to local data.
 !    p_Domega => rlocalVectorAssembly%p_Domega
@@ -461,6 +513,9 @@ contains
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly(1)%celement)
+    
+    ! Get type of transformation
+    ctrafotype = elem_igetTrafoType(rlocalVectorAssembly(1)%celement)
 
     ! Loop over the elements - blockwise.
     !
@@ -484,7 +539,7 @@ contains
         call trafo_mapCubPts1Dto2D(icoordSystem, IlocalEdgeNumber(1,IELset+iel-1), &
             ncubp, Dxi1D, Dxi2D(:,:,1,iel))
         call trafo_mapCubPts1Dto2D(icoordSystem, IlocalEdgeNumber(2,IELset+iel-1), &
-            ncubp, Dxi1D, Dxi2D(:,:,2,iel))    
+            ncubp, Dxi1D, Dxi2D(:,:,2,iel))
       end do
      
       ! Transpose the coordinate array such that we get coordinates we
@@ -642,12 +697,52 @@ contains
 !!      else
 !!        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
 !!      end if
+
+
+
+
+
+      ! Fill the corner coordinates of the elements
+      do iel = 1,IELmax-IELset+1
+        do ive = 1, NVE
+          Dcoords(1:ndim2d,ive,iel)=&
+                   p_DvertexCoords(1:ndim2d,p_IverticesAtElement(ive,IelementList(1,IELset+iel-1)))
+        end do
+      end do
+
+
+      ! The numerical flux function needs the x- and y- values
+      ! So we have to call the mapping from the reference- to the real element
+      call trafo_calctrafo_sim (ctrafoType,IELmax-IELset+1,ncubp,Dcoords,&
+                                DpointsRef(1:ndim2d,:,1,1:IELmax-IELset+1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
+                                Ddetj(1:ncubp,1:IELmax-IELset+1),&
+                                DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
       
       
       call flux_dg_buildVectorScEdge2D_sim (&
             rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
             DsolVals(:,:,1:IELmax-IELset+1),&
             normal(:,1:IELmax-IELset+1),&
+            DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rcollection )
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
@@ -765,7 +860,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly(2))
 
     ! Deallocate memory
-    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal)
+    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
 
   end subroutine
 
