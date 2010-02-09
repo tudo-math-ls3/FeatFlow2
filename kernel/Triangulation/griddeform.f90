@@ -359,8 +359,7 @@ contains
   
   ! user defined number of adaptation steps
   integer,intent(in), optional :: iodesteps
-  
-  
+    
 !</inputoutput>
 
 !<input>
@@ -540,14 +539,14 @@ contains
         iaux = 1
       
         ! initialise the tolerance
-        rgriddefInfo%dtolQ = 1.0E10_DP      
+        rgriddefInfo%dtolQ = 1.0E10_DP
         
         if(present(iodesteps))then        
         ! number of ode steps
           rgriddefInfo%ntimeSteps = iodesteps
         else
           rgriddefInfo%ntimeSteps = 20
-        end if
+        end if              
         
         ! set the multigrid level for the deformation PDE(really ?)
         p_ilevelODE(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
@@ -3092,6 +3091,15 @@ contains
   ! get the elements at vertex index array
   call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
   p_IelementsAtVertexIdx)
+  
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
+  p_IelementsAtVertex)
+
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
+  p_InodalProperty)
+  
+  call storage_getbase_double2d(rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_dvertexCoords,&
+  p_DvertexCoords)
 
   call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
   p_InodalProperty)
@@ -3108,7 +3116,7 @@ contains
   ntimeSteps = rgriddefInfo%ntimeSteps
   
   dstepSize = 1.0_dp/real(ntimeSteps,dp)
-  
+
   ! difference between grid level for ODE and PDE solving
   ! write the coordinates of the moved points to the actual coordinate vector
   ! Here, only the case ilevelODE < ilevel is considered, the opposite case
@@ -3117,155 +3125,152 @@ contains
 
   do ive=1, rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVT
      
-    ! if we have a boundary node we treat it in a special routine
-    if(p_InodalProperty(ive) .ne. 0)then
-      ! We are dealing with a boundary node... do nothing yet
-      !call griddef_perform_boundary2(rgriddefInfo,ive)
-    else
-      ! inner node      
-      ! initialise time variable
-      dtime = 0.0_DP
+    if(p_InodalProperty(ive) .ne. 0)cycle
+    ! inner node      
+    ! initialise time variable
+    dtime = 0.0_DP
 
-      ! initialise flag for failed search
-      bsearchFailed = .FALSE.
-      ! initial coordinates of the vertex
-      dx_old1 = p_DvertexCoords(1,ive)
-      dy_old1 = p_DvertexCoords(2,ive)
-      dz_old1 = p_DvertexCoords(3,ive)
+    ! initialise flag for failed search
+    bsearchFailed = .FALSE.
+    ! initial coordinates of the vertex
+    dx_old1 = p_DvertexCoords(1,ive)
+    dy_old1 = p_DvertexCoords(2,ive)
+    dz_old1 = p_DvertexCoords(3,ive)
+    
+    dx_old = p_DvertexCoords(1,ive)
+    dy_old = p_DvertexCoords(2,ive)
+    dz_old = p_DvertexCoords(3,ive)
+    
+    dx = p_DvertexCoords(1,ive)
+    dy = p_DvertexCoords(2,ive)
+    dz = p_DvertexCoords(3,ive)
+    
+    
+    ! some routines need the coordinates in
+    ! this format
+    Dpoint(1) = dx
+    Dpoint(2) = dy
+    Dpoint(3) = dz
+    
+    ! zero the Dvalues
+    Dvalues(:) = 0.0_dp
+    
+    ! for the first element read the element index
+    ielement = p_IelementsAtVertex(p_IelementsAtVertexIdx(ive))
+    
+    ! evaluate the functions on the element
+    call griddef_evalPhi_Known3D(DER_FUNC, Dvalues, &
+         rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(1), &
+         rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(2), &
+         rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(3), &
+         rgriddefInfo%p_rhLevels(NLMAX)%rvectorMonFuncQ1%RvectorBlock(1), &
+         rgriddefInfo%p_rhLevels(NLMAX)%rvectorAreaBlockQ1%RvectorBlock(1), &
+         Dpoint,ielement)
+
+    ! compute step size for next time step
+   !dstepSize = 0.05_dp
+
+    ! so this means in Dvalues(1) there is the
+    ! x coordinate of the recovered gradient
+    ! so this means in Dvalues(2) there is the
+    ! y coordinate of the recovered gradient  
+    ! so this means in Dvalues(3) there is the
+    ! z coordinate of the recovered gradient              
+    ! In Dvalues(5) we find the g function(area distribution)
+    ! In Dvalues(4) the f function (monitor)
+    ! perform the actual Euler step
+    dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
+         dtime*(Dvalues(4)))
+    dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
+         dtime*(Dvalues(4)))
+    dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
+         dtime*(Dvalues(4)))
+         
+    ! update time
+    dtime = dtime + dstepSize
+
+    ! While the current time is less than 1.0-eps
+    if (dtime .le. 1.0_DP - deps) then
+
+       ! for the other time steps, we have really to search
+      calculationloopEE_inner : do
       
-      dx_old = p_DvertexCoords(1,ive)
-      dy_old = p_DvertexCoords(2,ive)
-      dz_old = p_DvertexCoords(3,ive)
-      
-      dx = p_DvertexCoords(1,ive)
-      dy = p_DvertexCoords(2,ive)
-      dz = p_DvertexCoords(3,ive)
-      
-      
-      ! some routines need the coordinates in
-      ! this format
-      Dpoint(1) = dx
-      Dpoint(2) = dy
-      Dpoint(3) = dz
-      
-      ! zero the Dvalues
-      Dvalues(:) = 0.0_dp
-      
-      ! for the first element read the element index
-      ielement = p_IelementsAtVertex(p_IelementsAtVertexIdx(ive))
-      
-      ! evaluate the functions on the element
-      call griddef_evalPhi_Known3D(DER_FUNC, Dvalues, &
+        ! zero the Dvalues
+        Dvalues(:) = 0.0_dp
+        
+        ! here we store the coordinates
+        Dpoint(1) = dx
+        Dpoint(2) = dy      
+        Dpoint(3) = dz 
+             
+        ! we search for the point, we enter the element it
+        ! was found in last time
+        call griddef_evalphi_ray3D(DER_FUNC, Dvalues, &
            rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(1), &
            rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(2), &
            rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(3), &
            rgriddefInfo%p_rhLevels(NLMAX)%rvectorMonFuncQ1%RvectorBlock(1), &
            rgriddefInfo%p_rhLevels(NLMAX)%rvectorAreaBlockQ1%RvectorBlock(1), &
-           Dpoint,ielement)
+           Dpoint,bsearchFailed,ielement)        
 
-      ! compute step size for next time step
-      !dstepSize = 1.00_dp
+        ! if the point is outside the domain, stop moving it
+        if (bsearchFailed) then
+          !print *,Dpoint(:)
+          bsearchFailed = .FALSE.
+          exit calculationloopEE_inner
+        endif
 
-      ! so this means in Dvalues(1) there is the
-      ! x coordinate of the recovered gradient
-      ! so this means in Dvalues(2) there is the
-      ! y coordinate of the recovered gradient  
-      ! so this means in Dvalues(3) there is the
-      ! z coordinate of the recovered gradient              
-      ! In Dvalues(5) we find the g function(area distribution)
-      ! In Dvalues(4) the f function (monitor)
-      ! perform the actual Euler step
-      dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
-           dtime*(Dvalues(4)))
-      dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
-           dtime*(Dvalues(4)))
-      dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
-           dtime*(Dvalues(4)))
-           
-      ! update time
-      dtime = dtime + dstepSize
+        ! compute step size for next time step
+        ! griddef_computeStepSize(dtime, ntimeSteps)
+        !dstepSize = 0.01_dp 
 
-      ! While the current time is less than 1.0-eps
-      if (dtime .le. 1.0_DP - deps) then
+        ! perform the actual Euler step
+        dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
+             dtime*(Dvalues(4)))
+        dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
+             dtime*(Dvalues(4)))
+        dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
+             dtime*(Dvalues(4)))
 
-         ! for the other time steps, we have really to search
-        calculationloopEE_inner : do
+        ! advance in time
+        dtime = dtime + dstepSize
+        ivbd = 0
         
-          ! zero the Dvalues
-          Dvalues(:) = 0.0_dp
-          
-          ! here we store the coordinates
-          Dpoint(1) = dx
-          Dpoint(2) = dy      
-          Dpoint(3) = dz 
-
-          ! we search for the point, we enter the element it
-          ! was found in last time
-          call griddef_evalphi_ray3D(DER_FUNC, Dvalues, &
-             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(1), &
-             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(2), &
-             rgriddefInfo%p_rhLevels(NLMAX)%rvecGradBlock%RvectorBlock(3), &
-             rgriddefInfo%p_rhLevels(NLMAX)%rvectorMonFuncQ1%RvectorBlock(1), &
-             rgriddefInfo%p_rhLevels(NLMAX)%rvectorAreaBlockQ1%RvectorBlock(1), &
-             Dpoint,bsearchFailed,ielement)        
-
-          ! if the point is outside the domain, stop moving it
-          if (bsearchFailed) then
-            !print *,Dpoint(:)
-            bsearchFailed = .FALSE.
-            exit calculationloopEE_inner
-          endif
-
-          ! compute step size for next time step
-          ! griddef_computeStepSize(dtime, ntimeSteps)
-          !dstepSize = 0.01_dp 
-
-          ! perform the actual Euler step
-          dx = dx + dstepSize* Dvalues(1)/((1.0_DP - dtime)*Dvalues(5) + &
-               dtime*(Dvalues(4)))
-          dy = dy + dstepSize* Dvalues(2)/((1.0_DP - dtime)*Dvalues(5) + &
-               dtime*(Dvalues(4)))
-          dz = dz + dstepSize* Dvalues(3)/((1.0_DP - dtime)*Dvalues(5) + &
-               dtime*(Dvalues(4)))
-
-          ! advance in time
-          dtime = dtime + dstepSize
-          ivbd = 0
-          
-          ! if time interval greater 1.0_-eps, we are finished
-          if (dtime .ge. 1.0_DP - deps) then
-          
+        ! if time interval greater 1.0_-eps, we are finished
+        if (dtime .ge. 1.0_DP - deps) then
+        
 !                if(dx .gt. 1.0_dp)then
 !                  print *,ive
 !                end if
-                !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
-                !print *,"new coordinates: ",dx,dy,dz
-                
-                p_DvertexCoords(1,ive) = dx
-                p_DvertexCoords(2,ive) = dy
-                p_DvertexCoords(3,ive) = dz
-              exit calculationloopEE_inner
-            end if ! (dtime .ge. 1.0_DP - deps)
-        
-        enddo calculationloopEE_inner
-        
-      ! in case time interval exhausted in the first time step  
-      else
-        ! write the coordinates
-        if(dx .gt. 1.0_dp)then
-          print *,ive
-          print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
-          print *,"new coordinates: ",dx,dy,dz
-        end if
+              !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
+              !print *,"new coordinates: ",dx,dy,dz
               
-        p_DvertexCoords(1,ive) = dx
-        p_DvertexCoords(2,ive) = dy     
-        p_DvertexCoords(3,ive) = dz     
-      endif ! dtime
+              p_DvertexCoords(1,ive) = dx
+              p_DvertexCoords(2,ive) = dy
+              p_DvertexCoords(3,ive) = dz
+            exit calculationloopEE_inner
+          end if ! (dtime .ge. 1.0_DP - deps)
       
-  end if ! nodal_property .ne. 0
+      enddo calculationloopEE_inner
+      
+    ! in case time interval exhausted in the first time step  
+    else
+      ! write the coordinates
+            if(dx .gt. 1.0_dp)then
+              print *,ive
+            end if
+      !print *,"old coordinates: ",dx_old1,dy_old1,dz_old1
+      !print *,"new coordinates: ",dx,dy,dz
+            
+      p_DvertexCoords(1,ive) = dx
+      p_DvertexCoords(2,ive) = dy     
+      p_DvertexCoords(3,ive) = dz     
+    endif ! dtime
   
   end do ! ive
+  
+  ! now take care of the boundary
+  call griddef_project2Boundary(rgriddefInfo)
   
   end subroutine ! end griddef_performEE
   
@@ -4434,6 +4439,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   iel = ielement
   ! Use raytracing search to find the element
   ! containing the point.
+  
   call tsrch_getElem_raytrace3D (&
     Dpoint(:),rvecMon%p_rspatialDiscr%p_rtriangulation,iel,&
     iresult,ilastElement,ilastEdge,200)
@@ -4846,9 +4852,9 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
   
   ! user defined number of adaptation steps
   integer,intent(in), optional :: iadaptSteps
-
+  
   ! user defined number of adaptation steps
-  integer,intent(in), optional :: iodesteps
+  integer,intent(in), optional :: iodesteps  
   
 !</inputoutput>
 
@@ -5035,7 +5041,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
         else
           rgriddefInfo%ntimeSteps = 20
         end if
-        
+       
         ! set the multigrid level for the deformation PDE(really ?)
         p_ilevelODE(rgriddefInfo%iminDefLevel) = rgriddefInfo%iminDefLevel
 
@@ -5401,7 +5407,7 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     
     p_rsolverNode%nmaxIterations = 20
     
-    p_rsolverNode%depsRel = 1e-13
+    p_rsolverNode%depsRel = 1e-13    
     
     ! Initialise structure/data of the solver. This allows the
     ! solver to allocate memory / perform some precalculation
@@ -5464,5 +5470,190 @@ subroutine griddef_perform_boundary2(rgriddefInfo,ive)
     
   
   end subroutine ! end griddef_performOneDefStep
+  
+! **************************************************************************************** 
+
+!<subroutine>
+  subroutine griddef_project2Boundary(rgriddefInfo)
+!<description>
+  ! This subroutine handles the boundary nodes in 3d griddeformation
+  ! we do simple projection of the neighbouring inner Vertex to the
+  ! the nearest boundary face
+!</description>
+
+!<inputoutput>
+  ! structure containing all parameter settings for grid deformation
+  type(t_griddefInfo), intent(inout) :: rgriddefInfo
+!</inputoutput>
+
+!</subroutine>
+  integer, dimension(:,:), pointer :: p_IedgesAtElement
+  integer, dimension(:,:), pointer :: p_IvertAtEdge    
+  integer, dimension(:), pointer :: p_IverticesAtBoundary
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx
+  integer, dimension(:), pointer :: p_IelementsAtVertex
+  integer, dimension(:), pointer :: p_InodalProperty
+  integer, dimension(:,:), pointer :: p_IfacesAtElement  
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords  
+  real(DP), dimension(:,:), pointer :: p_DvertexCoordsNew  
+  integer, dimension(:,:), pointer :: p_IverticesAtFace  
+  
+  
+!-------------------------------------------------------  
+  real(DP), dimension(3) :: DPoint
+  real(DP), dimension(3) :: DR1
+  real(DP), dimension(3) :: DR2
+  real(DP), dimension(3) :: DQ
+  real(DP), dimension(3) :: DQP,DP2
+!-------------------------------------------------------    
+  
+  integer :: NLMAX,i,j,iVindex,ied,iel,iedge,v1,v2,iVert,iface,ive,iae
+  integer :: nmt,nvt
+  
+  NLMAX = rgriddefInfo%NLMAX
+  nmt=rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NMT
+  nvt=rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVT
+  
+  call storage_getbase_int2D(&
+       rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IedgesAtElement,&
+       p_IedgesAtElement)      
+
+  call storage_getbase_int2D(&
+       rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtEdge,&
+       p_IvertAtEdge)
+       
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtBoundary,&
+  p_IverticesAtBoundary)  
+  
+  call storage_getbase_int(&
+      rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertexIdx,&
+      p_IelementsAtVertexIdx)
+      
+  call storage_getbase_int(&
+      rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IelementsAtVertex,&
+      p_IelementsAtVertex)
+      
+  call storage_getbase_int (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_InodalProperty,&
+  p_InodalProperty)
+
+  call storage_getbase_double2D (rgriddefInfo%p_rhLevels(NLMAX)%p_rtriangulation%h_DvertexCoords,&
+      p_DvertexCoords)    
+
+  call storage_getbase_double2D (rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_DvertexCoords,&
+      p_DvertexCoordsNew)    
+
+      
+      
+
+  ! get the pointer
+  call storage_getbase_int2D(&
+      rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IverticesAtFace,&
+      p_IverticesAtFace)
+  
+  call storage_getbase_int2D(&
+      rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%h_IfacesAtElement,&
+      p_IfacesAtElement)  
+  
+  ! take care of all boundary nodes
+  do i=1,rgriddefInfo%p_rhLevels(NLMAX)%rtriangulation%NVBD
+    iVindex=p_IverticesAtBoundary(i)
+    iel=p_IelementsAtVertex(p_IelementsAtVertexIdx(iVindex))
+    iVert=-1
+    ! find the neighbouring vertex
+    ! that is an inner vertex(if it exists..)
+    do ied=1,12
+      iedge=p_IedgesAtElement(ied,iel)
+      v1=p_IvertAtEdge(1,iedge)
+      v2=p_IvertAtEdge(2,iedge)
+      ! check whether the edge contains the vertex
+      if((v1 .eq. iVindex) .or.(v2 .eq. iVindex))then
+        ! which of the edge vertices is the current vertex
+        if(v1 .eq. iVindex)then
+          ! if it is an inner node we can use
+          ! it to project
+          if(p_InodalProperty(v2) .eq. 0)then
+            iVert=v2
+            exit
+          end if
+        else
+          ! if it is an inner node we can use
+          ! it to project
+          if(p_InodalProperty(v1) .eq. 0)then
+            iVert=v1
+            exit
+          end if
+        end if
+        
+      end if ! end if v1 or v2 ...
+      
+    end do ! end for all edges
+    
+    ! if there is no neigbour that
+    ! is an inner vertex, we cannot do
+    ! the projection, skip to next vertex
+    if(iVert .eq. -1) cycle
+    
+    ! get the plane from the hexahedron and project...
+    ! look for the face that is a boundary face
+    ! AND contains the vertex iVert
+    call findFace(p_IverticesAtFace,p_InodalProperty,p_IfacesAtElement,nvt,nmt,iVindex,iface)    
+!    do iae=1,6
+!      iface=p_IfacesAtElement(iae,iel)
+!      ! found inner face... skip
+!      if(p_InodalProperty(nvt+nmt+iface) .eq. 0)cycle
+!      do ive=1,4
+!        if(p_IverticesAtFace(ive,iface) .eq. iVert)exit
+!      end do
+!    end do
+    
+    ! we got the face now set up the corresponding 
+    ! plane and project
+    DPoint(:)=p_DvertexCoords(:,iVindex)
+    DP2(:)=p_DvertexCoords(:,p_IverticesAtFace(1,iface))
+    DR1(:)=p_DvertexCoords(:,p_IverticesAtFace(2,iface)) ! &
+    !       -p_DvertexCoords(:,p_IverticesAtFace(1,iface))
+    DR1(:)=DR1(:)-DP2(:)
+    
+    DR2(:)=p_DvertexCoords(:,p_IverticesAtFace(3,iface)) !&
+           !-p_DvertexCoords(:,p_IverticesAtFace(1,iface))
+    DR2(:)=DR2(:)-DP2(:)           
+    
+    DQ(:)=p_DvertexCoordsNew(:,iVert)
+    DQP=(/0.0_dp,0.0_dp,0.0_dp/)
+
+    call gaux_projectPointPlane(DPoint,DR1,DR2,DQ,DQP)
+
+    p_DvertexCoordsNew(:,iVindex)=DQP(:)
+    
+  end do ! end for all boundary nodes
+  
+  contains
+  
+  subroutine findFace(IverticesAtFace,InodalProperty,IfacesAtElement,nvt,nmt,iV,iface)
+  
+  integer, dimension(:,:),intent(in) :: IverticesAtFace  
+  integer, dimension(:),intent(in)   :: InodalProperty
+  integer, dimension(:,:),intent(in) :: IfacesAtElement  
+  integer, intent(in) :: nvt
+  integer, intent(in) :: nmt
+  integer, intent(in) :: iV
+  integer, intent(inout) :: iface
+  integer :: iae,ive
+  
+    ! get the plane from the hexahedron and project...
+    ! look for the face that is a boundary face
+    ! AND contains the vertex iVindex
+    do iae=1,6
+      iface=IfacesAtElement(iae,iel)
+      ! found inner face... skip
+      if(InodalProperty(nvt+nmt+iface) .eq. 0)cycle
+      do ive=1,4
+        if(IverticesAtFace(ive,iface) .eq. iV)return
+      end do
+    end do
+  
+  end subroutine findFace
+
+  end subroutine ! end griddef_project2Boundary
  
 end module
