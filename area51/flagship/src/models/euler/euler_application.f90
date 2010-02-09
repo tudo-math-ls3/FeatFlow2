@@ -1341,6 +1341,25 @@ contains
       ! Initialize the FE-function by the L2-projection of the analytical data
       !-------------------------------------------------------------------------
 
+      ! Initialize total number of expressions
+      nexpression = 0
+
+      ! Compute total number of expressions
+      do iblock = 1, rvector%nblocks
+        nexpression = nexpression + rvector%RvectorBlock(iblock)%NVAR
+      end do
+
+      ! Check if array of solution names is available
+      if (parlst_querysubstrings(rparlist, ssectionName,&
+          'ssolutionname') .lt. nexpression) then
+        call output_line('Invalid number of expressions!',&
+            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+        call sys_halt()
+      end if
+
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
       ! Retrieve the lumped and consistent mass matrices from the
       ! problem level structure or recompute them on-the-fly.
       call parlst_getvalue_int(rparlist,&
@@ -1367,22 +1386,6 @@ contains
             rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
         call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
         p_rlumpedMassMatrix => rlumpedMassMatrix
-      end if
-      
-      ! Initialize total number of expressions
-      nexpression = 0
-      
-      ! Compute total number of expressions
-      do iblock = 1, rvector%nblocks
-        nexpression = nexpression + rvector%RvectorBlock(iblock)%NVAR
-      end do
-
-      ! Check if array of solution names is available
-      if (parlst_querysubstrings(rparlist, ssectionName,&
-          'ssolutionname') .lt. nexpression) then
-        call output_line('Invalid number of expressions!',&
-            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
-        call sys_halt()
       end if
       
       ! Get the number of refinement levels for summed cubature formula
@@ -1417,8 +1420,12 @@ contains
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
 
-          ! Set the number of the scalar subvector to the collection structure
-          rcollection%IquickAccess(1) = nexpression + 1
+          ! Get the function name of the component used for evaluating the initial solution.
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'ssolutionName', ssolutionName, isubstring=nexpression+1)
+
+          ! Set the number of the component used for evaluating the initial solution
+          rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
           
           ! Assemble the linear form for the scalar subvector
           call linf_buildVectorScalar2(rform, .true.,&
@@ -1434,9 +1441,13 @@ contains
 
           ! Loop over all blocks
           do ivar = 1, rvectorBlock%nblocks
-
-            ! Set the number of the scalar subvector to the collection structure
-            rcollection%IquickAccess(1) = nexpression + ivar
+            
+            ! Get the function name of the component used for evaluating the initial solution.
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
+            
+            ! Set the number of the component used for evaluating the initial solution
+            rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
 
             ! Assemble the linear form for the scalar subvector
             call linf_buildVectorScalar2(rform, .true.,&
