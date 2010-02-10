@@ -179,6 +179,9 @@ solver = FullMultigridSolverEuler
 # 21 = FEM-GP
 istabilisation = 1
 
+# perform prelimiting
+iprelimiting = 1
+
 
 ################################################################################
 [Transport]
@@ -332,6 +335,9 @@ solver = FullMultigridSolverTransport
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 1
+
+# perform prelimiting
+iprelimiting = 1
 
 
 ################################################################################

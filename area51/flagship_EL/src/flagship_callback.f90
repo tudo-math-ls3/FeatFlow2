@@ -68,10 +68,10 @@ contains
     type(t_graph), pointer, save :: rgraph
     integer :: i1,i2,i3
 
-    
+
     ! What operation should be performed?
     select case(iOperation)
-      
+
     case(HADAPT_OPR_INITCALLBACK)
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
@@ -80,17 +80,17 @@ contains
       rgraph => collct_getvalue_graph(rcollection,&
           trim(rcollection%SquickAccess(1)))
 
-      
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify sparsity graph
       nullify(rgraph)
 
-      
+
     case(HADAPT_OPR_INSERTVERTEXEDGE)
       ! Insert vertex into sparsity graph
       call grph_insertVertex(rgraph, rcollection%IquickAccess(1))
 
-      
+
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from sparsity graph
       if (rcollection%IquickAccess(2) .ne. 0) then
@@ -99,8 +99,8 @@ contains
       else
         call grph_removeVertex(rgraph, rcollection%IquickAccess(1))
       end if
-      
-      
+
+
     case(HADAPT_OPR_REF_LINE2LINE)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -110,8 +110,8 @@ contains
       call grph_removeEdge(rgraph, i1, i2)
       call grph_insertEdge(rgraph, i1, i3)
       call grph_insertEdge(rgraph, i2, i3)
-      
-      
+
+
     case(HADAPT_OPR_CRS_2LINE1LINE)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -121,7 +121,7 @@ contains
       call grph_removeEdge(rgraph, i1, i3)
       call grph_removeEdge(rgraph, i2, i3)
       call grph_insertEdge(rgraph, i1, i2)
-      
+
 
     case default
       call output_line('Unsupported operation!',&
@@ -158,14 +158,14 @@ contains
     integer :: i1,i2,i3,i4,i5,i6,i7,i8,i9
     integer :: e1,e2,e3,e4,e5,e6,e7,e8
 
-    
+
     ! What operation should be performed
     select case(iOperation)
 
     case(HADAPT_OPR_INITCALLBACK)
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
-      
+
       ! Retrieve sparsity pattern from collection and build sparsity-graph.
       rgraph => collct_getvalue_graph(rcollection,&
           trim(rcollection%SquickAccess(1)))
@@ -174,14 +174,14 @@ contains
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify sparsity graph
       nullify(rgraph)
-      
-      
+
+
     case(HADAPT_OPR_INSERTVERTEXEDGE,&
          HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into sparsity graph
       call grph_insertVertex(rgraph, rcollection%IquickAccess(1))
 
-   
+
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from sparsity graph and solution
       if (rcollection%IquickAccess(2) .ne. 0) then
@@ -201,7 +201,7 @@ contains
       e1 = rcollection%IquickAccess(5)
       e4 = rcollection%IquickAccess(8)
 
-      ! Delete broken edge (I1,I2) and add three new edges 
+      ! Delete broken edge (I1,I2) and add three new edges
       ! (I1,I4), (I2,I4), and (I3,I4) if this is necessary
       if (e1 .eq. e4) then
         call grph_removeEdge(rgraph, i1, i2)
@@ -443,7 +443,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -518,7 +518,7 @@ contains
       e6 = rcollection%IquickAccess(12)
       e7 = rcollection%IquickAccess(13)
       e8 = rcollection%IquickAccess(14)
-      
+
       ! Delete broken edge (I2,I3) and add new edges (I2,I5),(I3,I5)
       if (e2 .eq. e5) then
         call grph_removeEdge(rgraph, i2, i3)
@@ -549,7 +549,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -559,7 +559,7 @@ contains
       e6 = rcollection%IquickAccess(15)
       e7 = rcollection%IquickAccess(16)
       e8 = rcollection%IquickAccess(17)
-      
+
       ! Delete broken edge (I2,I3) and add new edges (I2,I6),(I3,I6)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i3)
@@ -605,7 +605,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -642,7 +642,7 @@ contains
       ! (I3,I9),I6,I7),(I4,I9), and (I7,I8)
       call grph_removeEdge(rgraph, i3, i5)
       call grph_removeEdge(rgraph, i4, i5)
-      
+
       call grph_insertEdge(rgraph, i1, i9)
       call grph_insertEdge(rgraph, i2, i9)
       call grph_insertEdge(rgraph, i3, i9)
@@ -666,7 +666,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -708,7 +708,7 @@ contains
       call grph_insertEdge(rgraph, i3, i9)
       call grph_insertEdge(rgraph, i6, i7)
       call grph_insertEdge(rgraph, i4, i9)
-      call grph_insertEdge(rgraph, i7, i8)   
+      call grph_insertEdge(rgraph, i7, i8)
 
 
     case(HADAPT_OPR_CRS_2TRIA1TRIA)
@@ -728,10 +728,10 @@ contains
         call grph_removeEdge(rgraph, i2, i4)
         call grph_insertEdge(rgraph, i1, i2)
       end if
-      
+
       ! Delete broken edge (I3,I4)
       call grph_removeEdge(rgraph, i3, i4)
-      
+
 
     case(HADAPT_OPR_CRS_4TRIA1TRIA)
       i1 = rcollection%IquickAccess(1)
@@ -892,7 +892,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -917,7 +917,7 @@ contains
       call grph_removeEdge(rgraph, i6, i7)
       call grph_removeEdge(rgraph, i7, i8)
       call grph_removeEdge(rgraph, i8, i5)
-     
+
       ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
       if (e1 .eq. e5) then
         call grph_removeEdge(rgraph, i1, i5)
@@ -945,12 +945,12 @@ contains
         call grph_removeEdge(rgraph, i1, i8)
         call grph_insertEdge(rgraph, i1, i4)
       end if
-      
+
       ! Add new edges (I1,I3) and (I2,I4)
       call grph_insertEdge(rgraph, i1, i3)
       call grph_insertEdge(rgraph, i2, i4)
- 
-      
+
+
     case(HADAPT_OPR_CRS_4QUAD2QUAD)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -960,7 +960,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -985,29 +985,29 @@ contains
       call grph_removeEdge(rgraph, i6, i7)
       call grph_removeEdge(rgraph, i7, i8)
       call grph_removeEdge(rgraph, i8, i5)
-      
+
       ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i6)
         call grph_removeEdge(rgraph, i3, i6)
         call grph_insertEdge(rgraph, i2, i3)
       end if
-      
+
       ! Delete broken edges (I4,I8) and (I1,I8) and add new edge (I4,I1)
       if (e4 .eq. e8) then
         call grph_removeEdge(rgraph, i4, i8)
         call grph_removeEdge(rgraph, i1, i8)
         call grph_insertEdge(rgraph, i1, i4)
       end if
-      
+
       ! Add new edges (I5,I7),(I1,I7),(I4,I5),(I2,I7) and (I3,I5)
       call grph_insertEdge(rgraph, i5, i7)
       call grph_insertEdge(rgraph, i1, i7)
       call grph_insertEdge(rgraph, i4, i5)
       call grph_insertEdge(rgraph, i2, i7)
       call grph_insertEdge(rgraph, i3, i5)
-      
-      
+
+
     case(HADAPT_OPR_CRS_4QUAD3TRIA)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1017,7 +1017,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -1042,33 +1042,33 @@ contains
       call grph_removeEdge(rgraph, i6, i7)
       call grph_removeEdge(rgraph, i7, i8)
       call grph_removeEdge(rgraph, i8, i5)
-      
+
       ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i6)
         call grph_removeEdge(rgraph, i3, i6)
         call grph_insertEdge(rgraph, i2, i3)
       end if
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Delete broken edges (I4,I8) and (I1,I8) and add new edge (I4,I1)
       if (e4 .eq. e8) then
         call grph_removeEdge(rgraph, i4, i8)
         call grph_removeEdge(rgraph, i1, i8)
         call grph_insertEdge(rgraph, i1, i4)
       end if
-      
+
       ! Add new edges (I3,I5) and (I4,I5)
       call grph_insertEdge(rgraph, i3, i5)
       call grph_insertEdge(rgraph, i4, i5)
-      
-      
+
+
     case(HADAPT_OPR_CRS_4QUAD4TRIA)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1078,7 +1078,7 @@ contains
       i6 = rcollection%IquickAccess(6)
       i7 = rcollection%IquickAccess(7)
       i8 = rcollection%IquickAccess(8)
-      i9 = rcollection%IquickAccess(9)      
+      i9 = rcollection%IquickAccess(9)
 
       e1 = rcollection%IquickAccess(10)
       e2 = rcollection%IquickAccess(11)
@@ -1102,26 +1102,26 @@ contains
       call grph_removeEdge(rgraph, i5, i6)
       call grph_removeEdge(rgraph, i6, i7)
       call grph_removeEdge(rgraph, i7, i8)
-      
+
       ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i6)
         call grph_removeEdge(rgraph, i3, i6)
         call grph_insertEdge(rgraph, i2, i3)
       end if
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Add new edges (I3,I5) and (I3,I8)
       call grph_insertEdge(rgraph, i3, i5)
       call grph_insertEdge(rgraph, i3, i8)
-      
-      
+
+
     case(HADAPT_OPR_CRS_2QUAD1QUAD)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1147,26 +1147,26 @@ contains
       call grph_removeEdge(rgraph, i2, i7)
       call grph_removeEdge(rgraph, i3, i5)
       call grph_removeEdge(rgraph, i4, i5)
-      
+
       ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
       if (e1 .eq. e5) then
         call grph_removeEdge(rgraph, i1, i5)
         call grph_removeEdge(rgraph, i2, i5)
         call grph_insertEdge(rgraph, i1, i2)
       end if
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Add new edges (I1,I3) and (I2,I4)
       call grph_insertEdge(rgraph, i1, i3)
       call grph_insertEdge(rgraph, i2, i4)
-      
-      
+
+
     case(HADAPT_OPR_CRS_2QUAD3TRIA)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1192,19 +1192,19 @@ contains
       call grph_removeEdge(rgraph, i2, i7)
       call grph_removeEdge(rgraph, i3, i5)
       call grph_removeEdge(rgraph, i4, i5)
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Add new edges (I3,I5) and (I4,I5)
       call grph_insertEdge(rgraph, i3, i5)
       call grph_insertEdge(rgraph, i4, i5)
-      
-      
+
+
     case(HADAPT_OPR_CRS_3TRIA1QUAD)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1224,19 +1224,19 @@ contains
       ! Delete broken edges (I3,I5) and (I4,I5)
       call grph_removeEdge(rgraph, i3, i5)
       call grph_removeEdge(rgraph, i4, i5)
-      
+
       ! Delete broken edges (I1,I5) and (I2,I5) and add new edge (I1,I2)
       if (e1 .eq. e5) then
         call grph_removeEdge(rgraph, i1, i5)
         call grph_removeEdge(rgraph, i2, i5)
         call grph_insertEdge(rgraph, i1, i2)
       end if
-      
+
       ! Add new edges (I1,I3) and (I2,I4)
       call grph_insertEdge(rgraph, i1, i3)
       call grph_insertEdge(rgraph, i2, i4)
-      
-      
+
+
     case(HADAPT_OPR_CRS_4TRIA1QUAD)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1260,26 +1260,26 @@ contains
       call grph_removeEdge(rgraph, i1, i6)
       call grph_removeEdge(rgraph, i1, i7)
       call grph_removeEdge(rgraph, i6, i7)
-      
+
       ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i6)
         call grph_removeEdge(rgraph, i3, i6)
         call grph_insertEdge(rgraph, i2, i3)
       end if
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Add new edges (I1,I3) and (I2,I4)
       call grph_insertEdge(rgraph, i1, i3)
       call grph_insertEdge(rgraph, i2, i4)
-      
-      
+
+
     case(HADAPT_OPR_CRS_4TRIA3TRIA2)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1302,18 +1302,18 @@ contains
       ! Delete broken edges (I1,I7) and (I6,I7)
       call grph_removeEdge(rgraph, i1, i7)
       call grph_removeEdge(rgraph, i6, i7)
-      
+
       ! Delete broken edges (I3,I7) and (I4,I7) and add new edge (I3,I4)
       if (e3 .eq. e7) then
         call grph_removeEdge(rgraph, i3, i7)
         call grph_removeEdge(rgraph, i4, i7)
         call grph_insertEdge(rgraph, i3, i4)
       end if
-      
+
       ! Add new edge (I4,I6)
       call grph_insertEdge(rgraph, i4, i6)
-      
-      
+
+
     case(HADAPT_OPR_CRS_4TRIA3TRIA3)
       i1 = rcollection%IquickAccess(1)
       i2 = rcollection%IquickAccess(2)
@@ -1336,14 +1336,14 @@ contains
       ! Delete broken edges (I1,I6) and (I6,I7)
       call grph_removeEdge(rgraph, i1, i6)
       call grph_removeEdge(rgraph, i6, i7)
-      
+
       ! Delete broken edges (I2,I6) and (I3,I6) and add new edge (I2,I3)
       if (e2 .eq. e6) then
         call grph_removeEdge(rgraph, i2, i6)
         call grph_removeEdge(rgraph, i3, i6)
         call grph_insertEdge(rgraph, i2, i3)
       end if
-      
+
       ! Add new edge (I2,I7)
       call grph_insertEdge(rgraph, i2, i7)
 
@@ -1380,11 +1380,11 @@ contains
 
     ! local variables
     type(t_graph), pointer, save :: rgraph
-    
+
 
     ! What operation should be performed?
     select case(iOperation)
-      
+
     case(HADAPT_OPR_INITCALLBACK)
       ! This subroutine assumes that the name of the sparsity pattern
       ! is stored in the first quick access string.
@@ -1393,7 +1393,7 @@ contains
       rgraph => collct_getvalue_graph(rcollection,&
           trim(rcollection%SquickAccess(1)))
 
-      
+
     case(HADAPT_OPR_DONECALLBACK)
       ! Nullify sparsity graph
       nullify(rgraph)
@@ -1404,7 +1404,7 @@ contains
       ! Insert vertex into sparsity graph
       call grph_insertVertex(rgraph, rcollection%IquickAccess(1))
 
-   
+
     case(HADAPT_OPR_REMOVEVERTEX)
       ! Remove vertex from sparsity graph and solution
       if (rcollection%IquickAccess(2) .ne. 0) then
@@ -1414,7 +1414,7 @@ contains
         call grph_removeVertex(rgraph, rcollection%IquickAccess(1))
       end if
 
-      
+
     case default
       call output_line('Unsupported operation!',&
                        OU_CLASS_ERROR, OU_MODE_STD, 'flagship_hadaptCallback3D')

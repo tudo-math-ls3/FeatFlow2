@@ -75,10 +75,19 @@ module euler_basic
 !<constantblock description="Global type of initial solution">
 
   ! zero initial solution
-  integer, parameter, public :: SOLUTION_ZERO     = 0
+  integer, parameter, public :: SOLUTION_ZERO                   = 0
 
-  ! analytical initial solution
-  integer, parameter, public :: SOLUTION_ANALYTIC = 1
+  ! analytical solution: given by pointwise values
+  integer, parameter, public :: SOLUTION_ANALYTIC_POINTVALUE    = 1
+
+  ! graymap profile for solution
+  integer, parameter, public :: SOLUTION_GRAYMAP                = 2
+
+  ! analytical solution: given by consistent L2-projection
+  integer, parameter, public :: SOLUTION_ANALYTIC_L2_CONSISTENT = 3
+
+  ! analytical solution: given by lumped L2-projection
+  integer, parameter, public :: SOLUTION_ANALYTIC_L2_LUMPED     = 4
 
 !</constantblock>
 
@@ -266,6 +275,14 @@ contains
 
       NVARtransformed = 2
 
+    elseif (svariables .eq. 'momentum') then
+
+      NVARtransformed = rproblemLevel%rtriangulation%ndim
+
+    elseif (svariables .eq. 'velocity') then
+
+      NVARtransformed = rproblemLevel%rtriangulation%ndim
+
     else
 
       NVARtransformed = 1
@@ -359,7 +376,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine euler_getVarInterleaveFormat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -632,11 +649,11 @@ contains
       end select
 
     else
-      !$omp parallel do
-      do ieq = 1, neq
-        Dvalue(ieq) = 0.0_DP
-      end do
-      !$omp end parallel do
+      
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarInterleaveFormat')
+      call sys_halt()
+
     end if
 
   end subroutine euler_getVarInterleaveFormat
@@ -645,7 +662,7 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
+  subroutine euler_getVarBlockformat(neq, nvar, cvariable, Ddata, Dvalue)
 
 !<description>
     ! This subroutine extracs a single variable from the vector of
@@ -918,12 +935,11 @@ contains
       end select
 
     else
-      !$omp parallel do
-      do ieq = 1, neq
-        Dvalue(ieq) = 0.0_DP
-      end do
-      !$omp end parallel do
 
+      call output_line('Invalid variable name!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_getVarBlockformat')
+      call sys_halt()
+      
     end if
 
   end subroutine euler_getVarBlockformat

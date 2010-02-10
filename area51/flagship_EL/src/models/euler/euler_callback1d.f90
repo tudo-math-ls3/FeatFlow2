@@ -105,19 +105,19 @@
 !#
 !# 26.) euler_trafoFluxVelocity1d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the velocity in x-direction
+!#         to fluxes for the velocity
 !#
 !# 27.) euler_trafoDiffVelocity1d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the velocity in x-direction
+!#         differences to differences for the velocity
 !#
 !# 28.) euler_trafoFluxMomentum1d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the momentum in x-direction
+!#         to fluxes for the momentum
 !#
 !# 29.) euler_trafoDiffMomentum1d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the momentum in x-direction
+!#         differences to differences for the momentum
 !#
 !# 30.) euler_trafoFluxDenEng1d
 !#      -> Computes the transformation from conservative fluxes

@@ -85,6 +85,9 @@
 !#      -> Solves the primal formulation of the time-dependent
 !#         compressible Euler equations.
 !#
+!# 12.) euler_projectSolution
+!#      -> Performs conservative projection of the solution from
+!#         a given FE-space to another FE-space
 !#
 !# The following auxiliary routines are available:
 !#
@@ -102,6 +105,7 @@ module euler_application
   use boundary
   use boundaryfilter
   use collection
+  use cubature
   use derivatives
   use element
   use euler_basic
@@ -126,6 +130,7 @@ module euler_application
   use pprocindicator
   use pprocsolution
   use problem
+  use scalarpde
   use solveraux
   use spatialdiscretisation
   use statistics
@@ -598,7 +603,7 @@ contains
     integer :: templateMatrix,systemMatrix,jacobianMatrix,consistentMassMatrix
     integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
-    integer :: imatrixFormat,NVARtransformed,ivar,jvar,nvariable
+    integer :: imatrixFormat,ivar,jvar,ivariable,nvariable,nvartransformed
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -1070,27 +1075,30 @@ contains
     if (inviscidAFC > 0) then
       if (rproblemLevel%Rafcstab(inviscidAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
 
-        ! Get number of limiting variables
+        ! Get number of expressions for limiting variables
         nvariable = max(1,&
             parlst_querysubstrings(rparlist,&
             ssectionName, 'slimitingvariable'))
         
         ! Initialise number of limiting variables
-        if (nvariable .gt. 1) then
-          nvartransformed = 1
-        else
+        nvartransformed = 1
+
+        ! Determine maximum number of limiting variables in a single set
+        do ivariable = 1, nvariable
           call parlst_getvalue_string(rparlist,&
               ssectionName, 'slimitingvariable',&
-              slimitingvariable, isubstring=1)
-          nvartransformed = euler_getNVARtransformed(&
-              rproblemLevel, slimitingvariable)
-        end if
-        
+              slimitingvariable, isubstring=ivariable)
+          nvartransformed = max(nvartransformed,&
+              euler_getNVARtransformed(rproblemLevel, slimitingvariable))
+        end do
+
+        ! Initialise stabilisation structure
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
             rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
 
       else
+        ! Resize stabilisation structure
         call afcstab_resizeStabilisation(&
             rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(templateMatrix))
@@ -1187,13 +1195,21 @@ contains
 !</subroutine>
 
     ! local variables
+    type(t_afcstab) :: rafcstab
+    type(t_linearForm) :: rform
+    type(t_vectorBlock) :: rvectorBlock
+    type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
+    type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
+    type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
     type(t_fparser), pointer :: p_rfparser
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression
-    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim
+    integer :: isolutiontype, nexpression, ccubType, nsummedCubType
+    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
+    integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
+
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1202,11 +1218,30 @@ contains
     ! How should the solution be initialized?
     select case(isolutionType)
     case (SOLUTION_ZERO)
+      
+      !-------------------------------------------------------------------------
       ! Initialize solution by zeros
+      !-------------------------------------------------------------------------
+      
       call lsysbl_clearVector(rvector)
 
+      
+    case (SOLUTION_GRAYMAP)
+      
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of a graymap image
+      !-------------------------------------------------------------------------
 
-    case (SOLUTION_ANALYTIC)
+      call output_line('Initialization if solution by graymap image is not yet supported!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+      call sys_halt()
+
+
+    case (SOLUTION_ANALYTIC_POINTVALUE)
+
+      !-------------------------------------------------------------------------
+      ! Initialize the nodal values by the data of an analytical expression
+      !-------------------------------------------------------------------------
 
       ! Initialize total number of expressions
       nexpression = 0
@@ -1278,12 +1313,197 @@ contains
       end do   ! iblock
 
 
+    case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
+          SOLUTION_ANALYTIC_L2_LUMPED)
+
+      !-------------------------------------------------------------------------
+      ! Initialize the FE-function by the L2-projection of the analytical data
+      !-------------------------------------------------------------------------
+
+      ! Initialize total number of expressions
+      nexpression = 0
+
+      ! Compute total number of expressions
+      do iblock = 1, rvector%nblocks
+        nexpression = nexpression + rvector%RvectorBlock(iblock)%NVAR
+      end do
+
+      ! Check if array of solution names is available
+      if (parlst_querysubstrings(rparlist, ssectionName,&
+          'ssolutionname') .lt. nexpression) then
+        call output_line('Invalid number of expressions!',&
+            OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
+        call sys_halt()
+      end if
+
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
+      ! Retrieve the lumped and consistent mass matrices from the
+      ! problem level structure or recompute them on-the-fly.
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'consistentMassMatrix', consistentMassMatrix)
+      
+      if (consistentMassMatrix .gt. 0) then
+        p_rconsistentMassMatrix => rproblemLevel%Rmatrix(consistentMassMatrix)
+      else
+        call bilf_createMatrixStructure(&
+            rvector%p_rblockDiscr%RspatialDiscr(1),&
+            LSYSSC_MATRIX9, rconsistentMassMatrix)
+        call stdop_assembleSimpleMatrix(&
+            rconsistentMassMatrix, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+        p_rconsistentMassMatrix => rconsistentMassMatrix
+      end if
+      
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
+      
+      if (lumpedMassMatrix .gt. 0) then
+        p_rlumpedMassMatrix => rproblemLevel%Rmatrix(lumpedMassMatrix)
+      else
+        call lsyssc_duplicateMatrix(p_rconsistentMassMatrix,&
+            rlumpedMassMatrix, LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_TEMPLATE)
+        call lsyssc_lumpMatrixScalar(rlumpedMassMatrix, LSYSSC_LUMP_DIAG)
+        p_rlumpedMassMatrix => rlumpedMassMatrix
+      end if
+      
+      ! Get the number of refinement levels for summed cubature formula
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'nsummedcubtype', nsummedCubType)
+      
+      ! Set up the linear form
+      rform%itermCount = 1
+      rform%Idescriptors(1) = DER_FUNC
+      
+      ! Attach the simulation time and the name of the 
+      ! function parser to the collection structure
+      rcollection%DquickAccess(1) = dtime
+      rcollection%SquickAccess(1) = "rfparser"
+      
+      !  Initialize number of expressions
+      nexpression = 0
+
+      ! Loop over all blocks of the global solution vector
+      do iblock = 1, rvector%nblocks
+        
+        ! Set pointer to spatial discretisation
+        p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
+
+        ! Enforce using summed cubature formula to obtain accurate results
+        do i = 1, p_rspatialDiscr%inumFESpaces
+          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+              cub_getSummedCubType(&
+              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
+        end do
+        
+        ! Scalar vectors in interleaved format have to be treated differently
+        if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
+
+          ! Get the function name of the component used for evaluating the initial solution.
+          call parlst_getvalue_string(rparlist, ssectionName,&
+              'ssolutionName', ssolutionName, isubstring=nexpression+1)
+
+          ! Set the number of the component used for evaluating the initial solution
+          rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+          
+          ! Assemble the linear form for the scalar subvector
+          call linf_buildVectorScalar2(rform, .true.,&
+              rvector%RvectorBlock(iblock), euler_coeffVectorAnalytic, rcollection)
+
+          ! Increase number of processed expressions
+          nexpression = nexpression + 1
+        else
+
+          ! Convert scalar vector in interleaved format to true block vector
+          call lsysbl_convertScalarBlockVector(&
+              rvector%RvectorBlock(iblock), rvectorBlock)
+
+          ! Loop over all blocks
+          do ivar = 1, rvectorBlock%nblocks
+            
+            ! Get the function name of the component used for evaluating the initial solution.
+            call parlst_getvalue_string(rparlist, ssectionName,&
+                'ssolutionName', ssolutionName, isubstring=nexpression+ivar)
+            
+            ! Set the number of the component used for evaluating the initial solution
+            rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
+
+            ! Assemble the linear form for the scalar subvector
+            call linf_buildVectorScalar2(rform, .true.,&
+                rvectorBlock%RvectorBlock(ivar), euler_coeffVectorAnalytic,&
+                rcollection)
+          end do
+
+          ! Convert block vector back to scalar vector in interleaved format
+          call lsysbl_convertBlockScalarVector(&
+              rvectorBlock,rvector%RvectorBlock(iblock))
+          
+          ! Increase number of processed expressions
+          nexpression = nexpression + rvectorBlock%nblocks
+          
+          ! Release temporal block vector
+          call lsysbl_releaseVector(rvectorBlock)
+        end if
+        
+        ! Compute the lumped L2-projection
+        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+        
+        ! Reset cubature formula to standard value
+        do i = 1, p_rspatialDiscr%inumFESpaces
+          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
+              cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
+        end do
+      end do
+      
+      !-------------------------------------------------------------------------
+      ! Restore contribution of the consistent mass matrix of the L2-projection
+      !-------------------------------------------------------------------------
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
+
+        ! Get parameters from parameter list
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
+        
+        ! Initialise stabilisation structure by hand
+        rafcstab%iSpec= AFCSTAB_UNDEFINED
+        rafcstab%bprelimiting = .false.
+        rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+        call gfsys_initStabilisation(&
+            rproblemLevel%RmatrixBlock(systemMatrix), rafcstab)
+        
+        ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
+        ! callback function for assembling the antidiffusive fluxes since it 
+        ! will not be used for assembling antidiffusive mass fluxes !!!
+        call gfsys_buildFluxFCT(&
+            rproblemLevel%Rmatrix(consistentMassMatrix:consistentMassMatrix),&
+            rafcstab, rvector, rvector, euler_calcFluxFCTScalarDiss1d,&
+            0.0_DP, 0.0_DP, 1.0_DP, .true.,&
+            rproblemLevel%Rmatrix(consistentMassMatrix))
+        
+        ! Attach section name to collection structure
+        rcollection%SquickAccess(1) = ssectionName
+
+        ! Apply flux correction to solution profile
+        call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
+            rvector, rcollection, rafcstab)
+        
+        ! Release stabilisation structure
+        call afcstab_releaseStabilisation(rafcstab)
+      end if
+      
+      ! Release temporal matrices (if any)
+      call lsyssc_releaseMatrix(rconsistentMassMatrix)
+      call lsyssc_releaseMatrix(rlumpedMassMatrix)
+      
+
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
       call sys_halt()
     end select
-
+    
   end subroutine euler_initSolution
 
   !*****************************************************************************
@@ -2468,6 +2688,107 @@ contains
 
   end subroutine euler_solveTransientPrimal
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_projectSolution(rsourceVector, rdestVector)
+    
+!<description>
+    ! This subroutine performs conservative projection of the given solution
+    ! stored in rsourceVector to another FE-space and stores the result in
+    ! rdestVector. An FCT algorithm is used ensure monotonicity preservation.
+!</description>
+
+!<input>
+    ! Source vector
+    type(t_vectorBlock), intent(inout), target :: rsourceVector
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: rdestVector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_linearForm) :: rform
+    type(t_collection) :: rcollection
+    type(t_matrixScalar) :: rmatrix1,rmatrix2
+    type(t_vectorScalar) :: rvector
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP) :: dmass1, dmass2
+    integer :: iblock
+    
+    ! Set up the linear form
+    rform%itermCount = 1
+    rform%Idescriptors(1) = DER_FUNC
+    
+    ! Set up the collection structure
+    call collct_init(rcollection)
+    rcollection%IquickAccess(1) = SYSTEM_BLOCKFORMAT
+    rcollection%p_rvectorQuickAccess1 => rsourceVector
+    
+    ! Assemble the linear form for destination vector
+    do iblock = 1, rdestVector%nblocks
+      
+      ! Create sparsity pattern of mass matrices
+      call bilf_createMatrixStructure(&
+          rsourceVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix1)
+      call bilf_createMatrixStructure(&
+          rdestVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix2)
+
+      ! Create mass matrices
+      call stdop_assembleSimpleMatrix(rmatrix1, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      call stdop_assembleSimpleMatrix(rmatrix2, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      
+      ! Compute the lumped mass matrices
+      call lsyssc_lumpMatrixScalar(rmatrix1, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
+
+      ! Set the number of the scalar subvector to the collection structure
+      rcollection%IquickAccess(2) = iblock
+      
+      ! Assemble the linear form for the scalar subvector
+      call linf_buildVectorScalar2(rform, .true.,&
+          rdestVector%RvectorBlock(iblock), euler_coeffVectorFE, rcollection)
+
+      ! Compute the lumped L2-projection
+      call lsyssc_invertedDiagMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          1.0_DP, rdestVector%RvectorBlock(iblock))
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rsourceVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix1, rsourceVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass1 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rdestVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass2 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      print *, "Density mass", dmass1, dmass2
+      
+      ! Release matrices
+      call lsyssc_releaseMatrix(rmatrix1)
+      call lsyssc_releaseMatrix(rmatrix2)
+
+    end do
+    
+    ! Release the collection structure
+    call collct_done(rcollection)
+
+  end subroutine euler_projectSolution
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES

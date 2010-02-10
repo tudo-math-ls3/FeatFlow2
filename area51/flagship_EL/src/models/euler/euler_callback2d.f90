@@ -116,19 +116,19 @@
 !#
 !# 28.) euler_trafoFluxVelocity2d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the velocity in y-direction
+!#         to fluxes for the velocity
 !#
 !# 29.) euler_trafoDiffVelocity2d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the velocity in y-direction
+!#         differences to differences for the velocity
 !#
 !# 30.) euler_trafoFluxMomentum2d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the momentum in y-direction
+!#         to fluxes for the momentum
 !#
 !# 31.) euler_trafoDiffMomentum2d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the momentum in y-direction
+!#         differences to differences for the momentum
 !#
 !# 32.) euler_trafoFluxDenEng2d
 !#      -> Computes the transformation from conservative fluxes
@@ -165,6 +165,9 @@
 !# 40.) euler_hadaptCallbackBlock2d
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in block format
+!#
+!# 41.) euler_limitEdgewiseVelocity2D
+!#      -> Performs synchronized flux correction for the velocity in 2D
 !#
 !# </purpose>
 !##############################################################################
@@ -2922,15 +2925,19 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: vi,vj
+    real(DP) :: ui,uj,vi,vj
 
     ! velocities
-    vi = U_i(3)/U_i(1)
-    vj = U_j(3)/U_j(1)
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    vi = U_i(3)/U_i(1);   vj = U_j(3)/U_j(1)
+
+    ! velocity fluxes in x-direction
+    G_ij(1) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(1) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
 
     ! velocity fluxes in y-direction
-    G_ij(1) =  (F_ij(3)-vi*F_ij(1))/U_i(1)
-    G_ji(1) = -(F_ij(3)-vj*F_ij(1))/U_j(1)
+    G_ij(2) =  (F_ij(3)-vi*F_ij(1))/U_i(1)
+    G_ji(2) = -(F_ij(3)-vj*F_ij(1))/U_j(1)
     
   end subroutine euler_trafoFluxVelocity2d
 
@@ -2956,8 +2963,11 @@ contains
 !</output>
 !</subroutine>
 
+    ! velocity difference in x-direction
+    U_ij(1) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
+
     ! velocity difference in y-direction
-    U_ij(1) =  U_j(3)/U_j(1)-U_i(3)/U_i(1)
+    U_ij(2) =  U_j(3)/U_j(1)-U_i(3)/U_i(1)
     
   end subroutine euler_trafoDiffVelocity2d
 
@@ -2986,9 +2996,13 @@ contains
 !</output>
 !</subroutine>
 
+    ! momentum fluxes in x-direction
+    G_ij(1) =  F_ij(2)
+    G_ji(1) = -F_ij(2)
+
     ! momentum fluxes in y-direction
-    G_ij(1) =  F_ij(3)
-    G_ji(1) = -F_ij(3)
+    G_ij(2) =  F_ij(3)
+    G_ji(2) = -F_ij(3)
     
   end subroutine euler_trafoFluxMomentum2d
 
@@ -3014,8 +3028,11 @@ contains
 !</output>
 !</subroutine>
 
+    ! momentum difference in x-direction
+    U_ij(1) =  U_j(2)-U_i(2)
+
     ! momentum difference in y-direction
-    U_ij(1) =  U_j(3)-U_i(3)
+    U_ij(2) =  U_j(3)-U_i(3)
     
   end subroutine euler_trafoDiffMomentum2d
 

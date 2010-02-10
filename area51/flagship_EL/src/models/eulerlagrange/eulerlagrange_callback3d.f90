@@ -115,19 +115,19 @@
 !#
 !# 28.) eulerlagrange_trafoFluxVelocity3d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the velocity in z-direction
+!#         to fluxes for the velocity
 !#
 !# 29.) eulerlagrange_trafoDiffVelocity3d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the velocity in z-direction
+!#         differences to differences for the velocity
 !#
 !# 30.) eulerlagrange_trafoFluxMomentum3d
 !#      -> Computes the transformation from conservative fluxes
-!#         to fluxes for the momentum in z-direction
+!#         to fluxes for the momentum
 !#
 !# 31.) eulerlagrange_trafoDiffMomentum3d
 !#      -> Computes the transformation from conservative solution
-!#         differences to differences for the momentum in z-direction
+!#         differences to differences for the momentum
 !#
 !# 32.) eulerlagrange_trafoFluxDenEng3d
 !#      -> Computes the transformation from conservative fluxes
@@ -1204,15 +1204,24 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: wi,wj
+    real(DP) :: ui,uj,vi,vj,wi,wj
 
     ! velocities
-    wi = U_i(4)/U_i(1)
-    wj = U_j(4)/U_j(1)
+    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    vi = U_i(3)/U_i(1);   vj = U_j(3)/U_j(1)
+    wi = U_i(4)/U_i(1);   wj = U_j(4)/U_j(1)
+
+    ! velocity fluxes in x-direction
+    G_ij(1) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
+    G_ji(1) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+
+    ! velocity fluxes in y-direction
+    G_ij(2) =  (F_ij(3)-vi*F_ij(1))/U_i(1)
+    G_ji(2) = -(F_ij(3)-vj*F_ij(1))/U_j(1)
 
     ! velocity fluxes in z-direction
-    G_ij(1) =  (F_ij(4)-wi*F_ij(1))/U_i(1)
-    G_ji(1) = -(F_ij(4)-wj*F_ij(1))/U_j(1)
+    G_ij(3) =  (F_ij(4)-wi*F_ij(1))/U_i(1)
+    G_ji(3) = -(F_ij(4)-wj*F_ij(1))/U_j(1)
     
   end subroutine eulerlagrange_trafoFluxVelocity3d
 
@@ -1238,8 +1247,14 @@ contains
 !</output>
 !</subroutine>
 
+    ! velocity difference in x-direction
+    U_ij(1) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
+
+    ! velocity difference in y-direction
+    U_ij(2) =  U_j(3)/U_j(1)-U_i(3)/U_i(1)
+
     ! velocity difference in z-direction
-    U_ij(1) =  U_j(4)/U_j(1)-U_i(4)/U_i(1)
+    U_ij(3) =  U_j(4)/U_j(1)-U_i(4)/U_i(1)
     
   end subroutine eulerlagrange_trafoDiffVelocity3d
 
@@ -1268,9 +1283,17 @@ contains
 !</output>
 !</subroutine>
 
+    ! momentum fluxes in x-direction
+    G_ij(1) =  F_ij(2)
+    G_ji(1) = -F_ij(2)
+
+    ! momentum fluxes in y-direction
+    G_ij(2) =  F_ij(3)
+    G_ji(2) = -F_ij(3)
+
     ! momentum fluxes in z-direction
-    G_ij(1) =  F_ij(4)
-    G_ji(1) = -F_ij(4)
+    G_ij(3) =  F_ij(4)
+    G_ji(3) = -F_ij(4)
     
   end subroutine eulerlagrange_trafoFluxMomentum3d
 
@@ -1295,6 +1318,12 @@ contains
     real(DP), dimension(:), intent(out) :: U_ij
 !</output>
 !</subroutine>
+
+    ! momentum difference in x-direction
+    U_ij(1) =  U_j(2)-U_i(2)
+
+    ! momentum difference in y-direction
+    U_ij(2) =  U_j(3)-U_i(3)
 
     ! momentum difference in z-direction
     U_ij(1) =  U_j(4)-U_i(4)

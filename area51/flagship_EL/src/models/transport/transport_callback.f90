@@ -2722,6 +2722,7 @@ contains
     ! local variables
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
+    type(t_vectorBlock), pointer :: p_rpredictor
     real(DP) :: dweight
     integer :: transportMatrix
     integer :: consistentMassMatrix, lumpedMassMatrix
@@ -2777,22 +2778,32 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT,&
           AFCSTAB_FEMFCT_ITERATIVE)
 
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+
       call parlst_getvalue_int(p_rparlist,&
           rcollection%SquickAccess(1),&
           'imassantidiffusiontype', imassantidiffusiontype)
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildConvVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rsolution, rtimestep%theta, dweight, .true., rrhs,&
+        call gfsc_buildFluxFCT(&
             rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, rsolution, rtimestep%theta,&
+            rtimestep%dStep, 1.0_DP, .true.,&
             rproblemLevel%Rmatrix(consistentMassMatrix))
       else
+        call gfsc_buildFluxFCT(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rsolution, rsolution, rtimestep%theta,&
+            rtimestep%dStep, 1.0_DP, .true.)
+        
+        ! Perform flux correction
         call gfsc_buildConvVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rsolution, rtimestep%theta, dweight, .true., rrhs,&
-            rproblemLevel%Rafcstab(convectionAFC))
+            rproblemLevel%Rafcstab(convectionAFC),&
+            p_rpredictor, dweight, .false.,&
+            AFCSTAB_FCTALGO_STANDARD, rrhs)
       end if
 
     case (AFCSTAB_FEMTVD)
@@ -3229,8 +3240,8 @@ contains
             AFCSTAB_FEMFCT_ITERATIVE,&
             AFCSTAB_FEMFCT_IMPLICIT)
 
-        ! Set pointer to low-order predictor
-        p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+        ! Set pointer to predictor
+        p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
         ! Compute low-order predictor ...
         if (ite .eq. 0) then
@@ -3257,14 +3268,12 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rsolution, rtimestep%theta,&
               rtimestep%dStep, 1.0_DP, (ite .eq. 0),&
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsc_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               rsolution, rsolution, rtimestep%theta,&
               rtimestep%dStep, 1.0_DP, (ite .eq. 0))
@@ -4186,8 +4195,8 @@ contains
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to low-order predictor
-    p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%RnodalBlockVectors(1)
+    ! Set pointer to predictor
+    p_rpredictor => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
 
     ! Compute the preconditioner
     call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
@@ -4205,14 +4214,12 @@ contains
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
       call gfsc_buildFluxFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC),&
           p_rpredictor, rsolution, rtimestepAux%theta,&
           rtimestepAux%dStep, 1.0_DP, .true.,&
           rproblemLevel%Rmatrix(consistentMassMatrix))
     else
       call gfsc_buildFluxFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC),&
           p_rpredictor, rsolution, rtimestepAux%theta,&
           rtimestepAux%dStep, 1.0_DP, .true.)
@@ -4335,8 +4342,8 @@ contains
 
         ! Evaluate all coefficients using the function parser
         do iel = 1, nelements
-          call fparser_evalFunction(p_rfparser, icomp, 2, Dpoints(:,:&
-              ,iel), Dcoefficients(itermCount,:,iel))
+          call fparser_evalFunction(p_rfparser, icomp, 2,&
+              Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
         end do
 
       else

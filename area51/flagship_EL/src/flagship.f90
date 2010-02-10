@@ -22,6 +22,20 @@
 !# 1.) Remove the old splib (ILU-k) from the solver module and replace it
 !#     by the routines from the iluk.f90 module.
 !#
+!# 2.) Prelimiting does not work for FEM-FCT algorithms except for the
+!#     linearized version. We still need to think about how to assemble
+!#     the fluxes for prelimiting.
+!#
+!# 3.) FEM-FCT algorithms for Euler model are not working except for the
+!#     linearized version.
+!#
+!# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
+!#     fixed (it was based on the fluxes but now it has to be based on the
+!#     edgewise correciton factors).
+!#
+!# 5.) Modify Z-pinch application so that it uses the new implementation
+!#     of the linearized FCT algorithm with failsafe strategy.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -38,9 +52,9 @@ program flagship
   use transport_application
   use zpinch_application
   use eulerlagrange_application
-  
+
   implicit none
-  
+
   ! global parameter list
   type(t_parlist) :: rparlist
 
@@ -55,10 +69,10 @@ program flagship
   character(LEN=8)  :: sdate
   integer, external :: signal_SIGINT, signal_SIGQUIT
 
-  
+
   ! Initialize Feat2 subsystem
   call system_init()
-  
+
   ! Set system halt mode
   sys_haltmode = SYS_HALT_THROWFPE
 
@@ -71,7 +85,7 @@ program flagship
 
   ! Initialize function parser
   call fparser_init()
-  
+
   ! Initialize signal handler for SIGINT and SIGQUIT
   call fsignal(SIGINT, signal_SIGINT)
   call fsignal(SIGQUIT, signal_SIGQUIT)
@@ -89,7 +103,7 @@ program flagship
   call output_line('  Authors:  Dmitri Kuzmin, Matthias Moeller')
   call output_line('            Institute of Applied Mathematics')
   call output_line('            Dortmund University of Technology')
-  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany') 
+  call output_line('            Vogelpothsweg 87, 44227 Dortmund, Germany')
   call output_separator(OU_SEP_STAR)
   call getenv('HOST',cbuffer); hostname = adjustl(cbuffer)
   call output_line('  Hostname:        '//trim(hostname))
@@ -105,7 +119,7 @@ program flagship
     call output_lbrk()
     call sys_halt()
   end if
-  
+
   ! Initialize parameter list from file
   call get_command_argument(command_argument_count(), cbuffer)
   sparameterfileName = adjustl(cbuffer)
@@ -137,11 +151,11 @@ program flagship
     call eulerlagrange_app(rparlist)
 
   else
-  
+
     call output_line('Invalid application name!',&
                      OU_CLASS_WARNING,OU_MODE_STD,'flagship')
     call sys_halt()
-    
+
   end if
 
   ! Release parameter list
@@ -157,7 +171,7 @@ program flagship
 
   ! Close logfile
   call output_done()
-  
+
 end program flagship
 
 !*****************************************************************************
@@ -188,16 +202,16 @@ function signal_SIGINT(signum) result(sigcount)
 
   ! local variables
   integer, save :: icount = 0
-  
+
   sigcount = icount
 
   if (signum .eq. -1) then
-    
+
     ! Reset counter
     icount = 0
 
   elseif (signum .eq. SIGINT) then
-    
+
     ! Increase counter
     icount = icount+1
     if (icount .ge. 3) then

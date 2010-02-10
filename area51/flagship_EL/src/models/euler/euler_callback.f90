@@ -51,6 +51,23 @@
 !#     -> Calculates the contribution of the antidiffusive fluxes
 !#        limited by the FCT algorithm and applies them to the residual
 !#
+!# 10.) euler_limitEdgewiseVelocity
+!#      -> Performs synchronized flux correction for the velocity
+!#
+!# 11.) euler_limitEdgewiseMomentum
+!#      -> Performs synchronized flux correction for the momentum
+!#
+!# 12.) euler_coeffVectorFE
+!#      -> Callback routine for the evaluation of linear forms
+!#         using a given FE-solution for interpolation
+!#
+!# 13.) euler_coeffVectorAnalytic
+!#      -> Callback routine for the evaluation of linear forms
+!#         using a given FE-solution for interpolation
+!#
+!# 14.) euler_calcMassFluxFCT
+!#      -> Calculates the antidiffusive mass flux for FCT algorithm
+!#
 !# Frequently asked questions?
 !#
 !# 1.) What is the magic behind subroutine 'transp_nlsolverCallback'?
@@ -107,6 +124,11 @@ module euler_callback
   public :: euler_calcLinearisedFCT
   public :: euler_calcFluxFCT
   public :: euler_calcCorrectionFCT
+  public :: euler_limitEdgewiseVelocity
+  public :: euler_limitEdgewiseMomentum
+  public :: euler_coeffVectorFE
+  public :: euler_coeffVectorAnalytic
+  public :: euler_calcMassFluxFCT
 
 contains
 
@@ -1721,8 +1743,8 @@ contains
           AFCSTAB_FEMFCT_IMPLICIT)
 
 
-      ! Set pointer to low-order predictor
-      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
+      ! Set pointer to predictor
+      p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
 
       ! Compute low-order predictor ...
       if (ite .eq. 0) then
@@ -2267,9 +2289,16 @@ contains
 
     ! local variables
     type(t_timestep) :: rtimestepAux
-    type(t_parlist), pointer :: p_rparlist
     type(t_vectorBlock), pointer :: p_rpredictor
-    integer :: inviscidAFC, lumpedMassMatrix
+    type(t_vectorBlock) :: rlowBound, rupBound
+    type(t_vectorScalar) :: rbeta, rvectorScalar
+    type(t_parlist), pointer :: p_rparlist
+    real(DP), dimension(:), pointer :: p_ML, p_Dalpha, p_Dbeta, p_Dflux
+    real(DP), dimension(:), pointer :: p_Ddata, p_DlowBound, p_DupBound
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+    character(len=SYS_STRLEN) :: sfailsafevariable
+    integer :: inviscidAFC, lumpedMassMatrix, isystemFormat
+    integer :: ifailsafe, nfailsafe, ivariable, nvariable
 
     ! Get parameters from parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2287,18 +2316,61 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'nfailsafe', nfailsafe)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(1),&
+        'isystemformat', isystemFormat)
+    
+    !---------------------------------------------------------------------------
+    ! Prepare failsafe flux correction
+    !---------------------------------------------------------------------------
+    if (nfailsafe .gt. 0) then
+ 
+      ! Get number of failsafe variables
+      nvariable = max(1,&
+          parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'sfailsafevariable'))
+      
+      ! Create block vectors for the upper and lower bounds
+      call lsysbl_createVectorBlock(rlowBound,&
+          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
+      call lsysbl_createVectorBlock(rupBound,&
+          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
+      
+      ! Initialise lower bounds from low-order solution
+      do ivariable = 1, nvariable
+        
+        ! Get variable declaration string
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'sfailsafevariable',&
+            sfailsafevariable, isubstring=ivariable)
+        
+        ! Get variable data from low-order solution
+        call euler_getVariable(rsolution, trim(sfailsafevariable),&
+            rlowBound%RvectorBlock(ivariable))
+      end do
+      
+      ! Copy lower bounds to upper bounds
+      call lsysbl_copyVector(rlowBound, rupBound)
+    end if
+    
+    !---------------------------------------------------------------------------
+    ! Linearised FEM-FCT algorithm
+    !---------------------------------------------------------------------------
 
     ! Initialize dummy timestep
     rtimestepAux%dStep = 1.0_DP
     rtimestepAux%theta = 0.0_DP
 
-    ! Set pointer to low-order predictor
-    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%RnodalBlockVectors(1)
-
+    ! Set pointer to predictor
+    p_rpredictor => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+    
     ! Compute low-order "right-hand side" without theta parameter
     call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
         rsolver, rsolution, p_rpredictor, rcollection, rsource)
-    
+
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2307,13 +2379,106 @@ contains
     ! Compute the raw antidiffusive fluxes
     call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
-
-    ! Apply linearised FEM-FCT algorithm
+    
+    ! Apply FEM-FCT correction
     call euler_calcCorrectionFCT(rproblemLevel,&
         rsolution, rtimestep%dStep, .false.,&
         AFCSTAB_FCTALGO_STANDARD+&
         AFCSTAB_FCTALGO_SCALEBYMASS,&
         rsolution, rcollection)
+    
+    !---------------------------------------------------------------------------
+    ! Perform failsafe flux correction
+    !---------------------------------------------------------------------------
+    if (nfailsafe .gt. 0) then
+      
+      ! Set pointers
+      call afcstab_getbase_IverticesAtEdge(&
+          rproblemLevel%Rafcstab(inviscidAFC), p_IverticesAtEdge)
+      
+      ! Compute upper and lower bounds from low-order solution
+      do ivariable = 1, nvariable
+        
+        ! Make a copy of the scalar subvector
+        call lsyssc_copyVector(rlowBound%RvectorBlock(ivariable), rvectorScalar)
+
+        ! Set pointers
+        call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
+        call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
+        call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+        
+        ! Compute bounds for variable
+        call computeBounds(p_IverticesAtEdge, p_Ddata, p_DlowBound, p_DupBound)
+      end do
+      
+      ! Make a copy of the flux corrected predictor
+      call lsysbl_copyVector(rsolution, p_rpredictor)
+      
+      ! Initialise the edgewise correction factors
+      call lsyssc_createVector(rbeta,&
+          rproblemLevel%Rafcstab(inviscidAFC)%NEDGE, .true.)
+      
+      ! Set pointers
+      call lsyssc_getbase_double(rbeta, p_Dbeta)
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_Dalpha)
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorFlux, p_Dflux)
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
+
+      ! Failsafe steps
+      do ifailsafe = 1, nfailsafe
+
+        ! Loop over failsafe variables
+        do ivariable = 1, nvariable
+          
+          ! Get variable declaration string
+          call parlst_getvalue_string(p_rparlist,&
+              rcollection%SquickAccess(1), 'sfailsafevariable',&
+              sfailsafevariable, isubstring=ivariable)
+          
+          ! Get variable data flux corrected solution
+          call euler_getVariable(rsolution, trim(sfailsafevariable), rvectorScalar)
+          
+          ! Set pointers
+          call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
+          call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
+          call lsyssc_getbase_double(rvectorScalar, p_Ddata)
+          
+          ! Compute failsafe correction factors
+          call computeFailsafe(p_IverticesAtEdge,&
+              rtimestep%dStep*real(ifailsafe, DP)/real(nfailsafe, DP),&
+              p_Ddata, p_DlowBound, p_DupBound, 1e-8_DP, p_Dbeta)
+        end do
+        
+        ! Restore flux correction solution
+        call lsysbl_copyVector(p_rpredictor, rsolution)
+        call lsysbl_getbase_double(rsolution, p_Ddata)
+        
+        ! Apply correction factors to solution vector
+        if (isystemFormat .eq. SYSTEM_INTERLEAVEFORMAT) then
+          call applyFailsafeInterleaveFormat(p_IverticesAtEdge,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
+              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
+        else
+          call applyFailsafeBlockFormat(p_IverticesAtEdge,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
+              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
+              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
+        end if
+      end do
+
+      ! Release temporal vector
+      call lsysbl_releaseVector(rlowBound)
+      call lsysbl_releaseVector(rupBound)
+      call lsyssc_releaseVector(rbeta)
+      call lsyssc_releaseVector(rvectorScalar)
+    end if
+    
 
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
@@ -2329,6 +2494,141 @@ contains
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
           rtimestep%dTime, euler_calcBoundaryvalues3d)
     end select
+
+  contains
+    
+    ! Here are some internal working routines 
+    
+    !**************************************************************
+    ! Compute the upper and lower bounds
+    
+    subroutine computeBounds(IverticesAtEdge,&
+        Dx, DlowBound, DupBound)
+
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:), intent(in) :: Dx
+      
+      real(DP), dimension(:), intent(inout) :: DlowBound, DupBound
+
+      ! local variables
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, size(IverticesAtEdge,2)
+
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+        
+        DlowBound(i) = min(DlowBound(i), Dx(j))
+        DlowBound(j) = min(DlowBound(j), Dx(i))
+        DupBound(i)  = max(DupBound(i),  Dx(j))
+        DupBound(j)  = max(DupBound(j),  Dx(i))
+      end do
+
+    end subroutine computeBounds
+
+    !**************************************************************
+    ! Compute the failsafe correction factors
+    
+    subroutine computeFailsafe(IverticesAtEdge,&
+        dscale, Dx, DlowBound, DupBound, dtolerance, Dbeta)
+      
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:), intent(in) :: Dx, Dlowbound, DupBound
+      real(DP), intent(in) :: dscale, dtolerance
+      
+      real(DP), dimension(:), intent(inout) :: Dbeta
+      
+      ! local variables
+      integer :: iedge,i,j
+      
+      ! Loop over all edges
+      !$omp parallel do private(i,j)
+      do iedge = 1, size(IverticesAtEdge,2)
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        if ((Dx(i) .lt. DlowBound(i)-dtolerance) .or.&
+            (Dx(j) .lt. DlowBound(j)-dtolerance) .or.&
+            (Dx(i) .gt. DupBound(i)+dtolerance) .or.&
+            (Dx(j) .gt. DupBound(j)+dtolerance)) Dbeta(iedge) = dscale
+      end do
+      !$omp end parallel do
+
+    end subroutine computeFailsafe
+
+    !**************************************************************
+    ! Apply the failsafe correction factors
+    ! The data vecto is stored in interleave format
+
+    subroutine applyFailsafeInterleaveFormat(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
+      
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      integer, intent(in) :: NEDGE, NEQ, NVAR
+      
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dx
+      
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, size(IverticesAtEdge,2)
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute portion of corrected antidiffusive flux
+        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+
+        ! Remove flux from solution
+        Dx(:,i) = Dx(:,i) - F_ij/ML(i)
+        Dx(:,j) = Dx(:,j) + F_ij/ML(j)
+      end do
+      
+    end subroutine applyFailsafeInterleaveFormat
+
+    !**************************************************************
+    ! Apply the failsafe correction factors
+    ! The data vecto is stored in interleave format
+
+    subroutine applyFailsafeBlockFormat(IverticesAtEdge,&
+        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
+      
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
+      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+      integer, intent(in) :: NEDGE, NEQ, NVAR
+      
+      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dx
+      
+      ! local variables
+      real(DP), dimension(NVAR) :: F_ij
+      integer :: iedge,i,j
+
+      ! Loop over all edges
+      do iedge = 1, size(IverticesAtEdge,2)
+        
+        ! Get node numbers
+        i  = IverticesAtEdge(1, iedge)
+        j  = IverticesAtEdge(2, iedge)
+
+        ! Compute portion of corrected antidiffusive flux
+        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
+
+        ! Remove flux from solution
+        Dx(i,:) = Dx(i,:) - F_ij/ML(i)
+        Dx(j,:) = Dx(j,:) + F_ij/ML(j)
+      end do
+      
+    end subroutine applyFailsafeBlockFormat
 
   end subroutine euler_calcLinearisedFCT
 
@@ -2420,7 +2720,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
@@ -2428,7 +2727,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss1d,&
@@ -2439,7 +2737,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
@@ -2447,7 +2744,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss2d,&
@@ -2458,7 +2754,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
@@ -2466,7 +2761,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTScalarDiss3d,&
@@ -2484,7 +2778,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
@@ -2492,7 +2785,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss1d,&
@@ -2503,7 +2795,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
@@ -2511,7 +2802,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss2d,&
@@ -2522,7 +2812,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
@@ -2530,7 +2819,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTTensorDiss3d,&
@@ -2548,7 +2836,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
@@ -2556,7 +2843,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov1d,&
@@ -2567,7 +2853,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
@@ -2575,7 +2860,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov2d,&
@@ -2586,7 +2870,6 @@ contains
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
@@ -2594,7 +2877,6 @@ contains
               rproblemLevel%Rmatrix(consistentMassMatrix))
         else
           call gfsys_buildFluxFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC),&
               rsolution1, rsolution2, euler_calcFluxFCTRusanov3d,&
@@ -2616,7 +2898,7 @@ contains
 !<subroutine>
 
   subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
-      dscale, bclear, ioperationSpec, rresidual, rcollection)
+      dscale, bclear, ioperationSpec, rresidual, rcollection, rafcstab)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2624,6 +2906,9 @@ contains
 !</description>
 
 !<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
     ! solution vector
     type(t_vectorBlock), intent(in) :: rsolution
 
@@ -2642,22 +2927,24 @@ contains
 !</input>
 
 !<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
     ! residual vector
     type(t_vectorBlock), intent(inout) :: rresidual
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
+
+    ! OPTIONAL: stabilisation structure
+    type(t_afcstab), intent(inout), optional, target :: rafcstab
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     type(t_parlist), pointer :: p_rparlist
+    type(t_afcstab), pointer :: p_rafcstab
     character(len=SYS_STRLEN) :: slimitingvariable
     integer(I32) :: iopSpec
-    integer :: inviscidAFC, lumpedMassMatrix, ivariable, nvariable
+    integer :: inviscidAFC, lumpedMassMatrix
+    integer :: ivariable, nvariable, nvartransformed
 
 
     ! Get parameters from parameter list
@@ -2666,10 +2953,17 @@ contains
     ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
-        'inviscidAFC', inviscidAFC)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
         'lumpedmassmatrix', lumpedmassmatrix)
+    
+    ! Set pointer to stabilisation structure
+    if (present(rafcstab)) then
+      p_rafcstab => rafcstab
+    else
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(1),&
+          'inviscidAFC', inviscidAFC)
+      p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
+    end if
 
     ! Get number of limiting variables
     nvariable = max(1,&
@@ -2693,6 +2987,9 @@ contains
           rcollection%SquickAccess(1), 'slimitingvariable',&
           slimitingvariable, isubstring=ivariable)
 
+      ! Get number of variables to be limited simultaneously
+      nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
+
       ! What type of flux transformation is applied?
       if (trim(slimitingvariable) .eq. 'density') then
 
@@ -2700,21 +2997,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDensity1d, euler_trafoDiffDensity1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDensity2d, euler_trafoDiffDensity2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDensity3d, euler_trafoDiffDensity3d)
         end select
 
@@ -2724,21 +3018,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxEnergy1d, euler_trafoDiffEnergy1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxEnergy2d, euler_trafoDiffEnergy2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxEnergy3d, euler_trafoDiffEnergy3d)
         end select
 
@@ -2748,77 +3039,66 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxPressure1d, euler_trafoDiffPressure1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxPressure2d, euler_trafoDiffPressure2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxPressure3d, euler_trafoDiffPressure3d)
         end select
 
-      elseif (trim(slimitingvariable) .eq. 'velocity_x') then
+      elseif (trim(slimitingvariable) .eq. 'velocity') then
 
-        ! Apply FEM-FCT algorithm for x-velocity fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxVelocity1d, euler_trafoDiffVelocity1d)
-        
-      elseif (trim(slimitingvariable) .eq. 'velocity_y') then
+        ! Apply FEM-FCT algorithm for velocity fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxVelocity1d, euler_trafoDiffVelocity1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxVelocity2d, euler_trafoDiffVelocity2d,&
+              fcb_limitEdgewise=euler_limitEdgewiseVelocity)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxVelocity3d, euler_trafoDiffVelocity3d,&
+              fcb_limitEdgewise=euler_limitEdgewiseVelocity)
+        end select
 
-        ! Apply FEM-FCT algorithm for y-velocity fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxVelocity2d, euler_trafoDiffVelocity2d)
+      elseif (trim(slimitingvariable) .eq. 'momentum') then
 
-      elseif (trim(slimitingvariable) .eq. 'velocity_z') then
-
-        ! Apply FEM-FCT algorithm for z-velocity fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxVelocity3d, euler_trafoDiffVelocity3d)
-        
-      elseif (trim(slimitingvariable) .eq. 'momentum_x') then
-
-        ! Apply FEM-FCT algorithm for x-momentum fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxMomentum1d, euler_trafoDiffMomentum1d)
-
-      elseif (trim(slimitingvariable) .eq. 'momentum_y') then
-
-        ! Apply FEM-FCT algorithm for y-momentum fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxMomentum2d, euler_trafoDiffMomentum2d)
-
-      elseif (trim(slimitingvariable) .eq. 'momentum_z') then
-
-        ! Apply FEM-FCT algorithm for z-momentum fluxes
-        call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
-            rsolution, dscale, bclear, iopSpec, rresidual,&
-            euler_trafoFluxMomentum3d, euler_trafoDiffMomentum3d)
+        ! Apply FEM-FCT algorithm for momentum fluxes
+        select case(rproblemLevel%rtriangulation%ndim)
+        case (NDIM1D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxMomentum1d, euler_trafoDiffMomentum1d)
+        case (NDIM2D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxMomentum2d, euler_trafoDiffMomentum2d,&
+              fcb_limitEdgewise=euler_limitEdgewiseMomentum)
+        case (NDIM3D)
+          call gfsys_buildDivVectorFCT(&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
+              euler_trafoFluxMomentum3d, euler_trafoDiffMomentum3d,&
+              fcb_limitEdgewise=euler_limitEdgewiseMomentum)
+        end select
         
       elseif (trim(slimitingvariable) .eq. 'density,energy') then
 
@@ -2826,21 +3106,18 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenEng1d, euler_trafoDiffDenEng1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenEng2d, euler_trafoDiffDenEng2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenEng3d, euler_trafoDiffDenEng3d)
         end select
 
@@ -2850,55 +3127,71 @@ contains
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPre1d, euler_trafoDiffDenPre1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPre2d, euler_trafoDiffDenPre2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPre3d, euler_trafoDiffDenPre3d)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
 
+        nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
+
         ! Apply FEM-FCT algorithm for full conservative fluxes
         call gfsys_buildDivVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
             rsolution, dscale, bclear, iopSpec, rresidual)
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure,velocity') then
+
+        nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
 
         ! Apply FEM-FCT algorithm for density, velocity and pressure fluxes
         select case(rproblemLevel%rtriangulation%ndim)
         case (NDIM1D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPreVel1d, euler_trafoDiffDenPreVel1d)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPreVel2d, euler_trafoDiffDenPreVel2d)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
-              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-              rproblemLevel%Rafcstab(inviscidAFC),&
-              rsolution, dscale, bclear, iopSpec, rresidual,&
+              rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+              rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
               euler_trafoFluxDenPreVel3d, euler_trafoDiffDenPreVel3d)
         end select
+
+      elseif (trim(slimitingvariable) .eq. 'none') then
+        
+        ! Apply raw antidiffusive fluxes without correction
+        iopSpec = ioperationSpec
+        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_ADINCREMENTS))
+        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_BOUNDS))
+        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITNODAL))
+        iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
+        
+        ! Enforce existence of edgewise correction factors
+        p_rafcstab%iSpec = ior(p_rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER)
+
+        call gfsys_buildDivVectorFCT(&
+            rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
+            rsolution, dscale, bclear, iopSpec, rresidual)
+        
+        ! Nothing more needs to be done
+        return
 
       else
         call output_line('Invalid type of flux transformation!',&
@@ -2925,11 +3218,622 @@ contains
       iopSpec = iand(iopSpec, not(AFCSTAB_FCTALGO_LIMITEDGE))
       
       call gfsys_buildDivVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
           rsolution, dscale, bclear, iopSpec, rresidual)
     end if
 
   end subroutine euler_calcCorrectionFCT
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
+      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
+      fcb_calcFluxTransformation, Dflux0, rcollection)
+
+!<description>
+    ! This subroutine computes the edgewise correction factors
+    ! for the velocity vector in synchronized fashion.
+    ! Note that this subroutine is designed for vectors in
+    ! interleave and block format, whereby the concrete format
+    ! is determined by means of the variables ndim1 and ndim2.
+!</description>
+
+!<input>
+    ! Number of edges
+    integer, intent(in) :: NEDGE
+    
+    ! Number of nodes
+    integer, intent(in) :: NEQ
+    
+    ! Number of solution variables
+    integer, intent(IN) :: NVAR
+
+    ! Number of transformed variables
+    integer, intent(IN) :: NVARtransformed
+
+    ! Dimensions of the solution vector
+    integer, intent(in) :: ndim1, ndim2
+
+    ! Solution used for flux transformation
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
+
+    ! Raw antidiffusive flux
+    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+
+    ! Nodal correction factors
+    real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
+
+    ! Edge data structure
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! OPTIONAL: callback function to compute variable transformation
+    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    optional :: fcb_calcFluxTransformation
+
+    ! OPTIONAL: Antidiffusive flux for constraining
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+!</intput>
+
+!<inputoutput>
+    ! Edgewise correction factors
+    real(DP), dimension(:), intent(inout) :: Dalpha
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP) :: alpha_ij
+    integer :: iedge,i,j
+    
+    ! Do we have to use the explicit fluxes as constraints?
+    if (present(Dflux0)) then
+      print *, "Not implemented yet"
+      stop
+      
+    else
+
+      if ((ndim1 .eq. NVAR) .and. (ndim2 .eq. NEQ)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is given in interleave format
+        !-----------------------------------------------------------------------
+
+        ! Loop over all edges
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers and matrix positions
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Compute transformed velocity fluxes
+          call fcb_calcFluxTransformation(&
+              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          
+          ! Compute edgewise correction factors
+          R_ij = min(R_ij, R_ji)
+          
+          ! Compute velocity average
+          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
+                        Dx(2:NVARtransformed+1,j)/Dx(1,j))
+          
+          ! Compute correction factor
+          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+          
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+        end do
+
+      elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is given in block format
+        !-----------------------------------------------------------------------
+
+        ! Loop over all edges
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers and matrix positions
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Compute transformed velocity fluxes
+          call fcb_calcFluxTransformation(&
+              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+          
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          
+          ! Compute edgewise correction factors
+          R_ij = min(R_ij, R_ji)
+          
+          ! Compute velocity average
+          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
+                        Dx(j,2:NVARtransformed+1)/Dx(j,1))
+          
+          ! Compute correction factor
+          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+          
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+        end do
+
+      else
+        
+        call output_line('Invalid system format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_limitEdgewiseVelocity')
+        call sys_halt()
+        
+      end if
+    end if
+    
+  end subroutine euler_limitEdgewiseVelocity
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
+      NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
+      fcb_calcFluxTransformation, Dflux0, rcollection)
+
+!<description>
+    ! This subroutine computes the edgewise correction factors
+    ! for the momentum vector in synchronized fashion.
+    ! Note that this subroutine is designed for vectors in
+    ! interleave and block format, whereby the concrete format
+    ! is determined by means of the variables ndim1 and ndim2.
+!</description>
+
+!<input>
+    ! Number of edges
+    integer, intent(in) :: NEDGE
+    
+    ! Number of nodes
+    integer, intent(in) :: NEQ
+    
+    ! Number of solution variables
+    integer, intent(IN) :: NVAR
+
+    ! Number of transformed variables
+    integer, intent(IN) :: NVARtransformed
+
+    ! Dimensions of the solution vector
+    integer, intent(in) :: ndim1, ndim2
+
+    ! Solution used for flux transformation
+    real(DP), dimension(ndim1,ndim2), intent(in) :: Dx
+
+    ! Raw antidiffusive flux
+    real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
+
+    ! Nodal correction factors
+    real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
+
+    ! Edge data structure
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! OPTIONAL: callback function to compute variable transformation
+    include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
+    optional :: fcb_calcFluxTransformation
+
+    ! OPTIONAL: Antidiffusive flux for constraining
+    real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
+!</intput>
+
+!<inputoutput>
+    ! Edgewise correction factors
+    real(DP), dimension(:), intent(inout) :: Dalpha
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP) :: alpha_ij
+    integer :: iedge,i,j
+    
+    ! Do we have to use the explicit fluxes as constraints?
+    if (present(Dflux0)) then
+      print *, "Not implemented yet"
+      stop
+      
+    else
+
+      if ((ndim1 .eq. NVAR) .and. (ndim2 .eq. NEQ)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is given in interleave format
+        !-----------------------------------------------------------------------
+
+        ! Loop over all edges
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers and matrix positions
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Compute transformed velocity fluxes
+          call fcb_calcFluxTransformation(&
+              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          
+          ! Compute edgewise correction factors
+          R_ij = min(R_ij, R_ji)
+          
+          ! Compute momentum average
+          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
+                        Dx(2:NVARtransformed+1,j))
+          
+          ! Compute correction factor
+          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+          
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+        end do
+
+      elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
+
+        !-----------------------------------------------------------------------
+        ! The vector is goven in block format
+        !-----------------------------------------------------------------------
+
+        ! Loop over all edges
+        do iedge = 1, NEDGE
+          
+          ! Get node numbers and matrix positions
+          i  = IverticesAtEdge(1, iedge)
+          j  = IverticesAtEdge(2, iedge)
+          
+          ! Compute transformed velocity fluxes
+          call fcb_calcFluxTransformation(&
+              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+          
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          
+          ! Compute edgewise correction factors
+          R_ij = min(R_ij, R_ji)
+          
+          ! Compute momentum average
+          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
+                        Dx(j,2:NVARtransformed+1))
+          
+          ! Compute correction factor
+          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+          
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+        end do
+
+      else
+
+        call output_line('Invalid system format!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_limitEdgewiseMomentum')
+        call sys_halt()
+        
+      end if
+    end if
+
+  end subroutine euler_limitEdgewiseMomentum
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_coeffVectorFE(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use derivatives
+    use domainintegration
+    use feevaluation
+    use fsystem
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+    !
+    ! The following data must be passed to this routine in the collection in order 
+    ! to work correctly:
+    !
+    ! IquickAccess(1) = systemFormat
+    ! IquickAccess(2) = ivar
+    ! p_rvectorQuickAccess1 => evaluation solution vector
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), pointer :: p_rvector
+    real(DP), dimension(:), pointer :: Ddata
+    integer :: isystemFormat,ivar,iel,ipoint
+    
+    if (.not. present(rcollection)) then
+      Dcoefficients(:,:,:) = 0.0_DP
+      return
+    end if
+
+    ! Get the parameters from the collection
+    isystemFormat = rcollection%IquickAccess(1)
+    ivar = rcollection%IquickAccess(2)
+    p_rvector => rcollection%p_rvectorQuickAccess1
+    
+    ! What type of system format are we?
+    select case(isystemFormat)
+   
+    case(SYSTEM_INTERLEAVEFORMAT)
+      
+      print *, "Not available"
+      stop
+      
+    case(SYSTEM_BLOCKFORMAT)
+      
+      ! Allocate temporal array
+      allocate(Ddata(npointsPerElement))
+      
+      ! Loop over all elements
+      do iel = 1, nelements
+        
+        ! Evaluate solution in cubature points
+        call fevl_evaluate(DER_FUNC, Ddata,&
+            p_rvector%RvectorBlock(ivar), Dpoints(:,:,iel))
+        
+        ! Loop over all cubature points
+        do ipoint = 1, npointsPerElement
+          Dcoefficients(1,ipoint,iel) = Ddata(ipoint)
+        end do
+      end do
+      
+      ! Deallocate temporal array
+      deallocate(Ddata)
+
+    case default
+      call output_line ('Invalid system format!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorFE')
+      call sys_halt()
+    end select
+    
+  end subroutine euler_coeffVectorFE
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_coeffVectorAnalytic(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, IdofsTest,&
+      rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use collection
+    use domainintegration
+    use fparser
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+    !
+    ! The following data must be passed to this routine in the collection in order 
+    ! to work correctly:
+    !
+    ! DquickAccess(1)          = dtime % simulation time
+    ! IquickAccess(itermCount) = icomp % number of the function to be evaluated
+    ! SquickAccess(1)          = name of the function parser
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements test in the test space.
+    ! DIMENSION(\#local DOF`s in test space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dtime
+    integer :: itermCount, ipoint, iel, ndim, icomp
+    
+    
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(1)))
+    
+    ! This subroutine assumes that the first quick access double value
+    ! holds the simulation time
+    dtime  = rcollection%DquickAccess(1)
+
+    ! Loop over all components of the linear form
+    do itermCount = 1, ubound(Dcoefficients,1)
+
+      ! Moreover, this subroutine assumes the quick access integer
+      ! 'itermCount' holds the number of the function to be evaluated
+      icomp = rcollection%IquickAccess(itermCount)
+
+      if (dtime < 0.0) then
+        
+        ! Evaluate all coefficients using the function parser
+        do iel = 1, nelements
+          call fparser_evalFunction(p_rfparser, icomp, 2,&
+              Dpoints(:,:,iel), Dcoefficients(itermCount,:,iel))
+        end do
+
+      else
+
+        ! Initialize values
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+        
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+        
+        do iel = 1, nelements
+          do ipoint = 1, npointsPerElement
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+            
+            ! Evaluate function parser
+            call fparser_evalFunction(p_rfparser, icomp, Dvalue,&
+                Dcoefficients(itermCount,ipoint,iel))
+          end do
+        end do
+
+      end if
+
+    end do ! itermCount
+    
+  end subroutine euler_coeffVectorAnalytic
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcMassFluxFCT(&
+      U1_i, U1_j, U2_i, U2_j, C_ij, C_ji,&
+      i, j, dscale1, dscale2, F_ij)
+
+!<description>
+    ! This subroutine computes the raw antidiffusive mass fluxes
+    ! for FCT algorithms in arbitrary dimension
+!</description>
+
+!<input>
+    ! local solution at nodes I and J
+    real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+
+    ! scaling coefficients
+    real(DP), intent(in) :: dscale1,dscale2
+
+    ! node numbers
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! raw antidiffusive flux
+    real(DP), dimension(:), intent(out) :: F_ij
+!</output>
+!</subroutine>
+  
+    ! Compute raw antidiffusive mass fluxes
+    F_ij = dscale1*(U1_i-U1_j)
+    
+  end subroutine euler_calcMassFluxFCT
 
 end module euler_callback
