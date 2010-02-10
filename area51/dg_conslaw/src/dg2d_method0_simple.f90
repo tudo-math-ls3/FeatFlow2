@@ -139,13 +139,13 @@ contains
     
     type(t_collection) :: rcollection
     
-    dt = 0.005_DP
+    dt = 0.001_DP
     ttfinal = 2*SYS_PI
     
     ielementType = EL_DG_T2_2D
     
     
-    ilimiting = 0
+    ilimiting = 2
     
         
     vel(1)=1.0_DP
@@ -154,7 +154,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 4
+    NLMAX = 7
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -590,10 +590,12 @@ contains
     
     !call dg_linearLimiter (rsol)
     
-    
+    write(*,*) ''
+    write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
     call dg2gmv(rsol,3)
     
+    Write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
 

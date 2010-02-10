@@ -1163,15 +1163,33 @@ contains
   !</output>
     
   !</subroutine>
+  
+  real(DP) :: r1
 
     integer :: iel, ipoint
     
+    Dcoefficients (1,:,:) =0.0_dp
+    
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)
+        
+        ! Gauss-Hügel
         !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
         !         exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
+        
+        ! Cone 1
         !Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
-        Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
+        
+        ! Cone 2
+        !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
+        
+        ! Zalesak
+        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
+        if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
+        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+        if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
+        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+        if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
       end do
     end do
                     
