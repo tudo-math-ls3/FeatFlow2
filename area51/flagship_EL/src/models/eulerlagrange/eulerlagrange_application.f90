@@ -477,6 +477,7 @@ contains
     call storage_free (rParticles%h_bdy_time)
     call storage_free (rParticles%h_PartVol)
 
+
   end subroutine eulerlagrange_app
 
   !*****************************************************************************
@@ -1558,13 +1559,24 @@ contains
               call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
-
+              
+              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata1)
+              
             case (NDIM2D)
               call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
               call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
                   'velocity_y', p_Dsolution, p_Ddata2)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
+                  p_Ddata1, p_Ddata2)
+                  
+              call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata1)
+              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
                   p_Ddata1, p_Ddata2)
 
             case (NDIM3D)
@@ -1576,6 +1588,16 @@ contains
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
+                  
+              call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata1)
+              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata2)
+              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'velo_part_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+
             end select
             
           else

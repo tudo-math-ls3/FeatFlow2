@@ -62,23 +62,23 @@ search = midpoint
 #-------------------------------------------------------------------------------
 
 # minimum particle-position in x-direction
-xmin = 1d-4
+xmin = 1.5e-4
 # maximum particle-position in x-direction
-xmax = 1d-3
+xmax = 1e-2
 # minimum particle-position in y-direction
-ymin = 0.5d-3
+ymin = 1.5e-3
 # maximum particle-position in y-direction
-ymax = 1d-1
+ymax = 9.0e-2
 
 #-------------------------------------------------------------------------------
 # mass and diameter of the particle
 #-------------------------------------------------------------------------------
 
 # particle-mass
-particlemass = 1d-15
+particlemass = 1e-15
 
 # particle-diameter
-particlediam = 1d-10
+particlediam = 1e-9
 
 
 #-------------------------------------------------------------------------------
@@ -86,10 +86,10 @@ particlediam = 1d-10
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction
-velopartx = 0d0
+velopartx = 0e0
 
 # velocity in y-direction
-veloparty = 0d0
+veloparty = 0e0
 
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
@@ -116,7 +116,7 @@ gravityy = 0
 #-------------------------------------------------------------------------------
 
 # kinematic viscosity of the gas
-gas_nu = 1d-5
+gas_nu = 1e-5
 
 ################################################################################
 
@@ -318,7 +318,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.5
+dfinalTime = 1.00
 
 # initial time step size
 dinitialStep = 1e-3
