@@ -498,7 +498,7 @@ contains
       call pperr_scalar (rsolution%RvectorBlock(3),PPERR_L2ERROR,Derr(3),&
                          ffunction_TargetP,rproblem%rcollection)
 
-      derrorP = sqrt(Derr(3))
+      derrorP = Derr(3)
       
       call output_line ('||u-reference||_L2 = '//trim(sys_sdEP(derrorVel,15,6)) )
       call output_line ('||p-reference||_L2 = '//trim(sys_sdEP(derrorP,15,6)) )
@@ -549,7 +549,7 @@ contains
                         ffunction_TargetP,rproblem%rcollection)
 
       if (Derr(3) .ne. -1.0_DP) then
-        derrorP = sqrt(Derr(3))
+        derrorP = Derr(3)
 
         call output_line ('||p-reference||_H1 = '//trim(sys_sdEP(derrorP,15,6)),&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
