@@ -2403,7 +2403,7 @@ end subroutine
     !
     ! These are the steps we are going to make:
     ! 1. Transform the point into the square's local coordinate system.
-    ! 2. "Rotating" the whole coordinate system by a multiple of 90°, such
+    ! 2. "Rotating" the whole coordinate system by a multiple of 90Ý, such
     !    that the resulting point has non-negative coordinates.
     !   (In fact, we will not "rotate" the point, but simply get the
     !    absolute values of its coordinates, since the square is symmetrical
@@ -4841,6 +4841,11 @@ end subroutine
       call geom_rect_isInGeometry(rgeomObject, Dcoords, iisInObject)
     case (GEOM_POLYGON)
       call geom_polygon_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_SPHERE)
+      call geom_sphere_isInGeometry(rgeomObject, Dcoords, iisInObject)
+    case (GEOM_ELLIPSOID)
+      call geom_ellipsoid_isInGeometry(rgeomObject, Dcoords, iisInObject)
+      
     case DEFAULT
       iisInObject = 0
     end select
@@ -4998,6 +5003,8 @@ end subroutine
      call geom_rect_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    case (GEOM_POLYGON)
      call geom_polygon_calcSignedDistance(rgeomObject, Dcoords, ddistance)
+   case (GEOM_ELLIPSOID)
+     call geom_ellipsoid_calcSignedDistance(rgeomObject, Dcoords, ddistance)
    case DEFAULT
      ddistance = 0.0_DP
    end select
@@ -5624,9 +5631,15 @@ end subroutine
     ! We want a sphere.
     rgeomObject%ctype = GEOM_ELLIPSOID
     
-    ! Now we need to create the coordinate system.
-    call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
-                               0.0_dp,dscalingFactor)
+    if(present(Dorigin))then
+      ! Now we need to create the coordinate system.
+      call bgeom_initCoordSys3D (rgeomObject%rcoord3D, Dorigin, 0.0_dp,0.0_dp,&
+                                 0.0_dp,dscalingFactor)
+    else
+      ! Now we need to create the coordinate system.
+      call bgeom_initCoordSys3D (rgeomObject%rcoord3D, (/0.0_dp,0.0_dp,0.0_dp/), 0.0_dp,0.0_dp,&
+                                 0.0_dp,dscalingFactor)
+    end if
     
     ! Is our object inverted?
     if (present(binverted)) then
@@ -5681,7 +5694,7 @@ end subroutine
   
   dvalue= (Dtrans(1)/rgeomObject%rellipsoid%dRadii(1))**2 + &
           (Dtrans(2)/rgeomObject%rellipsoid%dRadii(2))**2 + &
-          (Dtrans(1)/rgeomObject%rellipsoid%dRadii(3))**2 - 1.0_dp
+          (Dtrans(3)/rgeomObject%rellipsoid%dRadii(3))**2 - 1.0_dp
           
   if(dvalue .le. 0.0_dp)then
     iisinobject=1
@@ -5693,7 +5706,104 @@ end subroutine
     
   end subroutine
   
-! ***************************************************************************    
+! ***************************************************************************
+
+  subroutine geom_ellipsoid_calcSignedDistance (rgeomObject, Dcoord, ddistance)
+
+!<description>
+  ! This routine calculates the signed distance of a given point and an ellipsoid.
+!</description>
+
+!<input>
+  ! The ellipsoid against that the point is to be tested.
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  real(DP), dimension(:), intent(in)  :: Dcoord
+  
+!</input>
+
+!<output>
+  ! The shortest signed distance between the point and the ellipsoids boundary.
+  real(DP),               intent(out) :: ddistance
+!</output>
+
+!</subroutine>
+
+
+  ! The projection
+  real(DP), dimension(3) :: Dabc,DPoint
+  ! Dcoords are the coordinates of the point
+  ! after the transformation into coordinate system of the
+  ! ellipsoid( model coordiantes)
+  real(DP), dimension(3) :: Dcoords  
+  real(dp) :: maxabc,t,f,f1,eps,t1
+  ! Inside the polygon?
+  integer :: binside,maxiter,i
+  
+  maxiter=20
+  eps=1e-8
+ 
+  call bgeom_transformBackPoint3D(rgeomObject%rcoord3D, Dcoord, Dcoords) 
+ 
+  maxabc=max(rgeomObject%rellipsoid%dradii(1),rgeomObject%rellipsoid%dradii(2),rgeomObject%rellipsoid%dradii(3))
+  Dabc(:)=rgeomObject%rellipsoid%dradii(:)
+  
+  call geom_ellipsoid_isInGeometry (rgeomObject, Dcoord, binside)
+   
+  if(binside .eq. 1)then
+    t=0.0_dp
+  else
+    t=maxabc * sqrt(Dcoords(1)**2+Dcoords(2)**2+Dcoords(3)**2)
+  end if
+  
+  do i=1,maxiter
+    call evalF(t,Dabc(1),Dabc(2),Dabc(3),Dcoords(1),Dcoords(2),Dcoords(3),f)
+    call evalF1(t,Dabc(1),Dabc(2),Dabc(3),Dcoords(1),Dcoords(2),Dcoords(3),f1)
+    ! calculate new t
+    t1=t-f/f1
+    ! converged?
+    if(abs(t1-t).le.eps)then
+      t=t1
+      exit
+    else
+      t=t1
+    end if
+  end do
+  
+  DPoint(1)=Dabc(1)**2 * Dcoords(1)/(t+Dabc(1)**2)
+  DPoint(2)=Dabc(2)**2 * Dcoords(2)/(t+Dabc(2)**2)
+  DPoint(3)=Dabc(3)**2 * Dcoords(3)/(t+Dabc(3)**2)
+  
+  ddistance=sqrt((DPoint(1)-Dcoords(1))**2+(DPoint(3)-Dcoords(3))**2+(DPoint(3)-Dcoords(3))**2)
+  
+  if ((binside .eq. 1) .and. (.not. rgeomObject%binverted)) then
+    ddistance = -ddistance
+  end if
+  
+    ! That's it
+    
+  contains
+  
+  subroutine evalF(t,a,b,c,u,v,w,f)
+    real(dp), intent(in)  :: t,a,b,c,u,v,w
+    real(dp), intent(out) :: f
+      f = (t+a**2)**2 * (t+b**2)**2 * (t+c**2)**2-a**2 * u**2 * (t+b**2)**2 * (t+c**2)**2 - & 
+            b**2 * v**2 * (t+a**2)**2 * (t+c**2)**2 - c**2 * w**2 * (t+a**2)**2 * (t+b**2)**2
+  end subroutine evalF
+
+  subroutine evalF1(t,a,b,c,u,v,w,f1)
+    real(dp), intent(in)  :: t,a,b,c,u,v,w
+    real(dp), intent(out) :: f1
+      f1=(2*(t+a**2))*(t+b**2)**2*(t+c**2)**2+2*(t+a**2)**2*(t+b**2)*(t+c**2)**2+2*(t+a**2)**2*(t+b**2)**2*(t+c**2)- &
+      2*a**2*u**2*(t+b**2)*(t+c**2)**2-2*a**2*u**2*(t+b**2)**2*(t+c**2)-2*b**2*v**2*(t+a**2)*(t+c**2)**2-2*b**2*v**2*(t+a**2)**2*(t+c**2)- &
+      2*c**2*w**2*(t+a**2)*(t+b**2)**2-2*c**2*w**2*(t+a**2)**2*(t+b**2)
+  end subroutine evalF1
+
+    
+  end subroutine
+  
+  ! ***************************************************************************
   
   subroutine geom_triangulate(rgeomObject, hpolyHandle, bconvertToWorld)
                               
@@ -5874,6 +5984,7 @@ end subroutine
   end subroutine geom_triangulateSphere
 
 ! ***************************************************************************
+
 
 !<subroutine>
   subroutine geom_triangulateEllipsoid(rgeomObject,slices,stacks,iHandle)
