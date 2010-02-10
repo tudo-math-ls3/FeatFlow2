@@ -316,8 +316,8 @@ contains
     call cc_errorAnalysis (rvector,rproblem)
     
     ! move the particle
-    !call cc_updateParticlePosition(rproblem,rtimestepping%dtstep)
-    call cc_moveParticles(rproblem,rtimestepping%dtlaststep)
+    call cc_updateParticlePosition(rproblem,rtimestepping%dtstep)
+    !call cc_moveParticles(rproblem,rtimestepping%dtlaststep)
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     !
     ! In a nonstationary simulation, first check if we are allowed
@@ -2337,7 +2337,7 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipart,i,iedge1,iedge2,iseg,jpart
+    integer :: ipart,i,iedge1,iedge2,iseg,jpart,iwallforce
     real(DP) :: ah1,ah2,ah3,dvelx,dvely,dvelz,dmasssl,ddmasssl,dvolume,dimomir
     real(DP) :: dfx,dfy,length
     real(DP) :: dCenterX,dCenterY,dCenterXold,dCenterYold,domega,CenterX2,CenterY2
@@ -2348,12 +2348,12 @@ contains
     
     ! parameters for collision
     real(DP) :: eps1,eps2,pdist, ddist, deltaMesh, FWx,FWy
-    real(dp) :: ew1,ew2,dwall,t,FPx,FPy,dprad,dprad2
+    real(dp) :: ew1,ew2,dwall,t,FPx,FPy,dprad,dprad2,dcx,dcy
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:,:), pointer :: p_Dcoords
     integer, dimension(:,:), pointer :: p_Iedges    
-    real(DP), dimension(2) :: Dp1,Dp2,DpointA,DX,Dnormal,r,DV
+    real(DP), dimension(2) :: Dp1,Dp2,DpointA,DX,Dnormal,r,DV,DCollNormal
     real(dp), dimension(:,:), pointer :: p_DbdyEdg   
     real(dp),dimension(:),pointer :: Ddistances
     call cc_calcDistPart(rproblem,dtimestep)
@@ -2370,10 +2370,10 @@ contains
     
     Dp1(:)=p_Dcoords(:,iedge1)
     Dp2(:)=p_Dcoords(:,iedge2)
-    
-    deltaMesh=sqrt((Dp1(1)-Dp2(1))**2 + (Dp1(2)-Dp2(2))**2)
 
     deltaMesh = 0.015625_dp
+    
+    deltaMesh=sqrt((Dp1(1)-Dp2(1))**2 + (Dp1(2)-Dp2(2))**2)
     
     ! deltaMesh^2
     eps1 = deltaMesh**2
@@ -2385,6 +2385,8 @@ contains
     
     ew1=0.5_dp*(1.0_dp/eps1)
     ew2=0.5_dp*(1.0_dp/eps2)
+    
+    iwallforce=0
 
     p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
@@ -2434,42 +2436,43 @@ contains
       !----------------------------------------------------------------------------------------   
       !                        CALCULATE WALL REPULSIVE FORCES
       !---------------------------------------------------------------------------------------- 
-      do iseg=1,rproblem%isegments
-      
-        Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
-        Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
-        DpointA(1)=dCenterX
-        DpointA(2)=dCenterY
-        call gaux_calcDistPEdg2D(DpointA,Dp1,Dp2,ddist,t)
+      if(iwallforce .eq. 1)then
+        do iseg=1,rproblem%isegments
         
-        DX(1)=Dp1(1)+t*(Dp2(1)-Dp1(1))
-        DX(2)=Dp1(2)+t*(Dp2(2)-Dp1(2))
-        Ddistances(iseg)=ddist
-        call output_line ('SegmentNo: = '//trim(sys_si(iseg,2)) )
-        dwall=1.5_dp  
-        if(ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist)then
-          FWx=FWx+0.0_dp
-          FWy=FWy+0.0_dp
-          call output_line ('Case 1: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 1: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        elseif((ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad).and. &
-               (ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist))then
-          FWx=FWx+&
-          ew1*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
-          FWy=FWy+&
-          ew1*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
-          call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        elseif(ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad)then
-          FWx=FWx+&
-          ew2*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
-          FWy=FWy+&
-          ew2*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
-          call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
-          call output_line ('Case 3: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
-        end if
-      
-      end do
+          Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
+          Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
+          DpointA(1)=dCenterX
+          DpointA(2)=dCenterY
+          call gaux_calcDistPEdg2D(DpointA,Dp1,Dp2,ddist,t)
+          
+          DX(1)=Dp1(1)+t*(Dp2(1)-Dp1(1))
+          DX(2)=Dp1(2)+t*(Dp2(2)-Dp1(2))
+          Ddistances(iseg)=ddist
+          call output_line ('SegmentNo: = '//trim(sys_si(iseg,2)) )
+          dwall=1.5_dp  
+          if(ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist)then
+            FWx=FWx+0.0_dp
+            FWy=FWy+0.0_dp
+            call output_line ('Case 1: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+            call output_line ('Case 1: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+          elseif((ddist .gt. dwall*p_rparticleCollection%p_rParticles(ipart)%drad).and. &
+                 (ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist))then
+            FWx=FWx+&
+            ew1*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2             
+            FWy=FWy+&
+            ew1*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad + pdist - ddist)**2
+            call output_line ('Case 2: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+            call output_line ('Case 2: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+          elseif(ddist .le. dwall*p_rparticleCollection%p_rParticles(ipart)%drad)then
+            FWx=FWx+&
+            ew2*(dCenterX-DX(1))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)      
+            FWy=FWy+&
+            ew2*(dCenterY-DX(2))*(dwall*p_rparticleCollection%p_rParticles(ipart)%drad - ddist)
+            call output_line ('Case 3: WallforcesX: = '//trim(sys_sdEP(FWx,15,6)) )
+            call output_line ('Case 3: WallforcesY: = '//trim(sys_sdEP(FWy,15,6)) )
+          end if
+        end do
+      end if ! end if iwallforce
       p_rparticleCollection%p_rParticles(ipart)%rForceWall(1)=FWx
       p_rparticleCollection%p_rParticles(ipart)%rForceWall(2)=FWy
 
@@ -2480,6 +2483,7 @@ contains
       FPx = 0.0_dp     
       FPy = 0.0_dp     
       do jpart=1,p_rparticleCollection%nparticles
+        if(jpart .eq. ipart)cycle
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
         ddist=rproblem%dDistMatrix(ipart,jpart)
         dprad=p_rparticleCollection%p_rParticles(ipart)%drad
@@ -2594,9 +2598,19 @@ contains
       !                          Collision with walls
       !----------------------------------------------------------------------------------------
       do iseg=1,rproblem%isegments
+      
+        Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1) 
+        Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
+        DpointA(1)=dCenterX
+        DpointA(2)=dCenterY
+        call gaux_calcDistPEdg2D(DpointA,Dp1,Dp2,ddist,t)
         
-        if( Ddistances(iseg) .lt. p_rparticleCollection%p_rParticles(ipart)%drad )then
+        DX(1)=Dp1(1)+t*(Dp2(1)-Dp1(1))
+        DX(2)=Dp1(2)+t*(Dp2(2)-Dp1(2))
+        Ddistances(iseg)=ddist
         
+        if( Ddistances(iseg) .lt. p_rparticleCollection%p_rParticles(ipart)%drad+deltaMesh )then
+          !p_rparticleCollection%dtime=0.01_dp
           DV(1)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
           DV(2)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
         
@@ -2604,71 +2618,45 @@ contains
           Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)        
         
           Dnormal(1)=-1.0_dp*(Dp2(2)-Dp1(2))
-          Dnormal(2)= (Dp2(2)-Dp1(2))    
-          
+          Dnormal(2)= (Dp2(1)-Dp1(1))    
+  
+          ! normalize the "normal"        
           length=sqrt(Dnormal(1)**2 + Dnormal(2)**2)
+          Dnormal(1)=Dnormal(1)/length
+          Dnormal(2)=Dnormal(2)/length
           
+          ! reflect velocity vector 
           r(:)=DV(:)-2.0_dp*Dnormal(:)*(Dnormal(1)*DV(1)+Dnormal(2)*DV(2))
-
-          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.984*r(1)
-          
-          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.984*r(2)
+    
+          ! compute the distance between the outline of
+          ! the particle and the wall
+          dcx=(p_rparticleCollection%p_rParticles(ipart)%drad-Ddistances(iseg)+deltaMesh) * Dnormal(1)
+          dcy=(p_rparticleCollection%p_rParticles(ipart)%drad-Ddistances(iseg)+deltaMesh) * Dnormal(2)
+          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
+          p_rparticleCollection%p_rParticles(ipart)%dtransVelX+dcx*dtimestep
+          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
+          p_rparticleCollection%p_rParticles(ipart)%dtransVelY+dcy*dtimestep
           
           p_rgeometryObject%rcoord2D%Dorigin(:)=&
           p_rgeometryObject%rcoord2D%Dorigin(:) + &
-          (p_rparticleCollection%p_rParticles(ipart)%drad-Ddistances(iseg)) * Dnormal(:)
+          (p_rparticleCollection%p_rParticles(ipart)%drad-Ddistances(iseg)+deltaMesh) * Dnormal(:)
+
+!          ! the position is updated, now update the velocity
+!          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.984*r(1)
+!          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.984*r(2)
+          call output_line ('VelX: = '//trim(sys_sdEP(DV(1),15,6)) )                    
+          call output_line ('Vely: = '//trim(sys_sdEP(DV(2),15,6)) )                    
+          call output_line ('RefVelX: = '//trim(sys_sdEP(r(1),15,6)) )                    
+          call output_line ('RefVelX: = '//trim(sys_sdEP(r(2),15,6)) )                    
+          call output_line ('NormalX: = '//trim(sys_sdEP(Dnormal(1),15,6)) )                    
+          call output_line ('NormalY: = '//trim(sys_sdEP(Dnormal(2),15,6)) ) 
+          call output_line ('dcx: = '//trim(sys_sdEP(dcx,15,6)) )                    
+          call output_line ('dcy: = '//trim(sys_sdEP(dcy,15,6)) ) 
+          call output_line ('NewPoX: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(1),15,6)) )                    
+          call output_line ('NewPoY: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(2),15,6)) ) 
           
         end if
       end do
-!                Particles[i].m_vVelocity.y -= 0.98f * dT;
-!                Particles[i].Center() += Particles[i].m_vVelocity;
-!
-!                        if( fabs(Particles[i].Center().y - g_UnitCube1.Ymin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().y = g_UnitCube1.Ymin()+0.4f;
-!                                Particles[i].m_vVelocity.y=-0.84f * Particles[i].m_vVelocity.y;
-!                                Particles[i].m_vVelocity.x=0.994f * Particles[i].m_vVelocity.x;
-!                                Particles[i].m_vVelocity.z=0.994f * Particles[i].m_vVelocity.z;
-!								
-!								CVector3f vPoint(Particles[i].Center().x,g_UnitCube1.Ymin(),Particles[i].Center().z);
-!								CVector3f collnormal=(Particles[0].Center()-vPoint);
-!								collnormal.Normalize();
-!								Real relVel = Particles[i].m_vVelocity * collnormal;
-!								cout<<"Velocity along normal"<<relVel<<endl;
-!								cout<<"gravity * dT"<<0.98f * dT<<endl;
-!								if(relVel < (0.98f * dT))
-!								{
-!								  Particles[i].m_vVelocity=CVector3f(0,0,0);
-!								  Particles[i].m_iStat = 1;
-!								}//end if
-!								
-!
-!                        }
-!
-!                        if( fabs(Particles[i].Center().x - g_UnitCube1.Xmin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().x = g_UnitCube1.Xmin()+0.4f;
-!                                Particles[i].m_vVelocity.x=-0.84f * Particles[i].m_vVelocity.x;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().x - g_UnitCube1.Xmax()) < 0.4f)
-!                        {
-!                                Particles[i].Center().x = g_UnitCube1.Xmax()-0.4f;
-!                                Particles[i].m_vVelocity.x=-0.84f * Particles[i].m_vVelocity.x;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().z - g_UnitCube1.Zmax()) < 0.4f)
-!                        {
-!                                Particles[i].Center().z = g_UnitCube1.Zmax()+0.4f;
-!                                Particles[i].m_vVelocity.z=-0.84f * Particles[i].m_vVelocity.z;
-!                        }
-!
-!                        if( fabs(Particles[i].Center().z - g_UnitCube1.Zmin()) < 0.4f)
-!                        {
-!                                Particles[i].Center().z = g_UnitCube1.Zmin() - 0.4f;
-!                                Particles[i].m_vVelocity.z=-0.84f * Particles[i].m_vVelocity.z;
-!                        }
-      
       
       !----------------------------------------------------------------------------------------   
       !                          SCREEN OUTPUT
@@ -3111,42 +3099,42 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer  :: ipart
-    real(DP) :: dCenterX,dCenterY,DistX,DistY,VelX,VelY,rad
-    real(DP) :: alpha
-    type(t_geometryObject), pointer :: p_rgeometryObject
+  ! local variables
+  integer  :: ipart
+  real(DP) :: dCenterX,dCenterY,DistX,DistY,VelX,VelY,rad
+  real(DP) :: alpha
+  type(t_geometryObject), pointer :: p_rgeometryObject
+  
+  do ipart = 1,p_rparticleCollection%nparticles
+
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
     
-    do ipart = 1,p_rparticleCollection%nparticles
+    ! position
+    dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
+    dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
 
-      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-      
-      ! position
-      dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
-      dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
+    ! velocity
+    VelX=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+    VelY=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
 
-      ! velocity
-      VelX=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-      VelY=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+    ! radius
+    rad=p_rparticleCollection%p_rParticles(ipart)%drad
+    
+    ! detect boundary or wall
+    DistX = min((abs(dCenterX-0.0_dp)-rad), (abs(dCenterX-2.0_dp)-rad))
+    DistY = min((abs(dCenterY-0.0_dp)-rad), (abs(dCenterY-6.0_dp)-rad))
+    
+    alpha = 0.5_dp
+    ! resolve collision of the particle with the boundary
+    if (DistX-dtimestep*abs(VelX).le.0.0_dp)then
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelX = alpha*(-VelX)
+    end if
 
-      ! radius
-      rad=p_rparticleCollection%p_rParticles(ipart)%drad
-      
-      ! detect boundary or wall
-      DistX = min((abs(dCenterX-0.0_dp)-rad), (abs(dCenterX-2.0_dp)-rad))
-      DistY = min((abs(dCenterY-0.0_dp)-rad), (abs(dCenterY-6.0_dp)-rad))
-      
-      alpha = 0.5_dp
-      ! resolve collision of the particle with the boundary
-      if (DistX-dtimestep*abs(VelX).le.0.0_dp)then
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX = alpha*(-VelX)
-      end if
-
-      if (DistY-dtimestep*abs(VelY).le.0.0_dp)then
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY = alpha*(-VelY)
-      end if
-      
-    end do ! end ipart
+    if (DistY-dtimestep*abs(VelY).le.0.0_dp)then
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelY = alpha*(-VelY)
+    end if
+    
+  end do ! end ipart
     
   end subroutine
   
@@ -3159,58 +3147,54 @@ contains
 !</description>
 
 !<inputoutput>
-  
   integer, intent(IN)      :: isegments
   real(dp), intent(IN)     :: dtimestep
   real(dp), dimension(:,:), pointer, intent(IN)       :: p_DbdyEdg
   type(t_particleCollection), pointer, intent(INOUT)  :: p_rparticleCollection
-  
 !</inputoutput>
-
 !</subroutine>
-
-    ! local variables
-    integer  :: ipart,iseg
-    real(DP) :: dCenterX,dCenterY,DistX,DistY,VelX,VelY,rad
-    real(DP) :: alpha
-    real(DP), dimension(2)          :: Dp1,Dp2
-    type(t_geometryObject), pointer :: p_rgeometryObject
-    
+  ! local variables
+  integer  :: ipart,iseg
+  real(DP) :: dCenterX,dCenterY,DistX,DistY,VelX,VelY,rad
+  real(DP) :: alpha
+  real(DP), dimension(2)          :: Dp1,Dp2
+  type(t_geometryObject), pointer :: p_rgeometryObject
+  
 !     do iseg=1,isegments
 !         Dp1(:)=p_DbdyEdg(:,2*(iseg-1)+1)
 !         Dp2(:)=p_DbdyEdg(:,2*(iseg-1)+2)
 !     end do
+  
+  do ipart = 1,p_rparticleCollection%nparticles
+
+    p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
     
-    do ipart = 1,p_rparticleCollection%nparticles
+    ! position
+    dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
+    dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
 
-      p_rgeometryObject => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-      
-      ! position
-      dCenterX=p_rgeometryObject%rcoord2D%Dorigin(1)
-      dCenterY=p_rgeometryObject%rcoord2D%Dorigin(2)
+    ! velocity
+    VelX=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+    VelY=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
 
-      ! velocity
-      VelX=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-      VelY=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+    ! radius
+    rad=p_rparticleCollection%p_rParticles(ipart)%drad
+    
+    ! detect boundary or wall
+    DistX = min((abs(dCenterX-0.0_dp)-rad), (abs(dCenterX-2.0_dp)-rad))
+    DistY = min((abs(dCenterY-0.0_dp)-rad), (abs(dCenterY-6.0_dp)-rad))
+    
+    alpha = 0.5_dp
+    ! resolve collision of the particle with the boundary
+    if (DistX-dtimestep*abs(VelX).le.0.0_dp)then
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelX = alpha*(-VelX)
+    end if
 
-      ! radius
-      rad=p_rparticleCollection%p_rParticles(ipart)%drad
-      
-      ! detect boundary or wall
-      DistX = min((abs(dCenterX-0.0_dp)-rad), (abs(dCenterX-2.0_dp)-rad))
-      DistY = min((abs(dCenterY-0.0_dp)-rad), (abs(dCenterY-6.0_dp)-rad))
-      
-      alpha = 0.5_dp
-      ! resolve collision of the particle with the boundary
-      if (DistX-dtimestep*abs(VelX).le.0.0_dp)then
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX = alpha*(-VelX)
-      end if
-
-      if (DistY-dtimestep*abs(VelY).le.0.0_dp)then
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY = alpha*(-VelY)
-      end if
-      
-    end do ! end ipart
+    if (DistY-dtimestep*abs(VelY).le.0.0_dp)then
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelY = alpha*(-VelY)
+    end if
+    
+  end do ! end ipart
     
   end subroutine
   
@@ -3231,98 +3215,98 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer  :: ipart,jpart,n
-    real(DP) :: fx,fy
-    real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
-    real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
-    real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
-    real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
-    real(DP) :: kDist,kDist1
-    type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
-    
-    n = p_rparticleCollection%nparticles
+  ! local variables
+  integer  :: ipart,jpart,n
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+  
+  n = p_rparticleCollection%nparticles
 
-    do ipart = 1,n
-      do jpart = 1,n
+  do ipart = 1,n
+    do jpart = 1,n
 
-        p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-        p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        
-        ! radius
-        radi=p_rparticleCollection%p_rParticles(ipart)%drad
+      p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+      p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
+      
+      ! radius
+      radi=p_rparticleCollection%p_rParticles(ipart)%drad
 
-        radj=p_rparticleCollection%p_rParticles(jpart)%drad
-        
-        ! position
-        dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
-        dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
+      radj=p_rparticleCollection%p_rParticles(jpart)%drad
+      
+      ! position
+      dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
+      dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
 
-        dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
-        dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
-        
-        ! velocity
-        VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-        VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+      dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
+      dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
+      
+      ! velocity
+      VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+      VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
 
-        VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
-        VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
-        
-        if (ipart .ne. jpart) then
-        
-        ! detect particle collision
-        Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
+      VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
+      VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
+      
+      if (ipart .ne. jpart) then
+      
+      ! detect particle collision
+      Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
 
-        Dist_exact = Dist-(radi+radj)
+      Dist_exact = Dist-(radi+radj)
 
-        ex = (dCenterXj-dCenterXi)/Dist
-        ey = (dCenterYj-dCenterYi)/Dist
+      ex = (dCenterXj-dCenterXi)/Dist
+      ey = (dCenterYj-dCenterYi)/Dist
 
-        rvx = VelXj-VelXi
-        rvy = VelYj-VelYi
+      rvx = VelXj-VelXi
+      rvy = VelYj-VelYi
 
-        g_v = rvx*ex+rvy*ey
-        g_v1 = rvx*(-ey)+rvy*ex
-        
-        ! ok let's start the collision code (b/w particles)
-        d0 = 0.08_dp
-        meu = 0.001_dp
-        meu = dnu
-        epsp = 1e-04_dp
-        eps_p = 1e-04_dp
-        
-        ! calculate forces on ith particle
-        
+      g_v = rvx*ex+rvy*ey
+      g_v1 = rvx*(-ey)+rvy*ex
+      
+      ! ok let's start the collision code (b/w particles)
+      d0 = 0.08_dp
+      meu = 0.001_dp
+      meu = dnu
+      epsp = 1e-04_dp
+      eps_p = 1e-04_dp
+      
+      ! calculate forces on ith particle
+      
 !         if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0)) then
-        if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0) .and. &
-        (g_v .le. 0.0_dp)) then
-        fx = 1.0_dp/epsp*(dCenterXi-dCenterXj)*(d0-Dist_exact)**2
-        fy = 1.0_dp/epsp*(dCenterYi-dCenterYj)*(d0-Dist_exact)**2
+      if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0) .and. &
+      (g_v .le. 0.0_dp)) then
+      fx = 1.0_dp/epsp*(dCenterXi-dCenterXj)*(d0-Dist_exact)**2
+      fy = 1.0_dp/epsp*(dCenterYi-dCenterYj)*(d0-Dist_exact)**2
 
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
-        ! end if
-        end if
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
+      ! end if
+      end if
 
-        if ((Dist_exact .lt. 0.0_dp)) then
-        fx = 1.0_dp/eps_p*(dCenterXi-dCenterXj)*(-Dist_exact)
-        fy = 1.0_dp/eps_p*(dCenterYi-dCenterYj)*(-Dist_exact)
+      if ((Dist_exact .lt. 0.0_dp)) then
+      fx = 1.0_dp/eps_p*(dCenterXi-dCenterXj)*(-Dist_exact)
+      fy = 1.0_dp/eps_p*(dCenterYi-dCenterYj)*(-Dist_exact)
 
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
-        ! no torque due to collision forces (acting normally)
-        ! end if
-        end if
-        
-        ! end if
-        end if
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
+      ! no torque due to collision forces (acting normally)
+      ! end if
+      end if
+      
+      ! end if
+      end if
 
-      end do ! end jpart
-    end do ! end ipart
+    end do ! end jpart
+  end do ! end ipart
     
   end subroutine
   
@@ -3343,91 +3327,91 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer  :: ipart,jpart,n
-    real(DP) :: fx,fy
-    real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
-    real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
-    real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
-    real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
-    real(DP) :: kDist,kDist1
-    type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
-    
-    n = p_rparticleCollection%nparticles
+  ! local variables
+  integer  :: ipart,jpart,n
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+  
+  n = p_rparticleCollection%nparticles
 
-    do ipart = 1,n
-      do jpart = 1,n
+  do ipart = 1,n
+    do jpart = 1,n
 
-        p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-        p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        
-        ! radius
-        radi=p_rparticleCollection%p_rParticles(ipart)%drad
+      p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+      p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
+      
+      ! radius
+      radi=p_rparticleCollection%p_rParticles(ipart)%drad
 
-        radj=p_rparticleCollection%p_rParticles(jpart)%drad
-        
-        ! position
-        dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
-        dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
+      radj=p_rparticleCollection%p_rParticles(jpart)%drad
+      
+      ! position
+      dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
+      dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
 
-        dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
-        dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
-        
-        ! velocity
-        VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-        VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+      dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
+      dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
+      
+      ! velocity
+      VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+      VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
 
-        VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
-        VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
-        
-        if (ipart .ne. jpart) then
-        
-        ! detect particle collision
-        Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
+      VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
+      VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
+      
+      if (ipart .ne. jpart) then
+      
+      ! detect particle collision
+      Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
 
-        Dist_exact = Dist-(radi+radj)
+      Dist_exact = Dist-(radi+radj)
 
-        ex = (dCenterXj-dCenterXi)/Dist
-        ey = (dCenterYj-dCenterYi)/Dist
+      ex = (dCenterXj-dCenterXi)/Dist
+      ey = (dCenterYj-dCenterYi)/Dist
 
-        rvx = VelXj-VelXi
-        rvy = VelYj-VelYi
+      rvx = VelXj-VelXi
+      rvy = VelYj-VelYi
 
-        g_v = rvx*ex+rvy*ey
-        g_v1 = rvx*(-ey)+rvy*ex
-        
-        ! ok let's start the collision code (b/w particles)
-        d0 = 0.08_dp
-        meu = 0.001_dp
-        meu = dnu
-        beta = 1.0_dp/1e-03_dp
-        epsln = 1e-05_dp
-        d1 = 1e-01_dp
-        kDist = 0.0_dp
-        kDist1 = 0.0_dp
-        
-        ! calculate forces on ith particle
+      g_v = rvx*ex+rvy*ey
+      g_v1 = rvx*(-ey)+rvy*ex
+      
+      ! ok let's start the collision code (b/w particles)
+      d0 = 0.08_dp
+      meu = 0.001_dp
+      meu = dnu
+      beta = 1.0_dp/1e-03_dp
+      epsln = 1e-05_dp
+      d1 = 1e-01_dp
+      kDist = 0.0_dp
+      kDist1 = 0.0_dp
+      
+      ! calculate forces on ith particle
 !         if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0)) then
-        if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0) .and. &
-        (g_v .le. 0.0_dp)) then
-        print *, 'The test is ok! This is case:1.0'
-        kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
-        (radi**2 * radj**2)/(radi + radj)**2
+      if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0) .and. &
+      (g_v .le. 0.0_dp)) then
+      print *, 'The test is ok! This is case:1.0'
+      kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
+      (radi**2 * radj**2)/(radi + radj)**2
 
-        kDist1=beta*meu*6.0_dp*SYS_PI*log(d0/Dist_exact)* &
-        (radi**2 * radj**2)/(radi + radj)**2
-        ! end if
-        end if
-        if (Dist_exact .lt. 0.0_dp) then
-        print *, 'The test is ok! This is case:-1.0'
-        kDist=-beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
-        (radi**2 * radj**2)/(radi + radj)**2
+      kDist1=beta*meu*6.0_dp*SYS_PI*log(d0/Dist_exact)* &
+      (radi**2 * radj**2)/(radi + radj)**2
+      ! end if
+      end if
+      if (Dist_exact .lt. 0.0_dp) then
+      print *, 'The test is ok! This is case:-1.0'
+      kDist=-beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
+      (radi**2 * radj**2)/(radi + radj)**2
 
-        kDist1=beta*meu*6.0_dp*SYS_PI*log(-d0/Dist_exact)* &
-        (radi**2 * radj**2)/(radi + radj)**2
-        ! end if
-        end if
-        
+      kDist1=beta*meu*6.0_dp*SYS_PI*log(-d0/Dist_exact)* &
+      (radi**2 * radj**2)/(radi + radj)**2
+      ! end if
+      end if
+      
 !         if ((epsln .le. Dist_exact) .and. (Dist_exact .le. d0)) then
 !         print *, 'The test is ok! This is case:1.0'
 !         kDist=beta*meu*6.0_dp*SYS_PI*(1.0_dp/Dist_exact)* &
@@ -3467,23 +3451,23 @@ contains
 !         (radi**2 * radj**2)/(radi + radj)**2
 !         ! end if
 !         end if
-        
-        fx = (kDist*g_v*ex + kDist1*g_v1*(-ey))
-        fy = (kDist*g_v*ey + kDist1*g_v1*ex)
+      
+      fx = (kDist*g_v*ex + kDist1*g_v1*(-ey))
+      fy = (kDist*g_v*ey + kDist1*g_v1*ex)
 
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
-        ! torque due to collision forces (not acting normally)
-        p_rparticleCollection%p_rParticles(ipart)%pTorque(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pTorque(1) + radi*(ex*fy-ey*fx)
-        
-        ! end if
-        end if
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy
+      ! torque due to collision forces (not acting normally)
+      p_rparticleCollection%p_rParticles(ipart)%pTorque(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pTorque(1) + radi*(ex*fy-ey*fx)
+      
+      ! end if
+      end if
 
-      end do ! end jpart
-    end do ! end ipart
+    end do ! end jpart
+  end do ! end ipart
     
   end subroutine
   
@@ -3504,178 +3488,178 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer  :: ipart,jpart,i,k,n,neq
-    real(DP) :: fx,fy
-    real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
-    real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
-    real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
-    real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
-    real(DP) :: kDist,kDist1
-    real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
-    real(DP), dimension(:), allocatable   :: aprioriVelX,aprioriVelY,b,soln
-    real(DP), dimension(:,:), allocatable :: A
-    type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
-    
-    n = p_rparticleCollection%nparticles
-    allocate (aprioriVelX(n),aprioriVelY(n))
-    aprioriVelX = 0.0_dp
-    aprioriVelY = 0.0_dp
-    k = 0
+  ! local variables
+  integer  :: ipart,jpart,i,k,n,neq
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
+  real(DP), dimension(:), allocatable   :: aprioriVelX,aprioriVelY,b,soln
+  real(DP), dimension(:,:), allocatable :: A
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+  
+  n = p_rparticleCollection%nparticles
+  allocate (aprioriVelX(n),aprioriVelY(n))
+  aprioriVelX = 0.0_dp
+  aprioriVelY = 0.0_dp
+  k = 0
 
-    do ipart = 1,n
-      do jpart = 1,n
+  do ipart = 1,n
+    do jpart = 1,n
 
-        p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-        p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        
-        ! radius
-        radi=p_rparticleCollection%p_rParticles(ipart)%drad
-
-        radj=p_rparticleCollection%p_rParticles(jpart)%drad
-        
-        ! position
-        dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
-        dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
-
-        dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
-        dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
-        
-        ! velocity
-        VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-        VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
-
-        VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
-        VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
-        
-        if (ipart .ne. jpart) then
-        
-        ! detect particle collision
-        Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
-
-        Dist_exact = Dist-(radi+radj)
-
-        ex = (dCenterXj-dCenterXi)/Dist
-        ey = (dCenterYj-dCenterYi)/Dist
-
-        rvx = VelXj-VelXi
-        rvy = VelYj-VelYi
-
-        g_v = rvx*ex+rvy*ey
-        g_v1 = rvx*(-ey)+rvy*ex
-        
-        ! ok let's start the collision code (b/w particles)
-        d0 = 0.05_dp
-        meu = 0.001_dp
-        meu = dnu
-        
-        if ((ipart .lt. jpart) .and. (Dist_exact + dtimestep*g_v .le. 0.0_dp)) then
-
-        if (k .eq. 0) then
-        allocate (A(n*(n+3)/2,n*(n+3)/2),b(n*(n+3)/2),soln(n*(n+3)/2))
-        A = 0.0_dp
-        b = 0.0_dp
-        soln = 0.0_dp
-        do i = 1,2*n
-          A(i,i) = 1.0_dp
-        end do ! end i
-        ! end if
-        end if
-
-        k = k + 1
-
-        lembda = -Dist_exact/dtimestep
-
-        A(2*n+k,ipart) = -ex
-        A(2*n+k,jpart) = ex
-        A(2*n+k,n+ipart) = -ey
-        A(2*n+k,n+jpart) = ey
-
-        ! some physical parameters
-        dvolume  = radi**2 * SYS_PI
-        dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
-        ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
-
-        A(ipart,2*n+k) = dtimestep*(ex)/dmasssl
-        A(jpart,2*n+k) = dtimestep*(-ex)/dmasssl
-        A(n+ipart,2*n+k) = dtimestep*(ey)/dmasssl
-        A(n+jpart,2*n+k) = dtimestep*(-ey)/dmasssl
-
-        b(2*n+k) = lembda
-        ! end if
-        end if
-
-        ! end if
-        end if
-        
-      end do ! end jpart
+      p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+      p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
       
-      ! a priori velocity of the particle
+      ! radius
+      radi=p_rparticleCollection%p_rParticles(ipart)%drad
+
+      radj=p_rparticleCollection%p_rParticles(jpart)%drad
       
+      ! position
+      dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
+      dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
+
+      dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
+      dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
+      
+      ! velocity
+      VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+      VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+
+      VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
+      VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
+      
+      if (ipart .ne. jpart) then
+      
+      ! detect particle collision
+      Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
+
+      Dist_exact = Dist-(radi+radj)
+
+      ex = (dCenterXj-dCenterXi)/Dist
+      ey = (dCenterYj-dCenterYi)/Dist
+
+      rvx = VelXj-VelXi
+      rvy = VelYj-VelYi
+
+      g_v = rvx*ex+rvy*ey
+      g_v1 = rvx*(-ey)+rvy*ex
+      
+      ! ok let's start the collision code (b/w particles)
+      d0 = 0.05_dp
+      meu = 0.001_dp
+      meu = dnu
+      
+      if ((ipart .lt. jpart) .and. (Dist_exact + dtimestep*g_v .le. 0.0_dp)) then
+
+      if (k .eq. 0) then
+      allocate (A(n*(n+3)/2,n*(n+3)/2),b(n*(n+3)/2),soln(n*(n+3)/2))
+      A = 0.0_dp
+      b = 0.0_dp
+      soln = 0.0_dp
+      do i = 1,2*n
+        A(i,i) = 1.0_dp
+      end do ! end i
+      ! end if
+      end if
+
+      k = k + 1
+
+      lembda = -Dist_exact/dtimestep
+
+      A(2*n+k,ipart) = -ex
+      A(2*n+k,jpart) = ex
+      A(2*n+k,n+ipart) = -ey
+      A(2*n+k,n+jpart) = ey
+
+      ! some physical parameters
       dvolume  = radi**2 * SYS_PI
       dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
       ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
 
-      ! hydrodynamic drag/lift forces
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+      A(ipart,2*n+k) = dtimestep*(ex)/dmasssl
+      A(jpart,2*n+k) = dtimestep*(-ex)/dmasssl
+      A(n+ipart,2*n+k) = dtimestep*(ey)/dmasssl
+      A(n+jpart,2*n+k) = dtimestep*(-ey)/dmasssl
+
+      b(2*n+k) = lembda
+      ! end if
+      end if
+
+      ! end if
+      end if
       
-      ! Velocity difference for the given time step
-      dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
-      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
-      
-      ! save the current velocity
-      aprioriVelX(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
-      aprioriVelY(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
-      
-    end do ! end ipart
+    end do ! end jpart
     
-    if (k .ne. 0) then
-    do ipart = 1,n
-      b(ipart) = aprioriVelX(ipart)
-      b(n+ipart) = aprioriVelY(ipart)
-    end do ! end ipart
-
-    neq = 2*n + k
-
-    ! calculate new velocities of the particle
-    call gauss_pivot (A,b,soln,neq)
-
-    ! now we need the forces due to particle collision, so
-    ! calculate forces on ith particle
-    do ipart = 1,n
-      
-      dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
-      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
-      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
-
-      ! hydrodynamic drag/lift forces
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
-
-      ! force of gravity + hydrodynamic force
-      fx = dfx + ddmasssl*0.0_dp
-      fy = dfy + ddmasssl*-9.81_dp
-      
-      ! force = mass*(new_vel - old_vel)/timestep
-      ! force due to particle collision = force - (hydrodynamic force + gravity force)
-      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = dmasssl*(soln(ipart)- &
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX)/dtimestep - fx
-      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = dmasssl*(soln(n+ipart)- &
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY)/dtimestep - fy
-      ! no torque due to collision forces (acting normally)
-      
-    end do ! end ipart
-
-    deallocate (A,b,soln)
-    ! end if
-    end if
+    ! a priori velocity of the particle
     
-    deallocate (aprioriVelX,aprioriVelY)
+    dvolume  = radi**2 * SYS_PI
+    dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+    ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
+
+    ! hydrodynamic drag/lift forces
+    dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
+    dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+    
+    ! Velocity difference for the given time step
+    dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
+    dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
+    
+    ! save the current velocity
+    aprioriVelX(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
+    aprioriVelY(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
+    
+  end do ! end ipart
+  
+  if (k .ne. 0) then
+  do ipart = 1,n
+    b(ipart) = aprioriVelX(ipart)
+    b(n+ipart) = aprioriVelY(ipart)
+  end do ! end ipart
+
+  neq = 2*n + k
+
+  ! calculate new velocities of the particle
+  call gauss_pivot (A,b,soln,neq)
+
+  ! now we need the forces due to particle collision, so
+  ! calculate forces on ith particle
+  do ipart = 1,n
+    
+    dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
+    dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+    ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
+
+    ! hydrodynamic drag/lift forces
+    dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
+    dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+
+    ! force of gravity + hydrodynamic force
+    fx = dfx + ddmasssl*0.0_dp
+    fy = dfy + ddmasssl*-9.81_dp
+    
+    ! force = mass*(new_vel - old_vel)/timestep
+    ! force due to particle collision = force - (hydrodynamic force + gravity force)
+    p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = dmasssl*(soln(ipart)- &
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelX)/dtimestep - fx
+    p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = dmasssl*(soln(n+ipart)- &
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelY)/dtimestep - fy
+    ! no torque due to collision forces (acting normally)
+    
+  end do ! end ipart
+
+  deallocate (A,b,soln)
+  ! end if
+  end if
+  
+  deallocate (aprioriVelX,aprioriVelY)
     
   end subroutine
   
@@ -3696,146 +3680,146 @@ contains
 
 !</subroutine>
 
-    ! local variables
-    integer  :: ipart,jpart,i,k,n,neq,m,s
-    real(DP) :: fx,fy
-    real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
-    real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
-    real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
-    real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
-    real(DP) :: kDist,kDist1
-    real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
-    real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
-    real(DP), dimension(:), allocatable   :: aprioriVelX,aprioriVelY,b,soln
-    real(DP), dimension(:,:), allocatable :: A,gamma1
-    type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
-    
-    n = p_rparticleCollection%nparticles
-    allocate (aprioriVelX(n),aprioriVelY(n))
-    aprioriVelX = 0.0_dp
-    aprioriVelY = 0.0_dp
-    k = 0
+  ! local variables
+  integer  :: ipart,jpart,i,k,n,neq,m,s
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
+  real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
+  real(DP), dimension(:), allocatable   :: aprioriVelX,aprioriVelY,b,soln
+  real(DP), dimension(:,:), allocatable :: A,gamma1
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+  
+  n = p_rparticleCollection%nparticles
+  allocate (aprioriVelX(n),aprioriVelY(n))
+  aprioriVelX = 0.0_dp
+  aprioriVelY = 0.0_dp
+  k = 0
 
-    do ipart = 1,n
-      do jpart = 1,n
+  do ipart = 1,n
+    do jpart = 1,n
 
-        p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-        p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        
-        ! radius
-        radi=p_rparticleCollection%p_rParticles(ipart)%drad
-
-        radj=p_rparticleCollection%p_rParticles(jpart)%drad
-        
-        ! position
-        dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
-        dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
-
-        dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
-        dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
-        
-        ! velocity
-        VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-        VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
-
-        VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
-        VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
-        
-        if (ipart .ne. jpart) then
-        
-        ! detect particle collision
-        Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
-
-        Dist_exact = Dist-(radi+radj)
-
-        ex = (dCenterXj-dCenterXi)/Dist
-        ey = (dCenterYj-dCenterYi)/Dist
-
-        rvx = VelXj-VelXi
-        rvy = VelYj-VelYi
-
-        g_v = rvx*ex+rvy*ey
-        g_v1 = rvx*(-ey)+rvy*ex
-        
-        ! ok let's start the collision code (b/w particles)
-        d0 = 0.05_dp
-        meu = 0.001_dp
-        meu = dnu
-        
-        if ((ipart .lt. jpart) .and. (Dist_exact + dtimestep*g_v .le. 0.0_dp)) then
-
-        if (k .eq. 0) then
-        allocate (A(n*(n+3)/2,n*(n+3)/2),b(n*(n+3)/2),soln(n*(n+3)/2),gamma1(n,n))
-        A = 0.0_dp
-        b = 0.0_dp
-        soln = 0.0_dp
-        gamma1 = 0.0_dp
-        do i = 1,2*n
-          A(i,i) = 1.0_dp
-        end do ! end i
-        ! end if
-        end if
-
-        k = k + 1
-
-        lembda = -Dist_exact/dtimestep
-
-        A(2*n+k,ipart) = -ex
-        A(2*n+k,jpart) = ex
-        A(2*n+k,n+ipart) = -ey
-        A(2*n+k,n+jpart) = ey
-
-        ! some physical parameters
-        dvolume  = radi**2 * SYS_PI
-        dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
-        ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
-
-        A(ipart,2*n+k) = dtimestep*(ex)/dmasssl
-        A(jpart,2*n+k) = dtimestep*(-ex)/dmasssl
-        A(n+ipart,2*n+k) = dtimestep*(ey)/dmasssl
-        A(n+jpart,2*n+k) = dtimestep*(-ey)/dmasssl
-
-        b(2*n+k) = lembda
-        ! end if
-        end if
-
-        ! end if
-        end if
-        
-      end do ! end jpart
+      p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+      p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
       
-      ! a priori velocity of the particle
+      ! radius
+      radi=p_rparticleCollection%p_rParticles(ipart)%drad
+
+      radj=p_rparticleCollection%p_rParticles(jpart)%drad
       
+      ! position
+      dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
+      dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
+
+      dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
+      dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
+      
+      ! velocity
+      VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+      VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+
+      VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
+      VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
+      
+      if (ipart .ne. jpart) then
+      
+      ! detect particle collision
+      Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
+
+      Dist_exact = Dist-(radi+radj)
+
+      ex = (dCenterXj-dCenterXi)/Dist
+      ey = (dCenterYj-dCenterYi)/Dist
+
+      rvx = VelXj-VelXi
+      rvy = VelYj-VelYi
+
+      g_v = rvx*ex+rvy*ey
+      g_v1 = rvx*(-ey)+rvy*ex
+      
+      ! ok let's start the collision code (b/w particles)
+      d0 = 0.05_dp
+      meu = 0.001_dp
+      meu = dnu
+      
+      if ((ipart .lt. jpart) .and. (Dist_exact + dtimestep*g_v .le. 0.0_dp)) then
+
+      if (k .eq. 0) then
+      allocate (A(n*(n+3)/2,n*(n+3)/2),b(n*(n+3)/2),soln(n*(n+3)/2),gamma1(n,n))
+      A = 0.0_dp
+      b = 0.0_dp
+      soln = 0.0_dp
+      gamma1 = 0.0_dp
+      do i = 1,2*n
+        A(i,i) = 1.0_dp
+      end do ! end i
+      ! end if
+      end if
+
+      k = k + 1
+
+      lembda = -Dist_exact/dtimestep
+
+      A(2*n+k,ipart) = -ex
+      A(2*n+k,jpart) = ex
+      A(2*n+k,n+ipart) = -ey
+      A(2*n+k,n+jpart) = ey
+
+      ! some physical parameters
       dvolume  = radi**2 * SYS_PI
       dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
       ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
 
-      ! hydrodynamic drag/lift forces
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+      A(ipart,2*n+k) = dtimestep*(ex)/dmasssl
+      A(jpart,2*n+k) = dtimestep*(-ex)/dmasssl
+      A(n+ipart,2*n+k) = dtimestep*(ey)/dmasssl
+      A(n+jpart,2*n+k) = dtimestep*(-ey)/dmasssl
+
+      b(2*n+k) = lembda
+      ! end if
+      end if
+
+      ! end if
+      end if
       
-      ! Velocity difference for the given time step
-      dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
-      dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
-      
-      ! save the current velocity
-      aprioriVelX(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
-      aprioriVelY(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
-      
-    end do ! end ipart
+    end do ! end jpart
     
-    if (k .ne. 0) then
-    do ipart = 1,n
-      b(ipart) = aprioriVelX(ipart)
-      b(n+ipart) = aprioriVelY(ipart)
-    end do ! end ipart
+    ! a priori velocity of the particle
+    
+    dvolume  = radi**2 * SYS_PI
+    dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+    ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
 
-    neq = 2*n + k
+    ! hydrodynamic drag/lift forces
+    dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
+    dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+    
+    ! Velocity difference for the given time step
+    dvelx   = dtimestep*(1.0_dp*dfx+ddmasssl*0.0_dp)/dmasssl
+    dvely   = dtimestep*(1.0_dp*dfy+ddmasssl*-9.81_dp)/dmasssl
+    
+    ! save the current velocity
+    aprioriVelX(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelX + dvelx
+    aprioriVelY(ipart)=p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
+    
+  end do ! end ipart
+  
+  if (k .ne. 0) then
+  do ipart = 1,n
+    b(ipart) = aprioriVelX(ipart)
+    b(n+ipart) = aprioriVelY(ipart)
+  end do ! end ipart
 
-    ! calculate new velocities of the particle
-    call gauss_pivot (A,b,soln,neq)
+  neq = 2*n + k
+
+  ! calculate new velocities of the particle
+  call gauss_pivot (A,b,soln,neq)
 
 !     ! case for gluey particle
 !     m = 0
@@ -3870,39 +3854,39 @@ contains
 !       end do ! end jpart
 !     end do ! end ipart
 
-    ! now we need the forces due to particle collision, so
-    ! calculate forces on ith particle
-    do ipart = 1,n
-      
-      dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
-      dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
-      ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
-
-      ! hydrodynamic drag/lift forces
-      dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
-      dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
-       + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
-
-      ! force of gravity + hydrodynamic force
-      fx = dfx + ddmasssl*0.0_dp
-      fy = dfy + ddmasssl*-9.81_dp
-      
-      ! force = mass*(new_vel - old_vel)/timestep
-      ! force due to particle collision = force - (hydrodynamic force + gravity force)
-      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = dmasssl*(soln(ipart)- &
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelX)/dtimestep - fx
-      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = dmasssl*(soln(n+ipart)- &
-      p_rparticleCollection%p_rParticles(ipart)%dtransVelY)/dtimestep - fy
-      ! no torque due to collision forces (acting normally)
-      
-    end do ! end ipart
-
-    deallocate (A,b,soln,gamma1)
-    ! end if
-    end if
+  ! now we need the forces due to particle collision, so
+  ! calculate forces on ith particle
+  do ipart = 1,n
     
-    deallocate (aprioriVelX,aprioriVelY)
+    dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
+    dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume
+    ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume
+
+    ! hydrodynamic drag/lift forces
+    dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceX(1))
+    dfy = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceY(2) &
+     + p_rparticleCollection%p_rParticles(ipart)%rResForceY(1))
+
+    ! force of gravity + hydrodynamic force
+    fx = dfx + ddmasssl*0.0_dp
+    fy = dfy + ddmasssl*-9.81_dp
+    
+    ! force = mass*(new_vel - old_vel)/timestep
+    ! force due to particle collision = force - (hydrodynamic force + gravity force)
+    p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = dmasssl*(soln(ipart)- &
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelX)/dtimestep - fx
+    p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = dmasssl*(soln(n+ipart)- &
+    p_rparticleCollection%p_rParticles(ipart)%dtransVelY)/dtimestep - fy
+    ! no torque due to collision forces (acting normally)
+    
+  end do ! end ipart
+
+  deallocate (A,b,soln,gamma1)
+  ! end if
+  end if
+  
+  deallocate (aprioriVelX,aprioriVelY)
     
   end subroutine
   
@@ -3915,121 +3899,117 @@ contains
 !</description>
 
 !<inputoutput>
-  
   real(dp), intent(IN)                               :: dnu,dtimestep
   type(t_particleCollection), pointer, intent(INOUT) :: p_rparticleCollection
-  
 !</inputoutput>
-
 !</subroutine>
+  ! local variables
+  integer  :: ipart,jpart,n
+  real(DP) :: fx,fy,fx1,fy1,fx2,fy2
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
+  real(DP) :: cr,u1n,u2n,u1,u2,u1x,u1y,u2x,u2y
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+  
+  n = p_rparticleCollection%nparticles
 
-    ! local variables
-    integer  :: ipart,jpart,n
-    real(DP) :: fx,fy,fx1,fy1,fx2,fy2
-    real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
-    real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
-    real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
-    real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
-    real(DP) :: kDist,kDist1
-    real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
-    real(DP) :: cr,u1n,u2n,u1,u2,u1x,u1y,u2x,u2y
-    type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
-    
-    n = p_rparticleCollection%nparticles
+  do ipart = 1,n
+    do jpart = 1,n
 
-    do ipart = 1,n
-      do jpart = 1,n
+      p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
+      p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
+      
+      ! radius
+      radi=p_rparticleCollection%p_rParticles(ipart)%drad
 
-        p_rgeometryObjecti => p_rparticleCollection%p_rParticles(ipart)%rgeometryObject
-        p_rgeometryObjectj => p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
-        
-        ! radius
-        radi=p_rparticleCollection%p_rParticles(ipart)%drad
+      radj=p_rparticleCollection%p_rParticles(jpart)%drad
+      
+      ! position
+      dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
+      dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
 
-        radj=p_rparticleCollection%p_rParticles(jpart)%drad
-        
-        ! position
-        dCenterXi=p_rgeometryObjecti%rcoord2D%Dorigin(1)
-        dCenterYi=p_rgeometryObjecti%rcoord2D%Dorigin(2)
+      dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
+      dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
+      
+      ! velocity
+      VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
+      VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
 
-        dCenterXj=p_rgeometryObjectj%rcoord2D%Dorigin(1)
-        dCenterYj=p_rgeometryObjectj%rcoord2D%Dorigin(2)
-        
-        ! velocity
-        VelXi=p_rparticleCollection%p_rParticles(ipart)%dtransVelX
-        VelYi=p_rparticleCollection%p_rParticles(ipart)%dtransVelY
+      VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
+      VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
+      
+      if (ipart .ne. jpart) then
+      
+      ! detect particle collision
+      Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
 
-        VelXj=p_rparticleCollection%p_rParticles(jpart)%dtransVelX
-        VelYj=p_rparticleCollection%p_rParticles(jpart)%dtransVelY
-        
-        if (ipart .ne. jpart) then
-        
-        ! detect particle collision
-        Dist = sqrt((dCenterXj-dCenterXi)**2+(dCenterYj-dCenterYi)**2)
+      Dist_exact = Dist-(radi+radj)
 
-        Dist_exact = Dist-(radi+radj)
+      ex = (dCenterXj-dCenterXi)/Dist
+      ey = (dCenterYj-dCenterYi)/Dist
 
-        ex = (dCenterXj-dCenterXi)/Dist
-        ey = (dCenterYj-dCenterYi)/Dist
+      rvx = VelXj-VelXi
+      rvy = VelYj-VelYi
 
-        rvx = VelXj-VelXi
-        rvy = VelYj-VelYi
-
-        g_v = rvx*ex+rvy*ey
-        g_v1 = rvx*(-ey)+rvy*ex
-        
-        ! ok let's start the collision code (b/w particles)
-        d0 = 0.05_dp
-        meu = 0.001_dp
-        meu = dnu
-        cr = 0.97_dp
-        
-        ! calculate forces on ith particle
-        
-        if (Dist_exact + dtimestep*g_v .le. 0.0_dp) then
+      g_v = rvx*ex+rvy*ey
+      g_v1 = rvx*(-ey)+rvy*ex
+      
+      ! ok let's start the collision code (b/w particles)
+      d0 = 0.05_dp
+      meu = 0.001_dp
+      meu = dnu
+      cr = 0.97_dp
+      
+      ! calculate forces on ith particle
+      
+      if (Dist_exact + dtimestep*g_v .le. 0.0_dp) then
 !         if ((0.0_dp .le. Dist_exact) .and. (Dist_exact .le. d0)) then
-        ! some physical parameters
-        dvolumei  = radi**2 * SYS_PI
-        dmasssli  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolumei
-        dvolumej  = radj**2 * SYS_PI
-        dmassslj  = p_rparticleCollection%p_rParticles(jpart)%drho * dvolumej
+      ! some physical parameters
+      dvolumei  = radi**2 * SYS_PI
+      dmasssli  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolumei
+      dvolumej  = radj**2 * SYS_PI
+      dmassslj  = p_rparticleCollection%p_rParticles(jpart)%drho * dvolumej
 
-        ! normal comp. of velocity
-        u1n = VelXi*ex+VelYi*ey
-        u2n = VelXj*ex+VelYj*ey
+      ! normal comp. of velocity
+      u1n = VelXi*ex+VelYi*ey
+      u2n = VelXj*ex+VelYj*ey
 
-        u1 = cr*g_v*dmassslj/(dmasssli+dmassslj) + &
-        (dmasssli*u1n + dmassslj*u2n)/(dmasssli+dmassslj)
-        u2 = cr*g_v*dmasssli/(dmasssli+dmassslj) + &
-        (dmasssli*u1n + dmassslj*u2n)/(dmasssli+dmassslj)
+      u1 = cr*g_v*dmassslj/(dmasssli+dmassslj) + &
+      (dmasssli*u1n + dmassslj*u2n)/(dmasssli+dmassslj)
+      u2 = cr*g_v*dmasssli/(dmasssli+dmassslj) + &
+      (dmasssli*u1n + dmassslj*u2n)/(dmasssli+dmassslj)
 
-        u1x = u1*ex
-        u1y = u1*ey
-        u2x = -u2*ex
-        u2y = -u2*ey
+      u1x = u1*ex
+      u1y = u1*ey
+      u2x = -u2*ex
+      u2y = -u2*ey
 
-        fx1 = dmasssli*(u1x-VelXi)/dtimestep
-        fy1 = dmasssli*(u1y-VelYi)/dtimestep
-        fx2 = dmassslj*(u2x-VelXj)/dtimestep
-        fy2 = dmassslj*(u2y-VelYj)/dtimestep
+      fx1 = dmasssli*(u1x-VelXi)/dtimestep
+      fy1 = dmasssli*(u1y-VelYi)/dtimestep
+      fx2 = dmassslj*(u2x-VelXj)/dtimestep
+      fy2 = dmassslj*(u2y-VelYj)/dtimestep
 
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx1
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
-        p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy1
-        p_rparticleCollection%p_rParticles(jpart)%pForceX(1) = &
-        p_rparticleCollection%p_rParticles(jpart)%pForceX(1) + fx2
-        p_rparticleCollection%p_rParticles(jpart)%pForceY(1) = &
-        p_rparticleCollection%p_rParticles(jpart)%pForceY(1) + fy2
-        ! no torque due to collision forces (acting normally)
-        ! end if
-        end if
-        
-        ! end if
-        end if
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceX(1) + fx1
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) = &
+      p_rparticleCollection%p_rParticles(ipart)%pForceY(1) + fy1
+      p_rparticleCollection%p_rParticles(jpart)%pForceX(1) = &
+      p_rparticleCollection%p_rParticles(jpart)%pForceX(1) + fx2
+      p_rparticleCollection%p_rParticles(jpart)%pForceY(1) = &
+      p_rparticleCollection%p_rParticles(jpart)%pForceY(1) + fy2
+      ! no torque due to collision forces (acting normally)
+      ! end if
+      end if
+      
+      ! end if
+      end if
 
-      end do ! end jpart
-    end do ! end ipart
+    end do ! end jpart
+  end do ! end ipart
     
   end subroutine
   
@@ -4114,5 +4094,72 @@ contains
   end subroutine gauss_pivot
 
 ! ***************************************************************************  
+  
+!<subroutine>
+  subroutine collisionWall_normal(p_rparticleCollection,dnu,dtimestep)
+!<description>
+  ! 
+!</description>
 
+!<input>
+  ! the viscosity
+  real(dp), intent(in)                               :: dnu
+  ! the timestepsize, that was used to calculate the current solution
+  real(dp), intent(in)                               :: dtimestep  
+!</input>  
+
+!<inputoutput>  
+  type(t_particleCollection), pointer, intent(inout) :: p_rparticleCollection
+!</inputoutput>
+
+!</subroutine>
+  ! local variables
+  integer  :: ipart,jpart,i,k,n,neq,m,s
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
+  real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+
+  end subroutine ! collisionWall_normal
+  
+! ***************************************************************************  
+  
+!<subroutine>
+  subroutine collisionParticle_normal(p_rparticleCollection,dnu,dtimestep)
+!<description>
+  ! 
+!</description>
+
+!<input>
+  ! the viscosity
+  real(dp), intent(in)                               :: dnu
+  ! the timestepsize, that was used to calculate the current solution
+  real(dp), intent(in)                               :: dtimestep  
+!</input>  
+
+!<inputoutput>  
+  type(t_particleCollection), pointer, intent(inout) :: p_rparticleCollection
+!</inputoutput>
+
+!</subroutine>
+  ! local variables
+  integer  :: ipart,jpart,i,k,n,neq,m,s
+  real(DP) :: fx,fy
+  real(DP) :: dCenterXi,dCenterYi,dCenterXj,dCenterYj,DistX,DistY
+  real(DP) :: Dist,Dist_exact,VelXi,VelYi,VelXj,VelYj,radi,radj
+  real(DP) :: ex,ey,rvx,rvy,g_v,g_v1
+  real(DP) :: d0,meu,beta,epsln,d1,epsp,eps_p,lembda
+  real(DP) :: kDist,kDist1
+  real(DP) :: dvelx,dvely,dfx,dfy,dfx1,dfy1,dmasssl,ddmasssl,dvolume
+  real(DP) :: dmasssli,dvolumei,dmassslj,dvolumej
+  type(t_geometryObject), pointer :: p_rgeometryObjecti,p_rgeometryObjectj
+
+  end subroutine ! collisionParticle_normal
+
+! ***************************************************************************
 end module
