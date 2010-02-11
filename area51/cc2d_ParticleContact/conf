@@ -1,5 +1,5 @@
 ../../bin/configure \
-        --appname=cc2d_partflowCollision \
+        --appname=cc2d_ParticleContact \
         --programfile=src/cc2d_pf.f90 \
         --srclist_app="`ls src/*.f90`" \
         
