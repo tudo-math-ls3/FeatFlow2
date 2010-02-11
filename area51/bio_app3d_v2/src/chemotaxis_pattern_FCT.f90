@@ -536,17 +536,19 @@ module chemotaxis_pattern_FCT
 
                 ! RS: trying to set it up via a linear-form
                 ! e.g. invoke the linf_buildVectorScalar with rcell as the coefficient
-!                 call collct_init (rcollection)
-!                 call collct_setvalue_vecsca ( rcollection , 'cbvector' , rcell , .true.)
-!                 rcollection%DquickAccess(1) = dtstep
-!                 rcollection%DquickAccess(2) = PHI
-!                 call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
-!                                                 rlinform, .false., rrhschemo, coeff_hillenX_RHS_c, rcollection)
-!                 call collct_done(rcollection)
+                ! call collct_init (rcollection)
+                ! call collct_setvalue_vecsca ( rcollection , 'cbvector' , rcell , .true.)
+                ! rcollection%DquickAccess(1) = dtstep
+                ! rcollection%DquickAccess(2) = PHI
+                ! call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1), &
+                !                                 rlinform, .false., rrhschemo, coeff_hillenX_RHS_c, rcollection)
+                ! call collct_done(rcollection)
 !                 ! <--- This actually doesn't any good :(
 
                 call lsyssc_scalarMatVec(rmassmatrix, rcell, rrhschemo, dtstep*PHI, 1.0_DP)
-!                 call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)                                    
+                !call lsyssc_scalarMatVec(rtempLump, ranalytCell, rrhschemo, dtstep*PHI, 1.0_DP)            
+    
+                                 
                                 
                 rmatrixBlockchemo%p_rdiscreteBC => rdiscreteBCchemo
                 rrhsBlockchemo%p_rdiscreteBC => rdiscreteBCchemo

@@ -3225,8 +3225,8 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x*(16-x)
             !      c_analytic = x+y+z
-            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + convecRelaxation*(16_DP-2_DP*x))
-            
+            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + convecRelaxation*(16_DP-2_DP*x))            
+
             !16_DP + 2*x) )
             !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
             !                                    2*x*(x-16_DP)*z*(z-16_DP)+ & 
@@ -3381,7 +3381,8 @@ END IF
 !             if (abs(error) >= abs(error_max)) then 
 !                 error_max = error 
 !             end if
-            Dcoefficients(1,icub,iel) = (x + y + z) -PHI* DvaluesFevl2(1,icub, iel)
+            !Dcoefficients(1,icub,iel) = (x + y + z) -PHI* DvaluesFevl2(1,icub, iel)
+            Dcoefficients(1,icub,iel) = (x + y + z) - PHI*x*(16_DP - x)
 
             !Dcoefficients(1,icub,iel) = - ( -(x + y + z) )
             !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 

@@ -74,3 +74,16 @@ u=x*(16-x); c=x+y+z
 
 21) Just tedious validation of THIS code. No mistakes occured so far.
 11:18   12.01.2010
+
+22) Before switching to Robert's modified code.
+11:02 	03.02.2010
+
+23) Analytical-numerical difference with the help of L2 norm is realized.
+12:49	04.02.2010
+
+24) The H1 norm for ||c-c_h|| and ||u-u_h|| is realised.
+13:53	04.02.2010
+
+25) Before realising Q_2 elements.
+10:24	11.02.2010 
+
