@@ -89,6 +89,7 @@ module poisson2d_callback
   use bcassembly
   use element
   use feevaluation
+  use domainintegration
   
   implicit none
 
@@ -1035,6 +1036,7 @@ contains
               DsolVals,&
               normal,&
               DpointsReal,&
+              rintSubset,&
               rcollection )
               
   use collection
@@ -1043,6 +1045,7 @@ contains
   real(DP), dimension(:,:,:), intent(in) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
   real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
   !</input>
   
@@ -1054,6 +1057,7 @@ contains
   integer :: ipoint, iel
   real(dp), dimension(2) :: Dvel
   real(DP) :: dvn ,dx, dy
+  real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
   
   Dvel(1)=1.0_DP
   Dvel(2)=1.0_DP
@@ -1082,6 +1086,24 @@ contains
       
     end do ! ipoint
   end do ! iel
+  
+  
+!  ! If the solution (or its derivatives) has to be evaluated
+!  allocate(Dsolutionvalues(2,ubound(Dcoefficients,1),ubound(Dcoefficients,2)))
+!  ! Get values on the one side of the edge
+!  call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+!                                 rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
+!  ! Get values on the other side of the edge                               
+!  call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+!                                 rIntSubset(2), DER_FUNC, Dsolutionvalues, 2)
+!               
+!  ! Now we have
+!  ! Dsolutionvalues(1,ipoint,iel) = DsolVals(ipoint,1,iel)
+!  ! and
+!  ! Dsolutionvalues(2,ipoint,iel) = DsolVals(ipoint,2,iel)
+!  ! except on the elements, which are on the other side and where there is no other side (on the boundary)
+!                                 
+!  deallocate(Dsolutionvalues)
 
 
 
@@ -1351,7 +1373,7 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -1372,10 +1394,16 @@ contains
     integer :: iel, ipoint
     real(DP) :: dvx, dvy, dx, dy
     
-    do iel = 1, size(Dcoefficients,3)
-      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
-                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
-    end do
+    rdomainIntSubset%ielementDistribution = 1
+    
+    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+                                 rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+    
+    
+!    do iel = 1, size(Dcoefficients,3)
+!      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
+!                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+!    end do
     
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)
@@ -1450,7 +1478,7 @@ contains
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
@@ -1471,10 +1499,15 @@ contains
     integer :: iel, ipoint
     real(DP) :: dvx, dvy, dx, dy
     
-    do iel = 1, size(Dcoefficients,3)
-      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
-                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
-    end do
+    rdomainIntSubset%ielementDistribution = 1
+    
+    call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
+                                 rdomainIntSubset, DER_FUNC, Dcoefficients, 1)
+    
+!    do iel = 1, size(Dcoefficients,3)
+!      call fevl_evaluate (DER_FUNC, Dcoefficients(1,:,iel),&
+!                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+!    end do
     
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)

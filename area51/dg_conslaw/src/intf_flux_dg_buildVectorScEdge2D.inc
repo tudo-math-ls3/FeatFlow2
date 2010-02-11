@@ -12,6 +12,7 @@
               DsolVals,&
               normal,&
               DpointsReal,&
+              rintSubSet,&
               rcollection )
     
     use fsystem
@@ -37,6 +38,7 @@
   real(DP), dimension(:,:,:), intent(in) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
   real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+  type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
     
   !</input>

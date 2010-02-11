@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> poisson2d_method0_simple </name>
+!# <name> dg2d_method0_simple </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -139,13 +139,14 @@ contains
     
     type(t_collection) :: rcollection
     
-    dt = 0.001_DP
+    dt = 0.005_DP
+    !ttfinal = 0.0_dp
     ttfinal = 2*SYS_PI
     
     ielementType = EL_DG_T2_2D
     
     
-    ilimiting = 2
+    ilimiting = 0
     
         
     vel(1)=1.0_DP
@@ -153,8 +154,8 @@ contains
 
     ! Ok, let us start. 
     !
-    ! We want to solve our Poisson problem on level...
-    NLMAX = 7
+    ! We want to solve our problem on level...
+    NLMAX = 5
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -185,7 +186,7 @@ contains
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   ielementType,CUB_G3X3,rtriangulation, rboundary)
+                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
@@ -431,9 +432,11 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
-                                              flux_dg_buildVectorScEdge2D_sim)
+                                              flux_dg_buildVectorScEdge2D_sim,&
+                                              rcollection)
        
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
@@ -474,9 +477,11 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
-                                              flux_dg_buildVectorScEdge2D_sim)
+                                              flux_dg_buildVectorScEdge2D_sim,&
+                                              rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
        if(ielementType .ne. EL_DG_T0_2D) then
@@ -512,9 +517,11 @@ contains
        ! Create RHS-Vector
              
        ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
-                                              flux_dg_buildVectorScEdge2D_sim)
+                                              flux_dg_buildVectorScEdge2D_sim,&
+                                              rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
        ! Then add the convection terms
        if(ielementType .ne. EL_DG_T0_2D) then
@@ -546,6 +553,10 @@ contains
     
        ! Go on to the next time step
        ttime = ttime + dt
+       
+       ! If we would go beyond the final time in our next time step,
+       ! then reduce the timestep
+       if (ttfinal-ttime<dt) dt = ttfinal-ttime
 
        ! Leave the time stepping loop if final time is reached
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping

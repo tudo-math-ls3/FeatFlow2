@@ -334,7 +334,7 @@ contains
     real(DP) :: dval1, dval2
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), dimension(2), target :: rlocalVectorAssembly
-    type(t_domainIntSubset) :: rintSubset
+    type(t_domainIntSubset), dimension(2) :: rintSubset
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -352,7 +352,7 @@ contains
     real(DP), dimension(:,:,:,:), allocatable :: Dxi2D,DpointsRef
     
     ! Element list, where to assemble the form
-    integer, dimension(:,:), allocatable :: IelementList
+    integer, dimension(:,:), allocatable, target :: IelementList
     
     integer(i32) :: icoordSystem
     
@@ -678,25 +678,25 @@ contains
      ! ---------------------- Get values of the flux function --------------
      
      
-     !!      ! Now it is time to call our coefficient function to calculate the
-!!      ! function values in the cubature points:
-!!      if (present(fcoeff_buildVectorScBdr2D_sim)) then
-!!        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
-!!        rintSubset%ielementDistribution = 0
-!!        rintSubset%ielementStartIdx = IELset
-!!        rintSubset%p_Ielements => IelementList(IELset:IELmax)
-!!        rintSubset%p_IdofsTrial => p_Idofs
-!!        rintSubset%celement = rlocalVectorAssembly%celement
-!!        call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
-!!            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
-!!            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
-!!            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
-!!            p_Idofs, rintSubset, &
-!!            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
-!!        call domint_doneIntegration (rintSubset)
-!!      else
-!!        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
-!!      end if
+!      ! Now it is time to call our coefficient function to calculate the
+!      ! function values in the cubature points:
+!      if (present(fcoeff_buildVectorScBdr2D_sim)) then
+!        call domint_initIntegrationByEvalSet (p_revalElementSet, rintSubset)
+!        rintSubset%ielementDistribution = 0
+!        rintSubset%ielementStartIdx = IELset
+!        rintSubset%p_Ielements => IelementList(IELset:IELmax)
+!        rintSubset%p_IdofsTrial => p_Idofs
+!        rintSubset%celement = rlocalVectorAssembly%celement
+!        call fcoeff_buildVectorScBdr2D_sim (rvector%p_rspatialDiscr,&
+!            rlocalVectorAssembly%rform,  IELmax-IELset+1, ncubp,&
+!            p_revalElementSet%p_DpointsReal(:,:,1:IELmax-IELset+1),&
+!            ibdc, DpointsPar(:,1:IELmax-IELset+1),&
+!            p_Idofs, rintSubset, &
+!            p_Dcoefficients(:,:,1:IELmax-IELset+1), rcollection)
+!        call domint_doneIntegration (rintSubset)
+!      else
+!        p_Dcoefficients(:,:,1:IELmax-IELset+1) = 1.0_DP
+!      end if
 
 
 
@@ -727,10 +727,22 @@ contains
 
 
 
-
-
-
-
+    ! If the flux function needs other, than just the function values from the solution
+    ! (for example the derivatives), we will give an evalElementSet to it
+    ! This is filled here
+    
+    call domint_initIntegrationByEvalSet (rlocalVectorAssembly(1)%revalElementSet, rintSubset(1))
+    call domint_initIntegrationByEvalSet (rlocalVectorAssembly(2)%revalElementSet, rintSubset(2))
+        !rintSubset(1)%ielementDistribution = 0
+        rintSubset(1)%ielementStartIdx = IELset
+        rintSubset(1)%p_Ielements => IelementList(1,IELset:IELmax)
+        rintSubset(1)%p_IdofsTrial => rlocalVectorAssembly(1)%p_Idofs
+        rintSubset(1)%celement = rlocalVectorAssembly(1)%celement
+        !rintSubset(2)%ielementDistribution = 0
+        rintSubset(2)%ielementStartIdx = IELset
+        rintSubset(2)%p_Ielements => IelementList(2,IELset:IELmax)
+        rintSubset(2)%p_IdofsTrial => rlocalVectorAssembly(2)%p_Idofs
+        rintSubset(2)%celement = rlocalVectorAssembly(2)%celement
 
 
 
@@ -743,7 +755,12 @@ contains
             DsolVals(:,:,1:IELmax-IELset+1),&
             normal(:,1:IELmax-IELset+1),&
             DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
+            rintSubset,&
             rcollection )
+            
+      
+      call domint_doneIntegration (rintSubset(1))
+      call domint_doneIntegration (rintSubset(2))
       
       ! --------------------- DOF COMBINATION PHASE ------------------------
       
@@ -1523,7 +1540,7 @@ end subroutine
   
   
   
-   ielementtype = EL_Q1
+   ielementtype = EL_Q2
   
       ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
