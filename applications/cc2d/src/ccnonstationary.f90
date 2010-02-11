@@ -277,7 +277,7 @@ contains
   
 !<subroutine>
 
-  subroutine cc_initTimeSteppingScheme (rparams,rtimeStepping)
+  subroutine cc_initTimeSteppingScheme (rparams,rtimeStepping,ipressureFullyImplicit)
   
 !<description>
   ! Initialises the time stepping scheme according to the parameters in the DAT file.
@@ -292,6 +292,9 @@ contains
 !<inputoutput>
   ! The time stepping scheme structure to be initialised.
   type(t_explicitTimeStepping), intent(inout) :: rtimeStepping
+  
+  ! Returns 1 if the pressure should be discretised fully implicitely, 0 otherwise.
+  integer, intent(out) :: ipressureFullyImplicit
 !</inputoutput>
 
 !</subroutine>
@@ -314,6 +317,10 @@ contains
     call timstp_init (rtimestepping, &
                       cscheme, dtimemin, dtstep, dtheta)
 
+    ! Discretisation of the pressure.
+    call parlst_getvalue_int (rparams, &
+        'TIME-DISCRETISATION', 'IPRESSUREFULLYIMPLICIT', ipressureFullyImplicit, 1)
+    
   end subroutine
 
   ! ***************************************************************************
@@ -321,7 +328,8 @@ contains
 !<subroutine>
 
   subroutine cc_performTimestep (rproblem,rvector,rrhs,&
-      rtimestepping,rnonlinearIteration,rnlSolver,rtempVector,rtempVectorRhs)
+      rtimestepping,ipressureFullyImplicit,rnonlinearIteration,rnlSolver,&
+      rtempVector,rtempVectorRhs)
 
 !<description>
   ! Performs one time step: $t^n -> t^n+1$. 
@@ -344,6 +352,9 @@ contains
   
   ! Configuration block of the time stepping scheme.
   type(t_explicitTimeStepping)        :: rtimestepping
+
+  ! Set to 1 if the pressure should be discretised fully implicitely, 0 otherwise.
+  integer, intent(in) :: ipressureFullyImplicit
 
   ! Structure for the nonlinear iteration for solving the core equation.
   type(t_ccnonlinearIteration), intent(inout) :: rnonlinearIteration
@@ -411,8 +422,15 @@ contains
     rnonlinearCCMatrix%dtheta = -rtimestepping%dweightMatrixRHS
     rnonlinearCCMatrix%dgamma = -rtimestepping%dweightMatrixRHS * &
         real(1-rproblem%rphysics%iequation,DP)
+        
     rnonlinearCCMatrix%deta = 0.0_DP
     rnonlinearCCMatrix%dtau = 0.0_DP
+
+    ! Fully implicit pressure? There is only a difference if Crank-Nicolson
+    ! is used.
+    if (ipressureFullyImplicit .ne. 1) then
+      rnonlinearCCMatrix%deta = -rtimestepping%dweightMatrixRHS
+    end if
     
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP,rproblem)
 
@@ -471,8 +489,17 @@ contains
     ! handled fully implicitely. There is no part of the pressure on the RHS
     ! of the time step scheme and so the factor in front of the pressure
     ! is always the length of the current (sub)step!
-    call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
-        rtimestepping%dtstep)
+    !
+    ! For fully implicit pressure, just scale by the timestep size.
+    ! For semi-implicit pressure, scale by the full weight of the LHS.
+    ! There is only a difference if Crank-Nicolson or similar is used.
+    if (ipressureFullyImplicit .ne. 1) then
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          rtimestepping%dweightMatrixLHS)
+    else
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          rtimestepping%dtstep)
+    end if
     
     ! Update the preconditioner for the case, something changed (e.g.
     ! the boundary conditions).
@@ -488,8 +515,13 @@ contains
         rvector,rtempVectorRhs,rtempVector)             
 
     ! scale the pressure back, then we have again the correct solution vector.
-    call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
-        1.0_DP/rtimestepping%dtstep)
+    if (ipressureFullyImplicit .ne. 1) then
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          1.0_DP/rtimestepping%dweightMatrixLHS)
+    else
+      call lsyssc_scaleVector (rvector%RvectorBlock(NDIM2D+1),&
+          1.0_DP/rtimestepping%dtstep)
+    end if
 
     ! rvector is the solution vector u^{n+1}.    
   
@@ -548,6 +580,7 @@ contains
     real(dp) :: doldtime
     
     logical :: babortTimestep
+    integer :: ipressureFullyImplicit
     
     integer :: irepetition
     integer(I32) :: isolverStatus,isolverStatusPredictor
@@ -573,7 +606,8 @@ contains
         rvector,rrhs,rnonlinearIteration,'CC2D-NONLINEAR')
     
     ! Initialise the time stepping scheme according to the problem configuration
-    call cc_initTimeSteppingScheme (rproblem%rparamList,rtimestepping)
+    call cc_initTimeSteppingScheme (rproblem%rparamList,rtimestepping,&
+        ipressureFullyImplicit)
     
     ! Initialise the preconditioner for the nonlinear iteration
     call cc_initPreconditioner (rproblem,&
@@ -692,7 +726,7 @@ contains
           ! Proceed in time, calculate the predicted solution. 
           call lsysbl_copyVector (rvector,rpredictedSolution)              
           call cc_performTimestep (rproblem,rpredictedSolution,rrhs,&
-              rtimesteppingPredictor,rnonlinearIteration,rnlSol,&
+              rtimesteppingPredictor,ipressureFullyImplicit,rnonlinearIteration,rnlSol,&
               rtempBlock1,rtempBlock2)
           
           ! Gather statistics
@@ -799,7 +833,8 @@ contains
         
         ! Proceed the next time step -- if we are allowed to.
         call cc_performTimestep (rproblem,rvector,rrhs,&
-            rtimestepping,rnonlinearIteration,rnlSol,rtempBlock1,rtempBlock2)
+            rtimestepping,ipressureFullyImplicit,rnonlinearIteration,rnlSol,&
+            rtempBlock1,rtempBlock2)
             
         ! Gather statistics
         rproblem%rstatistics%ntimesteps = rproblem%rstatistics%ntimesteps + 1

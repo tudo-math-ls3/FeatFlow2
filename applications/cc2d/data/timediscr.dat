@@ -50,6 +50,14 @@ itimeStepScheme = 0                       # IFRSTP
 
 dtimeStepTheta = 1.0                      # THETA
 
+# Timestep-scheme for the pressure.
+# =0: Use the same timestep scheme as for the velocity.
+# =1: Calculate the pressure fully implicitely (standard)
+# No effect if Implicit-Euler is used.
+# Difference can only be seen for higher order time-discretisation.
+
+ipressureFullyImplicit = 1
+
 # ----------------------------------------------------------------------
 
 # Adaptive time stepping (similar to IADTIM)
