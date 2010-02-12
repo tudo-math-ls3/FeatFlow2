@@ -19,7 +19,7 @@
 !</input>
 
 !<inputoutput>
-      ! OPTIONAL: Collection
+      ! Collection
       type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
