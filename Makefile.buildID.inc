@@ -161,7 +161,7 @@ endif
 
 ifeq ($(strip $(ID)), pc-coredup-darwin)
 ID:=$(strip $(ID))-gcc-blas
-endfi
+endif
 
 ifeq ($(strip $(ID)), pc64-coredup-darwin)
 ID:=$(strip $(ID))-gcc-blas
