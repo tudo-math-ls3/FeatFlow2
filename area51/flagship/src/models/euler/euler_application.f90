@@ -308,10 +308,6 @@ contains
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
-    ! Hack to enforce single grid solver
-    call solver_setMinimumMultigridlevel(rsolver,&
-        solver_getMaximumMultigridlevel(rsolver))
-
     ! Initialize the individual problem levels
     call euler_initAllProblemLevels(rparlist, 'euler',&
         rproblem, rcollection)
@@ -360,23 +356,6 @@ contains
         call euler_outputSolution(rparlist, 'euler',&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
-
-
-!!$        ! BEGIN DEBUG
-!!$        call lsysbl_createVectorBlock(&
-!!$            rproblem%p_rproblemLevelMin%Rdiscretisation(1),&
-!!$            rsolutionDual, .false., ST_DOUBLE)
-!!$        if (rproblem%p_rproblemLevelMin%Rdiscretisation(1)%ncomponents .ne.&
-!!$            euler_getNVAR(rproblem%p_rproblemLevelMin)) then
-!!$          rsolutionDual%RvectorBlock(1)%NVAR = euler_getNVAR(rproblem%p_rproblemLevelMin)
-!!$          call lsysbl_resizeVectorBlock(rsolutionDual,&
-!!$              rsolutionDual%NEQ*euler_getNVAR(rproblem%p_rproblemLevelMin), .false., .false.)
-!!$        end if
-!!$        call euler_projectSolution(rsolutionPrimal, rsolutionDual)
-!!$        call euler_outputSolution(rparlist, 'euler',&
-!!$            rproblem%p_rproblemLevelMin, rsolutionDual,&
-!!$            dtime=rtimestep%dTime)
-!!$        ! END DEBUG
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -625,6 +604,7 @@ contains
     integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
     integer :: imatrixFormat,ivar,jvar,ivariable,nvariable,nvartransformed
+    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -655,7 +635,13 @@ contains
         ssectionName, 'isystemCoupling', isystemCoupling)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'celement', celement)
-
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
+    
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
     p_rboundary       => rproblemLevel%p_rproblem%rboundary
@@ -793,6 +779,21 @@ contains
               p_rdiscretisation%RspatialDiscr(ivar), .true.)
         end do
       end if
+
+      ! Enforce using summed cubature formula (if any)
+      do i = 1, p_rdiscretisation%ncomponents
+        do j = 1, p_rdiscretisation%RspatialDiscr(i)%inumFESpaces
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeBilForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeBilForm, nsumcubRefBilForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeLinForm, nsumcubRefLinForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeEval =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
+        end do
+      end do
 
     end if
 
@@ -1227,10 +1228,11 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression, ccubType, nsummedCubType
+    integer :: isolutiontype, nexpression
     integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
 
+    real(DP) :: derror
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1388,10 +1390,6 @@ contains
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
-      ! Get the number of refinement levels for summed cubature formula
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'nsummedcubtype', nsummedCubType)
-      
       ! Set up the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
@@ -1409,13 +1407,6 @@ contains
         
         ! Set pointer to spatial discretisation
         p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
-
-        ! Enforce using summed cubature formula to obtain accurate results
-        do i = 1, p_rspatialDiscr%inumFESpaces
-          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getSummedCubType(&
-              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
-        end do
         
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
@@ -1469,12 +1460,6 @@ contains
         ! Compute the lumped L2-projection
         call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
             rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
-        
-        ! Reset cubature formula to standard value
-        do i = 1, p_rspatialDiscr%inumFESpaces
-          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
-        end do
       end do
       
       !-------------------------------------------------------------------------
@@ -1496,11 +1481,9 @@ contains
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT(&
-            rproblemLevel%Rmatrix(consistentMassMatrix:consistentMassMatrix),&
+        call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
             rafcstab, rvector, rvector, euler_calcFluxFCTScalarDiss1d,&
-            0.0_DP, 0.0_DP, 1.0_DP, .true.,&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
+            0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
         
         ! Attach section name to collection structure
         rcollection%SquickAccess(1) = ssectionName
@@ -1513,11 +1496,11 @@ contains
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
       end if
-      
+
       ! Release temporal matrices (if any)
       call lsyssc_releaseMatrix(rconsistentMassMatrix)
       call lsyssc_releaseMatrix(rlumpedMassMatrix)
-      
+          
 
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
@@ -1526,6 +1509,88 @@ contains
     end select
     
   end subroutine euler_initSolution
+
+  subroutine ffunctionReference (cderivative, rdiscretisation, &
+                                   nelements, npointsPerElement, Dpoints, &
+                                   IdofsTest, rdomainIntSubset, &
+                                   Dvalues, rcollection)
+    
+    use fsystem
+    use basicgeometry
+    use triangulation
+    use scalarpde
+    use domainintegration
+    use spatialdiscretisation
+    use collection
+    
+  !<description>
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the (analytical) values of a function in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points.
+  !</description>
+    
+  !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+  !</output>
+    
+  !</subroutine>
+  
+    where (sqrt((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) .le. 0.4_DP .and.&
+           sqrt((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) .ge. 0.3_DP)
+      Dvalues = 1.0_DP
+    elsewhere
+      Dvalues = 0.01_DP
+    end where
+
+    end subroutine ffunctionReference
 
   !*****************************************************************************
 

@@ -797,6 +797,7 @@ contains
     type(t_boundary) , pointer :: p_rboundary
     type(t_fparser), pointer :: p_rfparser
 
+    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
 
     ! Retrieve application specific parameters from the parameter list
     call parlst_getvalue_int(rparlist,&
@@ -935,6 +936,21 @@ contains
             OU_CLASS_ERROR,OU_MODE_STD,'transp_initProblemLevel')
         call sys_halt()
       end select
+
+      ! Enforce using summed cubature formula (if any)
+      do i = 1, p_rdiscretisation%ncomponents
+        do j = 1, p_rdiscretisation%RspatialDiscr(i)%inumFESpaces
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeBilForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeBilForm, nsumcubRefBilForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeLinForm, nsumcubRefLinForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeEval =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
+        end do
+      end do
 
     end if
 

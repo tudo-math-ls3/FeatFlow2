@@ -97,9 +97,6 @@ sfailsafevariable(3) =
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 3
 
-# number of refinement levels for summed cubature formula
-nsummedcubtype = 2
-
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho

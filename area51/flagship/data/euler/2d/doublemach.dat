@@ -83,10 +83,9 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(3) = 
+slimitingvariable(2) = 
   density
   pressure
-  velocity
 
 # number of failsafe steps
 nfailsafe = 0
@@ -104,9 +103,6 @@ sfailsafevariable(3) =
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 3
-
-# number of refinement levels for summed cubature formula
-nsummedcubtype = 2
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -138,10 +134,10 @@ trifile = grids/2d/rect_4x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 1
+celement = 11
 
 # convert mesh to triangular mesh?
-iconvToTria = 1
+iconvToTria = 0
 
 # type of matrix format
 # 7 = matrix format 7
@@ -152,6 +148,11 @@ imatrixformat = 9
 # 0 = interleave scalar format
 # 1 = block system
 isystemformat = 0
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
@@ -258,16 +259,16 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-30
+dfinalTime = 0.2
 
 # initial time step size
-dinitialStep = 1e-3
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 1e-3
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 1e-3
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -309,10 +310,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 7
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 7
 
 # type of multigrid cycle
 # 0 = F-cylce
