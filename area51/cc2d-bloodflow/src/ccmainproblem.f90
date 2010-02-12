@@ -54,7 +54,6 @@ module ccmainproblem
   use ccstationary
   use ccnonstationary
   use ccboundarycondition
-  use ccmeshadaptivity
   
   implicit none
   
@@ -216,7 +215,7 @@ contains
     call output_line ("Time for matrix initialisation: "//&
       trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
 
-    ! On all levels, generate the static matrices used as templates
+    ! On all levels, generate the template matrices used as templates
     ! for the system matrix (Laplace, B, Mass,...)
     if (p_rproblem%MSHOW_Initialisation .ge. 1) then
       call output_separator (OU_SEP_MINUS)
@@ -278,7 +277,9 @@ contains
       call cc_postprocessingStationary (p_rproblem,rvector,rpostprocessing)
       
     else
-      
+    
+      ! Time dependent simulation with explicit time stepping.
+      !
       ! Generate the RHS vector for the first time step.
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
         call output_separator (OU_SEP_MINUS)
@@ -305,11 +306,11 @@ contains
       call stat_startTimer(rtimerSolver)
       
       call cc_solveNonstationary (p_rproblem,rvector,rrhs,rpostprocessing)
-
+      
       call stat_stopTimer(rtimerSolver)
       
     end if
-      
+    
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeSolver = &
       p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal

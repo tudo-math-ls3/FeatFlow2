@@ -149,7 +149,7 @@ contains
 
     real(DP) :: dx, dy, dx0, dy0, tol
     real(DP) :: dxRef1, dyRef1, dxRef2, dyRef2, dxRef3, dyRef3
-    real(DP) :: dtime, phi, phi1, phi2, phi3, width, height
+    real(DP) :: dtime, phi1, phi2, phi3, width, height
     integer :: iel, ivt, ive
 
     ! Set pointers
@@ -254,7 +254,6 @@ contains
 
     ! local variables
     type(t_collection) :: rcollection
-    integer, dimension(1) :: Ivalue = 0
     integer :: i
 
     ! Set pointers
@@ -266,8 +265,7 @@ contains
     rcollection%p_rvectorQuickAccess1 => rvector
 
     ! Initialise the callback function
-    call performAdaptation(rcollection,&
-        HADAPT_OPR_INITCALLBACK,Ivalue,Ivalue)
+    call performAdaptation(HADAPT_OPR_INITCALLBACK,rcollection)
 
     ! Perform one step h-adaptivity
     call hadapt_refreshAdaptation(p_rhadapt,p_rtriangulation)

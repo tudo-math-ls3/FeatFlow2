@@ -361,8 +361,8 @@ module ccnonlinearcore
     ! Pointer to the discretisation structure of that level
     type(t_blockDiscretisation), pointer :: p_rdiscretisation => null()
 
-    ! Pointer to static/precalculated information on this level.
-    type(t_staticLevelInfo), pointer :: p_rstaticInfo => null()
+    ! Pointer to template information on this level.
+    type(t_asmTemplates), pointer :: p_rasmTempl => null()
 
     ! Pointer to dynamic information on this level.
     type(t_dynamicLevelInfo), pointer :: p_rdynamicInfo => null()
@@ -484,7 +484,7 @@ contains
   !<subroutine>
   
     subroutine cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
-        rdiscretisation,rstaticLevelInfo,rdynamicLevelInfo)
+        rdiscretisation,rasmTempl,rdynamicLevelInfo)
   
   !<description>
     ! Initialises the rnonlinearCCMatrix structure with parameters and pointers
@@ -493,13 +493,13 @@ contains
 
   !<input>
     ! Global problem structure.
-    type(t_problem), intent(in) :: rproblem
+    type(t_problem), intent(in), target :: rproblem
     
     ! Discretisation of the level where the matrix is to be assembled.
     type(t_blockDiscretisation), intent(in), target :: rdiscretisation
     
-    ! Static structures on this level.
-    type(t_staticLevelInfo), intent(in), target :: rstaticLevelInfo
+    ! Template structures on this level.
+    type(t_asmTemplates), intent(in), target :: rasmTempl
 
     ! Dynamic structures on this level. Usually change in every timestep.
     type(t_dynamicLevelInfo), intent(in), target :: rdynamicLevelInfo
@@ -517,19 +517,12 @@ contains
       ! with basic global information.
       !
       ! 1.) Model, stabilisation
-      rnonlinearCCMatrix%iupwind = rproblem%rstabilisation%iupwind
-      rnonlinearCCMatrix%isubequation = rproblem%isubequation
-      rnonlinearCCMatrix%cviscoModel = rproblem%cviscoModel
-      rnonlinearCCMatrix%dviscoexponent = rproblem%dviscoexponent
-      rnonlinearCCMatrix%dviscoEps = rproblem%dviscoEps
-      rnonlinearCCMatrix%dnu = rproblem%dnu
-      rnonlinearCCMatrix%dupsam = rproblem%rstabilisation%dupsam
-      rnonlinearCCMatrix%ccubEOJ = rproblem%rstabilisation%ccubEOJ
-      rnonlinearCCMatrix%clocalH = rproblem%rstabilisation%clocalH
+      rnonlinearCCMatrix%p_rstabilisation => rproblem%rstabilisation
+      rnonlinearCCMatrix%p_rphysics => rproblem%rphysics
       
       ! 2.) Pointers to global precalculated matrices.
       rnonlinearCCMatrix%p_rdiscretisation => rdiscretisation
-      rnonlinearCCMatrix%p_rstaticInfo => rstaticLevelInfo
+      rnonlinearCCMatrix%p_rasmTempl => rasmTempl
       rnonlinearCCMatrix%p_rdynamicInfo => rdynamicLevelInfo
       
     end subroutine
@@ -662,7 +655,7 @@ contains
       ! matrix we want to have.
       call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
-        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rasmTempl,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
 
       rnonlinearCCMatrix%dalpha = rnonlinearIteration%dalpha
@@ -671,7 +664,7 @@ contains
       rnonlinearCCMatrix%deta = 1.0_DP
       rnonlinearCCMatrix%dtau = 1.0_DP
       
-      call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP)        
+      call cc_nonlinearMatMul (rnonlinearCCMatrix,rx,rd,-1.0_DP,1.0_DP,rproblem)        
       
       p_RfilterChain => rnonlinearIteration%p_RfilterChain
       if (associated(p_RfilterChain)) then    
@@ -847,7 +840,7 @@ contains
  
       call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdiscretisation,&
-        rnonlinearIteration%RcoreEquation(ilvmax)%p_rstaticInfo,&
+        rnonlinearIteration%RcoreEquation(ilvmax)%p_rasmTempl,&
         rnonlinearIteration%RcoreEquation(ilvmax)%p_rdynamicInfo)
         
       call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
@@ -863,7 +856,7 @@ contains
 
       ! Assemble the matrix.        
       call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-          rmatrix,rnonlinearCCMatrix,rtemp1)
+          rmatrix,rnonlinearCCMatrix,rproblem,rtemp1)
       
       ! We do not have to implement any boundary conditions into the matrix
       ! as we apply an appropriate filter to the defect vector after
@@ -1404,7 +1397,7 @@ contains
           
           call cc_initNonlinMatrix (rnonlinearCCMatrix,rproblem,&
             rnonlinearIteration%RcoreEquation(ilev)%p_rdiscretisation,&
-            rnonlinearIteration%RcoreEquation(ilev)%p_rstaticInfo,&
+            rnonlinearIteration%RcoreEquation(ilev)%p_rasmTempl,&
             rnonlinearIteration%RcoreEquation(ilev)%p_rdynamicInfo)
             
           call cc_prepareNonlinMatrixAssembly (rnonlinearCCMatrix,&
@@ -1421,10 +1414,10 @@ contains
           ! If we are on a lower level, we can specify a 'fine-grid' matrix.
           if (ilev .eq. NLMAX) then
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rnonlinearCCMatrix,p_rvectorCoarse)
+                p_rmatrix,rnonlinearCCMatrix,rproblem,p_rvectorCoarse)
           else
             call cc_assembleMatrix (CCMASM_COMPUTE,CCMASM_MTP_AUTOMATIC,&
-                p_rmatrix,rnonlinearCCMatrix,p_rvectorCoarse,p_rmatrixFine)
+                p_rmatrix,rnonlinearCCMatrix,rproblem,p_rvectorCoarse,p_rmatrixFine)
           end if
 
           ! Boundary conditions

@@ -46,10 +46,11 @@ module ccbasic
 
 !<typeblock>
 
-  ! A type block specifying all 'static' information which are depending
-  ! on a discretisation and a triangulation. Such static information can be
+  ! A type block specifying all 'template' information which are depending
+  ! on a discretisation and a triangulation. Such template information can be
   ! precalculated and is valid until the mesh or the FE spaces change.
-  type t_staticLevelInfo
+  ! It can be used to create vectors and matrices e.g.
+  type t_asmTemplates
   
     ! A template FEM matrix that defines the structure of Laplace/Stokes/...
     ! matrices. The matrix contains only a stucture, no content.
@@ -132,6 +133,7 @@ module ccbasic
 
 !</typeblock>
 
+
 !<typeblock description="Type block defining dynamic information about a level that change in every timestep">
 
   type t_dynamicLevelInfo
@@ -182,8 +184,8 @@ module ccbasic
     ! Temporary vector in the size of the RHS/solution vector on that level.
     type(t_vectorBlock) :: rtempVector
 
-    ! A structure containing all static information about this level.
-    type(t_staticLevelInfo) :: rstaticInfo
+    ! A structure containing all template information about this level.
+    type(t_asmTemplates) :: rasmTempl
 
     ! A structure containing all dynamic information about this level.
     type(t_dynamicLevelInfo) :: rdynamicInfo
@@ -226,6 +228,46 @@ module ccbasic
 
 !</typeblock>
 
+!<typeblock>
+
+  ! This type block encapsules all physical constants and configuration
+  ! parameters for the primal equation. This includes e.g. the type of the equation,
+  ! viscosity parameter etc.
+  type t_problem_physics
+  
+    ! Viscosity parameter nu = 1/Re
+    real(DP) :: dnu
+    
+    ! Type of problem.
+    ! =0: Stokes.
+    ! =1: Navier-Stokes.
+    integer :: iequation
+    
+    ! Type of subproblem of the main problem. Depending on iequationType.
+    ! If iequationType=0 or =1:
+    ! =0: (Navier-)Stokes with gradient tensor
+    ! =1: (Navier-)Stokes with deformation tensor
+    integer :: isubEquation
+    
+    ! Model for the viscosity.
+    ! =0: Constant viscosity.
+    ! =1: Power law: nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
+    ! =2: Bingham fluid: nu = nu_0 + dviscoyield / sqrt(|D(u)||^2+dviscoEps^2), nu_0 = 1/RE
+    integer :: cviscoModel 
+        
+    ! Exponent parameter for the viscosity model
+    real(DP) :: dviscoexponent
+
+    ! Epsilon regularisation for the viscosity model
+    real(DP) :: dviscoEps
+    
+    ! Yield stress for Bingham fluid
+    real(DP) :: dviscoYield
+
+  end type
+
+!</typeblock>
+
 
 !<typeblock description="Application-specific type block configuring the stabilisation">
 
@@ -235,11 +277,18 @@ module ccbasic
     integer :: iupwind = 0
     
     ! Cubature formula for the EOJ stabilisation.
-    integer(I32) :: ccubEOJ
+    integer(I32) :: ccubEOJ = CUB_G4_1D
     
     ! Stabilisation parameter for the nonlinearity.
     ! Standard values: Streamline diffusion: 1.0. Upwind: 0.1. Edge oriented: 0.01.
     real(DP) :: dupsam = 1.0_DP
+    
+    ! 2nd Relaxation parameter in the jump stabilisation. Standard = 0.0
+    real(dp) :: dUpsamStar = 0.0
+
+    ! Exponent for edge length weight in the jump stabilisation. Standard = 2.0
+    ! (corresponds to a weight dupsam*h^2).
+    real(dp) :: deojEdgeExp = 2.0
     
     ! Calculation of local H for streamline diffusion
     integer :: clocalH = 0
@@ -247,6 +296,7 @@ module ccbasic
   end type
 
 !</typeblock>
+
 
 !<typeblock>
 
@@ -303,6 +353,9 @@ module ccbasic
 
   type t_problem
   
+    ! Switch to decide of mesh adaptation should be performed
+    logical :: bmeshAdaptation = .false.
+
     ! Output level during the initialisation phase.
     integer :: MSHOW_Initialisation
   
@@ -315,33 +368,8 @@ module ccbasic
     ! Maximum refinement level
     integer :: NLMAX
     
-    ! Viscosity parameter nu = 1/Re
-    real(DP) :: dnu
-    
-    ! Type of problem.
-    ! =0: Stokes.
-    ! =1: Navier-Stokes.
-    integer :: iequation
-
-    ! Switch for mesh adaptation
-    integer :: bmeshAdaptation
-    
-    ! Type of subproblem of the main problem. Depending on iequationType.
-    ! If iequationType=0 or =1:
-    ! =0: (Navier-)Stokes with gradient tensor
-    ! =1: (Navier-)Stokes with deformation tensor
-    integer :: isubEquation
-    
-    ! Model for the viscosity.
-    ! =0: Constant viscosity.
-    ! =1: Power law nu = nu_0 * z^(dviscoexponent/2 - 1), nu_0 = 1/RE, z=||D(u)||^2+dviscoEps
-    integer :: cviscoModel 
-        
-    ! Exponent parameter for the viscosity model
-    real(DP) :: dviscoexponent
-
-    ! Epsilon regularisation for the viscosity model
-    real(DP) :: dviscoEps
+    ! A block containing the physics of the problem.
+    type(t_problem_physics) :: rphysics
 
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
@@ -367,11 +395,11 @@ module ccbasic
     ! =0: stationary simulation.
     ! =1: time-dependent simulation with explicit time stepping configured 
     !     by rtimedependence
-    integer                               :: itimedependence
+    integer :: itimedependence
     
     ! A parameter block for everything that controls the time dependence.
     ! Only valid if itimedependence=1!
-    type(t_problem_explTimeStepping)      :: rtimedependence
+    type(t_problem_explTimeStepping) :: rtimedependence
     
     ! A configuration block for the stabilisation of the convection.
     type(t_problem_stabilisation) :: rstabilisation
@@ -379,14 +407,14 @@ module ccbasic
     ! A collection object that saves structural data and some 
     ! problem-dependent information which is e.g. passed to 
     ! callback routines.
-    type(t_collection)                    :: rcollection
+    type(t_collection) :: rcollection
     
     ! A param list that saves all parameters from the DAT/INI file(s).
-    type(t_parlist)                       :: rparamList
+    type(t_parlist) :: rparamList
 
     ! A statistics structure gathering statistical data about the
     ! simulation.
-    type(t_cc_statistics)                 :: rstatistics
+    type(t_cc_statistics) :: rstatistics
 
   end type
 

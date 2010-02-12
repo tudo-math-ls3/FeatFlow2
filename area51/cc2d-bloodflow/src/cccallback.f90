@@ -92,9 +92,15 @@
 !#      -> If the moving frame formulation is activated, this routine
 !#         returns the velocity and acceleration of the moving frame.
 !#
-!# 15.) performAdaptation
+!# 15.) getNonconstantViscosity
+!#      -> If nonconstant viscosity is activated, this routine calculates
+!#         the viscosity.
+!#
+!# 16.) calcAdaptiveTimestep
+!#      -> Calculate a user defined timestep length.
+!#
+!# 17.) performAdaptation
 !#      -> Is called by the mesh adaptation procedure
-!#      -> Updates the solution vector as vertices are added/removed.
 !#
 !# For nonstationary simulation, it might be neccessary in these routines
 !# to access the current simulation time. Before the assembly process, the cc2d
@@ -1028,7 +1034,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0
+    Dvalues(:,:) = 0.0_DP
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1126,7 +1132,7 @@ contains
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = 0.0
+    Dvalues(:,:) = 0.0_DP
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -1612,19 +1618,151 @@ contains
       dtime = 0.0_DP
     end if
 
-    ! Velocity and acceleration is zero in both dimensinons.
-    Dvelocity(:) = 0.0
+    ! Default implementation: Velocity and acceleration is zero in all dimensinons.
+    Dvelocity(:) = 0.0_DP
     
-    Dacceleration(:) = 0.0
+    Dacceleration(:) = 0.0_DP
 
   end subroutine
 
-  !*****************************************************************************
+! *****************************************************************
 
 !<subroutine>
 
-  subroutine performAdaptation(rcollection, iOperation,&
-      Ivertices, Ielements)
+  subroutine getNonconstantViscosity (cterm,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset, &
+                Dcoefficients,rvelocity,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! This subroutine is called during the calculation of the SD operator. 
+  ! It allows to calculate a user defined viscosity coefficient
+  ! in case of a nonconstant viscosity.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! Term which is to be computed.
+  ! =0: Calculate the $\nu$ values in front of the Laplace.
+  ! =1: Calculate the $\alpha$ values in front of the Mass matrix.
+  integer, intent(in) :: cterm
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! Current velocity vector.
+  type(t_vectorBlock), intent(in) :: rvelocity
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the coefficients
+  ! in all the points specified in Dpoints.
+  ! cterm specifies what to evaluate.
+  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!</output>
+  
+!</subroutine>
+
+    ! Add a viscolity here. The parameter [CC-DISCRETISATION].cviscoModel
+    ! decides on whether this coefficient is evaluated or not.
+    !
+    ! WARNING: For a nonconstant coefficient, the extended assembly
+    ! method must be activated!!! (Parameter [CC-DISCRETISATION].iupwind)
+    Dcoefficients(:,:) = 0.0_DP
+
+  end subroutine
+
+! *****************************************************************
+  
+!<subroutine>
+  subroutine calcAdaptiveTimestep (dtstep,dtimeInit,dtime,isolverStatus,rcollection)
+!</subroutine>
+  
+!<description>
+  ! Is called by the framework to calculate a new timestep size if
+  ! cadaptiveTimeStepping=-1. 
+!</description>
+
+!<input>
+  ! Initial time
+  real(dp), intent(in) :: dtimeInit 
+  
+  ! Current simulation time
+  real(dp), intent(in) :: dtime     
+
+  ! Status of the solver
+  !  TADTS_SST_NLFAIL           = failure of the nonlinear solver
+  !  TADTS_SST_NLPRECFAIL       = failure of the nonlinear solver and 
+  !                               preconditioner in the nonlinear solver
+  !  TADTS_SST_NLINCOMPLETE     = nonlinear solver did not converge completely
+  !  TADTS_SST_NLPREDFAIL       = failure of the nonlinear solver and preconditioner 
+  !                               in the nonlinear solver during the predictor step
+  !  TADTS_SST_NLPREDPRECFAIL   = failure of the nonlinear solver during 
+  !                               the predictor step
+  !  TADTS_SST_NLPREDINCOMPLETE = nonlinear solver in the predictor step did 
+  !                               not converge completely
+  integer, intent(in) :: isolverStatus 
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(in), optional :: rcollection
+!</input>
+
+!<inputoutput>
+  ! Current timestep size. The routine may change this as needed.
+  ! Must be > 0!
+  real(dp), intent(inout) :: dtstep
+!</inputoutput>
+    
+    ! Current implementation: No nothing.
+    ! Then, a fixed timestep is used.
+    
+  end subroutine
+
+! *****************************************************************
+
+!<subroutine>
+
+  subroutine performAdaptation(iOperation, rcollection)
     
 !<description>
     ! This callback function is used to perform postprocessing tasks
@@ -1635,12 +1773,6 @@ contains
 !<input>
     ! Identifier for the grid modification operation
     integer, intent(in) :: iOperation
-
-    ! Array of vertices involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ivertices
-
-    ! Array of elements involved in the adaptivity step
-    integer, dimension(:), intent(in) :: Ielements
 !</input>
 
 !<inputoutput>
