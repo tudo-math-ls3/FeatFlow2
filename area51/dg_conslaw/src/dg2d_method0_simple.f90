@@ -37,6 +37,7 @@ module dg2d_method0_simple
   use cubature
   use dg2d_routines
   use collection
+  use linearalgebra
   
     
   use poisson2d_callback
@@ -92,7 +93,7 @@ contains
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
     type(t_matrixScalar) :: rmatrixMC, rmatrixCX, rmatrixCY
-    type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp
+    type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
@@ -135,18 +136,20 @@ contains
     
     real(DP), dimension(2) :: vel
     
+    real(dp) :: dL2updnorm
+    
     integer :: ielementType
     
     type(t_collection) :: rcollection
     
-    dt = 0.005_DP
-    !ttfinal = 0.0_dp
-    ttfinal = 2*SYS_PI
+    dt = 0.001_DP
+    ttfinal = 0.01_dp
+    !ttfinal = 5*SYS_PI
     
     ielementType = EL_DG_T2_2D
     
     
-    ilimiting = 0
+    ilimiting = 2
     
         
     vel(1)=1.0_DP
@@ -155,7 +158,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our problem on level...
-    NLMAX = 5
+    NLMAX = 7
     
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -163,10 +166,10 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/RECT2x1.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/RECT2x1.tri', rboundary)
      
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -260,6 +263,7 @@ contains
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsoltemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhstemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolUp ,.true.,ST_DOUBLE)
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolOld ,.true.,ST_DOUBLE)
                                  
 !    ! Test the new DG edgebased routine                                 
 !    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
@@ -426,6 +430,7 @@ contains
 !       p_Ddata(1)=0.0_DP       
        
        call lsyssc_copyVector(rsol,rsoltemp)
+       call lsyssc_copyVector(rsol,rsolOld)
        
        ! Step 1/3
        
@@ -550,23 +555,25 @@ contains
        ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsol)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
+       
+       ! Test, if the solution has converged
+       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
+       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /lsyssc_vectorNorm (rsol,LINALG_NORML2)
+       write(*,*) dL2updnorm
+       
     
        ! Go on to the next time step
        ttime = ttime + dt
-       
        ! If we would go beyond the final time in our next time step,
        ! then reduce the timestep
        if (ttfinal-ttime<dt) dt = ttfinal-ttime
 
        ! Leave the time stepping loop if final time is reached
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
+       
+       if (dL2updnorm.le.1.0e-12) exit timestepping
 
     end do timestepping
-    
-    
-    
-    
-    
     
     
     

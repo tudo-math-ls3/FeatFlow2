@@ -35,7 +35,7 @@
   !</description>
     
   !<input>
-  real(DP), dimension(:,:,:), intent(in) :: DsolVals
+  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
   real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset

@@ -1042,7 +1042,7 @@ contains
   use collection
   
   !<input>
-  real(DP), dimension(:,:,:), intent(in) :: DsolVals
+  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
   real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
@@ -1056,7 +1056,7 @@ contains
 
   integer :: ipoint, iel
   real(dp), dimension(2) :: Dvel
-  real(DP) :: dvn ,dx, dy
+  real(DP) :: dvn ,dx, dy, dr
   real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
   
   Dvel(1)=1.0_DP
@@ -1069,10 +1069,29 @@ contains
       dx = DpointsReal(1,ipoint,iel)
       dy = DpointsReal(2,ipoint,iel)
       
-      Dvel(1)=0.5_DP-dy
-      Dvel(2)=dx-0.5_DP
+      ! Zalesak
+      !Dvel(1)=0.5_DP-dy
+      !Dvel(2)=dx-0.5_DP
+      
+      ! Steady circular convection
+      Dvel(1)=dy
+      Dvel(2)=1.0_DP-dx
     
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
+      
+      ! Set initial condition on the inflow boundary
+      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
+!        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
+!        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
+!          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
+!        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
+!          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+!        end if
+        
+        dr = sqrt((dx-0.5_dp)**2.0_dp)
+        if (dr<0.2)DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
+      
+      end if
     
       ! Upwind flux
       if (dvn.ge.0) then
@@ -1206,16 +1225,21 @@ contains
         !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
         
         ! Zalesak
-        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
-        if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
-        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
-        if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
-        r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-        if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
+        !if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
+        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+        !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
+        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+        !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+        
+        ! Circular convection
+        r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
+        if ((0.3_dp.le.r1).and.(r1.le.0.7_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
+        
       end do
     end do
                     
-       ! Dcoefficients (1,:,:) =0.0_dp
+    !Dcoefficients (1,:,:) =0.0_dp
 
   end subroutine
 
