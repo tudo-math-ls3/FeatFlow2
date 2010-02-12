@@ -463,6 +463,34 @@ contains
       end do
       !$omp end parallel do
 
+    elseif (trim(cvariable) .eq. 'velo_part_x') then
+      !$omp parallel do
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(2, ieq)/Ddata(1, ieq)
+      end do
+      !$omp end parallel do
+
+    elseif (trim(cvariable) .eq. 'velo_part_y') then
+      !$omp parallel do
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(3, ieq)/Ddata(1, ieq)
+      end do
+      !$omp end parallel do
+
+    elseif (trim(cvariable) .eq. 'velo_part_z') then
+      !$omp parallel do
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(4, ieq)/Ddata(1, ieq)
+      end do
+      !$omp end parallel do
+      
+    elseif (trim(cvariable) .eq. 'vol_part') then
+      !$omp parallel do
+      do ieq = 1, neq
+        Dvalue(ieq) = Ddata(nvar, ieq)/Ddata(1, ieq)
+      end do
+      !$omp end parallel do
+
     elseif (trim(cvariable) .eq. 'momentum_x') then
       !$omp parallel do
       do ieq = 1, neq
@@ -966,7 +994,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:), pointer :: p_Ddata, p_Ddensity
+    real(DP), dimension(:), pointer :: p_Ddata, p_Ddensity, p_Dvol_part
     real(DP), dimension(:), pointer :: p_Dvelocity_x, p_Dvelocity_y
     real(DP), dimension(:), pointer :: p_Dvelo_part_x, p_Dvelo_part_y
     real(DP), dimension(:), pointer :: p_Denergy
@@ -1083,8 +1111,27 @@ contains
       allocate(p_Dvelo_part_x(neq))
       call ucd_getVariable(rexport, 'velo_part_Y', p_Dvelo_part_y)
 
+
+      ! Get volumefraction of the particles
+      call ucd_getVariable(rexport, 'vol_part', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'eulerlagrange_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvol_part(neq))
+      call ucd_getVariable(rexport, 'vol_part', p_Dvol_part)
+
+      ! Set energy variable
+      call setVarInterleaveFormat(neq, nvar, 4,&
+          p_Dvol_part, p_Ddata)
+
+
       ! Deallocate temporal memory
-      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy, p_Dvelo_part_x, p_Dvelo_part_y)
+      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy,&
+                     p_Dvelo_part_x, p_Dvelo_part_y, p_Dvol_part)
 
     else
 
@@ -1202,9 +1249,26 @@ contains
       ! Set velocity of the particles in x-direction
       call setVarBlockFormat(neq, nvar, 2,&
           p_Dvelo_part_y, p_Ddata)
+          
+      ! Get volumefraction of the particles
+      call ucd_getVariable(rexport, 'vol_part', nlength=nlength)
+      if (nlength .ne. neq) then
+        call output_line ('Invalid size of data', &
+            OU_CLASS_ERROR,OU_MODE_STD,'eulerlagrange_setVariables')
+        call sys_halt()
+      end if
+
+      ! Allocate temporal memory
+      allocate(p_Dvol_part(neq))
+      call ucd_getVariable(rexport, 'vol_part', p_Dvol_part)
+
+      ! Set volumefraction of the particles
+      call setVarBlockFormat(neq, nvar, 2,&
+          p_Dvol_part, p_Ddata)
 
       ! Deallocate temporal memory
-      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy, p_Dvelo_part_x, p_Dvelo_part_y)
+      deallocate(p_Ddensity, p_Dvelocity_x, p_Dvelocity_y, p_Denergy, &
+                    p_Dvelo_part_x, p_Dvelo_part_y, p_Dvol_part)
 
     end if
 

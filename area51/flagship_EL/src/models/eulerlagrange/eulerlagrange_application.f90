@@ -1615,8 +1615,8 @@ contains
     
     ! local variables
     type(t_ucdExport) :: rexport
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3
-    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3, rvector4, rvector5, rvector6
+    real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
     character(len=SYS_NAMELEN) :: cvariable
     integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
 
@@ -1654,21 +1654,33 @@ contains
       select case(ndim)
       case (NDIM1D)
         call lsyssc_createVector(rvector1, isize, .false.)
+        call lsyssc_createVector(rvector4, isize, .false.)
         call lsyssc_getbase_double(rvector1, p_Ddata1)
+        call lsyssc_getbase_double(rvector4, p_Ddata4)
         
       case (NDIM2D)
         call lsyssc_createVector(rvector1, isize, .false.)
         call lsyssc_createVector(rvector2, isize, .false.)
+        call lsyssc_createVector(rvector4, isize, .false.)
+        call lsyssc_createVector(rvector5, isize, .false.)
         call lsyssc_getbase_double(rvector1, p_Ddata1)
         call lsyssc_getbase_double(rvector2, p_Ddata2)
+        call lsyssc_getbase_double(rvector4, p_Ddata4)
+        call lsyssc_getbase_double(rvector5, p_Ddata5)
         
       case (NDIM3D)
         call lsyssc_createVector(rvector1, isize, .false.)
         call lsyssc_createVector(rvector2, isize, .false.)
         call lsyssc_createVector(rvector3, isize, .false.)
+        call lsyssc_createVector(rvector4, isize, .false.)
+        call lsyssc_createVector(rvector5, isize, .false.)
+        call lsyssc_createVector(rvector6, isize, .false.)
         call lsyssc_getbase_double(rvector1, p_Ddata1)
         call lsyssc_getbase_double(rvector2, p_Ddata2)
         call lsyssc_getbase_double(rvector3, p_Ddata3)
+        call lsyssc_getbase_double(rvector4, p_Ddata4)
+        call lsyssc_getbase_double(rvector5, p_Ddata5)
+        call lsyssc_getbase_double(rvector6, p_Ddata6)
         
       case DEFAULT
         call output_line('Invalid number of spatial dimensions',&
@@ -1724,27 +1736,27 @@ contains
             ! Special treatment of velocity vector
             select case(ndim)
             case (NDIM1D)
-              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
-                  'velo_part_x', p_Dsolution, p_Ddata1)
-              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata1)
+              call eulerlagrange_getVarInterleaveFormat(rvector4%NEQ, NVAR1D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)
 
             case (NDIM2D)
-              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata1)
-              call eulerlagrange_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
-                  'velo_part_y', p_Dsolution, p_Ddata2)
+              call eulerlagrange_getVarInterleaveFormat(rvector4%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call eulerlagrange_getVarInterleaveFormat(rvector5%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata5)
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata1, p_Ddata2)
+                  p_Ddata4, p_Ddata5)
 
             case (NDIM3D)
-              call eulerlagrange_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
-                  'velo_part_x', p_Dsolution, p_Ddata1)
-              call eulerlagrange_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
-                  'velo_part_y', p_Dsolution, p_Ddata2)
-              call eulerlagrange_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
-                  'velo_part_z', p_Dsolution, p_Ddata3)
+              call eulerlagrange_getVarInterleaveFormat(rvector4%NEQ, NVAR3D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call eulerlagrange_getVarInterleaveFormat(rvector5%NEQ, NVAR3D,&
+                  'velo_part_y', p_Dsolution, p_Ddata5)
+              call eulerlagrange_getVarInterleaveFormat(rvector6%NEQ, NVAR3D,&
+                  'velo_part_z', p_Dsolution, p_Ddata6)
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata1, p_Ddata2, p_Ddata3)
+                  p_Ddata4, p_Ddata5, p_Ddata6)
             end select
 
           else
@@ -1776,10 +1788,6 @@ contains
                   'velocity_x', p_Dsolution, p_Ddata1)
               call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata1)
               
-              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata2)
-              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata1)
-              
             case (NDIM2D)
               call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1788,13 +1796,6 @@ contains
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2)
                   
-              call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata1)
-              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
-                  'velo_part_y', p_Dsolution, p_Ddata2)
-              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata1, p_Ddata2)
-
             case (NDIM3D)
               call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
                   'velocity_x', p_Dsolution, p_Ddata1)
@@ -1804,18 +1805,37 @@ contains
                   'velocity_z', p_Dsolution, p_Ddata3)
               call ucd_addVarVertBasedVec(rexport, 'velocity',&
                   p_Ddata1, p_Ddata2, p_Ddata3)
-                  
-              call eulerlagrange_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata1)
-              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
-                  'velo_part_y', p_Dsolution, p_Ddata2)
-              call eulerlagrange_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
-                  'velo_part_z', p_Dsolution, p_Ddata3)
+            end select
+   
+          elseif (trim(cvariable) .eq. 'velo_part') then
+
+            ! Special treatment of velocity vector
+            select case(ndim)
+            case (NDIM1D)
+              call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)   
+                   
+            case (NDIM2D)
+              call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call eulerlagrange_getVarBlockFormat(rvector5%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata5)
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata1, p_Ddata2, p_Ddata3)
+                  p_Ddata4, p_Ddata5)
+                  
+            case (NDIM3D)           
+              call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
+                  'velo_part_x', p_Dsolution, p_Ddata4)
+              call eulerlagrange_getVarBlockFormat(rvector5%NEQ, NVAR2D,&
+                  'velo_part_y', p_Dsolution, p_Ddata5)
+              call eulerlagrange_getVarBlockFormat(rvector6%NEQ, NVAR2D,&
+                  'velo_part_z', p_Dsolution, p_Ddata6)
+              call ucd_addVarVertBasedVec(rexport, 'velo_part',&
+                  p_Ddata4, p_Ddata5, p_Ddata6)
 
             end select
-            
+             
           else
             
             ! Standard treatment for scalar quantity
@@ -1837,6 +1857,9 @@ contains
       call lsyssc_releaseVector(rvector1)
       call lsyssc_releaseVector(rvector2)
       call lsyssc_releaseVector(rvector3)
+      call lsyssc_releaseVector(rvector4)
+      call lsyssc_releaseVector(rvector5)
+      call lsyssc_releaseVector(rvector6)
       
     end if
     

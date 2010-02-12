@@ -97,6 +97,9 @@ module euler_lagrange
       ! volumepart of the particles 
       integer(I32) :: h_PartVol
       real(DP), dimension(:), pointer :: p_PartVol
+      ! volumepart of the particles 
+      integer(I32) :: h_PartVelo
+      real(DP), dimension(:,:), pointer :: p_PartVelo
       ! gravity
       real(DP), dimension(2)  :: gravity
       ! viscosity of the gas
@@ -338,6 +341,9 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
    ! volumepart of the particles
    call storage_new ('euler_lagrange', 'Elements:particlevolume', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVol, &
                             ST_NEWBLOCK_NOINIT)
+   ! velocity of the particles
+   call storage_new ('euler_lagrange', 'Elements:particlevelocity', md_el_length, ST_DOUBLE, rParticles%h_PartVelo, &
+                            ST_NEWBLOCK_NOINIT)
    
    call storage_getbase_double (rParticles%h_xpos, rParticles%p_xpos)
    call storage_getbase_double (rParticles%h_ypos, rParticles%p_ypos)
@@ -369,6 +375,7 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
    call storage_getbase_double (rParticles%h_bdy_check, rParticles%p_bdy_check)
 
    call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
+   call storage_getbase_double2D (rParticles%h_PartVelo, rParticles%p_PartVelo)
    call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
   
    ! Set pointer to coordinate vector
@@ -425,6 +432,8 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
     rParticles%gravity(2)= gravityy
     rParticles%iTimestep= 0
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
+    rParticles%p_PartVol= 0
+    rParticles%p_PartVelo= 0
 
     ! set boundaryconditions for the particles
     select case(boundbehav)
@@ -609,7 +618,10 @@ SUBROUTINE eulerlagrange_step(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
     end do
 
     ! subroutine to calculate the volume part of the particles
-    !call calculatevolumepart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+    call calculatevolumepart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+
+    ! subroutine to calculate the velocity of the particles 
+    call calculatevelopart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
     close(unit=20+rParticles%iTimestep)
     rParticles%iTimestep=rParticles%iTimestep+1
@@ -1191,8 +1203,8 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
 	real(DP), dimension(3) :: rho_gas
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
     
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3
-    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3, rvector4, rvector5, rvector6
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
 
 
     ! startingpostions of the particles
@@ -1224,9 +1236,15 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
 call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
 call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_y', rvector2)
 call eulerlagrange_getVariable(rsolutionPrimal, 'density', rvector3)
+call eulerlagrange_getVariable(rsolutionPrimal, 'velo_part_x', rvector4)
+call eulerlagrange_getVariable(rsolutionPrimal, 'velo_part_y', rvector5)
+call eulerlagrange_getVariable(rsolutionPrimal, 'vol_part', rvector6)
 call lsyssc_getbase_double(rvector1, p_Ddata1)
 call lsyssc_getbase_double(rvector2, p_Ddata2)
 call lsyssc_getbase_double(rvector3, p_Ddata3)
+call lsyssc_getbase_double(rvector4, p_Ddata4)
+call lsyssc_getbase_double(rvector5, p_Ddata5)
+call lsyssc_getbase_double(rvector6, p_Ddata6)
  
     c_pi= 3.14159265358979323846264338327950288
 
@@ -1363,6 +1381,9 @@ call lsyssc_getbase_double(rvector3, p_Ddata3)
 call lsyssc_releasevector(rvector1)
 call lsyssc_releasevector(rvector2)
 call lsyssc_releasevector(rvector3)
+call lsyssc_releasevector(rvector4)
+call lsyssc_releasevector(rvector5)
+call lsyssc_releasevector(rvector6)
 
 END SUBROUTINE moveparticle
 
@@ -1662,13 +1683,10 @@ END SUBROUTINE checkboundary
 !************************************ SUBROUTINE to calculate the volumepart ******************************************
 !*
 
-SUBROUTINE calculatevolumepart(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+SUBROUTINE calculatevolumepart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -1692,7 +1710,7 @@ SUBROUTINE calculatevolumepart(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
     ! Handle to 
     !       p_DelementArea = array [1..NEL+1] of double.
     ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
-    real(DP), dimension(:,:), pointer :: p_DelementVolume
+    real(DP), dimension(:), pointer :: p_DelementVolume
 
     ! pointer to the vertices adjacent to an element
     !
@@ -1710,21 +1728,22 @@ SUBROUTINE calculatevolumepart(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
 
     ! local variables
 	integer :: i, current
-	real(DP) :: area, det_A, c_pi
-	real(DP), dimension(3) :: x,y
+	real(DP) :: c_pi
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
  
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    
+    ! Get vertices at element
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
+    ! Get area of each element
+    call storage_getbase_double(&
+         p_rtriangulation%h_DelementVolume, p_DelementVolume)
+
     c_pi= 3.14159265358979323846264338327950288
 
-	DO i= 1, rParticles%nPart
+	do i= 1, rParticles%nPart
 
         ! element of the current particle
 		current= rParticles%p_element(i)
@@ -1732,19 +1751,123 @@ SUBROUTINE calculatevolumepart(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
         ! store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
-		                rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2
+		                (rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(1,current))
 		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
-		                rParticles%p_lambda2(i)*c_pi*0.25*rParticles%p_diam(i)**2
+		                (rParticles%p_lambda2(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(2,current))
 		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
-		                rParticles%p_lambda3(i)*c_pi*0.25*rParticles%p_diam(i)**2
+		                (rParticles%p_lambda3(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(3,current))
 
-	END DO
+	end do
+
+    ! Set volumefraction of the particles
+      !call setVarInterleaveFormat(neq, nvar, 4,&
+      !    p_Denergy, p_Ddata)
+
+     !call ucd_addVariableVertexBased (rexport,sname,cvarSpec, &
+      !DdataVert, DdataMid, DdataElem)
+
+
 
 END SUBROUTINE calculatevolumepart
 
 !*
 !**********************************************************************************************************************
+
+
+!************************************ SUBROUTINE to calculate the volumepart ******************************************
+!*
+
+SUBROUTINE calculatevelopart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+
+    ! parameterlist
+    type(t_parlist), intent(inout) :: rparlist
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+
+    ! particles
+    type(t_Particles), intent(inout) :: rParticles
+
+     ! primal solution vector
+    type(t_vectorBlock), intent(inout), target :: rsolution
+
+    ! Pointer to the multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! pointer to array of the volume for each element
+    !
+    ! 2D triangulation: Array with area of each element.
+    ! 3D triangulation: Array with volume of each element.
+    ! Handle to 
+    !       p_DelementArea = array [1..NEL+1] of double.
+    ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
+    real(DP), dimension(:), pointer :: p_DelementVolume
+
+    ! pointer to the vertices adjacent to an element
+    !
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the corner-vertices
+    ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! This is a handle to the old KVERT array.
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables
+	integer :: i, current
+	real(DP) :: c_pi
+
+    ! Set pointer to triangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
+ 
+    ! Get vertices at element
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+
+    ! Get area of each element
+    call storage_getbase_double(&
+         p_rtriangulation%h_DelementVolume, p_DelementVolume)
+
+    c_pi= 3.14159265358979323846264338327950288
+
+	do i= 1, rParticles%nPart
+
+        ! element of the current particle
+		current= rParticles%p_element(i)
+
+        ! store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
+		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
+		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
+		                (rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(1,current))
+		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
+		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
+		                (rParticles%p_lambda2(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(2,current))
+		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
+		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
+		                (rParticles%p_lambda3(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(3,current))
+
+	end do
+
+
+END SUBROUTINE calculatevelopart
+
+!*
+!**********************************************************************************************************************
+
 
 end module euler_lagrange

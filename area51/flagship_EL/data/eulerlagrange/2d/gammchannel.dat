@@ -274,12 +274,13 @@ sucdsolution = out/gammchannel
 sucderror = out/gammchannel_error
 
 # variables for ucd output
-sucdvariable(5) =
+sucdvariable(6) =
  density
  velocity
  energy
  pressure
  velo_part
+ vol_part
 
 
 ################################################################################
@@ -318,7 +319,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.00
+dfinalTime = 0.3
 
 # initial time step size
 dinitialStep = 1e-3
