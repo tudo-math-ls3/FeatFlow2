@@ -67,10 +67,6 @@ ifeq ($(strip $(ID)), pc-athlonxp-linux)
 ID:=$(strip $(ID))-g95-goto
 endif
 
-ifeq ($(strip $(ID)), pc-core2-linux)
-ID:=$(strip $(ID))-intel-goto
-endif
-
 ifeq ($(strip $(ID)), pc-coresolo-linux)
 ID:=$(strip $(ID))-g95-blas
 endif
@@ -159,8 +155,28 @@ ifeq ($(strip $(ID)), ia64-itanium2x2-linux)
 ID:=$(strip $(ID))-intel-mkl
 endif
 
-ifeq ($(strip $(ID)), i386-i486-darwin)
-ID:=$(strip $(ID))-g95-blas
+ifeq ($(strip $(ID)), pc-coresolo-darwin)
+ID:=$(strip $(ID))-gcc-goto
+endif
+
+ifeq ($(strip $(ID)), pc-coredup-darwin)
+ID:=$(strip $(ID))-gcc-blas
+endfi
+
+ifeq ($(strip $(ID)), pc64-coredup-darwin)
+ID:=$(strip $(ID))-gcc-blas
+endif
+
+ifeq ($(strip $(ID)), pc-penryn-darwin)
+ID:=$(strip $(ID))-gcc-blas
+endif
+
+ifeq ($(strip $(ID)), pc64-penryn-darwin)
+ID:=$(strip $(ID))-gcc-blas
+endif
+
+ifeq ($(strip $(ID)), pc64-nehalem-darwin)
+ID:=$(strip $(ID))-gcc-blas
 endif
 
 

@@ -296,17 +296,41 @@ case ${id} in
 	cpu=`(echo ${family} | tr 'A-Z' 'a-z' | tr -d ' ')`
         ;;
 
-    *-*-*bsd|*-*-darwin*)  #from /usr/include/mach/machine.h
+    *-*-*bsd|*-*-darwin*)
+	case ${arch} in
+	    x86_64) arch="pc64";;	
+	    *) arch="pc";;
+	esac
+
+        #from /usr/include/mach/machine.h
         cputype=`sysctl hw.cputype | awk '{print $2 ; exit;}'`
         cpusubt=`sysctl hw.cpusubtype | awk '{print $2; exit;}'`
+	cpufamily=`sysctl hw.cpufamily | awk '{print $2; exit;}'`
         case "${cputype}" in
-            7) cpu=i386
-                case "${cpusubt}" in
-                    3) cpu=i386 ;;
-                    4) cpu=i486 ;;
-                    5) cpu=pentium ;;
-                    6) cpu=pentiumpro ;;
-                esac
+            7) cpu=x86
+		case "${cpufamily}" in
+		    1943433984) cpu="coresolo";;
+		    1114597871) cpu="coreduo";;
+		    2028621756) cpu="penryn" ;;
+		    1801080018) cpu="nehalem" ;;
+		    *)	
+			case "${cpusubt}" in
+			    3) cpu="i386" ;;
+			    4) cpu="i486" ;;
+			    5) cpu="pentium" ;;
+			    22) cpu="pentiumpro" ;;
+			    54|86) cpu="pentium2" ;;
+			    103|119) cpu="celeron" ;;
+			    8|24|40) cpu="pentium3" ;;
+			    9) cpu="pentiumm" ;;
+			    10|26) cpu="pentium4" ;;
+			    11) cpu="itanium" ;;
+			    27) cpu="itanium2" ;;
+			    12) cpu="xeon" ;;
+			    28) cpu="xeon2" ;;
+			esac
+			;;
+		esac
                 ;;
             11) cpu=hppa ;;
             12) cpu=arm ;;
@@ -329,7 +353,7 @@ case ${id} in
                 case "${cpusubt}" in
                     100) cpu=ppc64_970 ;;
                 esac
-                ;;            
+                ;;
         esac
         ;;
 esac

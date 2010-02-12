@@ -1996,6 +1996,75 @@ LDFLAGS       := -march=nocona $(LDFLAGS)
 endif
 endif
 
+ifeq ($(call match,$(ID),pc-penryn-darwin-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -m32 -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -m32 -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -m32 -march=nocona $(CFLAGSF90)
+CFLAGSC       := -m32 -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -m32 -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -m32 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-penryn-darwin-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+gcc43or44=NO
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifeq ($(strip $(gcc43or44)), YES)
+ifeq ($(call optimise), YES)
+# Options choosen based on 
+# * the article at http://www.outsourcingi.com/articles_content.php?id=454
+# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
+# * and the options gcc itself passes when '-march=native --verbose' is 
+#   invoked on a MacBookPro5,5.
+# Note: It is absolutely mandatory to use a recent binutils package!
+#       Otherwise SSE4.1 is not available and the compiler will bail out.
+VERBOSEOPTFLAGS = \
+         -m32 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
+         --param l1-cache-line-size=64 --param l2-cache-size=3072 \
+	 -mtune=core2 -fPIC -ftree-vectorize
+
+CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
+CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
+CFLAGSF90     := $(VERBOSEOPTFLAGS) $(CFLAGSF90)
+CFLAGSC       := $(VERBOSEOPTFLAGS) $(CFLAGSC)
+CFLAGSCXX     := $(VERBOSEOPTFLAGS) $(CFLAGSCXX)
+CFLAGSCOPROC  := $(VERBOSEOPTFLAGS) $(CFLAGSCOPROC)
+LDFLAGS       := $(VERBOSEOPTFLAGS) -read_only_relocs suppress $(LDFLAGS)
+endif
+else
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -m32 -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -m32 -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -m32 -march=nocona $(CFLAGSF90)
+CFLAGSC       := -m32 -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -m32 -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -m32 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc-penryn-darwin-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
 ######################### Penryn 64 bit (Xeon E5450) #########################
 ######################### Penryn 64 bit (LiDO 2)     #########################
 
@@ -2168,6 +2237,74 @@ ifeq ($(call match,$(ID),pc64-penryn-linux-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
+
+ifeq ($(call match,$(ID),pc64-penryn-darwin-g95-.*),yes)
+# invokes the GNU Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/g95-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -m64 -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -m64 -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -m64 -march=nocona $(CFLAGSF90)
+CFLAGSC       := -m64 -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -m64 -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -m64 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-darwin-gcc-.*),yes)
+# invokes the GNU Fortran compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+gcc43or44=NO
+ifneq (,$(findstring 4.3.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
+gcc43or44=YES
+endif
+ifeq ($(strip $(gcc43or44)), YES)
+ifeq ($(call optimise), YES)
+# Options choosen based on 
+# * the article at http://www.outsourcingi.com/articles_content.php?id=454
+# * 'info gcc', section 3.17.14 Intel 386 and AMD x86-64 Options
+# * and the options gcc itself passes when '-march=native --verbose' is 
+#   invoked on a MacBookPro5,5.
+# Note: It is absolutely mandatory to use a recent binutils package!
+#       Otherwise SSE4.1 is not available and the compiler will bail out.
+VERBOSEOPTFLAGS = \
+         -m64 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
+         --param l1-cache-line-size=64 --param l2-cache-size=3072 \
+	 -mtune=core2 -fPIC -ftree-vectorize
+
+CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
+CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
+CFLAGSF90     := $(VERBOSEOPTFLAGS) $(CFLAGSF90)
+CFLAGSC       := $(VERBOSEOPTFLAGS) $(CFLAGSC)
+CFLAGSCXX     := $(VERBOSEOPTFLAGS) $(CFLAGSCXX)
+CFLAGSCOPROC  := $(VERBOSEOPTFLAGS) $(CFLAGSCOPROC)
+LDFLAGS       := $(VERBOSEOPTFLAGS) -read_only_relocs suppress $(LDFLAGS)
+endif
+else
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -m32 -march=nocona $(CFLAGSF77LIBS)
+CFLAGSF77     := -m32 -march=nocona $(CFLAGSF77)
+CFLAGSF90     := -m32 -march=nocona $(CFLAGSF90)
+CFLAGSC       := -m32 -march=nocona $(CFLAGSC)
+CFLAGSCXX     := -m32 -march=nocona $(CFLAGSCXX)
+LDFLAGS       := -m32 -march=nocona -read_only_relocs suppress $(LDFLAGS)
+endif
+endif
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
+
+ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
 
 
 
@@ -2436,59 +2573,6 @@ MPILIBS   = -lmpi
 MPILIBS   =
 endif
 
-
-
-#################################### APPLE #####################################
-
-ifeq ($(call match,$(ID),i386-i486-darwin-g95-.*),yes)
-# invokes the GNU Fortran 77/90 compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/g95-generic.mk
-ifeq ($(call optimise), YES)
-CFLAGSF77LIBS := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77LIBS)
-CFLAGSF77     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF77)
-CFLAGSF90     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSF90)
-CFLAGSC       := -msse3 -pipe -fomit-frame-pointer $(CFLAGSC)
-CFLAGSCXX     := -msse3 -pipe -fomit-frame-pointer $(CFLAGSCXX)
-LDFLAGS       := $(LDFLAGS) -read_only_relocs suppress
-endif
-endif
-
-
-ifeq ($(call match,$(ID),i386-i486-darwin-gcc-.*),yes)
-# invokes the GNU Fortran compiler, local umfpack
-include $(TEMPLATESDIR)/pc-generic.mk
-include $(TEMPLATESDIR)/gcc-generic.mk
-ifeq ($(call optimise), YES)
-# optimal flags taken from script CPUFlags v0.7.2
-#
-# According to http://archives.gentoo.org/gentoo-amd64/msg_14402.xml
-# H.J. Lu from Intel, very prominent on gcc 4.x bugzilla, advices
-# different settings:
-# * GCC 4.1:
-#   - use -march=prescott for Intel Core Solo/Duo
-#   - use -march=nocona (and an amd64 profile) for Core 2 Solo/Duo
-# * GCC 4.2:
-#   - use -march=prescott -mtune=generic for Intel Core Solo/Duo
-#   - use -march=nocona -mtune=generic for Intel Core 2 Solo/Duo
-CFLAGSF77LIBS := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77LIBS)
-CFLAGSF77     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF77)
-CFLAGSF90     := -march=nocona -msse3 -mfpmath=sse $(CFLAGSF90)
-CFLAGSC       := -march=nocona -msse3 -mfpmath=sse $(CFLAGSC)
-endif
-endif
-
-
-ifeq ($(call match,$(ID),i386-i486-darwin-.*-blas.*),yes)
-# Use self-compiled local BLAS
-include $(TEMPLATESDIR)/blas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),i386-i486-darwin-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
 
 ##############################################################################
 # auxiliary targets: .id, .idonly
