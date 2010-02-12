@@ -117,7 +117,7 @@ contains
     ! Start the timer
     call stat_startTimer(rtimerTotal)
     
-    ! Allocate memory fo rthe problem structure -- it is rather large!
+    ! Allocate memory for the problem structure -- it is rather large!
     allocate (p_rproblem)
     
     ! Initialise the collection
