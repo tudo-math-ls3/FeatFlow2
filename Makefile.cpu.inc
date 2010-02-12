@@ -2239,7 +2239,7 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-g95-.*),yes)
+ifeq ($(call match,$(ID),pc64-penryn-darwin-g95-.*),yes)
 # invokes the GNU Fortran 77/90 compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/g95-generic.mk
@@ -2253,7 +2253,7 @@ LDFLAGS       := -m64 -march=nocona -read_only_relocs suppress $(LDFLAGS)
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-gcc-.*),yes)
+ifeq ($(call match,$(ID),pc64-penryn-darwin-gcc-.*),yes)
 # invokes the GNU Fortran compiler, local umfpack
 include $(TEMPLATESDIR)/pc-generic.mk
 include $(TEMPLATESDIR)/gcc-generic.mk
@@ -2298,15 +2298,15 @@ endif
 endif
 endif
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-.*-blas.*),yes)
+ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
-ifeq ($(call match,$(ID),pc-penryn-darwin-.*-goto.*),yes)
+ifeq ($(call match,$(ID),pc64-penryn-darwin-.*-goto.*),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
-
+endif
 
 
 ############################### Sun Ultrasparc v8 #############################
