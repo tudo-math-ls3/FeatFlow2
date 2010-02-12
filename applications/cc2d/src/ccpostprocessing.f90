@@ -941,8 +941,10 @@ contains
         
       ieltype = rsolution%p_rblockDiscr%RspatialDiscr(1)% &
                 RelementDistr(1)%celement
-                
-      if (elem_getPrimaryElement(ieltype) .eq. EL_Q1T) then
+
+      select case (elem_getPrimaryElement(ieltype))
+
+      case (EL_Q1T, EL_P1T)
       
         ! Create a temporary vector 
         call lsyssc_createVecByDiscr (rsolution%RvectorBlock(3)%p_rspatialDiscr,&
@@ -965,7 +967,7 @@ contains
             
         call lsyssc_releaseVector (rtempVector)
       
-      end if
+      end select
       
     end if    
     
@@ -1675,21 +1677,21 @@ contains
     p_rdiscr => rproblem%RlevelInfo(rproblem%NLMAX)%rdiscretisation
 
     ! Piecewise constant space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q0, CUB_G1X1, &
+		 EL_P0, EL_Q0, CUB_G1_T, CUB_G1X1,&
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q1, CUB_G2X2, &
+                 EL_P1, EL_Q1, CUB_TRZ_T, CUB_G2X2, &
                  rpostprocessing%rdiscrLinear)
   
     ! Piecewise quadratic space:
-    call spdiscr_deriveSimpleDiscrSc (&
+    call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-                 EL_Q2, CUB_G3X3, &
+                 EL_P2, EL_Q2, CUB_G3_T, CUB_G3X3, &
                  rpostprocessing%rdiscrQuadratic)
   
     ! Initialise the time/file suffix when the first UCD file is to be written out.
