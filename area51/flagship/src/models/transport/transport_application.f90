@@ -1682,7 +1682,8 @@ contains
         rafcstab%bprelimiting = .false.
         rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
         call gfsc_initStabilisation(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
-        
+        call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
+
         ! Compute the raw antidiffusive mass fluxes
         call gfsc_buildFluxFCT(rafcstab, rvector, rvector, 0.0_DP, 0.0_DP,&
             1.0_DP, .true., rproblemLevel%Rmatrix(consistentMassMatrix))
