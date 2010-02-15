@@ -1521,8 +1521,8 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
     character(LEN=SYS_STRLEN) :: ssolutionname
-    integer :: isolutiontype, ccubType, nsummedCubType
-    integer :: ieq, neq, ndim, icomp, i
+    integer :: isolutiontype
+    integer :: ieq, neq, ndim, icomp
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
 
 
@@ -1645,10 +1645,6 @@ contains
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
 
-      ! Get the number of refinement levels for summed cubature formula
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'nsummedcubtype', nsummedCubType)
-      
       ! Set up the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
@@ -1661,13 +1657,6 @@ contains
       ! Set pointer to spatial discretisation
       p_rspatialDiscr => rvector%RvectorBlock(1)%p_rspatialDiscr
 
-      ! Enforce using summed cubature formula to obtain accurate results
-      do i = 1, p_rspatialDiscr%inumFESpaces
-        p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-            cub_getSummedCubType(&
-            p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
-      end do
-
       ! Get the number of the component used for evaluating the initial solution
       rcollection%IquickAccess(1) = fparser_getFunctionNumber(p_rfparser, ssolutionname)
       
@@ -1678,12 +1667,6 @@ contains
       ! Compute the lumped L2-projection
       call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
           rvector%RvectorBlock(1), 1.0_DP, rvector%RvectorBlock(1))
-
-      ! Reset cubature formula to standard value
-      do i = 1, p_rspatialDiscr%inumFESpaces
-        p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-            cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
-      end do
 
       !-------------------------------------------------------------------------
       ! Restore contribution of the consistent mass matrix of the L2-projection
