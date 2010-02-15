@@ -22,30 +22,36 @@
 !# 3.) anprj_charFctRealBdComp
 !#     -> Calculate the characteristic function of a boundary region
 !#
+!#
+!# 4.) anprj_analytL2projectionConstrained
+!#     -> Performs L2-projection using the lumped mass matrix and applies
+!#        constrained mass antidiffusive to improve the resolution
 !# </purpose>
 !##############################################################################
 
 module analyticprojection
 
-  use fsystem
-  use storage
-  use genoutput
-  use boundary
+  use afcstabilisation
   use basicgeometry
-  use linearalgebra
-  use triangulation
-  use dofmapping
-  use elementpreprocessing
-  use scalarpde
-  use spatialdiscretisation
-  use domainintegration
-  use linearsystemscalar
-  use linearformevaluation
+  use boundary
+  use collection
   use cubature
   use derivatives
+  use dofmapping
+  use domainintegration
   use element
+  use elementpreprocessing
+  use fsystem
+  use genoutput
+  use groupfemscalar
+  use linearalgebra
+  use linearformevaluation
+  use linearsystemscalar
+  use scalarpde
+  use spatialdiscretisation
+  use storage
   use transformation
-  use collection
+  use triangulation
   
   implicit none
   
@@ -53,6 +59,7 @@ module analyticprojection
   
   public :: t_configL2ProjectionByMass
   public :: anprj_analytL2projectionByMass
+  public :: anprj_analytL2projectionConstrained
   public :: anprj_discrDirect
   public :: anprj_charFctRealBdComp
 
@@ -125,9 +132,9 @@ contains
 
 !<subroutine>
 
-  subroutine anprj_analytL2projectionByMass (rvector,rmatrixMass,&
-      fcoeff_buildVectorSc_sim,rcollection,&
-      rL2ProjectionConfig,rmatrixMassLumped,rvectorTemp1,rvectorTemp2)
+  subroutine anprj_analytL2projectionByMass (rvector, rmatrixMass,&
+      fcoeff_buildVectorSc_sim, rcollection,&
+      rL2ProjectionConfig, rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
       
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
@@ -162,7 +169,6 @@ contains
   ! OPTIONAL: The lumped mass matrix of the FE space of rvector.
   ! If not specified, the damped Jacobi method will be used.
   type(t_matrixScalar), intent(in), optional :: rmatrixMassLumped
-
 !</input>
 
 !<inputoutput>
@@ -343,7 +349,7 @@ contains
 !<subroutine>
 
   subroutine anprj_discrDirect (rvector,&
-      ffunctionReference,rcollection,iorder)
+      ffunctionReference, rcollection, iorder)
       
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
@@ -783,7 +789,7 @@ contains
 
 !<subroutine>
 
-  subroutine anprj_charFctRealBdComp (rboundaryRegion,rvector)
+  subroutine anprj_charFctRealBdComp (rboundaryRegion, rvector)
       
 !<description>
   ! Calculates the characteristic function of a boundary region.
@@ -994,4 +1000,88 @@ contains
 
   end subroutine
 
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine anprj_analytL2projectionConstrained (rvector, rmatrixMass,&
+      rmatrixMassLumped, fcoeff_buildVectorSc_sim,&
+      rcollection, rvectorTemp1, rvectorTemp2)
+
+!<description>
+  ! Converts an analytically given function fcoeff_buildVectorSc_sim
+  ! to a finite element vector rvector by using mass matrices.
+  ! So the resulting vector is the lumped $L_2$ projection of the
+  ! analytically given function. The error induced by mass lumping is
+  ! reduced by adding some amount of mass antidiffusion a posteriori.
+  ! Flux limiting techniques are employed to determine the amount of
+  ! mass antidiffusion that can be applied without violating the
+  ! upper and lower bounds set of by the lumped-mass L2-projection.
+!</description>
+
+!<input>
+  ! The consistent mass matrix of the FE space of rvector.
+  type(t_matrixScalar), intent(in) :: rmatrixMass
+
+  ! The lumped mass matrix of the FE space of rvector.
+  type(t_matrixScalar), intent(in) :: rmatrixMassLumped
+
+  ! A callback routine for the function to be discretised. The callback routine
+  ! has the same syntax as that for evaluating analytic functions for the 
+  ! computation of RHS vectors.
+  include '../DOFMaintenance/intf_coefficientVectorSc.inc'
+
+  ! OPTIONAL: A pointer to a collection structure. This structure is 
+  ! given to the callback function for calculating the function
+  ! which should be discretised in the linear form.
+  type(t_collection), intent(inout), target, optional :: rcollection
+!</input>
+
+!<inputoutput>
+  ! A scalar vector that receives the $L_2$ projection of the function.
+  type(t_vectorScalar), intent(inout) :: rvector
+
+  ! OPTIONAL: A temporary vector of the same size as rvector.
+  type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp1
+
+  ! OPTIONAL: A second temporary vector of the same size as rvector.
+  type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp2
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variables
+    type(t_configL2ProjectionByMass) :: rconfig
+    type(t_afcstab) :: rafcstab
+
+    ! We need to perform s single defect correction step 
+    ! preconditioned by the lumped mass matrix
+    rconfig%nmaxIterations  = 1
+    rconfig%cpreconditioner = 2
+    rconfig%domega          = 1.0_DP
+
+    ! Compute the mass-lumped low-order L2-projection
+    call anprj_analytL2projectionByMass(rvector, rmatrixMassLumped,&
+        fcoeff_buildVectorSc_sim, rcollection, rconfig,&
+        rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
+    
+    ! Initialise the stabilisation structure
+    rafcstab%iSpec= AFCSTAB_UNDEFINED
+    rafcstab%bprelimiting = .false.
+    rafcstab%ctypeAFCstabilisation = AFCSTAB_FEMFCT_MASS
+    call gfsc_initStabilisation(rmatrixMass, rafcstab)
+    call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)
+
+    ! Compute the fluxes for the raw mass antidiffusion
+    call gfsc_buildFluxFCT(rafcstab, rvector, rvector,&
+        0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass)
+
+    ! Apply flux correction to improve the low-order L2-projection
+    call gfsc_buildConvVectorFCT(rmatrixMassLumped, rafcstab, rvector, 1._DP,&
+        .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+
+    ! Release stabilisation structure
+    call afcstab_releaseStabilisation(rafcstab)
+    
+  end subroutine anprj_analytL2projectionConstrained
 end module
