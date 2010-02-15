@@ -422,11 +422,10 @@ contains
     integer :: imaxIter,ite
     integer :: ielold
     real(DP), dimension(2,4) :: DcornerCoords
-    integer :: ive,nnve
+    integer :: ive,nve,nnve
     logical :: bcheck
     real(DP) :: dxmid,dymid
     real(DP) :: dx1,dy1,dx2,dy2
-    integer, dimension(4), parameter :: Inext = (/2,3,4,1/)
     
     ! Maximum number of iterations
     imaxIter = 100
@@ -454,10 +453,13 @@ contains
         DcornerCoords(1,ive) = DvertexCoords(1,IverticesAtElement(ive,iel))
         DcornerCoords(2,ive) = DvertexCoords(2,IverticesAtElement(ive,iel))
       end do
-      
+  
+      ! Store number of vertices for current element
+      nve = ive-1
+    
       ! Check if the point is in the element.
       ! bcheck will be set to TRUE if that is the case.
-      if (ive .eq. TRIA_NVETRI2D+1) then
+      if (nve .eq. TRIA_NVETRI2D) then
         call gaux_isInElement_tri2D(Dpoint(1),Dpoint(2),DcornerCoords,bcheck)
 
         ! DEBUG!!!
@@ -494,12 +496,11 @@ contains
         if (IneighboursAtElement(ive,iel) .ne. ielold) then
           
           ! Calculate point of intersection the edge ive.
-          ! (The use of Inext saves one division by avoiding MOD)
           dx1 = DvertexCoords(1,IverticesAtElement(ive,iel))
           dy1 = DvertexCoords(2,IverticesAtElement(ive,iel))
-          dx2 = DvertexCoords(1,IverticesAtElement(Inext(ive),iel))
-          dy2 = DvertexCoords(2,IverticesAtElement(Inext(ive),iel))
-          
+          dx2 = DvertexCoords(1,IverticesAtElement(mod(ive, nve)+1,iel))
+          dy2 = DvertexCoords(2,IverticesAtElement(mod(ive, nve)+1,iel))
+
           call gaux_isIntersection_line2D (dx1,dy1,dx2,dy2,dxmid,dymid,&
               Dpoint(1),Dpoint(2),bcheck)
           
@@ -789,7 +790,6 @@ contains
     logical :: bcheck
     real(DP) :: dxmid,dymid
     real(DP) :: dx1,dy1,dx2,dy2
-    integer, dimension(4), parameter :: Inext = (/2,3,4,1/)
     real(dp), dimension(3) :: Dmid
     real(dp), dimension(3,4) :: Dface
     integer, dimension(4,TRIA_NAEHEXA3D), parameter :: IverticesHexa =&
