@@ -1,0 +1,11 @@
+#!/bin/sh
+#
+# This small shell script is used to create a default makefile
+# for the application.
+#
+
+../../bin/configure \
+	--appname=interpdbg \
+	--programfile=src/interpdbg.f90 \
+	--srclist_app="src/interpdbg.f90 src/interp_callback.f90" \
+	$@
