@@ -324,6 +324,71 @@ datfile  = ./data/apps_cc2d/master_bench_ptests.dat
 mglevels = 4
 TIMEDISCRETISATION_DTIMESTEP=0.005
 
+################
+# Test 3:
+#  Calculate an initial solution for test 4.
+#  This is a similar procedure as CC2D_NONST1REF4_INIT, but it calculates
+#  the pressure semi-implicitely.
+################
+
+testid   = CC2D_NONST1TEST003_INIT1
+descr    = calculate 3.5 seconds with a large timestep and a big UPSAM.
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 0
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 3.5
+
+testid   = CC2D_NONST1TEST003_INIT2
+descr    = calculate 26.5 seconds with smaller timestep. We calculated 30 seconds afterwards.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMEMAX = 26.5
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT1/solution'
+
+
+################
+# Test 4/5:
+#   Start from the calculated solution in CC2D_NONST1TEST003_INIT2 and calculate
+#   2 seconds, once with semi-implicit, once with explicit CN.
+################
+
+testid   = CC2D_NONST1TEST004_DT1
+descr    = calculate 2 seconds to get a reference curve. Semi-explicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 0
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEMAX = 2
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT2/solution'
+
+testid   = CC2D_NONST1TEST004_DT2
+descr    = calculate 2 seconds to get a reference curve. Semi-explicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.05
+
+testid   = CC2D_NONST1TEST004_DT3
+descr    = calculate 2 seconds to get a reference curve. Semi-explicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+###
+
+testid   = CC2D_NONST1TEST005_DT1
+descr    = calculate 2 seconds to get a reference curve. Implicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 1
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+
+testid   = CC2D_NONST1TEST005_DT2
+descr    = calculate 2 seconds to get a reference curve. Implicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.05
+
+testid   = CC2D_NONST1TEST005_DT3
+descr    = calculate 2 seconds to get a reference curve. Implicit pressure.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
 
 ################
 # Test NONST2REF
