@@ -175,9 +175,9 @@ icalcBodyForces = 2
 
 # Specifies the tensor structure to use for the computation.
 # =-1: automatic
-# = 0: simple gradient tensor, constant nu
-# = 1: full gradient tensor, constant nu
-# = 2: deformation tensor, constant nu
+# = 0: simple gradient tensor
+# = 1: full gradient tensor
+# = 2: deformation tensor
 
 ibodyForcesFormulation = -1
 
