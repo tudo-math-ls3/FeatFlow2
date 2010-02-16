@@ -1893,7 +1893,7 @@ contains
 
   ! Optional: A collection structure to provide additional 
   ! information to the coefficient routine. 
-  type(t_collection), intent(in), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
 !<inputoutput>
@@ -1901,10 +1901,18 @@ contains
   ! Must be > 0!
   real(dp), intent(inout) :: dtstep
 !</inputoutput>
+  real(dp) :: is
+  type(t_geometryObject), pointer :: p_rgeometryObject
+  
+  type(t_particleCollection), pointer :: p_rparticleCollection
+
+  !
+  p_rparticleCollection => collct_getvalue_particles(rcollection,'particles')
+
     
     ! Current implementation: No nothing.
     ! Then, a fixed timestep is used.
-    dtstep = 0.01_dp
+    dtstep = p_rparticleCollection%dtime
     
   end subroutine
 

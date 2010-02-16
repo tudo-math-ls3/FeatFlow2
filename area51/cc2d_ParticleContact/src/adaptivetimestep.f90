@@ -447,13 +447,13 @@ contains
       real(dp), intent(in) :: dtimeInit ! Initial time
       real(dp), intent(in) :: dtime     ! Current simulation time
       integer, intent(in) :: isolverStatus ! Status of the solver, see above
-      type(t_collection), intent(in), optional :: rcollection
+      type(t_collection), intent(inout), optional :: rcollection
     end subroutine
   end interface
   optional :: fcalcTimestep
   
   ! OPTIONAL: Collection structure. Passed to the callback routine.
-  type(t_collection), intent(in), optional :: rcollection
+  type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
 !<result>

@@ -2337,9 +2337,9 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: ipart,i,iedge1,iedge2,iseg,jpart,iwallforce
+    integer :: ipart,i,iedge1,iedge2,iseg,jpart,iwallforce,ipartforce
     real(DP) :: ah1,ah2,ah3,dvelx,dvely,dvelz,dmasssl,ddmasssl,dvolume,dimomir
-    real(DP) :: dfx,dfy,length
+    real(DP) :: dfx,dfy,length,dmasssl2,ddmasssl2,dvolume2
     real(DP) :: dCenterX,dCenterY,dCenterXold,dCenterYold,domega,CenterX2,CenterY2
     type(t_geometryObject), pointer :: p_rgeometryObject,p_rgeometryObject2
     
@@ -2347,8 +2347,9 @@ contains
     type(t_particleCollection), pointer :: p_rparticleCollection
     
     ! parameters for collision
-    real(DP) :: eps1,eps2,pdist, ddist, deltaMesh, FWx,FWy
-    real(dp) :: ew1,ew2,dwall,t,FPx,FPy,dprad,dprad2,dcx,dcy
+    real(DP) :: eps1,eps2,pdist, ddist, deltaMesh, FWx,FWy,distout,dovlap
+    real(dp) :: ew1,ew2,dwall,t,FPx,FPy,dprad,dprad2,dcx,dcy,dri,drj,dcxi
+    real(dp) :: dcyi,dcyj,dcxj,dcuxi,dcuyi,dcuxj,dcuyj
     ! An object for saving the triangulation on the domain
     type(t_triangulation), pointer :: p_rtriangulation
     real(DP), dimension(:,:), pointer :: p_Dcoords
@@ -2356,6 +2357,7 @@ contains
     real(DP), dimension(2) :: Dp1,Dp2,DpointA,DX,Dnormal,r,DV,DCollNormal
     real(dp), dimension(:,:), pointer :: p_DbdyEdg   
     real(dp),dimension(:),pointer :: Ddistances
+    
     call cc_calcDistPart(rproblem,dtimestep)
     
     call storage_getbase_double2D(rproblem%h_DedgesAtBoundary,p_DbdyEdg)    
@@ -2387,6 +2389,7 @@ contains
     ew2=0.5_dp*(1.0_dp/eps2)
     
     iwallforce=0
+    ipartforce=1
 
     p_rparticleCollection => collct_getvalue_particles(rproblem%rcollection,'particles')
 
@@ -2481,7 +2484,8 @@ contains
       !---------------------------------------------------------------------------------------- 
       !initialize the forces for this particle by 0!
       FPx = 0.0_dp     
-      FPy = 0.0_dp     
+      FPy = 0.0_dp
+      if(ipartforce .eq. 0)then     
       do jpart=1,p_rparticleCollection%nparticles
         if(jpart .eq. ipart)cycle
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
@@ -2512,6 +2516,7 @@ contains
         end if
       
       end do
+      end if ! ipartforce
       
       !----------------------------------------------------------------------------------------   
       !               CALCULATE CHANGE IN TRANSLATIONAL AND ANGULAR VELOCITY
@@ -2593,6 +2598,78 @@ contains
       p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
       p_rparticleCollection%p_rParticles(ipart)%dtransVelY + dvely
       
+
+      ! normal collision model
+      if(ipartforce .eq. 1)then
+      do jpart=1,p_rparticleCollection%nparticles
+        if(jpart .eq. ipart)cycle
+        ! get the data of the 2nd particle      
+        p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
+        ! get the distance between the centers
+        ddist=rproblem%dDistMatrix(ipart,jpart)
+        dprad=p_rparticleCollection%p_rParticles(ipart)%drad
+        dprad2=p_rparticleCollection%p_rParticles(jpart)%drad
+        ! get the center of the 2nd particle
+        CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
+        CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
+        
+        ! the distance between the outlines
+        distout=ddist-dprad+dprad2
+        if(distout .lt. deltaMesh)then
+        dovlap=deltaMesh-distout
+        Dnormal(1)=CenterX2-dCenterX
+        Dnormal(2)=CenterY2-dCenterY
+        
+        dvolume2  = &
+        (p_rparticleCollection%p_rParticles(jpart)%drad)**2 * SYS_PI
+        dmasssl2  = &
+        p_rparticleCollection%p_rParticles(jpart)%drho * dvolume2 
+        !AMASLDIJ=AMASSLDI+AMASSLDJ       
+        dri=dmasssl*dovlap/(dmasssl2+dmasssl)
+        drj=dmasssl2*dovlap/(dmasssl2+dmasssl)
+        
+        dcxi=dri*Dnormal(1)/dovlap
+        dcyi=dri*Dnormal(2)/dovlap
+
+        dcxj=drj*Dnormal(1)/dovlap
+        dcyj=drj*Dnormal(2)/dovlap
+
+        p_rgeometryObject%rcoord2D%Dorigin(1)=&
+        p_rgeometryObject%rcoord2D%Dorigin(1)+dcxi
+        
+        p_rgeometryObject%rcoord2D%Dorigin(2)=&
+        p_rgeometryObject%rcoord2D%Dorigin(2)+dcyi
+        
+        p_rgeometryObject2%rcoord2D%Dorigin(1)=&
+        p_rgeometryObject2%rcoord2D%Dorigin(1)+dcxj
+        
+        p_rgeometryObject2%rcoord2D%Dorigin(2)=&
+        p_rgeometryObject2%rcoord2D%Dorigin(2)+dcyj
+        
+        dcuxi=dcxi/dtimestep
+        dcuyi=dcyi/dtimestep
+
+        dcuxj=dcxj/dtimestep
+        dcuyj=dcyj/dtimestep
+  
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelX=&
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelX+dcuxi
+
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY=&
+        p_rparticleCollection%p_rParticles(ipart)%dtransVelY+dcuyi
+
+        p_rparticleCollection%p_rParticles(jpart)%dtransVelX=&
+        p_rparticleCollection%p_rParticles(jpart)%dtransVelX+dcuxj
+
+        p_rparticleCollection%p_rParticles(jpart)%dtransVelY=&
+        p_rparticleCollection%p_rParticles(jpart)%dtransVelY+dcuyj
+
+
+        
+        end if
+        
+      end do ! end jpart      
+      end if ! ipartforce
       
       !----------------------------------------------------------------------------------------   
       !                          Collision with walls
@@ -2644,16 +2721,16 @@ contains
 !          ! the position is updated, now update the velocity
 !          p_rparticleCollection%p_rParticles(ipart)%dtransVelX=0.984*r(1)
 !          p_rparticleCollection%p_rParticles(ipart)%dtransVelY=0.984*r(2)
-          call output_line ('VelX: = '//trim(sys_sdEP(DV(1),15,6)) )                    
-          call output_line ('Vely: = '//trim(sys_sdEP(DV(2),15,6)) )                    
-          call output_line ('RefVelX: = '//trim(sys_sdEP(r(1),15,6)) )                    
-          call output_line ('RefVelX: = '//trim(sys_sdEP(r(2),15,6)) )                    
-          call output_line ('NormalX: = '//trim(sys_sdEP(Dnormal(1),15,6)) )                    
-          call output_line ('NormalY: = '//trim(sys_sdEP(Dnormal(2),15,6)) ) 
-          call output_line ('dcx: = '//trim(sys_sdEP(dcx,15,6)) )                    
-          call output_line ('dcy: = '//trim(sys_sdEP(dcy,15,6)) ) 
-          call output_line ('NewPoX: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(1),15,6)) )                    
-          call output_line ('NewPoY: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(2),15,6)) ) 
+!          call output_line ('VelX: = '//trim(sys_sdEP(DV(1),15,6)) )                    
+!          call output_line ('Vely: = '//trim(sys_sdEP(DV(2),15,6)) )                    
+!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(1),15,6)) )                    
+!          call output_line ('RefVelX: = '//trim(sys_sdEP(r(2),15,6)) )                    
+!          call output_line ('NormalX: = '//trim(sys_sdEP(Dnormal(1),15,6)) )                    
+!          call output_line ('NormalY: = '//trim(sys_sdEP(Dnormal(2),15,6)) ) 
+!          call output_line ('dcx: = '//trim(sys_sdEP(dcx,15,6)) )                    
+!          call output_line ('dcy: = '//trim(sys_sdEP(dcy,15,6)) ) 
+!          call output_line ('NewPoX: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(1),15,6)) )                    
+!          call output_line ('NewPoY: = '//trim(sys_sdEP( p_rgeometryObject%rcoord2D%Dorigin(2),15,6)) ) 
           
         end if
       end do
