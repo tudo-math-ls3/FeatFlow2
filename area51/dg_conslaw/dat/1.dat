@@ -1,0 +1,47 @@
+[TRIANGULATION]
+
+# We want to solve our problem on level ...
+nlmax = 6
+
+# Name of the parametrisation file
+#prmname = ./pre/QUAD.prm
+prmname = ./pre/RECT2x1.prm
+
+# Name of the triangulation file
+#triname = ./pre/QUAD.tri
+triname = ./pre/RECT2x1.tri
+
+# What kind of finite elements do we use?
+# 0: DG T0
+# 1: DG T1
+# 2: DG T2
+FEkind = 2
+
+
+
+[TIMESTEPPING]
+
+# Timestepsize
+dt = 0.01
+
+# Final time
+ttfinal = 0.5
+
+
+[SOLVER]
+
+
+
+[METHOD]
+
+
+
+[PROBLEM]
+
+# Set initial condition
+# You can use a function parser, depending on x and y
+# Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
+ic  = if(sqrt(x^2+y^2)<3,1,0)
+
+
+[OUTPUT]

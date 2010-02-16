@@ -859,7 +859,6 @@ contains
         ! the IdofsTest array.
         do idofe = 1,indof
         
-        
           p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) =&
                        p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) +&
                        DlocalData(1,idofe)
@@ -1664,6 +1663,19 @@ end subroutine
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
     call ucd_release (rexport)
+    
+    
+    
+    call lsysbl_releaseVector (rrhsBlock)
+    call lsysbl_releaseVector (rTempBlock)
+    call lsysbl_releaseVector (rsolSteadyBlock)
+    call lsyssc_releaseVector (rrhs)
+    call lsyssc_releaseVector (rsolsteady)
+    call lsyssc_releaseVector (rtemp)
+    
+    call lsysbl_releaseMatrix (rmatrixBlock)
+    call lsyssc_releaseMatrix (rmatrixMC)
+    
     
     call spdiscr_releaseBlockDiscr(rdiscretisation)
 

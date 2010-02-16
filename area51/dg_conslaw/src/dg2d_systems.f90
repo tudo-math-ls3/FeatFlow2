@@ -9,7 +9,7 @@
 !# </purpose>
 !##############################################################################
 
-module dg2d_method0_simple
+module dg2d_systems
 
   use fsystem
   use stdoperators
@@ -38,6 +38,7 @@ module dg2d_method0_simple
   use dg2d_routines
   use collection
   use linearalgebra
+  use paramlist
   
     
   use poisson2d_callback
@@ -50,7 +51,7 @@ contains
 
 !<subroutine>
 
-  subroutine dg2d_0_simple
+  subroutine dg2d_sys
   
 !<description>
   ! This is an all-in-one poisson solver for directly solving a Poisson
@@ -129,8 +130,11 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir
+    character(len=SYS_STRLEN) :: sucddir, sstring
     real(DP), dimension(:), pointer :: p_Ddata
+    
+    ! Command line and name of the paramater file
+    character(LEN=SYS_STRLEN) :: cbuffer, sparameterfileName
     
     real(DP) :: ttime, dt, ttfinal
     
@@ -142,35 +146,83 @@ contains
     
     type(t_collection) :: rcollection
     
-    dt = 0.01_DP
-    ttfinal = 0.0_dp
-    !ttfinal = 5*SYS_PI
+    ! Parameter list
+    type(t_parlist) :: rparlist
     
-    ielementType = EL_DG_T1_2D
-    
-    
-    ilimiting = 1
+    character(LEN=*), dimension(2), parameter ::&
+         cvariables = (/ (/'x'/), (/'y'/) /)
     
         
-    vel(1)=1.0_DP
-    vel(2)=1.0_DP
-
-    ! Ok, let us start. 
-    !
-    ! We want to solve our problem on level...
-    NLMAX = 4
+    ! Get command line arguments and extract name of parameter file
+    if (command_argument_count() .eq. 0) then
+      call output_lbrk()
+      call output_line('Using standart parameterfile: ./dat/1.dat')
+      call output_lbrk()
+      sparameterfileName = './dat/1.dat'
+    else
+      call get_command_argument(command_argument_count(), cbuffer)
+      sparameterfileName = adjustl(cbuffer)
+    end if
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
-    ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    ! Read parameter file
+    call parlst_init(rparlist)
+    call parlst_readFromFile(rparlist,sparameterfileName)
+    
+    
+    ! We want to solve our problem on level... Default=1
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)
+    
+    ! And with timestepsize
+    call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
 
-    ! At first, read in the parametrisation of the boundary and save
-    ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/RECT2x1.prm')
-        
+    ! To the final time
+    call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'ttfinal', ttfinal)
+    
+    ! Type of finite element to use
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
+    
+    select case (ielementType)
+    case (0)
+      ielementType = EL_DG_T0_2D
+      ilimiting = 0
+    case (1)
+      ielementType = EL_DG_T1_2D
+      ilimiting = 1
+    case (2)
+      ielementType = EL_DG_T2_2D
+      ilimiting = 2
+    end select
+    
+    
+    
+!    dt = 0.01_DP
+!    ttfinal = 0.0_dp
+!    !ttfinal = 5*SYS_PI
+!    
+!    ielementType = EL_DG_T1_2D
+!    
+!    
+!    ilimiting = 1
+!    
+!        
+!    vel(1)=1.0_DP
+!    vel(2)=1.0_DP
+!
+!    ! Ok, let us start. 
+!    !
+!    ! We want to solve our problem on level...
+!    NLMAX = 4
+
+    ! Read in parametrisation of the boundary
+    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+         'prmname', sstring)
+    call boundary_read_prm(rboundary, sstring)
+    
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/RECT2x1.tri', rboundary)
-     
+    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+         'triname', sstring)
+    call tria_readTriFile2D (rtriangulation, sstring, rboundary, .true.)    
+    
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
     
@@ -400,8 +452,11 @@ contains
     ! Now set the initial conditions via L2 projection
     rlinformIC%itermCount = 1
     rlinformIC%Idescriptors(1) = DER_FUNC2D
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'ic', sstring)
+    !rcollection%SquickAccess(2) = cvariables
+    rcollection%SquickAccess(1) = sstring
     call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
-                                  coeff_RHS_IC)
+                                  coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
     
     

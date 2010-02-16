@@ -16,6 +16,7 @@
 program dg
 
   use dg2d_method0_simple
+  use dg2d_systems
 
   implicit none
 
@@ -45,11 +46,17 @@ program dg
   ! Initialise the FEAT 2.0 storage management:
   call storage_init(999, 100)
 
-  ! Call the problem to solve. Poisson 2D method 1 - simple:
+  ! Call the problem to solve. Scalar hyperbolic conservation law:
   call output_lbrk ()
-  call output_line ('Calculating hyperbolic conservation problem with DG')
-  call output_line ('---------------------------------------------------')
+  call output_line ('Calculating scalar hyperbolic conservation problem with DG')
+  call output_line ('----------------------------------------------------------')
   call dg2d_0_simple
+  
+  ! Call the problem to solve. Hyperbolic conservation law, system case:
+  call output_lbrk ()
+  call output_line ('Calculating hyperbolic system conservation problem with DG')
+  call output_line ('----------------------------------------------------------')
+  !call dg2d_sys
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

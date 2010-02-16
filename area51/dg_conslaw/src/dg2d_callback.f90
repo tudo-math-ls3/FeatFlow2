@@ -90,6 +90,7 @@ module poisson2d_callback
   use element
   use feevaluation
   use domainintegration
+  use fparser
   
   implicit none
 
@@ -1081,15 +1082,15 @@ contains
       
       ! Set initial condition on the inflow boundary
       if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
-!        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
-!        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
-!          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
-!        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
-!          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
-!        end if
+        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
+        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
+          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
+        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
+          DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+        end if
         
-        dr = sqrt((dx-0.5_dp)**2.0_dp)
-        if (dr<0.2)DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
+!        dr = sqrt((dx-0.5_dp)**2.0_dp)
+!        if (dr<0.2)DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel) = 1.0_dp
       
       end if
     
@@ -1205,11 +1206,24 @@ contains
     
   !</subroutine>
   
-  real(DP) :: r1
+    real(DP) :: r1
 
     integer :: iel, ipoint
     
-    Dcoefficients (1,:,:) =0.0_dp
+    ! Function parser
+    type(t_fparser) :: rfparser
+    
+    character(LEN=*), dimension(2), parameter ::&
+         cvariables = (/ (/'x'/), (/'y'/) /)
+    
+    ! Initialise function parser
+    call fparser_init()
+    call fparser_create(rfparser, 1)
+    
+    !call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+    call fparser_parseFunction(rfparser, 1, 'x+y', cvariables)
+    
+    Dcoefficients (1,:,:) = 0.0_dp
     
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)
@@ -1233,13 +1247,21 @@ contains
         !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
         
         ! Circular convection
-        r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
-        if ((0.3_dp.le.r1).and.(r1.le.0.7_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
+        !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
+        !if ((0.3_dp.le.r1).and.(r1.le.0.7_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
+        
+        ! Parser from .dat-file
+        call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
+        
+        
         
       end do
     end do
+    
+    ! Release the function parser
+    call fparser_release(rfparser)
                     
-    !Dcoefficients (1,:,:) =0.0_dp
+    !Dcoefficients (1,:,:) = 0.0_dp
 
   end subroutine
 
@@ -1435,8 +1457,13 @@ contains
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
       
+        ! Zalesak
         dvx=0.5_DP-dy
         dvy=dx-0.5_DP
+        
+        ! Circular convection
+        dvx = dy
+        dvy = 1.0_dp - dx
         
         Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvx
       end do
@@ -1538,9 +1565,14 @@ contains
       
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
-      
+        
+        ! Zalesak
         dvx=0.5_DP-dy
         dvy=dx-0.5_DP
+        
+        ! Circular convection
+        dvx = dy
+        dvy = 1.0_dp - dx
         
         Dcoefficients (1,ipoint,iel) = Dcoefficients (1,ipoint,iel) * dvy
       end do
