@@ -174,7 +174,7 @@ contains
                  (Dpoints(2,ivt,iel)-0.5_DP)**2) .le. 0.3) then
           Dvalues(ivt,iel) = 1.0_DP
         else
-          Dvalues(ivt,iel) = 0.01_DP
+          Dvalues(ivt,iel) = 0.0_DP
         end if
       end do
     end do

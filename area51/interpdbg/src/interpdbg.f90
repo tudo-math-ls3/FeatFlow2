@@ -144,13 +144,13 @@ program interpdbg
   
   ! Project the solution onto rvector2
   call lsysbl_createVectorBlock(rdiscretisation2, rvector2, .true.)
-  call anprj_analytL2projectionConstrained(rvector2%RvectorBlock(1), &
-      rmatrix2%RmatrixBlock(1,1), rmatrixMassLumped2, interp_buildVector, rcollection)
-!!$
-!!$  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
-!!$      rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
-!!$      rmatrixMassLumped = rmatrixMassLumped2)
-!!$
+!!$  call anprj_analytL2projectionConstrained(rvector2%RvectorBlock(1), &
+!!$      rmatrix2%RmatrixBlock(1,1), rmatrixMassLumped2, interp_buildVector, rcollection)
+
+  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
+      rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
+      rmatrixMassLumped = rmatrixMassLumped2)
+
 !!$  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
 !!$      rmatrixMassLumped2, interp_buildVector, rcollection,&
 !!$      rmatrixMassLumped = rmatrixMassLumped2)
@@ -175,7 +175,7 @@ program interpdbg
   ! Compute statistical information
   call lsyssc_getbase_double(rmatrixMassLumped1, p_Da)
   call lsysbl_getbase_double(rvector1, p_Ddata)
-  call pperr_scalar(rvector1%RvectorBlock(1), PPERR_L2ERROR, derror,&
+  call pperr_scalar(rvector1%RvectorBlock(1), PPERR_L1ERROR, derror,&
       interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'Mass sol1', sum(p_Da*p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Min  sol1', minval(p_Ddata)
@@ -184,7 +184,7 @@ program interpdbg
   
   call lsyssc_getbase_double(rmatrixMassLumped2, p_Da)
   call lsysbl_getbase_double(rvector2, p_Ddata)
-  call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L2ERROR, derror,&
+  call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L1ERROR, derror,&
       interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'Mass sol2', sum(p_Da*p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Min  sol2', minval(p_Ddata)
@@ -245,7 +245,7 @@ contains
                (p_DvertexCoords(2,ivt)-0.5_DP)**2) .le. 0.3) then
         p_Ddata(ivt) = 1.0_DP
       else
-        p_Ddata(ivt) = 0.01_DP
+        p_Ddata(ivt) = 0.0_DP
       end if
     end do
   end subroutine interp_initSolution
