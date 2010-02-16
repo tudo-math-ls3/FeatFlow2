@@ -244,10 +244,86 @@ descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0
 mglevels = 5
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_5/solution'
 
+###
+# Test INIT_5 stopped due to overlong calculation!!!
+###
+testid   = CC2D_NONST1REF5_INIT_5_CONT
+descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
+mglevels = 5
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF5_INIT_5/solution'
+TIMEDISCRETISATION_DTIMEINIT = 5.3
+
 testid   = CC2D_NONST1REF5_INIT_6
 descr    = standard DFG benchmark 1, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0), Reference 5
 mglevels = 6
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF4_INIT_6/solution'
+TIMEDISCRETISATION_DTIMEINIT = 0.0
+
+
+################
+# Step 6. Additional tests starting from Step 5, just for testing purposes
+################
+# Test 1/2: 
+#  Comparison implicit Euler and semi-implicit Euler in the pressure.
+#  Level 4, larger timestep. Is there a difference in the drag/lift values
+#  when changing to the actual 'correct' pressure discretisation?
+################
+
+testid   = CC2D_NONST1TEST001_DT1
+descr    = fully implicit pressure, dt=0.1
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF5_INIT_4/solution'
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 1
+TIMEDISCRETISATION_DTIMESTEP=0.1
+TIMEDISCRETISATION_DTIMEMAX = 2.0
+
+testid   = CC2D_NONST1TEST001_DT2
+descr    = fully implicit pressure, dt=0.05
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.05
+
+testid   = CC2D_NONST1TEST001_DT3
+descr    = fully implicit pressure, dt=0.01
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.01
+
+testid   = CC2D_NONST1TEST001_DT4
+descr    = fully implicit pressure, dt=0.005
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.005
+
+###
+
+testid   = CC2D_NONST1TEST002_DT1
+descr    = semi-implicit pressure, dt=0.1
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1REF5_INIT_4/solution'
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 0
+TIMEDISCRETISATION_DTIMESTEP=0.1
+
+testid   = CC2D_NONST1TEST002_DT2
+descr    = semi-implicit pressure, dt=0.05
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.05
+
+testid   = CC2D_NONST1TEST002_DT3
+descr    = semi-implicit pressure, dt=0.01
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.01
+
+testid   = CC2D_NONST1TEST002_DT4
+descr    = semi-implicit pressure, dt=0.005
+datfile  = ./data/apps_cc2d/master_bench_ptests.dat
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP=0.005
+
 
 ################
 # Test NONST2REF
@@ -294,7 +370,7 @@ descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0
 mglevels = 6
 DISCRETISATION_CTYPEINITIALSOLUTION = 1
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST2REF1_6/solution'
-TIMEDISCRETISATION_DTIMEINIT = 7.3
+TIMEDISCRETISATION_DTIMEINIT = 5.6
 
 
 testid   = CC2D_NONST2REF1_2_TARGET
