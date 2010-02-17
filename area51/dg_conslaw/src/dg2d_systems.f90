@@ -86,7 +86,7 @@ contains
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC, rlinformx, rlinformy
+    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
@@ -483,10 +483,9 @@ contains
     
     
     
-    rlinformx%itermCount = 1
-    rlinformx%Idescriptors(1) = DER_DERIV_X
-    rlinformy%itermCount = 1
-    rlinformy%Idescriptors(1) = DER_DERIV_Y
+    rlinformconv%itermCount = 2
+    rlinformconv%Idescriptors(1) = DER_DERIV_X
+    rlinformconv%Idescriptors(2) = DER_DERIV_Y
     
     
     
@@ -529,15 +528,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-      
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+                                            
        end if
        
        ! Solve for solution update
@@ -575,15 +569,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
       
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
        end if
               
        ! Solve for solution update
@@ -617,15 +606,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
       
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
        end if
               
        ! Solve for solution update
@@ -688,8 +672,6 @@ contains
 !    
     
     
-    
-    !call dg_linearLimiter (rsol)
     
     write(*,*) ''
     write(*,*) 'Writing solution to file'
