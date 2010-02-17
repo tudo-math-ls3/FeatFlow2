@@ -230,12 +230,12 @@ contains
     end if
     call cc_initInitialSolution (p_rproblem,rvector)
 
-    ! On finest level, initialise the adaptation structure from file.
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising mesh adaptation...')
-    end if
-    call cc_initAdaptation (p_rproblem)
+!!$    ! On finest level, initialise the adaptation structure from file.
+!!$    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+!!$      call output_separator (OU_SEP_MINUS)
+!!$      call output_line('Initialising mesh adaptation...')
+!!$    end if
+!!$    call cc_initAdaptation (p_rproblem)
 
     
     ! Now choose the algorithm. Stationary or time-dependent simulation?

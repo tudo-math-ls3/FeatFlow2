@@ -9,10 +9,10 @@
 [PARAMTRIANG]
 
 # Filename of the parametrisation of the domain
-sParametrisation = '%{spredirectory}/rectangle_Tria.prm'
+sParametrisation = '%{spredirectory}/rotor2.prm'
 
 # Filename of the coarse grid mesh
-sMesh = '%{spredirectory}/rectangle_Tria.tri'
+sMesh = '%{spredirectory}/rotor2.tri'
 
 # Whether to convert the mesh into a pure triangular mesh or not
 iconvertToTriangleMesh = 1

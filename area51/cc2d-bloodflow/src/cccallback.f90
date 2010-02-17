@@ -1416,18 +1416,10 @@ contains
     
     ! Get the triangulation array for the point coordinates
     p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
-    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
-                                    p_DvertexCoordinates)
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement,&
-                                p_IverticesAtElement)
-    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge,&
-                                p_IverticesAtEdge)
+    call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords, p_DvertexCoordinates)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int2d (p_rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
     
-    ! Definition of the flap
-    dx0 = 1.5_DP; dy0 = 0.0_DP
-    width = 0.1; height = 0.6
-    phi = sin(2*SYS_PI*dtime)*SYS_PI/6.0
-
 !!$    ! Definition of the rotor
 !!$    dx0 = 0.0_DP; dy0 = 0.0_DP
 !!$    width = 0.1; height = 0.6
@@ -1443,21 +1435,18 @@ contains
       ipoint = Revaluation(1)%p_Iwhere(idx)
       
       ! Get x- and y-coordinate
-      call getXYcoord (Revaluation(1)%cinfoNeeded,ipoint,&
-                        p_DvertexCoordinates,&
-                        p_IverticesAtElement,p_IverticesAtEdge,&
-                        p_rtriangulation%NVT,&
-                        dx,dy)
+      call getXYcoord (Revaluation(1)%cinfoNeeded,ipoint, p_DvertexCoordinates,&
+          p_IverticesAtElement,p_IverticesAtEdge, p_rtriangulation%NVT, dx,dy)
 
-      ! Compute reference coordinates for the flap
-      dxRef = cos(phi)*(dx-dx0)-sin(phi)*(dy-dy0)
-      dyRef = sin(phi)*(dx-dx0)+cos(phi)*(dy-dy0)
-      
-      ! Definition of the flap
-      if ((dxRef .ge.-width) .and.&
-          (dxRef .le. width) .and.&
-          (dyRef .le. height) .and.&
-          (dyRef .ge. 0)) then
+!!$      ! Compute reference coordinates for the flap
+!!$      dxRef = cos(phi)*(dx-dx0)-sin(phi)*(dy-dy0)
+!!$      dyRef = sin(phi)*(dx-dx0)+cos(phi)*(dy-dy0)
+!!$      
+!!$      ! Definition of the flap
+!!$      if ((dxRef .ge.-width) .and.&
+!!$          (dxRef .le. width) .and.&
+!!$          (dyRef .le. height) .and.&
+!!$          (dyRef .ge. 0)) then
       
 !!$      ! Compute reference coordinates for the rotor
 !!$      dxRef1 =  cos(phi1)*(dx-dx0)+sin(phi1)*(dy-dy0)
@@ -1474,18 +1463,22 @@ contains
 !!$          (dyRef2 .le. height) .and. (dyRef2 .ge. 0) .or.&
 !!$          (dxRef3 .ge.-width)  .and. (dxRef3 .le. width) .and.&
 !!$          (dyRef3 .le. height) .and. (dyRef3 .ge. 0)) then
+
+      ! Definition of the rotor
+      if ((dx .ge. -0.1_DP) .and. (dx .le. 0.1_DP) .and. (dy .ge. -0.5) .and. (dy .le. 0.5) .or.&
+          (dx .ge. -0.5_DP) .and. (dx .le. 0.5_DP) .and. (dy .ge. -0.1) .and. (dy .le. 0.1)) then
         
         ! Denote in the p_Iinside array that we prescribe a value here:
         Revaluation(1)%p_Iinside (idx) = 1
         Revaluation(2)%p_Iinside (idx) = 1
         
-!!$        ! We prescribe Dirichlet value here - for x- and y-velocity
-!!$        Revaluation(1)%p_Dvalues (idx,1) = -dy
-!!$        Revaluation(2)%p_Dvalues (idx,1) =  dx
-
         ! We prescribe Dirichlet value here - for x- and y-velocity
-        Revaluation(1)%p_Dvalues (idx,1) =  sign(1.0,cos(2*SYS_PI*dtime))*(dy-dy0)
-        Revaluation(2)%p_Dvalues (idx,1) = -sign(1.0,cos(2*SYS_PI*dtime))*(dx-dx0)
+        Revaluation(1)%p_Dvalues (idx,1) = 0!-dy
+        Revaluation(2)%p_Dvalues (idx,1) = 0! dx
+
+!!$        ! We prescribe Dirichlet value here - for x- and y-velocity
+!!$        Revaluation(1)%p_Dvalues (idx,1) =  sign(1.0_DP,cos(2*SYS_PI*dtime))*(dy-dy0)
+!!$        Revaluation(2)%p_Dvalues (idx,1) = -sign(1.0_DP,cos(2*SYS_PI*dtime))*(dx-dx0)
       
       end if
       
@@ -1619,10 +1612,15 @@ contains
     end if
 
     ! Default implementation: Velocity and acceleration is zero in all dimensinons.
-    Dvelocity(:) = 0.0_DP
-    
-    Dacceleration(:) = 0.0_DP
+!!$    Dvelocity(:) = 0.0_DP
+!!$    Dacceleration(:) = 0.0_DP
 
+
+    Dvelocity(1) = 1.0_DP
+    Dvelocity(2) = 0.0_DP
+
+    Dacceleration(:) = 0.0_DP
+    
   end subroutine
 
 ! *****************************************************************

@@ -1685,7 +1685,7 @@ contains
               rrhs%RvectorBlock(2),coeff_RHS_y,&
               rproblem%rcollection)
                            
-    ! Is the moving-frame formulatino active?
+    ! Is the moving-frame formulation active?
     call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
         'imovingFrame',imovingFrame,0)
         

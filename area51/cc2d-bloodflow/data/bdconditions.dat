@@ -51,7 +51,7 @@
 
 bdExpressions(2) =
   'Dirichlet0'     0    0.0
-  'ParProfExpr'   -1    'tanh(TIME)*4.0*1.0*L*(1.0-L)'
+  'ParProfExpr'   -1    '44.444444444*0.3*(R-0.6)*(0.9-R)'
   
 
 ##############
@@ -115,11 +115,17 @@ ineumannBoundary = 1
 #  called for that segment to return the analytic boundary value!
 
 # Benchmark configuration:
-bdComponent1(4)=
-   1.0  3  0  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
-   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
-   3.0  3  0  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
-   4.0  0  0                               # ]3.0,4.0[ : Neumann boundary = do-nothing
-
-#bdComponent1(1)=
+#bdComponent1(4)=
 #   1.0  3  0  'Dirichlet0'  'Dirichlet0'   # [0.0,1.0] : Dirichlet-0 boundary
+#   2.0  0  0                               # ]1.0,2.0[ : Neumann boundary = do-nothing
+#   3.0  3  0  'Dirichlet0'  'Dirichlet0'   # [2.0,3.0] : Dirichlet-0 boundary
+#   4.0  0  0                               # ]3.0,4.0[ : Neumann boundary = do-nothing
+
+bdComponent1(3)=
+   0.6  1  0                                # [0.0,0.6[ : Neumann boundary = do-nothing
+   0.9  3  1   'Dirichlet0'  'ParProfExpr'  # [0.6,0.9] : Dirichlet boundary
+   1.0  2  0                                # ]0.9,1.0] : Neumann boundary = do-nothing
+
+
+bdComponent2(1)=
+  28.0  3  1   'Dirichlet0'  'Dirichlet0'   # [0.0,28.0] : Dirichlet-0 boundary

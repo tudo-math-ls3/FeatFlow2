@@ -28,7 +28,7 @@ dtimeInit = 0.0                           # TIMENS
 # Max. absolute time of the simulation (TIMEMX); simulation stops if 
 # time > dtimemax or #iterations > niterations
 
-dtimeMax = 6.0                            # TIMEMX
+dtimeMax = 0.05                           # TIMEMX
 
 # Initial time step size
 
