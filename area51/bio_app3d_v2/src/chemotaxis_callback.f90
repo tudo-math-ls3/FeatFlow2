@@ -3225,7 +3225,9 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x*(16-x)
             !      c_analytic = x+y+z
-            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + convecRelaxation*(16_DP-2_DP*x))            
+            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + 2_DP + 2_DP + convecRelaxation*(1_DP-2_DP*x) & 
+								    + convecRelaxation*(1_DP-2_DP*y) & 
+								    + convecRelaxation*(1_DP-2_DP*z) )            
 
             !16_DP + 2*x) )
             !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
@@ -3382,7 +3384,7 @@ END IF
 !                 error_max = error 
 !             end if
             !Dcoefficients(1,icub,iel) = (x + y + z) -PHI* DvaluesFevl2(1,icub, iel)
-            Dcoefficients(1,icub,iel) = (x + y + z) - PHI*x*(16_DP - x)
+            Dcoefficients(1,icub,iel) = (x + y + z) - PHI*(x*(1_DP - x) + y*(1_DP - y) + z*(1_DP - z))
 
             !Dcoefficients(1,icub,iel) = - ( -(x + y + z) )
             !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 
@@ -6707,7 +6709,9 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
-            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 16_DP - Dpoints(1,icub,iel))
+            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 1_DP - Dpoints(1,icub,iel)) & 
+				 + Dpoints(2,icub,iel)*( 1_DP - Dpoints(2,icub,iel)) & 
+				 + Dpoints(3,icub,iel)*( 1_DP - Dpoints(3,icub,iel))	
         END DO
     END DO
   end subroutine
@@ -6802,7 +6806,7 @@ END IF
                 !RS: c^2 test-case
 !             Dvalues(icub, iel) = Dpoints(1,icub,iel)**2+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
                 !RS: andriy and linear test-case
-            Dvalues(icub, iel) = Dpoints(1,icub,iel)+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
+            Dvalues(icub, iel) = Dpoints(1,icub,iel) + Dpoints(2,icub,iel) + Dpoints(3,icub,iel)
         END DO
     END DO
   end subroutine
@@ -6832,7 +6836,8 @@ END IF
         ! For the andriy test-case
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
-        func_result = x*(16_DP-x)
+        !!!func_result = x*(16_DP-x)
+        func_result = x*(1_DP-x) + y*(1_DP-y) + z*(1_DP-z) 
         
         !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
 
@@ -6863,10 +6868,11 @@ END IF
         
         !func_result = 0.0_DP
             ! RS: c^2 test-case
-!         func_result = x**2+y+z
+        !func_result = x**2+y+z
             ! RS: andriy and linear test-case
-        func_result = x+y+z
-        
+        !!!func_result = x+y+z
+        func_result = x+y+z 
+                
         !func_result = -x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
         !func_result = x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
         
@@ -6972,7 +6978,9 @@ END IF
     ! For the andriy test-case
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
-    Dvalues(1) = Dcoords(1)*( 16_DP - Dcoords(1) )
+    Dvalues(1) = Dcoords(1)*( 1_DP - Dcoords(1) ) & 
+	       + Dcoords(2)*( 1_DP - Dcoords(2) ) & 
+	       + Dcoords(3)*( 1_DP - Dcoords(3) )
     !Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
 
   end subroutine    
@@ -7073,7 +7081,7 @@ END IF
     ! For the andriy and linear test-case
     ! eg. u_analytic = x*(16-x) resp. (16-x)
     !      c_analytic = x+y+z
-    Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)    
+    Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
     !Dvalues(1)=x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
 
   end subroutine
@@ -7262,7 +7270,9 @@ END IF
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+    Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
+		 + Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) &
+		 + Dpoints(3,:,:)*(1_DP - Dpoints(3,:,:)) 
     !Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
     
     ! Example:
@@ -7468,13 +7478,15 @@ END IF
     end if
 
    IF (cderivative .EQ. DER_FUNC3D) THEN
-     Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
+     Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
+		  + Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) &
+ 		  + Dpoints(3,:,:)*(1_DP - Dpoints(3,:,:))  
    ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
-     Dvalues(:,:) = 16_DP - 2*Dpoints(1,:,:)
+     Dvalues(:,:) = 1_DP - 2*Dpoints(1,:,:)
    ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
-     Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = 1_DP - 2*Dpoints(2,:,:)
    ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
-     Dvalues(:,:) = 0.0_DP
+     Dvalues(:,:) = 1_DP - 2*Dpoints(3,:,:)
    END IF     
 
     !Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))

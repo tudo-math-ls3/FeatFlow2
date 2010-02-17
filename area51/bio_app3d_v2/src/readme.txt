@@ -87,3 +87,5 @@ u=x*(16-x); c=x+y+z
 25) Before realising Q_2 elements.
 10:24	11.02.2010 
 
+26) Frist good results for the validation of the 3D bio code are obtained.
+16:02	17.02.2010

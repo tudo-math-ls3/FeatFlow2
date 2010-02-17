@@ -345,7 +345,7 @@ module chemotaxis_pattern_FCT
         if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
         ! At first, read in the basic triangulation.
-        call tria_readTriFile3D (rtriangulation, trim(spredir)//'/cCube3.tri')
+        call tria_readTriFile3D (rtriangulation, trim(spredir)//'/ucube3.tri')
 
         ! Refine it.
         call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
@@ -362,6 +362,8 @@ module chemotaxis_pattern_FCT
         ! structures for every component of the solution vector.
         ! Initialise the first element of the list to specify the element
         ! and cubature rule for this solution component:
+        !call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
+        !                                EL_Q1_3D,CUB_G3_3D,rtriangulation)
         call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                         EL_Q1_3D,CUB_G3_3D,rtriangulation)
             
