@@ -40,9 +40,6 @@ module dg2d_systems
   use linearalgebra
   use paramlist
   
-    
-  use poisson2d_callback
-  
   implicit none
 
 contains
@@ -161,6 +158,8 @@ contains
     ! For time measurement
     real(dp) :: dtime1, dtime2
     
+    type(t_additionalTriaData) :: raddTriaData
+    
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -250,6 +249,9 @@ contains
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    
+    ! Calculate additional triangulation data, as the normal vectors and local edge numbers
+    call addTriaData(rtriangulation,raddTriaData)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -516,6 +518,7 @@ contains
        rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        
@@ -562,6 +565,7 @@ contains
        rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -603,6 +607,7 @@ contains
        rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -780,6 +785,9 @@ contains
     
     ! Release the triangulation. 
     call tria_done (rtriangulation)
+    
+    ! Release additional triangulation data, as the normal vectors and local edge numbers
+    call releaseTriaData(raddTriaData)
     
     ! Finally release the domain, that is it.
     call boundary_release (rboundary)

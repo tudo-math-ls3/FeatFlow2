@@ -40,13 +40,21 @@ module dg2d_routines
   use poisson2d_callback
     
 
-    implicit none
+  implicit none
     
-    type t_array
+  type t_array
 		! Pointer to the double-valued matrix or vector data
     	real(DP), dimension(:), pointer :: Da
 	end type t_array
 	
+	type t_additionalTriaData
+	  ! Pointer to normal vectors of the triangulation (ndim,nedge)
+	  real(DP), dimension(:,:), pointer :: p_Dnormals
+	  ! Pointer to local edge numbers (2,nedge)
+	  integer, dimension(:,:), pointer :: p_IlocalEdgeNumber
+	  ! Lengths of the edges
+	  real(DP), dimension(:), pointer :: p_DedgeLength
+	end type 
 	
 	public :: linf_dg_buildVectorScalarEdge2d
 
@@ -62,6 +70,7 @@ contains
   subroutine linf_dg_buildVectorScalarEdge2d (rform, ccubType, bclear,&
                                               rvectorScalar,&
                                               rvectorScalarSol,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
   
@@ -92,6 +101,9 @@ contains
   
   ! The solution vector. Used to calculate the solution on the edges.
   type(t_vectorScalar), intent(in) :: rvectorScalarSol
+  
+  ! Additional triangulation data
+  type(t_additionalTriaData), intent(in) :: raddTriaData
    
   ! OPTIONAL: A collection structure. This structure is 
   ! given to the callback function for calculating the function
@@ -177,13 +189,6 @@ contains
       
       ! All edges
       forall (iedge = 1:NMT) p_IedgeList(iedge)=iedge
-      
-      ! Allocate space for local edge numbers
-      allocate(p_IlocalEdgeNumber(2,NMT))
-         
-      ! Get local edge numbers
-      call linf_getLocalEdgeNumbers(p_IedgeList,p_IlocalEdgeNumber,&
-                                    p_rtriangulation)
      
       ! Initialise the vectorAssembly structures
       call linf_initAssembly(rvectorAssembly(1), rform,&
@@ -196,8 +201,8 @@ contains
       ! Assemble the data for all elements in this element distribution
       call linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
             rvectorScalar, rvectorScalarSol,&
-            p_IedgeList(1:NMT),p_IlocalEdgeNumber&
-            ,flux_dg_buildVectorScEdge2D_sim,&
+            p_IedgeList(1:NMT),raddTriaData,&
+            flux_dg_buildVectorScEdge2D_sim,&
             rcollection&
              )
 
@@ -208,10 +213,7 @@ contains
 
       ! Deallocate the edgelist
       deallocate(p_IedgeList)
-      
-      ! Deallocate space for local edge numbers
-      deallocate(p_IlocalEdgeNumber)
-      
+            
     case DEFAULT
       call output_line('Single precision vectors currently not supported!',&
                        OU_CLASS_ERROR,OU_MODE_STD,'linf_dg_buildVectorScalarEdge2d')
@@ -278,7 +280,7 @@ contains
   
   subroutine linf_dg_assembleSubmeshVectorScalarEdge2d (rvectorAssembly,&
               rvector, rvectorSol,&
-              IedgeList, IlocalEdgeNumber,&
+              IedgeList, raddTriaData,&
               flux_dg_buildVectorScEdge2D_sim,&
               rcollection)
 
@@ -292,12 +294,12 @@ contains
 
   ! List of edges where to assemble the linear form.
   integer, dimension(:), intent(in), target :: IedgeList
-  
-  ! List of local edge numbers for the two elements adjacent to the two edges.
-  integer, dimension(:,:), intent(in) :: IlocalEdgeNumber
-  
+    
   ! The solution vector. Used to calculate the solution on the edges.
   type(t_vectorScalar), intent(in) :: rvectorSol
+  
+  ! Additional triangulation data
+  type(t_additionalTriaData), intent(in) :: raddTriaData
 
   ! A callback routine which is able to calculate the values of the
   ! function $f$ which is to be discretised.
@@ -380,9 +382,6 @@ contains
     
     ! Array for the solution values in the cubature points
     real(DP), dimension(:,:,:), allocatable :: DsolVals
-    
-    ! Array for the length of the edges
-    real(DP), dimension(:), allocatable :: edgelength
          
     ! Array for the normal vectors
     real(DP), dimension(:,:), allocatable :: normal
@@ -464,20 +463,20 @@ contains
     ! Allocate space for the solution values in the cubature points
     allocate(DsolVals(ncubp,2,rlocalVectorAssembly(1)%nelementsPerBlock))
     
-    ! Allocate space for the jacobi matrices in the cubature points
-    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    
-    ! Allocate space for the determinants of the jacobi matrices in the cubature points
-    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
-    
+!    ! Allocate space for the jacobi matrices in the cubature points
+!    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+!    
+!    ! Allocate space for the determinants of the jacobi matrices in the cubature points
+!    allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+!    
 !    ! Allocate space for the integration points on the real elements
 !    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
 
-    ! Allocate space for normal vectors
-    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
-    
-    ! Allocate space for edge length
-    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+!    ! Allocate space for normal vectors
+!    allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
+!    
+!    ! Allocate space for edge length
+!    allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
     
 !    ! The coordinates of the corner edges of the elements for the transformation
 !    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
@@ -535,9 +534,9 @@ contains
       
       ! Map the 1D cubature points to the edges in 2D.
       do iel = 1,IELmax-IELset+1
-        call trafo_mapCubPts1Dto2D(icoordSystem, IlocalEdgeNumber(1,IELset+iel-1), &
+        call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(1,Iedgelist(IELset+iel-1)), &
             ncubp, Dxi1D, Dxi2D(:,:,1,iel))
-        call trafo_mapCubPts1Dto2D(icoordSystem, IlocalEdgeNumber(2,IELset+iel-1), &
+        call trafo_mapCubPts1Dto2D(icoordSystem, raddTriaData%p_IlocalEdgeNumber(2,Iedgelist(IELset+iel-1)), &
             ncubp, Dxi1D, Dxi2D(:,:,2,iel))
       end do
      
@@ -658,22 +657,6 @@ contains
 !      end do
      
       
-     ! --------------------- Get normal vectors ---------------------------
-     
-     do iel = 1,IELmax-IELset+1    
-       ! Calculate the length of the edge 
-       dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
-       dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,IedgeList(IELset+iel-1)))
-       dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
-       dyl2=p_DvertexCoords(2,p_IverticesAtEdge(2,IedgeList(IELset+iel-1)))
-       edgelength(iel)=sqrt((dxl1-dxl2)*(dxl1-dxl2)+(dyl1-dyl2)*(dyl1-dyl2))
-         
-       ! Calculate the normal vector to the element at this edge
-       normal(1,iel) = (dyl2-dyl1)/edgelength(iel)
-       normal(2,iel) = (dxl1-dxl2)/edgelength(iel)
-     end do
-      
-      
      ! ---------------------- Get values of the flux function --------------
      
      
@@ -752,7 +735,7 @@ contains
       call flux_dg_buildVectorScEdge2D_sim (&
             rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
             DsolVals(:,:,1:IELmax-IELset+1),&
-            normal(:,1:IELmax-IELset+1),&
+            raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rintSubset,&
             rcollection )
@@ -787,7 +770,7 @@ contains
         ! The length of the current edge serves as a "determinant"
         ! in the cubature, so we have to divide it by 2 as an edge on 
         ! the unit interval [-1,1] has length 2.
-        dlen = 0.5_DP*edgelength(iel)
+        dlen = 0.5_DP*raddTriaData%p_Dedgelength(Iedgelist(IELset+iel-1))
 
         ! Loop over all cubature points on the current element
         do icubp = 1, ncubp
@@ -842,10 +825,14 @@ contains
               DlocalData(1,idofe) = DlocalData(1,idofe)+&
                                     rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux1
               
-              if(IelementList(2,IELset+iel-1).ne.0) then
+!              if(IelementList(2,IELset+iel-1).ne.0) then
+!                DlocalData(2,idofe) = DlocalData(2,idofe)+&
+!                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
+!              end if
+                    
                 DlocalData(2,idofe) = DlocalData(2,idofe)+&
-                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
-              end if
+                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2* real(min(1,IelementList(2,IELset+iel-1)))
+              
              
             end do ! idofe
             
@@ -869,13 +856,16 @@ contains
       end do ! iel
 
     end do ! IELset
+
+
+
     
     ! Release the local vector assembly structure
     call linf_releaseAssemblyData(rlocalVectorAssembly(1))
     call linf_releaseAssemblyData(rlocalVectorAssembly(2))
 
     ! Deallocate memory
-    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal,Djac,Ddetj)!,DpointsReal,Dcoords)
+    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals)!edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
 
   end subroutine
 
@@ -1982,5 +1972,170 @@ end subroutine
   
   
   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+
+  !****************************************************************************
+  
+!<subroutine>  
+  
+  subroutine addTriaData(rtriangulation, raddTriaData)
+
+!<description>
+
+  ! For each global edge number in the list the local edge numbers
+  ! of the two adjacent elements are calculated.
+  ! And the normal vectors of the first element adjacent to each edge.
+
+!</description>
+
+!<input>
+
+  ! The underlying triangulation
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+!</input>
+
+!<output>
+  
+  ! The additional triangulation data
+  type(t_additionalTriaData), intent(out):: raddTriaData
+!</output>
+  
+!</subroutine>
+  ! local variables
+  integer :: nedge, iedge, IglobalEdgeNumber, ImaxedgePerElement, ilocal
+  integer :: iel1, iel2, iel
+  integer, dimension(:,:), pointer :: p_IelementsAtEdge, p_IedgesAtElement
+  ! Pointer to the vertex coordinates
+  real(DP), dimension(:,:), pointer :: p_DvertexCoords
+  real(dp) :: dxl1, dxl2, dyl1, dyl2
+  ! Pointer to IverticesAtEdge in the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtEdge
+  real(dp) :: dedgeLength
+  
+  
+  ! Get pointers to the needed arrays from the triangulation
+  call storage_getbase_int2D(rtriangulation%h_IelementsAtEdge,&
+                             p_IelementsAtEdge)
+  call storage_getbase_int2D(rtriangulation%h_IedgesAtElement,&
+                             p_IedgesAtElement)
+                             
+  ! Get maximum number of edges per element in the triangulation
+  ImaxedgePerElement = rtriangulation%NNEE
+                             
+  ! Get the number of edges
+  nedge = rtriangulation%NMT
+  
+  ! Allocate space for local edge numbers
+  allocate(raddTriaData%p_IlocalEdgeNumber(2,nedge))
+  
+  ! Loop over all edges
+  do iedge = 1, nedge
+    
+    ! Get the global edge number
+    Iglobaledgenumber = iedge !IedgeList(iedge)
+    
+    ! Get the numbers of the elements adjacent to that edge
+    iel1 = p_IelementsAtEdge(1,Iglobaledgenumber)
+    iel2 = p_IelementsAtEdge(2,Iglobaledgenumber)
+    
+    ! Get the local edge number of the global edge in the first element adjacent to that edge
+    do ilocal = 1,ImaxedgePerElement
+      if (Iglobaledgenumber.eq.p_IedgesAtElement(ilocal,iel1)) exit
+    end do
+    raddTriaData%p_IlocalEdgeNumber(1,iedge) = ilocal
+    
+    ! Test, if the second element exists (otherwise the edge is a boundary edge)
+    ! If so, find its local edge number, too
+    if (iel2.eq.0) then
+      ! Second element doesn't exist
+      ! Set local edge number as 0
+      raddTriaData%p_IlocalEdgeNumber(2,iedge) = 0
+    else 
+      ! Second element does exist, so do the same thing as with the first element
+      do ilocal = 1,ImaxedgePerElement
+        if (Iglobaledgenumber.eq.p_IedgesAtElement(ilocal,iel2)) exit
+      end do
+      raddTriaData%p_IlocalEdgeNumber(2,iedge) = ilocal
+    end if
+  
+  end do ! iedge
+  
+  
+  
+  ! *** Calculate normal vectors ***
+  
+  ! Get pointer to the vertex coordinates
+  call storage_getbase_double2D(rtriangulation%h_DvertexCoords,&
+          p_DvertexCoords)
+  
+  ! Get pointer to vertices at edge
+    call storage_getbase_int2D(&
+          rtriangulation%h_IverticesAtEdge,&
+          p_IverticesAtEdge)
+	  
+	! Allocate space for normal vectors
+  allocate(raddTriaData%p_Dnormals(2,nedge))
+    
+  ! Allocate space for edge length
+  allocate(raddTriaData%p_DedgeLength(nedge))
+
+  do iedge = 1, nedge
+    ! Calculate the length of the edge 
+    dxl1=p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+    dyl1=p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+    dxl2=p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
+    dyl2=p_DvertexCoords(2,p_IverticesAtEdge(2,iedge))
+    dedgelength = sqrt((dxl1-dxl2)*(dxl1-dxl2)+(dyl1-dyl2)*(dyl1-dyl2))
+    raddTriaData%p_DedgeLength(iedge) = dedgeLength
+         
+    ! Calculate the normal vector to the element at this edge
+    raddTriaData%p_Dnormals(1,iedge) = (dyl2-dyl1)/dedgeLength
+    raddTriaData%p_Dnormals(2,iedge) = (dxl1-dxl2)/dedgeLength
+  end do
+
+  end subroutine
+  
+  
+  
+  !****************************************************************************
+  
+!<subroutine>  
+  
+  subroutine releaseTriaData(raddTriaData)
+
+!<description>
+
+  ! Release additional triangulation data.
+
+!</description>
+
+!<output>
+  
+  ! The additional triangulation data
+  type(t_additionalTriaData), intent(inout):: raddTriaData
+!</output>
+  
+!</subroutine>
+
+  ! Deallocate space for local edge numbers
+  deallocate(raddTriaData%p_IlocalEdgeNumber)
+
+	! Deallocate space for normal vectors
+  deallocate(raddTriaData%p_Dnormals)
+    
+  ! Deallocate space for edge length
+  deallocate(raddTriaData%p_DedgeLength)
+  
+  end subroutine
     
 end module

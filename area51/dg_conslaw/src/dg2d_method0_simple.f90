@@ -38,9 +38,7 @@ module dg2d_method0_simple
   use dg2d_routines
   use collection
   use linearalgebra
-  
-    
-  use poisson2d_callback
+  use paramlist
   
   implicit none
 
@@ -132,6 +130,12 @@ contains
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
     
+    ! Command line and name of the paramater file
+    character(LEN=SYS_STRLEN) :: cbuffer, sparameterfileName
+    
+    ! Strings describing initial condition and inlet condition for the function parser
+    character(len=SYS_STRLEN) :: sstring, sic, sinlet
+    
     real(DP) :: ttime, dt, ttfinal
     
     real(DP), dimension(2) :: vel
@@ -142,41 +146,112 @@ contains
     
     type(t_collection) :: rcollection
     
-    dt = 0.01_DP
-    ttfinal = 0.0_dp
-    !ttfinal = 5*SYS_PI
+    ! Parameter list
+    type(t_parlist) :: rparlist
     
-    ielementType = EL_DG_T1_2D
+    character(LEN=*), dimension(2), parameter ::&
+         cvariables = (/ (/'x'/), (/'y'/) /)
     
+    ! How many extra points for output
+    integer :: iextraPoints
     
-    ilimiting = 1
+    ! For time measurement
+    real(dp) :: dtime1, dtime2
+    
+    type(t_additionalTriaData) :: raddTriaData
+    
+    ! Start time measurement
+    call cpu_time(dtime1)
     
         
-    vel(1)=1.0_DP
-    vel(2)=1.0_DP
-
-    ! Ok, let us start. 
-    !
-    ! We want to solve our problem on level...
-    NLMAX = 4
+    ! Get command line arguments and extract name of parameter file
+    if (command_argument_count() .eq. 0) then
+      call output_lbrk()
+      call output_line('Using standart parameterfile: ./dat/1.dat')
+      call output_lbrk()
+      sparameterfileName = './dat/1.dat'
+    else
+      call get_command_argument(command_argument_count(), cbuffer)
+      sparameterfileName = adjustl(cbuffer)
+    end if
     
-    ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
-    ! from. If that does not exist, write to the directory "./pre".
-    if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
+    ! Read parameter file
+    call parlst_init(rparlist)
+    call parlst_readFromFile(rparlist,sparameterfileName)
+    
+    
+    ! We want to solve our problem on level... Default=1
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)    
+    
+    ! And with timestepsize
+    call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
 
-    ! At first, read in the parametrisation of the boundary and save
-    ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/RECT2x1.prm')
-        
+    ! To the final time
+    call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'ttfinal', ttfinal)
+    
+    ! Type of finite element to use
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
+    
+    ! How many extra points for output
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'extrapoints', iextraPoints, 3)
+    
+    ! Get string describing the initial condition for the function parser
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'ic', sic)
+    
+    ! Get string describing the initial condition for the function parser
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'inlet', sinlet)
+    
+    select case (ielementType)
+    case (0)
+      ielementType = EL_DG_T0_2D
+      ilimiting = 0
+    case (1)
+      ielementType = EL_DG_T1_2D
+      ilimiting = 1
+    case (2)
+      ielementType = EL_DG_T2_2D
+      ilimiting = 2
+    end select
+    
+    
+    
+!    dt = 0.01_DP
+!    ttfinal = 0.0_dp
+!    !ttfinal = 5*SYS_PI
+!    
+!    ielementType = EL_DG_T1_2D
+!    
+!    
+!    ilimiting = 1
+!    
+!        
+!    vel(1)=1.0_DP
+!    vel(2)=1.0_DP
+!
+!    ! Ok, let us start. 
+!    !
+!    ! We want to solve our problem on level...
+!    NLMAX = 4
+
+    ! Read in parametrisation of the boundary
+    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+         'prmname', sstring)
+    call boundary_read_prm(rboundary, sstring)
+    
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/RECT2x1.tri', rboundary)
-     
+    call parlst_getvalue_string (rparlist, 'TRIANGULATION', &
+         'triname', sstring)
+    call tria_readTriFile2D (rtriangulation, sstring, rboundary, .true.)    
+    
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
     
     ! And create information about adjacencies and everything one needs from
     ! a triangulation.
     call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+    
+    ! Calculate additional triangulation data, as the normal vectors and local edge numbers
+    call addTriaData(rtriangulation,raddTriaData)
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -400,8 +475,10 @@ contains
     ! Now set the initial conditions via L2 projection
     rlinformIC%itermCount = 1
     rlinformIC%Idescriptors(1) = DER_FUNC2D
+    !rcollection%SquickAccess(2) = cvariables
+    rcollection%SquickAccess(1) = sic
     call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
-                                  coeff_RHS_IC)
+                                  coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
     
     
@@ -438,8 +515,10 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        
@@ -483,8 +562,10 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -523,8 +604,10 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
+                                              raddTriaData,&
                                               flux_dg_buildVectorScEdge2D_sim,&
                                               rcollection)
        call lsyssc_scaleVector (rrhs,-1.0_DP)
@@ -611,7 +694,7 @@ contains
     write(*,*) ''
     write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
-    call dg2gmv(rsol,3)
+    call dg2gmv(rsol,iextraPoints)
     
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
@@ -703,8 +786,15 @@ contains
     ! Release the triangulation. 
     call tria_done (rtriangulation)
     
+    ! Release additional triangulation data, as the normal vectors and local edge numbers
+    call releaseTriaData(raddTriaData)
+    
     ! Finally release the domain, that is it.
     call boundary_release (rboundary)
+    
+    ! End of time measurement
+    call cpu_time(dtime2)
+    write (*,*) 'Calculation took', dtime2-dtime1
     
   end subroutine
 
