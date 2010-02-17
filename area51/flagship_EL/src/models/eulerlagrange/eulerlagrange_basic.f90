@@ -1099,6 +1099,10 @@ contains
       allocate(p_Dvelo_part_x(neq))
       call ucd_getVariable(rexport, 'velo_part_X', p_Dvelo_part_x)
 
+      ! Set velocity variable
+      call setVarInterleaveFormat(neq, nvar, 4,&
+          p_Dvelo_part_x, p_Ddata)
+
       ! Get velocity of the particles in y-direction
       call ucd_getVariable(rexport, 'velo_part_Y', nlength=nlength)
       if (nlength .ne. neq) then
@@ -1110,6 +1114,10 @@ contains
       ! Allocate temporal memory
       allocate(p_Dvelo_part_x(neq))
       call ucd_getVariable(rexport, 'velo_part_Y', p_Dvelo_part_y)
+
+      ! Set velocity variable
+      call setVarInterleaveFormat(neq, nvar, 4,&
+          p_Dvelo_part_y, p_Ddata)
 
 
       ! Get volumefraction of the particles

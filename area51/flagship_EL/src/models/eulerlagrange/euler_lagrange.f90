@@ -118,13 +118,10 @@ module euler_lagrange
 
     contains
 
-SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
     
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -180,52 +177,6 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
     ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
-
-
-
-    ! pointer to nodal property array. 
-    !
-    ! Handle to 
-    !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
-    ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
-    ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
-    ! its function inside of the geometry.
-    ! Generally said, the range of the p_InodalProperty-array 
-    ! characterizes the type of the node (=vertex/edge):
-    ! = 0    : The vertex/edge is an inner vertex/edge
-    ! > 0    : The vertex/edge is a boundary vertex/edge on the real
-    !           boundary. KNPR(.) defines the number of the boundary
-    !           component.
-    ! This is the old KNPR-array, slightly modified for edges and
-    ! hanging nodes.
-    !
-    ! In case there are hanging nodes in the mesh, this array
-    ! has a special meaning for all hanging vertices and all edges
-    ! containing hanging vertices.  Values < 0 indicate hanging
-    ! vertices at an edge. 
-    ! Let iedgeC (NVT+1..NVT+NMT) be the number of
-    ! a a 'full' edge containing the hanging vertex jvertex. 
-    ! Let iedge be one of the sub-edges inside of edge iedgeC.
-    ! Then there is:
-    !   p_InodalProperty(jvertex) = -iedgeC
-    !   p_InodalProperty(iedge)   = -iedgeC
-    !   p_InodalProperty(iedgeC)  = -jvertex
-    ! Let kfaceC (NVT+NMT+1..NVT+NMT+NAT) be the number of a 'full' face
-    ! containing the hanging vertex jvertex. 
-    ! Let kface be the number of a one of the subfaces inside
-    ! the face kfaceC. Let iedge be the number of one of the sub-edges
-    ! inside face kfaceC.
-    ! Then there is:
-    !   p_InodalProperty(jvertex) = -kfaceC
-    !   p_InodalProperty(kface)   = -kfaceC
-    !   p_InodalProperty(iedge)   = -kfaceC
-    !   p_InodalProperty(kfaceC)  = -jvertex
-    ! A hanging vertex is either the midpoint of a face or of an edge,
-    ! therefore this assignment is unique due to the range of the number.
-    ! 'Hanging edges' (only appear in 3D) without a hanging vertex
-    ! in the center of an edge/face are not supported.
-    !integer, dimension(:), pointer :: p_InodalProperty
-
  
   ! local variables
   integer :: ivt, iPart, iel
@@ -258,9 +209,6 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
   ! Set pointer to triangulation
   p_rtriangulation => p_rproblemLevel%rtriangulation
   
-  ! Set pointer to maximum problem level
-  p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    
   ! get quantity of particles
   call parlst_getvalue_int(rparlist, 'Eulerlagrange', "nPart", nPart)
 
@@ -477,29 +425,26 @@ SUBROUTINE eulerlagrange_init(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
         rParticles%p_bdy_check(iPart)= 0
         
         ! Find the start element for each particle
-        call findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+        call findnewelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
         ! calculate barycentric coordinates
-        call calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+        call calculatebarycoords(p_rproblemLevel,rParticles,iPart)
 
         ! wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
                   abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
-            call wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+            call wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
     end do
 
 
-END SUBROUTINE eulerlagrange_init
+end subroutine eulerlagrange_init
 
-SUBROUTINE eulerlagrange_step(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -566,9 +511,6 @@ SUBROUTINE eulerlagrange_step(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
 
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-
     ! Set pointer to coordinate vector
     call storage_getbase_double2D(&
          p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
@@ -585,8 +527,7 @@ SUBROUTINE eulerlagrange_step(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
 
     do iPart = 1, rParticles%nPart
       ! subroutine to find the element with the particle
-      call findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,&
-                            rtimestep,rcollection,rParticles,iPart)
+      call findnewelement(rparlist,p_rproblemLevel,rParticles,iPart)
  
       dx= rParticles%p_xpos(iPart)
       dy= rParticles%p_ypos(iPart)
@@ -605,52 +546,36 @@ SUBROUTINE eulerlagrange_step(rparlist,rproblem,p_rproblemLevel,rsolution,rtimes
       ! check if particle is in the wrong element
       IF ((abs(rParticles%p_lambda1(iPart))+&
            abs(rParticles%p_lambda2(iPart))+&
-           abs(rParticles%p_lambda3(iPart))) .GE. 1.00001) THEN
-        call wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-      END IF
+           abs(rParticles%p_lambda3(iPart))) .GE. 1.00001) then
+        call wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
+      end if
 
       write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
 
-      ! subroutine to compute the new position of the particles
-      call moveparticle(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-
-
     end do
 
+    ! subroutine to compute the new position of the particles
+    call moveparticle(rparlist,p_rproblemLevel,rsolution,rParticles)
+
     ! subroutine to calculate the volume part of the particles
-    call calculatevolumepart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+    call calculatevolumepart(p_rproblemLevel,rParticles)
 
     ! subroutine to calculate the velocity of the particles 
-    call calculatevelopart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
+    call calculatevelopart(p_rproblemLevel,rParticles)
 
     close(unit=20+rParticles%iTimestep)
     rParticles%iTimestep=rParticles%iTimestep+1
 
-END SUBROUTINE eulerlagrange_step
+end subroutine eulerlagrange_step
 
 
 !************ SUBROUTINE to calculate the barycentric coordinates ******************************************
 !*
 
-SUBROUTINE calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-
-    ! parameterlist
-    type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
+subroutine calculatebarycoords(p_rproblemLevel,rParticles,iPart)
 
     ! particles
     type(t_Particles), intent(inout) :: rParticles
-
-     ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
     
     ! current number of particle
     integer, intent(inout) :: iPart
@@ -682,9 +607,6 @@ SUBROUTINE calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
   
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-
     ! Get vertices at element
     call storage_getbase_int2D(&
         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
@@ -697,12 +619,12 @@ SUBROUTINE calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
     currentElement = rParticles%p_element(iPart)
 
     ! store coordinates of the vertices
-    DO ivt=1,3
+    do ivt=1,3
 
       vert_coord(1,ivt)= p_DvertexCoords(1,p_IverticesAtElement(ivt,currentElement))
       vert_coord(2,ivt)= p_DvertexCoords(2,p_IverticesAtElement(ivt,currentElement))
 
-    END DO
+    end do
 
     ! compute determinate
     !	    1 x1 y1
@@ -763,7 +685,7 @@ SUBROUTINE calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtime
     rParticles%p_lambda3(iPart)= abs(det_A3/det_A)
 
 
-END SUBROUTINE calculatebarycoords
+end subroutine calculatebarycoords
 
     !*
     !**********************************************************************************************************************
@@ -772,26 +694,14 @@ END SUBROUTINE calculatebarycoords
     !******************************* SUBROUTINE to find the right element *************************************************
     !*
 
-SUBROUTINE findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+subroutine findnewelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
+    
     ! particles
     type(t_Particles), intent(inout) :: rParticles
 
-    ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
-    
     ! pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
@@ -880,9 +790,6 @@ SUBROUTINE findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
-  
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
    
     ! get vertices at element
     call storage_getbase_int2D(&
@@ -943,13 +850,13 @@ SUBROUTINE findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,
 		    
 	    end do gotoNextElm
 	    
-    case DEFAULT
+    case default
         call output_line('Invalid search mode!',&
                      OU_CLASS_WARNING,OU_MODE_STD,'flagship')
         call sys_halt()
     end select
 
-END SUBROUTINE findnewelement
+end subroutine findnewelement
 
 !*
 !**********************************************************************************************************************
@@ -958,37 +865,19 @@ END SUBROUTINE findnewelement
 !****************************************** SUBROUTINE for wrong elements *********************************************
 !*
 
-SUBROUTINE wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+subroutine wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
     ! particles
     type(t_Particles), intent(inout) :: rParticles
 
-     ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
-    
     ! current number of particle
     integer, intent(inout) :: iPart
 
-      ! pointer to elements adjacent to an edge. (Only 2D).
-    !
-    ! Handle to 
-    !       p_IelementsAtEdge = array [1..2,1..NMT] of integer.
-    ! The numbers of the two elements adjacent to an edge IMT in 2D. 
-    ! For boundary edges, p_IelementsOnEdge(2,IMT) is set to 0.
-    ! This is the old KMEL array.
-    integer, dimension(:,:), pointer :: p_IelementsAtEdge
+    ! Pointer to the multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! pointer to array containing the elements adjacent to a vertex.
     !
@@ -1053,9 +942,6 @@ SUBROUTINE wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rc
     ! In such a case, only the first NVT n-tuples in this array are valid!
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! Pointer to the multigrid level
-    type(t_problemLevel), pointer :: p_rproblemLevel
-
     ! pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
@@ -1070,9 +956,6 @@ SUBROUTINE wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rc
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
   
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
          
@@ -1132,11 +1015,11 @@ SUBROUTINE wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rc
 
     if ((abs(dxi1)+abs(dxi2)+abs(dxi3)) .GE. 1.00001) then
 	  rParticles%p_element(iPart) = currentelm
-	  call checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+	  call checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
 
-END SUBROUTINE wrongelement
+end subroutine wrongelement
 
 !*
 !**********************************************************************************************************************
@@ -1144,19 +1027,10 @@ END SUBROUTINE wrongelement
 !*************************************** SUBROUTINE to move the particle **********************************************
 !*
 
-SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimestep,rcollection,rParticles,iPart)
+subroutine moveparticle(rparlist,p_rproblemLevel,rsolutionPrimal,rParticles)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
-
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
 
     ! particles
     type(t_Particles), intent(inout) :: rParticles
@@ -1167,9 +1041,6 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
     
-    ! current number of particle
-    integer, intent(inout) :: iPart
-
     ! pointer to elements adjacent to the boundary. 
     !
     ! Handle to 
@@ -1203,9 +1074,9 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
 	real(DP), dimension(3) :: rho_gas
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
     
-    type(t_vectorScalar) :: rvector1, rvector2, rvector3, rvector4, rvector5, rvector6
-    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
-
+    type(t_vectorScalar) :: rvector1, rvector2, rvector3
+    real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
+    integer :: iPart
 
     ! startingpostions of the particles
     real(DP) :: partxmin, partxmax, partymin, partymax
@@ -1216,9 +1087,6 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
  
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
@@ -1232,21 +1100,18 @@ SUBROUTINE moveparticle(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimes
     ! get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
-!TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
-call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
-call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_y', rvector2)
-call eulerlagrange_getVariable(rsolutionPrimal, 'density', rvector3)
-call eulerlagrange_getVariable(rsolutionPrimal, 'velo_part_x', rvector4)
-call eulerlagrange_getVariable(rsolutionPrimal, 'velo_part_y', rvector5)
-call eulerlagrange_getVariable(rsolutionPrimal, 'vol_part', rvector6)
-call lsyssc_getbase_double(rvector1, p_Ddata1)
-call lsyssc_getbase_double(rvector2, p_Ddata2)
-call lsyssc_getbase_double(rvector3, p_Ddata3)
-call lsyssc_getbase_double(rvector4, p_Ddata4)
-call lsyssc_getbase_double(rvector5, p_Ddata5)
-call lsyssc_getbase_double(rvector6, p_Ddata6)
+    ! Get data from solution
+    call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
+    call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_y', rvector2)
+    call eulerlagrange_getVariable(rsolutionPrimal, 'density', rvector3)
+    call lsyssc_getbase_double(rvector1, p_Ddata1)
+    call lsyssc_getbase_double(rvector2, p_Ddata2)
+    call lsyssc_getbase_double(rvector3, p_Ddata3)
  
     c_pi= 3.14159265358979323846264338327950288
+
+    ! Loop over the particles
+    do iPart = 1, rParticles%nPart
 
 	! store old data
 	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
@@ -1289,7 +1154,7 @@ call lsyssc_getbase_double(rvector6, p_Ddata6)
 	! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
 	! with \nu_g=\frac{\eta_g}{\rho_g}
 	!
-	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/rParticles%nu_g)*(SQRT((rParticles%p_xvelo_gas(iPart)- &
+	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/rParticles%nu_g)*(sqrt((rParticles%p_xvelo_gas(iPart)- &
 	       rParticles%p_xvelo_old(iPart))**2+&
 		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2))
 
@@ -1304,7 +1169,7 @@ call lsyssc_getbase_double(rvector6, p_Ddata6)
 	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8 
 
 	! calculate the velocity
-	Velo_rel= SQRT((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2 +&
+	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2 +&
 	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2)
 
 	! calculate new velocity of the particle
@@ -1363,29 +1228,27 @@ call lsyssc_getbase_double(rvector6, p_Ddata6)
         rParticles%p_bdy_check(iPart)= 0
         
         ! Find the start element for each particle
-        call findnewelement(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimestep,rcollection,rParticles,iPart)
+        call findnewelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
         ! calculate barycentric coordinates
-        call calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimestep,rcollection,rParticles,iPart)
+        call calculatebarycoords(p_rproblemLevel,rParticles,iPart)
 
         ! wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
                   abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
-            call wrongelement(rparlist,rproblem,p_rproblemLevel,rsolutionPrimal,rtimestep,rcollection,rParticles,iPart)
+            call wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
 	end if	
 	
+	end do
 	
-!TODO: Nicht für jedes Particle einzeln (sondern im Hauptprogramm)
-call lsyssc_releasevector(rvector1)
-call lsyssc_releasevector(rvector2)
-call lsyssc_releasevector(rvector3)
-call lsyssc_releasevector(rvector4)
-call lsyssc_releasevector(rvector5)
-call lsyssc_releasevector(rvector6)
+    ! release temporal data
+    call lsyssc_releasevector(rvector1)
+    call lsyssc_releasevector(rvector2)
+    call lsyssc_releasevector(rvector3)
 
-END SUBROUTINE moveparticle
+end subroutine moveparticle
 
 !*
 !**********************************************************************************************************************
@@ -1393,26 +1256,13 @@ END SUBROUTINE moveparticle
 !****************************************** SUBROUTINE to check the boundary ******************************************
 !*
 
-SUBROUTINE checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
-
+subroutine checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
 
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
-    ! Problem structure which holds all internal data (vectors/matrices)
-    type(t_problem), intent(inout) :: rproblem
-
-   ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
     ! particles
     type(t_Particles), intent(inout) :: rParticles
-
-     ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
@@ -1460,24 +1310,7 @@ SUBROUTINE checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,r
     ! This is the old KEBD array.
     integer, dimension(:), pointer :: p_IelementsAtBoundary
 
-
-   ! Nodal property array. 
-    ! Handle to 
-    !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
-    ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
-    ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
-    ! its function inside of the geometry.
-    ! Generally said, the range of the p_InodalProperty-array 
-    ! characterizes the type of the node (=vertex/edge):
-    ! = 0    : The vertex/edge is an inner vertex/edge
-    ! > 0    : The vertex/edge is a boundary vertex/edge on the real
-    !           boundary. KNPR(.) defines the number of the boundary
-    !           component.
-    ! This is the old KNPR-array, slightly modified for edges and
-    ! hanging nodes.
-    integer, dimension(:), pointer :: p_InodalProperty
-
-     ! pointer to the coordinates of the vertices
+    ! pointer to the coordinates of the vertices
     !
     ! A list of all corner(!)-vertices of the elements in the triangulation.
     ! Handle to 
@@ -1530,13 +1363,8 @@ SUBROUTINE checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,r
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
 
-    ! Set pointer to maximum problem level
-    p_rproblemLevel   => rproblem%p_rproblemLevelMax
-    
     call storage_getbase_int(&
          p_rtriangulation%h_IelementsAtBoundary, p_IelementsAtBoundary)
-    call storage_getbase_int(&
-         p_rtriangulation%h_InodalProperty, p_InodalProperty)
     call storage_getbase_double2D(&
          p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_int2D(&
@@ -1607,9 +1435,9 @@ SUBROUTINE checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,r
 				bdy_point(1)= x(1) + s*x(2)
 				bdy_point(2)= y(1) + s*y(2)
 				!Anteil der Bewegung am Zeitschritt
-				rParticles%p_bdy_time(iPart)= (SQRT((bdy_point(1) - rParticles%p_xpos_old(iPart))**2+& 
+				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2+& 
 											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2))&
-											/(SQRT((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2+&
+											/(sqrt((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2+&
 											(rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart))**2))
 			    rParticles%p_xpos(iPart) = bdy_point(1)
 			    rParticles%p_ypos(iPart) = bdy_point(2)
@@ -1663,19 +1491,19 @@ SUBROUTINE checkboundary(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,r
     rParticles%p_bdy_check(iPart) = 0
 
     ! Find the new element for the particle
-    call findnewelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+    call findnewelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
     ! calculate barycentric coordinates
-    call calculatebarycoords(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+    call calculatebarycoords(p_rproblemLevel,rParticles,iPart)
 
     ! wrong element
     if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
          abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
-        call wrongelement(rparlist,rproblem,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles,iPart)
+        call wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
 
-END SUBROUTINE checkboundary
+end subroutine checkboundary
 
 !*
 !**********************************************************************************************************************
@@ -1683,121 +1511,10 @@ END SUBROUTINE checkboundary
 !************************************ SUBROUTINE to calculate the volumepart ******************************************
 !*
 
-SUBROUTINE calculatevolumepart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
-
-    ! parameterlist
-    type(t_parlist), intent(inout) :: rparlist
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
+subroutine calculatevolumepart(p_rproblemLevel,rParticles)
 
     ! particles
     type(t_Particles), intent(inout) :: rParticles
-
-     ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
-
-    ! Pointer to the multigrid level
-    type(t_problemLevel), pointer :: p_rproblemLevel
-
-    ! pointer to array of the volume for each element
-    !
-    ! 2D triangulation: Array with area of each element.
-    ! 3D triangulation: Array with volume of each element.
-    ! Handle to 
-    !       p_DelementArea = array [1..NEL+1] of double.
-    ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
-    real(DP), dimension(:), pointer :: p_DelementVolume
-
-    ! pointer to the vertices adjacent to an element
-    !
-    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
-    ! For each element the node numbers of the corner-vertices
-    ! in mathematically positive sense.
-    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
-    ! meshes, there is NVE=4. In this case, there is 
-    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
-    ! This is a handle to the old KVERT array.
-    integer, dimension(:,:), pointer :: p_IverticesAtElement
-
-    ! pointer to the triangulation
-    type(t_triangulation), pointer :: p_rtriangulation
-
-    ! local variables
-	integer :: i, current
-	real(DP) :: c_pi
-
-    ! Set pointer to triangulation
-    p_rtriangulation => p_rproblemLevel%rtriangulation
- 
-    ! Get vertices at element
-    call storage_getbase_int2D(&
-         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
-
-    ! Get area of each element
-    call storage_getbase_double(&
-         p_rtriangulation%h_DelementVolume, p_DelementVolume)
-
-    c_pi= 3.14159265358979323846264338327950288
-
-	do i= 1, rParticles%nPart
-
-        ! element of the current particle
-		current= rParticles%p_element(i)
-
-        ! store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
-		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
-		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
-		                (rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
-		                p_DelementVolume(p_IverticesAtElement(1,current))
-		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
-		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
-		                (rParticles%p_lambda2(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
-		                p_DelementVolume(p_IverticesAtElement(2,current))
-		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
-		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
-		                (rParticles%p_lambda3(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
-		                p_DelementVolume(p_IverticesAtElement(3,current))
-
-	end do
-
-    ! Set volumefraction of the particles
-      !call setVarInterleaveFormat(neq, nvar, 4,&
-      !    p_Denergy, p_Ddata)
-
-     !call ucd_addVariableVertexBased (rexport,sname,cvarSpec, &
-      !DdataVert, DdataMid, DdataElem)
-
-
-
-END SUBROUTINE calculatevolumepart
-
-!*
-!**********************************************************************************************************************
-
-
-!************************************ SUBROUTINE to calculate the volumepart ******************************************
-!*
-
-SUBROUTINE calculatevelopart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
-
-    ! parameterlist
-    type(t_parlist), intent(inout) :: rparlist
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-
-    ! time-stepping structure
-    type(t_timestep), intent(inout) :: rtimestep
-
-    ! particles
-    type(t_Particles), intent(inout) :: rParticles
-
-     ! primal solution vector
-    type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
@@ -1864,7 +1581,95 @@ SUBROUTINE calculatevelopart(rparlist,p_rproblemLevel,rsolution,rtimestep,rcolle
 	end do
 
 
-END SUBROUTINE calculatevelopart
+end subroutine calculatevolumepart
+
+!*
+!**********************************************************************************************************************
+
+
+!********************** SUBROUTINE to calculate the velocity of the particles in the gridpoint ************************
+!*
+
+subroutine calculatevelopart(p_rproblemLevel,rParticles)
+
+    ! particles
+    type(t_Particles), intent(inout) :: rParticles
+
+    ! Pointer to the multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! pointer to the vertices adjacent to an element
+    !
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the corner-vertices
+    ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! This is a handle to the old KVERT array.
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    
+    ! pointer to array of the volume for each element
+    !
+    ! 2D triangulation: Array with area of each element.
+    ! 3D triangulation: Array with volume of each element.
+    ! Handle to 
+    !       p_DelementArea = array [1..NEL+1] of double.
+    ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
+    real(DP), dimension(:), pointer :: p_DelementVolume
+
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables
+	integer :: i, current
+	real(DP) :: c_pi
+
+    ! Set pointer to triangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
+ 
+    ! Get vertices at element
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+
+    ! Get area of each element
+    call storage_getbase_double(&
+         p_rtriangulation%h_DelementVolume, p_DelementVolume)
+
+	do i= 1, rParticles%nPart
+
+        ! element of the current particle
+		current= rParticles%p_element(i)
+
+        ! store the velocity of the particle in the gridpoints (with barycentric coordinates)
+		rParticles%p_PartVelo(1,p_IverticesAtElement(1,current))= &
+		                rParticles%p_PartVelo(1,p_IverticesAtElement(1,current)) + &
+		                (rParticles%p_xvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(1,current))
+		rParticles%p_PartVelo(1,p_IverticesAtElement(2,current))= &
+		                rParticles%p_PartVelo(1,p_IverticesAtElement(2,current)) + &
+		                (rParticles%p_xvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(2,current))
+		rParticles%p_PartVelo(1,p_IverticesAtElement(3,current))= &
+		                rParticles%p_PartVelo(1,p_IverticesAtElement(3,current)) + &
+		                (rParticles%p_xvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(3,current))
+		rParticles%p_PartVelo(2,p_IverticesAtElement(1,current))= &
+		                rParticles%p_PartVelo(2,p_IverticesAtElement(1,current)) + &
+		                (rParticles%p_yvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(1,current))
+		rParticles%p_PartVelo(2,p_IverticesAtElement(2,current))= &
+		                rParticles%p_PartVelo(2,p_IverticesAtElement(2,current)) + &
+		                (rParticles%p_yvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(2,current))
+		rParticles%p_PartVelo(2,p_IverticesAtElement(3,current))= &
+		                rParticles%p_PartVelo(2,p_IverticesAtElement(3,current)) + &
+		                (rParticles%p_yvelo(i)**2)/&
+		                p_DelementVolume(p_IverticesAtElement(3,current))
+
+	end do
+
+end subroutine calculatevelopart
 
 !*
 !**********************************************************************************************************************

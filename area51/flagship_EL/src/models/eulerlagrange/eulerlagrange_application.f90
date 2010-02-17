@@ -348,7 +348,7 @@ contains
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     ! Euler-Lagrange
     !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    call eulerlagrange_init(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolution,&
+    call eulerlagrange_init(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
                             rtimestep,rcollection,rParticles)
     
     ! Stop time measurement for pre-processing
@@ -390,7 +390,7 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Euler-Lagrange
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        !call eulerlagrange_step(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
+        !call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
 
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
@@ -2823,7 +2823,7 @@ contains
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       ! Euler-Lagrange (compute particle phase)
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-      call eulerlagrange_step(rparlist,rproblem,rproblem%p_rproblemLevelMax,rsolution,&
+      call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
             rtimestep,rcollection,rParticles)
 
     end do timeloop
