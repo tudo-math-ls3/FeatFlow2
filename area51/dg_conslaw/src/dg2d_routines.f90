@@ -180,11 +180,10 @@ contains
       
       ! Allocate space for local edge numbers
       allocate(p_IlocalEdgeNumber(2,NMT))
-      
+         
       ! Get local edge numbers
       call linf_getLocalEdgeNumbers(p_IedgeList,p_IlocalEdgeNumber,&
                                     p_rtriangulation)
-                                    
      
       ! Initialise the vectorAssembly structures
       call linf_initAssembly(rvectorAssembly(1), rform,&
@@ -471,8 +470,8 @@ contains
     ! Allocate space for the determinants of the jacobi matrices in the cubature points
     allocate(Ddetj(ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
     
-    ! Allocate space for the integration points on the real elements
-    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
+!    ! Allocate space for the integration points on the real elements
+!    allocate(DpointsReal(ndim2d,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     ! Allocate space for normal vectors
     allocate(normal(2,min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
@@ -480,8 +479,8 @@ contains
     ! Allocate space for edge length
     allocate(edgelength(min(size(IedgeList),rlocalVectorAssembly(1)%nelementsPerBlock)))
     
-    ! The coordinates of the corner edges of the elements for the transformation
-    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
+!    ! The coordinates of the corner edges of the elements for the transformation
+!    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
       
   
   
@@ -650,13 +649,13 @@ contains
         end do
       end do
       
-     ! Set values at boundary
-     do iel = 1,IELmax-IELset+1
-      if(IelementList(2,IELset+iel-1).eq.0) then
-        DsolVals(1:ncubp,2,iel) = 0.0_DP
-      end if
-      
-    end do
+!     ! Set values at boundary
+!     do iel = 1,IELmax-IELset+1
+!      if(IelementList(2,IELset+iel-1).eq.0) then
+!        DsolVals(1:ncubp,2,iel) = 0.0_DP
+!      end if
+!      
+!      end do
      
       
      ! --------------------- Get normal vectors ---------------------------
@@ -702,21 +701,21 @@ contains
 
 
 
-      ! Fill the corner coordinates of the elements
-      do iel = 1,IELmax-IELset+1
-        do ive = 1, NVE
-          Dcoords(1:ndim2d,ive,iel)=&
-                   p_DvertexCoords(1:ndim2d,p_IverticesAtElement(ive,IelementList(1,IELset+iel-1)))
-        end do
-      end do
-
-
-      ! The numerical flux function needs the x- and y- values
-      ! So we have to call the mapping from the reference- to the real element
-      call trafo_calctrafo_sim (ctrafoType,IELmax-IELset+1,ncubp,Dcoords,&
-                                DpointsRef(1:ndim2d,:,1,1:IELmax-IELset+1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
-                                Ddetj(1:ncubp,1:IELmax-IELset+1),&
-                                DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1))
+!      ! Fill the corner coordinates of the elements
+!      do iel = 1,IELmax-IELset+1
+!        do ive = 1, NVE
+!          Dcoords(1:ndim2d,ive,iel)=&
+!                   p_DvertexCoords(1:ndim2d,p_IverticesAtElement(ive,IelementList(1,IELset+iel-1)))
+!        end do
+!      end do
+!
+!
+!      ! The numerical flux function needs the x- and y- values
+!      ! So we have to call the mapping from the reference- to the real element
+!      call trafo_calctrafo_sim (ctrafoType,IELmax-IELset+1,ncubp,Dcoords,&
+!                                DpointsRef(1:ndim2d,:,1,1:IELmax-IELset+1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
+!                                Ddetj(1:ncubp,1:IELmax-IELset+1),&
+!                                DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1))
 
 
 
@@ -754,7 +753,7 @@ contains
             rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
             DsolVals(:,:,1:IELmax-IELset+1),&
             normal(:,1:IELmax-IELset+1),&
-            DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
+            !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rintSubset,&
             rcollection )
             
@@ -876,7 +875,7 @@ contains
     call linf_releaseAssemblyData(rlocalVectorAssembly(2))
 
     ! Deallocate memory
-    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal,Djac,Ddetj,DpointsReal,Dcoords)
+    deallocate(Dxi2D,DpointsRef,IelementList,DsolVals,edgelength,normal,Djac,Ddetj)!,DpointsReal,Dcoords)
 
   end subroutine
 

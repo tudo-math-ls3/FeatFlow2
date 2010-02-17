@@ -1,3 +1,4 @@
+
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
@@ -15,7 +16,7 @@ triname = ./pre/RECT2x1.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 2
+FEkind = 1
 
 
 
@@ -25,7 +26,7 @@ FEkind = 2
 dt = 0.01
 
 # Final time
-ttfinal = 0.5
+ttfinal = 1.0
 
 
 [SOLVER]
@@ -41,7 +42,14 @@ ttfinal = 0.5
 # Set initial condition
 # You can use a function parser, depending on x and y
 # Example: 1  //  x+y  //  cos(x*y)+5  //  if(x<40, 5, 10)
-ic  = if(sqrt(x^2+y^2)<3,1,0)
+ic  = 0
+
+# Set data at the inlet
+inlet = if(y=0,if(x<1,1,0),0)
+incond = 1
 
 
 [OUTPUT]
+
+# How fine shall be the DG output file (Default = 3)
+extrapoints = 3

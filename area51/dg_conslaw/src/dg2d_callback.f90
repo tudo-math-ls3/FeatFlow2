@@ -1036,7 +1036,7 @@ contains
               Dcoefficients,&
               DsolVals,&
               normal,&
-              DpointsReal,&
+              !DpointsReal,&
               rintSubset,&
               rcollection )
               
@@ -1045,7 +1045,7 @@ contains
   !<input>
   real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
-  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
   !</input>
@@ -1060,15 +1060,27 @@ contains
   real(DP) :: dvn ,dx, dy, dr
   real(dp), dimension(:,:,:), allocatable :: Dsolutionvalues
   
-  Dvel(1)=1.0_DP
-  Dvel(2)=1.0_DP
+  ! Function parser
+  type(t_fparser) :: rfparser
+    
+  character(LEN=*), dimension(2), parameter ::&
+       cvariables = (/ (/'x'/), (/'y'/) /)
+    
+!  ! Initialise function parser
+!  call fparser_init()
+!  call fparser_create(rfparser, 1)
+!  call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+  
   
   do iel = 1, ubound(Dcoefficients,2)
   
     do ipoint= 1, ubound(Dcoefficients,1)
     
-      dx = DpointsReal(1,ipoint,iel)
-      dy = DpointsReal(2,ipoint,iel)
+      !dx = DpointsReal(1,ipoint,iel)
+      !dy = DpointsReal(2,ipoint,iel)
+      
+      dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
+      dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
       ! Zalesak
       !Dvel(1)=0.5_DP-dy
@@ -1081,6 +1093,8 @@ contains
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
       
       ! Set initial condition on the inflow boundary
+      !call fparser_evalFunction(rfparser, 1, rintSubset(1)%p_DcubPtsReal(:,ipoint,iel), DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel))
+      
       if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
         dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
         if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
@@ -1106,6 +1120,9 @@ contains
       
     end do ! ipoint
   end do ! iel
+  
+!  ! Release the function parser
+!  call fparser_release(rfparser)
   
   
 !  ! If the solution (or its derivatives) has to be evaluated
@@ -1220,8 +1237,8 @@ contains
     call fparser_init()
     call fparser_create(rfparser, 1)
     
-    !call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
-    call fparser_parseFunction(rfparser, 1, 'x+y', cvariables)
+    call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+    
     
     Dcoefficients (1,:,:) = 0.0_dp
     

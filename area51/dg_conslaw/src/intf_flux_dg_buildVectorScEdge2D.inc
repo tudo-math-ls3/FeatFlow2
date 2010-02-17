@@ -11,7 +11,7 @@
               Dcoefficients,&
               DsolVals,&
               normal,&
-              DpointsReal,&
+!              DpointsReal,&
               rintSubSet,&
               rcollection )
     
@@ -37,7 +37,7 @@
   !<input>
   real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
-  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
+!  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
     

@@ -130,11 +130,14 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir, sstring
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
     
     ! Command line and name of the paramater file
     character(LEN=SYS_STRLEN) :: cbuffer, sparameterfileName
+    
+    ! Strings describing initial condition and inlet condition for the function parser
+    character(len=SYS_STRLEN) :: sstring, sic, sinlet
     
     real(DP) :: ttime, dt, ttfinal
     
@@ -151,6 +154,15 @@ contains
     
     character(LEN=*), dimension(2), parameter ::&
          cvariables = (/ (/'x'/), (/'y'/) /)
+    
+    ! How many extra points for output
+    integer :: iextraPoints
+    
+    ! For time measurement
+    real(dp) :: dtime1, dtime2
+    
+    ! Start time measurement
+    call cpu_time(dtime1)
     
         
     ! Get command line arguments and extract name of parameter file
@@ -170,7 +182,7 @@ contains
     
     
     ! We want to solve our problem on level... Default=1
-    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)
+    call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'NLMAX', nlmax, 1)    
     
     ! And with timestepsize
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'dt', dt)
@@ -180,6 +192,15 @@ contains
     
     ! Type of finite element to use
     call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
+    
+    ! How many extra points for output
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'extrapoints', iextraPoints, 3)
+    
+    ! Get string describing the initial condition for the function parser
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'ic', sic)
+    
+    ! Get string describing the initial condition for the function parser
+    call parlst_getvalue_string (rparlist, 'PROBLEM', 'inlet', sinlet)
     
     select case (ielementType)
     case (0)
@@ -452,9 +473,8 @@ contains
     ! Now set the initial conditions via L2 projection
     rlinformIC%itermCount = 1
     rlinformIC%Idescriptors(1) = DER_FUNC2D
-    call parlst_getvalue_string (rparlist, 'PROBLEM', 'ic', sstring)
     !rcollection%SquickAccess(2) = cvariables
-    rcollection%SquickAccess(1) = sstring
+    rcollection%SquickAccess(1) = sic
     call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
                                   coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
@@ -493,6 +513,7 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim,&
@@ -538,6 +559,7 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim,&
@@ -578,6 +600,7 @@ contains
              
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
        call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhs,rsolTemp,&
                                               flux_dg_buildVectorScEdge2D_sim,&
@@ -666,7 +689,7 @@ contains
     write(*,*) ''
     write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
-    call dg2gmv(rsol,3)
+    call dg2gmv(rsol,iextraPoints)
     
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
@@ -760,6 +783,10 @@ contains
     
     ! Finally release the domain, that is it.
     call boundary_release (rboundary)
+    
+    ! End of time measurement
+    call cpu_time(dtime2)
+    write (*,*) 'Calculation took', dtime2-dtime1
     
   end subroutine
 
