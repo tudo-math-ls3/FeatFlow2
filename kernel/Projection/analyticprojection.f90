@@ -857,147 +857,145 @@ contains
                       OU_CLASS_ERROR,OU_MODE_STD,'anprj_charFctRealBdComp')
     call sys_halt()
   
-  contains
-  
-    ! ---------------------------------------------------------------
-  
-    subroutine charFctRealBdComp2d_P1Q1 (rboundaryRegion,rvector)
-      ! Worker routine for P1/Q1 space.
-      type(t_boundaryRegion), intent(in), target :: rboundaryRegion
-      type(t_vectorScalar), intent(inout), target :: rvector
-      
-      ! local variables
-      type(t_triangulation), pointer :: p_rtriangulation
-      integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
-      real(dp), dimension(:), pointer :: p_DvertexParameterValue
-      integer :: ibct,ivbd
-      real(DP), dimension(:), pointer :: p_Ddata
-      
-      ! Get some data
-      p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
-      call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
-          p_IverticesAtBoundary)
-      call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
-          p_IboundaryCpIdx)
-      call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
-          p_DvertexParameterValue)
-      call lsyssc_getbase_double (rvector,p_Ddata)
-      
-      ! Loop through the boundary components.
-      do ibct = 1,p_rtriangulation%nbct
-        ! Loop through the vertices
-        do ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
-          ! Check if the vertex is in the region
-          if (boundary_isInRegion (rboundaryRegion,ibct,&
-              p_DvertexParameterValue(ivbd))) then
-            ! Add a 1 to the vector
-            p_Ddata(p_IverticesAtBoundary(ivbd)) = &
-                p_Ddata(p_IverticesAtBoundary(ivbd)) + 1.0_DP
-          end if
-        end do
-      end do
-      
-    end subroutine
-    
-    ! ---------------------------------------------------------------
-  
-    subroutine charFctRealBdComp2d_P2Q2(rboundaryRegion,rvector)
-      ! Worker routine for P1/Q1 space.
-      type(t_boundaryRegion), intent(in), target :: rboundaryRegion
-      type(t_vectorScalar), intent(inout), target :: rvector
-      
-      ! local variables
-      type(t_triangulation), pointer :: p_rtriangulation
-      integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
-      real(dp), dimension(:), pointer :: p_DvertexParameterValue
-      integer, dimension(:), pointer :: p_IedgesAtBoundary
-      real(dp), dimension(:), pointer :: p_DedgeParameterValue
-      integer :: ibct,ivbd,iebd
-      real(DP), dimension(:), pointer :: p_Ddata
-      
-      ! Get some data
-      p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
-      call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
-          p_IverticesAtBoundary)
-      call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
-          p_IboundaryCpIdx)
-      call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
-          p_DvertexParameterValue)
-      call storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,&
-          p_IedgesAtBoundary)
-      call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
-          p_IboundaryCpIdx)
-      call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
-          p_DedgeParameterValue)
-      call lsyssc_getbase_double (rvector,p_Ddata)
-      
-      ! Loop through the boundary components.
-      do ibct = 1,p_rtriangulation%nbct
-        ! Loop through the vertices
-        do ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
-          ! Check if the vertex is in the region
-          if (boundary_isInRegion (rboundaryRegion,ibct,&
-              p_DvertexParameterValue(ivbd))) then
-            ! Add a 1 to the vector
-            p_Ddata(p_IverticesAtBoundary(ivbd)) = &
-                p_Ddata(p_IverticesAtBoundary(ivbd)) + 1.0_DP
-          end if
-        end do
+  end subroutine
 
-        ! Loop through the edges
-        do iebd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
-          ! Check if the edge is in the region
-          if (boundary_isInRegion (rboundaryRegion,ibct,&
-              p_DedgeParameterValue(iebd))) then
-            ! Add a 1 to the vector
-            p_Ddata(p_IedgesAtBoundary(iebd)+p_rtriangulation%NVT) = &
-                p_Ddata(p_IedgesAtBoundary(iebd)+p_rtriangulation%NVT) + 1.0_DP
-          end if
-        end do
-      end do
-      
-    end subroutine
-    
-    ! ---------------------------------------------------------------
-  
-    subroutine charFctRealBdComp2d_Q1T (rboundaryRegion,rvector)
-      ! Worker routine for Q1~-space.
-      type(t_boundaryRegion), intent(in), target :: rboundaryRegion
-      type(t_vectorScalar), intent(inout), target :: rvector
-      
-      ! local variables
-      type(t_triangulation), pointer :: p_rtriangulation
-      integer, dimension(:), pointer :: p_IedgesAtBoundary,p_IboundaryCpIdx
-      real(dp), dimension(:), pointer :: p_DedgeParameterValue
-      integer :: ibct,iebd
-      real(DP), dimension(:), pointer :: p_Ddata
-      
-      ! Get some data
-      p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
-      call storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,&
-          p_IedgesAtBoundary)
-      call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
-          p_IboundaryCpIdx)
-      call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
-          p_DedgeParameterValue)
-      call lsyssc_getbase_double (rvector,p_Ddata)
-      
-      ! Loop through the boundary components.
-      do ibct = 1,p_rtriangulation%nbct
-        ! Loop through the vertices
-        do iebd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
-          ! Check if the edge is in the region
-          if (boundary_isInRegion (rboundaryRegion,ibct,&
-              p_DedgeParameterValue(iebd))) then
-            ! Add a 1 to the vector
-            p_Ddata(p_IedgesAtBoundary(iebd)) = &
-                p_Ddata(p_IedgesAtBoundary(iebd)) + 1.0_DP
-          end if
-        end do
-      end do
-      
-    end subroutine
+  ! ---------------------------------------------------------------
 
+  subroutine charFctRealBdComp2d_P1Q1 (rboundaryRegion,rvector)
+    ! Worker routine for P1/Q1 space.
+    type(t_boundaryRegion), intent(in), target :: rboundaryRegion
+    type(t_vectorScalar), intent(inout), target :: rvector
+    
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
+    real(dp), dimension(:), pointer :: p_DvertexParameterValue
+    integer :: ibct,ivbd
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    ! Get some data
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
+    call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
+        p_IverticesAtBoundary)
+    call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
+        p_DvertexParameterValue)
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    
+    ! Loop through the boundary components.
+    do ibct = 1,p_rtriangulation%nbct
+      ! Loop through the vertices
+      do ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+        ! Check if the vertex is in the region
+        if (boundary_isInRegion (rboundaryRegion,ibct,&
+            p_DvertexParameterValue(ivbd))) then
+          ! Add a 1 to the vector
+          p_Ddata(p_IverticesAtBoundary(ivbd)) = &
+              p_Ddata(p_IverticesAtBoundary(ivbd)) + 1.0_DP
+        end if
+      end do
+    end do
+    
+  end subroutine
+  
+  ! ---------------------------------------------------------------
+
+  subroutine charFctRealBdComp2d_P2Q2(rboundaryRegion,rvector)
+    ! Worker routine for P1/Q1 space.
+    type(t_boundaryRegion), intent(in), target :: rboundaryRegion
+    type(t_vectorScalar), intent(inout), target :: rvector
+    
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IverticesAtBoundary,p_IboundaryCpIdx
+    real(dp), dimension(:), pointer :: p_DvertexParameterValue
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+    real(dp), dimension(:), pointer :: p_DedgeParameterValue
+    integer :: ibct,ivbd,iebd
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    ! Get some data
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
+    call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary,&
+        p_IverticesAtBoundary)
+    call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_double(p_rtriangulation%h_DvertexParameterValue,&
+        p_DvertexParameterValue)
+    call storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,&
+        p_IedgesAtBoundary)
+    call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
+        p_DedgeParameterValue)
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    
+    ! Loop through the boundary components.
+    do ibct = 1,p_rtriangulation%nbct
+      ! Loop through the vertices
+      do ivbd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+        ! Check if the vertex is in the region
+        if (boundary_isInRegion (rboundaryRegion,ibct,&
+            p_DvertexParameterValue(ivbd))) then
+          ! Add a 1 to the vector
+          p_Ddata(p_IverticesAtBoundary(ivbd)) = &
+              p_Ddata(p_IverticesAtBoundary(ivbd)) + 1.0_DP
+        end if
+      end do
+
+      ! Loop through the edges
+      do iebd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+        ! Check if the edge is in the region
+        if (boundary_isInRegion (rboundaryRegion,ibct,&
+            p_DedgeParameterValue(iebd))) then
+          ! Add a 1 to the vector
+          p_Ddata(p_IedgesAtBoundary(iebd)+p_rtriangulation%NVT) = &
+              p_Ddata(p_IedgesAtBoundary(iebd)+p_rtriangulation%NVT) + 1.0_DP
+        end if
+      end do
+    end do
+    
+  end subroutine
+  
+  ! ---------------------------------------------------------------
+
+  subroutine charFctRealBdComp2d_Q1T (rboundaryRegion,rvector)
+    ! Worker routine for Q1~-space.
+    type(t_boundaryRegion), intent(in), target :: rboundaryRegion
+    type(t_vectorScalar), intent(inout), target :: rvector
+    
+    ! local variables
+    type(t_triangulation), pointer :: p_rtriangulation
+    integer, dimension(:), pointer :: p_IedgesAtBoundary,p_IboundaryCpIdx
+    real(dp), dimension(:), pointer :: p_DedgeParameterValue
+    integer :: ibct,iebd
+    real(DP), dimension(:), pointer :: p_Ddata
+    
+    ! Get some data
+    p_rtriangulation => rvector%p_rspatialDiscr%p_rtriangulation
+    call storage_getbase_int(p_rtriangulation%h_IedgesAtBoundary,&
+        p_IedgesAtBoundary)
+    call storage_getbase_int(p_rtriangulation%h_IboundaryCpIdx,&
+        p_IboundaryCpIdx)
+    call storage_getbase_double(p_rtriangulation%h_DedgeParameterValue,&
+        p_DedgeParameterValue)
+    call lsyssc_getbase_double (rvector,p_Ddata)
+    
+    ! Loop through the boundary components.
+    do ibct = 1,p_rtriangulation%nbct
+      ! Loop through the vertices
+      do iebd = p_IboundaryCpIdx(ibct),p_IboundaryCpIdx(ibct+1)-1
+        ! Check if the edge is in the region
+        if (boundary_isInRegion (rboundaryRegion,ibct,&
+            p_DedgeParameterValue(iebd))) then
+          ! Add a 1 to the vector
+          p_Ddata(p_IedgesAtBoundary(iebd)) = &
+              p_Ddata(p_IedgesAtBoundary(iebd)) + 1.0_DP
+        end if
+      end do
+    end do
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1084,4 +1082,5 @@ contains
     call afcstab_releaseStabilisation(rafcstab)
     
   end subroutine anprj_analytL2projectionConstrained
+  
 end module
