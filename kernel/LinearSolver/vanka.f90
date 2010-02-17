@@ -404,7 +404,7 @@ module vanka
     ! Pointer to the matrix entries of the pressure identity matrix A33
     ! (if it exists).
     real(DP), dimension(:), pointer :: p_DA33 => NULL()
-
+    
     ! Pointer to diagonal entries of A33
     integer, dimension(:), pointer :: p_KdiagonalA33 => NULL()
 
@@ -5532,6 +5532,7 @@ contains
     integer, dimension(nnvel) :: IdofGlobal
     real(DP), dimension(nnld,nnld) :: AA
     real(DP), dimension(nnld) :: FF
+    real(DP) :: dmult11, dmult22, dmult13, dmult31
     
     ! LAPACK temporary space
     integer :: Ipiv(nnld),ilapackInfo
@@ -5556,6 +5557,11 @@ contains
     p_DB2 => rvanka%p_DB2
     p_DD1 => rvanka%p_DD1
     p_DD2 => rvanka%p_DD2
+    
+    dmult11 = rvanka%Dmultipliers(1,1)
+    dmult22 = rvanka%Dmultipliers(2,2)
+    dmult31 = rvanka%Dmultipliers(3,1)
+    dmult13 = rvanka%Dmultipliers(1,3)
     
     ! Get pointers to the vectors, RHS, get triangulation information
     NVT = rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NVT
@@ -5671,8 +5677,8 @@ contains
 
         ! Put on AA(.) the diagonal entry of matrix A -- the 1st and the
         ! 2nd block
-        AA(inode,inode) = p_DA(p_KdiagonalA(idof))
-        AA(inode+nnvel,inode+nnvel) = p_DA(p_KdiagonalA(idof))
+        AA(inode,inode) = dmult11*p_DA(p_KdiagonalA(idof))
+        AA(inode+nnvel,inode+nnvel) = dmult22*p_DA(p_KdiagonalA(idof))
         
         ! Set FF initially to the value of the right hand
         ! side vector that belongs to our current DOF corresponding
@@ -5776,7 +5782,7 @@ contains
         ib2=p_KldB(idof+1)-1
         do ib = ib1,ib2
           J = p_KcolB(ib)
-          daux = p_Dvector(j+ioffsetp)
+          daux = p_Dvector(j+ioffsetp) * dmult13
           FF(inode)       = FF(inode)      -p_DB1(ib)*daux
           FF(inode+lofsv) = FF(inode+lofsv)-p_DB2(ib)*daux
         end do
@@ -5824,15 +5830,15 @@ contains
           J = p_KcolB(ib)
           
           ! Get the entries in the B-matrices
-          AA(inode,      2*nnvel+isubdof) = p_DB1(ib)
-          AA(inode+nnvel,2*nnvel+isubdof) = p_DB2(ib)
+          AA(inode,      2*nnvel+isubdof) = dmult13*p_DB1(ib)
+          AA(inode+nnvel,2*nnvel+isubdof) = dmult13*p_DB2(ib)
 
           ! The same way, get DD1 and DD2.
           ! Note that DDi has exacty the same matrix structrure as BBi and is noted
           ! as 'transposed matrix' only because of the transposed-flag.
           ! So we can use "ib" as index here to access the entry of DDi:
-          AA(2*nnvel+isubdof,inode)       = p_DD1(ib)
-          AA(2*nnvel+isubdof,inode+nnvel) = p_DD2(ib)
+          AA(2*nnvel+isubdof,inode)       = dmult31*p_DD1(ib)
+          AA(2*nnvel+isubdof,inode+nnvel) = dmult31*p_DD2(ib)
 
           ! Build the pressure entry in the local defect vector:
           !   f_i = (f_i-Aui) - D_i pi
