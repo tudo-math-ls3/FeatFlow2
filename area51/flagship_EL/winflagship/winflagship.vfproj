@@ -52,7 +52,6 @@
 		<File RelativePath="..\src\models\euler\euler_callback2d.f90"/>
 		<File RelativePath="..\src\models\euler\euler_callback3d.f90"/></Filter>
 		<Filter Name="eulerlagrange">
-		<File RelativePath="..\src\models\eulerlagrange\euler_lagrange.f90"/>
 		<File RelativePath="..\src\models\eulerlagrange\eulerlagrange_application.f90"/>
 		<File RelativePath="..\src\models\eulerlagrange\eulerlagrange_basic.f90"/>
 		<File RelativePath="..\src\models\eulerlagrange\eulerlagrange_callback.f90"/>
