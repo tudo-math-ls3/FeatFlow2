@@ -146,7 +146,7 @@ contains
     ! structure for global access.
     call cc_initParameters (p_rproblem)
     
-    p_rproblem%iParticles = 1
+    p_rproblem%iParticles = 2
     
     allocate(p_rproblem%dDistMatrix(p_rproblem%iParticles,p_rproblem%iParticles))
     
