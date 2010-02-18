@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 6
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/QUAD.prm
@@ -23,10 +23,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.01
+dt = 0.001
 
 # Final time
-ttfinal = 1.0
+ttfinal = 500.0
 
 
 [SOLVER]

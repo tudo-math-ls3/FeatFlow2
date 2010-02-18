@@ -625,7 +625,7 @@ contains
        
        ! Test, if the solution has converged
        call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
-       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /lsyssc_vectorNorm (rsol,LINALG_NORML2)
+       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt/lsyssc_vectorNorm (rsol,LINALG_NORML2)
        write(*,*) dL2updnorm
        
     
@@ -638,7 +638,7 @@ contains
        ! Leave the time stepping loop if final time is reached
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
        
-       if (dL2updnorm.le.1.0e-12) exit timestepping
+       if (dL2updnorm.le.1.0e-6) exit timestepping
 
     end do timestepping
     
