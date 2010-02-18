@@ -86,7 +86,7 @@ contains
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC, rlinformx, rlinformy
+    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
@@ -103,7 +103,7 @@ contains
     type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -271,9 +271,9 @@ contains
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9,rmatrixMC,&
-                                     rdiscretisation%RspatialDiscr(1),&
-                                     BILF_MATC_EDGEBASED)
+                                     LSYSSC_MATRIX9,rmatrixMC)!,&
+                                     !rdiscretisation%RspatialDiscr(1),&
+                                     !BILF_MATC_EDGEBASED)
     
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -483,10 +483,9 @@ contains
     
     
     
-    rlinformx%itermCount = 1
-    rlinformx%Idescriptors(1) = DER_DERIV_X
-    rlinformy%itermCount = 1
-    rlinformy%Idescriptors(1) = DER_DERIV_Y
+    rlinformconv%itermCount = 2
+    rlinformconv%Idescriptors(1) = DER_DERIV_X
+    rlinformconv%Idescriptors(2) = DER_DERIV_Y
     
     
     
@@ -529,15 +528,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-      
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+                                            
        end if
        
        ! Solve for solution update
@@ -575,15 +569,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
       
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
        end if
               
        ! Solve for solution update
@@ -617,15 +606,10 @@ contains
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
          !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformx, .true., rrhstemp,&
-                                       flux_one,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
+                                       flux,rcollection)
+         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
       
-         !call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-         call linf_buildVectorScalar2 (rlinformy, .true., rrhstemp,&
-                                       flux_two,rcollection)
-         call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-                                       
        end if
               
        ! Solve for solution update
@@ -641,7 +625,7 @@ contains
        
        ! Test, if the solution has converged
        call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
-       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /lsyssc_vectorNorm (rsol,LINALG_NORML2)
+       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt!/lsyssc_vectorNorm (rsol,LINALG_NORML2)
        write(*,*) dL2updnorm
        
     
@@ -654,7 +638,7 @@ contains
        ! Leave the time stepping loop if final time is reached
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
        
-       if (dL2updnorm.le.1.0e-12) exit timestepping
+       !if ((dL2updnorm.le.1.0e-2).and.(ttime > 5.0)) exit timestepping
 
     end do timestepping
     
@@ -688,8 +672,6 @@ contains
 !    
     
     
-    
-    !call dg_linearLimiter (rsol)
     
     write(*,*) ''
     write(*,*) 'Writing solution to file'
@@ -739,14 +721,15 @@ contains
 !    ! We are finished - but not completely!
 !    ! Now, clean up so that all the memory is available again.
 !    !
-!    ! Release solver data and structure
-!    call linsol_doneData (p_rsolverNode)
-!    call linsol_doneStructure (p_rsolverNode)
-!    
-!    ! Release the solver node and all subnodes attached to it (if at all):
-!    call linsol_releaseSolver (p_rsolverNode)
+    ! Release solver data and structure
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
 !    
 !    ! Release the block matrix/vectors
+    call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rrhsBlock)
     call lsysbl_releaseVector (rsolBlock)
     call lsysbl_releaseVector (rsolTempBlock)

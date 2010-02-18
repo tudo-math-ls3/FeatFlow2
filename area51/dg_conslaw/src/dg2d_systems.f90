@@ -74,6 +74,10 @@ contains
     ! An object for saving the domain:
     type(t_boundary) :: rboundary
     
+    ! Number of Variables (h, hu, hv)
+    ! (h=Waterheights, u/v=speed in x/y-direction)
+    integer, parameter :: nvar2d = 3
+    
     ! An object for saving the triangulation on the domain
     type(t_triangulation) :: rtriangulation
 
@@ -90,13 +94,13 @@ contains
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    type(t_matrixScalar) :: rmatrixMC, rmatrixCX, rmatrixCY
+    type(t_matrixScalar) :: rmatrixMC
     type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -154,6 +158,8 @@ contains
     
     ! How many extra points for output
     integer :: iextraPoints
+    
+    integer :: ivar
     
     ! For time measurement
     real(dp) :: dtime1, dtime2
@@ -255,8 +261,8 @@ contains
     
     ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
-    ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation,1,&
+    ! solution vector. For the shallow water problem we need three (nvar2d) blocks
+    call spdiscr_initBlockDiscr (rdiscretisation, nvar2d,&
                                  rtriangulation, rboundary)
     
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
@@ -265,15 +271,23 @@ contains
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    ielementType,CUB_G5X5,rtriangulation, rboundary)
+                                   
+    ! Now copy this initialised block into the other ones
+    ! But only create a derived copy, which shares the handles of the original one
+    do ivar = 2, nvar2d
+       call spdiscr_duplicateDiscrSc (rdiscretisation%Rspatialdiscr(1), &
+            rdiscretisation%Rspatialdiscr(ivar), &
+            .true.)
+    end do
                  
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
     ! for our one and only solution component.
     call bilf_createMatrixStructure (rdiscretisation%RspatialDiscr(1),&
-                                     LSYSSC_MATRIX9,rmatrixMC,&
-                                     rdiscretisation%RspatialDiscr(1),&
-                                     BILF_MATC_EDGEBASED)
+                                     LSYSSC_MATRIX9,rmatrixMC)!,&
+                                     !rdiscretisation%RspatialDiscr(1),&
+                                     !BILF_MATC_EDGEBASED)
     
     ! And now to the entries of the matrix. For assembling of the entries,
     ! we need a bilinear form, which first has to be set up manually.
@@ -298,30 +312,22 @@ contains
     ! data.
     call bilf_buildMatrixScalar (rform,.true.,rmatrixMC,coeff_Laplace_2D)
     
-    ! Next we create the Matrices CX and CY 
-    ! They represent the diskretisation of the nabla operator
+    ! Now create the preconditioner block matrix P
+    ! First create an empty block matrix structur with nvar2d x nvar2d blocks
+    call lsysbl_createEmptyMatrix (rmatrixBlockP, nvar2d)
 
-    ! We could do this as we did with the mass matrix MC, but as CX and MC
-    ! are of the same structure we can as well create a shared matrix,
-    ! that shares the handles for the structure (Kld, Kcol, Kdiagonal)
-    ! with the Matrix MC and only creates a new haldle for the entries (Data)
-    ! So instead of using
-    ! CALL bilf_createMatrixStructure (rdiscretisation%RspatialDiscretisation(1),&
-    !                                    LSYSSC_MATRIX9,rmatrixCX)
-    ! we use
-    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixCX,&
-         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCX, DER_FUNC, DER_DERIV_X)
+    ! Next create the diagonal blocks of P as empty matrices, using the 
+    ! matrix structur of the matrix MC
+    ! We will only need the diagonal blocks, as we employ a block jacobi
+    ! method here
+    do ivar = 1, nvar2d
+       call lsyssc_duplicateMatrix (rmatrixMC, &
+            rmatrixBlockP%Rmatrixblock(ivar,ivar), &
+            LSYSSC_DUP_SHARE, &
+            LSYSSC_DUP_EMPTY)
+    end do
     
-    ! Now we do the same for CY
-    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixCY,&
-         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
-
-    if(ielementType .ne. EL_DG_T0_2D) call stdop_assembleSimpleMatrix(rmatrixCY, DER_FUNC, DER_DERIV_Y)
     
-    !call lsyssc_scaleMatrix (rmatrixCX,4.0_dp)
-    !call lsyssc_scaleMatrix (rmatrixCY,4.0_dp)
 
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
@@ -330,31 +336,29 @@ contains
     
     
     
-    ! Create scalar vectors
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhs ,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),redge,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rconv,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsol ,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsoltemp ,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhstemp ,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolUp ,.true.,ST_DOUBLE)
-    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolOld ,.true.,ST_DOUBLE)
-                                 
-!    ! Test the new DG edgebased routine                                 
-!    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
-!                                              redge,rsol,&
-!                                              flux_dg_buildVectorScEdge2D_sim)
-                                 
+    ! First create the block vectors
+    ! rtempBlock, rrhsBlock, rsolBlock, rdefBlock and rstempBlock, rsolDotBlock
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rrhsBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,redgeBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rconvBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolTempBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolOldBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolUpBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rTempBlock,.true.,&
+         ST_DOUBLE)
+
     
-    ! The linear solver only works for block matrices/vectors - but above,
-    ! we created scalar ones. So the next step is to make a 1x1 block
-    ! system from the matrices/vectors above which the linear solver
-    ! understands.
-    call lsysbl_createMatFromScalar (rmatrixMC,rmatrixBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rrhs,rrhsBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rsol,rsolBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rsolTemp,rsolTempBlock,rdiscretisation)
-    call lsysbl_createVecFromScalar (rsolUp,rsolUpBlock,rdiscretisation)
+                                 
+
+    
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
 !    ! conditions.
@@ -420,7 +424,7 @@ contains
     ! Fill the solution vector with 0:
     !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolBlock, .true.)
     !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolTempBlock, .true.)
-    call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
+    !call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
 !    
 !    ! Next step is to implement boundary conditions into the RHS,
 !    ! solution and matrix. This is done using a vector/matrix filter
@@ -467,6 +471,10 @@ contains
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
     call linsol_initData (p_rsolverNode, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    
+    
+    ! Initialise the collection
+    call collct_init(Rcollection)
     
     
     
@@ -527,7 +535,7 @@ contains
        
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
-         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+
          call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
                                        flux,rcollection)
          !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
@@ -568,7 +576,7 @@ contains
        
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
-         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+
          call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
                                        flux,rcollection)
          !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
@@ -605,7 +613,7 @@ contains
        
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          
-         !call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
+
          call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
                                        flux,rcollection)
          !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
@@ -653,11 +661,7 @@ contains
 !                                              rrhs,rsolTemp,&
 !                                              flux_dg_buildVectorScEdge2D_sim)
 !       
-!       call lsyssc_scaleVector (rrhs,-1.0_DP)
-!       ! Then add the convection terms
-!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-!       
+
 !       ! Solve for solution update
 !       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
 !       
@@ -721,14 +725,19 @@ contains
 !    ! We are finished - but not completely!
 !    ! Now, clean up so that all the memory is available again.
 !    !
-!    ! Release solver data and structure
-!    call linsol_doneData (p_rsolverNode)
-!    call linsol_doneStructure (p_rsolverNode)
-!    
-!    ! Release the solver node and all subnodes attached to it (if at all):
-!    call linsol_releaseSolver (p_rsolverNode)
-!    
+    ! Release solver data and structure
+    call linsol_doneData (p_rsolverNode)
+    call linsol_doneStructure (p_rsolverNode)
+    
+    ! Release the solver node and all subnodes attached to it (if at all):
+    call linsol_releaseSolver (p_rsolverNode)
+    
+
+    ! Initialise the collection
+    call collct_done(rcollection)
+
 !    ! Release the block matrix/vectors
+    call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rrhsBlock)
     call lsysbl_releaseVector (rsolBlock)
     call lsysbl_releaseVector (rsolTempBlock)
@@ -745,8 +754,6 @@ contains
     call lsyssc_releaseVector (rsolUp)
     call lsyssc_releaseVector (rsolOld)
     
-    call lsyssc_releaseMatrix (rmatrixCX)
-    call lsyssc_releaseMatrix (rmatrixCY)
     call lsyssc_releaseMatrix (rmatrixMC)
     
     

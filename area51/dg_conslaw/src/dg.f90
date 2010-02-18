@@ -16,7 +16,7 @@
 program dg
 
   use dg2d_method0_simple
-  use dg2d_systems
+!  use dg2d_systems
 
   implicit none
 
@@ -50,13 +50,13 @@ program dg
   call output_lbrk ()
   call output_line ('Calculating scalar hyperbolic conservation problem with DG')
   call output_line ('----------------------------------------------------------')
-  !call dg2d_0_simple
+  call dg2d_0_simple
   
   ! Call the problem to solve. Hyperbolic conservation law, system case:
   call output_lbrk ()
   call output_line ('Calculating hyperbolic system conservation problem with DG')
   call output_line ('----------------------------------------------------------')
-  call dg2d_sys
+  !call dg2d_sys
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.

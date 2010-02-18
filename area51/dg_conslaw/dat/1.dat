@@ -16,7 +16,7 @@ triname = ./pre/RECT2x1.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 2
 
 
 
@@ -26,7 +26,7 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 500.0
+ttfinal = 5.0
 
 
 [SOLVER]
