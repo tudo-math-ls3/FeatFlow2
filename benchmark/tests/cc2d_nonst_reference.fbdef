@@ -349,6 +349,14 @@ TIMEDISCRETISATION_DTIMEMAX = 26.5
 DISCRETISATION_CTYPEINITIALSOLUTION = 1
 DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT1/solution'
 
+testid   = CC2D_NONST1TEST003_INIT3
+descr    = calculate 25 seconds with smaller timestep starting from zero.
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+TIMEDISCRETISATION_DTIMEMAX = 25
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT1/solution'
+
 
 ################
 # Test 4/5:
@@ -362,7 +370,7 @@ mglevels = 4
 TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 0
 TIMEDISCRETISATION_DTIMESTEP = 0.1
 TIMEDISCRETISATION_DTIMEMAX = 2
-DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT2/solution'
+DISCRETISATION_SINITIALSOLUTIONFILENAME = './logs/CC2D_NONST1TEST003_INIT3/solution'
 
 testid   = CC2D_NONST1TEST004_DT2
 descr    = calculate 2 seconds to get a reference curve. Semi-explicit pressure.
@@ -455,3 +463,61 @@ POSTPROCESSING_DTIMEDIFFERENCEFILM = 0.0
 testid   = CC2D_NONST2REF1_3_TARGET
 descr    = standard DFG benchmark 2, CC2D, nonstationary Navier-Stokes, Q2, SD(0.0)
 mglevels = 3
+
+
+################
+# Step 2. Additional tests with the bench3-configuration.
+################
+# Test 1/2: 
+#  Comparison implicit Euler and semi-implicit Euler in the pressure.
+#  Level 4. Is there a difference in the drag/lift values
+#  when changing to the actual 'correct' pressure discretisation?
+################
+
+################
+# Test 1: implicit Euler
+################
+testid   = CC2D_NONST2TEST001_DT1
+datfile  = ./data/apps_cc2d/master_bench_ptests_sin.dat
+descr    = calculate 8 secs, sin-inflow, implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 1
+DISCRETISATION_IELEMENTTYPE = 4
+DISCRETISATION_IUPWIND = 0
+DISCRETISATION_DUPSAM = 0.0
+TIMEDISCRETISATION_DTIMESTEP = 0.1
+TIMEDISCRETISATION_DTIMEINIT = 0.0
+TIMEDISCRETISATION_DTIMEMAX = 8
+DISCRETISATION_CTYPEINITIALSOLUTION = 0
+LINEARSOLVER_ISMOOTHERTYPE = 3
+LINEARSOLVER_ICOARSEGRIDSOLVERTYPE = 2
+SMOOTHER_DOMEGA = 0.7
+POSTPROCESSING_IOUTPUTFILM=0
+
+testid   = CC2D_NONST2TEST001_DT2
+descr    = calculate 8 secs, sin-inflow, implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.05
+
+testid   = CC2D_NONST2TEST001_DT3
+descr    = calculate 8 secs, sin-inflow, implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+################
+# Test 2: semi-implicit Euler
+################
+testid   = CC2D_NONST2TEST002_DT1
+descr    = calculate 8 secs, sin-inflow, semi-implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_IPRESSUREFULLYIMPLICIT = 0
+
+testid   = CC2D_NONST2TEST002_DT2
+descr    = calculate 8 secs, sin-inflow, semi-implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.05
+
+testid   = CC2D_NONST2TEST002_DT3
+descr    = calculate 8 secs, sin-inflow, semi-implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.01
