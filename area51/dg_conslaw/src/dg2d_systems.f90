@@ -103,7 +103,7 @@ contains
     type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode,p_rpreconditioner
+    type(t_linsolNode), pointer :: p_rsolverNode, p_rpreconditioner
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.

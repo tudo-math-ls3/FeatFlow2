@@ -461,7 +461,7 @@ contains
     NVE = rvectorAssembly(1)%NVE
     
     ! Allocate space for the solution values in the cubature points
-    allocate(DsolVals(ncubp,2,rlocalVectorAssembly(1)%nelementsPerBlock))
+    allocate(DsolVals(2,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
     
 !    ! Allocate space for the jacobi matrices in the cubature points
 !    allocate(Djac(4,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
@@ -507,7 +507,7 @@ contains
     allocate(Dxi2D(ncubp,NDIM2D+1,2,rlocalVectorAssembly(1)%nelementsPerBlock))
 
     ! Allocate memory for the coordinates of the reference points
-    allocate(DpointsRef(NDIM2D+1,ncubp,2,rlocalVectorAssembly(1)%nelementsPerBlock))
+    allocate(DpointsRef(NDIM2D+1,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock,2))
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly(1)%celement)
@@ -542,11 +542,11 @@ contains
      
       ! Transpose the coordinate array such that we get coordinates we
       ! can work with.
-      do iel = 1,IELmax-IELset+1
-        do iside = 1,2
+      do iside = 1,2
+        do iel = 1,IELmax-IELset+1
           do icubp = 1,ncubp
             do k = 1,ubound(DpointsRef,1)
-              DpointsRef(k,icubp,iside,iel) = Dxi2D(icubp,k,iside,iel)
+              DpointsRef(k,icubp,iel,iside) = Dxi2D(icubp,k,iside,iel)
             end do
           end do
         end do
@@ -604,12 +604,12 @@ contains
           rlocalVectorAssembly(1)%revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%ctrafoType, &
-          DpointsRef=DpointsRef(:,:,1,:))
+          DpointsRef=DpointsRef(:,:,:,1))
       call elprep_prepareSetForEvaluation (&
           rlocalVectorAssembly(2)%revalElementSet,&
           cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
           IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%ctrafoType, &
-          DpointsRef=DpointsRef(:,:,2,:))
+          DpointsRef=DpointsRef(:,:,:,2))
           
       ! Calculate the values of the basis functions.
       call elem_generic_sim2 (rlocalVectorAssembly(1)%celement, &
@@ -643,15 +643,19 @@ contains
                    * rlocalVectorAssembly(2)%p_Dbas(idofe,DER_FUNC,icubp,iel)
           end do
           ! Save the value in the point
-          DsolVals(icubp,1,iel) = dval1
-          DsolVals(icubp,2,iel) = dval2
+          DsolVals(1,icubp,iel) = dval1
+          DsolVals(2,icubp,iel) = dval2
         end do
       end do
+
+
+
+
       
 !     ! Set values at boundary
 !     do iel = 1,IELmax-IELset+1
 !      if(IelementList(2,IELset+iel-1).eq.0) then
-!        DsolVals(1:ncubp,2,iel) = 0.0_DP
+!        DsolVals(2,1:ncubp,iel) = 0.0_DP
 !      end if
 !      
 !      end do
@@ -696,7 +700,7 @@ contains
 !      ! The numerical flux function needs the x- and y- values
 !      ! So we have to call the mapping from the reference- to the real element
 !      call trafo_calctrafo_sim (ctrafoType,IELmax-IELset+1,ncubp,Dcoords,&
-!                                DpointsRef(1:ndim2d,:,1,1:IELmax-IELset+1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
+!                                DpointsRef(1:ndim2d,:,1:IELmax-IELset+1,1),Djac(1:4,1:ncubp,1:IELmax-IELset+1),&
 !                                Ddetj(1:ncubp,1:IELmax-IELset+1),&
 !                                DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1))
 
@@ -830,8 +834,8 @@ contains
 !                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2
 !              end if
                     
-                DlocalData(2,idofe) = DlocalData(2,idofe)+&
-                                      rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2* real(min(1,IelementList(2,IELset+iel-1)))
+              DlocalData(2,idofe) = DlocalData(2,idofe)+&
+                                    rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2* real(min(1,IelementList(2,IELset+iel-1)))
               
              
             end do ! idofe

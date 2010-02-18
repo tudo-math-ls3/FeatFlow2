@@ -1110,9 +1110,9 @@ contains
     
       ! Upwind flux
       if (dvn.ge.0) then
-        Dcoefficients(ipoint,iel) = dvn *DsolVals(ipoint,1,iel)
+        Dcoefficients(ipoint,iel) = dvn *DsolVals(1,ipoint,iel)
       else
-        Dcoefficients(ipoint,iel) = dvn *DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel)
+        Dcoefficients(ipoint,iel) = dvn *DsolVals(2,ubound(Dcoefficients,1)-ipoint+1,iel)
       end if
       
       ! Centered Flux
