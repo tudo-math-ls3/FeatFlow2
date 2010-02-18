@@ -504,6 +504,11 @@ descr    = calculate 8 secs, sin-inflow, implicit Euler
 mglevels = 4
 TIMEDISCRETISATION_DTIMESTEP = 0.01
 
+testid   = CC2D_NONST2TEST001_DT4
+descr    = calculate 8 secs, sin-inflow, implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.001
+
 ################
 # Test 2: semi-implicit Euler
 ################
@@ -521,3 +526,8 @@ testid   = CC2D_NONST2TEST002_DT3
 descr    = calculate 8 secs, sin-inflow, semi-implicit Euler
 mglevels = 4
 TIMEDISCRETISATION_DTIMESTEP = 0.01
+
+testid   = CC2D_NONST2TEST002_DT4
+descr    = calculate 8 secs, sin-inflow, semi-implicit Euler
+mglevels = 4
+TIMEDISCRETISATION_DTIMESTEP = 0.001
