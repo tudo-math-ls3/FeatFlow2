@@ -2607,8 +2607,16 @@ contains
         p_rgeometryObject2=>p_rparticleCollection%p_rParticles(jpart)%rgeometryObject
         ! get the distance between the centers
         ddist=rproblem%dDistMatrix(ipart,jpart)
+        
         dprad=p_rparticleCollection%p_rParticles(ipart)%drad
         dprad2=p_rparticleCollection%p_rParticles(jpart)%drad
+        
+        if(ddist .le. (2.33_dp*dprad))then
+          p_rparticleCollection%dtime=0.01_dp
+        else
+          p_rparticleCollection%dtime=0.1_dp
+        end if
+        
         ! get the center of the 2nd particle
         CenterX2=p_rgeometryObject2%rcoord2D%Dorigin(1)
         CenterY2=p_rgeometryObject2%rcoord2D%Dorigin(2)               
