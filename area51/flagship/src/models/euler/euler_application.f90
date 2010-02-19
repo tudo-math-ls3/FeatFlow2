@@ -1219,7 +1219,7 @@ contains
     ! local variables
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
-    type(t_vectorBlock) :: rvectorBlock
+    type(t_vectorBlock) :: rvectorBlock, rvectorLoad, rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -1231,8 +1231,6 @@ contains
     integer :: isolutiontype, nexpression
     integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-
-    real(DP) :: derror
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1334,7 +1332,7 @@ contains
         nexpression = nexpression + nvar
 
       end do   ! iblock
-
+   
 
     case (SOLUTION_ANALYTIC_L2_CONSISTENT,&
           SOLUTION_ANALYTIC_L2_LUMPED)
@@ -1399,7 +1397,7 @@ contains
       rcollection%DquickAccess(1) = dtime
       rcollection%SquickAccess(1) = "rfparser"
       
-      !  Initialize number of expressions
+      ! Initialize number of expressions
       nexpression = 0
 
       ! Loop over all blocks of the global solution vector
@@ -1456,17 +1454,55 @@ contains
           ! Release temporal block vector
           call lsysbl_releaseVector(rvectorBlock)
         end if
-        
-        ! Compute the lumped L2-projection
-        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
-            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+
       end do
       
       !-------------------------------------------------------------------------
       ! Restore contribution of the consistent mass matrix of the L2-projection
       !-------------------------------------------------------------------------
-      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
+      if (isolutionType .ne. SOLUTION_ANALYTIC_L2_CONSISTENT) then
 
+        ! Compute the lumped L2-projection
+        do iblock = 1, rvector%nblocks
+          call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+              rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+        end do
+
+        ! That is it.
+
+      else
+
+        ! Create load vector
+        call lsysbl_duplicateVector(rvector, rvectorLoad,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+        
+        ! Compute the lumped L2-projection
+        do iblock = 1, rvector%nblocks
+          call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+              rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+        end do
+
+        ! Compute auxiliary vectors for high-order solution and increment
+        call lsysbl_duplicateVector(rvector, rvectorHigh,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+        call lsysbl_duplicateVector(rvector, rvectorAux,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+        
+        ! Compute the consistent L2-projection by Richardson iteration
+        do iblock = 1, rvector%nblocks
+          do i = 1, 5
+            call lsyssc_copyVector(rvectorLoad%RvectorBlock(iblock),&
+                rvectorAux%RvectorBlock(iblock))
+            call lsyssc_scalarMatVec(p_rconsistentMassMatrix,&
+                rvectorHigh%RvectorBlock(iblock),&
+                rvectorAux%RvectorBlock(iblock), -1.0_DP, 1.0_DP)
+            call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+                rvectorAux%RvectorBlock(iblock), 1.0_DP, rvectorAux%RvectorBlock(iblock))
+            call lsyssc_vectorLinearComb(rvectorAux%RvectorBlock(iblock),&
+                rvectorHigh%RvectorBlock(iblock), 1.0_DP, 1.0_DP)
+          end do
+        end do
+        
         ! Get parameters from parameter list
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
@@ -1482,7 +1518,7 @@ contains
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
         call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
-            rafcstab, rvector, rvector, euler_calcFluxFCTScalarDiss1d,&
+            rafcstab, rvectorHigh, rvectorHigh, euler_calcFluxFCTScalarDiss1d,&
             0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
         
         ! Attach section name to collection structure
@@ -1495,12 +1531,17 @@ contains
         
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
+
+        ! Release auxiliary vectors
+        call lsysbl_releaseVector(rvectorLoad)
+        call lsysbl_releaseVector(rvectorHigh)
+        call lsysbl_releaseVector(rvectorAux)
       end if
 
       ! Release temporal matrices (if any)
       call lsyssc_releaseMatrix(rconsistentMassMatrix)
       call lsyssc_releaseMatrix(rlumpedMassMatrix)
-          
+        
 
     case DEFAULT
       call output_line('Invalid type of solution profile!',&
@@ -1509,88 +1550,6 @@ contains
     end select
     
   end subroutine euler_initSolution
-
-  subroutine ffunctionReference (cderivative, rdiscretisation, &
-                                   nelements, npointsPerElement, Dpoints, &
-                                   IdofsTest, rdomainIntSubset, &
-                                   Dvalues, rcollection)
-    
-    use fsystem
-    use basicgeometry
-    use triangulation
-    use scalarpde
-    use domainintegration
-    use spatialdiscretisation
-    use collection
-    
-  !<description>
-    ! This subroutine is called during the calculation of errors. It has to compute
-    ! the (analytical) values of a function in a couple of points on a couple
-    ! of elements. These values are compared to those of a computed FE function
-    ! and used to calculate an error.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points.
-  !</description>
-    
-  !<input>
-    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-    ! The result must be written to the Dvalue-array below.
-    integer, intent(in) :: cderivative
-  
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-    ! An array accepting the DOF`s on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(out) :: Dvalues
-  !</output>
-    
-  !</subroutine>
-  
-    where (sqrt((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) .le. 0.4_DP .and.&
-           sqrt((Dpoints(1,:,:)-0.5_DP)**2+(Dpoints(2,:,:)-0.5_DP)**2) .ge. 0.3_DP)
-      Dvalues = 1.0_DP
-    elsewhere
-      Dvalues = 0.01_DP
-    end where
-
-    end subroutine ffunctionReference
 
   !*****************************************************************************
 
@@ -2592,7 +2551,7 @@ contains
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
     !---------------------------------------------------------------------------
-
+return
     timeloop: do
 
       ! Check for user interaction
