@@ -2162,6 +2162,9 @@ contains
         'dtimeCoupling',rdebugFlags%dtimeCoupling,1.0_DP)
 
     call parlst_getvalue_int (rparlist,ssection,&
+        'ipressureFullyImplicit',rdebugFlags%ipressureFullyImplicit,1)
+
+    call parlst_getvalue_int (rparlist,ssection,&
         'cumfpackWriteMatrix',rdebugFlags%cumfpackWriteMatrix,0)
 
     call parlst_getvalue_string (rparlist,ssection,&

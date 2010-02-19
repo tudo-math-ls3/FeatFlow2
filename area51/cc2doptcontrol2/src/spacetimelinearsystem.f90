@@ -545,7 +545,8 @@ contains
     
     ! other local variables
     real(DP) :: dnewton
-    real(DP) :: dtstep,dtheta
+    real(DP) :: dtstep,dtheta,dthetadiag,dthetaoffdiag
+    integer :: ipressureFullyImplicit
     logical :: bconvectionExplicit
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
     integer :: neqtime
@@ -554,6 +555,7 @@ contains
     ddualPrimalCoupling = rspaceTimeMatrix%p_rdebugFlags%ddualPrimalCoupling
     dterminalCondDecoupled = rspaceTimeMatrix%p_rdebugFlags%dterminalCondDecoupled
     dtimeCoupling = rspaceTimeMatrix%p_rdebugFlags%dtimeCoupling
+    ipressureFullyImplicit = rspaceTimeMatrix%p_rdebugFlags%ipressureFullyImplicit
     
     dequationType = 1.0_DP
     if (rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%ispaceTimeFormulation .ne. 0) &
@@ -584,6 +586,9 @@ contains
     dtheta = p_rtimeDiscr%dtheta
     dtstep = p_rtimeDiscr%dtstep
     neqTime = tdiscr_igetNDofGlob(p_rtimeDiscr)
+    
+    dthetadiag = dtheta**2 + (1.0_DP-dtheta)**2
+    dthetaoffdiag = dtheta*(1.0_DP-dtheta)
 
     ! Clear the coefficients
     rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
@@ -644,6 +649,11 @@ contains
 
         rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
+
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(1,1) = dtheta
+          rnonlinearSpatialMatrix%Deta(2,2) = dtheta
+        end if
         
         rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
@@ -721,6 +731,10 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta)
         
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(2,2) = dtimeCoupling * (1.0_DP-dtheta)
+        end if
+
         if (.not. bconvectionExplicit) then
         
           rnonlinearSpatialMatrix%Dgamma(2,2) = &
@@ -773,6 +787,10 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(1,1) = dtimeCoupling * (1.0_DP-dtheta) 
         
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(1,1) = dtimeCoupling * (1.0_DP-dtheta)
+        end if
+
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = dtimeCoupling * &
@@ -813,7 +831,7 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
         rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
-        
+
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
@@ -829,6 +847,11 @@ contains
 
         rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
+
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(1,1) = dtheta
+          rnonlinearSpatialMatrix%Deta(2,2) = dtheta
+        end if
         
         rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP
@@ -902,10 +925,14 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(2,2) = dtimeCoupling * (1.0_DP-dtheta) 
         
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(2,2) = dtimeCoupling * (1.0_DP-dtheta)
+        end if
+        
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
-              - (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+              (- (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
               (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
@@ -913,7 +940,7 @@ contains
         else
         
           rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
-              - dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+              (- dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
           
           rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
                 dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
@@ -967,6 +994,10 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(1,1) = dtimeCoupling * (1.0_DP-dtheta) 
         
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(1,1) = dtimeCoupling * (1.0_DP-dtheta)
+        end if
+        
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = dtimeCoupling * &
@@ -1005,7 +1036,7 @@ contains
         
         rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
         rnonlinearSpatialMatrix%Dtheta(2,2) = dtheta
-        
+
         if (.not. bconvectionExplicit) then
 
           rnonlinearSpatialMatrix%Dgamma(1,1) = &
@@ -1021,6 +1052,11 @@ contains
 
         rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Deta(2,2) = 1.0_DP
+
+        if (ipressureFullyImplicit .eq. 0) then
+          rnonlinearSpatialMatrix%Deta(1,1) = dtheta
+          rnonlinearSpatialMatrix%Deta(2,2) = dtheta
+        end if
         
         rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
         rnonlinearSpatialMatrix%Dtau(2,2) = 1.0_DP

@@ -239,6 +239,13 @@ module structuresoptc
     ! If the following parameter is set from 1.0 to 0.0, the time coupling
     ! is disabled, resulting in a stationary simulation in every timestep.
     real(dp) :: dtimeCoupling = 1.0
+    
+    ! Timestep-scheme for the pressure.
+    ! =0: Use the same timestep scheme as for the velocity.
+    ! =1: Calculate the pressure fully implicitely (standard)
+    ! No effect if Implicit-Euler is used.
+    ! Difference can only be seen for higher order time-discretisation.
+    integer :: ipressureFullyImplicit = 1
   
     ! Tell the space-time UMFPACK (if present in the lienar solver) to write 
     ! out the global matrix.
