@@ -144,18 +144,22 @@ program interpdbg
   
   ! Project the solution onto rvector2
   call lsysbl_createVectorBlock(rdiscretisation2, rvector2, .true.)
-!!$  call anprj_analytL2projectionConstrained(rvector2%RvectorBlock(1), &
-!!$      rmatrix2%RmatrixBlock(1,1), rmatrixMassLumped2, interp_buildVector, rcollection)
 
-  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
-      rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
-      rmatrixMassLumped = rmatrixMassLumped2)
-
+!!$  ! Lumped L2-projection
 !!$  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
 !!$      rmatrixMassLumped2, interp_buildVector, rcollection,&
 !!$      rmatrixMassLumped = rmatrixMassLumped2)
-
   
+!!$  ! Consistent L2-projection
+!!$  call anprj_analytL2projectionByMass(rvector2%RvectorBlock(1), &
+!!$      rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
+!!$      rmatrixMassLumped = rmatrixMassLumped2)
+ 
+  ! Constrained L2-projection
+  call anprj_analytL2projectionConstrained(rvector2%RvectorBlock(1), &
+      rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
+      rmatrixMassLumped = rmatrixMassLumped2)
+ 
   ! Output solutions
   call ucd_startGMV (rexport1, UCD_FLAG_STANDARD, rtriangulation1, 'out/out1.gmv')
   call ucd_startGMV (rexport2, UCD_FLAG_STANDARD, rtriangulation2, 'out/out2.gmv')
@@ -175,20 +179,30 @@ program interpdbg
   ! Compute statistical information
   call lsyssc_getbase_double(rmatrixMassLumped1, p_Da)
   call lsysbl_getbase_double(rvector1, p_Ddata)
-  call pperr_scalar(rvector1%RvectorBlock(1), PPERR_L1ERROR, derror,&
-      interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'Mass sol1', sum(p_Da*p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Min  sol1', minval(p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Max  sol1', maxval(p_Ddata)
+  
+  call pperr_scalar(rvector1%RvectorBlock(1), PPERR_L1ERROR, derror,&
+      interp_refFunction, rcollection)
+  write (*,fmt='(A,X,G15.6)') 'L1-error1', derror
+
+  call pperr_scalar(rvector1%RvectorBlock(1), PPERR_L2ERROR, derror,&
+      interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'L2-error1', derror
   
   call lsyssc_getbase_double(rmatrixMassLumped2, p_Da)
   call lsysbl_getbase_double(rvector2, p_Ddata)
-  call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L1ERROR, derror,&
-      interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'Mass sol2', sum(p_Da*p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Min  sol2', minval(p_Ddata)
   write (*,fmt='(A,X,G15.6)') 'Max  sol2', maxval(p_Ddata)
+
+  call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L1ERROR, derror,&
+      interp_refFunction, rcollection)
+  write (*,fmt='(A,X,G15.6)') 'L1-error2', derror
+
+  call pperr_scalar(rvector2%RvectorBlock(1), PPERR_L2ERROR, derror,&
+      interp_refFunction, rcollection)
   write (*,fmt='(A,X,G15.6)') 'L2-error2', derror
     
   ! Release all data structures
@@ -232,20 +246,13 @@ contains
     p_rtriangulation => rvector%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     call lsysbl_getbase_double(rvector, p_Ddata)
     call storage_getbase_double2d(p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-    
-!!$    ! Sinusoidal profile
-!!$    do ivt = 1, size(p_DvertexCoords, 2)
-!!$      p_Ddata(ivt) = sin(2*SYS_PI*p_DvertexCoords(1,ivt)) *&
-!!$                     cos(2*SYS_PI*p_DvertexCoords(2,ivt))
-!!$    end do
-
-    ! Disc
+   
     do ivt = 1, size(p_DvertexCoords, 2)
       if (sqrt((p_DvertexCoords(1,ivt)-0.5_DP)**2+&
                (p_DvertexCoords(2,ivt)-0.5_DP)**2) .le. 0.3) then
         p_Ddata(ivt) = 1.0_DP
       else
-        p_Ddata(ivt) = 0.0_DP
+        p_Ddata(ivt) = 0.01_DP
       end if
     end do
   end subroutine interp_initSolution

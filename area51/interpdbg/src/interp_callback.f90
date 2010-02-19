@@ -164,17 +164,13 @@ contains
     ! local variables
     integer :: ivt,iel
 
-    ! Sinusoidal profile
-!!$    Dvalues = sin(2*SYS_PI*Dpoints(1,:,:))*cos(2*SYS_PI*Dpoints(2,:,:))
-
-    ! Disc
     do iel = 1, nelements
       do ivt = 1, npointsPerElement
         if (sqrt((Dpoints(1,ivt,iel)-0.5_DP)**2+&
                  (Dpoints(2,ivt,iel)-0.5_DP)**2) .le. 0.3) then
           Dvalues(ivt,iel) = 1.0_DP
         else
-          Dvalues(ivt,iel) = 0.0_DP
+          Dvalues(ivt,iel) = 0.01_DP
         end if
       end do
     end do

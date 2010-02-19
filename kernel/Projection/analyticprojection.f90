@@ -1003,8 +1003,8 @@ contains
 !<subroutine>
 
   subroutine anprj_analytL2projectionConstrained (rvector, rmatrixMass,&
-      rmatrixMassLumped, fcoeff_buildVectorSc_sim,&
-      rcollection, rvectorTemp1, rvectorTemp2)
+      fcoeff_buildVectorSc_sim, rcollection,&
+      rL2ProjectionConfig, rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
 
 !<description>
   ! Converts an analytically given function fcoeff_buildVectorSc_sim
@@ -1021,9 +1021,6 @@ contains
   ! The consistent mass matrix of the FE space of rvector.
   type(t_matrixScalar), intent(in) :: rmatrixMass
 
-  ! The lumped mass matrix of the FE space of rvector.
-  type(t_matrixScalar), intent(in) :: rmatrixMassLumped
-
   ! A callback routine for the function to be discretised. The callback routine
   ! has the same syntax as that for evaluating analytic functions for the 
   ! computation of RHS vectors.
@@ -1033,12 +1030,20 @@ contains
   ! given to the callback function for calculating the function
   ! which should be discretised in the linear form.
   type(t_collection), intent(inout), target, optional :: rcollection
+
+  ! OPTIONAL: The lumped mass matrix of the FE space of rvector.
+  ! If not specified, it is computed on the fly
+  type(t_matrixScalar), intent(in), optional, target :: rmatrixMassLumped
 !</input>
 
 !<inputoutput>
   ! A scalar vector that receives the $L_2$ projection of the function.
   type(t_vectorScalar), intent(inout) :: rvector
 
+  ! OPTIONAL: A configuration block for the iteration.
+  ! If not specified, the standard settings are used.
+  type(t_configL2ProjectionByMass), intent(inout), optional :: rL2ProjectionConfig
+  
   ! OPTIONAL: A temporary vector of the same size as rvector.
   type(t_vectorScalar), intent(inout), target, optional :: rvectorTemp1
 
@@ -1050,7 +1055,19 @@ contains
 
     ! local variables
     type(t_configL2ProjectionByMass) :: rconfig
+    type(t_vectorScalar) :: rvectorAux
+    type(t_matrixScalar), pointer :: p_rmatrixMassLumped
     type(t_afcstab) :: rafcstab
+
+    ! Retrieve lumped mass matrix or create it on the fly
+    if (present(rmatrixMassLumped)) then
+      p_rmatrixMassLumped => rmatrixMassLumped
+    else
+      allocate(p_rmatrixMassLumped)
+      call lsyssc_duplicateMatrix(rmatrixMass, p_rmatrixMassLumped,&
+          LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
+      call lsyssc_lumpMatrixScalar(p_rmatrixMassLumped, LSYSSC_LUMP_DIAG)
+    end if
 
     ! We need to perform s single defect correction step 
     ! preconditioned by the lumped mass matrix
@@ -1059,9 +1076,15 @@ contains
     rconfig%domega          = 1.0_DP
 
     ! Compute the mass-lumped low-order L2-projection
-    call anprj_analytL2projectionByMass(rvector, rmatrixMassLumped,&
+    call anprj_analytL2projectionByMass(rvector, p_rmatrixMassLumped,&
         fcoeff_buildVectorSc_sim, rcollection, rconfig,&
-        rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
+        p_rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
+
+    ! Compute the consistent L2-projection
+    call lsyssc_copyVector(rvector, rvectorAux)
+    call anprj_analytL2projectionByMass(rvectorAux, rmatrixMass,&
+        fcoeff_buildVectorSc_sim, rcollection, rL2ProjectionConfig,&
+        p_rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
     
     ! Initialise the stabilisation structure
     rafcstab%iSpec= AFCSTAB_UNDEFINED
@@ -1071,15 +1094,24 @@ contains
     call afcstab_generateVerticesAtEdge(rmatrixMass, rafcstab)
 
     ! Compute the fluxes for the raw mass antidiffusion
-    call gfsc_buildFluxFCT(rafcstab, rvector, rvector,&
+    call gfsc_buildFluxFCT(rafcstab, rvectorAux, rvectorAux,&
         0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass)
 
     ! Apply flux correction to improve the low-order L2-projection
-    call gfsc_buildConvVectorFCT(rmatrixMassLumped, rafcstab, rvector, 1._DP,&
+    call gfsc_buildConvVectorFCT(p_rmatrixMassLumped, rafcstab, rvector, 1._DP,&
         .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
     ! Release stabilisation structure
     call afcstab_releaseStabilisation(rafcstab)
+
+    ! Release auxiliary vector
+    call lsyssc_releaseVector(rvectorAux)
+
+    ! Release temporal lumped mass matrix (if required)
+    if (.not.present(rmatrixMassLumped)) then
+      call lsyssc_releaseMatrix(p_rmatrixMassLumped)
+      deallocate(p_rmatrixMassLumped)
+    end if
     
   end subroutine anprj_analytL2projectionConstrained
   
