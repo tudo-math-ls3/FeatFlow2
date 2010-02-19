@@ -32,7 +32,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = pseudotransient_primal
+algorithm = transient_primal
 
 ################################################################################ 
 # initialisation for Euler-Lagrange
@@ -42,7 +42,7 @@ algorithm = pseudotransient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 4000
+nPart = 1000
 
 
 #-------------------------------------------------------------------------------
@@ -59,13 +59,13 @@ search = midpoint
 #-------------------------------------------------------------------------------
 
 # minimum particle-position in x-direction
-xmin = 1.5e-4
+xmin = 0
 # maximum particle-position in x-direction
 xmax = 1e-2
 # minimum particle-position in y-direction
-ymin = 1.5e-3
+ymin = 0
 # maximum particle-position in y-direction
-ymax = 9.0e-2
+ymax = 0
 
 #-------------------------------------------------------------------------------
 # mass and diameter of the particle
@@ -105,7 +105,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = 0
+gravityy = -9.81
 
 
 #-------------------------------------------------------------------------------
@@ -135,7 +135,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -249,7 +249,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 
 ################################################################################
@@ -261,10 +261,10 @@ istabilisation = 20
 # 1 = GMV
 # 2 = AVS
 # 3 = VTK
-iformatUCD = 1
+iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.01
 
 # file for UCD output of solution
 sucdsolution = out/compressioncorner
@@ -273,11 +273,13 @@ sucdsolution = out/compressioncorner
 sucderror = out/compressioncorner_error
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(6) =
  density
  velocity
  energy
  pressure
+ velo_part
+ vol_part
 
 
 ################################################################################
@@ -291,7 +293,7 @@ sucdvariable(4) =
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 4
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -310,22 +312,22 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 0.1
 
 # initial time step size
 dinitialStep = 0.001
 
 # lower bound for the admissible time step
-dminStep = 0.001
+dminStep = 1e-3
 
 # upper bound for the admissible time step
-dmaxStep = 1.0
+dmaxStep = 1e-3
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -334,10 +336,10 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.75
+ddecreaseFactor = 0.8
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.5
+dincreaseFactor = 1.2
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
@@ -349,7 +351,7 @@ depsRel = 0.0
 depsAbs = 0.0
 
 # tolerance for steady state convergence
-depsSteady = 1e-6
+depsSteady = 1e-8
 
 
 ################################################################################
@@ -364,13 +366,13 @@ depsSteady = 1e-6
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 3
+ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 4
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 4
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -501,7 +503,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 25
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -518,7 +520,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 1
+dperturbationStrategy = 0
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -631,7 +633,7 @@ domega = 1
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-2
+depsRel = 1e-4
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -679,14 +681,14 @@ sprecondName = LinearPrecond
 # 3 = information
 # 4 = verbose output
 # >9 = file output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
 # 1 = L1-norm
 # 2 = L2-norm
 # 3 = MAX-norm
-iresNorm = 0
+iresNorm = 1
 
 # minimum number of linear steps
 nminIterations = 1
@@ -704,13 +706,13 @@ nmaxIterations = 100
 isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 10
+nkrylov = 15
 
 # linear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 1e-2
@@ -768,10 +770,10 @@ nsubdividemax = 3
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.1
+drefinementTolerance = 0.5
 
 # coarsening tolerance
-dcoarseningTolerance = 0.05
+dcoarseningTolerance = 0.01
 
 
 ################################################################################
@@ -794,13 +796,13 @@ ierrorestimator = 7
 igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.001
+dnoisefilter = 0.05
 
 # absolute filter
-dabsfilter = 0.0001
+dabsfilter = 0.001
 
 # number of protection layers
-nprotectLayers = 0
+nprotectLayers = 2
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0

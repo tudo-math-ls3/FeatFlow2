@@ -3084,6 +3084,9 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
   ! kinematic viscosity of the gas
   real(DP) :: gas_nu
   
+  integer, dimension(14,14) :: rbartMatrix
+  integer :: j1, j2
+  
   ! Set pointer to triangulation
   p_rtriangulation => p_rproblemLevel%rtriangulation
   
@@ -3261,6 +3264,12 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%p_PartVol= 0
     rParticles%p_PartVelo= 0
 
+    IF (partxmin==0) partxmin=minval(p_DvertexCoords(1,:))
+    IF (partxmax==0) partxmax=minval(p_DvertexCoords(1,:))+&
+            0.2*(maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+    IF (partymin==0) partymin= minval(p_DvertexCoords(2,:))
+    IF (partymax==0) partymax= maxval(p_DvertexCoords(2,:))
+
     ! set boundaryconditions for the particles
     select case(boundbehav)
     case (0)
@@ -3274,6 +3283,44 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_boundbehav')
       call sys_halt()
     end select
+    
+!rbartmatrix = (/&
+!(/01010101010100/),&
+!(/01101010101100/),&
+!(/01000000000100/),&
+!(/01001100011100/),&
+!(/11001100011100/),&
+!(/11000000000110/),&
+!(/01000000000110/),&
+!(/01000010000100/),&
+!(/01000001111100/),&
+!(/00100000010000/),&
+!(/00010000100000/),&
+!(/00100000010000/)&
+!/)
+
+rbartmatrix = transpose(reshape(&
+(/&
+0,1,0,1,0,1,0,1,0,1,0,0,0,0,&
+0,1,1,0,1,0,1,0,1,0,1,1,0,0,&
+0,1,0,0,0,0,0,0,0,0,0,1,0,0,&
+0,1,0,0,1,1,0,0,0,1,1,1,0,0,&
+1,1,0,0,1,1,0,0,0,1,1,1,0,0,&
+1,1,0,0,0,0,0,0,0,0,0,1,1,0,&
+0,1,0,0,0,0,0,0,0,0,0,1,1,0,&
+0,1,0,0,0,0,1,0,0,0,0,1,0,0,&
+0,1,0,0,0,0,0,1,1,1,1,1,0,0,&
+0,0,1,0,0,0,0,0,0,1,0,0,0,0,&
+0,0,0,1,0,0,0,0,1,0,0,0,0,0,&
+0,0,1,0,0,0,0,0,0,1,0,0,0,0,&
+0,0,0,0,0,0,0,0,0,0,0,0,0,0,&
+0,0,0,0,0,0,0,0,0,0,0,0,0,0&
+/),&
+(/14,14/)))
+
+
+
+
 
     ! initialize data for each particle
     do iPart=1,rParticles%npart
@@ -3283,10 +3330,31 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 		call random_number(random2)
 		
         ! set initial values for the particles
-        rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-        rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
-        rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-        rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+        !rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+        !rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+        !rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
+        !rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+        
+        
+        do
+         call random_number(random1)
+		 call random_number(random2)
+          j1 = int(random1*size(rbartmatrix,1)-1)+1
+          j2 = int(random2*size(rbartmatrix,2)-1)+1
+          if (rbartMatrix(j1,j2).eq.1) exit
+        end do
+        
+       !Hole Zufallszahl
+		call random_number(random1)
+		call random_number(random2)
+  
+            rParticles%p_xpos(iPart)= partxmin + (j2+random1-0.5_dp)/size(rbartmatrix,2)*(partxmax - partxmin)
+            rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rbartmatrix,1)*(partymax - partymin)
+            rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
+            rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
+            
+ 
+ 
         rParticles%p_xvelo(iPart)= velopartx
         rParticles%p_yvelo(iPart)= veloparty
         rParticles%p_xvelo_old(iPart)= velopartx

@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 4000
+nPart = 1000
 
 
 #-------------------------------------------------------------------------------
@@ -61,14 +61,14 @@ search = midpoint
 # startingposition of the particles
 #-------------------------------------------------------------------------------
 
-# minimum particle-position in x-direction
-xmin = 1.5e-4
-# maximum particle-position in x-direction
-xmax = 1e-2
-# minimum particle-position in y-direction
-ymin = 1.5e-3
-# maximum particle-position in y-direction
-ymax = 9.0e-2
+# minimum particle-position in x-direction (=0 minval(p_DvertexCoords(1,:)))
+xmin = 0    #1.5e-4
+# maximum particle-position in x-direction (=0 0.2*maxval(p_DvertexCoords(1,:)))
+xmax = 4e-2
+# minimum particle-position in y-direction (=0 minval(p_DvertexCoords(2,:)))
+ymin = 0    #1.5e-3
+# maximum particle-position in y-direction (=0 maxval(p_DvertexCoords(2,:)))
+ymax = 0    #9.0e-2
 
 #-------------------------------------------------------------------------------
 # mass and diameter of the particle
@@ -108,7 +108,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = 0
+gravityy = -9.81
 
 
 #-------------------------------------------------------------------------------
@@ -265,7 +265,7 @@ istabilisation = 1
 iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.0
+dstepUCD = 0.01
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel
@@ -755,7 +755,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 10
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -771,7 +771,7 @@ nsubdividemax = 3
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.05
+drefinementTolerance = 0.5
 
 # coarsening tolerance
 dcoarseningTolerance = 0.01
