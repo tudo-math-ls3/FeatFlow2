@@ -564,6 +564,10 @@ module element
   ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
   integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_EM31_2D = EL_EM31
+  
+  ! ID of 'rotated bilinear enhanced' nonconforming quarilateral FE
+  integer(I32), parameter, public :: EL_E032    = EL_Q1TB + 2**17
+  integer(I32), parameter, public :: EL_E032_2D = EL_E032
 
   ! ID of rotated biquadratic nonconforming quadrilateral FE, Q2~.
   integer(I32), parameter, public :: EL_E050    = EL_Q2T
@@ -764,6 +768,8 @@ contains
     else if (selem .eq. "EL_Q1TB" .or. selem .eq. "EL_Q1TB_2D" .or. &
              selem .eq. "EL_EB30" .or. selem .eq. "EL_EB30_2D") then
       elem_igetID = EL_Q1TB_2D
+    else if (selem .eq. "EL_E032" .or. selem .eq. "EL_E032_2D") then
+      elem_igetID = EL_E032_2D
     else if (selem .eq. "EL_Q2T" .or. selem .eq. "EL_Q2T_2D" .or. &
              selem .eq. "EL_E050" .or. selem .eq. "EL_E050_2D") then
       elem_igetID = EL_E050_2D
@@ -920,7 +926,7 @@ contains
       ! local DOFs for Ex30, Ex31
       elem_igetNDofLoc = 4
     case (EL_Q1TB)
-      ! local DOFs for EB30
+      ! local DOFs for EB30 / E032
       elem_igetNDofLoc = 5
     case (EL_Q2T)
       ! local DOFs for Ex50 
@@ -1108,7 +1114,7 @@ contains
       ! local DOFs for Ex30
       ndofAtEdges    = 4
     case (EL_Q1TB)
-      ! local DOFs for EB30
+      ! local DOFs for EB30 / E032
       ndofAtEdges    = 4
       ndofAtElement  = 1
     case (EL_Q2T)
@@ -1875,6 +1881,8 @@ contains
         call elem_EM31 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E031)
         call elem_E031 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_E032)
+        bwrapSim2 = .true.
       case (EL_E050)
         call elem_E050 (celement, Dcoords, ItwistIndex, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EB50)
@@ -2724,6 +2732,9 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsRef)
+    
+    case (EL_E032)
+      call elem_eval_E032_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E050)
       call elem_E050_sim (celement, revalElementSet%p_Dcoords,&

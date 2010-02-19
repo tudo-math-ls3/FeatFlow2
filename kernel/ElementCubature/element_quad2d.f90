@@ -63,6 +63,7 @@ module element_quad2d
   public :: elem_eval_E030_2D 
   public :: elem_eval_EB30_2D 
   public :: elem_eval_EM30_2D 
+  public :: elem_eval_E032_2D
   public :: elem_eval_E050_2D 
   public :: elem_eval_EB50_2D 
   public :: elem_eval_EM50_2D
@@ -8782,6 +8783,177 @@ contains
 
   end subroutine
 
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_E032_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+! </subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The E032_2D element is specified by five polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y, x^2, y^2 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,5:
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Int_[-1,1] (|DEj(t)|*Pi(Ej(t))) d(t) = kronecker(i,j) * |ej|
+  !     <==>
+  !     Int_ej (Pi(t)) d(t) = kronecker(i,j) * |ej|
+  !   }
+  !   Int_T (p_i(x,y)) d(x,y) = kronecker(i,5) * |T|
+  ! }
+  !
+  ! With:
+  ! ej being the j-th local edge of the quadrilateral
+  ! |ej| being the length of the edge ej
+  ! Ej: [-1,1] -> ej being the parametrisation of the edge ej
+  ! |DEj(t)| being the determinant of the Jacobi-Matrix of Ej in the point t
+  ! T being the quadrilateral
+  ! |T| being the area of the quadrilateral
+  !
+  ! On the reference element, the above combination of monomial set and
+  ! basis polynomial conditions leads to the following basis polynomials:
+  !
+  !  P1(x,y) = ((3*y - 2)*y - 1)*1/4
+  !  P2(x,y) = ((3*x + 2)*x - 1)*1/4
+  !  P3(x,y) = ((3*y + 2)*y - 1)*1/4
+  !  P4(x,y) = ((3*x - 2)*x - 1)*1/4
+  !  P5(x,y) = 2 - 3/2*(x^2 + y^2)
+
+  ! Parameter: number of local basis functions
+  integer, parameter :: NBAS = 5
+
+  ! Local variables
+  real(DP) :: ddet,dx,dy
+  integer :: i,j
+  
+  ! derivatives on reference element
+  real(DP), dimension(NBAS,NDIM2D) :: DrefDer
+  
+    ! Calculate function values?
+    if(Bder(DER_FUNC2D)) then
+      
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          
+          ! Evaluate basis functions
+          Dbas(1,DER_FUNC2D,i,j) = ((3.0_DP*dy - 2.0_DP)*dy - 1.0_DP)*0.25_DP
+          Dbas(2,DER_FUNC2D,i,j) = ((3.0_DP*dx + 2.0_DP)*dx - 1.0_DP)*0.25_DP
+          Dbas(3,DER_FUNC2D,i,j) = ((3.0_DP*dy + 2.0_DP)*dy - 1.0_DP)*0.25_DP
+          Dbas(4,DER_FUNC2D,i,j) = ((3.0_DP*dx - 2.0_DP)*dx - 1.0_DP)*0.25_DP
+          Dbas(5,DER_FUNC2D,i,j) = 2.0_DP - 1.5_DP*(dx*dx + dy*dy)
+        
+        end do ! i
+      
+      end do ! j
+      
+    end if
+    
+    ! Calculate derivatives?
+    if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+      ! Loop through all elements
+      do j = 1, reval%nelements
+      
+        ! Loop through all points on the current element
+        do i = 1, reval%npointsPerElement
+        
+          ! Get the point coordinates
+          dx = reval%p_DpointsRef(1,i,j)
+          dy = reval%p_DpointsRef(2,i,j)
+          
+          ! Calculate derivatives on reference element
+          ! X-derivatives
+          DrefDer(1,1) = 0.0_DP
+          DrefDer(2,1) = 1.5_DP*dx + 0.5_DP
+          DrefDer(3,1) = 0.0_DP
+          DrefDer(4,1) = 1.5_DP*dx - 0.5_DP
+          DrefDer(5,1) = -3.0_DP*dx
+          ! Y-derivatives
+          DrefDer(1,2) = 1.5_DP*dy - 0.5_DP
+          DrefDer(2,2) = 0.0_DP
+          DrefDer(3,2) = 1.5_DP*dy + 0.5_DP
+          DrefDer(4,2) = 0.0_DP
+          DrefDer(5,2) = -3.0_DP*dy
+          
+          ! Remark: Please note that the following code is universal and does
+          ! not need to be modified for other parametric 2D quad elements!
+          
+          ! Get jacobian determinant
+          ddet = 1.0_DP / reval%p_Ddetj(i,j)
+          
+          ! X-derivatives on real element
+          dx = reval%p_Djac(4,i,j)*ddet
+          dy = reval%p_Djac(2,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_X,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+          
+          ! Y-derivatives on real element
+          dx = -reval%p_Djac(3,i,j)*ddet
+          dy = -reval%p_Djac(1,i,j)*ddet
+          Dbas(1:NBAS,DER_DERIV2D_Y,i,j) = dx*DrefDer(1:NBAS,1) &
+                                         - dy*DrefDer(1:NBAS,2)
+        
+        end do ! i
+
+      end do ! j
+      
+    end if
+  
+  end subroutine
+  
   !************************************************************************
   
 !<subroutine>  
