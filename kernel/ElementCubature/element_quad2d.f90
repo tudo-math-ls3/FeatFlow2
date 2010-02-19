@@ -8845,7 +8845,7 @@ contains
   !     <==>
   !     Int_ej (Pi(t)) d(t) = kronecker(i,j) * |ej|
   !   }
-  !   Int_T (p_i(x,y)) d(x,y) = kronecker(i,5) * |T|
+  !   Int_T (Pi(x,y)) d(x,y) = kronecker(i,5) * |T|
   ! }
   !
   ! With:
