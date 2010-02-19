@@ -9,7 +9,7 @@
 
     subroutine flux_dg_buildVectorScEdge2D_sim (&
               Dcoefficients,&
-              DsolVals,&
+!              DsolVals,&
               normal,&
 !              DpointsReal,&
               rintSubSet,&
@@ -35,7 +35,7 @@
   !</description>
     
   !<input>
-  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
+!  real(DP), dimension(:,:,:), intent(inout) :: DsolVals
   real(DP), dimension(:,:), intent(in) :: normal
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
