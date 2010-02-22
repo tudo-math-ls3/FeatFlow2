@@ -4078,34 +4078,38 @@ contains
 
   subroutine eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
 
-    ! particles
+!<description>
+    ! This subroutine computes the barycentric coordinates of the position of the particle in the element.
+
+!<input>
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
     
-    ! current number of particle
+    ! Current number of particle
     integer, intent(inout) :: iPart
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! pointer to vertices at each element
+    ! Pointer to vertices at each element
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
-    ! pointer to the vertex coordinates
+    ! Pointer to the vertex coordinates
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! current element
+    ! Current element
     integer :: currentElement
 
-    ! coordinates of the vertices of the actual element
+    ! Coordinates of the vertices of the actual element
     real(DP), dimension(2,3) :: vert_coord
 
-    ! determinates
+    ! Determinates
     real(DP) :: det_A, det_A1, det_A2, det_A3
 
-    ! local variables
+    ! Local variables
     integer :: ivt
 
     ! Set pointer to triangulation
@@ -4197,6 +4201,10 @@ contains
 
   subroutine eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
+!<description>
+    ! This subroutine searchs in which element the particle is.
+
+!<input>
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
     
@@ -4268,43 +4276,43 @@ contains
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
    
-    ! current number of particle
+    ! Current number of particle
     integer, intent(inout) :: iPart
   
-    ! position of the element
+    ! Position of the element
     real(DP), dimension(2) :: particlepos
 
-    ! element number
+    ! Element number
     integer :: iel
  
-    ! particle is in element 
+    ! Particle is in element 
     logical :: binside
     
-    ! search mode
+    ! Search mode
     character(LEN=15) :: searchmode
 
-    ! variables for midpoints_el
+    ! Variables for midpoints_el
 	real(DP), dimension(1:5) :: distances
-	integer :: i, adj, minl, ite, mittelelement
+	integer :: i, adj, minl, ite
 	integer, parameter :: itemax = 10000
 	real(DP) :: distToMid
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
    
-    ! get vertices at element
+    ! Get vertices at element
     call storage_getbase_int2D(&
         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-    ! get coordinates for elements
+    ! Get coordinates for elements
     call storage_getbase_double2d (&
         p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
         
-    ! get neighboured elements
+    ! Get neighboured elements
     call storage_getbase_int2D(&
         p_rtriangulation%h_IneighboursAtElement, p_IneighboursAtElement)
     
-    ! set particles position
+    ! Set particles position
     particlepos(1)= rParticles%p_xpos(iPart)
     particlepos(2)= rParticles%p_ypos(iPart) 
    
@@ -4315,8 +4323,8 @@ contains
     case('bruteforce')
         call tsrch_getElem_BruteForce(particlepos,p_DvertexCoords,p_IverticesAtElement,iel)
     case('raytrace2D')
-        !call tsrch_getElem_raytrace2D(&
-        !        Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
+ !       call tsrch_getElem_raytrace2D(&
+ !               Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
     case('midpoint')
 
 	    distToMid = 10000.0d0
@@ -4334,6 +4342,7 @@ contains
 			  end if
 		    end do
 		    
+		    ! Distance of the current element to the new position
 		    distances(1) = (rParticles%p_xpos(iPart)-&
 		                        rParticles%p_midpoints_el(1,rParticles%p_element(iPart)))**2.0d0+&
 		                   (rParticles%p_ypos(iPart)-&
@@ -4366,13 +4375,17 @@ contains
 
   subroutine eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
-    ! parameterlist
+!<description>
+    ! If the search algorithim finds the wrong element, the subroutine searchh in the neighboured elements.
+    
+!<input>
+    ! Parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
-    ! particles
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
-    ! current number of particle
+    ! Current number of particle
     integer, intent(inout) :: iPart
 
     ! Pointer to the multigrid level
@@ -4441,13 +4454,14 @@ contains
     ! In such a case, only the first NVT n-tuples in this array are valid!
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
- 	! local variables
+ 	! Local variables
  	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, lexipunkt, i
     real(DP) :: dxi1,dxi2,dxi3
     real(DP) :: dx,dy
+    ! Coordinates of the cornervertices
     real(DP), dimension(2,4) :: DcornerCoords
 
     logical :: binside
@@ -4468,7 +4482,7 @@ contains
         p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
 
-    ! store the current element
+    ! Store the current element
 	currentelm = rParticles%p_element(iPart)
 	dxi1=0d0
 	dxi2=0d0
@@ -4479,6 +4493,7 @@ contains
     ! Loop over the vertices of the element
 	SearchVertex: do Vert = 1, 3												
 		
+		!Current vertex
 		nVertex = p_IverticesAtElement(Vert, currentelm)
 			
 		! Loop over the element containing to the vertex
@@ -4490,7 +4505,7 @@ contains
 
 			rParticles%p_element(iPart) = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
 
-            ! store coordinates of cornervertices
+            ! Store coordinates of cornervertices
             DcornerCoords(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,rParticles%p_element(iPart)))
             DcornerCoords(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,rParticles%p_element(iPart)))
             DcornerCoords(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,rParticles%p_element(iPart)))
@@ -4498,9 +4513,10 @@ contains
             DcornerCoords(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))
             DcornerCoords(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))
 
-            ! check if the particle is in the element
+            ! Check if the particle is in the element
             call gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
           
+            ! If the particle is in the element, then exit loop
             if (binside .eq. .true.) then
                 exit SearchVertex
             end if 
@@ -4509,14 +4525,16 @@ contains
 
 	end do SearchVertex
 
-    ! get barycentric coordinates
+    ! Get barycentric coordinates
     call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
 
+    ! If the particle is still outside the element
     if ((abs(dxi1)+abs(dxi2)+abs(dxi3)) .GE. 1.00001) then
+      ! Take the old elementnumber
 	  rParticles%p_element(iPart) = currentelm
+	  ! Check if the is/was a particle-wall-collision
 	  call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
-
 
   end subroutine eulerlagrange_wrongelement
 
@@ -4526,13 +4544,17 @@ contains
 
   subroutine eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolutionPrimal,rParticles)
 
-    ! parameterlist
+!<description>
+    ! This subroutine calculates the movement of the particles.
+
+!<input>
+    ! Parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
-    ! particles
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
-     ! primal solution vector
+    ! Primal solution vector
     type(t_vectorBlock), intent(inout) :: rsolutionPrimal
 
     ! Pointer to the multigrid level
@@ -4589,23 +4611,29 @@ contains
     ! In such a case, only the first NVT n-tuples in this array are valid!
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
+    ! Coordinates of the three cornervertices
 	real(DP) :: ux1_part, uy1_part, ux2_part, uy2_part, ux3_part, uy3_part
+	! Density of the gas in the Cornervertices
 	real(DP), dimension(3) :: rho_gas
+	
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
     
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
-    integer :: iPart
+    integer :: iPart, istartpos
 
-    ! startingpostions of the particles
+    ! Startingpostions of the particles
     real(DP) :: partxmin, partxmax, partymin, partymax
 
-    ! velocity of the particles
+    ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2
+
+    ! Variables for the startingposition
+    integer, dimension(14,14) :: rstartmatrix
+    integer :: j1, j2
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -4624,7 +4652,7 @@ contains
     dt=0d0
     c_pi=0d0
     
-    ! get values for the startingpositions of the particles
+    ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
     ! Get data from solution
@@ -4640,7 +4668,7 @@ contains
     ! Loop over the particles
     do iPart = 1, rParticles%nPart
 
-	! store old data
+	! Store old data
 	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
 	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
 	rParticles%p_xvelo_old(iPart)=	   rParticles%p_xvelo(iPart)
@@ -4648,22 +4676,22 @@ contains
 	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
 	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
 
-	! velocity and density of the gas in the first corner (in mathematically positive sense)
+	! Velocity and density of the gas in the first corner (in mathematically positive sense)
 	ux1_part= p_Ddata1(p_IverticesAtElement(1,rParticles%p_element(iPart)))
 	uy1_part= p_Ddata2(p_IverticesAtElement(1,rParticles%p_element(iPart)))
 	rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,rParticles%p_element(iPart)))
 
-	! velocity and density of the gas in the second corner (in mathematically positive sense)
+	! Velocity and density of the gas in the second corner (in mathematically positive sense)
 	ux2_part= p_Ddata1(p_IverticesAtElement(2,rParticles%p_element(iPart)))
 	uy2_part= p_Ddata2(p_IverticesAtElement(2,rParticles%p_element(iPart)))
 	rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,rParticles%p_element(iPart)))
 
-	! velocity and density of the gas in the third corner (in mathematically positive sense)
+	! Velocity and density of the gas in the third corner (in mathematically positive sense)
 	ux3_part= p_Ddata1(p_IverticesAtElement(3,rParticles%p_element(iPart)))
 	uy3_part= p_Ddata2(p_IverticesAtElement(3,rParticles%p_element(iPart)))
 	rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,rParticles%p_element(iPart)))
 
-	! calculate velocity of the gas
+	! Calculate velocity of the gas
 	rParticles%p_xvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*ux1_part + &
 									rParticles%p_lambda2(iPart)*ux2_part + &
 									rParticles%p_lambda3(iPart)*ux3_part 
@@ -4671,12 +4699,12 @@ contains
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
 
-	! calculate the density of the gas in the position of the particle
+	! Calculate the density of the gas in the position of the particle
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
 	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3) 
 
 
-	! calculate particle Reynoldsnumber
+	! Calculate particle Reynoldsnumber
 	!
 	! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
 	! with \nu_g=\frac{\eta_g}{\rho_g}
@@ -4685,21 +4713,21 @@ contains
 	       rParticles%p_xvelo_old(iPart))**2+&
 		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2))
 
-	! calculate the drag force coefficient
+	! Calculate the drag force coefficient
 	if (Re_p<1000) then
 		C_W= 24/Re_p*(1+0.15*Re_p**0.687)
 	else
 		C_W= 24/Re_p
 	end if
 
-	! calculate alpha_n
+	! Calculate alpha_n
 	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8 
 
-	! calculate the velocity
+	! Calculate the relative velocity
 	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2 +&
 	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2)
 
-	! calculate new velocity of the particle
+	! Calculate new velocity of the particle
 	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
 								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25 * rParticles%p_diam(iPart)**2 &
 								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * rParticles%gravity(1))/&
@@ -4720,6 +4748,7 @@ contains
 	rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt * rParticles%p_xvelo(iPart)
 	rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt * rParticles%p_yvelo(iPart)
 	
+	! If the particle comes to the outlet
 	if (rParticles%p_xpos(iPart).ge.rParticles%maxvalx) then
 	
 	    ! get values for the startingpositions of the particles
@@ -4732,21 +4761,64 @@ contains
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 	
-	  	!Hole Zufallszahl
-		call random_number(random1)
-		call random_number(random2)
-		
-        IF (partxmin==0) partxmin=minval(p_DvertexCoords(1,:))
-        IF (partxmax==0) partxmax=minval(p_DvertexCoords(1,:))+&
-                0.2*(maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
-        IF (partymin==0) partymin= minval(p_DvertexCoords(2,:))
-        IF (partymax==0) partymax= maxval(p_DvertexCoords(2,:))
-		
-        ! set initial values for the particles
-        rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-        rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
-        rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-        rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+	    ! get variable for startingposition
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
+
+	    select case(istartpos)
+        case(0)
+  		  ! Get randomnumber
+		  call random_number(random1)
+		  call random_number(random2)
+		  
+          partxmin= minval(p_DvertexCoords(1,:))
+          partxmax= minval(p_DvertexCoords(1,:))+&
+                    0.2*(maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+          partymin= minval(p_DvertexCoords(2,:))
+          partymax= maxval(p_DvertexCoords(2,:))
+
+          ! Set startingpositions of the particle
+          rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+
+
+        case(1)
+  		  ! Get randomnumber
+		  call random_number(random1)
+		  call random_number(random2)
+		  
+          ! Set startingpositions of the particle
+          rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+        
+        case(2)
+          do
+            ! Get random numbers
+            call random_number(random1)
+		    call random_number(random2)
+		    ! Get point of the matrix
+            j1 = int(random1*size(rstartmatrix,1)-1)+1
+            j2 = int(random2*size(rstartmatrix,2)-1)+1
+            ! If there can be particles, exit loop
+            if (rstartmatrix(j1,j2).eq.1) exit
+          end do
+        
+          ! Get random numbers
+		  call random_number(random1)
+		  call random_number(random2)
+  
+          ! Set startingpositions of the particle
+          rParticles%p_xpos(iPart)= partxmin + (j2+random1-0.5_dp)/size(rstartmatrix,2)*(partxmax - partxmin)
+          rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rstartmatrix,1)*(partymax - partymin)
+          rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
+          rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
+            
+        end select
+ 
+        ! Set initial values for the particles
         rParticles%p_xvelo(iPart)= velopartx
         rParticles%p_yvelo(iPart)= veloparty
         rParticles%p_xvelo_old(iPart)= velopartx
@@ -4763,10 +4835,10 @@ contains
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
-        ! calculate barycentric coordinates
+        ! Calculate barycentric coordinates
         call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
 
-        ! wrong element
+        ! Wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
                   abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
@@ -4776,7 +4848,7 @@ contains
 	
 	end do
 	
-    ! release temporal data
+    ! Release temporal data
     call lsyssc_releasevector(rvector1)
     call lsyssc_releasevector(rvector2)
     call lsyssc_releasevector(rvector3)
@@ -4789,6 +4861,10 @@ contains
 
   subroutine eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
 
+!<description>
+    ! This subroutine checks if there is/was a collision beetween the particle and the wall
+
+!<input>
     ! parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
@@ -4947,7 +5023,7 @@ contains
 
 			! x-coordinate of the first vertex of the boundary (counterclockwise)
 			x(1)= p_DvertexCoords(1,bdy_Koords(1))
-			! x-coodinate of the distance from the first to the second vertex of the boundary
+			! x-coordinate of the distance from the first to the second vertex of the boundary
 			x(2)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1)) 
 			! x-coordinate of the old position of the particle
 			x(3)= rParticles%p_xpos_old(iPart)
@@ -5010,6 +5086,7 @@ contains
 			    proj_norm = (rParticles%p_xpos_old(iPart) - rParticles%p_xpos(iPart))*bdy_norm(1)+&
 				    		(rParticles%p_ypos_old(iPart) - rParticles%p_ypos(iPart))*bdy_norm(2)
 
+                ! New particle velocity after the collision
 			    rParticles%p_xvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(1)+&
 				    				       rParticles%norm_val*proj_norm*bdy_norm(1)
 			    rParticles%p_yvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
@@ -5042,7 +5119,11 @@ contains
 
   subroutine eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
-    ! particles
+!<description>
+    ! This subroutine computes volumefraction of the particles in the gridpoints
+
+!<input>
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
     ! Pointer to the multigrid level
@@ -5068,10 +5149,10 @@ contains
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
 
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! local variables
+    ! Local variables
 	integer :: i, current
 	real(DP) :: c_pi
 
@@ -5090,10 +5171,10 @@ contains
 
 	do i= 1, rParticles%nPart
 
-        ! element of the current particle
+        ! Element of the current particle
 		current= rParticles%p_element(i)
 
-        ! store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
+        ! Store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
 		                (rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
@@ -5148,10 +5229,10 @@ contains
     ! p_DelementArea [NEL+1] gives the total area/voloume of the domain.
     real(DP), dimension(:), pointer :: p_DelementVolume
 
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! local variables
+    ! Local variables
 	integer :: i, current
 	real(DP) :: c_pi
 
@@ -5168,10 +5249,10 @@ contains
 
 	do i= 1, rParticles%nPart
 
-        ! element of the current particle
+        ! Element of the current particle
 		current= rParticles%p_element(i)
 
-        ! store the velocity of the particle in the gridpoints (with barycentric coordinates)
+        ! Store the velocity of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVelo(1,p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVelo(1,p_IverticesAtElement(1,current)) + &
 		                (rParticles%p_xvelo(i)**2)/&

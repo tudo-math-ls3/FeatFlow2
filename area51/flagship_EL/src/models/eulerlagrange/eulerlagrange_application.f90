@@ -2994,30 +2994,37 @@ module eulerlagrange_application
     
   end subroutine eulerlagrange_adjustParameterlist
 
+  !*****************************************************************************
 
+!<subroutine>
 
 subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
-    ! parameterlist
+
+!<description>
+    ! This subroutine initialise the particle data. 
+
+!<input>
+    ! Parameterlist
     type(t_parlist), intent(inout) :: rparlist
     
-    ! collection structure
+    ! Collection structure
     type(t_collection), intent(inout) :: rcollection
 
-    ! time-stepping structure
+    ! Time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
 
-    ! primal solution vector
+    ! Primal solution vector
     type(t_vectorBlock), intent(inout), target :: rsolution
 
-    ! particles
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
-    ! local variables
-    ! pointer to the triangulation
+    ! Local variables
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
 
-    ! pointer to the multigrid level
+    ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
 
     ! pointer to the coordinates of the vertices
@@ -3056,172 +3063,172 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
  
-  ! local variables
-  integer :: ivt, iPart, iel
+    ! Local variables
+    integer :: ivt, iPart, iel
 
-  real(DP) :: random1, random2
+    real(DP) :: random1, random2
 
-  ! midpoints of the elements
-  integer(I32) :: h_midpoints
-  real(DP), dimension(:,:), pointer :: p_midpoints_el
-  integer, dimension(2) :: md_el_length
+    ! Midpoints of the elements
+    integer(I32) :: h_midpoints
+    real(DP), dimension(:,:), pointer :: p_midpoints_el
+    integer, dimension(2) :: md_el_length
 
-  ! startingpostions of the particles
-  real(DP) :: partxmin, partxmax, partymin, partymax
+    ! Startingpostions of the particles
+    real(DP) :: partxmin, partxmax, partymin, partymax
 
-  ! velocity, mass and diameter of the particles
-  real(DP) :: velopartx, veloparty, particlediam, particlemass
+    ! Velocity, mass and diameter of the particles
+    real(DP) :: velopartx, veloparty, particlediam, particlemass
 
-  ! gravity
-  real(DP) :: gravityx, gravityy
+    ! Gravity
+    real(DP) :: gravityx, gravityy
 
-  ! quantity of particles
-  integer :: nPart
+    ! Quantity of particles
+    integer :: nPart
   
-  ! boundarybehaviour
-  integer :: boundbehav
+    ! Boundarybehaviour
+    integer :: boundbehav
 
-  ! startingpositions of the particles
-  integer :: istartpos
+    ! Mode for the startingpositions of the particles
+    integer :: istartpos
 
-  ! kinematic viscosity of the gas
-  real(DP) :: gas_nu
+    ! Kinematic viscosity of the gas
+    real(DP) :: gas_nu
   
-  ! variables for the startingposition
-  integer, dimension(14,14) :: rstartmatrix
-  integer :: j1, j2
+    ! Matrix for the startingposition
+    integer, dimension(14,14) :: rstartmatrix
+    integer :: j1, j2
   
-  ! Set pointer to triangulation
-  p_rtriangulation => p_rproblemLevel%rtriangulation
+    ! Set pointer to triangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
   
-  ! get quantity of particles
-  call parlst_getvalue_int(rparlist, 'Eulerlagrange', "nPart", nPart)
+    ! Get quantity of particles
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "nPart", nPart)
 
-  ! number of particles
-  rParticles%npart = nPart
+    ! Number of particles
+    rParticles%npart = nPart
   
-  ! storage_new (scall, sname, isize, ctype, ihandle, cinitNewBlock)
-  call storage_new ('euler_lagrange', 'Particle:element', rParticles%npart, ST_INT, rParticles%h_element, &
+    ! Storage_new (scall, sname, isize, ctype, ihandle, cinitNewBlock)
+    call storage_new ('euler_lagrange', 'Particle:element', rParticles%npart, ST_INT, rParticles%h_element, &
                             ST_NEWBLOCK_NOINIT)
 
-  call storage_new ('euler_lagrange', 'Particle:lambda1', rParticles%npart, ST_DOUBLE, rParticles%h_lambda1, &
+    call storage_new ('euler_lagrange', 'Particle:lambda1', rParticles%npart, ST_DOUBLE, rParticles%h_lambda1, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:lambda2', rParticles%npart, ST_DOUBLE, rParticles%h_lambda2, &
+    call storage_new ('euler_lagrange', 'Particle:lambda2', rParticles%npart, ST_DOUBLE, rParticles%h_lambda2, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:lambda3', rParticles%npart, ST_DOUBLE, rParticles%h_lambda3, &
+    call storage_new ('euler_lagrange', 'Particle:lambda3', rParticles%npart, ST_DOUBLE, rParticles%h_lambda3, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:lambda4', rParticles%npart, ST_DOUBLE, rParticles%h_lambda4, &
-                            ST_NEWBLOCK_NOINIT)
-
-  call storage_new ('euler_lagrange', 'Particle:diameter', rParticles%npart, ST_DOUBLE, rParticles%h_diam, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:alpha_n', rParticles%npart, ST_DOUBLE, rParticles%h_alpha_n, &
+    call storage_new ('euler_lagrange', 'Particle:lambda4', rParticles%npart, ST_DOUBLE, rParticles%h_lambda4, &
                             ST_NEWBLOCK_NOINIT)
 
-  call storage_new ('euler_lagrange', 'Particle:xpos', rParticles%npart, ST_DOUBLE, rParticles%h_xpos, &
+   call storage_new ('euler_lagrange', 'Particle:diameter', rParticles%npart, ST_DOUBLE, rParticles%h_diam, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:ypos', rParticles%npart, ST_DOUBLE, rParticles%h_ypos, &
+    call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zpos', rParticles%npart, ST_DOUBLE, rParticles%h_zpos, &
-                            ST_NEWBLOCK_NOINIT)
-
-  call storage_new ('euler_lagrange', 'Particle:xpos_old', rParticles%npart, ST_DOUBLE, rParticles%h_xpos_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:ypos_old', rParticles%npart, ST_DOUBLE, rParticles%h_ypos_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zpos_old', rParticles%npart, ST_DOUBLE, rParticles%h_zpos_old, &
+    call storage_new ('euler_lagrange', 'Particle:alpha_n', rParticles%npart, ST_DOUBLE, rParticles%h_alpha_n, &
                             ST_NEWBLOCK_NOINIT)
 
-  call storage_new ('euler_lagrange', 'Particle:xvelo', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo, &
+    call storage_new ('euler_lagrange', 'Particle:xpos', rParticles%npart, ST_DOUBLE, rParticles%h_xpos, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:yvelo', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo, &
+    call storage_new ('euler_lagrange', 'Particle:ypos', rParticles%npart, ST_DOUBLE, rParticles%h_ypos, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zvelo', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo, &
-                            ST_NEWBLOCK_NOINIT)
-
-  call storage_new ('euler_lagrange', 'Particle:xvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:yvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_old, &
+    call storage_new ('euler_lagrange', 'Particle:zpos', rParticles%npart, ST_DOUBLE, rParticles%h_zpos, &
                             ST_NEWBLOCK_NOINIT)
 
-  call storage_new ('euler_lagrange', 'Particle:xvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_gas, &
+    call storage_new ('euler_lagrange', 'Particle:xpos_old', rParticles%npart, ST_DOUBLE, rParticles%h_xpos_old, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:yvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_gas, &
+    call storage_new ('euler_lagrange', 'Particle:ypos_old', rParticles%npart, ST_DOUBLE, rParticles%h_ypos_old, &
                             ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_gas, &
-                            ST_NEWBLOCK_NOINIT)
-
-  call storage_new ('euler_lagrange', 'Particle:xvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_gas_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:yvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_gas_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:zvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_gas_old, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:bdy_time', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_time, &
-                            ST_NEWBLOCK_NOINIT)
-  call storage_new ('euler_lagrange', 'Particle:bdy_check', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_check, &
+    call storage_new ('euler_lagrange', 'Particle:zpos_old', rParticles%npart, ST_DOUBLE, rParticles%h_zpos_old, &
                             ST_NEWBLOCK_NOINIT)
 
-   md_el_length(1)=2
-   md_el_length(2)=p_rtriangulation%NEL
+    call storage_new ('euler_lagrange', 'Particle:xvelo', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:yvelo', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:zvelo', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo, &
+                            ST_NEWBLOCK_NOINIT)
 
-   ! midpoints of the elements
-   call storage_new ('euler_lagrange', 'Elements:midpoints', md_el_length, ST_DOUBLE, rParticles%h_midpoints_el, &
+    call storage_new ('euler_lagrange', 'Particle:xvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_old, &
                             ST_NEWBLOCK_NOINIT)
-   ! volumepart of the particles
-   call storage_new ('euler_lagrange', 'Elements:particlevolume', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVol, &
+    call storage_new ('euler_lagrange', 'Particle:yvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_old, &
                             ST_NEWBLOCK_NOINIT)
-   ! velocity of the particles
-   call storage_new ('euler_lagrange', 'Elements:particlevelocity', md_el_length, ST_DOUBLE, rParticles%h_PartVelo, &
+    call storage_new ('euler_lagrange', 'Particle:zvelo_old', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_old, &
+                            ST_NEWBLOCK_NOINIT)
+
+    call storage_new ('euler_lagrange', 'Particle:xvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_gas, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:yvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_gas, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:zvelo_gas', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_gas, &
+                            ST_NEWBLOCK_NOINIT)
+
+    call storage_new ('euler_lagrange', 'Particle:xvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_xvelo_gas_old, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:yvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_yvelo_gas_old, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:zvelo_gas_old', rParticles%npart, ST_DOUBLE, rParticles%h_zvelo_gas_old, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:bdy_time', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_time, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:bdy_check', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_check, &
+                            ST_NEWBLOCK_NOINIT)
+
+    md_el_length(1)=2
+    md_el_length(2)=p_rtriangulation%NEL
+
+    ! Midpoints of the elements
+    call storage_new ('euler_lagrange', 'Elements:midpoints', md_el_length, ST_DOUBLE, rParticles%h_midpoints_el, &
+                            ST_NEWBLOCK_NOINIT)
+    ! Volumepart of the particles
+    call storage_new ('euler_lagrange', 'Elements:particlevolume', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVol, &
+                            ST_NEWBLOCK_NOINIT)
+    ! Velocity of the particles
+    call storage_new ('euler_lagrange', 'Elements:particlevelocity', md_el_length, ST_DOUBLE, rParticles%h_PartVelo, &
                             ST_NEWBLOCK_NOINIT)
    
-   call storage_getbase_double (rParticles%h_xpos, rParticles%p_xpos)
-   call storage_getbase_double (rParticles%h_ypos, rParticles%p_ypos)
-   call storage_getbase_double (rParticles%h_zpos, rParticles%p_zpos)
-   call storage_getbase_double (rParticles%h_xpos_old, rParticles%p_xpos_old)
-   call storage_getbase_double (rParticles%h_ypos_old, rParticles%p_ypos_old)
-   call storage_getbase_double (rParticles%h_zpos_old, rParticles%p_zpos_old)
-   call storage_getbase_double (rParticles%h_xvelo, rParticles%p_xvelo)
-   call storage_getbase_double (rParticles%h_yvelo, rParticles%p_yvelo)
-   call storage_getbase_double (rParticles%h_zvelo, rParticles%p_zvelo)
-   call storage_getbase_double (rParticles%h_xvelo_old, rParticles%p_xvelo_old)
-   call storage_getbase_double (rParticles%h_yvelo_old, rParticles%p_yvelo_old)
-   call storage_getbase_double (rParticles%h_zvelo_old, rParticles%p_zvelo_old)
-   call storage_getbase_double (rParticles%h_xvelo_gas, rParticles%p_xvelo_gas)
-   call storage_getbase_double (rParticles%h_yvelo_gas, rParticles%p_yvelo_gas)
-   call storage_getbase_double (rParticles%h_zvelo_gas, rParticles%p_zvelo_gas)
-   call storage_getbase_double (rParticles%h_xvelo_gas_old, rParticles%p_xvelo_gas_old)
-   call storage_getbase_double (rParticles%h_yvelo_gas_old, rParticles%p_yvelo_gas_old)
-   call storage_getbase_double (rParticles%h_zvelo_gas_old, rParticles%p_zvelo_gas_old)
-   call storage_getbase_int (rParticles%h_element, rParticles%p_element)
-   call storage_getbase_double (rParticles%h_lambda1, rParticles%p_lambda1)
-   call storage_getbase_double (rParticles%h_lambda2, rParticles%p_lambda2)
-   call storage_getbase_double (rParticles%h_lambda3, rParticles%p_lambda3)
-   call storage_getbase_double (rParticles%h_lambda4, rParticles%p_lambda4)
-   call storage_getbase_double (rParticles%h_diam, rParticles%p_diam)
-   call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
-   call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
-   call storage_getbase_double (rParticles%h_bdy_time, rParticles%p_bdy_time)
-   call storage_getbase_double (rParticles%h_bdy_check, rParticles%p_bdy_check)
+    call storage_getbase_double (rParticles%h_xpos, rParticles%p_xpos)
+    call storage_getbase_double (rParticles%h_ypos, rParticles%p_ypos)
+    call storage_getbase_double (rParticles%h_zpos, rParticles%p_zpos)
+    call storage_getbase_double (rParticles%h_xpos_old, rParticles%p_xpos_old)
+    call storage_getbase_double (rParticles%h_ypos_old, rParticles%p_ypos_old)
+    call storage_getbase_double (rParticles%h_zpos_old, rParticles%p_zpos_old)
+    call storage_getbase_double (rParticles%h_xvelo, rParticles%p_xvelo)
+    call storage_getbase_double (rParticles%h_yvelo, rParticles%p_yvelo)
+    call storage_getbase_double (rParticles%h_zvelo, rParticles%p_zvelo)
+    call storage_getbase_double (rParticles%h_xvelo_old, rParticles%p_xvelo_old)
+    call storage_getbase_double (rParticles%h_yvelo_old, rParticles%p_yvelo_old)
+    call storage_getbase_double (rParticles%h_zvelo_old, rParticles%p_zvelo_old)
+    call storage_getbase_double (rParticles%h_xvelo_gas, rParticles%p_xvelo_gas)
+    call storage_getbase_double (rParticles%h_yvelo_gas, rParticles%p_yvelo_gas)
+    call storage_getbase_double (rParticles%h_zvelo_gas, rParticles%p_zvelo_gas)
+    call storage_getbase_double (rParticles%h_xvelo_gas_old, rParticles%p_xvelo_gas_old)
+    call storage_getbase_double (rParticles%h_yvelo_gas_old, rParticles%p_yvelo_gas_old)
+    call storage_getbase_double (rParticles%h_zvelo_gas_old, rParticles%p_zvelo_gas_old)
+    call storage_getbase_int (rParticles%h_element, rParticles%p_element)
+    call storage_getbase_double (rParticles%h_lambda1, rParticles%p_lambda1)
+    call storage_getbase_double (rParticles%h_lambda2, rParticles%p_lambda2)
+    call storage_getbase_double (rParticles%h_lambda3, rParticles%p_lambda3)
+    call storage_getbase_double (rParticles%h_lambda4, rParticles%p_lambda4)
+    call storage_getbase_double (rParticles%h_diam, rParticles%p_diam)
+    call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
+    call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
+    call storage_getbase_double (rParticles%h_bdy_time, rParticles%p_bdy_time)
+    call storage_getbase_double (rParticles%h_bdy_check, rParticles%p_bdy_check)
 
-   call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
-   call storage_getbase_double2D (rParticles%h_PartVelo, rParticles%p_PartVelo)
-   call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
+    call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
+    call storage_getbase_double2D (rParticles%h_PartVelo, rParticles%p_PartVelo)
+    call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
   
-   ! Set pointer to coordinate vector
-   call storage_getbase_double2D(&
+    ! Set pointer to coordinate vector
+    call storage_getbase_double2D(&
         p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
  
-   ! Set pointer to vertices at element
-   call storage_getbase_int2D(&
+    ! Set pointer to vertices at element
+    call storage_getbase_int2D(&
         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-   ! Stores the midpoint for each element
-   do iel=1,p_rtriangulation%NEL
+    ! Stores the midpoint for each element
+    do iel=1,p_rtriangulation%NEL
 
       rParticles%p_midpoints_el(1,iel)= &
                                 (p_DvertexCoords(1,p_IverticesAtElement(1,iel))+&
@@ -3233,36 +3240,36 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                                  p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
                                  p_DvertexCoords(2,p_IverticesAtElement(3,iel)))/3.0_dp
 
-    end do
+        end do
 
-    ! get values for the startingpositions of the particles
+    ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "xmin", partxmin)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "xmax", partxmax)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "ymin", partymin)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "ymax", partymax)
  
-    ! get particlevelocity
+    ! Get particlevelocity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 
-    ! get particle-mass and diameter
+    ! Get particle-mass and diameter
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
 
-    ! get values for gravity
+    ! Get values for gravity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "gravityx", gravityx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "gravityy", gravityy)
 
-    ! get value of kinematic viscosity
+    ! Get value of kinematic viscosity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "gas_nu", gas_nu)
 
-    ! get boundarybehaviour
+    ! Get boundarybehaviour
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "boundbehav", boundbehav)
 
-    ! get variable for startingposition
+    ! Get variable for startingposition
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
-    ! store particlesnumber, viscosity of the gas and gravity  
+    ! Store particlesnumber, viscosity of the gas and gravity  
     rParticles%npart = nPart
     rParticles%nu_g= gas_nu
     rParticles%gravity(1)= gravityx
@@ -3272,7 +3279,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%p_PartVol= 0
     rParticles%p_PartVelo= 0
 
-    ! set boundaryconditions for the particles
+    ! Set boundaryconditions for the particles
     select case(boundbehav)
     case (0)
         rParticles%tang_val= 1.0d0
@@ -3307,7 +3314,7 @@ rstartmatrix = transpose(reshape(&
 (/14,14/)))
 
 
-    ! initialize data for each particle
+    ! Initialize data for each particle
     do iPart=1,rParticles%npart
   
         select case(istartpos)
@@ -3393,27 +3400,35 @@ rstartmatrix = transpose(reshape(&
 
 end subroutine eulerlagrange_init
 
+  !*****************************************************************************
+
+!<subroutine>
+
 subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcollection,rParticles)
 
-    ! parameterlist
+!<description>
+    ! This subroutine computes 
+
+!<input>
+    ! Parameterlist
     type(t_parlist), intent(inout) :: rparlist
 
-    ! collection structure
+    ! Collection structure
     type(t_collection), intent(inout) :: rcollection
 
-    ! time-stepping structure
+    ! Time-stepping structure
     type(t_timestep), intent(inout) :: rtimestep
 
-    ! particles
+    ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
-    ! primal solution vector
+    ! Primal solution vector
     type(t_vectorBlock), intent(inout), target :: rsolution
 
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
     
-    ! pointer to the triangulation
+    ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
  
     ! pointer to the coordinates of the vertices
@@ -3453,7 +3468,7 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     integer, dimension(:,:), pointer :: p_IverticesAtElement
  
     
-    ! current particlenumber
+    ! Current particlenumber
     integer :: iPart
     character(LEN=20) :: sfilename, sfilenamenew
 
@@ -3478,7 +3493,7 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     open(20+rParticles%iTimestep,file='out/video/'//sfilenamenew)
 
     do iPart = 1, rParticles%nPart
-      ! subroutine to find the element with the particle
+      ! Subroutine to find the element with the particle
       call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
  
       dx= rParticles%p_xpos(iPart)
@@ -3491,11 +3506,11 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
       DcornerCoords(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))
       DcornerCoords(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))
  
-      ! get barycentric coordinates
+      ! Get barycentric coordinates
       call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,&
             rParticles%p_lambda1(iPart),rParticles%p_lambda2(iPart),rParticles%p_lambda3(iPart))
                    
-      ! check if particle is in the wrong element
+      ! Check if particle is in the wrong element
       IF ((abs(rParticles%p_lambda1(iPart))+&
            abs(rParticles%p_lambda2(iPart))+&
            abs(rParticles%p_lambda3(iPart))) .GE. 1.00001) then
@@ -3506,13 +3521,13 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
     end do
 
-    ! subroutine to compute the new position of the particles
+    ! Subroutine to compute the new position of the particles
     call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
 
-    ! subroutine to calculate the volume part of the particles
+    ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
 
-    ! subroutine to calculate the velocity of the particles 
+    ! Subroutine to calculate the velocity of the particles 
     call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
     close(unit=20+rParticles%iTimestep)
