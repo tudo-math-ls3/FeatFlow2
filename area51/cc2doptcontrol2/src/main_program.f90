@@ -1068,7 +1068,7 @@ contains
     character(LEN=SYS_STRLEN) :: smaster
     
     ! Check if a command line parameter specifies the master.dat file.
-    call sys_getcommandLineArg(1,smaster,sdefault=trim(DIR_DATA)//'/data/master.dat')
+    call sys_getcommandLineArg(1,smaster,sdefault=trim(DIR_DATA)//'/master.dat')
 
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
@@ -1080,6 +1080,11 @@ contains
       ! contains references to subfiles with data.
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/master.dat',trim(DIR_DATA))
     else
+      call output_line("Master file not found: "//trim(smaster),&
+          OU_CLASS_WARNING,ssubroutine='main_getDat')
+      call output_line("Reading standard parameters.",&
+          OU_CLASS_WARNING,ssubroutine='main_getDat')
+    
       ! Each 'readfromfile' command adds the parameter of the specified file 
       ! to the parameter list.
       call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/main.dat')
