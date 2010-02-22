@@ -35,6 +35,64 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_bcassembly.inc'
 !#
+!# coeff_hillenX_RHS_rfu (§)
+!#     -> returns the coefficients for the RHS of the cell-part. 
+!#          This depends on the analytic given solutions of c and u
+!#          These coefficients should be modified if the analytical functions are varied 
+!#
+!# coeff_hillenX_RHS_rfc
+!#     -> returns the coefficients for the RHS of the chemo-part. 
+!#          This depends on the analytic given solutions of c and u
+!#          For the current PDE-System, these coefficients are set automatically (determined by
+!#          userPresc_cellsSol and userPresc_chemoSol)
+!#
+!# coeff_hillenX
+!#     -> returns the coefficients for the chemotactic-part (\Chi \div (u \grad c))
+!#          For the current PDE-System, these coefficients are set automatically
+!# userPresc_cellsSol (§)
+!#     -> Returns the coefficients of the analytical solution for u
+!#
+!# userPresc_chemoSol (§)
+!#     -> Returns the coefficients of the analytical solution for c
+!#
+!# userPresc_cellsInitCond (§)
+!#     -> Here we set the initial conditions for u
+!#
+!# userPresc_chemoattrInitCond (§)
+!#     -> Here we set the initial conditions for c
+!#
+!# getBoundaryValuesMR_cell
+!#     -> Returns analitical values on the (Dirichlet) boundary of the
+!#        problem to solve. Should coincide with userPresc_cellsSol. So this subroutine 
+!#        needs not to be modified.
+!#
+!# getBoundaryValuesMR_chemo
+!#     -> Returns analitical values on the (Dirichlet) boundary of the
+!#        problem to solve. Should coincide with userPresc_chemoSol. So this subroutine 
+!#        needs not to be modified.
+!#
+!# ffunction_Target_Chemo
+!#     -> Returns analitical values for calculating some norms (here L2) of the solution
+!#        It coincides with userPresc_chemoSol, so it needs not to be touched
+!#
+!# ffunction_Target_Cells
+!#     -> Returns analitical values for calculating some norms (here L2) of the solution
+!#        It coincides with userPresc_cellsSol, so it needs not to be touched
+!#
+!# ffunction_Target_ChemoH1 (§)
+!#     -> Returns analitical values for calculating some norms (here H1) of the solution
+!#        Since we're about to calculate the derivatives of the solutions, this subroutine 
+!#        has to be modified if the userPresc_chemoSol is varied.
+!#
+!# ffunction_Target_CellsH1 (§)
+!#     -> Returns analitical values for calculating some norms (here H1) of the solution
+!#        Since we're about to calculate the derivatives of the solutions, this subroutine 
+!#        has to be modified if the userPresc_chemoSol is varied.
+!#
+!#------------------------------------------------------------
+!#      If we want to modify the ICs or the analytic solutions, we should make sure 
+!#      to modify the §-marked subroutine as well
+!#------------------------------------------------------------
 !# </purpose>
 !##############################################################################
 
