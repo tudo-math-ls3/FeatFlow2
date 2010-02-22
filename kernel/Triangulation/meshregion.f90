@@ -494,6 +494,17 @@ module meshregion
 !<description>
   ! Creates a new mesh region by calling a hit-test callback function
   ! to decide whether a cell belongs to the mesh region or not.
+  !
+  ! fmshregHitTest must decide on point coordinates if a point belongs
+  ! to a mesh region or not; the returned array Ihit(.) must return a
+  ! value > 0 for all mesh entities that should belong to the mesh region.
+  !
+  ! If IallowedHit is specified, the value in Ihit(.) also counts.
+  ! In this case, only those mesh entities are collected in the mesh
+  ! region whose Ihit(.) identifier also appears in IallowedHit(.).
+  ! This allows to use one subroutine fmshregHitTest for the whole mesh
+  ! that returns identifiers for different parts of the mesh.
+  ! Using IallowedHit(.) then allows to filter for one or multiple parts.
 !</description>
 
 !<input>
@@ -512,7 +523,13 @@ module meshregion
   ! A callback to the hit-test function.
   include 'intf_mshreghittest.inc'
   
-  ! OPTIONAL: 
+  ! OPTIONAL: Hit-test filter.
+  ! If this is not specified, the routine generates a mesh region of
+  !   all mesh entities where the callback function fmshregHitTest
+  !   returns a value > 0 in Ihit(.).
+  ! If this is specified, the routine generates a mesh region of
+  !   all mesh entities where the callback function fmshregHitTest
+  !   returns a value which also appears in IallowedHit(*).
   integer, dimension(:), optional, intent(in)    :: IallowedHit
   
 !</input>
