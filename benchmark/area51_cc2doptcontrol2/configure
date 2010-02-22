@@ -96,9 +96,9 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 ######################################################
 # Finally, invoke the main workhorse:
 ../../bin/configure \
-	--appname=cc2doptcontrol \
-	--programfile=../../area51/cc2doptcontrol/src/cc2doptc.f90 \
-	--srclist_app="`ls ../../area51/cc2doptcontrol/src/*.f90`" \
+	--appname=cc2doptcontrol2 \
+	--programfile=../../area51/cc2doptcontrol2/src/cc2doptc.f90 \
+	--srclist_app="`ls ../../area51/cc2doptcontrol2/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@
