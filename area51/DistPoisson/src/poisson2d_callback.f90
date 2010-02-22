@@ -251,9 +251,9 @@ contains
 
     !    u(x,y) = 16*x*(1-x)*y*(1-y)
     ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
-    Dcoefficients (1,:,:) = 32.0_DP * &
-                    ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
-                      Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+    Dcoefficients (1,:,:) = 1.0_dp !32.0_DP * &
+                            !( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
+                             ! Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
 
   end subroutine
 
@@ -697,11 +697,13 @@ contains
 !</subroutine>
 
       ! local variables
-      real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy
+      real(DP) :: ddistance, dxcenter, dycenter, dradius, dx, dy,eps
       real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
       type(t_triangulation), pointer :: p_rtriangulation
       integer :: ipoint,idx
-
+      external getdistance
+      
+      eps=0.004_dp
       
       ! Just make sure we are evaluating in the corners.
       if (Revaluation(1)%cinfoNeeded .ne. DISCFBC_NEEDFUNC) then
@@ -715,9 +717,9 @@ contains
                                      p_DvertexCoordinates)
 
       ! Definition of the circle
-      dxcenter = 0.4
-      dycenter = 0.4
-      dradius  = 0.25
+      dxcenter = 0.5
+      dycenter = 0.5
+      dradius  = 0.2
       
       ! Loop through the points where to evaluate:
       do idx = 1,Revaluation(1)%nvalues
@@ -729,11 +731,13 @@ contains
         dx = p_DvertexCoordinates(1,ipoint)
         dy = p_DvertexCoordinates(2,ipoint)
         
+        call getdistance(dx,dy,ddistance)
+        
         ! Get the distance to the center
-        ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
+        !ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
         
         ! Point inside?
-        if (ddistance .le. dradius) then
+        if(abs(ddistance) .le. eps)then
         
           ! Denote in the p_Iinside array that we prescribe a value here:
           Revaluation(1)%p_Iinside (idx) = 1
@@ -745,36 +749,6 @@ contains
         
       end do
 
-      ! Definition of a 2nd circle
-      dxcenter = 0.75
-      dycenter = 0.75
-      dradius  = 0.1
-      
-      ! Loop through the points where to evaluate:
-      do idx = 1,Revaluation(1)%nvalues
-      
-        ! Get the number of the point to process
-        ipoint = Revaluation(1)%p_Iwhere(idx)
-        
-        ! Get x- and y-coordinate
-        dx = p_DvertexCoordinates(1,ipoint)
-        dy = p_DvertexCoordinates(2,ipoint)
-        
-        ! Get the distance to the center
-        ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 )
-        
-        ! Point inside?
-        if (ddistance .le. dradius) then
-        
-          ! Denote in the p_Iinside array that we prescribe a value here:
-          Revaluation(1)%p_Iinside (idx) = 1
-          
-          ! We prescribe 0.0 as Dirichlet value here.
-          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
-        
-        end if
-        
-      end do
     
   end subroutine
 

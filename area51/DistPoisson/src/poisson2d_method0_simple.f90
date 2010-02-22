@@ -33,7 +33,7 @@ module poisson2d_method0_simple
   use ucd
   use pprocerror
   use genoutput
-    
+  use pprocgradients
   use poisson2d_callback
   
   implicit none
@@ -78,7 +78,7 @@ contains
 
     ! An object specifying the discretisation.
     ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation
+    type(t_blockDiscretisation) :: rdiscretisation,rdiscretisationgrad
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
@@ -92,7 +92,7 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock
+    type(t_vectorBlock) :: rvectorBlock,rrhsBlock,rtempBlock,rgradient
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -109,13 +109,13 @@ contains
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(2), target :: RfilterChain
     
     ! NLMAX receives the level where we want to solve.
     integer :: NLMAX
     
     ! Error indicator during initialisation of the solver
-    integer :: ierror
+    integer :: ierror,i
     
     ! Error of FE function to reference function
     real(DP) :: derror
@@ -124,12 +124,21 @@ contains
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata
+    real(DP), dimension(:), pointer :: p_transf
+    real(DP), dimension(:), pointer :: p_transf2
+    real(DP), dimension(:), pointer :: p_transf3
+    real(DP), dimension(:), pointer :: p_error
+    real(DP), dimension(:), pointer :: p_gradx
+    real(DP), dimension(:), pointer :: p_grady
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+    real(dp) :: ddist    
+    external initcurve
 
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 7
-    
+    NLMAX = 9
+    call initcurve()
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
     if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
@@ -153,14 +162,25 @@ contains
     ! solution vector. In this simple problem, we only have one block.
     call spdiscr_initBlockDiscr (rdiscretisation,1,&
                                  rtriangulation, rboundary)
-    
+                                 
+    call spdiscr_initBlockDiscr (rdiscretisationgrad,2,&
+                                 rtriangulation, rboundary)
+                                 
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
     ! structures for every component of the solution vector.
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
                                    EL_E011,CUB_G2X2,rtriangulation, rboundary)
-                 
+                                   
+    call spdiscr_initDiscr_simple (rdiscretisationgrad%RspatialDiscr(1), &
+                                     EL_E011,CUB_G2X2,rtriangulation, rboundary)
+
+    call spdiscr_initDiscr_simple (rdiscretisationgrad%RspatialDiscr(2), &
+                                     EL_E011,CUB_G2X2,rtriangulation, rboundary)
+                                   
+                                   
+    call lsysbl_createVecBlockByDiscr (rdiscretisationgrad,rgradient,.true.)                 
     ! Now as the discretisation is set up, we can start to generate
     ! the structure of the system matrix which is to solve.
     ! We create a scalar matrix, based on the discretisation structure
@@ -243,29 +263,29 @@ contains
     ! - Discretise the boundary condition so that the BC`s can be applied
     !   to matrices and vectors
     ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
+!                             
+!    ! Now to the edge 2 of boundary component 1 the domain.
+!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
+!                             
+!    ! Edge 3 of boundary component 1.
+!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
+!    
+!    ! Edge 4 of boundary component 1. That is it.
+!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+!                                       rboundaryRegion,rdiscreteBC,&
+!                                       getBoundaryValues_2D)
                              
-    ! Now to the edge 2 of boundary component 1 the domain.
-    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
-                             
-    ! Edge 3 of boundary component 1.
-    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
-    
-    ! Edge 4 of boundary component 1. That is it.
-    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-                                       rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
-                             
-   CALL bcasm_newDirichletBConFBD (rdiscretisation,(/1,2/),&
+   CALL bcasm_newDirichletBConFBD (rdiscretisation,(/1/),&
        rdiscreteFBC,getBoundaryValuesFBC_2D)
                              
                              
@@ -308,6 +328,7 @@ contains
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
 
     ! Create a BiCGStab-solver. Attach the above filter chain
     ! to the solver, so that the solver automatically filters
@@ -317,6 +338,7 @@ contains
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 2
+    
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
@@ -342,6 +364,7 @@ contains
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
+    p_rsolverNode%nmaxIterations = 1000
     call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
     
     ! That is it, rvectorBlock now contains our solution. We can now
@@ -352,11 +375,31 @@ contains
     if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
 
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       trim(sucddir)//'/u2d_0_simple.gmv')
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       trim(sucddir)//'/u2d_0_simple.vtk')
     
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
     call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
+    
+    call ppgrd_calcGradient (rvectorBlock%RvectorBlock(1),rgradient)
+    call lsyssc_getbase_double (rgradient%RvectorBlock(1),p_gradx)
+    call lsyssc_getbase_double (rgradient%RvectorBlock(2),p_grady)
+    
+    call storage_getbase_double2D (rtriangulation%h_DvertexCoords,&
+        p_DvertexCoords)
+
+    
+    do i = 1, size(p_Ddata)
+         p_Ddata(i) =sqrt( (p_gradx(i)**2) + (p_grady(i)**2) +2*p_Ddata(i) ) -sqrt((p_gradx(i)**2) + (p_grady(i)**2)) 
+    end do
+    
+    call ucd_addVariableVertexBased (rexport,'distance',UCD_VAR_STANDARD, p_Ddata)    
+    
+    do i = 1, size(p_Ddata)
+      call getdistance(p_DvertexCoords(1,i),p_DvertexCoords(2,i),p_Ddata(i))
+    end do
+    
+    call ucd_addVariableVertexBased (rexport,'analytic',UCD_VAR_STANDARD, p_Ddata)        
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
