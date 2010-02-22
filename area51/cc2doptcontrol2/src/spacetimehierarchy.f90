@@ -242,8 +242,9 @@ contains
       ! Initialise the space levels
       icurrent = nspace2
       dcurrentfactor = 0.0_DP
-      do i=ntime2, ntime1,-1
+      do i=rhierarchy%nlevels, 1,-1
         rhierarchy%p_IlevelDef(1,i) = icurrent
+        rhierarchy%p_IlevelDef(2,i) = ntime2-(rhierarchy%nlevels-i)
 
         ! If the current factor overflows, coarsen in space.        
         dcurrentfactor = dcurrentfactor + 1.0_DP/dspacetimeRefFactor
@@ -265,12 +266,12 @@ contains
       ! Initialise the level counter depending on how much levels we have
       rhierarchy%nlevels = min(nspace2-nspace1+1,nmax)
       allocate(rhierarchy%p_IlevelDef(2,rhierarchy%nlevels))
-      rhierarchy%p_IlevelDef(1,:) = (/1:rhierarchy%nlevels/)
 
       ! Initialise the time levels
       icurrent = nspace2
       dcurrentfactor = 0.0_DP
-      do i=nspace2, nspace1,-1
+      do i=rhierarchy%nlevels, 1,-1
+        rhierarchy%p_IlevelDef(2,i) = nspace2-(rhierarchy%nlevels-i)
         rhierarchy%p_IlevelDef(2,i) = icurrent
 
         ! If the current factor overflows, coarsen in time.
