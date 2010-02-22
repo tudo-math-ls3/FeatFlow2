@@ -2931,9 +2931,11 @@ end subroutine
 
       
       
-      call flux_dg_buildVectorScEdge2D_sim (&
-            rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
+      call flux_dg_buildVectorBlEdge2D_sim (&
+!            rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
 !            DsolVals(:,:,1:IELmax-IELset+1),&
+            DfluxValues(:,:,:),&
+            rvectorSol,&
             raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rintSubset,&
