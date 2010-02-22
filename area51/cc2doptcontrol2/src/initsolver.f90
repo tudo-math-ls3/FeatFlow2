@@ -3047,10 +3047,10 @@ contains
     ! local variables
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     logical :: bconvectionExplicit
-    real(DP) :: dequationType,dtstep
+    real(DP) :: dequationType,dtstep,dtheta
     type(t_spatialMatrixDiscrData) :: rmatrixDiscr
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
-    real(dp), dimension(:), pointer :: p_Ddata
+    real(dp), dimension(:), pointer :: p_DdataB,p_DdataX
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     
 !    ! If the following constant is set from 1.0 to 0.0, the primal system is
@@ -3070,12 +3070,14 @@ contains
     dprimalDualCoupling = rsettings%rdebugFlags%dprimalDualCoupling
     ddualPrimalCoupling = rsettings%rdebugFlags%ddualPrimalCoupling
     dtimeCoupling = rsettings%rdebugFlags%dtimeCoupling
+    dtheta = rtimediscr%dtheta
     
     ! Create two temp vectors representing the first timestep.
     p_rspaceDiscr => rx%p_rblockDiscr
         
     ! DEBUG!!!
-    call lsysbl_getbase_double (rb,p_Ddata)
+    call lsysbl_getbase_double (rb,p_DdataB)
+    call lsysbl_getbase_double (rx,p_DdataX)
 
     ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
     ! of the spatial matrix.
@@ -3112,7 +3114,7 @@ contains
       
     call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
     rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-    rnonlinearSpatialMatrix%Dtheta(1,1) = 1.0_DP
+    rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
     
     if (.not. bconvectionExplicit) then
       rnonlinearSpatialMatrix%Dgamma(1,1) = real(1-rsettings%rphysicsPrimal%iequation,DP)
