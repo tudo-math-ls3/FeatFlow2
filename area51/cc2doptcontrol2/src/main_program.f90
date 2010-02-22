@@ -1065,11 +1065,15 @@ contains
 !</subroutine>
 
     logical :: bexists
+    character(LEN=SYS_STRLEN) :: smaster
     
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault=trim(DIR_DATA)//'/data/master.dat')
+
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a
     ! couple of files.
-    inquire(file=trim(DIR_DATA)//'/master.dat', exist=bexists)
+    inquire(file=smaster, exist=bexists)
     
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
