@@ -3225,9 +3225,9 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x*(16-x)
             !      c_analytic = x+y+z
-            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + 2_DP + 2_DP + convecRelaxation*(1_DP-2_DP*x) & 
-								    + convecRelaxation*(1_DP-2_DP*y) & 
-								    + convecRelaxation*(1_DP-2_DP*z) )            
+            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + 2_DP + 2_DP + convecRelaxation*(2_DP-2_DP*x) & 
+								    + convecRelaxation*(2_DP-2_DP*y) & 
+								    + convecRelaxation*(2_DP-2_DP*z) )            
 
             !16_DP + 2*x) )
             !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
@@ -3336,63 +3336,44 @@ END IF
     
     ! This array contains the output of the FE evaluations, e.g. the values which
     ! we ' ll deriving the Dvalues with 
-    real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl1, DvaluesFevl2
+!     real(DP), dimension(:,:,:) , allocatable :: DvaluesFevl1, DvaluesFevl2
 
     ! This is the vector which is of interest
-    type(t_vectorScalar):: rvector, ranalytCell
+!     type(t_vectorScalar):: rvector, ranalytCell
 
     real(DP) :: PHI
     ! some variables for error-ctrl
-    real(DP) :: error_max, error
+!     real(DP) :: error_max, error
     
     PHI = rcollection%DquickAccess(1)
     
 !     rvector = collct_getvalue_vecsca (rcollection, "cbvector1",0,'')
-    ranalytCell = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
+!     ranalytCell = collct_getvalue_vecsca (rcollection, "cbvector2",0,'')
 
     ! Alllocate some memory for the array, since it'll be written by
     ! the fevl calls
 !     allocate(DvaluesFevl1(1,npointsPerElement , nelements))
-    allocate(DvaluesFevl2(1,npointsPerElement , nelements))
-
-    ! Fetching the values of rvector in the cubature pts.
-!     call fevl_evaluate_sim4(rvector, &
-!                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl1, 1)
-    call fevl_evaluate_sim4(ranalytCell, &
-                                 rdomainIntSubset, DER_FUNC3D, DvaluesFevl2, 1)
-    error_max = 0_DP
+!     allocate(DvaluesFevl2(1,npointsPerElement , nelements))
+! 
+!     ! Fetching the values of rvector in the cubature pts.
+! !     call fevl_evaluate_sim4(rvector, &
+! !                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl1, 1)
+!     call fevl_evaluate_sim4(ranalytCell, &
+!                                  rdomainIntSubset, DER_FUNC3D, DvaluesFevl2, 1)
+!     error_max = 0_DP
     ! laplacian
     DO iel = 1, nelements
         DO icub = 1, npointsPerElement
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
             z=Dpoints(3,icub,iel)
-            
-            ! For the c^2 test-case
-            ! eg. u_analytic = (16-x)
-            !      c_analytic = x*x+y+z
-!             Dcoefficients(1,icub,iel) = ( -2 + (x**2 + y + z) - PHI*(16_DP - x) )
-            ! For the linear test-case
-            ! eg. u_analytic = (16-x)
-            !      c_analytic = x+y+z
-!             Dcoefficients(1,icub,iel) = - ( -(x + y + z) + PHI*(16_DP - x) )
-            ! For the andriy test-case
-            ! eg. u_analytic = x * (16-x)
-            !      c_analytic = x+y+z
-!             error = DvaluesFevl2(1,icub, iel) - DvaluesFevl1(1,icub, iel)
-!             if (abs(error) >= abs(error_max)) then 
-!                 error_max = error 
-!             end if
-            !Dcoefficients(1,icub,iel) = (x + y + z) -PHI* DvaluesFevl2(1,icub, iel)
-            Dcoefficients(1,icub,iel) = (x + y + z) - PHI*(x*(1_DP - x) + y*(1_DP - y) + z*(1_DP - z))
 
-            !Dcoefficients(1,icub,iel) = - ( -(x + y + z) )
-            !Dcoefficients(1,icub,iel) = -(-2*y*(y-16_DP)*z*(z-16_DP)- & 
-            !                            2*x*(x-16_DP)*z*(z-16_DP)- & 
-            !                            2*x*(x-16_DP)*y*(y-16_DP) + &
-            ! -1c                                        
-            !                            x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP))
-            !Dcoefficients(1,icub,iel) = x + y + z + x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)                                        
+
+!             Dcoefficients(1,icub,iel) = (x + y + z) - PHI*(x*(1_DP - x) + y*(1_DP - y) + z*(1_DP - z))
+!             RS: for the 16-cube...
+            Dcoefficients(1,icub,iel) = userPresc_chemoSol( x, y, z ) - &
+                                                  PHI*userPresc_cellsSol( x, y, z )
+
         END DO
     END DO
 
@@ -3401,7 +3382,7 @@ END IF
 !             print*,'############################################################################'
 
 !     deallocate(DvaluesFevl1)
-    deallocate(DvaluesFevl2)
+!     deallocate(DvaluesFevl2)
  
   end subroutine
   !end of coeff_hillenX_RHS_rfc
@@ -6701,7 +6682,7 @@ END IF
     integer :: icub, iel
 
     DO iel = 1, nelements
-        DO icub = 1, npointsPerElement             
+        DO icub = 1, npointsPerElement
             ! For the linear test-case
             ! eg. u_analytic = (16-x)
             !      c_analytic = x+y+z
@@ -6709,9 +6690,8 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
-            Dvalues( icub, iel ) = Dpoints(1,icub,iel)*( 1_DP - Dpoints(1,icub,iel)) & 
-				 + Dpoints(2,icub,iel)*( 1_DP - Dpoints(2,icub,iel)) & 
-				 + Dpoints(3,icub,iel)*( 1_DP - Dpoints(3,icub,iel))	
+            Dvalues( icub, iel ) = userPresc_cellsInitCond( Dpoints(1,icub,iel), & 
+				            Dpoints(2,icub,iel), Dpoints(3,icub,iel) )	
         END DO
     END DO
   end subroutine
@@ -6802,11 +6782,12 @@ END IF
     integer :: icub, iel
 
     DO iel = 1, nelements
-        DO icub = 1, npointsPerElement             
+        DO icub = 1, npointsPerElement
                 !RS: c^2 test-case
 !             Dvalues(icub, iel) = Dpoints(1,icub,iel)**2+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
                 !RS: andriy and linear test-case
-            Dvalues(icub, iel) = Dpoints(1,icub,iel) + Dpoints(2,icub,iel) + Dpoints(3,icub,iel)
+            Dvalues(icub, iel) = userPresc_chemoattrInitCond( Dpoints(1,icub,iel),&
+                                         Dpoints(2,icub,iel), Dpoints(3,icub,iel) )
         END DO
     END DO
   end subroutine
@@ -6814,6 +6795,25 @@ END IF
   !!!!! end of  analyt_c_pattern functions !!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! ***************************************************************************
+        function userPresc_cellsSol(x,y,z) result (func_result)
+        ! This function returns the analytical solution for assembling 
+        ! the RHSs, BCs ect.
+            real(DP) :: x,y,z
+            real(DP) :: func_result
+
+            func_result = x*(2_DP-x) + y*(2_DP-y) + z*(2_DP-z) 
+
+        end function userPresc_cellsSol
+
+        function userPresc_chemoSol(x,y,z) result (func_result)
+        ! This function returns the analytical solution for assembling 
+        ! the RHSs, BCs ect.
+            real(DP) :: x,y,z
+            real(DP) :: func_result
+
+            func_result = x + y + z
+
+        end function userPresc_chemoSol
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !!!!! User prescribed function for setting initial conditions for cells !!!!!
@@ -6837,7 +6837,7 @@ END IF
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
         !!!func_result = x*(16_DP-x)
-        func_result = x*(1_DP-x) + y*(1_DP-y) + z*(1_DP-z) 
+        func_result = x*(2_DP-x) + y*(2_DP-y) + z*(2_DP-z) 
         
         !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
 
@@ -6964,8 +6964,12 @@ END IF
   real(DP), dimension(:), intent(out)            :: Dvalues
 !</output>
   
+    real(DP) :: x, y, z
 !</subroutine>
 
+    x = Dcoords(1)
+    y = Dcoords(2)
+    z = Dcoords(3)
     ! Return zero Dirichlet boundary values for all situations.
     
     !!!!! set boundary conditions to nothins !!!!!
@@ -6978,9 +6982,7 @@ END IF
     ! For the andriy test-case
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
-    Dvalues(1) = Dcoords(1)*( 1_DP - Dcoords(1) ) & 
-	       + Dcoords(2)*( 1_DP - Dcoords(2) ) & 
-	       + Dcoords(3)*( 1_DP - Dcoords(3) )
+    Dvalues(1) = userPresc_cellsSol( x, y, z )
     !Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
 
   end subroutine    
@@ -7081,7 +7083,7 @@ END IF
     ! For the andriy and linear test-case
     ! eg. u_analytic = x*(16-x) resp. (16-x)
     !      c_analytic = x+y+z
-    Dvalues(1) = Dcoords(1)+Dcoords(2)+Dcoords(3)
+    Dvalues(1) = userPresc_chemoSol( x, y, z )
     !Dvalues(1)=x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
 
   end subroutine
@@ -7157,8 +7159,8 @@ END IF
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
-    integer :: itimedependence
+    real(DP) :: dtime,dtimeMax, x, y, z
+    integer :: itimedependence, icub, iel
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -7172,8 +7174,17 @@ END IF
       dtimeMax = 0.0_DP
     end if
 
+    DO iel = 1,nelements
+        DO icub = 1,npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+
+            Dvalues(icub,iel) = userPresc_chemoSol( x, y, z )
+        END DO
+    END DO
+    
     !Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
-    Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
     
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -7255,8 +7266,8 @@ END IF
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
-    integer :: itimedependence
+    real(DP) :: dtime,dtimeMax, x, y, z
+    integer :: itimedependence, icub, iel
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -7270,9 +7281,16 @@ END IF
       dtimeMax = 0.0_DP
     end if
 
-    Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		 + Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) &
-		 + Dpoints(3,:,:)*(1_DP - Dpoints(3,:,:)) 
+    DO iel = 1,nelements
+        DO icub = 1,npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+
+            Dvalues(icub,iel) = userPresc_cellsSol( x, y, z )
+        END DO
+    END DO
+
     !Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
     
     ! Example:
@@ -7356,8 +7374,8 @@ END IF
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
-    integer :: itimedependence
+    real(DP) :: dtime,dtimeMax, x, y, z
+    integer :: itimedependence, icub, iel
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -7371,16 +7389,27 @@ END IF
       dtimeMax = 0.0_DP
     end if
 
-   IF (cderivative .EQ. DER_FUNC3D) THEN
-     !Dvalues(:,:) = 4.0_DP*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-     Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
-   ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
-     Dvalues(:,:) = 1.0_DP
-   ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
-     Dvalues(:,:) = 1.0_DP
-   ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
-     Dvalues(:,:) = 1.0_DP
-   END IF     
+    DO iel = 1,nelements
+        DO icub = 1,npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+
+            IF (cderivative .EQ. DER_FUNC3D) THEN
+                !Dvalues(:,:) = 4.0_DP*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+                Dvalues(icub,iel) = userPresc_chemoSol( x, y, z )
+            ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
+                Dvalues(icub,iel) = 1.0_DP
+            ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
+                Dvalues(icub,iel) = 1.0_DP
+            ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
+                Dvalues(icub,iel) = 1.0_DP
+            END IF
+
+        END DO
+    END DO
+
+
      
     ! Example:
     ! IF (cderivative .EQ. DER_FUNC) THEN
@@ -7462,8 +7491,8 @@ END IF
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,dtimeMax
-    integer :: itimedependence
+    real(DP) :: dtime,dtimeMax, x, y, z
+    integer :: itimedependence, icub, iel
 
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
@@ -7477,17 +7506,26 @@ END IF
       dtimeMax = 0.0_DP
     end if
 
-   IF (cderivative .EQ. DER_FUNC3D) THEN
-     Dvalues(:,:) = Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		  + Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) &
- 		  + Dpoints(3,:,:)*(1_DP - Dpoints(3,:,:))  
-   ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
-     Dvalues(:,:) = 1_DP - 2*Dpoints(1,:,:)
-   ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
-     Dvalues(:,:) = 1_DP - 2*Dpoints(2,:,:)
-   ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
-     Dvalues(:,:) = 1_DP - 2*Dpoints(3,:,:)
-   END IF     
+    DO iel = 1,nelements
+        DO icub = 1,npointsPerElement
+            x=Dpoints(1,icub,iel)
+            y=Dpoints(2,icub,iel)
+            z=Dpoints(3,icub,iel)
+
+            IF (cderivative .EQ. DER_FUNC3D) THEN
+                Dvalues(icub,iel) = userPresc_cellsSol( x, y, z )
+            ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
+                Dvalues(icub,iel) = 2_DP - 2*Dpoints(1,icub,iel)
+            ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
+                Dvalues(icub,iel) = 2_DP - 2*Dpoints(2,icub,iel)
+            ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
+                Dvalues(icub,iel) = 2_DP - 2*Dpoints(3,icub,iel)
+            END IF
+
+        END DO
+    END DO
+
+
 
     !Dvalues(:,:) = Dpoints(1,:,:)*(16_DP - Dpoints(1,:,:))
     !Dvalues(:,:) = Dpoints(1,:,:)+Dpoints(2,:,:)+Dpoints(3,:,:)
