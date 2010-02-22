@@ -1078,7 +1078,7 @@ contains
     if (bexists) then
       ! Read the master file. That either one contains all parameters or
       ! contains references to subfiles with data.
-      call parlst_readfromfile (rparamList, trim(DIR_DATA)//'/master.dat',trim(DIR_DATA))
+      call parlst_readfromfile (rparamList, trim(smaster),trim(DIR_DATA))
     else
       call output_line("Master file not found: "//trim(smaster),&
           OU_CLASS_WARNING,ssubroutine='main_getDat')
