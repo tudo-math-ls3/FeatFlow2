@@ -5,11 +5,13 @@
 nlmax = 5
 
 # Name of the parametrisation file
+#prmname = ./pre/BADQUAD.prm
 prmname = ./pre/QUAD.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 
 # Name of the triangulation file
+#triname = ./pre/BADQUAD.tri
 triname = ./pre/QUAD.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
@@ -28,7 +30,7 @@ FEkind = 2
 dt = 0.001
 
 # Final time
-ttfinal = 0.01
+ttfinal = 0.2
 
 
 [SOLVER]

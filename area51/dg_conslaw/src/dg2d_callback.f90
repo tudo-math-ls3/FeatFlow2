@@ -1296,6 +1296,8 @@ contains
         
         Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
                  exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+          
+          !Dcoefficients (1,ipoint,iel)=1.0_dp
         else
         Dcoefficients (1,ipoint,iel)=0.0_dp
         end if
@@ -1843,8 +1845,14 @@ contains
     
       ! Set initial condition on the boundary
       if ((dx<0.00001).or.(dx>0.99999).or.(dy<0.00001).or.(dy>0.99999)) then
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
-        !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.05_dp,0.0_dp,0.0_dp/)
+        ! Riemann BC
+        !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
+        !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
+        
+        ! Reflecting BC
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
       end if
       
     
@@ -1865,11 +1873,17 @@ contains
       
       ! First calculate flux in x-direction
       DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
-                   matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
+                   normal(1,iel)*matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
+                   !sign(1.0_dp,normal(1,iel))*matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
+      
+      !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
       
       ! First calculate flux in y-direction
       DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
-                   matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
+                   normal(2,iel)*matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
+                   !sign(1.0_dp,normal(2,iel))*matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
+      
+      !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
                    
       ! Add the fluxes of the two dimensional directions to get Flux * normal
       DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
@@ -1877,7 +1891,7 @@ contains
       ! Save the calculated flux
       DfluxValues(:,1,ipoint,iel) = DFlux
       
-!      ! *** centered flux ***
+!!      ! *** centered flux ***
 !      DFx= 0.5_dp*(DF1i+DF1a)
 !      DFy= 0.5_dp*(DF2i+DF2a)
 !      
