@@ -1,10 +1,13 @@
 module dg2d_problem
 
 
-  real(dp), parameter :: g = 9.81
-    
+  use fsystem
+  use storage
 
   implicit none
+  
+  real(dp), parameter :: g = 9.81
+
     
 
 contains
@@ -24,7 +27,7 @@ contains
     real(DP)		:: whl, whr, denom, hl, hr
 
     ! Choose kind of mean value
-    integer, parameter :: mvk = 1
+    integer, parameter :: mvk = 0
 
 
     select case (mvk)
@@ -63,9 +66,6 @@ contains
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: q
 
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
-
     integer, intent(IN)                     :: d
 
     ! primitive variables
@@ -73,14 +73,14 @@ contains
 
     ! Calculate primitive variables
     h=Q(1)
-    if (h<clipwater) then
-      h=0.0_dp
-      u=0.0_dp
-      v=0.0_dp
-    else
+!    if (h<clipwater) then
+!      h=0.0_dp
+!      u=0.0_dp
+!      v=0.0_dp
+!    else
       u=Q(2)/Q(1)
       v=Q(3)/Q(1)
-    end if
+!    end if
 
     if (d==1) then
        ! build Jacobi matrix in x direction
@@ -119,9 +119,6 @@ contains
 
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
-
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
 
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
@@ -179,9 +176,6 @@ contains
 
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
-
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
 
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
@@ -242,9 +236,6 @@ contains
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
 
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
-
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
 
@@ -301,9 +292,6 @@ contains
 
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
-
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
 
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
@@ -364,9 +352,6 @@ contains
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
 
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
-
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
 
@@ -378,14 +363,14 @@ contains
 
     ! Calculate primitive variables
     h=Q(1)
-    if (h<clipwater) then
-      h = 0.0_dp
-      u = 0.0_dp
-      v = 0.0_dp
-    else
+!    if (h<clipwater) then
+!      h = 0.0_dp
+!      u = 0.0_dp
+!      v = 0.0_dp
+!    else
       u = Q(2)/Q(1)
       v = Q(3)/Q(1)
-    end if
+!    end if
 
     ! compute c = sqrt(g*h)
     c = sqrt(g*h)
@@ -416,9 +401,6 @@ contains
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
 
-    ! The gravitational konstant
-    real(DP), intent(IN)		        	:: g
-
     ! the direction: d=1: x-direction, d=2: y-direction
     integer, intent(IN)                     :: d
 
@@ -437,10 +419,10 @@ contains
     !c = sqrt(g*h)
 
     ! Test for dry bed case
-     if (Q(1)<clipwater) then
-        !dry bed case
-        Flux=0
-     else
+!     if (Q(1)<clipwater) then
+!        !dry bed case
+!        Flux=0
+!     else
        !wet bed case
        if (d==1) then
           ! build Flux in x direction
@@ -453,7 +435,7 @@ contains
           Flux(2) = Q(2)*Q(3)/Q(1)
           Flux(3) = Q(3)*Q(3)/Q(1)+0.5_DP*g*Q(1)*Q(1)
        end if
-     end if ! dry or wet bed
+!     end if ! dry or wet bed
   end function buildFlux
 
     

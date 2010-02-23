@@ -91,6 +91,7 @@ module poisson2d_callback
   use feevaluation
   use domainintegration
   use fparser
+  use dg2d_problem
   
   implicit none
 
@@ -1289,7 +1290,15 @@ contains
         ! Parser from .dat-file
         !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
         
+        ! Wasser-Hügel
         
+        if (rcollection%IquickAccess(1)==1) then
+        
+        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+        else
+        Dcoefficients (1,ipoint,iel)=0.0_dp
+        end if
         
       end do
     end do
@@ -1297,7 +1306,7 @@ contains
     ! Release the function parser
     call fparser_release(rfparser)
                     
-    Dcoefficients (1,:,:) = 0.0_dp
+    !Dcoefficients (1,:,:) = 0.0_dp
 
   end subroutine
 
@@ -1792,8 +1801,10 @@ contains
   
   real(dp), dimension(3) :: DQi, DQa, DQroe, DFi, DFa, DFlux
   integer :: ivar, iel, ipoint
-  ! Dsolutionvalues(2 sides, ialbet, ncubp, NEL, nvar)
-  real(dp), dimension(:,:,:,:,:), allocatable :: Dsolutionvalues
+  ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
+  real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
+  real(dp) :: dx, dy
+  real(dp), dimension(3) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
   
   
   
@@ -1804,16 +1815,16 @@ contains
 
   ! Get solution values (or its derivatives)
   ! DfluxValues(nvar,ialbet,ncubp,NEL)
-  ! Dsolutionvalues(2 sides, ialbet, ncubp, NEL, nvar)
-  allocate(Dsolutionvalues(2,ubound(DfluxValues,2),ubound(DfluxValues,3),ubound(DfluxValues,4),ubound(DfluxValues,1)))
+  ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
+  allocate(Dsolutionvalues(2,ubound(DfluxValues,3),ubound(DfluxValues,4),ubound(DfluxValues,1)))
   
   do ivar = 1, size(DfluxValues,1)
 
     ! Get values on the one side of the edge
-    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
                              rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
     ! Get values on the other side of the edge                               
-    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(1), &
+    call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
                              rIntSubset(2), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 2)
    end do
                
@@ -1822,9 +1833,9 @@ contains
 
   
   
-  do iel = 1, ubound(Dcoefficients,2)
+  do iel = 1, ubound(DfluxValues,4)
   
-    do ipoint= 1, ubound(Dcoefficients,1)
+    do ipoint= 1, ubound(DfluxValues,3)
       
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
@@ -1832,15 +1843,15 @@ contains
     
       ! Set initial condition on the boundary
       if ((dx<0.00001).or.(dx>0.99999).or.(dy<0.00001).or.(dy>0.99999)) then
-        Dsolutionvalues(2,1,ubound(Dcoefficients,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
       end if
       
     
       ! *** Upwind flux ***
       
       ! Get solution values on the in and outside
-      DQi = Dsolutionvalues(1,1,icubp,iel,:)
-      DQa = Dsolutionvalues(2,1,icubp,iel,:)
+      DQi = Dsolutionvalues(1,ipoint,iel,:)
+      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
       
       ! Get fluxes on the in and outside in x- and y-direction
       DF1i = buildFlux(DQi,1)
@@ -1852,18 +1863,29 @@ contains
       DQroe = calculateQroe(DQi,DQa)
       
       ! First calculate flux in x-direction
-      DFx= 0.5_dp*(DF1i+DF1a - ! centered part
-                   matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1))*(dQa-dQi) ) ! artificial diffusion
+      DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
+                   matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
       
       ! First calculate flux in y-direction
-      DFy= 0.5_dp*(DF2i+DF2a - ! centered part
-                   matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2))*(dQa-dQi) ) ! artificial diffusion
+      DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
+                   matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
                    
       ! Add the fluxes of the two dimensional directions to get Flux * normal
       DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
       
       ! Save the calculated flux
-      DfluxValues(:,1,icubp,iel)
+      DfluxValues(:,1,ipoint,iel) = DFlux
+      
+      ! *** centered flux ***
+      DFx= 0.5_dp*(DF1i+DF1a)
+      DFy= 0.5_dp*(DF2i+DF2a)
+      
+      ! Add the fluxes of the two dimensional directions to get Flux * normal
+      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+      
+      ! Save the calculated flux
+      DfluxValues(:,1,ipoint,iel) = DFlux
+      
       
     end do ! ipoint
   end do ! iel
@@ -1877,5 +1899,151 @@ contains
   
   
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+   ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine flux_sys (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
+  
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(3) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+    
+    nvar2d = 3
+    
+    rdomainIntSubset%ielementDistribution = 1
+    
+    ! Which variable (of the system) we are at
+    currentvar = rcollection%IquickAccess(1)
+    
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+    
+    ! Allocate space for the solution values ! (# of terms, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(nterms,size(Dpoints,2),size(Dpoints,3),nvar2d))
+    
+    ! First evaluate the solution in each point
+    do ivar = 1, nvar2d
+      call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
+                                 rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+    end do  
+    
+!call    lsyssc_getbase_double(rcollection%p_rvectorQuickAccess1%RvectorBlock(3),p_ddata)
+!    write(*,*) p_ddata
+                               
+                                 
+
+    
+    do iel = 1, size(Dcoefficients,3)
+      do ipoint = 1, size(Dcoefficients,2)
+      
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+        
+        dQ = DsolutionValues(1,ipoint,iel,:)
+        !write(*,*) dQ
+        
+        DFx = buildFlux(dQ,1)
+        DFy = buildFlux(dQ,2)
+        
+        Dcoefficients (1,ipoint,iel) = DFx(currentvar)
+        Dcoefficients (2,ipoint,iel) = DFy(currentvar)
+        
+      end do
+    end do
+    
+    deallocate(DsolutionValues)
+    
+  end subroutine
+  
+  
+  
+  
 
 end module

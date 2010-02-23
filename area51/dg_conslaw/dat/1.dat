@@ -2,31 +2,33 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 6
 
 # Name of the parametrisation file
-#prmname = ./pre/QUAD.prm
-prmname = ./pre/RECT2x1.prm
+prmname = ./pre/QUAD.prm
+#prmname = ./pre/RECT2x1.prm
+#prmname = ./pre/QUAD4x4.prm
 
 # Name of the triangulation file
-#triname = ./pre/QUAD.tri
-triname = ./pre/RECT2x1.tri
+triname = ./pre/QUAD.tri
+#triname = ./pre/RECT2x1.tri
+#triname = ./pre/QUAD4x4.tri
 
 # What kind of finite elements do we use?
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 2
+FEkind = 3
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.01
+dt = 0.001
 
 # Final time
-ttfinal = 0.5
+ttfinal = 0.05
 
 
 [SOLVER]

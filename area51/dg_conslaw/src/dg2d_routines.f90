@@ -2286,7 +2286,7 @@ end subroutine
 
 !<inputoutput>
   ! The linear form vector. Calculated entries are imposed to this vector.
-  type(t_vectorScalar), intent(inout) :: rvectorBlock
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
 !</inputoutput>
 
 !</subroutine>
@@ -2338,7 +2338,7 @@ end subroutine
 
   ! Set pointers for quicker access
   p_rboundary => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%p_rboundary
-  p_rtriangulation => rvectorScalar%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
+  p_rtriangulation => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation
     
   ! Do we have a uniform triangulation? Would simplify a lot...
   if (rvectorBlock%RvectorBlock(1)%p_rspatialDiscr%ccomplexity .eq. SPDISC_UNIFORM) then 
@@ -2505,7 +2505,7 @@ end subroutine
     real(DP) :: dval1, dval2
     integer(I32) :: cevaluationTag
     type(t_linfVectorAssembly), dimension(2), target :: rlocalVectorAssembly
-    type(t_domainIntSubset), dimension(2), allocatable :: rintSubset
+    type(t_domainIntSubset), dimension(2) :: rintSubset
     real(DP), dimension(:), pointer :: p_Domega
     real(DP), dimension(:,:,:,:), pointer :: p_Dbas
     real(DP), dimension(:,:,:), pointer :: p_Dcoefficients
@@ -2560,7 +2560,7 @@ end subroutine
     real(DP) :: dxl1, dxl2, dyl1, dyl2
     
     ! Space for the values of the flux function
-    real(DP), dimension(:,:,:,:) :: DfluxValues
+    real(DP), dimension(:,:,:,:), allocatable :: DfluxValues
     
     ! The Jacobian matrix of the mapping for each point.
     ! DIMENSION(number of entries in the matrix,npointsPerEl,nelements)
@@ -2587,6 +2587,12 @@ end subroutine
     
     ! Pointer to the data of the different blocks of the output vector
     type(t_dpPointer), dimension(:), allocatable :: p_DoutputData
+    
+    ! Number of elements of the triangulation
+    integer :: NEL
+    
+    ! Number of current variable
+    integer :: ivar
   
   
     ! Copy the assembly data to the local assembly data,
@@ -2605,25 +2611,27 @@ end subroutine
     ! Get number of variables of the system
     nvar = rvector%nblocks
     
+    ! Get number of elements
+    NEL = rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
   
     ! Get pointers to elements at edge
     call storage_getbase_int2D(&
-          rvector%p_rspatialDiscr%p_rtriangulation%h_IelementsAtEdge,&
+          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IelementsAtEdge,&
           p_IelementsAtEdge)
           
     ! Get pointers to the vertex coordinates
     call storage_getbase_double2D(&
-          rvector%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
+          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_DvertexCoords,&
           p_DvertexCoords)
           
     ! Get pointers to vertices at edge
     call storage_getbase_int2D(&
-          rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
+          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IverticesAtEdge,&
           p_IverticesAtEdge)
     
     ! Get pointers to vertices at elements
     call storage_getbase_int2D(&
-          rvector%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
+          rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%h_IverticesAtElement,&
           p_IverticesAtElement)   
     
     ! Get the elements adjacent to the given edges
@@ -2640,7 +2648,7 @@ end subroutine
     end do
     
     ! Get some pointers for faster access
-    call lsyssc_getbase_double (rvector, p_Ddata)
+!    call lsyssc_getbase_double (rvector, p_Ddata)
     indof = rvectorAssembly(1)%indof
     ncubp = rvectorAssembly(1)%ncubp
     NVE = rvectorAssembly(1)%NVE
@@ -2666,8 +2674,8 @@ end subroutine
 !    ! The coordinates of the corner edges of the elements for the transformation
 !    allocate(Dcoords(ndim2d,NVE,rlocalVectorAssembly(1)%nelementsPerBlock))
       
-  ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,NEL)
-  allocate(DfluxValues(nvar,ialbet,ncubp,NEL))
+  ! Allocate space for the flux variables DIM(nvar,ialbet,ncubp,elementsperblock)
+  allocate(DfluxValues(nvar,1,ncubp,rlocalVectorAssembly(1)%nelementsPerBlock))
   
   
    
@@ -2701,7 +2709,7 @@ end subroutine
     allocate(p_DoutputData(nvar))
     
     do ivar = 1, nvar
-      call lsyssc_getbase_double(rvectorBlockSol,p_DoutputData(ivar)%p_Ddata)
+      call lsyssc_getbase_double(rvector%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
     end do
 
     ! Get the type of coordinate system
@@ -2773,9 +2781,9 @@ end subroutine
       !
       ! More exactly, we call dof_locGlobMapping_mult to calculate all the
       ! global DOF`s of our LINF_NELEMSIM elements simultaneously.
-      call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
+      call dof_locGlobMapping_mult( rvectorSol%RvectorBlock(1)%p_rspatialDiscr, &
           IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%p_Idofs)
-      call dof_locGlobMapping_mult(rvector%p_rspatialDiscr, &
+      call dof_locGlobMapping_mult( rvectorSol%RvectorBlock(1)%p_rspatialDiscr, &
           IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%p_Idofs)
                                    
       ! -------------------- ELEMENT EVALUATION PHASE ----------------------
@@ -2797,12 +2805,12 @@ end subroutine
       ! coordinates of the points on the cells.
       call elprep_prepareSetForEvaluation (&
           rlocalVectorAssembly(1)%revalElementSet,&
-          cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+          cevaluationTag,  rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation, &
           IelementList(1,IELset:IELmax), rlocalVectorAssembly(1)%ctrafoType, &
           DpointsRef=DpointsRef(:,:,:,1))
       call elprep_prepareSetForEvaluation (&
           rlocalVectorAssembly(2)%revalElementSet,&
-          cevaluationTag, rvector%p_rspatialDiscr%p_rtriangulation, &
+          cevaluationTag,  rvectorSol%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation, &
           IelementList(3,IELset:IELmax), rlocalVectorAssembly(2)%ctrafoType, &
           DpointsRef=DpointsRef(:,:,:,2))
           
@@ -2934,7 +2942,7 @@ end subroutine
       call flux_dg_buildVectorBlEdge2D_sim (&
 !            rlocalVectorAssembly(1)%p_Dcoefficients(1,:,1:IELmax-IELset+1),&
 !            DsolVals(:,:,1:IELmax-IELset+1),&
-            DfluxValues(:,:,:),&
+            DfluxValues(:,:,:,1:IELmax-IELset+1),&
             rvectorSol,&
             raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
@@ -2961,7 +2969,7 @@ end subroutine
         ! the large solution vector.
         
         ! Clear the output vector.
-        DlocalData(1:2,1:indof) = 0.0_DP
+        DlocalData(1:nvar,1:2,1:indof) = 0.0_DP
 
         ! Get the length of the edge. Let us use the parameter values
         ! on the boundary for that purpose; this is a more general
@@ -3026,7 +3034,7 @@ end subroutine
               ! contribution in the local array.
               
               DlocalData(:,1,idofe) = DlocalData(:,1,idofe)+&
-                                    rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux1(:,1)
+                                    rlocalVectorAssembly(1)%p_Dbas(idofe,ia,icubp,iel)*daux(:,1)
               
 !              if(IelementList(2,IELset+iel-1).ne.0) then
 !                DlocalData(2,idofe) = DlocalData(2,idofe)+&
@@ -3034,7 +3042,7 @@ end subroutine
 !              end if
                     
               DlocalData(:,2,idofe) = DlocalData(:,2,idofe)+&
-                                    rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux2(:,2)*&
+                                    rlocalVectorAssembly(2)%p_Dbas(idofe,ia,icubp,iel)*daux(:,2)*&
                                     real(min(1,IelementList(2,IELset+iel-1)))
               
              

@@ -16,7 +16,7 @@
 program dg
 
   use dg2d_method0_simple
-!  use dg2d_systems
+  use dg2d_systems
 
   implicit none
 

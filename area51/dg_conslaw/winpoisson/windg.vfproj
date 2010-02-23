@@ -55,8 +55,7 @@
 				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes" PreprocessorDefinitions=""/></FileConfiguration></File>
 		<File RelativePath="..\src\dg2d_problem.f90"/>
 		<File RelativePath="..\src\dg2d_routines.f90"/>
-		<File RelativePath="..\src\dg2d_systems.f90">
-			<FileConfiguration Name="Release|Win32" ExcludedFromBuild="true"/></File>
+		<File RelativePath="..\src\dg2d_systems.f90"/>
 		<File RelativePath="..\src\intf_flux_dg_buildVectorBlEdge2D.inc"/>
 		<File RelativePath="..\src\intf_flux_dg_buildVectorScEdge2D.inc"/></Filter>
 		<Filter Name="3D"/>

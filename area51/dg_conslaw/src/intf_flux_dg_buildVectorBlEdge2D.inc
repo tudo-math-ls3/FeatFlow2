@@ -7,7 +7,7 @@
   
   !<subroutine>
 
-    subroutine flux_dg_buildVectorScEdge2D_sim (&
+    subroutine flux_dg_buildVectorBlEdge2D_sim (&
 !              Dcoefficients,&
 !              DsolVals,&
 			  DfluxValues,&
@@ -43,12 +43,12 @@
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
-  type(t_vectorBlock), intent(in) :: rvectorSol
+  type(t_vectorBlock), intent(in) :: rvectorSolBlock
     
   !</input>
   
   !<output>
-  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+!  real(DP), dimension(:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>
