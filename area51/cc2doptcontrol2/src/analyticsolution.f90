@@ -63,6 +63,7 @@ module analyticsolution
   use genoutput
   use fparser
   use boundary
+  use triangulation
   use basicgeometry
   use derivatives
   use linearsystemscalar
