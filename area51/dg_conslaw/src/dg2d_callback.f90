@@ -1290,7 +1290,7 @@ contains
         ! Parser from .dat-file
         !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
         
-        ! Wasser-Hügel
+        ! Water hill
         
         if (rcollection%IquickAccess(1)==1) then
         
@@ -1844,6 +1844,7 @@ contains
       ! Set initial condition on the boundary
       if ((dx<0.00001).or.(dx>0.99999).or.(dy<0.00001).or.(dy>0.99999)) then
         Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
+        !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.05_dp,0.0_dp,0.0_dp/)
       end if
       
     
@@ -1876,15 +1877,15 @@ contains
       ! Save the calculated flux
       DfluxValues(:,1,ipoint,iel) = DFlux
       
-      ! *** centered flux ***
-      DFx= 0.5_dp*(DF1i+DF1a)
-      DFy= 0.5_dp*(DF2i+DF2a)
-      
-      ! Add the fluxes of the two dimensional directions to get Flux * normal
-      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-      
-      ! Save the calculated flux
-      DfluxValues(:,1,ipoint,iel) = DFlux
+!      ! *** centered flux ***
+!      DFx= 0.5_dp*(DF1i+DF1a)
+!      DFy= 0.5_dp*(DF2i+DF2a)
+!      
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+!      
+!      ! Save the calculated flux
+!      DfluxValues(:,1,ipoint,iel) = DFlux
       
       
     end do ! ipoint

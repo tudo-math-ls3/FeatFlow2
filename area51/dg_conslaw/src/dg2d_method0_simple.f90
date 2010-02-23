@@ -34,7 +34,6 @@ module dg2d_method0_simple
   use ucd
   use pprocerror
   use genoutput
-  use cubature
   use dg2d_routines
   use collection
   use linearalgebra

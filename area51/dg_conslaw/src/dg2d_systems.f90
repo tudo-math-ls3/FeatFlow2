@@ -34,7 +34,6 @@ module dg2d_systems
   use ucd
   use pprocerror
   use genoutput
-  use cubature
   use dg2d_routines
   use collection
   use linearalgebra
@@ -572,79 +571,89 @@ contains
 
     
        
-       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
-       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
+!       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
+!       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
        
        
-!       ! Step 2/3
-!       
-!       ! Create RHS-Vector
-!             
-!       ! First use the dg-function for the edge terms
-!       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!       rcollection%SquickAccess(1) = sinlet
-!       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
-!                                              rrhs,rsolTemp,&
-!                                              raddTriaData,&
-!                                              flux_dg_buildVectorScEdge2D_sim,&
-!                                              rcollection)
-!       call lsyssc_scaleVector (rrhs,-1.0_DP)
-!       ! Then add the convection terms
-!       if(ielementType .ne. EL_DG_T0_2D) then
-!       
-!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!         
-!
-!         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
-!                                       flux,rcollection)
-!         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-!      
-!       end if
-!              
-!       ! Solve for solution update
-!       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-!       
-!       ! Get new temp solution
-!       call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
-!       call lsyssc_vectorLinearComb (rsol,rsolUp,0.75_DP,0.25_DP,rsoltemp)
-!       
+       ! Step 2/3
+       
+       ! Create RHS-Vector
+             
+       ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       ! Then add the convection terms
+      if(ielementType .ne. EL_DG_T0_2D) then
+       
+       
+         do ivar = 1, nvar2d
+         
+           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+           rcollection%IquickAccess(1) = ivar
+         
+
+           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
+                                         flux_sys,rcollection)
+           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         end do
+                                            
+       end if
+              
+       ! Solve for solution update
+       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       
+       ! Get new temp solution
+       call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
+       call lsysbl_vectorLinearComb (rsolBlock,rsolUpBlock,0.75_DP,0.25_DP,rsoltempBlock)
+       
 !              ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
-!
-!
-!       ! Step 3/3
-!       
-!       ! Create RHS-Vector
-!             
-!       ! First use the dg-function for the edge terms
-!       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!       rcollection%SquickAccess(1) = sinlet
-!       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
-!                                              rrhs,rsolTemp,&
-!                                              raddTriaData,&
-!                                              flux_dg_buildVectorScEdge2D_sim,&
-!                                              rcollection)
-!       call lsyssc_scaleVector (rrhs,-1.0_DP)
-!       ! Then add the convection terms
-!       if(ielementType .ne. EL_DG_T0_2D) then
-!       
-!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!         
-!
-!         call linf_buildVectorScalar2 (rlinformconv, .false., rrhs,&
-!                                       flux,rcollection)
-!         !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-!      
-!       end if
-!              
-!       ! Solve for solution update
-!       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-!       
-!       ! Get new temp solution
-!       call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
-!       call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
-!       
+
+
+       ! Step 3/3
+       
+       ! Create RHS-Vector
+             
+       ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       rcollection%SquickAccess(1) = sinlet
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       ! Then add the convection terms
+      if(ielementType .ne. EL_DG_T0_2D) then
+       
+       
+         do ivar = 1, nvar2d
+         
+           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+           rcollection%IquickAccess(1) = ivar
+         
+
+           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
+                                         flux_sys,rcollection)
+           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         end do
+                                            
+       end if
+              
+       ! Solve for solution update
+       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       
+       ! Get new temp solution
+       call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
+       call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
+       
 !       ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
