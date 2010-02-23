@@ -28,24 +28,13 @@
 
 program poisson
 
-  use poisson1d_method0_simple
-  use poisson1d_method1_mg
   use poisson2d_method0_simple
   use poisson2d_method1_mg
-  use poisson2d_method1_em30
-  use poisson2d_method1_robin
-  use poisson2d_method1_fbc
-  use poisson2d_method1_hadapt
-  use poisson2d_method1_l2prj
-  use poisson2d_method1_prolmat
   use poisson2d_method2
-  use poisson2d_method2_collect
-  use poisson2d_method2_cmsort
   use poisson2d_method2_mg
   use poisson3d_method0_simple
   use poisson3d_method1_mg
   use poisson3d_method1_em30
-  use poisson2d_method1_ncc
 
   implicit none
 
@@ -88,10 +77,10 @@ program poisson
 !  call poisson1d_1_mg
 
   ! Call the problem to solve. Poisson 2D method 1 - simple:
-  call output_lbrk ()
-  call output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
-  call output_line ('-----------------------------------------------------')
-  call poisson2d_0_simple
+!  call output_lbrk ()
+!  call output_line ('Calculating Poisson-2D-Problem with method 0 - simple')
+!  call output_line ('-----------------------------------------------------')
+!  call poisson2d_0_simple
 
 !  ! Call the problem to solve. Poisson 2D method 1 - nonconstant coefficients:
 !  call output_lbrk ()
@@ -164,20 +153,20 @@ program poisson
 !  call output_line ('Calculating Poisson-2D-Problem with method 2 - collection')
 !  call output_line ('---------------------------------------------------------')
 !  call poisson2d_2_collect
-!
+
 !  ! Call the problem to solve. Poisson3D-1:
-!  call output_lbrk ()
-!  call output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
-!  call output_line ('-----------------------------------------------------')
-!  call poisson3d_0_simple
-!
-!  ! Call the problem to solve. Poisson3D-1:
+  call output_lbrk ()
+  call output_line ('Calculating Poisson-3D-Problem with method 0 - simple')
+  call output_line ('-----------------------------------------------------')
+  call poisson3d_0_simple
+
+  ! Call the problem to solve. Poisson3D-1:
 !  call output_lbrk ()
 !  call output_line ('Calculating Poisson-3D-Problem with method 1 - multigrid')
 !  call output_line ('--------------------------------------------------------')
 !  call poisson3d_1_mg
-!
-!  ! Call the problem to solve. Poisson3D-7:
+
+  ! Call the problem to solve. Poisson3D-7:
 !  call output_lbrk ()
 !  call output_line ('Calculating Poisson-3D-Problem with method 1 - EM30')
 !  call output_line ('---------------------------------------------------')

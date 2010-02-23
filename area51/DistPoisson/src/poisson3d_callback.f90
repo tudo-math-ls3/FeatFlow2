@@ -234,13 +234,7 @@ contains
       !    u(x,y,z) = 64*x*(1-x)*y*(1-y)*z*(1-z)
       ! => f(x,y,z) = 128 * ( y*(1-y)*z*(1-z)
       !             + x*(1-x)*z*(1-z) + x*(1-x)*y*(1-y))
-      Dcoefficients(1,:,:) = 128.0_DP * &
-          ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))*&
-              Dpoints(3,:,:)*(1.0_DP-Dpoints(3,:,:)) + &
-            Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*&
-              Dpoints(3,:,:)*(1.0_DP-Dpoints(3,:,:)) + &
-            Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*&
-              Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)))
+      Dcoefficients(1,:,:) = 1.0_dp
           
 
   end subroutine
@@ -617,6 +611,133 @@ contains
     ! Return zero Dirichlet boundary values for all situations.
     Dvalues(1) = 0.0_DP
 
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getBoundaryValuesFBC_3D(Icomponents,rdiscretisation,&
+                                     Revaluation, rcollection)
+  
+  use collection
+  use spatialdiscretisation
+  use discretefbc
+  
+!<description>
+  ! This subroutine is called during the discretisation of boundary
+  ! conditions on fictitious boundary components. It calculates a special quantity 
+  ! on the boundary, which is then used by the discretisation routines to 
+  ! generate a discrete 'snapshot' of the (actually analytic) boundary conditions.
+  !
+  ! The routine must calculate the values on all elements of the element
+  ! list Ielements simultaneously. Iwhere is a list with vertex or edge numbers
+  ! where information is to be retrieved. Dvalues is filled with function values
+  ! while Binside is set to TRUE for every vertex/edge that is inside of the
+  ! corresponding fictitious boundary region (identified by rbcRegion).
+!</description>
+  
+!<input>
+  ! Component specifier.
+  ! For Dirichlet boundary: 
+  !   Icomponents(1..SIZE(Icomponents)) defines the number of the solution component,
+  !   the value should be calculated for 
+  !   (e.g. 1=1st solution component, e.g. X-velocity, 
+  !         2=2nd solution component, e.g. Y-velocity,...,
+  !         3=3rd solution component, e.g. pressure)
+  !   Example: Icomponents(:) = [1,2] -> Compute velues for X- and Y-velocity
+  !     (1=x, 2=y component)
+  integer, dimension(:), intent(in)                           :: Icomponents
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_blockDiscretisation), intent(in)                     :: rdiscretisation
+  
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional                 :: rcollection
+
+!</input>
+
+!<inputoutput>
+  ! A t_discreteFBCevaluation structure array that defines what to evaluate, 
+  ! where to evaluate and which accepts the return values.
+  ! This callback routine must check out the cinfoNeeded-entry in this structure
+  ! to find out what to evaluate.
+  ! The other entries in this structure describe where to evaluate.
+  ! The result of the evaluation must be written into the p_Dvalues array entry
+  ! in this structure.
+  !
+  ! The number of structures in this array depend on what to evaluate:
+  !
+  ! For Dirichlet boundary:
+  !   revaluation contains as many entries as Icomponents; every entry in
+  !   Icomponent corresponds to one entry in revaluation
+  !   (so Icomponent(1)=1 defines to evaluate the X-velocity while the 
+  !    values for the X-velocity are written to revaluation(1)\%p_Dvalues;
+  !    Icomponent(2)=2 defines to evaluate the Y-velocity while the values 
+  !    for the Y-velocity are written to revaluation(2)\%p_Dvalues, etc).
+  !
+  type(t_discreteFBCevaluation), dimension(:), intent(inout) :: Revaluation
+!</inputoutput>
+  
+!</subroutine>
+
+      ! local variables
+      real(DP) :: ddistance, dxcenter, dycenter,dzcenter, dradius, dx, dy,eps,dz
+      real(DP), dimension(:,:), pointer :: p_DvertexCoordinates
+      type(t_triangulation), pointer :: p_rtriangulation
+      integer :: ipoint,idx
+      
+      eps=0.016_dp
+      
+      ! Just make sure we are evaluating in the corners.
+      if (Revaluation(1)%cinfoNeeded .ne. DISCFBC_NEEDFUNC) then
+        print *,'FBC: only corner evaluation supported at the moment!'
+        stop
+      end if
+      
+      ! Get the triangulation array for the point coordinates
+      p_rtriangulation => rdiscretisation%RspatialDiscr(1)%p_rtriangulation
+      call storage_getbase_double2d (p_rtriangulation%h_DvertexCoords,&
+                                     p_DvertexCoordinates)
+
+      ! Definition of the circle
+      dxcenter = 0.5
+      dycenter = 0.5
+      dzcenter = 0.5
+      dradius  = 0.2
+      
+      ! Loop through the points where to evaluate:
+      do idx = 1,Revaluation(1)%nvalues
+      
+        ! Get the number of the point to process
+        ipoint = Revaluation(1)%p_Iwhere(idx)
+        
+        ! Get x- and y-coordinate
+        dx = p_DvertexCoordinates(1,ipoint)
+        dy = p_DvertexCoordinates(2,ipoint)
+        dz = p_DvertexCoordinates(3,ipoint)        
+        
+        ! Get the distance to the center
+        ddistance = sqrt( (dx-dxcenter)**2 + (dy-dycenter)**2 + (dz-dzcenter)**2 )
+        ddistance=ddistance-dradius
+        ! Point inside?
+        if(abs(ddistance) .le. eps)then
+        !if(ddistance .le. dradius)then
+        
+          ! Denote in the p_Iinside array that we prescribe a value here:
+          Revaluation(1)%p_Iinside (idx) = 1
+          
+          ! We prescribe 0.0 as Dirichlet value here.
+          Revaluation(1)%p_Dvalues (idx,1) = 0.0_DP
+        
+        end if
+        
+      end do
+
+    
   end subroutine
 
 end module

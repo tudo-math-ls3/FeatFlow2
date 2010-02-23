@@ -61,6 +61,7 @@ module poisson3d_method1_mg
 
     ! A variable describing the discrete boundary conditions.    
     type(t_discreteBC) :: rdiscreteBC
+    type(t_discreteFBC) :: rdiscreteFBC
   
   end type
   
@@ -123,7 +124,7 @@ contains
     ! A filter chain that describes how to filter the matrix/vector
     ! before/during the solution process. The filters usually implement
     ! boundary conditions.
-    type(t_filterChain), dimension(1), target :: RfilterChain
+    type(t_filterChain), dimension(2), target :: RfilterChain
     
     ! One level of multigrid
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
@@ -154,8 +155,8 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMIN = 1
-    NLMAX = 4
+    NLMIN = 2
+    NLMAX = 7
     
     ! Allocate memory for all levels
     allocate(Rlevels(NLMIN:NLMAX))
@@ -290,6 +291,10 @@ contains
       ! Create a t_discreteBC structure where we store all discretised boundary
       ! conditions.
       call bcasm_initDiscreteBC(Rlevels(i)%rdiscreteBC)
+      
+      call bcasm_newDirichletBConFBD (Rlevels(i)%rdiscretisation,(/1/),&
+         Rlevels(i)%rdiscreteFBC,getBoundaryValuesFBC_3D)
+      
 
       ! Create a mesh region describing the mesh`s boundary based on the
       ! nodal-property-array of the current triangulation.
@@ -306,14 +311,18 @@ contains
       ! Hang the pointer into the matrix. That way, these
       ! boundary conditions are always connected to that matrix.
       Rlevels(i)%rmatrix%p_rdiscreteBC => Rlevels(i)%rdiscreteBC
+      Rlevels(i)%rmatrix%p_rdiscreteBCfict => Rlevels(i)%rdiscreteFBC
+      
       
       ! Also implement the boundary conditions into the matrix.
       call matfil_discreteBC (Rlevels(i)%rmatrix)
+      call matfil_discreteFBC (Rlevels(i)%rmatrix)
 
     end do ! level loop
 
     ! Our right-hand-side also needs to know the boundary conditions.
     rrhsBlock%p_rdiscreteBC => Rlevels(NLMAX)%rdiscreteBC
+    rrhsBlock%p_rdiscreteBCfict => Rlevels(NLMAX)%rdiscreteFBC
 
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -329,7 +338,9 @@ contains
     ! vectors/matrix. Call the appropriate vector/matrix filter that
     ! modifies the vectors/matrix according to the boundary conditions.
     call vecfil_discreteBCrhs (rrhsBlock)
+    call vecfil_discreteFBCrhs(rrhsBlock)    
     call vecfil_discreteBCsol (rvectorBlock)
+    call vecfil_discreteFBCrhs(rvectorBlock)    
 
     ! During the linear solver, the boundary conditions are also
     ! frequently imposed to the vectors. But as the linear solver
@@ -338,6 +349,7 @@ contains
     ! So, set up a filter chain that filters the defect vector
     ! during the solution process to implement discrete boundary conditions.
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
+    RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT    
 
     ! Now we have to build up the level information for multigrid.
     !

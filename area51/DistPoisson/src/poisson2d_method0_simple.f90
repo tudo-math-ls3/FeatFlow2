@@ -35,6 +35,7 @@ module poisson2d_method0_simple
   use genoutput
   use pprocgradients
   use poisson2d_callback
+  use vectorio
   
   implicit none
 
@@ -118,7 +119,7 @@ contains
     integer :: ierror,i
     
     ! Error of FE function to reference function
-    real(DP) :: derror
+    real(DP) :: derror,eps,ddistance
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -137,7 +138,7 @@ contains
     ! Ok, let us start. 
     !
     ! We want to solve our Poisson problem on level...
-    NLMAX = 9
+    NLMAX = 6
     call initcurve()
     ! Get the path $PREDIR from the environment, where to read .prm/.tri files 
     ! from. If that does not exist, write to the directory "./pre".
@@ -145,10 +146,10 @@ contains
 
     ! At first, read in the parametrisation of the boundary and save
     ! it to rboundary.
-    call boundary_read_prm(rboundary, trim(spredir)//'/QUAD.prm')
+    call boundary_read_prm(rboundary, trim(spredir)//'/cavity.prm')
         
     ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/QUAD.tri', rboundary)
+    call tria_readTriFile2D (rtriangulation, trim(spredir)//'/cavity.tri', rboundary)
      
     ! Refine it.
     call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
@@ -297,7 +298,6 @@ contains
     rmatrixBlock%p_rdiscreteBCfict => rdiscreteFBC    
     rrhsBlock%p_rdiscreteBCfict => rdiscreteFBC
     
-    
                              
     ! Now we have block vectors for the RHS and the matrix. What we
     ! need additionally is a block vector for the solution and
@@ -400,6 +400,24 @@ contains
     end do
     
     call ucd_addVariableVertexBased (rexport,'analytic',UCD_VAR_STANDARD, p_Ddata)        
+
+    eps=0.016_dp
+    print *,rtriangulation%NVT
+    do i = 1, rtriangulation%NVT
+      
+      call getdistance(p_DvertexCoords(1,i),p_DvertexCoords(2,i),ddistance)
+      
+      ! Point inside?
+      if(abs(ddistance) .le. eps)then
+        p_Ddata(i)=1.0_dp
+        
+      else
+        p_Ddata(i)=0.0_dp
+      end if
+
+    end do
+
+    call ucd_addVariableVertexBased (rexport,'FBM',UCD_VAR_STANDARD, p_Ddata)        
     
     ! Write the file to disc, that is it.
     call ucd_write (rexport)
@@ -413,7 +431,10 @@ contains
     call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
                        getReferenceFunction_2D)
     call output_line ('H1-error: ' // sys_sdEL(derror,10) )
-    
+
+
+
+    call vecio_writeArray_Dble (p_Ddata, 0, 'fbLvl6.txt','(E20.10)')
     ! We are finished - but not completely!
     ! Now, clean up so that all the memory is available again.
     !
