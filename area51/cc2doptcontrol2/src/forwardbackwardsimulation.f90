@@ -60,6 +60,7 @@ module forwardbackwardsimulation
   use basicgeometry
   use element
   use cubature
+  use triangulation
   use linearsystemscalar
   use linearsystemblock
   use filtersupport
