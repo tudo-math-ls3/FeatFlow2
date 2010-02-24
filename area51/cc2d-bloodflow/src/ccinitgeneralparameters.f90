@@ -118,11 +118,16 @@ contains
 
 !<subroutine>
 
-  subroutine cc2d_getDAT (rparamList)
+  subroutine cc2d_getDAT (rparamList, smasterOpt)
   
 !<description>
   ! Reads in all DAT files into the parameter list rparlist
 !</description>
+
+!<input>
+  ! OPTIONAL: Name of the master.dat file
+  character(len=*), intent(in), optional :: smasterOpt
+!</input>
 
 !<inputoutput>
   ! The parameter list where the values of the DAT files should be stored.
@@ -136,8 +141,12 @@ contains
     logical :: bexists
     character(LEN=SYS_STRLEN) :: smaster
     
-    ! Check if a command line parameter specifies the master.dat file.
-    call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+    if (present(smasterOpt)) then
+      smaster = smasterOpt
+    else
+      ! Check if a command line parameter specifies the master.dat file.
+      call sys_getcommandLineArg(1,smaster,sdefault='./data/master.dat')
+    end if
 
     ! Read the file 'master.dat'.
     ! If that does not exist, try to manually read files with parameters from a

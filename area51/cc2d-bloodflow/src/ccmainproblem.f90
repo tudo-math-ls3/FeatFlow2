@@ -89,14 +89,14 @@ contains
 
 !</subroutine>
 
-    ! A problem structure for our problem
-    type(t_problem), pointer :: p_rproblem
-    
+    ! A problem structure for each of our problems
+    type(t_problem), pointer :: p_rproblem, p_rproblemTurbine1
+   
     ! A structure for the solution vector and the RHS vector of the problem.
-    type(t_vectorBlock) :: rvector,rrhs
+    type(t_vectorBlock) :: rvector,rrhs,rvectorTurbine1,rrhsTurbine1
     
     ! A structure for the postprocessing.
-    type(t_c2d2postprocessing) :: rpostprocessing
+    type(t_c2d2postprocessing) :: rpostprocessing,rpostprocessingTurbine1
     
     ! Timer objects for stopping time
     type(t_timer) :: rtimerTotal
@@ -104,139 +104,28 @@ contains
     type(t_timer) :: rtimerMatrixGeneration
     type(t_timer) :: rtimerSolver
     
-    integer :: i
-    
     ! Ok, let us start. 
-    
+
     ! Initialise the timers by zero:
     call stat_clearTimer(rtimerTotal)
     call stat_clearTimer(rtimerGridGeneration)
     call stat_clearTimer(rtimerMatrixGeneration)
     call stat_clearTimer(rtimerSolver)
-
+    
     ! Start the timer
     call stat_startTimer(rtimerTotal)
     
-    ! Allocate memory for the problem structure -- it is rather large!
+    ! Allocate memory for both problem structures
     allocate (p_rproblem)
-    
-    ! Initialise the collection
-    call collct_init (p_rproblem%rcollection)
-    
-    ! Initialise the parameter list object. This creates an empty parameter list.
-    call parlst_init (p_rproblem%rparamList)
-    
-    ! Read parameters from the INI/DAT files into the parameter list. 
-    call cc2d_getDAT (p_rproblem%rparamList)
-    
-    ! Ok, parameters are read in.
-    ! Get the output levels during the initialisation phase and during the program.
-    call cc_initOutput (p_rproblem)
-    
-    ! Print the configuration to the terminal
-    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
-      call output_line ('Parameters:')
-      call output_lbrk ()
-      call parlst_info (p_rproblem%rparamList)
-    end if
-    
-    ! Evaluate these parameters and initialise global data in the problem
-    ! structure for global access.
-    call cc_initParameters (p_rproblem)
-    
-    ! So now the different steps - one after the other.
-    !
-    ! Initialisation
-    !
-    ! Parametrisation & Triangulation
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising parametrisation / triangulation...')
-    end if
-    
-    call stat_startTimer(rtimerGridGeneration)
-    
-    call cc_initParamTriang (p_rproblem)
-    
-    call stat_stopTimer(rtimerGridGeneration)
-    call output_lbrk ()
-    call output_line ("Time for mesh generation: "//&
-      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-      
-    p_rproblem%rstatistics%dtimeGridGeneration = &
-      p_rproblem%rstatistics%dtimeGridGeneration + rtimerGridGeneration%delapsedReal
-    
-    ! Print mesh information
-    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
-      call output_lbrk ()
-      call output_line ('Mesh statistics:')
-      call output_lbrk ()
-      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        call tria_infoStatistics (p_rproblem%RlevelInfo(i)%rtriangulation,&
-            i .eq. p_rproblem%NLMIN,i)
-      end do
-    end if
-    
-    ! Discretisation
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising discretisation...')
-    end if
-    call cc_initDiscretisation (p_rproblem)    
-
-    if (p_rproblem%MSHOW_Initialisation .ge. 2) then
-      call output_lbrk ()
-      call output_line ('Discretisation statistics:')
-      do i=p_rproblem%NLMIN,p_rproblem%NLMAX
-        call output_lbrk ()
-        call output_line ('Level '//sys_siL(i,5))
-        call dof_infoDiscrBlock (p_rproblem%RlevelInfo(i)%rdiscretisation,.false.)
-      end do
-    end if
-    
-    ! And all the other stuff...
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising postprocessing...')
-    end if
-    call cc_initPostprocessing (p_rproblem,rpostprocessing)
-    
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising matrices/vectors...')
-    end if
-    
-    call stat_startTimer(rtimerMatrixGeneration)
-    
-    call cc_allocMatVec (p_rproblem,rvector,rrhs)    
-    
-    call stat_stopTimer(rtimerMatrixGeneration)
-    call output_lbrk ()
-    call output_line ("Time for matrix initialisation: "//&
-      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
-
-    ! On all levels, generate the template matrices used as templates
-    ! for the system matrix (Laplace, B, Mass,...)
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Generating basic matrices...')
-    end if
-    call cc_generateBasicMat (p_rproblem)
-
-    ! Create the solution vector -- zero or read from file.
-    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-      call output_separator (OU_SEP_MINUS)
-      call output_line('Initialising initial solution vector...')
-    end if
-    call cc_initInitialSolution (p_rproblem,rvector)
-
-!!$    ! On finest level, initialise the adaptation structure from file.
-!!$    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
-!!$      call output_separator (OU_SEP_MINUS)
-!!$      call output_line('Initialising mesh adaptation...')
-!!$    end if
-!!$    call cc_initAdaptation (p_rproblem)
-
+    allocate (p_rproblemTurbine1)
+        
+    ! Initialise both problem structures
+    call cc2dinit(p_rproblem, rvector, rrhs,&
+        rpostprocessing, rtimerGridGeneration, rtimerMatrixGeneration,&
+        './data/master.dat')
+    call cc2dinit(p_rproblemTurbine1, rvectorTurbine1, rrhsTurbine1,&
+        rpostprocessing, rtimerGridGeneration, rtimerMatrixGeneration,&
+        './data/master_turbine.dat')
     
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     if (p_rproblem%itimedependence .eq. 0) then
@@ -313,46 +202,25 @@ contains
     
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeSolver = &
-      p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
+        p_rproblem%rstatistics%dtimeSolver + rtimerSolver%delapsedReal
     
     ! (Probably) write (final) solution vector
     call cc_writeSolution (p_rproblem,rvector)
     
-    ! Cleanup
-    call cc_doneMatVec (p_rproblem,rvector,rrhs)
-    call cc_doneBC (p_rproblem)
-    call cc_doneDiscretisation (p_rproblem)
-    call cc_donepostprocessing (rpostprocessing)    
-    call cc_doneParamTriang (p_rproblem)
-    
-    ! Release parameters from the DAT/INI files from the problem structure.
-    call cc_doneParameters (p_rproblem)
-
-    ! Release the parameter list
-    call parlst_done (p_rproblem%rparamList)
-    
-    ! Print some statistical data about the collection - anything forgotten?
-    call output_lbrk ()
-    call output_line ('Remaining collection statistics:')
-    call output_line ('--------------------------------')
-    call output_lbrk ()
-    call collct_printStatistics (p_rproblem%rcollection)
-    
-    ! Finally release the collection and the problem structure.
-    call collct_done (p_rproblem%rcollection)
+    call cc2ddone(p_rproblem, rvector, rrhs, rpostprocessing)
     
     ! Stop the timer
     call stat_stopTimer(rtimerTotal)
-
+    
     ! Gather statistics    
     p_rproblem%rstatistics%dtimeTotal = &
-      p_rproblem%rstatistics%dtimeTotal + rtimerTotal%delapsedReal
+        p_rproblem%rstatistics%dtimeTotal + rtimerTotal%delapsedReal
     
     ! Print the time for the total computation
     call output_lbrk ()
     call output_line ("Total time:                             "//&
         trim(sys_sdL(p_rproblem%rstatistics%dtimeTotal,10)))
-
+    
     call output_line ("Time for initial mesh generation:       "//&
         trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
         
@@ -398,6 +266,207 @@ contains
     ! That is it.    
     deallocate(p_rproblem)
     
-  end subroutine
+  end subroutine cc2dmain
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc2dinit(rproblem, rvector, rrhs, rpostprocessing,&
+      rtimerGridGeneration, rtimerMatrixGeneration, smasterOpt)
+
+!<description>
+  ! This subroutine initialises all structured for the Navier-Stokes solver.
+!</description>
+
+!<input>
+  ! OPTIONAL: Name of the master.dat file
+  character(len=*), intent(in), optional :: smasterOpt
+
+!<inputoutput>
+  ! A problem structure for our problem
+  type(t_problem), intent(inout) :: rproblem
+    
+  ! A structure for the solution vector and the RHS vector of the problem.
+  type(t_vectorBlock), intent(inout) :: rvector,rrhs
+  
+  ! A structure for the postprocessing.
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
+  
+  ! Timer objects for stopping time
+  type(t_timer), intent(inout) :: rtimerGridGeneration
+  type(t_timer), intent(inout) :: rtimerMatrixGeneration
+!</inputoutput>
+
+!</subroutine>
+
+    ! local variable
+    integer :: i
+
+    ! Initialise the collection
+    call collct_init (rproblem%rcollection)
+    
+    ! Initialise the parameter list object. This creates an empty parameter list.
+    call parlst_init (rproblem%rparamList)
+    
+    ! Read parameters from the INI/DAT files into the parameter list. 
+    call cc2d_getDAT (rproblem%rparamList, smasterOpt)
+    
+    ! Ok, parameters are read in.
+    ! Get the output levels during the initialisation phase and during the program.
+    call cc_initOutput (rproblem)
+    
+    ! Print the configuration to the terminal
+    if (rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_line ('Parameters:')
+      call output_lbrk ()
+      call parlst_info (rproblem%rparamList)
+    end if
+    
+    ! Evaluate these parameters and initialise global data in the problem
+    ! structure for global access.
+    call cc_initParameters (rproblem)
+    
+    ! So now the different steps - one after the other.
+    !
+    ! Initialisation
+    !
+    ! Parametrisation & Triangulation
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising parametrisation / triangulation...')
+    end if
+    
+    call stat_startTimer(rtimerGridGeneration)
+    
+    call cc_initParamTriang (rproblem)
+    
+    call stat_stopTimer(rtimerGridGeneration)
+    call output_lbrk ()
+    call output_line ("Time for mesh generation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+      
+    rproblem%rstatistics%dtimeGridGeneration = &
+        rproblem%rstatistics%dtimeGridGeneration + rtimerGridGeneration%delapsedReal
+    
+    ! Print mesh information
+    if (rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Mesh statistics:')
+      call output_lbrk ()
+      do i = rproblem%NLMIN, rproblem%NLMAX
+        call tria_infoStatistics (rproblem%RlevelInfo(i)%rtriangulation,&
+            i .eq. rproblem%NLMIN,i)
+      end do
+    end if
+
+    ! Discretisation
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising discretisation...')
+    end if
+    call cc_initDiscretisation (rproblem)    
+
+    if (rproblem%MSHOW_Initialisation .ge. 2) then
+      call output_lbrk ()
+      call output_line ('Discretisation statistics:')
+      do i = rproblem%NLMIN, rproblem%NLMAX
+        call output_lbrk ()
+        call output_line ('Level '//sys_siL(i,5))
+        call dof_infoDiscrBlock (rproblem%RlevelInfo(i)%rdiscretisation,.false.)
+      end do
+    end if
+    
+    ! And all the other stuff...
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising postprocessing...')
+    end if
+    call cc_initPostprocessing (rproblem, rpostprocessing)
+    
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising matrices/vectors...')
+    end if
+    
+    call stat_startTimer(rtimerMatrixGeneration)
+    
+    call cc_allocMatVec (rproblem, rvector, rrhs)
+    
+    call stat_stopTimer(rtimerMatrixGeneration)
+    call output_lbrk ()
+    call output_line ("Time for matrix initialisation: "//&
+      trim(sys_sdL(rtimerGridGeneration%delapsedReal,10)))
+
+    ! On all levels, generate the template matrices used as templates
+    ! for the system matrix (Laplace, B, Mass,...)
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Generating basic matrices...')
+    end if
+    call cc_generateBasicMat (rproblem)
+
+    ! Create the solution vector -- zero or read from file.
+    if (rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising initial solution vector...')
+    end if
+    call cc_initInitialSolution (rproblem, rvector)
+
+!!$    ! On finest level, initialise the adaptation structure from file.
+!!$    if (rproblem%MSHOW_Initialisation .ge. 1) then
+!!$      call output_separator (OU_SEP_MINUS)
+!!$      call output_line('Initialising mesh adaptation...')
+!!$    end if
+!!$    call cc_initAdaptation (rproblem)
+
+  end subroutine cc2dinit
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc2ddone(rproblem, rvector, rrhs, rpostprocessing)
+
+!<description>
+  ! This subroutine rleases all structures for the Navier-Stokes solver.
+!</description>
+
+!<inputoutput>
+  ! A problem structure for our problem
+  type(t_problem), intent(inout) :: rproblem
+    
+  ! A structure for the solution vector and the RHS vector of the problem.
+  type(t_vectorBlock), intent(inout) :: rvector,rrhs
+  
+  ! A structure for the postprocessing.
+  type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
+!</inputoutput>
+!</subroutine>
+
+    ! Cleanup
+    call cc_doneMatVec (rproblem,rvector,rrhs)
+    call cc_doneBC (rproblem)
+    call cc_doneDiscretisation (rproblem)
+    call cc_donepostprocessing (rpostprocessing)    
+    call cc_doneParamTriang (rproblem)
+    
+    ! Release parameters from the DAT/INI files from the problem structure.
+    call cc_doneParameters (rproblem)
+
+    ! Release the parameter list
+    call parlst_done (rproblem%rparamList)
+    
+    ! Print some statistical data about the collection - anything forgotten?
+    call output_lbrk ()
+    call output_line ('Remaining collection statistics:')
+    call output_line ('--------------------------------')
+    call output_lbrk ()
+    call collct_printStatistics (rproblem%rcollection)
+    
+    ! Finally release the collection and the problem structure.
+    call collct_done (rproblem%rcollection)
+
+  end subroutine cc2ddone
 
 end module
