@@ -94,6 +94,15 @@
 !# 23.) spdiscr_concatBlockDiscr
 !#     -> Concatenates two block discretisation structures to a new
 !#        block discretisation structure.
+!#
+!# 24.) spdisc_isBlockDiscrCompatible
+!#      -> Checks whether two block discretisation structures are compatible
+!#
+!# 25.) spdiscr_isDiscrCompatible
+!#      -> Checks whether two spatial discretisation structures are compatible
+!#
+!# 26.) spdiscr_isElemDistrCompatible
+!#      -> Checks whether two element distribution structures are compatible
 !# </purpose>
 !##############################################################################
 
@@ -422,6 +431,9 @@ module spatialdiscretisation
   public :: spdscr_edgeBlocking2D
   public :: spdscr_releaseEdgeBlocking
   public :: spdiscr_concatBlockDiscr
+  public :: spdiscr_isBlockDiscrCompatible
+  public :: spdiscr_isDiscrCompatible
+  public :: spdiscr_isElemDistrCompatible
 
 contains
 
@@ -2438,6 +2450,191 @@ contains
           rdestDiscr%RspatialDiscr(rsourceDiscr1%ncomponents+i), .true.)
     end do
       
-    end subroutine  
+  end subroutine
+
+  ! ***************************************************************************
   
+!<subroutine>
+
+  subroutine spdiscr_isBlockDiscrCompatible (rdiscr1,rdiscr2,bcompatible)
+
+!<description>
+  ! Checks whether two block discretisations are compatible to each other.
+  ! Two block discretisations are compatible if
+  ! - they have the same dimension,
+  ! - they have the same complexity,
+  ! - they have the same number of components,
+  ! - they have the same structure of spatial discretisations
+!</description>
+  
+!<input>
+  ! The first block discretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscr1
+  
+  ! The second block discretisation
+  type(t_blockDiscretisation), intent(in) :: rdiscr2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether the block discretisations are compatible or not.
+  ! If not given, an error will inform the user if the two block
+  ! discretisations are not compatible and the program will halt.
+  logical, intent(out), optional :: bcompatible
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    
+    ! We assume that we are compatible
+    if (present(bcompatible)) bcompatible = .true.
+    
+    ! Block discretisation structures must have the same dimension,
+    ! complexity and number of components
+    if ((rdiscr1%ndimension .ne. rdiscr2%ndimension) .or.&
+        (rdiscr1%ccomplexity .ne. rdiscr2%ccomplexity) .or.&
+        (rdiscr1%ncomponents .ne. rdiscr2%ncomponents)) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Block discretisation structures are not compatible!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_isBlockDiscrCompatible')
+        call sys_halt()
+      end if
+    end if
+    
+    ! All spatial discretisations must be compatible.
+    do i = 1, rdiscr1%ncomponents
+      call spdiscr_isDiscrCompatible(rdiscr1%RspatialDiscr(i),&
+          rdiscr2%RspatialDiscr(i), bcompatible)
+    end do
+
+  end subroutine spdiscr_isBlockDiscrCompatible
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_isDiscrCompatible (rdiscr1,rdiscr2,bcompatible)
+
+!<description>
+  ! Checks whether two spatial discretisations are compatible to each other.
+  ! Two spatial discretisations are compatible if
+  ! - they have the same dimension,
+  ! - they have the same complexity,
+  ! - they have the same number of different FE spaces,
+  ! - they have both precomputed DOF-mapping or not,
+  ! - they have the same structure of element distributions
+!</description>
+  
+!<input>
+  ! The first spatial discretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscr1
+  
+  ! The second spatial discretisation
+  type(t_spatialDiscretisation), intent(in) :: rdiscr2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending on
+  ! whether the spatial discretisations are compatible or not.
+  ! If not given, an error will inform the user if the two spatial
+  ! discretisations are not compatible and the program will halt.
+  logical, intent(out), optional :: bcompatible
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i
+    
+    ! We assume that we are compatible
+    if (present(bcompatible)) bcompatible = .true.
+    
+    ! Spatial discretisation structures must have the same dimension,
+    ! complexity, number of components and DOF-mapping must be precomputed
+    ! either for both discretisations or not.
+    if ((rdiscr1%ndimension .ne. rdiscr2%ndimension) .or.&
+        (rdiscr1%ccomplexity .ne. rdiscr2%ccomplexity) .or.&
+        (rdiscr1%inumFESpaces .ne. rdiscr2%inumFESpaces) .or.&
+        (rdiscr1%ndof .ne. rdiscr2%ndof) .or.&
+        (rdiscr1%bprecompiledDofMapping .ne. rdiscr2%bprecompiledDofMapping)) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Spatial discretisation structures are not compatible!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_isDiscrCompatible')
+        call sys_halt()
+      end if
+    end if
+
+    ! All element distributions must be compatible.
+    do i = 1, rdiscr1%inumFESpaces
+      call spdiscr_isElemDistrCompatible(rdiscr1%RelementDistr(i),&
+          rdiscr2%RelementDistr(i), bcompatible)
+    end do
+
+  end subroutine spdiscr_isDiscrCompatible
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine spdiscr_isElemDistrCompatible (relemDistr1,relemDistr2,bcompatible)
+
+!<description>
+  ! Checks whether two element distributions are compatible to each other.
+  ! Twoelement distributions are compatible if
+  ! - they have the same type of element,
+  ! - they have the same cubature formulas,
+  ! - they have the same type of transformation,
+  ! - they have the same number of elements
+!</description>
+  
+!<input>
+  ! The first element distribution
+  type(t_elementDistribution), intent(in) :: relemDistr1
+  
+  ! The second spatial discretisation
+  type(t_elementDistribution), intent(in) :: relemDistr2
+!</input>
+
+!<output>
+  ! OPTIONAL: If given, the flag will be set to TRUE or FALSE depending
+  ! on whether the element distributions are compatible or not.
+  ! If not given, an error will inform the user if the two element
+  ! distributions are not compatible and the program will halt.
+  logical, intent(out), optional :: bcompatible
+!</output>
+
+!</subroutine>
+
+  ! We assume that we are compatible
+    if (present(bcompatible)) bcompatible = .true.
+    
+    ! Element distributions structures must have the same dimension,
+    ! complexity, number of components and DOF-mapping must be precomputed
+    ! either for both discretisations or not.
+    if ((relemDistr1%celement .ne. relemDistr2%celement) .or.&
+        (relemDistr1%ccubTypeBilForm .ne. relemDistr1%ccubTypeBilForm) .or.&
+        (relemDistr1%ccubTypeLinForm .ne. relemDistr1%ccubTypeLinForm) .or.&
+        (relemDistr1%ccubTypeEval .ne. relemDistr1%ccubTypeEval) .or.&
+        (relemDistr1%ctrafoType .ne. relemDistr1%ctrafoType) .or.&
+        (relemDistr1%NEL .ne. relemDistr1%NEL)) then
+      if (present(bcompatible)) then
+        bcompatible = .false.
+        return
+      else
+        call output_line('Element distributions are not compatible!', &
+            OU_CLASS_ERROR,OU_MODE_STD,'spdiscr_isElemDistrCompatible')
+        call sys_halt()
+      end if
+    end if
+    
+  end subroutine spdiscr_isElemDistrCompatible
+
 end module

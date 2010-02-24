@@ -7,10 +7,9 @@
   
   !<subroutine>
 
-    subroutine fcoeff_buildVectorSc_sim (rdiscretisation, rform, &
-                  nelements, npointsPerElement, Dpoints, &
-                  IdofsTest, rdomainIntSubset, &
-                  Dcoefficients, rcollection)
+    subroutine fcoeff_buildVectorBlBdr2D_sim (rdiscretisation, rform, &
+                  nelements, npointsPerElement, Dpoints, ibct, DpointPar, &
+                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
     
     use fsystem
     use basicgeometry
@@ -52,6 +51,16 @@
     ! DIMENSION(dimension,npointsPerElement,nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
     ! An array accepting the DOF`s on all elements test in the test space.
     ! DIMENSION(\#local DOF`s in test space,Number of elements)
     integer, dimension(:,:), intent(in) :: IdofsTest
@@ -59,21 +68,20 @@
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
-  !</input>
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
-  !<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional :: rcollection
-  !</inputoutput>
+    
+  !</input>
   
   !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    !   DIMENSION(nbocks,itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>

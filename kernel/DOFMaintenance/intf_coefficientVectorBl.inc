@@ -7,7 +7,7 @@
   
   !<subroutine>
 
-    subroutine fcoeff_buildVectorSc_sim (rdiscretisation, rform, &
+    subroutine fcoeff_buildVectorBl_sim (rdiscretisation, rform, &
                   nelements, npointsPerElement, Dpoints, &
                   IdofsTest, rdomainIntSubset, &
                   Dcoefficients, rcollection)
@@ -59,21 +59,22 @@
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
   !</input>
-
+    
   !<inputoutput>
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
     type(t_collection), intent(inout), optional :: rcollection
+
   !</inputoutput>
   
   !<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    !   DIMENSION(nblocks,itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>
