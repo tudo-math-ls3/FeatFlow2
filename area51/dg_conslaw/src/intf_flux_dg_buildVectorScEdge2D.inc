@@ -44,7 +44,7 @@
   !</input>
   
   !<output>
-  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   !</output>
     
   !</subroutine>

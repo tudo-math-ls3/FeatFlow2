@@ -1030,6 +1030,19 @@ contains
     call lsysbl_releaseVector(rgradientRef)
     
   end subroutine
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
 
 
@@ -1052,7 +1065,7 @@ contains
   !</input>
   
   !<output>
-  real(DP), dimension(:,:), intent(out) :: Dcoefficients
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   !</output>
 
 
@@ -1078,7 +1091,7 @@ contains
 
 
   ! If the solution (or its derivatives) has to be evaluated
-  allocate(Dsolutionvalues(2,ubound(Dcoefficients,1),ubound(Dcoefficients,2)))
+  allocate(Dsolutionvalues(2,ubound(Dcoefficients,2),ubound(Dcoefficients,3)))
   ! Get values on the one side of the edge
   call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(1), &
                                  rIntSubset(1), DER_FUNC, Dsolutionvalues, 1)
@@ -1096,9 +1109,9 @@ contains
 
   
   
-  do iel = 1, ubound(Dcoefficients,2)
+  do iel = 1, ubound(Dcoefficients,3)
   
-    do ipoint= 1, ubound(Dcoefficients,1)
+    do ipoint= 1, ubound(Dcoefficients,2)
     
       !dx = DpointsReal(1,ipoint,iel)
       !dy = DpointsReal(2,ipoint,iel)
@@ -1117,38 +1130,38 @@ contains
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
       
       ! Set initial condition on the inflow boundary
-      !call fparser_evalFunction(rfparser, 1, rintSubset(1)%p_DcubPtsReal(:,ipoint,iel), DsolVals(ubound(Dcoefficients,1)-ipoint+1,2,iel))
+      !call fparser_evalFunction(rfparser, 1, rintSubset(1)%p_DcubPtsReal(:,ipoint,iel), DsolVals(ubound(Dcoefficients,2)-ipoint+1,2,iel))
       
 !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
 !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
 !        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
-!          DsolVals(2,ubound(Dcoefficients,1)-ipoint+1,iel) = 1.0_dp
+!          DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
 !        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
-!          DsolVals(2,ubound(Dcoefficients,1)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+!          DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
 !        end if
 
       if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
         dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
         if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
-          Dsolutionvalues(2,ubound(Dcoefficients,1)-ipoint+1,iel) = 1.0_dp
+          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
         elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
-          Dsolutionvalues(2,ubound(Dcoefficients,1)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
         end if
         
 !        dr = sqrt((dx-0.5_dp)**2.0_dp)
-!        if (dr<0.2)DsolVals(2,ubound(Dcoefficients,1)-ipoint+1,iel) = 1.0_dp
+!        if (dr<0.2)DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
       
       end if
     
       ! Upwind flux
       if (dvn.ge.0) then
-        Dcoefficients(ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
+        Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(1,ipoint,iel)
       else
-        Dcoefficients(ipoint,iel) = dvn *Dsolutionvalues(2,ubound(Dcoefficients,1)-ipoint+1,iel)
+        Dcoefficients(1,ipoint,iel) = dvn *Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel)
       end if
       
       ! Centered Flux
-      !Dcoefficients(ipoint,iel) = 0.5_dp* dvn *(DsolVals(1,ipoint,iel)+DsolVals(2,ubound(Dcoefficients,1)-ipoint+1,iel))
+      !Dcoefficients(1,ipoint,iel) = 0.5_dp* dvn *(DsolVals(1,ipoint,iel)+DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel))
       
     end do ! ipoint
   end do ! iel
@@ -1259,7 +1272,7 @@ contains
     call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
     
     
-    Dcoefficients (1,:,:) = 0.0_dp
+    Dcoefficients (1,:,:) = 1.0_dp
     
     do iel = 1, size(Dcoefficients,3)
       do ipoint = 1, size(Dcoefficients,2)
@@ -1291,16 +1304,21 @@ contains
         !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
         
         ! Water hill
-        
-        if (rcollection%IquickAccess(1)==1) then
-        
-        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-          
-          !Dcoefficients (1,ipoint,iel)=1.0_dp
-        else
-        Dcoefficients (1,ipoint,iel)=0.0_dp
-        end if
+!        
+!        if (rcollection%IquickAccess(1)==1) then
+!        
+!        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+!                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!          
+!          !Dcoefficients (1,ipoint,iel)=1.0_dp
+!        else
+!        Dcoefficients (1,ipoint,iel)=0.0_dp
+!        end if
+
+      ! Riemann problem
+      if (rcollection%IquickAccess(1)==1) then
+      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
+      end if
         
       end do
     end do
@@ -1843,7 +1861,7 @@ contains
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
     
-      ! Set initial condition on the boundary
+      ! Set boundary conditions
       if ((dx<0.00001).or.(dx>0.99999).or.(dy<0.00001).or.(dy>0.99999)) then
         ! Riemann BC
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
@@ -1851,8 +1869,8 @@ contains
         
         ! Reflecting BC
         Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)!*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)!*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
       end if
       
     
@@ -2057,7 +2075,128 @@ contains
     
   end subroutine
   
+
+
+
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine flux_sys_block (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
   
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(3) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+    
+    nvar2d = 3
+    
+    rdomainIntSubset%ielementDistribution = 1
+    
+    
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+    
+    ! Allocate space for the solution values ! (# of terms, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(nterms,size(Dpoints,2),size(Dpoints,3),nvar2d))
+    
+    ! First evaluate the solution in each point
+    do ivar = 1, nvar2d
+      call fevl_evaluate_sim4 (rcollection%p_rvectorQuickAccess1%RvectorBlock(ivar), &
+                                 rdomainIntSubset, DER_FUNC, DsolutionValues(:,:,:,ivar), 1)
+    end do  
+ 
+ 
+    
+    do iel = 1, size(Dpoints,3)
+      do ipoint = 1, size(Dpoints,2)
+      
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+        
+        dQ = DsolutionValues(1,ipoint,iel,:)
+        !write(*,*) dQ
+        
+        DFx = buildFlux(dQ,1)
+        DFy = buildFlux(dQ,2)
+        
+        Dcoefficients (:,1,ipoint,iel) = DFx(:)
+        Dcoefficients (:,2,ipoint,iel) = DFy(:)
+        
+      end do
+    end do
+    
+    deallocate(DsolutionValues)
+    
+  end subroutine
   
   
 

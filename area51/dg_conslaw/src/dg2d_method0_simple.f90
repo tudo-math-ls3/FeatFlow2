@@ -476,6 +476,7 @@ contains
     rlinformIC%Idescriptors(1) = DER_FUNC2D
     !rcollection%SquickAccess(2) = cvariables
     rcollection%SquickAccess(1) = sic
+    rcollection%IquickAccess(1) = 1
     call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
                                   coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)

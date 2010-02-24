@@ -545,7 +545,10 @@ contains
        ! Then add the convection terms
        if(ielementType .ne. EL_DG_T0_2D) then
        
-       
+!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+!         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+!                                       flux_sys_block,rcollection)
+                                              
          do ivar = 1, nvar2d
          
            rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -568,6 +571,7 @@ contains
               ! Limit the solution vector
        !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+       if (ielementType .eq. EL_DG_T1_2D) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
 
     
        
@@ -591,7 +595,9 @@ contains
        ! Then add the convection terms
       if(ielementType .ne. EL_DG_T0_2D) then
        
-       
+!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+!         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+!                                       flux_sys_block,rcollection)
          do ivar = 1, nvar2d
          
            rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -615,6 +621,7 @@ contains
 !              ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+        if (ielementType .eq. EL_DG_T1_2D) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
 
 
        ! Step 3/3
@@ -632,8 +639,11 @@ contains
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
        ! Then add the convection terms
       if(ielementType .ne. EL_DG_T0_2D) then
-       
-       
+         
+!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+!         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+!                                       flux_sys_block,rcollection)
+         
          do ivar = 1, nvar2d
          
            rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -657,6 +667,8 @@ contains
 !       ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
+       if (ielementType .eq. EL_DG_T1_2D) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
+
 !       
 !       ! Test, if the solution has converged
 !       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
