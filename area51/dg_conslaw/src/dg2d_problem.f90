@@ -56,7 +56,7 @@ contains
 
 
 
-  ! This routine builds the jacobi matrix in direction d
+  ! This routine builds the jacobi matrix DF of the flux in direction d
   ! d=1: x-direction, d=2: y-direction
   function buildJacobi(Q,d) result(J)
 
@@ -110,7 +110,11 @@ contains
 
 
 
-  ! This routine builds the trafo matrix Rij in direction d
+  ! This routine builds the trafo matrix T for the jacobian DF of the flux in direction d
+  ! This means :   invTrafo * DF * Trafo    = D (diagonal matrix)
+  ! or         :   Trafo    * D  * invTrafo = DF
+  ! So to get the characteristic variables, the conservative variables have to be multiplied by
+  ! invTrafo
   ! d=1: x-direction, d=2: y-direction
   function buildTrafo(Q,d) result(Rij)
 
@@ -167,7 +171,11 @@ contains
 
 
 
-  ! This routine builds the inv trafo matrix Rij^{-1} in direction d
+  ! This routine builds the inverse of the trafo matrix T for the jacobian DF of the flux in direction d
+  ! This means :   invTrafo * DF * Trafo    = D (diagonal matrix)
+  ! or         :   Trafo    * D  * invTrafo = DF
+  ! So to get the characteristic variables, the conservative variables have to be multiplied by
+  ! invTrafo
   ! d=1: x-direction, d=2: y-direction
   function buildInvTrafo(Q,d) result(invRij)
 

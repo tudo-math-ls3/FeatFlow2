@@ -2,19 +2,19 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 4
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
-prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
+#prmname = ./pre/NONCARTQUAD.prm
+prmname = ./pre/QUAD.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
-triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
+#triname = ./pre/NONCARTQUAD.tri
+triname = ./pre/QUAD.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 
@@ -40,6 +40,9 @@ ttfinal = 0.04
 
 
 [METHOD]
+# What limiter to use
+# 0: No limiter
+limiter = 5
 
 
 

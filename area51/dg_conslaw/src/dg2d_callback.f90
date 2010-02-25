@@ -2165,8 +2165,8 @@ contains
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
     
-    ! Allocate space for the solution values ! (# of terms, ncubp, NEL, nvar2d)
-    allocate(DsolutionValues(nterms,size(Dpoints,2),size(Dpoints,3),nvar2d))
+    ! Allocate space for the solution values ! (# of derivatives, ncubp, NEL, nvar2d)
+    allocate(DsolutionValues(1,size(Dpoints,2),size(Dpoints,3),nvar2d))
     
     ! First evaluate the solution in each point
     do ivar = 1, nvar2d
