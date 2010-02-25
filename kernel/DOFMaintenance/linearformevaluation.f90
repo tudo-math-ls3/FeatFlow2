@@ -21,7 +21,7 @@
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a boundary integral.
 !#
-!# 4.) linf_buildVectorBlockScalarBdr2d
+!# 4.) linf_buildVectorBlockBdr2d
 !#     -> Assembles the entries of a vector according to a linear form
 !#        defined in terms of a boundary integral.
 !#
@@ -280,7 +280,9 @@ module linearformevaluation
   public :: linf_assembleSubmeshVecIntlBdr2D
   public :: linf_assembleSubmeshVectorBlock
   public :: linf_assembleSubmeshVectorBlockBdr2D
-  
+  public :: linf_allocAssemblyData
+  public :: linf_releaseAssemblyData
+
 contains
 
   !****************************************************************************
@@ -3063,8 +3065,9 @@ contains
         ! the IdofsTest array.
         do iblock =1,rvector%nblocks
           do IDOFE = 1,indof
-            p_Ddata((iblock-1)*rvector%nblocks+p_Idofs(idofe,iel)) =&
-                p_Ddata((iblock-1)*rvector%nblocks+p_Idofs(idofe,iel)) + DlocalData(iblock,idofe)
+            p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)=&
+                p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)+&
+                DlocalData(iblock,idofe)
           end do
         end do
         
@@ -3423,8 +3426,9 @@ contains
         ! the IdofsTest array.
         do iblock =1,rvector%nblocks
           do idofe = 1,indof
-            p_Ddata((iblock-1)*rvector%nblocks+p_Idofs(idofe,iel)) =&
-                p_Ddata((iblock-1)*rvector%nblocks+p_Idofs(idofe,iel)) + DlocalData(iblock,idofe)
+            p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)=&
+                p_Ddata(rvector%RvectorBlock(iblock)%iidxFirstEntry+p_Idofs(idofe,iel)-1)+&
+                DlocalData(iblock,idofe)
           end do
         end do
         
