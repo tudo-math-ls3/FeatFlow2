@@ -2561,7 +2561,7 @@ contains
         (rdiscr1%ccomplexity .ne. rdiscr2%ccomplexity) .or.&
         (rdiscr1%inumFESpaces .ne. rdiscr2%inumFESpaces) .or.&
         (rdiscr1%ndof .ne. rdiscr2%ndof) .or.&
-        (rdiscr1%bprecompiledDofMapping .ne. rdiscr2%bprecompiledDofMapping)) then
+        (rdiscr1%bprecompiledDofMapping .neqv. rdiscr2%bprecompiledDofMapping)) then
       if (present(bcompatible)) then
         bcompatible = .false.
         return
