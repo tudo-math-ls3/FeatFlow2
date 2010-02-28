@@ -221,7 +221,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_postprocessSingleSol (rpostproc,ifileid,dtime,rvector,&
+  subroutine optcpp_postprocessSingleSol (rpostproc,ifileid,dtimePrimal,dtimeDual,rvector,&
       roptcontrol,rsettings,bfirstFile)
   
 !<description>
@@ -244,8 +244,9 @@ contains
   ! Id of the file on the hard disc; added to the filename.
   integer, intent(in) :: ifileid
   
-  ! Current simulation time.
-  real(dp), intent(in) :: dtime
+  ! Current simulation time in the primal and dual equation.
+  real(dp), intent(in) :: dtimePrimal
+  real(dp), intent(in) :: dtimeDual
   
   ! Parameters about the optimal control
   type(t_settings_optcontrol), intent(in) :: roptControl
@@ -261,7 +262,6 @@ contains
   integer :: ieltype,cflag,iunit
   real(DP) :: dflux,denergy
   logical :: bfileexists
-  type(t_collection) :: rcollection
 
   ! We need some more variables for postprocessing - i.e. writing
   ! a GMV file.
@@ -332,7 +332,7 @@ contains
           write (iunit,'(A)') '# timestep time bdc horiz vert'
         end if
         stemp = trim(sys_siL(ifileid,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtimePrimal,10)) // ' ' &
             // trim(sys_siL(rpostproc%ibodyForcesBdComponent,10)) // ' ' &
             // trim(sys_sdEL(Dforces(1),10)) // ' '&
             // trim(sys_sdEL(Dforces(2),10))
@@ -361,7 +361,7 @@ contains
           write (iunit,'(A)') '# timestep time flux'
         end if
         stemp = trim(sys_siL(ifileid,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtimePrimal,10)) // ' ' &
             // trim(sys_sdEL(dflux,10))
         write (iunit,'(A)') trim(stemp)
         close (iunit)
@@ -394,7 +394,7 @@ contains
           write (iunit,'(A)') '# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2'
         end if
         stemp = trim(sys_siL(ifileid,10)) // ' ' &
-            // trim(sys_sdEL(dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtimePrimal,10)) // ' ' &
             // trim(sys_sdEL(denergy,10)) // ' ' &
             // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
             // trim(sys_sdEL(Derr(1),10)) // ' ' &
@@ -475,16 +475,10 @@ contains
       ! new discretisation:
       call spdp_projectSolution (rvector,rprjVector)
       
-      call collct_init(rcollection)
-      call user_initCollectForAssembly(rsettings%rglobalData,dtime,rcollection)
-      
-      call sbc_assembleBDconditions (rsettings%roptcBDC,dtime,rpostproc%rspaceDiscrLinear,&
+      call sbc_assembleBDconditions (rsettings%roptcBDC,dtimePrimal,dtimeDual,rpostproc%rspaceDiscrLinear,&
           rpostproc%p_rtimeDiscr,CCSPACE_PRIMALDUAL,rdiscreteBC,rsettings%rglobalData)
-      call sbc_assembleFBDconditions (dtime,rpostproc%rspaceDiscrLinear,rpostproc%p_rtimeDiscr,&
+      call sbc_assembleFBDconditions (dtimePrimal,rpostproc%rspaceDiscrLinear,rpostproc%p_rtimeDiscr,&
           CCSPACE_PRIMALDUAL,rdiscreteFBC,rsettings%rglobalData)
-      
-      call user_doneCollectForAssembly(rsettings%rglobalData,rcollection)
-      call collct_done(rcollection)
       
       ! Filter the solution vector to implement discrete BC's.
       call vecfil_discreteBCsol (rprjVector,rdiscreteBC)
@@ -656,7 +650,7 @@ contains
   ! local variables
   type(t_vectorBlock) :: rvecTemp
   integer :: istep
-  real(dp) :: dtime
+  real(dp) :: dtimePrimal,dtimeDual,dtstep
   real(DP), dimension(4) :: Derror
 
     ! -------------------------------------------------------------------------
@@ -668,9 +662,10 @@ contains
 
     ! Write a file for every timestep
     do istep = 1,rvector%NEQtime
-      call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtime)
+      call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal - (1.0_DP-rpostproc%p_rtimeDiscr%dtheta)*dtstep
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
-      call optcpp_postprocessSingleSol (rpostproc,istep-1,dtime,rvecTemp,&
+      call optcpp_postprocessSingleSol (rpostproc,istep-1,dtimePrimal,dtimeDual,rvecTemp,&
           roptControl,rsettings,istep .eq. 1)
     end do
     
@@ -756,7 +751,7 @@ contains
     type(t_optcPostprocessing) :: rpostproc
     type(t_vectorBlock) :: rvecTemp
     integer :: istep
-    real(dp) :: dtime
+    real(dp) :: dtimePrimal,dtimeDual,dtstep
     
     ! Create a default postprocessing structure
     call optcpp_initpostprocessing (rpostproc,CCSPACE_PRIMALDUAL,&
@@ -771,9 +766,10 @@ contains
     
     ! Write a file for every timestep
     do istep = 1,rvector%NEQtime
-      call tdiscr_getTimestep(rtimediscr,istep-1,dtime)
+      call tdiscr_getTimestep(rtimediscr,istep-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal - (1.0_DP-rtimediscr%dtheta)*dtstep
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
-      call optcpp_postprocessSingleSol (rpostproc,istep,dtime,rvecTemp,&
+      call optcpp_postprocessSingleSol (rpostproc,istep,dtimePrimal,dtimeDual,rvecTemp,&
           rsettings%rsettingsOptControl,rsettings,istep .eq. 1)
     end do
     

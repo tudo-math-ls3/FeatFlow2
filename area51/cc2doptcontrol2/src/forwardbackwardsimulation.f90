@@ -1821,7 +1821,7 @@ contains
 
 !<subroutine>
 
-  subroutine fbsim_updateDiscreteBCprec (rglobalData,rpreconditioner,dtime)
+  subroutine fbsim_updateDiscreteBCprec (rglobalData,rpreconditioner,dtimePrimal,dtimeDual)
   
 !<description>
   ! Updates the discrete boundary conditions in the preconditioner
@@ -1831,8 +1831,11 @@ contains
   ! Global settings for callback routines.
   type(t_globalData), intent(inout), target :: rglobalData
 
-  ! Current simulation time.
-  real(dp), intent(in) :: dtime
+  ! Current simulation time for the primal equation.
+  real(dp), intent(in) :: dtimePrimal
+
+  ! Current simulation time for the dual equation.
+  real(dp), intent(in) :: dtimeDual
 !</input>
   
 !<inputoutput>
@@ -1845,32 +1848,23 @@ contains
     ! local variables
     logical :: bneumann
     integer :: ilev
-    type(t_collection) :: rcollection
-
-    ! Initialise the collection for the assembly.
-    call collct_init(rcollection)
-    call user_initCollectForAssembly (rglobalData,dtime,rcollection)
 
     ! Clear the BC`s and reassemble on all levels.
     do ilev = rpreconditioner%NLMIN,rpreconditioner%NLMAX
       call bcasm_clearDiscreteBC(rpreconditioner%p_RdiscreteBC(ilev))
       call bcasm_clearDiscreteFBC(rpreconditioner%p_RdiscreteFBC(ilev))
       
-      call sbc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtime,&
+      call sbc_assembleBDconditions (rpreconditioner%p_rboundaryConditions,dtimePrimal,dtimeDual,&
           rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
           rpreconditioner%p_rtimeDiscr,&
           rpreconditioner%cspace,rpreconditioner%p_RdiscreteBC(ilev),&
           rglobalData,bneumann)
-      call sbc_assembleFBDconditions (dtime,&
+      call sbc_assembleFBDconditions (dtimePrimal,&
           rpreconditioner%p_rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation,&
           rpreconditioner%p_rtimeDiscr,&
           rpreconditioner%cspace,rpreconditioner%p_RdiscreteFBC(ilev),&
           rglobalData)
     end do
-
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call user_doneCollectForAssembly (rglobalData,rcollection)
-    call collct_done(rcollection)
 
     ! Do we have Neumann boundary?
     ! The Neumann flag on the maximum level decides upon that.
@@ -2897,7 +2891,7 @@ contains
 
 !<subroutine>
 
-  subroutine fbsim_writeUCD (rpostprocessing,rvector,istep,dtime,rsettings)
+  subroutine fbsim_writeUCD (rpostprocessing,rvector,istep,dtimePrimal,dtimeDual,rsettings)
 
 !<description>
   ! Writes an UCD postprocessing file as configured in the DAT file.
@@ -2911,8 +2905,13 @@ contains
   ! Id of the timestep.
   integer, intent(in) :: istep
   
-  ! Must be ommitted in stationary simulations.
-  real(DP), intent(in) :: dtime
+  ! Simulation time of the primal equation
+  ! Must be set to 0 in stationary simulations.
+  real(DP), intent(in) :: dtimePrimal
+
+  ! Simulation time of the dual equation
+  ! Must be set to 0 in stationary simulations.
+  real(DP), intent(in) :: dtimeDual
 
   ! The structure of the main solver
   type(t_settings_optflow), intent(inout), target :: rsettings
@@ -2926,9 +2925,6 @@ contains
 !</inputoutput>
 
 !</subroutine>
-
-    ! local variables
-    type(t_collection) :: rcollection
 
     ! We need some more variables for postprocessing - i.e. writing
     ! a GMV file.
@@ -3006,18 +3002,12 @@ contains
     ! new discretisation:
     call spdp_projectSolution (rvector,rprjVector)
 
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    call collct_init(rcollection)
-    call user_initCollectForAssembly (rsettings%rglobalData,dtime,rcollection)
-
     ! Discretise the boundary conditions according to the Q1/Q1/Q0 
     ! discretisation for implementing them into a solution vector.
-    call sbc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtime,&
+    call sbc_assembleBDconditions (rpostprocessing%p_rboundaryConditions,dtimePrimal,dtimeDual,&
         rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
         rpostprocessing%cspace,rpostprocessing%rdiscreteBC,rsettings%rglobalData)
-    call sbc_assembleFBDconditions (dtime,&
+    call sbc_assembleFBDconditions (dtimePrimal,&
         rprjDiscretisation,rpostprocessing%p_rtimeDiscr,&
         rpostprocessing%cspace,rpostprocessing%rdiscreteFBC,rsettings%rglobalData)
     
@@ -3059,7 +3049,7 @@ contains
     end select
         
     ! Set the simulation time.
-    call ucd_setSimulationTime (rexport,dtime)
+    call ucd_setSimulationTime (rexport,dtimePrimal)
     
     ! Write the configuration of the application as comment block
     ! to the output file.
@@ -3177,17 +3167,13 @@ contains
     ! Release the discretisation structure.
     call spdiscr_releaseBlockDiscr (rprjDiscretisation)
     
-    ! Clean up the collection (as we are done with the assembly, that is it.
-    call user_doneCollectForAssembly (rsettings%rglobalData,rcollection)
-    call collct_done(rcollection)
-    
   end subroutine
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine fbsim_postprocessing (rpostproc,rsolution,istep,dtime,rsettings)
+  subroutine fbsim_postprocessing (rpostproc,rsolution,istep,dtimePrimal,dtimeDual,rsettings)
   
 !<description>
   ! Performs postprocessing to a solution vector.
@@ -3200,8 +3186,11 @@ contains
   ! Id of the timestep.
   integer, intent(in) :: istep
   
-  ! Must be ommitted in stationary simulations.
-  real(DP), intent(in) :: dtime
+  ! Simulation time for the primal equation
+  real(DP), intent(in) :: dtimePrimal
+
+  ! Simulation time for the dual equation
+  real(DP), intent(in) :: dtimeDual
 
   ! Reference to the problem structure
   type(t_settings_optflow), intent(inout) :: rsettings
@@ -3216,7 +3205,7 @@ contains
 
     ! Output to a visualisation file?
     if (rpostproc%ioutputUCD .ne. 0) then
-      call fbsim_writeUCD (rpostproc,rsolution,istep-1,dtime,rsettings)
+      call fbsim_writeUCD (rpostproc,rsolution,istep-1,dtimePrimal,dtimeDual,rsettings)
     end if
 
   end subroutine
@@ -3274,7 +3263,7 @@ contains
     ! local variables
     integer :: iiterate,NEQtime
     logical :: blocalsuccess
-    real(dp) :: dtime,dweightold,dweightnew,dtstep
+    real(dp) :: dtimePrimal,dtimeDual,dweightold,dweightnew,dtstep
     type(t_vectorBlock), target :: roseensol1, roseensol2, roseensol3
     type(t_vectorBlock) :: rprevsol, rcurrentsol, rprevrhs, rcurrentrhs, rrhs
     type(t_vectorBlock) :: rdefect
@@ -3416,16 +3405,17 @@ contains
       
       ! Focus on the initial solution.
       call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,&
-          ifirstinterval-1,dtime)
+          ifirstinterval-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal - (1.0_DP-p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
       call output_separator (OU_SEP_MINUS,&
           coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
       call output_line ('Time-Iterate '//trim(sys_siL(ifirstinterval,6))// &
-          ', Time = '//trim(sys_sdL(dtime,5)), &
+          ', Time = '//trim(sys_sdL(dtimePrimal,5)), &
           coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
           
       call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
-          rsimsolver%rpreconditioner,dtime)
+          rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
       
       ! Initial condition is given. Read it.
       call sptivec_getTimestepData (rrhsvector, ifirstinterval, rcurrentrhs)
@@ -3442,7 +3432,7 @@ contains
       ! Initial postprocessing
       call stat_startTimer (rtimerPostProc)
       call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,ifirstinterval,&
-          dtime,rsimsolver%p_rsettings)
+          dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
       call stat_stopTimer (rtimerPostProc)
           
       ! Loop through the timesteps. Ignore the initial solution, this is the
@@ -3451,20 +3441,21 @@ contains
       
         ! Timestep size? Current time step?
         call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate-1,&
-            dtime,dtstep)
+            dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         if (rsimSolver%ioutputLevel .ge. 1) then
           call output_separator (OU_SEP_MINUS,&
               coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
           call output_line ('Time-Iterate '//trim(sys_siL(iiterate,6))// &
-              ', Time = '//trim(sys_sdL(dtime,5))// &
+              ', Time = '//trim(sys_sdL(dtimePrimal,5))// &
               ', Stepsize = '//trim(sys_sdL(dtstep,5)),&
               coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
         end if
 
         ! Update the boundary conditions to the current time
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
-            rsimsolver%rpreconditioner,dtime)
+            rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
 
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
@@ -3738,7 +3729,7 @@ contains
           ! Postprocessing
           call stat_startTimer (rtimerPostProc)
           call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,iiterate,&
-              dtime,rsimsolver%p_rsettings)
+              dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
           call stat_stopTimer (rtimerPostProc)
         else  
           exit
@@ -3771,20 +3762,22 @@ contains
       do iiterate = ifirstinterval,NEQtime
       
         ! Current time step?
-        call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtime)
+        call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate-1,&
+            dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         if (rsimSolver%ioutputLevel .ge. 1) then
           call output_line ("fbsim_simulate: Forward Iteration "//&
               trim(sys_siL(iiterate,10))//" of ["//&
               trim(sys_siL(ifirstinterval,10))//".."//&
               trim(sys_siL(NEQtime,10))//"], Time="//&
-              trim(sys_sdL(dtime,10)),&
+              trim(sys_sdL(dtimePrimal,10)),&
               coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
         end if
 
         ! Update the boundary conditions to the current time
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
-            rsimsolver%rpreconditioner,dtime)
+            rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
 
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
@@ -3906,20 +3899,22 @@ contains
       do iiterate = NEQtime,ifirstinterval,-1
       
         ! Current time step?
-        call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate,dtimestart=dtime)
+        call tdiscr_getTimestep(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,iiterate,&
+            dtstep=dtstep,dtimestart=dtimePrimal)
+        dtimeDual = dtimePrimal - (1.0_DP-p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         if (rsimSolver%ioutputLevel .ge. 1) then
           call output_line ("fbsim_simulate: Backward Iteration "//&
               trim(sys_siL(iiterate,10))//" of ["//&
               trim(sys_siL(ifirstinterval,10))//".."//&
               trim(sys_siL(NEQtime,10))//"], Time="//&
-              trim(sys_sdL(dtime,10)),&
+              trim(sys_sdL(dtimePrimal,10)),&
               coutputMode=rsimSolver%rnonlinearIteration%coutputMode)
         end if
 
         ! Update the boundary conditions to the current time
         call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
-            rsimsolver%rpreconditioner,dtime)
+            rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
         
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .lt. NEQtime) then

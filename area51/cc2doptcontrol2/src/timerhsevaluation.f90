@@ -171,7 +171,7 @@ contains
 
     ! local variables
     integer :: iiterate,nintervals
-    real(DP) :: dtime,dtstep,dtime2
+    real(DP) :: dtimePrimal,dtstep,dtimePrimal2,dtimeDual,dtimeDual2
     real(DP) :: dweightoldp,dweightnewp,dweightoldd,dweightnewd
     
     ! Temporary vectors
@@ -196,18 +196,33 @@ contains
     call lsysbl_getbase_double (rtempVector2,p_Db)
     call lsysbl_getbase_double (rtempVector3,p_Dd)
 
+    ! NOTE:
+    ! For setting up the RHS, the time in the dual equation matches the time+
+    ! of the primal equation. For explicit Euler, this is the case anyway.
+    ! For Crank-Nicolson / Theta scheme, the RHS must be evaluated in the
+    ! time midpoint between two subsequent timesteps; but as the evaluation
+    ! points of the dual equation are shifted by dt/2, the time midpoint
+    ! in the dual equation coincides with the evaluation pont in time of the
+    ! primal equation!
+
     ! Assemble 1st RHS vector in X temp vector.
-    call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,0,dtime)
-    call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtime, roptimalControl, rtempVector1)
+    call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,0,dtimePrimal,dtstep)
+    dtimeDual = dtimePrimal
+    call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtimePrimal, dtimeDual,&
+        roptimalControl, rtempVector1)
         
     ! Assemble the 2nd RHS vector in the RHS temp vector
-    call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,1,dtime)
-    call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtime, roptimalControl, rtempVector2)
+    call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,1,dtimePrimal,dtstep)
+    dtimeDual = dtimePrimal
+    call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtimePrimal, dtimeDual,&
+        roptimalControl, rtempVector2)
 
     if (nintervals .gt. 1) then
       ! Assemble the RHS of the 'next' timestep into the 3rd temp vector if possible.
-      call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,2,dtime2)
-      call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtime2, roptimalControl, rtempVector3)
+      call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,2,dtimePrimal2,dtstep)
+      dtimeDual2 = dtimePrimal2
+      call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtimePrimal2, dtimeDual2,&
+          roptimalControl, rtempVector3)
     else
       ! 3rd temp vector is initialised with the rhs in rtempVector2.
       ! Dummy, as the 3rd subvector is usually not used in this case.
@@ -224,36 +239,41 @@ contains
     do iiterate = 1,nintervals+1
     
       ! Get the timestep weights for the current interval.
-      call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,iiterate-1,dtime,dtstep)
+      call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal !- (1.0_DP-rrhsDiscrete%p_rtimeDiscr%dtheta)*dtstep
       call tdiscr_getTimestepWeights(rrhsDiscrete%p_rtimeDiscr,iiterate-1,dweightoldp,dweightnewp)
-      call tdiscr_getTimestepWeights(rrhsDiscrete%p_rtimeDiscr,iiterate,dweightoldd,dweightnewd)
+      call tdiscr_getTimestepWeights(rrhsDiscrete%p_rtimeDiscr,iiterate-1,dweightoldd,dweightnewd)
     
       if (iiterate .eq. 1) then
       
-        ! Primal RHS comes from rtempVector1. The dual from the
-        ! mean (depending on the timestep scheme) of 0 and the
-        ! iiterate+1'th RHS in rtempVector2.
+        ! RHS comes from rtempVector1. 
         !
         ! primal RHS(0) = PRIMALRHS(0)
-        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
+        ! dual RHS(0)   = DUALRHS(0)
 
-        call lsyssc_copyVector (rtempVector1%RvectorBlock(1),rtempVectorRHS%RvectorBlock(1))
-        call lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
-        call lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
-
-        call lsyssc_vectorLinearComb (&
-            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(6))
+        call lsysbl_copyVector (rtempVector1,rtempVectorRHS)
+        
+        ! Scale the dual RHS according to the timestep scheme.
+        call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),1.0_DP-rrhsDiscrete%p_rtimeDiscr%dtheta)
+        call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),1.0_DP-rrhsDiscrete%p_rtimeDiscr%dtheta)
+        
+!        call lsyssc_copyVector (rtempVector1%RvectorBlock(1),rtempVectorRHS%RvectorBlock(1))
+!        call lsyssc_copyVector (rtempVector1%RvectorBlock(2),rtempVectorRHS%RvectorBlock(2))
+!        call lsyssc_copyVector (rtempVector1%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
+!
+!        call lsyssc_vectorLinearComb (&
+!            rtempVector1%RvectorBlock(4),rtempVector2%RvectorBlock(4),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(4))
+!        call lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(5),rtempVector2%RvectorBlock(5),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(5))
+!        ! Pressure is fully implicit
+!        call lsyssc_vectorLinearComb (&                                                   
+!            rtempVector1%RvectorBlock(6),rtempVector2%RvectorBlock(6),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(6))
 
         ! In the 0'th timestep, there is no RHS in the dual equation!
         ! That is because of the initial condition, which fixes the primal solution
@@ -272,7 +292,7 @@ contains
         ! iiterate-1'th RHS.
         !
         ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
-        ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
+        ! dual RHS(0)   = DUALRHS(0)
         
         call lsyssc_vectorLinearComb (&
             rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
@@ -288,19 +308,23 @@ contains
             dweightoldp,dweightnewp,&
             rtempVectorRHS%RvectorBlock(3))
 
-        call lsyssc_vectorLinearComb (&
-            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(5))
-        ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
-            dweightnewd,dweightoldd,&
-            rtempVectorRHS%RvectorBlock(6))
+        call lsyssc_copyVector (rtempVector2%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
+        call lsyssc_copyVector (rtempVector2%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
+        call lsyssc_copyVector (rtempVector2%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
+        
+!        call lsyssc_vectorLinearComb (&
+!            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(4))
+!        call lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(5))
+!        ! Pressure is fully implicit
+!        call lsyssc_vectorLinearComb (&                                                   
+!            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
+!            dweightnewd,dweightoldd,&
+!            rtempVectorRHS%RvectorBlock(6))
         
         if (iiterate .lt. rrhsDiscrete%p_rtimeDiscr%nintervals) then
           ! Shift the RHS vectors and generate the RHS for the next time step.
@@ -310,8 +334,10 @@ contains
           call lsysbl_copyVector(rtempVector3,rtempVector2)
 
           ! Assemble the RHS of the 'next' timestep into the 3rd temp vector if possible.
-          call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,iiterate+1,dtime2)
-          call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtime2, roptimalControl, rtempVector3)
+          call tdiscr_getTimestep(rrhsDiscrete%p_rtimeDiscr,iiterate+1,dtimePrimal2,dtstep)
+          dtimeDual2 = dtimePrimal2
+          call trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtimePrimal2, dtimeDual2,&
+              roptimalControl, rtempVector3)
         end if
         
       else
@@ -338,24 +364,24 @@ contains
             dweightoldp,dweightnewp,&
             rtempVectorRHS%RvectorBlock(3))
 
-        !CALL generateRHS (rproblem,iiterate+1,niterations,&
-        !    rtempVector3, .TRUE., .FALSE.)
+!        !CALL generateRHS (rproblem,iiterate+1,niterations,&
+!        !    rtempVector3, .TRUE., .FALSE.)
         call lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
         call lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
         call lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
 
-        ! Multiply the last RHS of the dual equation -z by 1+gamma/dtstep, that's it.
+        ! Multiply the last RHS of the dual equation -z by theta+gamma/dtstep, that's it.
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
-            dweightnewp+roptimalControl%dgammaC/dtstep)
+            dweightoldd + roptimalControl%dgammaC/dtstep)
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
-            dweightnewp+roptimalControl%dgammaC/dtstep)
+            dweightoldd + roptimalControl%dgammaC/dtstep)
 
       end if
 
       ! Implement the boundary conditions into the RHS vector        
       if (present(roptcBDC)) then
         call tbc_implementSpatialBCtoRHS (roptcBDC, &
-            dtime, rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
+            dtimePrimal, dtimeDual, rrhsDiscrete%p_rtimeDiscr, rtempVectorRHS, rglobalData)
       end if
       
       ! Save the RHS.
@@ -568,7 +594,7 @@ contains
   
 !<subroutine>
   
-  subroutine trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtime, &
+  subroutine trhsevl_assembleSpatialRHS (rglobalData, rrhs, dtimePrimal, dtimeDual, &
       roptimalControl, rrhsDiscrete)
   
 !<description>
@@ -583,9 +609,10 @@ contains
   ! Analytic solution defining the RHS of the equation.
   type(t_anSolution), intent(inout) :: rrhs
 
-  ! Time where the RHS should be generated.
+  ! Time where the primal/dual RHS should be generated.
   ! Must not necessarily coincide with the start/end time of the timestep.
-  real(DP), intent(in) :: dtime
+  real(DP), intent(in) :: dtimePrimal
+  real(DP), intent(in) :: dtimeDual
 
   ! Optimal control parameters.
   type(t_settings_optcontrol), intent(inout) :: roptimalControl
@@ -639,7 +666,7 @@ contains
     if (rrhs%ctype .eq. ANSOL_TP_ANALYTICAL) then
     
       ! Evaluate the RHS using the user defined callback functions
-      call user_initCollectForAssembly (rglobalData,dtime,rcollection)
+      call user_initCollectForAssembly (rglobalData,dtimePrimal,rcollection)
 
       ! Discretise the X-velocity part:
       call linf_buildVectorScalar (&
@@ -650,6 +677,12 @@ contains
       call linf_buildVectorScalar (&
                 p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
                 rrhsDiscrete%RvectorBlock(2),user_coeff_RHSprimal_y,rcollection)
+
+      call user_doneCollectForAssembly (rglobalData,rcollection)
+
+      ! Dual RHS
+
+      call user_initCollectForAssembly (rglobalData,dtimeDual,rcollection)
                                   
       ! The RHS terms for the dual equation are calculated using
       ! the desired 'target' flow field plus the coefficients of the
@@ -670,7 +703,7 @@ contains
     else
     
       ! Evaluate the RHS using the analytical definition.
-      call ansol_prepareEval (rrhs,rcollection,"RHS",dtime)
+      call ansol_prepareEval (rrhs,rcollection,"RHS",dtimePrimal)
       
       ! Discretise the primal X-velocity part:
       rcollection%IquickAccess(1) = 1
@@ -687,7 +720,7 @@ contains
       call ansol_doneEval (rcollection,"RHS")
     
       ! Evaluate the target function using the analytical definition.
-      call ansol_prepareEval (roptimalControl%rtargetFlow,rcollection,"RHS",dtime)
+      call ansol_prepareEval (roptimalControl%rtargetFlow,rcollection,"RHS",dtimeDual)
       
       ! Discretise the X-velocity part:
       rcollection%IquickAccess(1) = 1
@@ -710,18 +743,18 @@ contains
     ! because the RHS of the dual equation is '-z'!
     ! Remember that it this case the signs of the mass matrices that couple
     ! primal and dual velocity must be changed, too!
-    if (roptimalControl%ispaceTimeFormulation .eq. 0) then
+    if (roptimalControl%ispaceTimeFormulation .ne. 0) then
       call lsyssc_scaleVector (rrhsDiscrete%RvectorBlock(4),-1.0_DP)
       call lsyssc_scaleVector (rrhsDiscrete%RvectorBlock(5),-1.0_DP)
     end if
 
     ! Now there may exist a 'real' dual RHS (ehich is usually only the case
-    ! for analytical test functions). we have to add these to the dual
+    ! for analytical test functions). We have to add these to the dual
     ! RHS vectors. This will compute the real dual RHS "f_dual - z".
     if (rrhs%ctype .eq. ANSOL_TP_ANALYTICAL) then
     
       ! Evaluate the RHS using the user defined callback functions
-      call user_initCollectForAssembly (rglobalData,dtime,rcollection)
+      call user_initCollectForAssembly (rglobalData,dtimeDual,rcollection)
 
       ! Discretise the X-velocity part:
       call linf_buildVectorScalar (&
@@ -738,7 +771,7 @@ contains
     else
     
       ! Evaluate the RHS using the analytical definition.
-      call ansol_prepareEval (rrhs,rcollection,"RHS",dtime)
+      call ansol_prepareEval (rrhs,rcollection,"RHS",dtimeDual)
       
       ! Discretise the dual X-velocity part:
       rcollection%IquickAccess(1) = 4

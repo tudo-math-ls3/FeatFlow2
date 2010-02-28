@@ -2570,7 +2570,7 @@ contains
 
     ! local variables
     integer :: iiterate, neqtime
-    real(DP) :: dtime
+    real(DP) :: dtimePrimal,dtimeDual,dtstep
     logical :: bsuccess
     type(t_fbsimPreconditioner), pointer :: p_rpreconditioner
     type(t_spatialMatrixNonlinearData) :: rnonlinearData
@@ -2622,16 +2622,18 @@ contains
     do iiterate = 1,neqtime
     
       ! Current time step?
-      call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtime)
+      call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal)
+      dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
       ! Update the boundary conditions to the current time
-      call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,p_rpreconditioner,dtime)
+      call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,p_rpreconditioner,&
+          dtimePrimal,dtimeDual)
 
       if (rsolverNode%ioutputLevel .ge. 1) then
         call output_line ("Space-Time-Block-Jacobi: Iteration "//&
             trim(sys_siL(iiterate,10))//" of [1.."//&
             trim(sys_siL(neqtime,10))//"], Time="//&
-            trim(sys_sdL(dtime,10)) )
+            trim(sys_sdL(dtimePrimal,10)) )
       end if
     
       ! Load the data of the 'next' timestep to p_rvector3.    
@@ -2981,7 +2983,7 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP) :: dtime,drelaxSOR,drelaxGS
+    real(DP) :: dtimePrimal,dtimeDual,dtstep,drelaxSOR,drelaxGS
     logical :: bsuccess
     integer :: i
     type(t_fbsimPreconditioner), pointer :: p_rpreconditioner
@@ -3229,16 +3231,18 @@ contains
       do iiterate = 1,neqtime
       
         ! Current time step?
-        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtime)
+        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         ! Update the boundary conditions to the current time
-        call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,dtime)
+        call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,&
+            dtimePrimal,dtimeDual)
 
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ("Space-Time-Block-FBSOR: Forward Iteration "//&
               trim(sys_siL(iiterate,10))//" of [1.."//&
               trim(sys_siL(neqtime,10))//"], Time="//&
-              trim(sys_sdL(dtime,10)) )
+              trim(sys_sdL(dtimePrimal,10)) )
         end if
       
         ! Load the nonlinearity of the 'next' timestep to p_rvector3.    
@@ -3379,6 +3383,7 @@ contains
 
       ! local variables:
       integer :: iiterate,neqtime
+      real(DP) :: dtimePrimal,dtimeDual,dtstep
       type(t_spatialMatrixNonlinearData) :: rnonlinearData
       type(t_vectorBlock), pointer :: p_rvector1,p_rvector2,p_rvector3
       type(t_discreteBC), pointer :: p_rdiscreteBC
@@ -3416,16 +3421,18 @@ contains
       do iiterate = neqtime,1,-1
       
         ! Current time step?
-        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtime)
+        call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
         ! Update the boundary conditions to the current time
-        call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,dtime)
+        call fbsim_updateDiscreteBCprec (rsolverNode%p_rsettings%rglobalData,rpreconditioner,&
+            dtimePrimal,dtimeDual)
 
         if (rsolverNode%ioutputLevel .ge. 1) then
           call output_line ("Space-Time-Block-FBSOR: Backward Iteration "//&
               trim(sys_siL(iiterate,10))//" of [1.."//&
               trim(sys_siL(neqtime,10))//"], Time="//&
-              trim(sys_sdL(dtime,10)) )
+              trim(sys_sdL(dtimePrimal,10)) )
         end if
       
         ! Load the nonlinearity of the 'previous' timestep to p_rvector1.    
@@ -4628,17 +4635,12 @@ contains
     integer :: isubstep,ileft,iright,ix
     integer, dimension(1) :: Irows
     integer :: idiag
-    real(dp) :: dtime
+    real(dp) :: dtimePrimal,dtimeDual,dtstep
     integer, dimension(2) :: Iidx
-    type(t_collection) :: rcollection
     
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Ddata1,p_Ddata2,p_Ddata3
       
-    ! Initialise the collection for the assembly.
-    call collct_init(rcollection)
-    call user_initCollectForAssembly (rsupermatrix%p_rglobalData,dtime,rcollection)
-
     neq = dof_igetNDofGlobBlock(rsupermatrix%rdiscrData%p_rspaceDiscr)
     neqtime = tdiscr_igetNDofGlob(rsupermatrix%rdiscrData%p_rtimeDiscr)
     ivelSize = 2 * rsupermatrix%rdiscrData%p_rstaticSpaceAsmTempl%rmatrixTemplateFEM%NEQ
@@ -4691,10 +4693,11 @@ contains
       end if
     
       ! Current time step?
-      call tdiscr_getTimestep(rsupermatrix%rdiscrData%p_rtimeDiscr,isubstep-1,dtime)
+      call tdiscr_getTimestep(rsupermatrix%rdiscrData%p_rtimeDiscr,isubstep-1,dtimePrimal,dtstep)
+      dtimeDual = dtimePrimal - (1.0_DP-rsupermatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
       ! Update the boundary conditions to the current time
-      call fbsim_updateDiscreteBCprec (rsettings%rglobalData,rpreconditioner,dtime)
+      call fbsim_updateDiscreteBCprec (rsettings%rglobalData,rpreconditioner,dtimePrimal,dtimeDual)
 
       ! Assemble diagonal blocks as well as the band above and below the diagonal.
       ileft = -1
@@ -4798,10 +4801,6 @@ contains
     ! Update structural information of the global matrix.
     call lsysbl_updateMatStrucInfo (rmatrix)
   
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call user_doneCollectForAssembly (rsupermatrix%p_rglobalData,rcollection)
-    call collct_done(rcollection)
-
   contains
 
     ! ---------------------------------------------------------------

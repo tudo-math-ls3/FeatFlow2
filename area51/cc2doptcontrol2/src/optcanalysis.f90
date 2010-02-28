@@ -447,7 +447,7 @@ contains
     
     ! local variables
     integer :: isubstep,i
-    real(DP) :: dtstep,dtime
+    real(DP) :: dtstep,dtimePrimal,dtimeDual
     real(DP),dimension(6) :: Derr
     type(t_collection) :: rcollection
     type(t_vectorBlock) :: rtempVector
@@ -456,6 +456,12 @@ contains
     ! Create a temp vector
     call lsysbl_createVectorBlock(rsolution%p_rspaceDiscr,rtempVector,.true.)
     call lsysbl_getbase_double (rtempVector,p_Ddata)
+
+    ! Some basic initialisation.
+    ! Initialise the collection for the assembly process with callback routines.
+    ! This stores the simulation time in the collection and sets the
+    ! current subvector z for the callback routines.
+    call collct_init(rcollection)
     
     derrorU = 0.0_DP
     derrorP = 0.0_DP
@@ -470,48 +476,79 @@ contains
       ! For all further iterates, look at the time interval leading to
       ! that iterate.
       if (isubstep .gt. 1) then
-        call tdiscr_getTimestep(rsolution%p_rtimeDiscr,isubstep-1,dtime,dtstep)
+        call tdiscr_getTimestep(rsolution%p_rtimeDiscr,isubstep-1,dtimePrimal,dtstep)
+        dtimeDual = dtimePrimal - (1.0_DP-rsolution%p_rtimeDiscr%dtheta)*dtstep
       else
-        call tdiscr_getTimestep(rsolution%p_rtimeDiscr,isubstep,dtstep=dtstep,dtimestart=dtime)
+        call tdiscr_getTimestep(rsolution%p_rtimeDiscr,isubstep,dtstep=dtstep,dtimestart=dtimePrimal)
+        dtimeDual = dtimePrimal
       end if
 
       ! Get the solution.
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
-      !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
-      call tmevl_evaluate(rsolution,dtime,rtempVector)
-
-      ! Initialise the collection for the assembly process with callback routines.
-      ! This stores the simulation time in the collection and sets the
-      ! current subvector z for the callback routines.
-      call collct_init(rcollection)
+      ! Note: THe dual solution is shifted by (1-dtheta)*dtstep!
+      ! We therefore only have to evaluate once!
       
+      !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
+      call tmevl_evaluate(rsolution,dtimePrimal,rtempVector)
+
       ! Use our standard implementation to evaluate the error.
-      call ansol_prepareEval (rreference,rcollection,"SOL",dtime)
+      call ansol_prepareEval (rreference,rcollection,"SOL",dtimePrimal)
 
       ! Perform error analysis to calculate and add 1/2||y-y0||^2_{L^2},...
-      do i=1,6
+      do i=1,3
         rcollection%IquickAccess(1) = i
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
       end do
           
       call ansol_doneEval (rcollection,"SOL")
+      
+      ! Ignore the solution of the 0th step (initial solution).
+      ! They don't contribute to the dual solution!
+      
+      if (isubstep .gt. 0) then
+      
+        ! The same for the dual equation.
+        ! In rtempVector(4..6) is the dual solution at time dtimeDual,
+        ! so we don't have to evaluate the flow again!
+
+        call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
+        do i=4,6
+          rcollection%IquickAccess(1) = i
+          call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+              optcana_evalFunction,rcollection)
+        end do
+        call ansol_doneEval (rcollection,"SOL")
+      else
+        Derr(4:6) = 0.0_DP
+      end if
 
       ! We use the summed trapezoidal rule.
-      if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
-        derrorU = derrorU + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
-        derrorP = derrorP + 0.5_DP*Derr(3)**2 * dtstep
-
-        derrorLambda = derrorLambda + 0.5_DP*0.5_DP*(Derr(4)**2 + Derr(5)**2) * dtstep
-        derrorXi = derrorXi + 0.5_DP*Derr(6)**2 * dtstep
-      else
+      if (isubstep .eq. 1) then
+        
         derrorU = derrorU + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
         derrorP = derrorP + Derr(3)**2 * dtstep
 
+      else if ((isubstep .eq. 2) .or. (isubstep .eq. rsolution%NEQtime)) then
+
+        ! 2nd substep is first solution in the dual.
+
+        derrorU = derrorU + (Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorP = derrorP + Derr(3)**2 * dtstep
+        
         derrorLambda = derrorLambda + 0.5_DP*(Derr(4)**2 + Derr(5)**2) * dtstep
         derrorXi = derrorXi + Derr(6)**2 * dtstep
+      
+      else
+      
+        derrorU = derrorU + (Derr(1)**2 + Derr(2)**2) * dtstep
+        derrorP = derrorP + Derr(3)**2 * dtstep
+
+        derrorLambda = derrorLambda + (Derr(4)**2 + Derr(5)**2) * dtstep
+        derrorXi = derrorXi + Derr(6)**2 * dtstep
+      
       end if
       
       if (boutput) then

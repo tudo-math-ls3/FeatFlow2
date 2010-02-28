@@ -3047,7 +3047,7 @@ contains
     ! local variables
     type(t_nonlinearSpatialMatrix) :: rnonlinearSpatialMatrix
     logical :: bconvectionExplicit
-    real(DP) :: dequationType,dtstep,dtheta
+    real(DP) :: dtstep,dtheta
     type(t_spatialMatrixDiscrData) :: rmatrixDiscr
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
     real(dp), dimension(:), pointer :: p_DdataB,p_DdataX
@@ -3108,10 +3108,6 @@ contains
     ! primal and dual solutions.
     bconvectionExplicit = rsettings%rsettingsOptControl%iconvectionExplicit .ne. 0
 
-    dequationType = 1.0_DP
-    if (rsettings%rsettingsOptControl%ispaceTimeFormulation .ne. 0) &
-      dequationType = -1.0_DP
-      
     call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
     rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
     rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
