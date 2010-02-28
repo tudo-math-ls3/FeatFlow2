@@ -487,8 +487,12 @@ contains
       ! Evaluate the space time function in rvector in the point
       ! in time dtime. Independent of the discretisation in time,
       ! this will give us a vector in space.
-      ! Note: THe dual solution is shifted by (1-dtheta)*dtstep!
+      ! Note 1: The dual solution is shifted by (1-dtheta)*dtstep!
       ! We therefore only have to evaluate once!
+      ! Note 2: For Crank-Nicolson, the time discretisation discretises
+      ! the primal pressure at the point of the dual velocity and
+      ! the dual pressure at the time of the primal velocity.
+      ! We compensate for this time shift during the error calculation.
       
       !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
       call tmevl_evaluate(rsolution,dtimePrimal,rtempVector)
