@@ -419,7 +419,7 @@ contains
       ! structure, as this uses different finite elements for trial and test
       ! functions.
       call spdiscr_deriveSimpleDiscrSc (rdiscretisation%RspatialDiscr(2), &
-          EL_QP1, icubB, rdiscretisation%RspatialDiscr(3))
+          EL_QP1NP, icubB, rdiscretisation%RspatialDiscr(3))
                   
     case (5)
       ! rdiscretisation%Rdiscretisations is a list of scalar 

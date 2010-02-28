@@ -497,11 +497,25 @@ contains
       call ansol_prepareEval (rreference,rcollection,"SOL",dtimePrimal)
 
       ! Perform error analysis to calculate and add 1/2||y-y0||^2_{L^2},...
-      do i=1,3
+      ! Primal velocity, dual pressure
+      do i=1,2
         rcollection%IquickAccess(1) = i
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
       end do
+      
+      ! Primal pressure only in the 1st timestep.
+      if (isubstep .eq. 0) then
+        i=3
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+            optcana_evalFunction,rcollection)
+      end if
+      
+      i=6
+      rcollection%IquickAccess(1) = i
+      call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+          optcana_evalFunction,rcollection)
           
       call ansol_doneEval (rcollection,"SOL")
       
@@ -511,15 +525,30 @@ contains
       if (isubstep .gt. 0) then
       
         ! The same for the dual equation.
+        ! Dual velocity, primal pressure.
         ! In rtempVector(4..6) is the dual solution at time dtimeDual,
         ! so we don't have to evaluate the flow again!
 
         call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
-        do i=4,6
+        do i=4,5
           rcollection%IquickAccess(1) = i
           call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
               optcana_evalFunction,rcollection)
         end do
+        
+        i=3
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+            optcana_evalFunction,rcollection)
+            
+        ! Dual pressure only in the last timestep.
+        if (isubstep .eq. rsolution%NEQtime) then
+          i=6
+          rcollection%IquickAccess(1) = i
+          call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+              optcana_evalFunction,rcollection)
+        end if
+
         call ansol_doneEval (rcollection,"SOL")
       else
         Derr(4:6) = 0.0_DP
