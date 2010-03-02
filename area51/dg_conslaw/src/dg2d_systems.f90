@@ -574,7 +574,7 @@ contains
        !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
-       if (ielementType .eq. EL_DG_T2_2D) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
+       if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
 
     
@@ -626,7 +626,7 @@ contains
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
         if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
-        if (ielementType .eq. EL_DG_T2_2D) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
+        if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
         if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
 
 
@@ -674,7 +674,7 @@ contains
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
-       if (ielementType .eq. EL_DG_T2_2D) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
+       if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
 
 !       

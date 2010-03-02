@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 5
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -22,7 +22,7 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 2
 
 
 
@@ -32,7 +32,7 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 0.04
+ttfinal = 0.05
 
 
 [SOLVER]
@@ -42,7 +42,7 @@ ttfinal = 0.04
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 5
+limiter = 0
 
 
 
@@ -61,4 +61,4 @@ incond = 1
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3

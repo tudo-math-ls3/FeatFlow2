@@ -1304,21 +1304,21 @@ contains
         !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
         
         ! Water hill
-!        
-!        if (rcollection%IquickAccess(1)==1) then
-!        
-!        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-!                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-!          
-!          !Dcoefficients (1,ipoint,iel)=1.0_dp
-!        else
-!        Dcoefficients (1,ipoint,iel)=0.0_dp
-!        end if
+        
+        if (rcollection%IquickAccess(1)==1) then
+        
+        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+          
+          !Dcoefficients (1,ipoint,iel)=1.0_dp
+        else
+        Dcoefficients (1,ipoint,iel)=0.0_dp
+        end if
 
       ! Riemann problem
-      if (rcollection%IquickAccess(1)==1) then
-      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
-      end if
+!      if (rcollection%IquickAccess(1)==1) then
+!      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
+!      end if
         
       end do
     end do

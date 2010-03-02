@@ -3475,7 +3475,7 @@ end subroutine
   ! Number of vertives at boundary
   NVBD = p_rtriangulation%NVBD
   
-  ! Get pointers to the data form the triangulation
+  ! Get pointers to the data from the triangulation
   call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
                                p_IverticesAtElement)
   call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
@@ -3654,14 +3654,14 @@ end subroutine
       do iel = 1, NEL  
   
         Dalpha(3,iel) = max(Dalpha(1,iel),Dalpha(3,iel))
-      
+     
         ! Get global DOFs of the element
         call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
     
     
         ! Multiply the linear part of the solution vector with the correction factor
         do ivar = 1, nvar
-          p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(1,iel)
+          p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(3,iel)
         end do
     
       end do ! iel
