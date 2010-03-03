@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -42,7 +42,7 @@ ttfinal = 0.05
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 0
+limiter = 6
 
 
 

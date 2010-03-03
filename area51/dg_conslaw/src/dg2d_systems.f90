@@ -575,7 +575,9 @@ contains
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
        if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
+       if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsoltempBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
+       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
 
     
        
@@ -627,7 +629,9 @@ contains
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
         if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
         if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
+        if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsoltempBlock, 1)
         if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
+        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
 
 
        ! Step 3/3
@@ -675,7 +679,9 @@ contains
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
        if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
+       if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
+       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
 
 !       
 !       ! Test, if the solution has converged

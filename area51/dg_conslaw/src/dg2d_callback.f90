@@ -1305,20 +1305,20 @@ contains
         
         ! Water hill
         
-        if (rcollection%IquickAccess(1)==1) then
-        
-        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-          
-          !Dcoefficients (1,ipoint,iel)=1.0_dp
-        else
-        Dcoefficients (1,ipoint,iel)=0.0_dp
-        end if
+!        if (rcollection%IquickAccess(1)==1) then
+!        
+!        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+!                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!          
+!          !Dcoefficients (1,ipoint,iel)=1.0_dp
+!        else
+!        Dcoefficients (1,ipoint,iel)=0.0_dp
+!        end if
 
       ! Riemann problem
-!      if (rcollection%IquickAccess(1)==1) then
-!      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
-!      end if
+      if (rcollection%IquickAccess(1)==1) then
+      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
+      end if
         
       end do
     end do
@@ -1891,15 +1891,15 @@ contains
       
       ! First calculate flux in x-direction
       DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
-                   normal(1,iel)*matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
-                   !sign(1.0_dp,normal(1,iel))*matmul(matmul(matmul(buildTrafo(DQroe,1),buildaLambda(DQroe,1)),buildinvTrafo(DQroe,1)),(dQa-dQi) )) ! artificial diffusion
+                   !normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
+                   sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
       
       !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
       
       ! First calculate flux in y-direction
       DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
-                   normal(2,iel)*matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
-                   !sign(1.0_dp,normal(2,iel))*matmul(matmul(matmul(buildTrafo(DQroe,2),buildaLambda(DQroe,2)),buildinvTrafo(DQroe,2)),(dQa-dQi) )) ! artificial diffusion
+                   !normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
+                   sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
       
       !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
                    
