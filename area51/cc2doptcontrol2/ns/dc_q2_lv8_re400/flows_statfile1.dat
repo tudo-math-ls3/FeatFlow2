@@ -1,6 +1,6 @@
-###########
-[DRIVENCAV]
-###########
+##################
+[DRIVENCAV_STOKES]
+##################
 
 # Type of flow.
 # =1: stationary flow
@@ -22,9 +22,9 @@ ielementType = 4
 # Mesh
 #smesh = './pre/QUAD.tri'
 
-################
-[DRIVENCAV_INIT]
-################
+#################
+[DRIVENCAV_NAVST]
+#################
 
 # Type of flow.
 # =1: stationary flow
