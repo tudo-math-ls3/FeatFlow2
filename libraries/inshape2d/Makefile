@@ -9,27 +9,33 @@ RANLIB = ranlib
 
 # C compiler and flags
 CC = gcc
-CFLAGS = -g -Wall -D_GNU_SOURCE -DMY_ZCALLOC -DZ_PREFIX -I.  
+CFLAGS = -g -Wall -c -D_GNU_SOURCE -DMY_ZCALLOC -DZ_PREFIX -I.  
 #CFLAGS = -O -Wall -D_GNU_SOURCE -DMY_ZCALLOC -DZ_PREFIX -I.  
 
 # C++ compiler and flags
 CCC = g++
-CCFLAGS = -g -Wall -D_GNU_SOURCE -I. -I./src -I./include -I../opennurbs
+CCFLAGS = -g -w -c -D_GNU_SOURCE -I. -I./src -I./include -I../opennurbs
 #CCFLAGS = -O -Wall -D_GNU_SOURCE -I.
-LDFLAGS = -L. -lopenNURBS
+LDFLAGS = -L. 
 
 ###############################################################
 LINK = $(CCC)
 LINKFLAGS =
 
 ###############################################################
-# Pattern for .cpp
-%.o:%.cpp
-	$(CCC) $(CCFLAGS) -c $<
-###############################################################	
-# Pattern for .c	
-%.o:%.c
-	$(CC) $(CFLAGS) -c $<	
+
+#%.o: %.cpp
+#	$(CCC) $(CCFLAGS) -c $< -o $@
+
+.cpp.o :
+	$(CCC) $(CCFLAGS) -c $*.cpp -o $*.o
+
+# If your make doesn't have a rule for .c to .o, uncomment the
+# next two lines.
+%.o: %.c
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
 ###############################################################
 # Name of the library
 OPENNURBS_LIB_NAME = inshape2d
@@ -183,10 +189,6 @@ ON_SRC= ../opennurbs/opennurbs_3dm_attributes.cpp \
 		../opennurbs/opennurbs_math.cpp \
 		../opennurbs/opennurbs_matrix.cpp \
 		../opennurbs/opennurbs_memory.c \
-		../opennurbs/opennurbs_memory_custom.c \
-		../opennurbs/opennurbs_memory_default.c \
-		../opennurbs/opennurbs_memory_microsoft.c \
-		../opennurbs/opennurbs_memory_new.cpp \
 		../opennurbs/opennurbs_memory_util.c \
 		../opennurbs/opennurbs_mesh.cpp \
 		../opennurbs/opennurbs_mesh_tools.cpp \
@@ -325,121 +327,138 @@ ON_OBJ=opennurbs_3dm_attributes.o \
 		opennurbs_zlib_memory.o
 
 ZLIB_INC= ../opennurbs/zlib/crc32.h \
-		../opennurbs/zlib/deflate.h \
-		../opennurbs/zlib/inffast.h \
-		../opennurbs/zlib/inffixed.h \
-		../opennurbs/zlib/inflate.h \
-		../opennurbs/zlib/inftrees.h \
-		../opennurbs/zlib/trees.h \
-		../opennurbs/zlib/zconf.h \
-		../opennurbs/zlib/zlib.h \
-		../opennurbs/zlib/zutil.h \
+	../opennurbs/zlib/deflate.h \
+	../opennurbs/zlib/inffast.h \
+	../opennurbs/zlib/inffixed.h \
+	../opennurbs/zlib/inflate.h \
+	../opennurbs/zlib/inftrees.h \
+	../opennurbs/zlib/trees.h \
+	../opennurbs/zlib/zconf.h \
+	../opennurbs/zlib/zlib.h \
+	../opennurbs/zlib/zutil.h \
 		
 ZLIB_SRC= ../opennurbs/zlib/adler32.c \
-		../opennurbs/zlib/compress.c \
-		../opennurbs/zlib/crc32.c \
-		../opennurbs/zlib/deflate.c \
-		../opennurbs/zlib/infback.c \
-		../opennurbs/zlib/inffast.c \
-		../opennurbs/zlib/inflate.c \
-		../opennurbs/zlib/inftrees.c \
-		../opennurbs/zlib/trees.c \
-		../opennurbs/zlib/uncompr.c \
-		../opennurbs/zlib/zutil.c
+	../opennurbs/zlib/compress.c \
+	../opennurbs/zlib/crc32.c \
+	../opennurbs/zlib/deflate.c \
+	../opennurbs/zlib/infback.c \
+	../opennurbs/zlib/inffast.c \
+	../opennurbs/zlib/inflate.c \
+	../opennurbs/zlib/inftrees.c \
+	../opennurbs/zlib/trees.c \
+	../opennurbs/zlib/uncompr.c \
+	../opennurbs/zlib/zutil.c
 
 
 ZLIB_OBJ=adler32.o \
-		compress.o \
-		crc32.o \
-		deflate.o \
-		infback.o \
-		inffast.o \
-		inflate.o \
-		inftrees.o \
-		trees.o \
-		uncompr.o \
-		zutil.o
+	compress.o \
+	crc32.o \
+	deflate.o \
+	infback.o \
+	inffast.o \
+	inflate.o \
+	inftrees.o \
+	trees.o \
+	uncompr.o \
+	zutil.o
 
-KERNEL_INC=	include/dynamicarray.h \
-						include/torus.h \
-						include/mathglobals.h \
-						include/matrix2x2.h \
-						include/matrix3x3.h \
-						include/matrix4x4.h \
-						include/quaternion.h \
-						include/vector2.h \
-						include/vector3.h \
-						include/vector4.h \
-						include/aabbtree.h \
-						include/approxcurve.h \
-						include/basiccurve.h \
-						include/binstree.h \
-						include/boxes.h \
-						include/bspline.h \
-						include/distops.h \
-						include/exception.h \
-						include/fileParser.h \
-						include/geomops.h \
-						include/graham.h \
-						include/macros.h \
-						include/nurbs.h \
-						include/primops.h \
-						include/rootfinder.h 
+KERNEL_INC=include/dynamicarray.h \
+	include/torus.h \
+	include/mathglobals.h \
+	include/matrix2x2.h \
+	include/matrix3x3.h \
+	include/matrix4x4.h \
+	include/quaternion.h \
+	include/vector2.h \
+	include/vector3.h \
+	include/vector4.h \
+	include/aabbtree.h \
+	include/approxcurve.h \
+	include/basiccurve.h \
+	include/binstree.h \
+	include/boxes.h \
+	include/bspline.h \
+	include/distops.h \
+	include/exception.h \
+	include/fileParser.h \
+	include/geomops.h \
+	include/graham.h \
+	include/macros.h \
+	include/nurbs.h \
+	include/primops.h \
+	include/rootfinder.h 
 
-KERNEL_INC= src/dynamicarray.cpp \
-						src/torus.cpp \
-						src/matrix2x2.cpp \
-						src/quaternion.cpp \
-						src/vector2.cpp \
-						src/vector3.cpp \
-						src/aabb2.cpp \
-						src/aabbtree.cpp \
-						src/approxcurve.cpp \
-						src/basiccurve.cpp \
-						src/boxes.cpp \
-						src/bspline.cpp \
-						src/distops.cpp \
-						src/exception.cpp \
-						src/fileParser.cpp \
-						src/geomops.cpp \
-						src/graham.cpp \
-						src/nurbs.cpp \
-						src/primops.cpp \
-						src/rootfinder.cpp 
+KERNEL_SRC= src/dynamicarray.cpp \
+	src/torus.cpp \
+	src/matrix2x2.cpp \
+	src/quaternion.cpp \
+	src/vector2.cpp \
+	src/vector3.cpp \
+	src/aabb2.cpp \
+	src/aabbtree.cpp \
+	src/approxcurve.cpp \
+	src/basiccurve.cpp \
+	src/boxes.cpp \
+	src/bspline.cpp \
+	src/distops.cpp \
+	src/exception.cpp \
+	src/fileParser.cpp \
+	src/geomops.cpp \
+	src/graham.cpp \
+	src/nurbs.cpp \
+	src/primops.cpp \
+	src/rootfinder.cpp 
 
-KERNEL_OBJ=	dynamicarray.o \
-						matrix2x2.o \
-						quaternion.o \
-						vector2.o \
-						vector3.o \
-		        aabbtree.o \
-		        aabb2.o \
-						approxcurve.o \
-						basiccurve.o \
-						boxes.o \
-						bspline.o \
-						distops.o \
-						exception.o \
-						fileParser.o \
-						geomops.o \
-						graham.o \
-						nurbs.o \
-						primops.o \
-						rootfinder.o \
-						torus.o
-
-$(ON_OBJ) : $(ON_INC)
+KERNEL_OBJ=dynamicarray.o \
+	matrix2x2.o \
+	quaternion.o \
+	vector2.o \
+	vector3.o \
+	aabbtree.o \
+	aabb2.o \
+	approxcurve.o \
+	basiccurve.o \
+	boxes.o \
+	bspline.o \
+	distops.o \
+	exception.o \
+	fileParser.o \
+	geomops.o \
+	graham.o \
+	nurbs.o \
+	primops.o \
+	rootfinder.o \
+	torus.o
 
 $(ZLIB_OBJ) : $(ZLIB_INC)
+	$(CC) $(CFLAGS) $(ZLIB_SRC)
 
-$(KERNEL_OBJ) : $(KERNEL_SRC) $(KERNEL_INC)  
+zlib: $(ZLIB_OBJ)
+	
+
+opennurbs_memory.o : ../opennurbs/opennurbs_memory_default.c $(ON_INC)
+
+$(ON_OBJ) : $(ON_INC)
+	@echo "opennurbs" 
+	$(CCC) $(CCFLAGS) $(LDFLAGS) $(ON_SRC)
+
+$(KERNEL_OBJ): $(KERNEL_INC)
+	@echo "kernel Inshape " 
+	$(CCC) $(CCFLAGS) $(LDFLAGS) $(KERNEL_SRC) 
 
 $(OPENNURBS_LIB_FILE) : $(KERNEL_OBJ) $(ON_OBJ) $(ZLIB_OBJ)
+	@echo "Building <$(OPENNURBS_LIB_FILE)>" 
 	-$(RM) $@
 	$(AR) $@ $(KERNEL_OBJ) $(ON_OBJ) $(ZLIB_OBJ)  
 	$(RANLIB) $@
+
+kernel: $(KERNEL_OBJ)  
+	@echo "only kernel Inshape " 
+#	$(CCC) $(CCFLAGS) $(KERNEL_SRC) 
+
 	
 all: $(OPENNURBS_LIB_FILE)
+	
 
 #Inshape2d: $(KERNEL_OBJ) $(MATH_OBJ) $(UTILITY_OBJ) $(ON_OBJ) $(ZLIB_OBJ)
 #	$(CCC) $(CCFLAGS) $(LDFLAGS) $(KERNEL_OBJ) $(MATH_OBJ) $(UTILITY_OBJ) $(ON_OBJ) $(ZLIB_OBJ) -o $@
