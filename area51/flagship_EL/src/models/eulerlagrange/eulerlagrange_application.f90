@@ -393,7 +393,7 @@ module eulerlagrange_application
             rsolutionPrimal, rcollection,rParticles)
 
         call eulerlagrange_outputSolution(rparlist, 'eulerlagrange', rproblem&
-            %p_rproblemLevelMax, rsolutionPrimal, dtime=rtimestep&
+            %p_rproblemLevelMax, rParticles, rsolutionPrimal, dtime=rtimestep&
             %dTime)
             
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1588,7 +1588,7 @@ module eulerlagrange_application
 !<subroutine>
 
   subroutine eulerlagrange_outputSolution(rparlist, ssectionName,&
-      rproblemLevel, rsolutionPrimal, rsolutionDual, dtime)
+      rproblemLevel, rParticles, rsolutionPrimal, rsolutionDual, dtime)
 
 !<description>
     ! This subroutine exports the solution vector to file in UCD format
@@ -1604,6 +1604,9 @@ module eulerlagrange_application
     ! problem level structure
     type(t_problemLevel), intent(in) :: rproblemLevel
 
+    ! particles
+    type(t_particles), intent(in), optional :: rParticles
+
     ! OPTIONAL: solution vector for primal problem
     type(t_vectorBlock), intent(in), optional :: rsolutionPrimal
 
@@ -1612,6 +1615,7 @@ module eulerlagrange_application
 
     ! OPTIONAL: simulation time
     real(DP), intent(in), optional :: dtime
+    
 !</input>
 !</subroutine>
 
@@ -1628,7 +1632,6 @@ module eulerlagrange_application
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
     character(len=SYS_NAMELEN) :: cvariable
     integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
-
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -1750,12 +1753,9 @@ module eulerlagrange_application
               call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)
 
             case (NDIM2D)
-              call eulerlagrange_getVarInterleaveFormat(rvector4%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata4)
-              call eulerlagrange_getVarInterleaveFormat(rvector5%NEQ, NVAR2D,&
-                  'velo_part_y', p_Dsolution, p_Ddata5)
+
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata4, p_Ddata5)
+                  rParticles%p_PartVelox, rParticles%p_PartVeloy)
 
             case (NDIM3D)
               call eulerlagrange_getVarInterleaveFormat(rvector4%NEQ, NVAR3D,&
@@ -1767,6 +1767,11 @@ module eulerlagrange_application
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
                   p_Ddata4, p_Ddata5, p_Ddata6)
             end select
+
+          elseif (trim(cvariable) .eq. 'vol_part') then
+          
+            call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, rParticles%p_PartVol)
 
           else
 
@@ -1826,12 +1831,9 @@ module eulerlagrange_application
               call ucd_addVarVertBasedVec(rexport, 'velo_part', p_Ddata4)   
                    
             case (NDIM2D)
-              call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
-                  'velo_part_x', p_Dsolution, p_Ddata4)
-              call eulerlagrange_getVarBlockFormat(rvector5%NEQ, NVAR2D,&
-                  'velo_part_y', p_Dsolution, p_Ddata5)
+
               call ucd_addVarVertBasedVec(rexport, 'velo_part',&
-                  p_Ddata4, p_Ddata5)
+                  rParticles%p_PartVelox, rParticles%p_PartVeloy)
                   
             case (NDIM3D)           
               call eulerlagrange_getVarBlockFormat(rvector4%NEQ, NVAR2D,&
@@ -1844,7 +1846,12 @@ module eulerlagrange_application
                   p_Ddata4, p_Ddata5, p_Ddata6)
 
             end select
-             
+
+          elseif (trim(cvariable) .eq. 'vol_part') then
+         
+              call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, rParticles%p_PartVol)
+                
           else
             
             ! Standard treatment for scalar quantity
@@ -1863,12 +1870,23 @@ module eulerlagrange_application
       end select
 
       ! Release temporal memory
-      call lsyssc_releaseVector(rvector1)
-      call lsyssc_releaseVector(rvector2)
-      call lsyssc_releaseVector(rvector3)
-      call lsyssc_releaseVector(rvector4)
-      call lsyssc_releaseVector(rvector5)
-      call lsyssc_releaseVector(rvector6)
+      select case(ndim)
+      case (NDIM1D)
+          call lsyssc_releaseVector(rvector1)
+          call lsyssc_releaseVector(rvector4)
+      case (NDIM2D)
+          call lsyssc_releaseVector(rvector1)
+          call lsyssc_releaseVector(rvector2)
+          call lsyssc_releaseVector(rvector4)
+          call lsyssc_releaseVector(rvector5)
+      case (NDIM3D)           
+          call lsyssc_releaseVector(rvector1)
+          call lsyssc_releaseVector(rvector2)
+          call lsyssc_releaseVector(rvector3)
+          call lsyssc_releaseVector(rvector4)
+          call lsyssc_releaseVector(rvector5)
+          call lsyssc_releaseVector(rvector6)
+      end select
       
     end if
     
@@ -2666,7 +2684,7 @@ module eulerlagrange_application
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call eulerlagrange_outputSolution(rparlist, ssectionName,&
-          p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+          p_rproblemLevel, rParticles, rsolution, dtime=rtimestep%dTime)
       
       !-------------------------------------------------------------------------
       ! Advance solution in time
@@ -2724,7 +2742,7 @@ module eulerlagrange_application
 
         ! Export the intermediate solution
         call eulerlagrange_outputSolution(rparlist, ssectionName,&
-            p_rproblemLevel, rsolution, dtime=rtimestep%dTime)
+            p_rproblemLevel, rParticles, rsolution, dtime=rtimestep%dTime)
 
         ! Stop time measurement for post-processing
         call stat_stopTimer(p_rtimerPrepostProcess)
@@ -3183,7 +3201,9 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_new ('euler_lagrange', 'Elements:particlevolume', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVol, &
                             ST_NEWBLOCK_NOINIT)
     ! Velocity of the particles
-    call storage_new ('euler_lagrange', 'Elements:particlevelocity', md_el_length, ST_DOUBLE, rParticles%h_PartVelo, &
+    call storage_new ('euler_lagrange', 'Elements:particlevelocityx', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVelox, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Elements:particlevelocityy', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVeloy, &
                             ST_NEWBLOCK_NOINIT)
    
     call storage_getbase_double (rParticles%h_xpos, rParticles%p_xpos)
@@ -3216,7 +3236,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_double (rParticles%h_bdy_check, rParticles%p_bdy_check)
 
     call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
-    call storage_getbase_double2D (rParticles%h_PartVelo, rParticles%p_PartVelo)
+    call storage_getbase_double (rParticles%h_PartVelox, rParticles%p_PartVelox)
+    call storage_getbase_double (rParticles%h_PartVeloy, rParticles%p_PartVeloy)
     call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
   
     ! Set pointer to coordinate vector
@@ -3277,7 +3298,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%iTimestep= 0
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0
-    rParticles%p_PartVelo= 0
+    rParticles%p_PartVelox= 0
+    rParticles%p_PartVeloy= 0
 
     ! Set boundaryconditions for the particles
     select case(boundbehav)
