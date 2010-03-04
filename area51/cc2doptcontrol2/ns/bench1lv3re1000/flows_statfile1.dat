@@ -31,7 +31,7 @@ ielementType = 4
 
 ctype = 1
 
-# Navier-Stokes flow at RE=400
+# Navier-Stokes flow at RE=1000
 
 sflowFile = './ns/bench1lv3re1000/bench1_lv3_q2_statnavstokes.sol'
 
