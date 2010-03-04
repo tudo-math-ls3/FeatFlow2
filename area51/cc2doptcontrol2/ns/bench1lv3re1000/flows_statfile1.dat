@@ -1,0 +1,65 @@
+##################
+[BENCH1_STOKES]
+##################
+
+# Type of flow.
+# =1: stationary flow
+
+ctype = 1
+
+# The Stokes flow.
+
+sflowFile = './ns/bench1lv3re1000/bench1_lv3_q2_statstokes.sol'
+
+# Level
+
+ilevel = 3
+
+# Q2
+
+ielementType = 4
+
+# Mesh
+#smesh = './pre/bench1.tri'
+
+#################
+[BENCH1_NAVST]
+#################
+
+# Type of flow.
+# =1: stationary flow
+
+ctype = 1
+
+# Navier-Stokes flow at RE=400
+
+sflowFile = './ns/bench1lv3re1000/bench1_lv3_q2_statnavstokes.sol'
+
+# Level
+
+ilevel = 3
+
+# Q2
+
+ielementType = 4
+
+# Mesh
+#smesh = './pre/bench1.tri'
+
+###############
+[BDEXPRESSIONS]
+###############
+
+bdExpressions(2) =
+  'Dirichlet0'    0    0.0
+  'ParProfile'    2    0.3
+
+##############
+[BDCONDITIONS]
+##############
+
+bdComponent1(4)=
+   1.0  3  1  'Dirichlet0'  'Dirichlet0'
+   2.0  0  0                            
+   3.0  3  1  'Dirichlet0'  'Dirichlet0'
+   4.0  3  1  'ParProfile'  'Dirichlet0'

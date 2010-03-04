@@ -50,8 +50,8 @@ ctype = 0
 ctype = 0
  
 [OPTIMALCONTROL]
-stargetFlow = DRIVENCAV
-sinitialCondition = DRIVENCAV_INIT
+stargetFlow = DRIVENCAV_STOKES
+sinitialCondition = DRIVENCAV_NAVST
 dalphaC = 0.01
 dgammaC = 0.0
 ccontrolConstraints = 0

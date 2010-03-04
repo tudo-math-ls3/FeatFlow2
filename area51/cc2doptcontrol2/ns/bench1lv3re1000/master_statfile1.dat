@@ -3,10 +3,10 @@
 #
 # - Imports the flows_statfile.dat file which defines
 #   - start condition = fully developed stationary
-#     Stokes at Re=400
-#   - target flow = fully developed Navier-Stokes flow
+#     Navier-Stokes at Re=400
+#   - target flow = fully developed Stokes flow
 #     at Re=400
-# - Re=400, Stokes-equation
+# - Re=400, Navier-Stokes equation
 # - zero initial flow
 # - No constraints
 # - Q2/P1 / CN, no stabilisation
@@ -21,15 +21,15 @@ simportdatafiles(1) =
   "./ns/dc_q2_lv8_re400/flows_statfile1.dat"
 
 [PARAMTRIANG]
-sParametrisation = './pre/QUAD.prm'
-sMesh = './pre/QUAD.tri'
+sParametrisation = './pre/bench1.prm'
+sMesh = './pre/bench1.tri'
  
 [CC-PHYSICSPRIMAL]
-iequation  = 1
-RE = 400
+iequation  = 0
+RE = 1000
 
 [CC-DISCRETISATION]
-NLMIN = 3
+NLMIN = 1
 NLMAX = 5
 iElementType = 4
 iUpwind1 = 0
@@ -50,8 +50,8 @@ ctype = 0
 ctype = 0
  
 [OPTIMALCONTROL]
-stargetFlow = DRIVENCAV_NAVST
-sinitialCondition = DRIVENCAV_STOKES
+stargetFlow = BENCH1_STOKES
+sinitialCondition = BENCH1_NAVST
 dalphaC = 0.01
 dgammaC = 0.0
 ccontrolConstraints = 0
@@ -122,9 +122,9 @@ sfilenameUCD = './gmv/u_dc.vtk'
 icalcForces = 0
 dbdForcesCoeff1 = 0.004
 dbdForcesCoeff2 = 0.004
-icalcFlux = 1
+icalcFlux = 0
 dfluxline = 0.5 0.5 0.5 0.0
-iwriteFlux = 1
+iwriteFlux = 0
 sfilenameFlux = 'ns/flux'
 
 [CC-LINEARSOLVER]
