@@ -68,7 +68,8 @@ search = midpoint
 #	ymax = maxval(p_DvertexCoords(2,:))
 # 1 individual startingposition
 # 2 read starting position from file
-startpos = 0
+# 3 uniformly distributed
+startpos = 3
 
 # minimum particle-position in x-direction 
 xmin = 1.5e-4

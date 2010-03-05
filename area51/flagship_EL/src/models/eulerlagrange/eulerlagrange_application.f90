@@ -3138,7 +3138,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_new ('euler_lagrange', 'Particle:lambda4', rParticles%npart, ST_DOUBLE, rParticles%h_lambda4, &
                             ST_NEWBLOCK_NOINIT)
 
-   call storage_new ('euler_lagrange', 'Particle:diameter', rParticles%npart, ST_DOUBLE, rParticles%h_diam, &
+    call storage_new ('euler_lagrange', 'Particle:diameter', rParticles%npart, ST_DOUBLE, rParticles%h_diam, &
                             ST_NEWBLOCK_NOINIT)
     call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
                             ST_NEWBLOCK_NOINIT)
@@ -3261,7 +3261,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                                  p_DvertexCoords(2,p_IverticesAtElement(2,iel))+&
                                  p_DvertexCoords(2,p_IverticesAtElement(3,iel)))/3.0_dp
 
-        end do
+    end do
 
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "xmin", partxmin)
@@ -3387,7 +3387,15 @@ rstartmatrix = transpose(reshape(&
           rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rstartmatrix,1)*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
-            
+        case(3)
+          call random_number(random1)
+          random2= iPart/rParticles%npart
+          ! Set startingpositions of the particle
+          rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+     
         end select
  
         ! Set initial values for the particles

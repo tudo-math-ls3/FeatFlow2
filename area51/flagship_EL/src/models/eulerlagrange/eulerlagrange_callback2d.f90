@@ -302,7 +302,7 @@ module eulerlagrange_callback2d
       real(DP), dimension(:), pointer :: p_PartVol
       ! volumepart of the particles 
       integer(I32) :: h_PartVelox, h_PartVeloy
-      real(DP), dimension(:,:), pointer :: p_PartVelox, p_PartVeloy
+      real(DP), dimension(:), pointer :: p_PartVelox, p_PartVeloy
       ! gravity
       real(DP), dimension(2)  :: gravity
       ! viscosity of the gas
@@ -5156,6 +5156,8 @@ contains
 	integer :: i, current
 	real(DP) :: c_pi
 
+    !rParticles%p_PartVol=0
+
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
  
@@ -5255,27 +5257,27 @@ contains
         ! Store the velocity of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVelox(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVelox(p_IverticesAtElement(1,current)) + &
-		                (rParticles%p_xvelo(i)**2)/&
+		                (rParticles%p_xvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(1,current))
 		rParticles%p_PartVelox(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVelox(p_IverticesAtElement(2,current)) + &
-		                (rParticles%p_xvelo(i)**2)/&
+		                (rParticles%p_xvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(2,current))
 		rParticles%p_PartVelox(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVelox(p_IverticesAtElement(3,current)) + &
-		                (rParticles%p_xvelo(i)**2)/&
+		                (rParticles%p_xvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(3,current))
 		rParticles%p_PartVeloy(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(1,current)) + &
-		                (rParticles%p_yvelo(i)**2)/&
+		                (rParticles%p_yvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(1,current))
 		rParticles%p_PartVeloy(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(2,current)) + &
-		                (rParticles%p_yvelo(i)**2)/&
+		                (rParticles%p_yvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(2,current))
 		rParticles%p_PartVeloy(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(3,current)) + &
-		                (rParticles%p_yvelo(i)**2)/&
+		                (rParticles%p_yvelo(i))/&
 		                p_DelementVolume(p_IverticesAtElement(3,current))
 
 	end do
