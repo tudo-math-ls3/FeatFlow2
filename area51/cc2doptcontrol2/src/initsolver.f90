@@ -138,7 +138,7 @@ contains
 
     character(len=SYS_STRLEN) :: sstr,sstr2
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    type(t_feSpaceLevel), pointer :: p_rfeSpacePrimalDual
+    type(t_feSpaceLevel), pointer :: p_rfeSpacePrimalDual,p_rfeSpacePrimal
     type(t_settings_discr) :: rsettingsSpaceDiscr
     integer :: isuccess
     
@@ -361,6 +361,8 @@ contains
         rsettingsSolver%rtimeHierarchy%p_rtimeLevels(rsettingsSolver%rtimeHierarchy%nlevels)
     p_rfeSpacePrimalDual => rsettingsSolver%rfeHierPrimalDual% &
         p_rfeSpaces(rsettingsSolver%rfeHierPrimalDual%nlevels)
+    p_rfeSpacePrimal => rsettingsSolver%rfeHierPrimal% &
+        p_rfeSpaces(rsettingsSolver%rfeHierPrimal%nlevels)
 
     ! Initialise the postprocessing
     if (ioutputLevel .ge. 1) then
@@ -369,7 +371,7 @@ contains
     end if
     call init_initPostprocessing (rparlist,rsettings%ssectionSpaceTimePostprocessing,&
         rsettingsSpaceDiscr,rsettingsSolver%roptcBDC,&
-        p_rtimeDiscr,p_rfeSpacePrimalDual%p_rdiscretisation,&
+        p_rtimeDiscr,p_rfeSpacePrimalDual%p_rdiscretisation,p_rfeSpacePrimal%p_rdiscretisation,&
         rpostproc,rsettingsSolver)
 
     ! Call the first user defined init routine to fetch parameters from
@@ -2816,7 +2818,7 @@ contains
 !<subroutine>
 
   subroutine init_initPostprocessing (rparlist,ssection,rsettingsSpaceDiscr,&
-      rboundaryConditions,rtimeDiscr,rspaceDiscr,rpostproc,rsettings)
+      rboundaryConditions,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal,rpostproc,rsettings)
 
 !<description>
   ! Initialises rdiscrData with standard values from rsettings.
@@ -2838,6 +2840,9 @@ contains
   ! Underlying space discretisation
   type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
 
+  ! Underlying space discretisation in the primal space
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+
   ! Underlying time discretisation
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
   
@@ -2858,7 +2863,7 @@ contains
 
     ! Basic initialisation of the postprocessing structure
     call optcpp_initpostprocessing (rpostproc,CCSPACE_PRIMALDUAL,&
-        rboundaryConditions,rtimeDiscr,rspaceDiscr)
+        rboundaryConditions,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
         
     ! Read remaining parameters from the DAT file.
     !
@@ -2871,6 +2876,10 @@ contains
 
     call parlst_getvalue_string (rparlist,ssection,&
         "sfinalSolutionFileName",rpostproc%sfinalSolutionFileName,&
+        "",bdequote=.true.)
+
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfinalControlFileName",rpostproc%sfinalControlFileName,&
         "",bdequote=.true.)
 
     ! function value calculation

@@ -75,6 +75,10 @@ module structuresoptflow
     ! Filename of a file sequence where the final solution is saved to.
     ! ="": Disable.
     character(len=SYS_STRLEN) :: sfinalSolutionFileName = ""
+
+    ! Filename of a file sequence where the final control is saved to.
+    ! ="": Disable.
+    character(len=SYS_STRLEN) :: sfinalControlFileName = ""
     
     ! Whether to calculate the values of the optimisation functional
     ! J(.) as well as ||y-y0|| etc. during the postprocessing of space-time vectors.
@@ -135,6 +139,9 @@ module structuresoptflow
     ! Space that is available in rsolution. One of the CCSPACE_xxxx constants.
     integer :: cspace = CCSPACE_PRIMALDUAL
     
+    ! Underlying space discretisation of the primal space
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscrPrimal
+
     ! Underlying space discretisation
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
 

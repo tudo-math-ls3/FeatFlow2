@@ -23,6 +23,9 @@
 !#
 !# 5.) optcpp_postprocSpaceVisOutput
 !#     -> Write out visualisation files of all solutions in a space-time vector
+!#
+!# 6.) optcpp_calculateControl
+!#     -> Calculates the control from a solution vector.
 !# </purpose>
 !##############################################################################
 
@@ -121,7 +124,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_initpostprocessing (rpostproc,cspace,rboundaryConditions,&
-      rtimeDiscr,rspaceDiscr)
+      rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
   
 !<description>
   ! Initialises the postprocessing
@@ -137,6 +140,9 @@ contains
   ! Underlying space discretisation
   type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
 
+  ! Underlying space discretisation in the primal space
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
+
   ! Underlying time discretisation
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
 !</input>
@@ -150,6 +156,7 @@ contains
 
     ! Fetch data
     rpostproc%cspace = cspace
+    rpostproc%p_rspaceDiscrPrimal => rspaceDiscrPrimal
     rpostproc%p_rspaceDiscr => rspaceDiscr
     rpostproc%p_rtimeDiscr => rtimeDiscr
     rpostproc%p_rboundaryConditions => rboundaryConditions
@@ -239,7 +246,7 @@ contains
   type(t_settings_optflow), intent(inout), target :: rsettings
 
   ! The solution vector which is to be evaluated by the postprocessing routines.
-  type(t_vectorBlock), intent(IN) :: rvector
+  type(t_vectorBlock), intent(inout) :: rvector
   
   ! Id of the file on the hard disc; added to the filename.
   integer, intent(in) :: ifileid
@@ -271,7 +278,7 @@ contains
   type(t_triangulation), pointer :: p_rtriangulation
   
   ! A vector accepting Q1 data
-  type(t_vectorBlock) :: rprjVector
+  type(t_vectorBlock) :: rprjVector,rcontrolVector
   
   ! Output block for UCD output to GMV file
   type(t_ucdExport) :: rexport
@@ -418,6 +425,33 @@ contains
       
       call vecio_writeBlockVectorHR (rvector, "vector"//sys_si0(ifileid,5), .false.,&
           0, sfilename,  "(E20.10)")
+    end if
+
+    ! -------------------------------------------------------------------------
+    ! Writing out of the final coptrol. Note that we have to calculate it
+    ! from the final dual solution.
+    ! -------------------------------------------------------------------------
+    
+    if (rpostproc%sfinalControlFileName .ne. "") then
+    
+      ! Do the projection into a vector in the discretisation
+      ! if the primal space.
+      call lsysbl_createVecBlockByDiscr (rpostproc%p_rspaceDiscrPrimal,&
+          rcontrolVector,.true.)
+    
+      call optcpp_calcControl (rvector,roptControl%rconstraints,&
+          roptControl%dalphaC,rcontrolVector)  
+    
+      ! Write the current solution to disc as it is.
+      sfilename = trim(rpostproc%sfinalControlFileName)//'.'//sys_si0(ifileid,5)
+      
+      call output_lbrk ()
+      call output_line ('Writing control file: '//trim(sfilename))
+      
+      call vecio_writeBlockVectorHR (rcontrolVector, "vector"//sys_si0(ifileid,5), .false.,&
+          0, sfilename,  "(E20.10)")
+          
+      call lsysbl_releaseVector (rcontrolVector)
     end if
 
     ! -------------------------------------------------------------------------
@@ -571,19 +605,7 @@ contains
         end if
 
         ! Control u = P[min/max](-1/alpha lambda)
-        call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
-        call lsyssc_scaleVector (rprjVector%RvectorBlock(4),-1.0_DP/roptControl%dalphaC)
-
-        call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
-        call lsyssc_scaleVector (rprjVector%RvectorBlock(5),-1.0_DP/roptControl%dalphaC)
-
-        if (roptControl%rconstraints%ccontrolConstraints .ne. 0) then
-          call smva_projectControlTimestep (rprjVector%RvectorBlock(4),&
-              roptControl%rconstraints%dumin1,roptControl%rconstraints%dumax1)
-
-          call smva_projectControlTimestep (rprjVector%RvectorBlock(5),&
-              roptControl%rconstraints%dumin2,roptControl%rconstraints%dumax2)
-        end if
+        call optcpp_calcControl (rprjVector,roptControl%rconstraints,roptControl%dalphaC)
 
         call ucd_addVarVertBasedVec (rexport,'control',&
             p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
@@ -707,8 +729,8 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_postprocSpaceVisOutput (rsettings,rspaceDiscr,rtimeDiscr,rvector,&
-      ioutputUCD,sfilename)
+  subroutine optcpp_postprocSpaceVisOutput (rsettings,rspaceDiscr,rspaceDiscrPrimal,&
+      rtimeDiscr,rvector,ioutputUCD,sfilename)
   
 !<description>
   ! For every sub-solution in the global space-time vector rvector,
@@ -725,6 +747,10 @@ contains
   ! A space-time discretisation structure defining the discretisation of
   ! rvector.
   type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+
+  ! A space-time discretisation structure defining the discretisation of
+  ! the primal space.
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscrPrimal
   
   ! Underlying time discretisation
   type(t_timeDiscretisation), intent(in) :: rtimeDiscr
@@ -755,7 +781,7 @@ contains
     
     ! Create a default postprocessing structure
     call optcpp_initpostprocessing (rpostproc,CCSPACE_PRIMALDUAL,&
-        rsettings%roptcBDC,rtimeDiscr,rspaceDiscr)
+        rsettings%roptcBDC,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
     
     ! Only apply the visualisation output
     rpostproc%ioutputUCD = ioutputUCD
@@ -777,6 +803,64 @@ contains
     call lsysbl_releaseVector (rvecTemp)
     call optcpp_donepostprocessing (rpostproc)
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine optcpp_calcControl (rvectorSol,rconstraints,dalpha,rvectorControl)
+  
+!<description>
+  ! Uses the dual solution in rvectorSol to calculate the discrete 
+  ! control into rvectorControl.
+!</description>
+
+!<input>
+  ! Constraints in the optimal control problem.
+  type(t_optcconstraintsSpaceTime), intent(in) :: rconstraints
+
+  ! Regularisation parameter $\alpha$.
+  real(DP), intent(in) :: dalpha
+!</input>
+
+!<inputoutput>
+  ! Solution vector. If rvectorControl is not specified, the dual solution
+  ! is replaced by the control.
+  type(t_vectorBlock), intent(inout) :: rvectorSol
+
+  ! Receives the discrete control. If not specified, the dual solution
+  ! in rvectorSol is replaced by the control.
+  type(t_vectorBlock), intent(inout), optional :: rvectorControl
+!</inputoutput>
+
+!</subroutine>
+
+    ! Copy, scale and impose constraints if necessary.
+    if (present(rvectorControl)) then
+      call lsyssc_copyVector (rvectorSol%RvectorBlock(4),rvectorControl%RvectorBlock(1))
+      call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
+      call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
+      call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
+      
+      if (rconstraints%ccontrolConstraints .ne. 0) then
+        call smva_projectControlTimestep (rvectorControl%RvectorBlock(1),&
+            rconstraints%dumin1,rconstraints%dumax1)
+        call smva_projectControlTimestep (rvectorControl%RvectorBlock(2),&
+            rconstraints%dumin2,rconstraints%dumax2)
+      end if
+    else
+      call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
+      call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
+      
+      if (rconstraints%ccontrolConstraints .ne. 0) then
+        call smva_projectControlTimestep (rvectorSol%RvectorBlock(4),&
+            rconstraints%dumin1,rconstraints%dumax1)
+        call smva_projectControlTimestep (rvectorSol%RvectorBlock(5),&
+            rconstraints%dumin2,rconstraints%dumax2)
+      end if
+    end if
+
   end subroutine
 
 !  !****************************************************************************
