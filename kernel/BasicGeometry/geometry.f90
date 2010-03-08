@@ -271,7 +271,9 @@ module geometry
 
   ! Ellipsoid object
   integer, parameter, public :: GEOM_ELLIPSOID = 12
-  
+
+  ! nurbs object
+  integer, parameter, public :: GEOM_NURBS     = 13
 
 !</constantblock>
 
@@ -381,6 +383,26 @@ module geometry
   end type
   
   public :: t_geometryCircle
+
+! *****************************************************************************
+
+!<typeblock>
+
+  ! This structure realises the subnode for the circle object.
+  type t_geometryNURBS
+    
+    ! this type of geometry obj is usually loaded from
+    ! a file in the 3dm file format
+    character(LEN=SYS_STRLEN) :: sfile3dm = ""
+    
+    ! In the case that we have multiple curves, we need to indentify 
+    ! the curves by an ID, so we assign an integer id
+    integer :: iID
+    
+  end type
+  
+  public :: t_geometryNURBS
+
   
 !</typeblock>
   
@@ -535,6 +557,9 @@ module geometry
 
     ! Structure for the polygon object
     type(t_geometryPolygon)    :: rpolygon
+    
+    ! Structure for the NURBS object
+    type(t_geometryNURBS)      :: rNURBS
 
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
@@ -685,7 +710,6 @@ module geometry
     real(dp), dimension(2) :: dTorqueX = 0
     real(dp), dimension(2) :: dTorqueY = 0
     real(dp), dimension(2) :: dTorqueZ = 0
-  
   end type
 
 !</typeblock>
@@ -707,6 +731,8 @@ module geometry
   
     ! pointer to the particle structures
     type(t_particle), dimension(:), pointer :: p_rParticles
+    
+    real(dp) :: dtime
   
   end type
 !</typeblock>
@@ -764,6 +790,9 @@ module geometry
     
     ! the shape id of the particle, initialized as a circle by default
     integer :: ishape = GEOM_CIRCLE
+    
+    ! in case the geometry is loaded from file
+    character(LEN=SYS_STRLEN) :: sfilename
     
   end type
 !</typeblock>
@@ -848,7 +877,12 @@ module geometry
     module procedure geom_init_ellipsoid_direct
   end interface
   
-  
+#if defined FEAT2_NURBS
+  interface geom_init_NURBS
+    module procedure geom_init_NURBS_indirect
+    module procedure geom_init_NURBS_direct
+  end interface
+#endif
 
   public :: geom_init_circle
   public :: geom_init_square
@@ -4698,7 +4732,274 @@ end subroutine
   
   end subroutine
 
+
+#if defined FEAT2_NURBS
   ! ***************************************************************************
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! *= 2D NURBS Routines                                                    =*
+  ! *-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-*
+  ! ***************************************************************************
+    
+ ! ***************************************************************************    
+
+!<subroutine>
+
+  subroutine geom_init_NURBS_indirect(rgeomObject,s3dm)
+
+!<description>
+  ! Creates a t_geometryObject representing a 2D polygon.
+!</description>
+
+!<input>
+  ! the name of the file that contains the nurbs curve information
+  character(LEN=*)                :: s3dm 
+!</input>  
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),      intent(out) :: rgeomObject
+!</output>
+
+!</subroutine>
+!  interface 
+!    integer function get() result(iverts)
+!      ! This routine must change dtstep to the new timestep size.
+!    end function
+!  end interface
+  real(dp) :: dx,dy
+  integer  :: ilength
+  external initcurvefromfile,getcenter
+  
+    ! The dimension is 2D.
+    rgeomObject%ndimension = NDIM2D
+    
+    ! We want a polygon.
+    rgeomObject%ctype = GEOM_NURBS
+
+    ilength=len(s3dm)
+    call initcurvefromfile(ilength,s3dm)
+
+    call getcenter(dx,dy)
+
+    call geom_init_NURBS_direct(rgeomObject,(/dx,dy/))
+
+    ! That's it!
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine geom_init_NURBS_direct(rgeomObject,Dorigin, &
+                                     drotation, dscalingFactor)
+
+!<description>
+  ! Creates a t_geometryObject representing a 2D NURBS curve.
+!</description>
+
+!<input>
+  
+  ! OPTIONAL: The origin of the NURBS curve.
+  ! Is set to (/ 0.0_DP, 0.0_DP /) if not given.
+  real(DP), dimension(:), optional,  intent(in)  :: Dorigin
+  
+  ! OPTIONAL: The rotation of the circle.
+  ! Is set to 0.0_DP if not given.
+  real(DP), optional,                intent(in)  :: drotation
+  
+  ! OPTIONAL: The scaling factor of the NURBS curve.
+  ! Is set to 1.0_DP if not given.
+  real(DP), optional,                intent(in)  :: dscalingFactor
+
+!</input>
+
+!<output>
+  ! A t_geometryObject structure to be written.
+  type(t_geometryObject),            intent(out) :: rgeomObject
+
+!</output>
+
+!</subroutine>
+
+    ! The dimension is 2D.
+    rgeomObject%ndimension = NDIM2D
+    
+    ! We want a circle.
+    rgeomObject%ctype = GEOM_NURBS
+    
+    ! Now we need to create the coordinate system.
+    call bgeom_initCoordSys2D (rgeomObject%rcoord2D, Dorigin, drotation, &
+                               dscalingFactor)
+    
+  
+  end subroutine
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  subroutine geom_NURBS_isInGeometry (rgeomObject, Dcoords, iisInObject)
+
+!<description>
+  ! This routine checks whether a given point is inside the closed NURBS curve or not.
+  !
+  ! iisInObject is set to 0 if the point is outside the NURBS, it is set
+  ! to 1 if it is inside the NURBS and is set to -1 if the point is inside.
+!</description>
+
+!<input>
+  ! The polygon against that the point is to be tested.
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  real(DP), dimension(:), intent(in)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! An integer for the return value.
+  integer,           intent(out) :: iisInObject
+!</output>
+
+!</subroutine>
+  
+  ! The output of the projector routine
+  logical :: bisInObject
+  
+  ! Are we inside the polygon?
+  if (bisInObject) then
+    iisInObject = 1
+  else
+    iisInObject = 0
+  end if
+
+  ! That's it
+    
+  end subroutine
+
+  ! ***************************************************************************
+      
+!<subroutine>
+
+  subroutine geom_NURBS_calcSignedDistance (rgeomObject, Dcoords, ddistance)
+
+!<description>
+  ! This routine returns the signed distance of a given point and a NURBS.
+  !
+  ! This routine is not a wrapper - it calls ...
+!</description>
+
+!<input>
+  ! The polygon against that the point is to be tested.
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  
+  ! The coordinates of the point that is to be tested.
+  real(DP), dimension(:), intent(in)  :: Dcoords
+  
+!</input>
+
+!<output>
+  ! The shortest signed distance between the point and the circle's boundary.
+  real(DP),               intent(out) :: ddistance
+!</output>
+
+!</subroutine>
+
+
+  ! The projection
+  real(DP), dimension(2) :: Dproj
+  
+  ! Inside the polygon?
+  logical :: bisInside
+  
+    ! Calculate projection
+    call geom_polygon_projector(rgeomObject, Dcoords, Dproj, ddistance, bisInside)
+    
+    if (bisInside) then
+      ddistance = -ddistance
+    end if
+  
+    ! That's it
+    
+  end subroutine
+  
+  ! ***************************************************************************
+ 
+!<subroutine>
+  
+  subroutine geom_NURBS_polygonise (rgeomObject, hpolyHandle)
+  
+!<description>
+  ! This routine converts a NURBS curve to a polygon, so that it can
+  ! be printed to an output file via ucd_addPolygon (see ucd.f90 for more
+  ! details).
+  ! This routine simply copies the vertices stored in the geometry object
+  ! into a new array of vertices without changing them.
+!</description>
+
+!<input>
+  ! The geometry object to calculate the distance from.
+  type(t_geometryObject), intent(in)  :: rgeomObject
+  
+!</input>
+
+!<output>
+  ! Handle to a 2D array holding the vertices of the polygon.
+  integer, intent(out) :: hpolyHandle
+  
+!</output>
+
+!</subroutine>
+  real(dp) :: dx,dy
+  
+  interface 
+    integer function getnumverts() result(iverts)
+      ! This routine must change dtstep to the new timestep size.
+    end function
+  end interface
+
+  interface 
+    subroutine getvertex(iid,dx,dy)
+      use fsystem
+      ! This routine must change dtstep to the new timestep size
+	integer,intent(inout) :: iid
+	real(dp), intent(inout) :: dx
+	real(dp), intent(inout) :: dy
+    end subroutine
+  end interface
+
+  integer :: i, inumVerts
+  
+  real(DP), dimension(:,:), pointer :: p_Dvertices
+  
+  integer, dimension(2) :: Isize
+  
+  ! Get number of vertices
+  inumVerts = getnumverts()
+
+  ! Allocate desired number of vertices
+  Isize = (/ 2, inumVerts /)
+  call storage_new('geom_NURBS_polygonise', 'hpolyHandle', Isize, &
+                     ST_DOUBLE, hpolyHandle, ST_NEWBLOCK_NOINIT)
+
+  ! Get vertice array
+  call storage_getbase_double2D(hpolyHandle, p_Dvertices)
+  
+  ! Copy all vertices
+  do i=0, (inumVerts-1)
+    call getvertex(i,dx,dy)
+    p_Dvertices(1,(i+1)) = dx
+    p_Dvertices(2,(i+1)) = dy
+  end do
+    
+  end subroutine
+
+#endif
+
+  ! ***************************************************************************      
+
+
 
 !<subroutine>
   
@@ -5148,6 +5449,10 @@ end subroutine
       call geom_rect_polygonise(rgeomObject, hpolyHandle)
     case (GEOM_POLYGON)
       call geom_polygon_polygonise(rgeomObject, hpolyHandle)
+#if defined FEAT2_NURBS
+    case (GEOM_NURBS)
+      call geom_NURBS_polygonise(rgeomObject, hpolyHandle)      
+#endif
     end select
     
     ! Maybe the subroutine failed?
@@ -6127,13 +6432,13 @@ end subroutine
 ! ***************************************************************************  
 
 !<subroutine>  
-  subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy)
+  subroutine geom_initParticle(rParticle,iid,drad,drho,dx,dy,s3dm)
 !<description>
   ! this routines initializes a t_particle structure
   ! according to the parameters iid,dx,dy,drad,drho
   ! The parameter iid should be one of the constants:
   ! GEOM_CIRCLE GEOM_ELLIPSE GEOM_SQUARE GEOM_RECT GEOM_POLYGON
-  ! So far ONLY GEOM_CIRCLE is fully supported!!!
+  ! So far ONLY GEOM_CIRCLE,GEOM_NURBS are fully supported!!!
   !
 !</description>
   
@@ -6157,6 +6462,10 @@ end subroutine
   ! shape of the object
   integer, intent(in) :: iid
   
+!<input>
+  ! If we want to construct the particle geometry from a
+  ! nurbs curve the data has to be read from a file in most cases
+  character(LEN=*),optional :: s3dm 
 !</input>  
   
 !</subroutine>  
@@ -6186,6 +6495,10 @@ end subroutine
     call output_line ('Unsupported geometry type for particle.!', &
         OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
     call sys_halt()
+#if defined FEAT2_NURBS
+  case (GEOM_NURBS)
+    call geom_init_NURBS(rParticle%rgeometryObject,s3dm)
+#endif
   case default
     call output_line ('Unsupported geometry type for particle.!', &
         OU_CLASS_ERROR,OU_MODE_STD,'geom_initParticle')
@@ -6295,7 +6608,7 @@ end subroutine
     drho  = rparticleDescriptor%pparameters(4,i1)
     ! call the routine to initialize the particle
     call geom_initParticle(rparticleCollection%p_rParticles(i1),rparticleDescriptor%ishape,&
-                           drad,drho,dx,dy)
+                           drad,drho,dx,dy,trim(rparticleDescriptor%sfilename))
   end do
   
   end subroutine ! end geom_initParticleCollection
