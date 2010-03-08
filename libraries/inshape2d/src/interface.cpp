@@ -20,7 +20,7 @@
 
 #include "interface.h"
 #include "feat2ops.h"
-
+#include <string>
 
 //================================================
 //		    		GLOBALS
@@ -141,6 +141,90 @@ extern "C" void initgroup(int *iNumObj)
 
 
 }//end initgroup
+
+extern "C" void initcurvefromfile(int *ilength,char *sfile)
+{
+	/* initialize OpenNurbs */	
+	ON::Begin();
+	
+	/* initialize curves */
+	int numPoints = 0;
+	int length=*ilength;
+	printf("Initializing Nurbs module .\n");
+	std::string sfileName(sfile);
+	sfileName=sfileName.substr(0,length);
+
+	//load models
+	ONX_Model model;
+
+	FILE* archive_fp = ON::OpenFile( sfileName.c_str(), "rb");
+	if ( !archive_fp ) 
+	{
+     
+		cerr<<"Could not open archive "<<sfileName<<endl;
+		exit(0);
+	}//end if
+
+	const ON_NurbsCurve* curve = 0;
+
+	ON_BinaryFile archive(ON::read3dm, archive_fp);
+
+	bool rc = model.Read(archive);
+
+    // close the file
+	ON::CloseFile( archive_fp );
+	
+	if(rc)
+		cout<<"Archive successfully read."<<endl;
+	else
+		cout<<"Error during reading"<<endl;
+
+	if(model.IsValid())
+		cout<<"Model is valid"<<endl;
+	else
+		cout<<"Model is not valid"<<endl;
+
+	//set the number of objects
+	g_nObjects = model.m_object_table.Count();
+
+	printf("Number of objects %d\n",model.m_object_table.Count());	
+ 
+	for(int i = 0; i < g_nObjects; i++)
+	{
+
+		const ONX_Model_Object mo = model.m_object_table[i];
+
+		curve = ON_NurbsCurve::Cast(mo.m_object);
+		
+		const ON_NurbsCurve &rcurve = *curve;
+
+		CONXNurbs *tempCurve = new CONXNurbs(rcurve);
+		
+		tempCurve->genBoxes(1500);
+		tempCurve->subdivideBoxes();
+		tempCurve->subdivideBoxes();
+		tempCurve->subdivideBoxes();
+		CApproxCurve *myCurve = new CApproxCurve( tempCurve, 400, static_cast<short>(i) );
+		ApproxCurves.push_back(myCurve);
+	}//end for
+	
+	/* release model */
+	model.Destroy();
+
+	/* set initialization variable */
+	g_Init = true;	
+
+	/* translate the curve so that the COG is at the origin */
+	VECTOR2 vCOG=ApproxCurves[0]->GetCenter();
+	vCOG=vCOG*-1.0;
+	ApproxCurves[0]->TranslateCurveByVector(vCOG);
+
+	printf("\n");
+
+	printf("Nurbs module initialized\n");
+	
+}//end initcurve
+
 
 extern "C" void initcurve()
 {
@@ -315,7 +399,7 @@ extern "C" void initobject(int *nID)
 }//end initobject
 
 
-extern "C" int isingeometry(double *x, double *y)
+extern "C" int isingeometry2(double *x, double *y)
 {
 
 	double dX = *x;
@@ -350,8 +434,6 @@ extern "C" int isingeometry(double *x, double *y)
 
 extern "C" int getnumverts()
 {
-
-	cout<<"Number of samples: "<<ApproxCurves[0]->GetResolution()<<endl;
 
 	if(ApproxCurves[0])
 		return ApproxCurves[0]->GetResolution();
@@ -465,10 +547,12 @@ extern "C" void translateobject(double *dpTransX, double *dpTransY)
 {
 
 	VECTOR2 vNewCenter(*dpTransX, *dpTransY);
+	
+	ApproxCurves[0]->SetCenter(vNewCenter);
 
-	VECTOR2 vTrans =  vNewCenter - ApproxCurves[0]->GetCenter();
+	//VECTOR2 vTrans =  vNewCenter - ApproxCurves[0]->GetCenter();
 
-	ApproxCurves[0]->TranslateCurveByVector(vTrans);
+	//ApproxCurves[0]->TranslateCurveByVector(vTrans);
 
 }//End translateobject
 
@@ -486,5 +570,25 @@ extern "C" void getdistance(double *dX, double *dY,double *ddist)
 	CBCNode *nBest = NULL;
 	SearchResult sres=op.LUBSearch(ApproxCurves[0], vQuery, lBFS, nBest);
 	*ddist=sres.res;
+
+}
+
+extern "C" void getcenter(double *dX,double *dY)
+{
+	
+	VECTOR2 vCenter=ApproxCurves[0]->GetCenter();
+	*dX=vCenter.x;
+	*dY=vCenter.y;
+
+}
+
+extern "C" void getvertex(int *nX,double *dX,double *dY)
+{
+	int index =*nX;
+	index-=1;
+	VECTOR2 vPoint= ApproxCurves[0]->GetSamples()[*nX];
+
+	*dX=vPoint.x;
+	*dY=vPoint.y;
 
 }
