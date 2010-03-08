@@ -363,7 +363,6 @@ ZLIB_OBJ=adler32.o \
 	zutil.o
 
 KERNEL_INC=include/dynamicarray.h \
-	include/torus.h \
 	include/mathglobals.h \
 	include/matrix2x2.h \
 	include/matrix3x3.h \
@@ -396,7 +395,6 @@ KERNEL_INC=include/dynamicarray.h \
 	include/interface.h
 
 KERNEL_SRC= src/dynamicarray.cpp \
-	src/torus.cpp \
 	src/matrix2x2.cpp \
 	src/quaternion.cpp \
 	src/vector2.cpp \
@@ -446,7 +444,6 @@ KERNEL_OBJ=dynamicarray.o \
 	nurbs.o \
 	primops.o \
 	rootfinder.o \
-	torus.o \
 	interface.o
 
 $(ZLIB_OBJ) : $(ZLIB_INC)
