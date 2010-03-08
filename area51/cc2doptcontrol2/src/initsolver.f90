@@ -3105,6 +3105,8 @@ contains
     call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
     call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
     
+    rnonlinearSpatialMatrix%iprimalSol = 2
+
     ! Disable the submatices for the dual solution and the coupling.
     ! We only want to generate the RHS for the primal solution.
     call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
@@ -3122,7 +3124,7 @@ contains
     rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
     
     if (.not. bconvectionExplicit) then
-      rnonlinearSpatialMatrix%Dgamma(1,1) = real(1-rsettings%rphysicsPrimal%iequation,DP)
+      rnonlinearSpatialMatrix%Dgamma(1,1) = dtheta*real(1-rsettings%rphysicsPrimal%iequation,DP)
     end if
 
     rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP

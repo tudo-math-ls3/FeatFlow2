@@ -606,7 +606,9 @@ contains
 
         ! Control u = P[min/max](-1/alpha lambda)
         call optcpp_calcControl (rprjVector,roptControl%rconstraints,roptControl%dalphaC)
-
+        
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
         call ucd_addVarVertBasedVec (rexport,'control',&
             p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
         

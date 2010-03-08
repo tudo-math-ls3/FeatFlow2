@@ -8917,6 +8917,19 @@ contains
 
     do ite = 1,max(rsolverNode%nminIterations,rsolverNode%nmaxIterations)
     
+      call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rforwardsolver, &
+          rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
+          rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
+          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
+
+      if (.not. bsuccess) then
+        call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
+            OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
+        call output_line("Solution ignored.",&
+            OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
+        return
+      end if
+
       call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rbackwardsolver, &
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
@@ -8930,18 +8943,6 @@ contains
         return
       end if
       
-      call fbsim_simulate (rsolverNode%p_rsubnodeFBsim%rforwardsolver, &
-          rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
-          rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
-          rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
-
-      if (.not. bsuccess) then
-        call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
-            OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
-        call output_line("Solution ignored.",&
-            OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
-        return
-      end if
     end do
 
     call stat_stopTimer (rsolverNode%rtimeSpacePrecond)

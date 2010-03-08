@@ -564,6 +564,7 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     logical :: bhasNeumann
     real(dp) :: dtimePrimal,dtimeDual,dtstep
+    real(DP), dimension(:), pointer :: p_Dx
 
     ! Initialise the boundary conditions
     call bcasm_initDiscreteBC(rdiscreteBC)
@@ -575,6 +576,9 @@ contains
       ! Create temp vectors
       call lsysbl_createVecBlockByDiscr (rx%p_rspaceDiscr,rtempVector,.true.)
     end if
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rtempVector,p_Dx)
 
     ! Normalise the primal and dual pressure to zero.
     do isubstep = 1,rx%NEQtime

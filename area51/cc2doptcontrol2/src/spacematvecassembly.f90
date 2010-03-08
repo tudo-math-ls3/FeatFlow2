@@ -412,6 +412,13 @@ module spacematvecassembly
     ! ASSEMBLY SPECIALS: If set to TRUE, the D-matrices are assembled as 
     ! virtually transposed B-matrices. With the standard setting FALSE, the
     ! D-matrices are assembled as standard divergence matrices.
+    ! WARNING: If matrices are to be assembled as virtually transposed
+    ! matrices, they must not be overwritten, as they share their data with
+    ! other matrices.
+    ! If the matrix is assembled in the standard way without virtual
+    ! transposition, separate memory is requested for the matrices and so
+    ! they are allowed to be overwritten if necessary. (Neessary for UMFPACK
+    ! on a pure Dirichlet problem.)
     logical :: bvirtualTransposedD = .false.
 
   end type
@@ -1973,8 +1980,8 @@ contains
       
       if (dtau .ne. 0.0_DP) then                 
         ! Furthermore, put B1^T and B2^T to the block matrix.
-        ! These matrices are always 'shared'.
         if (rflags%bvirtualTransposedD) then
+          ! Virtually transposed matrices are always 'shared'.
           call lsyssc_transposeMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB1, &
               rmatrix%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
@@ -1982,13 +1989,18 @@ contains
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixB2, &
               rmatrix%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
         else
+          ! Real matrices are not shared. This allows them to be overwritten
+          ! if necessary (e.g. if an UMFPACK solver is used or similar).
+          ! In a situation, where the matrix needs to be overwritten,
+          ! the caller must therefore always request a not virtually transposed
+          ! matix!
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD1, &
-              rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+              rmatrix%RmatrixBlock(3,1),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPYOVERWRITE)
 
           call lsyssc_duplicateMatrix (&
               rnonlinearSpatialMatrix%rdiscrData%p_rstaticAsmTemplates%rmatrixD2, &
-              rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+              rmatrix%RmatrixBlock(3,2),LSYSSC_DUP_SHARE,LSYSSC_DUP_COPYOVERWRITE)
         end if
       end if
 
