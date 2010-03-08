@@ -372,11 +372,17 @@ KERNEL_INC=include/dynamicarray.h \
 	include/vector2.h \
 	include/vector3.h \
 	include/vector4.h \
+	include/aabb2.h \
 	include/aabbtree.h \
+	include/obb2.h \
+	include/bctree.h \
+	include/sbbtree.h \
+	include/sbb.h \
 	include/approxcurve.h \
 	include/basiccurve.h \
 	include/binstree.h \
-	include/boxes.h \
+	include/feat2ops.h \
+	include/paramline.h \
 	include/bspline.h \
 	include/distops.h \
 	include/exception.h \
@@ -386,7 +392,8 @@ KERNEL_INC=include/dynamicarray.h \
 	include/macros.h \
 	include/nurbs.h \
 	include/primops.h \
-	include/rootfinder.h 
+	include/rootfinder.h \
+	include/interface.h
 
 KERNEL_SRC= src/dynamicarray.cpp \
 	src/torus.cpp \
@@ -396,9 +403,14 @@ KERNEL_SRC= src/dynamicarray.cpp \
 	src/vector3.cpp \
 	src/aabb2.cpp \
 	src/aabbtree.cpp \
+	src/obb2.cpp \
+	src/bctree.cpp \
+	src/sbbtree.cpp \
+	src/sbb.cpp \
 	src/approxcurve.cpp \
 	src/basiccurve.cpp \
-	src/boxes.cpp \
+	src/feat2ops.cpp \
+	src/paramline.cpp \
 	src/bspline.cpp \
 	src/distops.cpp \
 	src/exception.cpp \
@@ -407,7 +419,8 @@ KERNEL_SRC= src/dynamicarray.cpp \
 	src/graham.cpp \
 	src/nurbs.cpp \
 	src/primops.cpp \
-	src/rootfinder.cpp 
+	src/rootfinder.cpp \
+	src/interface.cpp
 
 KERNEL_OBJ=dynamicarray.o \
 	matrix2x2.o \
@@ -417,8 +430,13 @@ KERNEL_OBJ=dynamicarray.o \
 	aabbtree.o \
 	aabb2.o \
 	approxcurve.o \
+	obb2.o \
+	bctree.o \
+	sbbtree.o \
+	sbb.o \
 	basiccurve.o \
-	boxes.o \
+	feat2ops.o \
+	paramline.o \
 	bspline.o \
 	distops.o \
 	exception.o \
@@ -428,7 +446,8 @@ KERNEL_OBJ=dynamicarray.o \
 	nurbs.o \
 	primops.o \
 	rootfinder.o \
-	torus.o
+	torus.o \
+	interface.o
 
 $(ZLIB_OBJ) : $(ZLIB_INC)
 	$(CC) $(CFLAGS) $(ZLIB_SRC)
