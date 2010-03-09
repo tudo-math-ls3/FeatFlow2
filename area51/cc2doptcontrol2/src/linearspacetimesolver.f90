@@ -3036,12 +3036,12 @@ contains
         
     do i=1,max(rsolverNode%nminIterations,rsolverNode%nmaxIterations)
         
-      call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
-          p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
-          
       call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
           p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
 
+      call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+          p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+          
       if (rsolverNode%ioutputLevel .ge. 2) then
         ! Print the initial defect
         call sptivec_copyVector (rd,rtempVector)
