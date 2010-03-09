@@ -696,6 +696,8 @@ contains
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
           rprecsettings%drelax,p_rprecond)
           
+      p_rprecond%nmaxIterations = rprecsettings%nmaxIterations
+      p_rprecond%nminIterations = rprecsettings%nminIterations
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
       
