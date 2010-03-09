@@ -2134,7 +2134,7 @@ end subroutine
   
   ! *** Calculate midpoints of the elements ***
   
-  ! Allocate space for edge length
+  ! Allocate space for midpoints
   allocate(raddTriaData%p_DmidPoints(2,NEL))
   
   do iel = 1, NEL
@@ -3877,22 +3877,23 @@ end subroutine
       
       ! Get center values of all variables in all neighbour vertices and calculate
       ! the solution differences Dlin(nvar,nneighbors)
-      iidx = 1
+      iidx = 0
       DLin = 0.0_dp
       do ineighbour = p_IelementsAtVertexIdx(iglobVtNumber), p_IelementsAtVertexIdx(iglobVtNumber+1)-1
         iglobNeighNum = p_IelementsAtVertex(ineighbour)
         if (iglobNeighNum.ne.iel) then
           call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
+          iidx = iidx +1
           do ivar = 1, nvar
             DLin(ivar,iidx) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1))- DVec(ivar)
           end do
-          iidx = iidx +1
+          
         end if
       end do
           
       
       ! Dimensional splitting
-      do idim = 1, 2 !NDIM2D
+      do idim = 1, NDIM2D
         ! Now we need the trafo matrices
         DL = buildInvTrafo(DVec,idim)
         DR = buildTrafo(DVec,idim)
@@ -3907,8 +3908,8 @@ end subroutine
         
         ! Get max and min of the transformed solution differences
         do ivar = 1, nvar
-          DtLinMax(ivar) = maxval(DtLin(ivar,1:iidx))
-          DtLinMin(ivar) = minval(DtLin(ivar,1:iidx))
+          DtLinMax(ivar) = max(maxval(DtLin(ivar,1:iidx)),0.0_dp)
+          DtLinMin(ivar) = min(minval(DtLin(ivar,1:iidx)),0.0_dp)
         end do
         
         ! Now, as the differences are transformed, we can limit every component on its own
@@ -4492,7 +4493,8 @@ end subroutine
   ! limited transformed solution differences, limited backtransformed solution differences
   ! and limiting factors
   allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar), DltIi(nvar), DlIi(nvar))
-  allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  !allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  allocate(DLin(nvar,10), DtLin(nvar,10), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
   
   Dalpha = 1.0_DP
   
@@ -4512,7 +4514,7 @@ end subroutine
   
     ! Get coordinates of the center of the element
     Dpoints(1,1) = raddTriaData%p_DmidPoints(1,iel)
-    Dpoints(2,1) = raddTriaData%p_DmidPoints(1,iel)
+    Dpoints(2,1) = raddTriaData%p_DmidPoints(2,iel)
     Ielements(1) = iel
     
     ! Get values in the center of the element for all variables
@@ -4572,11 +4574,14 @@ end subroutine
         end if
       end do
       
+      iidx=iidx+1
+      
+      if (iidx.ne.0) then
       ! Dimensional splitting
       do idim = 1, NDIM2D
         ! Now we need the trafo matrices
-        DL = buildInvTrafo(DVei,idim)
-        DR = buildTrafo(DVei,idim)
+        DL = buildInvTrafo(DVec,idim)
+        DR = buildTrafo(DVec,idim)
         
         ! Transform the solution differences
         DtIi = matmul(DL,DIi)
@@ -4586,6 +4591,8 @@ end subroutine
         
         ! Get max and min of the transformed solution differences
         do ivar = 1, nvar
+          !DtLinMax(ivar) = max(maxval(DtLin(ivar,1:iidx)),0.0_dp)
+          !DtLinMin(ivar) = min(minval(DtLin(ivar,1:iidx)),0.0_dp)
           DtLinMax(ivar) = maxval(DtLin(ivar,1:iidx))
           DtLinMin(ivar) = minval(DtLin(ivar,1:iidx))
         end do
@@ -4612,6 +4619,7 @@ end subroutine
         end do
       
       end do ! idim
+      end if
       
     end do ! ivt
     
