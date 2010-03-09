@@ -747,6 +747,7 @@ contains
       call flux_dg_buildVectorScEdge2D_sim (&
             DfluxValues(:,:,1:IELmax-IELset+1),&
 !            DsolVals(:,:,1:IELmax-IELset+1),&
+            IelementList(2,IELset:IELmax),&
             raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rintSubset,&
@@ -2983,6 +2984,7 @@ end subroutine
 !            DsolVals(:,:,1:IELmax-IELset+1),&
             DfluxValues(:,:,:,1:IELmax-IELset+1),&
             rvectorSol,&
+            IelementList(2,IELset:IELmax),&
             raddTriaData%p_Dnormals(:,Iedgelist(IELset:IELmax)),&
             !DpointsReal(1:ndim2d,1:ncubp,1:IELmax-IELset+1),&
             rintSubset,&
@@ -3837,7 +3839,8 @@ end subroutine
   ! limited transformed solution differences, limited backtransformed solution differences
   ! and limiting factors
   allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar), DltIi(nvar), DlIi(nvar))
-  allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  !allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  allocate(DLin(nvar,20), DtLin(nvar,20), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
   
   do iel = 1, NEL
     
@@ -3886,23 +3889,26 @@ end subroutine
           iidx = iidx +1
         end if
       end do
+          
       
       ! Dimensional splitting
-      do idim = 1, NDIM2D
+      do idim = 1, 2 !NDIM2D
         ! Now we need the trafo matrices
-        DL = buildInvTrafo(DVei,idim)
-        DR = buildTrafo(DVei,idim)
+        DL = buildInvTrafo(DVec,idim)
+        DR = buildTrafo(DVec,idim)
         
         ! Transform the solution differences
         DtIi = matmul(DL,DIi)
-        do ineighbour = 1, NVE-1
+        do ineighbour = 1, iidx
           DtLin(:,ineighbour) = matmul(DL,Dlin(:,ineighbour))
         end do
         
+
+        
         ! Get max and min of the transformed solution differences
         do ivar = 1, nvar
-          DtLinMax(ivar) = maxval(DtLin(ivar,:))
-          DtLinMin(ivar) = minval(DtLin(ivar,:))
+          DtLinMax(ivar) = maxval(DtLin(ivar,1:iidx))
+          DtLinMin(ivar) = minval(DtLin(ivar,1:iidx))
         end do
         
         ! Now, as the differences are transformed, we can limit every component on its own
@@ -3919,20 +3925,28 @@ end subroutine
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
           if (abs(DIi(ivar))<SYS_EPSREAL) then
-            Dalphaei(ivar,ivt) = 1.0_dp
+            !Dalphaei(ivar,ivt) = 1.0_dp
           else
             Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
+            !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ))
           end if
         end do
       
       end do ! idim
       
     end do ! ivt
+
+
     
     ! Get minimum of all correction factors of all vertices on this element
     do ivar = 1, nvar
       Dalpha(ivar, iel) = minval(Dalphaei(ivar,:))
     end do
+    
+!    if (iel.eq.985) then
+!      write(*,*) Dalphaei(1,:)
+!      write(*,*) Dalpha(1, iel)
+!    end if
     
     ! Get global DOFs of the element
     call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)

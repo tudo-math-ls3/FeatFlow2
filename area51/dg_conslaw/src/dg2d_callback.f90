@@ -1049,6 +1049,7 @@ contains
   subroutine flux_dg_buildVectorScEdge2D_sim (&
               Dcoefficients,&
 !              DsolVals,&
+              IelementList,&
               normal,&
               !DpointsReal,&
               rintSubset,&
@@ -1062,6 +1063,7 @@ contains
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
+  integer, dimension(:) , intent(in) :: IelementList
   !</input>
   
   !<output>
@@ -1271,57 +1273,77 @@ contains
     
     call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
     
+    select case (rcollection%IquickAccess(1))
+      case (1) ! Set height variable h
     
-    Dcoefficients (1,:,:) = 1.0_dp
-    
-    do iel = 1, size(Dcoefficients,3)
-      do ipoint = 1, size(Dcoefficients,2)
-        
-        ! Gauss-Hügel
-        !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
-        !         exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
-        
-        ! Cone 1
-        !Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
-        
-        ! Cone 2
-        !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
-        
-        ! Zalesak
-        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
-        !if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
-        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
-        !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
-        !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-        !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
-        
-        ! Circular convection
-        !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
-        !if ((0.2_dp.le.r1).and.(r1.le.0.4_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
-        !if ((0.5_dp.le.r1).and.(r1.le.0.8_dp)) Dcoefficients(1,ipoint,iel) = 0.25_dp*(1.0_dp+cos(SYS_PI*(r1-0.65_dp)/0.15_dp))
-        
-        ! Parser from .dat-file
-        !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
-        
-        ! Water hill
-        
-!        if (rcollection%IquickAccess(1)==1) then
-!        
-!        Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-!                 exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-!          
-!          !Dcoefficients (1,ipoint,iel)=1.0_dp
-!        else
-!        Dcoefficients (1,ipoint,iel)=0.0_dp
-!        end if
+        do iel = 1, size(Dcoefficients,3)
+          do ipoint = 1, size(Dcoefficients,2)
+            
+            ! Gauss-Hügel
+            !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
+            !         exp(-5.0_dp*(Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2))
+            
+            ! Cone 1
+            !Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
+            
+            ! Cone 2
+            !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
+            
+            ! Zalesak
+            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
+            !if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
+            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+            !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
+            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+            !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+            
+            ! Circular convection
+            !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
+            !if ((0.2_dp.le.r1).and.(r1.le.0.4_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
+            !if ((0.5_dp.le.r1).and.(r1.le.0.8_dp)) Dcoefficients(1,ipoint,iel) = 0.25_dp*(1.0_dp+cos(SYS_PI*(r1-0.65_dp)/0.15_dp))
+            
+            ! Parser from .dat-file
+            !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
+            
+            ! Water hill
+            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+              
+              
+            
+            
+!          ! Riemann problem
+!          if (Dpoints(1,ipoint,iel)<0.5_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
+          
 
-      ! Riemann problem
-      if (rcollection%IquickAccess(1)==1) then
-      if (Dpoints(1,ipoint,iel)<0.5_dp) Dcoefficients (1,ipoint,iel)=1.5_dp
-      end if
-        
-      end do
-    end do
+!          ! Zylinders
+!          if (Dpoints(1,ipoint,iel)<10.0_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
+
+!            ! Water reservoir
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
+!              Dcoefficients (1,ipoint,iel)=1.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!            end if
+            
+          end do
+        end do
+      
+      case (2) ! Set x-momentum
+        Dcoefficients (1,:,:) = 0.0_dp
+      
+      case (3) ! Set y-momentum
+        Dcoefficients (1,:,:) = 0.0_dp
+      
+    end select
     
     ! Release the function parser
     call fparser_release(rfparser)
@@ -1777,6 +1799,7 @@ contains
 !              DsolVals,&
               DfluxValues,&
               rvectorSolBlock,&
+              IelementList,&
               normal,&
 !              DpointsReal,&
               rintSubSet,&
@@ -1807,6 +1830,7 @@ contains
 !  real(DP), dimension(:,:,:), intent(in) :: DpointsReal
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_vectorBlock), intent(in) :: rvectorSolBlock
+  integer, dimension(:) , intent(in) :: IelementList
   type(t_collection), intent(inout), target, optional :: rcollection
     
   !</input>
@@ -1824,6 +1848,7 @@ contains
   ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
   real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
   real(dp) :: dx, dy
+  real(dp) :: dh, du, dv, dnormalPart, dtangentialPart
   real(dp), dimension(3) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
   
   
@@ -1862,15 +1887,50 @@ contains
       
     
       ! Set boundary conditions
-      if ((dx<0.00001).or.(dx>0.99999).or.(dy<0.00001).or.(dy>0.99999)) then
+      ! Test, if we are at a boundary
+      if (IelementList(iel)==0) then
         ! Riemann BC
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
-        ! Reflecting BC
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)!*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)!*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
+!        ! No BCs
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)!*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)!*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
+        
+        ! Reflecting BCs
+        ! Calculate x- and y- velocity from momentum
+        dh = Dsolutionvalues(1,ipoint,iel,1)
+        du = Dsolutionvalues(1,ipoint,iel,2)/dh
+        dv = Dsolutionvalues(1,ipoint,iel,3)/dh
+        
+        ! Calculate normal and tangential part
+        dnormalPart     = du*normal(1,iel) + dv*normal(2,iel)
+        dtangentialPart = du*normal(2,iel) - dv*normal(1,iel)
+        
+        ! Invert the normal part
+        dnormalPart     = -dnormalPart
+        dtangentialPart = +dtangentialPart
+        
+        
+!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
+!          write(*,*) du,dv
+!        end if
+        
+        ! Calculate new velocity
+        du = dnormalPart*normal(1,iel) + dtangentialPart*normal(2,iel)
+        dv = dnormalPart*normal(2,iel) - dtangentialPart*normal(1,iel)
+        
+!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
+!          write(*,*) du,dv
+!          write(*,*) ''
+!        end if
+        
+        ! Set new momentum
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = dh
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = dh * du
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = dh * dv
+        
       end if
       
     
@@ -1893,7 +1953,8 @@ contains
       DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
                    !normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
                    sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
-      
+
+                   
       !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
       
       ! First calculate flux in y-direction
@@ -1918,7 +1979,12 @@ contains
 !      
 !      ! Save the calculated flux
 !      DfluxValues(:,1,ipoint,iel) = DFlux
-      
+
+!      if (IelementList(iel)==0) then
+!      do ivar=1,3
+!      DfluxValues(ivar,1,ipoint,iel) = 0.0_dp
+!      end do
+!      end if
       
     end do ! ipoint
   end do ! iel

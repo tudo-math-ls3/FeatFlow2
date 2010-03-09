@@ -12,6 +12,7 @@
 !              DsolVals,&
 			  DfluxValues,&
 			  rvectorSolBlock,&
+			  IelementList,&
               normal,&
 !              DpointsReal,&
               rintSubSet,&
@@ -44,6 +45,7 @@
   type(t_domainIntSubset), dimension(2), intent(in) :: rintSubset
   type(t_collection), intent(inout), target, optional :: rcollection
   type(t_vectorBlock), intent(in) :: rvectorSolBlock
+  integer, dimension(:), intent(in) :: IelementList
     
   !</input>
   

@@ -99,7 +99,7 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -353,6 +353,8 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolTempBlock,.true.,&
          ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolLimiterBlock,.true.,&
+         ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolOldBlock,.true.,&
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolUpBlock,.true.,&
@@ -506,6 +508,12 @@ contains
     rlinformconv%Idescriptors(1) = DER_DERIV_X
     rlinformconv%Idescriptors(2) = DER_DERIV_Y
     
+       if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
+       if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
+       if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
+       if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
+       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
+    
     
     ! error detection
     !call    lsyssc_getbase_double(rsolBlock%RvectorBlock(3),p_ddata)
@@ -513,7 +521,8 @@ contains
     
     
     ttime = 0.0_DP
-
+    
+    if (ttfinal > 0.0_dp)then
     timestepping: do
 
        ! Compute solution from time step t^n to time step t^{n+1}
@@ -702,7 +711,9 @@ contains
        !if (dL2updnorm.le.1.0e-6) exit timestepping
 
     end do timestepping
-    
+   end if
+
+ 
     
     
 !    
@@ -793,19 +804,20 @@ contains
     call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rrhsBlock)
     call lsysbl_releaseVector (rsolBlock)
+    call lsysbl_releaseVector (rsolLimiterBlock)
     call lsysbl_releaseVector (rsolTempBlock)
     call lsysbl_releaseVector (rsolUpBlock)
 
     call lsysbl_releaseMatrix (rmatrixBlock)
 
-    call lsyssc_releaseVector (rrhs)
-    call lsyssc_releaseVector (redge)
-    call lsyssc_releaseVector (rconv)
-    call lsyssc_releaseVector (rsol)
-    call lsyssc_releaseVector (rsoltemp)
-    call lsyssc_releaseVector (rrhstemp)
-    call lsyssc_releaseVector (rsolUp)
-    call lsyssc_releaseVector (rsolOld)
+!    call lsyssc_releaseVector (rrhs)
+!    call lsyssc_releaseVector (redge)
+!    call lsyssc_releaseVector (rconv)
+!    call lsyssc_releaseVector (rsol)
+!    call lsyssc_releaseVector (rsoltemp)
+!    call lsyssc_releaseVector (rrhstemp)
+!    call lsyssc_releaseVector (rsolUp)
+!    call lsyssc_releaseVector (rsolOld)
     
     call lsyssc_releaseMatrix (rmatrixMC)
     
