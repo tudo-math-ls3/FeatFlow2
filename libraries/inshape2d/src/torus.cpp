@@ -19,7 +19,7 @@
  ***************************************************************************/
 
 #include <math.h>
-#include <Torus.h>
+#include <torus.h>
 
 
 CTorus::CTorus(void)

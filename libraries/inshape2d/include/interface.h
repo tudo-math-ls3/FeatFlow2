@@ -58,12 +58,18 @@ using namespace std;
 //
 //==================================================================
 
+extern "C" void initcurvefromfile(int *ilength,char *sfile);
 
 extern "C" void initcurve();
 
 extern "C" void initobject(int *nID);
 
-extern "C" int isingeometry(double *x, double *y);
+extern "C" int isingeometry2(double *x, double *y);
+
+extern "C" void isingeometry(double *x, double *y,int *iin)
+{
+	*iin=isingeometry2(x,y);
+}
 
 extern "C" int getnumverts();
 
@@ -77,6 +83,8 @@ extern "C" Real getvalxid(int *iID, int *nX);
 
 extern "C" Real getvalyid(int *iID, int *nX);
 
+extern "C" void getvertex(int *nX,double *dX,double *dY);
+
 extern "C" void rotateobject(double *dpAngle);
 
 extern "C" void initgroup(int *iNumObj);
@@ -87,6 +95,8 @@ extern "C" void translateobject(double *dpTransX, double *dpTransY);
 
 extern "C" void freememory();
 
+extern "C" void getcenter(double *dX,double *dY);
+
 extern "C" void getdistance(double *dX, double *dY,double *ddist);
 
 //==================================================================
@@ -94,6 +104,21 @@ extern "C" void getdistance(double *dX, double *dY,double *ddist);
 //		function names in small letters with underscores
 //
 //==================================================================
+
+extern "C" void getvertex_(int *nX,double *dX,double *dY)
+{
+	getvertex(nX,dX,dY);
+}
+
+extern "C" void getcenter_(double *dX,double *dY)
+{
+	getcenter(dX,dY);
+}
+
+extern "C" void initcurvefromfile_(int *ilength,char *sfile)
+{
+	initcurvefromfile(ilength,sfile);
+}
 
 extern "C" void getdistance_(double *dX, double *dY,double *ddist)
 {
@@ -110,9 +135,9 @@ extern "C" void initobject_(int *nID)
 	initobject(nID);
 }
 
-extern "C" int isingeometry_(double *x, double *y)
+extern "C" void isingeometry_(double *x, double *y,int *iin)
 {
-	return isingeometry(x,y);
+	*iin = isingeometry2(x,y);
 }
 
 extern "C" int getnumverts_()
@@ -175,6 +200,23 @@ extern "C" void freememory_()
 //		function names in capital letters with underscores
 //
 //==================================================================
+
+extern "C" void GETVERTEX_(int *nX,double *dX,double *dY)
+{
+	getvertex(nX,dX,dY);
+}
+
+extern "C" void GETCENTER_(double *dX,double *dY)
+{
+	getcenter(dX,dY);
+}
+
+
+extern "C" void INITCURVEFROMFILE_(int *ilength,char *sfile)
+{
+	initcurvefromfile(ilength,sfile);
+}
+
 extern "C" void GETDISTANCE_(double *dX, double *dY,double *ddist)
 {
 	getdistance(dX,dY,ddist);
@@ -190,9 +232,9 @@ extern "C" void GETDISTANCE_(double *dX, double *dY,double *ddist)
     initobject(nID);
  }
  
- extern "C" int ISINGEOMETRY_(double *x, double *y)
+ extern "C" void ISINGEOMETRY_(double *x, double *y,int *iin)
  {
- 	return isingeometry(x,y);
+ 	*iin=isingeometry2(x,y);
  }
  
  extern "C" int GETNUMVERTS_()
@@ -255,6 +297,23 @@ extern "C" void GETDISTANCE_(double *dX, double *dY,double *ddist)
 //		function names in capital letters without underscores
 //
 //==================================================================
+
+extern "C" void GETVERTEX(int *nX,double *dX,double *dY)
+{
+	getvertex(nX,dX,dY);
+}
+
+extern "C" void GETCENTER(double *dX,double *dY)
+{
+	getcenter(dX,dY);
+}
+
+
+extern "C" void INITCURVEFROMFILE(int *ilength,char *sfile)
+{
+	initcurvefromfile(ilength,sfile);
+}
+
 extern "C" void GETDISTANCE(double *dX, double *dY,double *ddist)
 {
 	getdistance(dX,dY,ddist);
@@ -270,9 +329,9 @@ extern "C" void INITCURVE()
  	initobject(nID);
  }
  
- extern "C" int ISINGEOMETRY(double *x, double *y)
+ extern "C" void ISINGEOMETRY(double *x, double *y,int *iin)
  {
- 	return isingeometry(x,y);
+ 	*iin=isingeometry2(x,y);
  }
  
  extern "C" int GETNUMVERTS()
@@ -336,6 +395,23 @@ extern "C" void INITCURVE()
 //		function names in capital letters without underscores infront
 //
 //====================================================================
+
+extern "C" void _getvertex(int *nX,double *dX,double *dY)
+{
+	getvertex(nX,dX,dY);
+}
+
+extern "C" void _getcenter(double *dX,double *dY)
+{
+	getcenter(dX,dY);
+}
+
+
+extern "C" void _initcurvefromfile(int *ilength,char *sfile)
+{
+	initcurvefromfile(ilength,sfile);
+}
+
 extern "C" void _getdistance(double *dX, double *dY,double *ddist)
 {
 	getdistance(dX,dY,ddist);
@@ -351,9 +427,9 @@ extern "C" void _initobject(int *nID)
 	initobject(nID);
 }
 
-extern "C" int _isingeometry(double *x, double *y)
+extern "C" void _isingeometry(double *x, double *y,int *iin)
 {
-	return isingeometry(x,y);
+	*iin=isingeometry2(x,y);
 }
 
 extern "C" int _getnumverts()
