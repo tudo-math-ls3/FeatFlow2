@@ -1945,38 +1945,24 @@ contains
     select case (ispacelevelcoupledtotimelevel)
     case (0)
       ! Only in time, space level stays at max.
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimal,&
-          rrefinementSpace%nlevels,rrefinementSpace%nlevels,&
-          1,rrefinementTime%nlevels,dspacetimeRefFactor)
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimalDual,&
-          rrefinementSpace%nlevels,rrefinementSpace%nlevels,&
-          1,rrefinementTime%nlevels,dspacetimeRefFactor)
+      dspacetimeRefFactor = SYS_INFINITY
           
     case (1)
-      ! Simultaneous refinement in space+time
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimal,&
-          1,rrefinementSpace%nlevels,&
-          1,rrefinementTime%nlevels,dspacetimeRefFactor)
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimalDual,&
-          1,rrefinementSpace%nlevels,&
-          1,rrefinementTime%nlevels,dspacetimeRefFactor)
+      ! Simultaneous refinement in space+time.
 
     case (2)
       ! Only in space, time level stays at max.
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimal,&
-          1,rrefinementSpace%nlevels,&
-          rrefinementTime%nlevels,rrefinementTime%nlevels,dspacetimeRefFactor)
-
-      call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimalDual,&
-          1,rrefinementSpace%nlevels,&
-          rrefinementTime%nlevels,rrefinementTime%nlevels,dspacetimeRefFactor)
+      dspacetimeRefFactor = 0.0_DP
 
     end select
+
+    call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimal,&
+        1,rrefinementSpace%nlevels,&
+        1,rrefinementTime%nlevels,dspacetimeRefFactor)
+
+    call sth_defineHierarchyByCoarsening (rspaceTimeHierPrimalDual,&
+        1,rrefinementSpace%nlevels,&
+        1,rrefinementTime%nlevels,dspacetimeRefFactor)
 
   end subroutine
 
