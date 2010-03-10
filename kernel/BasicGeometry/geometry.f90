@@ -4743,18 +4743,17 @@ end subroutine
  ! ***************************************************************************    
 
 !<subroutine>
-
-  subroutine geom_init_NURBS_indirect(rgeomObject,s3dm)
-
+  subroutine geom_init_NURBS_indirect(rgeomObject,dx,dy,s3dm)
 !<description>
   ! Creates a t_geometryObject representing a 2D polygon.
 !</description>
 
 !<input>
   ! the name of the file that contains the nurbs curve information
-  character(LEN=*)                :: s3dm 
+  character(LEN=*),intent(in)              :: s3dm 
 !</input>  
-
+  real(dp), intent(in)                  :: dx
+  real(dp), intent(in)                  :: dy
 !<output>
   ! A t_geometryObject structure to be written.
   type(t_geometryObject),      intent(out) :: rgeomObject
@@ -4766,7 +4765,7 @@ end subroutine
 !      ! This routine must change dtstep to the new timestep size.
 !    end function
 !  end interface
-  real(dp) :: dx,dy
+
   integer  :: ilength
   external initcurvefromfile,getcenter
   
@@ -4778,8 +4777,6 @@ end subroutine
 
     ilength=len(s3dm)
     call initcurvefromfile(ilength,s3dm)
-
-    call getcenter(dx,dy)
 
     call geom_init_NURBS_direct(rgeomObject,(/dx,dy/))
 
@@ -4865,14 +4862,16 @@ end subroutine
 !</subroutine>
   
   ! The output of the projector routine
-  logical :: bisInObject
+  external isingeometry
   
-  ! Are we inside the polygon?
-  if (bisInObject) then
-    iisInObject = 1
-  else
-    iisInObject = 0
-  end if
+  real(DP), dimension(2) :: DrelCoords
+  
+  ! First transfrom the point's coordinates into the NURBS's local
+  ! coordinate system
+  call bgeom_transformBackPoint2D(rgeomObject%rcoord2D, Dcoords, DrelCoords)
+  
+  call isingeometry(DrelCoords(1),DrelCoords(2),iisInObject)
+  
 
   ! That's it
     
@@ -5146,7 +5145,10 @@ end subroutine
       call geom_sphere_isInGeometry(rgeomObject, Dcoords, iisInObject)
     case (GEOM_ELLIPSOID)
       call geom_ellipsoid_isInGeometry(rgeomObject, Dcoords, iisInObject)
-      
+#if defined FEAT2_NURBS      
+    case (GEOM_NURBS)
+      call geom_NURBS_isInGeometry(rgeomObject, Dcoords, iisInObject)
+#endif      
     case DEFAULT
       iisInObject = 0
     end select
@@ -6497,7 +6499,7 @@ end subroutine
     call sys_halt()
 #if defined FEAT2_NURBS
   case (GEOM_NURBS)
-    call geom_init_NURBS(rParticle%rgeometryObject,s3dm)
+    call geom_init_NURBS(rParticle%rgeometryObject,dx,dy,s3dm)
 #endif
   case default
     call output_line ('Unsupported geometry type for particle.!', &
