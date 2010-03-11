@@ -20,6 +20,7 @@ module pprocintegrals
   use genoutput
   use cubature
   use mprimitives
+  use basicgeometry
   use triangulation
   use triasearch
   use collection
@@ -77,7 +78,7 @@ contains
 
     ! local variables
     integer(I32) :: ccub
-    integer :: ncubp, ncdim,i,idim
+    integer :: ncubp, ncdim,i,j,idim
     integer :: ifirstUnknownPoint,ilastUnknownPoint
     real(DP), dimension(:,:), allocatable :: Dpoints,DpointsReal
     real(DP), dimension(:,:,:), allocatable :: DpointsReal2
@@ -126,6 +127,37 @@ contains
     
     call tsrch_getElementsByRaytrace (rtriangulation,DpointsReal,Ielements,&
         ifirstUnknownPoint,ilastUnknownPoint)
+        
+    ! Sometimes, some elements may not be found (e.g. if the point is outside 
+    ! of the domain). We replace the correspoding function value by zero
+    ! in this case and throw a warning. This is done by deleting the points
+    ! and elements from the list.
+    j = 1
+    do i=1,ncubp
+      if (Ielements(i) .ne. 0) then
+        if (j .ne. i) then
+          DpointsReal2(:,1,j) = DpointsReal2(:,1,i)
+          Ielements(j) = Ielements(i)
+          j = j+1
+        end if
+      else
+        select case (ubound(DpointsReal2,1))
+        case (NDIM1D)
+          call output_line ("Element not found. Point "//trim(sys_siL(i,10))//"=("//&
+              trim(sys_sdL(DpointsReal2(1,1,i),5))//")", &
+              OU_CLASS_WARNING,OU_MODE_STD,"ppint_lineIntegral")
+        case (NDIM2D)
+          call output_line ("Element not found. Point "//trim(sys_siL(i,10))//"=("//&
+              trim(sys_sdL(DpointsReal2(1,1,i),5))//","//trim(sys_sdL(DpointsReal2(2,1,i),5))//")", &
+              OU_CLASS_WARNING,OU_MODE_STD,"ppint_lineIntegral")
+        case (NDIM3D)
+          call output_line ("Element not found. Point "//trim(sys_siL(i,10))//"=("//&
+              trim(sys_sdL(DpointsReal2(1,1,i),5))//","//trim(sys_sdL(DpointsReal2(2,1,i),5))//&
+              trim(sys_sdL(DpointsReal2(3,1,i),5))//")", &
+              OU_CLASS_WARNING,OU_MODE_STD,"ppint_lineIntegral")
+        end select
+      end if
+    end do
     
     ! Calculate the values in the points. One point per element.
     allocate(Dvalues(1,ncubp))
