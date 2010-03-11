@@ -6,7 +6,7 @@ module dg2d_problem
 
   implicit none
   
-  real(dp), parameter :: g = 9.81
+  real(dp), parameter :: g = 1.0_dp
 
     
 

@@ -167,6 +167,9 @@ contains
     
     integer :: ilimiter
     
+    ! The profiler to measure the time
+    type(t_profiler) :: rprofiler
+    
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -522,6 +525,9 @@ contains
     
     ttime = 0.0_DP
     
+    ! Initialise the profiler with 5 timers
+    call profiler_init(rprofiler, 5)
+    
     if (ttfinal > 0.0_dp)then
     timestepping: do
 
@@ -531,7 +537,7 @@ contains
        write(*,*) 'TIME STEP:', ttime
        write(*,*)
        
-       
+       call profiler_measure(rprofiler,1)
        
 !       call lsyssc_getbase_double (rsol,p_Ddata)
 !       p_Ddata(1)=0.0_DP       
@@ -546,14 +552,17 @@ contains
        ! First use the dg-function for the edge terms
        !rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        !rcollection%SquickAccess(1) = sinlet
+       call profiler_measure(rprofiler,2)
        call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
                                               flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
        
+       call profiler_measure(rprofiler,1)
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
        ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
        if(ielementType .ne. EL_DG_T0_2D) then
        
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -573,12 +582,15 @@ contains
                                             
        end if
        
+       call profiler_measure(rprofiler,4)
        ! Solve for solution update
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        
+       call profiler_measure(rprofiler,1)
        ! Get new temp solution
        call lsysbl_vectorLinearComb (rsolBlock,rsolUpBlock,1.0_DP,dt,rsoltempBlock)
        
+       call profiler_measure(rprofiler,5)
               ! Limit the solution vector
        !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
@@ -598,6 +610,7 @@ contains
        
        ! Create RHS-Vector
              
+       call profiler_measure(rprofiler,2)
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        rcollection%SquickAccess(1) = sinlet
@@ -606,8 +619,12 @@ contains
                                               raddTriaData,&
                                               flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
+                                              
+       call profiler_measure(rprofiler,1)
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
        ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
       if(ielementType .ne. EL_DG_T0_2D) then
        
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -627,12 +644,15 @@ contains
        end if
               
        ! Solve for solution update
+       call profiler_measure(rprofiler,4)
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        
+       call profiler_measure(rprofiler,1)
        ! Get new temp solution
        call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
        call lsysbl_vectorLinearComb (rsolBlock,rsolUpBlock,0.75_DP,0.25_DP,rsoltempBlock)
        
+       call profiler_measure(rprofiler,5)
 !              ! Limit the solution vector
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
@@ -650,13 +670,17 @@ contains
        ! First use the dg-function for the edge terms
        rcollection%p_rvectorQuickAccess1 => rsolTempBlock
        rcollection%SquickAccess(1) = sinlet
+       call profiler_measure(rprofiler,2)
        call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
                                               rrhsBlock,rsolTempBlock,&
                                               raddTriaData,&
                                               flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
+       call profiler_measure(rprofiler,1)
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
        ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
       if(ielementType .ne. EL_DG_T0_2D) then
          
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
@@ -677,13 +701,16 @@ contains
        end if
               
        ! Solve for solution update
+       call profiler_measure(rprofiler,4)
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        
        ! Get new temp solution
+       call profiler_measure(rprofiler,1)
        call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
        call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
 !       ! Limit the solution vector
+        call profiler_measure(rprofiler,5)
 !       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
 !       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
@@ -699,6 +726,8 @@ contains
 !       write(*,*) dL2updnorm
        
     
+    
+    call profiler_measure(rprofiler,1)
        ! Go on to the next time step
        ttime = ttime + dt
        ! If we would go beyond the final time in our next time step,
@@ -713,7 +742,8 @@ contains
     end do timestepping
    end if
 
- 
+   ! Release the profiler and print statistics
+   call profiler_release(rprofiler)
     
     
 !    
@@ -745,6 +775,8 @@ contains
     write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
     call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints)
+    ! Output solution to vtk file
+    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints)
     
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection

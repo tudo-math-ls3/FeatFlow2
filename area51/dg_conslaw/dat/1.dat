@@ -2,12 +2,13 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 5
+nlmax = 8
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
 prmname = ./pre/QUAD.prm
+#prmname = ./pre/zehnm.prm
 #prmname = ./pre/zylinderuse.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
@@ -17,6 +18,7 @@ prmname = ./pre/QUAD.prm
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
 triname = ./pre/QUAD.tri
+#triname = ./pre/zehnm.tri
 #triname = ./pre/zylinderuse.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
@@ -33,10 +35,10 @@ FEkind = 1
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.001
+dt = 0.0001
 
 # Final time
-ttfinal = 0.05
+ttfinal = 0.1
 
 
 [SOLVER]
@@ -65,4 +67,4 @@ incond = 1
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 3
+extrapoints = 0

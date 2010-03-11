@@ -1305,9 +1305,9 @@ contains
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
-            ! Water hill
-            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            ! Water hill
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
               
               
             
@@ -1327,11 +1327,18 @@ contains
 !            Dcoefficients (1,ipoint,iel)=1.0_dp
 !          end if
 
-!            ! Water reservoir
-!            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
-!              Dcoefficients (1,ipoint,iel)=1.5_dp
+            ! Water reservoir
+            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
+              Dcoefficients (1,ipoint,iel)=1.5_dp
+            else
+              Dcoefficients (1,ipoint,iel)=1.0_dp
+            end if
+
+!            ! Circular Dambreak
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+!              Dcoefficients (1,ipoint,iel)=2.5_dp
 !            else
-!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!              Dcoefficients (1,ipoint,iel)=0.5_dp
 !            end if
             
           end do

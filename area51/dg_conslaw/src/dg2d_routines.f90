@@ -58,6 +58,12 @@ module dg2d_routines
 	  real(dp), dimension(:,:), pointer :: p_DmidPoints
 	end type 
 	
+	type t_profiler
+	  integer :: ntimer, icurrenttimer
+	  real(dp) :: dstarttime, dendtime, dlasttime
+	  real(dp), dimension(:), allocatable :: Dtimers
+	end type
+	
 	public :: linf_dg_buildVectorScalarEdge2d
 
 contains
@@ -1226,7 +1232,234 @@ end subroutine
 
 
 
+    !****************************************************************************
+  
+!<subroutine>  
+  
+   subroutine dg2vtk(rvector,extraNodesPerEdge)
 
+!<description>
+
+  ! Output a DG vector to gmv format
+
+!</description>
+
+!<input>
+ 
+  ! The solution vector to output
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! Refinement level of the output grid (0 = No, n = n extra points on edge)
+  integer, intent(in) :: extraNodesPerEdge
+  
+    
+!</input>
+
+!<output>
+!</output>
+  
+!</subroutine>
+  ! local variables
+  
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  ! Space for the coordinates of the points on the reference element
+  real(dp), dimension(:,:), allocatable :: drefCoords
+  
+  ! The corner points of the cells on the reference element
+  integer, dimension(:,:), allocatable ::irefCornerNodesOfCell
+  
+  ! The coordinates of the real vertices (not on the reference element)
+  real(dp), dimension(:,:), allocatable :: dNodeCoords
+  
+  ! Vertices at element of the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  
+  ! Vertices at element of the triangulation
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  ! Maps element to corner vertices
+  integer, dimension(:,:), allocatable :: iCornerNodesOfCell
+  
+  integer :: nnodesOnRef, i, j, ncellsOnRef, icell, nnodes, iel, ibaseC, ibaseN, NEL, inode, ncells, iunit
+  
+  real(dp) :: dx, dy
+  
+  integer(I32) :: ctrafoType
+  
+  real(DP), dimension(:,:), allocatable :: Djac
+  
+  real(DP), dimension(:), allocatable :: Ddetj
+  
+  real(DP), dimension(:), allocatable :: dnodeValues
+  
+  
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvector%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+  
+  ! Get pointers to the data form the truangulation
+  call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+  call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
+                               p_DvertexCoords)
+
+  ! Get number of elements from the triangulation                               
+  NEL = p_rtriangulation%NEL
+  
+  ! First calculate the number of nodes on the reference element
+  nnodesOnRef = (2+extraNodesPerEdge)*(2+extraNodesPerEdge)
+
+  ! Allocate space for the coordinates of the nodes on the reference element
+  allocate(drefCoords(3,nnodesOnRef))
+
+  ! Calculate the coordinates of the nodes on the reference element
+  inode = 1
+  do i=1,2+extraNodesPerEdge
+    dy = -1.0_dp + (i-1)*2.0_dp/(1+extraNodesPerEdge)
+    do j=1,2+extraNodesPerEdge
+      dx = -1.0_dp + (j-1)*2.0_dp/(1+extraNodesPerEdge)
+      drefCoords(1,inode) = dx
+      drefCoords(2,inode) = dy
+      drefCoords(3,inode) = 0.0_dp
+      inode=inode+1
+    end do
+  end do
+
+
+  ! First calculate the number of cells on the reference element
+  ncellsOnRef = (1+extraNodesPerEdge)*(1+extraNodesPerEdge)
+
+  ! Allocate space for the array taking the corner nodes of the cells
+  ! on the reference element
+  allocate(irefCornerNodesOfCell(4,ncellsOnRef))
+
+  ! Calculate the array taking the corner nodes of the cells
+  ! on the reference element
+  icell = 1
+  do i=1,1+extraNodesPerEdge
+    do j=1,1+extraNodesPerEdge
+      irefCornerNodesOfCell(1,icell) = (j-1)*(2+extraNodesPerEdge)+(i  )
+      irefCornerNodesOfCell(2,icell) = (j-1)*(2+extraNodesPerEdge)+(i+1)
+      irefCornerNodesOfCell(3,icell) = (j  )*(2+extraNodesPerEdge)+(i+1)
+      irefCornerNodesOfCell(4,icell) = (j  )*(2+extraNodesPerEdge)+(i  )
+      icell=icell+1
+    end do
+  end do
+
+
+  ! Now calculate the total number of nodes to write to the gmv file
+  nnodes = nnodesOnRef * NEL
+
+  ! Allocate array for the coordinates of these nodes
+  allocate(dNodeCoords(3,nnodes))
+  
+  ! Get type of transformation
+  ctrafotype = p_rspatialDiscr%RelementDistr(1)%ctrafotype
+  
+  ! Allocate temp space for mapping
+  allocate(Djac(4,nnodesOnRef))
+  allocate(Ddetj(nnodesOnRef))
+
+  ! Calculate the real coordinates of the nodes
+  do iel = 1, NEL
+  
+    call trafo_calctrafo_mult (ctrafoType,nnodesOnRef,&
+                             p_DvertexCoords(:,p_IverticesAtElement(:,iel)),&
+                             drefCoords(1:2,:),Djac,Ddetj,&
+                             dNodeCoords(1:2,(iel-1)*nnodesOnRef+1:(iel)*nnodesOnRef))
+
+  end do
+  
+  ! Third coordinate is zero
+  dNodeCoords(3,:) = 0.0_DP
+
+  ! Deallocate temp space for mapping
+  deallocate(Djac)
+  deallocate(Ddetj)
+
+  ! Calculate the total number of cells
+  ncells = ncellsOnRef*NEL
+
+  ! Allocate space for the array taking the corner nodes of the cells
+  allocate(iCornerNodesOfCell(4,ncells))
+
+  ! Calculate the array taking the corner nodes of the cells
+  do iel=1,NEL
+    ibaseC = (iel-1)*ncellsOnRef
+    ibaseN = (iel-1)*nnodesOnRef
+    do i=1,ncellsOnRef
+      iCornerNodesOfCell(1,ibaseC+i) = irefCornerNodesOfCell(1,i)+ibaseN
+      iCornerNodesOfCell(2,ibaseC+i) = irefCornerNodesOfCell(2,i)+ibaseN
+      iCornerNodesOfCell(3,ibaseC+i) = irefCornerNodesOfCell(3,i)+ibaseN
+      iCornerNodesOfCell(4,ibaseC+i) = irefCornerNodesOfCell(4,i)+ibaseN
+    end do
+  end do
+  
+  
+  
+  ! Evaluate the values of the solution vector in the points
+  
+  allocate(dnodeValues(nnodes))
+  
+  do iel = 1, NEL
+    ibaseN = (iel-1)*nnodesOnRef
+    call fevl_evaluate_mult1 (DER_FUNC, dnodeValues(ibaseN+1:ibaseN+nnodesOnRef),&
+                              rvector, iel, drefCoords(1:2,:))
+  end do
+  
+  
+  
+  
+  
+  
+  ! ************ WRITE TO FILE PHASE *******************
+  
+  iunit = sys_getFreeUnit()
+  
+  open(iunit, file='./gmv/u2d.vtk')
+  
+  write(iunit, '(A)') "# vtk DataFile Version 2.0"
+  write(iunit, '(A)') "Generated by FEATFlow 2.x"
+  write(iunit, '(A)') "ASCII"
+
+  write(iunit,'(A)') 'DATASET UNSTRUCTURED_GRID'
+  write(iunit,'(A,I10,A)') "POINTS", nnodes, " double"
+    do i=1,nnodes
+      write(iunit,'(3E16.7)') dNodeCoords(1:3,i)
+    end do
+  
+  write(iunit,'(A,2I10)') "CELLS",ncells,ncells*5
+  do i=1,ncells
+    write(iunit,'(5I8)') 4,iCornerNodesOfCell(1:4,i)-1
+  end do
+  
+  write(iunit,'(A,I10)') "CELL_TYPES",ncells
+  do i=1,ncells
+    write(iunit,'(I3)') 9
+  end do
+  
+  write (iunit,'(A,I10)') "POINT_DATA", nnodes
+  write (iunit,'(A)') "SCALARS scalars double 1"
+  write (iunit,'(A)') "LOOKUP_TABLE default"
+  do i=1,nnodes
+    write (iunit,'(ES16.8E3)') dnodevalues(i)
+  end do
+
+  close(iunit)
+
+
+  deallocate(drefCoords)
+  deallocate(irefCornerNodesOfCell)
+  deallocate(dNodeCoords)
+  deallocate(iCornerNodesOfCell)
+  deallocate(dnodeValues)
+
+end subroutine
 
 
 
@@ -1542,7 +1775,7 @@ end subroutine
   
   
   
-   ielementtype = EL_Q2
+   ielementtype = EL_Q1
   
       ! Now we can start to initialise the discretisation. At first, set up
     ! a block discretisation structure that specifies the blocks in the
@@ -2748,9 +2981,10 @@ end subroutine
     ! Allocate the space for the pointer to the Data of the different blocks of the output vector
     allocate(p_DoutputData(nvar))
     
-    do ivar = 1, nvar
-      call lsyssc_getbase_double(rvector%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
-    end do
+    !do ivar = 1, nvar
+    !  call lsyssc_getbase_double(rvector%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
+    !end do
+    call lsysbl_getbase_double (rvector, p_Ddata)
 
     ! Get the type of coordinate system
     icoordSystem = elem_igetCoordSystem(rlocalVectorAssembly(1)%celement)
@@ -3100,13 +3334,21 @@ end subroutine
         do ivar = 1, nvar
         
           do idofe = 1,indof
+                    
+            p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) = &            
+              p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(1)%p_Idofs(idofe,iel)-1) + &
+              DlocalData(ivar,1,idofe)
+            
+            p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(2)%p_Idofs(idofe,iel)-1) = &            
+              p_Ddata(rvector%RvectorBlock(ivar)%iidxFirstEntry+rlocalVectorAssembly(2)%p_Idofs(idofe,iel)-1) + &
+              DlocalData(ivar,2,idofe)
         
-            p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) =&
-                         p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) +&
-                         DlocalData(ivar,1,idofe)
-            p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) =&
-                         p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) +&
-                         DlocalData(ivar,2,idofe)
+!            p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) =&
+!                         p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(1)%p_Idofs(idofe,iel)) +&
+!                         DlocalData(ivar,1,idofe)
+!            p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) =&
+!                         p_DoutputData(ivar)%p_Ddata(rlocalVectorAssembly(2)%p_Idofs(idofe,iel)) +&
+!                         DlocalData(ivar,2,idofe)
           end do
           
         end do ! nvar
@@ -3165,7 +3407,7 @@ end subroutine
 !</subroutine>
 
   ! local variables, used by all processors
-  real(DP), dimension(:), pointer :: p_Ddata
+  real(DP), dimension(:), pointer :: p_Ddata, p_DdataOut
   integer :: indof, NEL, iel, NVE, ivt, NVT
     
   ! The underlying triangulation
@@ -3219,9 +3461,11 @@ end subroutine
   ! Allocate the space for the pointer to the Data of the different blocks of the output vector
   allocate(p_DoutputData(nvar))
     
-  do ivar = 1, nvar
-    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
-  end do
+!  do ivar = 1, nvar
+!    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
+!  end do
+  
+  call lsysbl_getbase_double (rvectorBlock, p_DdataOut)
   
   ! Point to the indicatorvariable
   p_rvector => rvectorBlock%RvectorBlock(iindicatorVar)
@@ -3387,7 +3631,10 @@ end subroutine
     ! Multiply the linear part of the solution vector with the correction factor
     
     do ivar = 1, nvar
-      p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*dalpha
+      !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*dalpha
+      p_DdataOut(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &            
+        p_DdataOut(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) * &
+        dalpha
     end do
     
   end do ! iel
@@ -3789,7 +4036,7 @@ end subroutine
   real(dp), dimension(:), allocatable :: DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi
   
   real(dp), dimension(:,:), allocatable :: DLin, DtLin, Dalphaei, DL, DR, Dalpha
-  
+    
   ! Array of pointers to the data of the blockvector to limit
   type(t_dpPointer), dimension(:), allocatable :: p_DoutputData
   
@@ -3805,9 +4052,12 @@ end subroutine
   ! Allocate the space for the pointer to the Data of the different blocks of the output vector
   allocate(p_DoutputData(nvar))
     
-  do ivar = 1, nvar
-    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
-  end do
+!  do ivar = 1, nvar
+!    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
+!  end do
+  call lsysbl_getbase_double (rvectorBlock, p_Ddata)
+  
+  
     
   
   ! Get number of elements
@@ -3840,7 +4090,7 @@ end subroutine
   ! and limiting factors
   allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar), DltIi(nvar), DlIi(nvar))
   !allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
-  allocate(DLin(nvar,20), DtLin(nvar,20), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  allocate(DLin(nvar,10), DtLin(nvar,10), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
   
   do iel = 1, NEL
     
@@ -3849,13 +4099,15 @@ end subroutine
     
     ! Get values in the center of the element for all variables
     do ivar = 1, nvar
-      DVec(ivar) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1))
+      !DVec(ivar) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1))
+      DVec(ivar) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1)-1)
     end do
     
     ! Here we should maybe get a local value of NVE
     
     ! Initialise the correction factor
-    Dalphaei(:,:) = 1.0_dp
+    !Dalphaei(:,:) = 1.0_dp
+    Dalphaei(:,:) = 0.0_dp
     
     ! Now calculate the limiting factor for every vertex on our element
     do ivt = 1, NVE
@@ -3883,15 +4135,17 @@ end subroutine
         iglobNeighNum = p_IelementsAtVertex(ineighbour)
         if (iglobNeighNum.ne.iel) then
           call dof_locGlobMapping(p_rspatialDiscr, iglobNeighNum, IdofGlob)
-          iidx = iidx +1
+          iidx = iidx + 1          
           do ivar = 1, nvar
-            DLin(ivar,iidx) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1))- DVec(ivar)
+            !DLin(ivar,iidx) = p_DoutputData(ivar)%p_Ddata(IdofGlob(1)) - DVec(ivar)
+            DLin(ivar,iidx) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(1)-1) - DVec(ivar)
           end do
+
           
         end if
       end do
           
-      
+      if (iidx>0) then
       ! Dimensional splitting
       do idim = 1, NDIM2D
         ! Now we need the trafo matrices
@@ -3908,10 +4162,12 @@ end subroutine
         
         ! Get max and min of the transformed solution differences
         do ivar = 1, nvar
-          DtLinMax(ivar) = max(maxval(DtLin(ivar,1:iidx)),0.0_dp)
-          DtLinMin(ivar) = min(minval(DtLin(ivar,1:iidx)),0.0_dp)
+          DtLinMax(ivar) = maxval(DtLin(ivar,1:iidx))
+          DtLinMin(ivar) = minval(DtLin(ivar,1:iidx))
+          !DtLinMax(ivar) = max(DtLinMax(ivar),0.0_dp)
+          !DtLinMin(ivar) = min(DtLinMin(ivar),0.0_dp)
         end do
-        
+       
         ! Now, as the differences are transformed, we can limit every component on its own
         do ivar = 1, nvar
           DltIi(ivar) = max(min(DtLinMax(ivar),DtIi(ivar)),DtLinMin(ivar))
@@ -3928,12 +4184,23 @@ end subroutine
           if (abs(DIi(ivar))<SYS_EPSREAL) then
             !Dalphaei(ivar,ivt) = 1.0_dp
           else
-            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
+            ! This is the one following the principles
+            !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
+            
+            ! This one is less limiting
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ))
+            
+            ! This is the one with the max of the dimensional splitting
+            !Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
+            
+            ! This is the least limiting one
+            Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ) )
           end if
         end do
       
       end do ! idim
+      end if
+
       
     end do ! ivt
 
@@ -3943,6 +4210,7 @@ end subroutine
     do ivar = 1, nvar
       Dalpha(ivar, iel) = minval(Dalphaei(ivar,:))
     end do
+    
     
 !    if (iel.eq.985) then
 !      write(*,*) Dalphaei(1,:)
@@ -3954,7 +4222,12 @@ end subroutine
     
     ! Multiply the linear part of the solution vector with the correction factor
     do ivar = 1, nvar
-      p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
+      ! p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
+      
+      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) = &            
+        p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3)-1) * &
+        Dalpha(ivar, iel)
+      
     end do
     
   end do !iel
@@ -4693,6 +4966,74 @@ end subroutine
   deallocate(DLin, DtLin, Dalphaei)
 
   
+  end subroutine
+  
+  
+    
+  
+  subroutine profiler_init(rprofiler, inumtimers)
+    type(t_profiler), intent(inout) :: rprofiler
+    integer, intent(in) :: inumtimers
+    
+    allocate(rprofiler%Dtimers(inumtimers))
+    rprofiler%Dtimers(:)    = 0.0_dp
+    rprofiler%dendtime      = 0.0_dp
+    rprofiler%dlasttime     = 0.0_dp
+    rprofiler%ntimer        = inumtimers
+    rprofiler%icurrenttimer = -1
+    call cpu_time(rprofiler%dstarttime)
+    
+  end subroutine
+  
+  
+  subroutine profiler_release(rprofiler)
+    type(t_profiler), intent(inout) :: rprofiler
+    
+    real(dp) :: dalltime
+    integer :: i
+    
+    call cpu_time(rprofiler%dendtime)
+    
+    dalltime = rprofiler%dendtime - rprofiler%dstarttime
+    
+    write(*,*) ''
+    write(*,*) '*********************************************************************'
+    write(*,*) 'Profiler statistics'
+    write(*,*) 'Full time:' , dalltime
+    
+    do i = 1, rprofiler%ntimer
+      write(*,*) i,  (rprofiler%Dtimers(i)/dalltime*100),'%'
+    end do
+    write(*,*) '*********************************************************************'
+    write(*,*) ''
+    
+    rprofiler%dstarttime    = 0.0_dp
+    rprofiler%dendtime      = 0.0_dp
+    rprofiler%dlasttime     = 0.0_dp
+    rprofiler%ntimer        = -1
+    rprofiler%icurrenttimer = -1
+    deallocate(rprofiler%Dtimers)
+    
+  end subroutine
+  
+  
+  subroutine profiler_measure(rprofiler,icurrtimer)
+    type(t_profiler), intent(inout) :: rprofiler
+    integer, intent(in) :: icurrtimer
+    
+    real(dp) :: dcurrtime
+    integer :: i
+    
+    call cpu_time(dcurrtime)
+    
+    if (rprofiler%icurrenttimer>0) then
+      rprofiler%Dtimers(rprofiler%icurrenttimer) = rprofiler%Dtimers(rprofiler%icurrenttimer) + dcurrtime-rprofiler%dlasttime
+    end if
+    
+    rprofiler%dlasttime = dcurrtime
+    
+    rprofiler%icurrenttimer = icurrtimer
+    
   end subroutine
   
   
