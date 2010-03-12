@@ -1590,6 +1590,15 @@ contains
         ! it was read in at the beginning of the program.
         call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhsAssembly%rrhsVector)
         
+        ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
+        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+            rrhsAssembly%rrhsVector%RvectorBlock(1), &
+            rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX, 0.0_DP, .false.)
+
+        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+            rrhsAssembly%rrhsVector%RvectorBlock(2), &
+            rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
+        
       else if (rrhsAssembly%ctype .eq. 4) then
         ! Determine the file before and after the current simulation time.
         dreltime = (rproblem%rtimedependence%dtime - rrhsAssembly%dtimeInit) / &
