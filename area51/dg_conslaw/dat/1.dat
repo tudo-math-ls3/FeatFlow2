@@ -28,17 +28,17 @@ triname = ./pre/QUAD.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 2
 
 
 
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.0001
+dt = 0.0005
 
 # Final time
-ttfinal = 0.1
+ttfinal = 0.05
 
 
 [SOLVER]
@@ -48,7 +48,12 @@ ttfinal = 0.1
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 5
+limiter = 6
+
+# What kind of time stepping to use
+# 1: RK SSP 3rd order
+# 2: dGP(2) 3rd/4th order
+timestepping = 1
 
 
 
@@ -67,4 +72,4 @@ incond = 1
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3

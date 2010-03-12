@@ -100,6 +100,8 @@ contains
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
     type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock
+    type(t_vectorBlock), target :: rk1, rk2, rdefBlock, rimf1, rimf2
+
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -167,8 +169,14 @@ contains
     
     integer :: ilimiter
     
+    real(dp) :: ddefnorm
+    
+    integer :: idef
+    
     ! The profiler to measure the time
     type(t_profiler) :: rprofiler
+    
+    integer :: itimestepping
     
     ! Start time measurement
     call cpu_time(dtime1)
@@ -210,6 +218,9 @@ contains
     
     ! Get string describing the initial condition for the function parser
     call parlst_getvalue_string (rparlist, 'PROBLEM', 'inlet', sinlet)
+    
+    ! Which kind of time stepping
+    call parlst_getvalue_int(rparlist, 'METHOD', 'timestepping', itimestepping, 1)
     
     ! What type of limiter to use
     call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0) 
@@ -364,7 +375,17 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rTempBlock,.true.,&
          ST_DOUBLE)
- 
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rk1,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rk2,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rdefBlock,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rimf1,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rimf2,.true.,&
+         ST_DOUBLE)
+         
 
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
@@ -522,7 +543,8 @@ contains
     !call    lsyssc_getbase_double(rsolBlock%RvectorBlock(3),p_ddata)
     !write(*,*) p_ddata
     
-    
+   select case (itimestepping)
+   case (1)
     ttime = 0.0_DP
     
     ! Initialise the profiler with 5 timers
@@ -741,9 +763,169 @@ contains
 
     end do timestepping
    end if
-
+   
    ! Release the profiler and print statistics
    call profiler_release(rprofiler)
+   
+   
+   
+ case(2)  
+   
+  
+  ! Initialise the profiler with 5 timers
+  call profiler_init(rprofiler, 5)
+   
+  ttime = 0.0_DP
+    
+  if (ttfinal > 0.0_dp)then
+    timestepping2: do
+
+      ! Compute solution from time step t^n to time step t^{n+1}
+      write(*,*)
+      write(*,*)
+      write(*,*) 'TIME STEP:', ttime
+      write(*,*)
+      
+      idef = 0
+      
+      ! Calculate rimf2
+      call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                          rrhsBlock,rsolBlock,&
+                                           raddTriaData,&
+                                           flux_dg_buildVectorBlEdge2D_sim,&
+                                           rcollection)
+       
+      call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+      if(ielementType .ne. EL_DG_T0_2D) then
+       
+        rcollection%p_rvectorQuickAccess1 => rsolBlock
+        call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                     flux_sys_block,rcollection)
+                                            
+      end if
+       
+      call linsol_solveAdaptively (p_rsolverNode,rimf2,rrhsBlock,rtempBlock)
+      
+      
+      
+      ! Calculate K1 and K2 
+      call lsysbl_vectorLinearComb (rsolBlock,rimf2,0.5_dp,dt/8.0_dp,rk1)
+      call lsysbl_vectorLinearComb (rsolBlock,rimf2,1.0_dp,dt/6.0_dp,rk2)
+      
+      defcorr: do
+      
+      ! Calculate U1
+      call lsysbl_vectorLinearComb (rsolBlock,rk1,0.5_dp,1.0_dp,rsolTempBlock)
+      call lsysbl_vectorLinearComb (rimf2,rsolTempBlock,-dt/8.0_dp,1.0_dp)
+      
+      ! calculate rimf1 
+      call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       if(ielementType .ne. EL_DG_T0_2D) then
+       
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+                                            
+       end if
+       
+       call linsol_solveAdaptively (p_rsolverNode,rimf1,rrhsBlock,rtempBlock)
+      
+      
+      ! Calculate U2
+      call lsysbl_vectorLinearComb (rk2,rimf2,1.0_dp,dt/6.0_dp,rsolBlock)
+      call lsysbl_vectorLinearComb (rimf1,rsolBlock,2.0_dp/3.0_dp*dt,1.0_dp)
+      
+      ! Calculate rimf2
+      call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       if(ielementType .ne. EL_DG_T0_2D) then
+       
+         rcollection%p_rvectorQuickAccess1 => rsolBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+                                            
+       end if
+       
+       call linsol_solveAdaptively (p_rsolverNode,rimf2,rrhsBlock,rtempBlock)
+      
+      ! Calculate defect
+      call lsysbl_vectorLinearComb (rk2,rimf2,1.0_dp,dt/6.0_dp,rdefBlock)
+      call lsysbl_vectorLinearComb (rimf1,rdefBlock,2.0_dp/3.0_dp*dt,1.0_dp)
+      call lsysbl_vectorLinearComb (rsolBlock,rdefBlock,-1.0_dp,1.0_dp)
+      
+      ddefNorm = lsysbl_vectorNorm (rdefBlock,LINALG_NORML2)
+      write(*,*) '   Defect:', ddefNorm
+      
+      if (ddefnorm < 0.00000000001) exit defcorr
+      
+      idef = idef +1
+      
+      if (idef > 100) exit defcorr
+      
+      end do defcorr
+      
+            ! Limit the solution vector
+      !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
+      !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+      if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
+      if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
+      if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
+      if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
+      if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
+  
+       
+ 
+
+
+     ! Go on to the next time step
+     ttime = ttime + dt
+     ! If we would go beyond the final time in our next time step,
+     ! then reduce the timestep
+     !if (ttfinal-ttime<dt) dt = ttfinal-ttime
+
+     ! Leave the time stepping loop if final time is reached
+     if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping2
+       
+
+    end do timestepping2
+   end if
+   
+   
+      ! Release the profiler and print statistics
+   call profiler_release(rprofiler)
+   end select
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
+   
     
     
 !    
