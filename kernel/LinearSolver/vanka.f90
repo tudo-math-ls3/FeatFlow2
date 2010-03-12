@@ -9450,8 +9450,8 @@ contains
     
     real(DP) :: di1,di2
     
-    integer, dimension(:), pointer :: p_KcolA,p_KcolA12
-    integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KdiagonalA
+    integer, dimension(:), pointer :: p_KcolA,p_KcolA12,p_KcolA45
+    integer, dimension(:), pointer :: p_KldA,p_KldA12,p_KldA45,p_KdiagonalA
     real(DP), dimension(:), pointer :: p_DA11,p_Da22,p_Da44,p_Da55
     real(DP), dimension(:), pointer :: p_DA12,p_Da21,p_Da45,p_Da54
     integer, dimension(:), pointer :: p_KcolB
@@ -9497,6 +9497,8 @@ contains
     p_KdiagonalA => rvanka%p_KdiagonalA11
     p_KcolA12 => rvanka%p_KcolA12
     p_KldA12 => rvanka%p_KldA12
+    p_KcolA45 => rvanka%p_KcolA45
+    p_KldA45 => rvanka%p_KldA45
     p_DA11 => rvanka%p_DA11
     p_DA22 => rvanka%p_DA22
     p_Da44 => rvanka%p_Da44
@@ -9814,8 +9816,8 @@ contains
         end if
         
         if (bhaveA45) then
-          ia1 = p_KldA12(idof)
-          ia2 = p_KldA12(idof+1)-1
+          ia1 = p_KldA45(idof)
+          ia2 = p_KldA45(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
@@ -9828,8 +9830,8 @@ contains
         end if
         
         if (bhaveA42) then
-          ia1 = p_KldA12(idof)
-          ia2 = p_KldA12(idof+1)-1
+          ia1 = p_KldA45(idof)
+          ia2 = p_KldA45(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
@@ -9842,8 +9844,8 @@ contains
         end if
 
         if (bhaveA24) then
-          ia1 = p_KldA12(idof)
-          ia2 = p_KldA12(idof+1)-1
+          ia1 = p_KldA45(idof)
+          ia2 = p_KldA45(idof+1)-1
           daux1 = 0.0_DP
           daux2 = 0.0_DP
           do ia = ia1,ia2
