@@ -1485,7 +1485,7 @@ contains
             case (4)
               select case (cspace)
               case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVST)
+                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVST)
                 rpreconditioner%bneedVirtTransposedD = .true.
               case (CCSPACE_PRIMALDUAL)
                 call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAG2)
@@ -1498,7 +1498,7 @@ contains
             case (5)
               select case (cspace)
               case (CCSPACE_PRIMAL, CCSPACE_DUAL)
-                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTDIRECT)
+                call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DNAVSTDIRECT)
               case (CCSPACE_PRIMALDUAL)
                 call linsol_initVANKA (p_rsmoother,1.0_DP,LINSOL_VANKA_2DFNAVSTOCDIAGDIR)
               end select
