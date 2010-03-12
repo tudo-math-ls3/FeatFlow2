@@ -1588,8 +1588,7 @@ contains
         
         ! The basic RHS can be found in the rrhsassembly structure,
         ! it was read in at the beginning of the program.
-        call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhsAssembly%rrhsVector)
-        
+        !        
         ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
         call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
             rrhsAssembly%rrhsVector%RvectorBlock(1), &
