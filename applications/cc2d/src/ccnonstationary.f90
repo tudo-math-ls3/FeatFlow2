@@ -448,7 +448,9 @@ contains
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
     ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
-    call cc_generateBasicRHS (rproblem,rrhs)
+    call cc_generateBasicRHS (rproblem,&
+        rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
+        rproblem%rrhsassembly,rrhs)
     
     ! Add w_3*f_{n+1} to the current RHS.     
     call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&
@@ -534,6 +536,75 @@ contains
   
 !<subroutine>
 
+  subroutine cc_interpolateTimesteps (rtimestepping,rvectorOld,dtimeOld,&
+      rvectorNew,dtimeNew,rvectorInt,dtimeInt)
+
+!<description>
+  ! Interpolates the solution of the old and new timestep to a common
+  ! point in time. May be necessary for example for a CN time discretisation
+  ! where the pressure exists between the velocity timesteps.
+!</description>
+
+!<input>
+  ! Configuration block of the time stepping scheme.
+  type(t_explicitTimeStepping)        :: rtimestepping
+
+  ! Solution vector of the previous timestep
+  type(t_vectorBlock), intent(in) :: rvectorOld
+
+  ! Point in time of the previous timestep
+  real(dp), intent(in) :: dtimeOld
+
+  ! Solution vector of the current timestep
+  type(t_vectorBlock), intent(in) :: rvectorNew
+
+  ! Point in time of the current timestep
+  real(dp), intent(in) :: dtimeNew
+!</input>
+
+!<inputoutput>
+  ! Interpolated solution vector
+  type(t_vectorBlock), intent(inout) :: rvectorInt
+
+  ! Point in time of the interpolated solution vector
+  real(dp), intent(out) :: dtimeInt
+!</inputoutput>
+
+!</subroutine>
+
+    ! For the implicit Euler scheme, just take the solution.
+    ! The same for the FS-Theta scheme (has probably to be changed in 
+    ! the future!)
+    call lsysbl_copyVector (rvectorNew,rvectorInt)
+    
+    if ((rtimestepping%ctimestepType .eq. TSCHM_FRACTIONALSTEP) .or. &
+        ((rtimestepping%ctimestepType .eq. TSCHM_ONESTEP) .and. &
+         (rtimestepping%dtheta .eq. 1.0_DP))) then
+         
+      dtimeInt = dtimeNew
+      
+    else
+    
+      ! For the general Theta scheme, take an appropriate mean.
+      ! of the velocity vectors to compute the velocity in the point
+      ! of the timestep where the pressure lives.
+      dtimeInt = 0.5_DP*(dtimeNew + dtimeOld)
+      
+      call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(1),&
+          rvectorInt%RvectorBlock(1),&
+          1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
+      call lsyssc_vectorLinearComb (rvectorOld%RvectorBlock(2),&
+          rvectorInt%RvectorBlock(2),&
+          1.0_DP-rtimestepping%dtheta,rtimestepping%dtheta)
+          
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
   subroutine cc_solveNonstationary (rproblem,rvector,rrhs,rpostprocessing)
   
 !<description>
@@ -573,6 +644,10 @@ contains
     type(t_nlsolNode) :: rnlSol
 
     real(DP) :: dtimederivative,dtmp,dtmperror,dtimeratio,dcpuTime
+    
+    ! Time-interpolated solution vector
+    type(t_vectorBlock) :: rvectorInt
+    real(DP) :: dtimeInt
     
     ! Time error analysis and adaptive time stepping variables
     type(t_timestepSnapshot) :: rsnapshotLastMacrostep
@@ -617,8 +692,8 @@ contains
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock1, .false.)
     call lsysbl_createVecBlockIndirect (rrhs, rtempBlock2, .false.)
 
-    ! First time step
-    rproblem%rtimedependence%itimeStep = 1
+    ! Initial time step
+    rproblem%rtimedependence%itimeStep = 0
     rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
     dtimederivative = rproblem%rtimedependence%dminTimeDerivative
     
@@ -634,7 +709,9 @@ contains
     call output_line ('Starting postprocessing of initial solution...')
     call cc_postprocessingNonstat (rproblem,&
         rvector,rproblem%rtimedependence%dtimeInit,&
-        rvector,rproblem%rtimedependence%dtimeInit,0,rpostprocessing)
+        rvector,rproblem%rtimedependence%dtimeInit,&
+        rvector,rproblem%rtimedependence%dtimeInit,&
+        0,rpostprocessing)
 
     ! Reset counter of current macro step repetitions.
     irepetition = 0
@@ -642,6 +719,9 @@ contains
     !----------------------------------------------------
     ! Timeloop
     !----------------------------------------------------
+    
+    ! Start with the 1st timestep
+    rproblem%rtimedependence%itimeStep = 1
     
     ! Start timers that calculate the current time.
     call stat_clearTimer(rtimerAllTimesteps)
@@ -1141,12 +1221,20 @@ contains
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Starting postprocessing of the time step...',&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
+            
+        ! Calculate an interpolated solution vector where the time of
+        ! pressure and velocity matches.
+        call cc_interpolateTimesteps (rtimestepping,roldSolution,doldtime,&
+            rvector,rproblem%rtimedependence%dtime,rvectorInt,dtimeInt)
         
         ! Postprocessing. Write out the solution if it was calculated successfully.
         call cc_postprocessingNonstat (rproblem,&
             roldSolution,doldtime,&
             rvector,rproblem%rtimedependence%dtime,&
+            rvectorInt,dtimeInt,&
             rproblem%rtimedependence%itimeStep,rpostprocessing)
+            
+        call lsysbl_releaseVector (rvectorInt)
         
         call output_separator(OU_SEP_MINUS,coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         call output_line ('Analysing time derivative...',&

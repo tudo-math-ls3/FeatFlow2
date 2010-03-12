@@ -9,6 +9,16 @@
 [CC-POSTPROCESSING]
 ###################
 
+# Whether to apply postprocessing to a time interpolated solution or not.
+# This is used for error analysis as well as drag/lift calculation but
+# not for UCD/film output.
+# =0: Apply postprocessing to the raw solution vector.
+# =1 (standard): Apply postprocessing to a time-interpolated solution
+#   with velocity and pressure matching the same point in time.
+#   Necessary for higher order time stepping schemes like Crank-Nicolson.
+
+ipostprocTimeInterpSolution = 1
+
 # ------------------------------------------------------------------------
 # UCD output (GMV, AVS, Paraview...)
 
@@ -200,7 +210,7 @@ ibodyForcesBdComponent = 2
 
 # Whether to write the body forces to a file
 
-iwriteBodyForces = 0
+iwriteBodyForces = 1
 
 # Filename for the body forces
 

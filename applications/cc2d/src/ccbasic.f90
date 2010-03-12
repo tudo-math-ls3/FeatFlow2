@@ -131,6 +131,63 @@ module ccbasic
 
 !</typeblock>
 
+!<typeblock>
+
+  ! Type block configuring the RHS.
+  type t_rhsAssembly
+    
+    ! Type of the RHS.
+    ! =0: zero.
+    ! =1: stationary RHS, analytically defined by coeff_RHS_x/coeff_RHS_y
+    ! =2: nonstationary RHS, analytically defined by coeff_RHS_x/coeff_RHS_y
+    ! =3; Stationary RHS prescribed by a file.
+    ! =4: Nonstationary RHS prescribed by a sequence of files.
+    !     The files are linearly interpolated over the whole current
+    !     space-time cylinder.
+    integer :: ctype = 0
+    
+    ! If ctype=3/4: Basic filename of the files configuring the RHS.
+    character(len=SYS_STRLEN) :: sfilename = ""
+    
+    ! If ctype=4: First index in the filename.
+    ! The filename sfilename is extended by an index ".00001", ",.00002",...
+    integer :: ifirstindex = 0
+    
+    ! If ctype=4: Number of files in the sequence.
+    integer :: inumfiles = 0
+    
+    ! Whether or not files are formatted.
+    integer :: iformatted = 1
+    
+    ! If ctype=3/4: Block vector representing the stationary RHS from the file.
+    type(t_vectorBlock) :: rrhsVector
+
+    ! If ctype=4: A second RHS vector used for interpolating.
+    type(t_vectorBlock) :: rrhsVector2
+    
+    ! If ctype=4: Index of the RHS currently loaded in rrhsVector.
+    ! =-1 if this is undetermined.
+    integer :: icurrentRhs = -1
+    
+    ! If ctype=4: Index of the RHS currently loaded in rrhsVector2.
+    ! =-1 if this is undetermined.
+    integer :: icurrentRhs2 = -1
+    
+    ! For irhs=4: start time of the RHS.
+    real(DP) :: dtimeInit = 0.0_DP
+
+    ! For irhs=4: end time of the RHS.
+    real(DP) :: dtimeMax = 0.0_DP
+    
+    ! Multiplier for the X-component
+    real(DP) :: dmultiplyX = 1.0_DP
+    
+    ! Multiplier for the Y-component
+    real(DP) :: dmultiplyY = 1.0_DP
+
+  end type
+
+!</typeblock>
 
 !<typeblock description="Type block defining dynamic information about a level that change in every timestep">
 
@@ -374,6 +431,9 @@ module ccbasic
     ! =2: nonstationary boundary conditions, possibly with
     !     prssure drop and/or Neumann boundary parts
     integer :: iboundary
+    
+    ! Assembly structure specifying the RHS.
+    type(t_rhsAssembly) :: rrhsAssembly
 
     ! A solver node that accepts parameters for the linear solver    
     type(t_linsolNode), pointer           :: p_rsolverNode

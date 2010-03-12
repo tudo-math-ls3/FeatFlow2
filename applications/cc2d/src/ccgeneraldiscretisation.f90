@@ -1529,7 +1529,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_generateBasicRHS (rproblem,rrhs)
+  subroutine cc_generateBasicRHS (rproblem,rasmTemplates,rrhsassembly,rrhs)
   
 !<description>
   ! Calculates the entries of the basic right-hand-side vector on the finest
@@ -1542,13 +1542,22 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
   
+  ! Assembly templates structure of the level of the RHS.
+  type(t_asmTemplates), intent(in) :: rasmTemplates
+  
+  ! RHS assembly structure that defines the RHS.
+  type(t_rhsAssembly), intent(inout) :: rrhsAssembly
+  
   ! The RHS vector which is to be filled with data.
   type(t_vectorBlock), intent(inout) :: rrhs
 !</inputoutput>
 
 !</subroutine>
 
-  ! local variables
+    ! local variables
+    real(DP) :: dreltime,dtimeweight
+    integer :: iidx1,iidx2
+    character(len=SYS_STRLEN) :: sfilename,sarray
   
     ! A linear form describing the analytic problem to solve
     type(t_linearForm) :: rlinform
@@ -1565,74 +1574,168 @@ contains
     ! block discretisation structure:
     p_rdiscretisation => rrhs%p_rblockDiscr
     
-    ! The vector structure is already prepared, but the entries are missing.
-    !
-    ! At first set up the corresponding linear form (f,Phi_j):
-    rlinform%itermCount = 1
-    rlinform%Idescriptors(1) = DER_FUNC
-    
-    ! ... and then discretise the RHS to the first subvector of
-    ! the block vector using the discretisation structure of the 
-    ! first block.
-    !
-    ! We pass our collection structure as well to this routine, 
-    ! so the callback routine has access to everything what is
-    ! in the collection.
-    !
-    ! Note that the vector is unsorted after calling this routine!
-    !
-    ! Initialise the collection for the assembly process with callback routines.
-    ! Basically, this stores the simulation time in the collection if the
-    ! simulation is nonstationary.
-    call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
-
-    ! Discretise the X-velocity part:
-    call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(1),rlinform,.true.,&
-              rrhs%RvectorBlock(1),coeff_RHS_x,&
-              rproblem%rcollection)
-
-    ! And the Y-velocity part:
-    call linf_buildVectorScalar (&
-              p_rdiscretisation%RspatialDiscr(2),rlinform,.true.,&
-              rrhs%RvectorBlock(2),coeff_RHS_y,&
-              rproblem%rcollection)
-                           
-    ! Is the moving-frame formulatino active?
-    call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
-        'imovingFrame',imovingFrame,0)
-        
-    if (imovingFrame .ne. 0) then
-    
-      ! Get the velocity and acceleration from the callback routine.
-      call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
-            
-      ! Assemble a constant RHS with the returned acceleration using the 
-      ! above coeff_RHS_const, this realises the moving frame in the 
-      ! inner of the domain. We pass the constant function in DquickAccess(1).
-      
-      ! Discretise the X-velocity part:
-      rlocalColl%DquickAccess(1) = Dacceleration(1)
-      call linf_buildVectorScalar (&
-                p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
-                rrhs%RvectorBlock(1),coeff_RHS_const,&
-                rlocalcoll)
-
-      ! And the Y-velocity part:
-      rlocalColl%DquickAccess(1) = Dacceleration(2)
-      call linf_buildVectorScalar (&
-                p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
-                rrhs%RvectorBlock(2),coeff_RHS_const,&
-                rlocalcoll)
-    
-    end if
-                                
+    ! Clear the RHS at first.
     ! The third subvector must be zero initially - as it represents the RHS of
     ! the equation "div(u) = 0".
-    call lsyssc_clearVector(rrhs%RvectorBlock(3))
+    call lsysbl_clearVector (rrhs)
+    
+    ! If the RHS is nonzero, generate it.
+    if (rrhsAssembly%ctype .ne. 0) then
+    
+      ! In a first step, check what kind of RHS we have. Probably we have
+      ! to read some files to generate it.
+      if (rrhsAssembly%ctype .eq. 3) then
+        
+        ! The basic RHS can be found in the rrhsassembly structure,
+        ! it was read in at the beginning of the program.
+        call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhsAssembly%rrhsVector)
+        
+      else if (rrhsAssembly%ctype .eq. 4) then
+        ! Determine the file before and after the current simulation time.
+        dreltime = (rproblem%rtimedependence%dtime - rrhsAssembly%dtimeInit) / &
+                   (rrhsAssembly%dtimeMax - rrhsAssembly%dtimeInit) *&
+                    real(rrhsAssembly%inumfiles,DP)
+        
+        ! Get the indices. If dtime refers to the max. time, we have to look
+        ! at the last interval.
+        iidx1 = max(0,min(int(dreltime),rrhsAssembly%inumfiles)) + rrhsAssembly%ifirstindex
+        iidx2 = min(iidx1+1,rrhsAssembly%inumfiles) + rrhsAssembly%ifirstindex
+            
+        ! There is iidx1 <= dreltime <= iidx2 and iidx2=iidx1+0/1.
+        ! By subtracting iidx1 from dreltime we obtain a value in the range [0,1]
+        ! which is the interpolation weight.
+        dtimeweight = dreltime - real(iidx1-rrhsAssembly%ifirstindex,DP)
+        
+        ! Did we read the files already? Try to avoid reading files at all costs,
+        ! it is expensive!
+        if (rrhsAssembly%icurrentRhs .ne. iidx1) then
+          if (rrhsAssembly%icurrentRhs2 .eq. iidx1) then
+            ! Shift the RHS.
+            call lsysbl_copyVector (rrhsAssembly%rrhsVector2,rrhsAssembly%rrhsVector)
+            rrhsAssembly%icurrentRhs = iidx1
+          else 
+            ! Read the file.
+            sfilename = trim(rrhsAssembly%sfilename)//"."//sys_si0(iidx1,5)
+            call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector, sarray, .true.,&
+                0, sfilename, rrhsAssembly%iformatted .ne. 0)
+            rrhsAssembly%icurrentRhs = iidx1
+          end if
+        end if
+
+        if (rrhsAssembly%icurrentRhs2 .ne. iidx2) then
+          if (rrhsAssembly%icurrentRhs .eq. iidx2) then
+            ! Shift the RHS.
+            ! this may actually only happen in the case where we repeat a timestep
+            ! as we walk backwards in time...
+            call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhsAssembly%rrhsVector2)
+            rrhsAssembly%icurrentRhs = iidx2
+          else 
+            ! Read the file.
+            sfilename = trim(rrhsAssembly%sfilename)//"."//sys_si0(iidx2,5)
+            call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector2, sarray, .true.,&
+                0, sfilename, rrhsAssembly%iformatted .ne. 0)
+            rrhsAssembly%icurrentRhs2 = iidx2
+          end if
+        end if
+        
+        ! Get the RHS by linear interpolation.
+        ! Multiply with mass matrices to calculate the actual RHS from the nodal vector.
+        
+        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+            rrhsAssembly%rrhsVector%RvectorBlock(1), &
+            rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX, 0.0_DP, .false.)
+
+        call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+            rrhsAssembly%rrhsVector%RvectorBlock(2), &
+            rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY, 0.0_DP, .false.)
+
+        if (dtimeweight .gt. 0.0_DP) then
+          call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+              rrhsAssembly%rrhsVector2%RvectorBlock(1), &
+              rrhs%RVectorBlock(1), rrhsAssembly%dmultiplyX*dtimeweight, &
+              (1.0_DP-dtimeweight), .false.)
+
+          call lsyssc_scalarMatVec (rasmTemplates%rmatrixMass, &
+              rrhsAssembly%rrhsVector2%RvectorBlock(2), &
+              rrhs%RVectorBlock(2), rrhsAssembly%dmultiplyY*dtimeweight, &
+              (1.0_DP-dtimeweight), .false.)
+        end if
+
+        !call lsysbl_copyVector (rrhsAssembly%rrhsVector,rrhs)
+!        if (dtimeweight .gt. 0.0_DP) then
+!          
+!          call lsysbl_vectorLinearComb (rrhs,rrhsAssembly%rrhsVector2,&
+!              (1.0_DP-dtimeweight),dtimeweight)
+!        end if
+        
+      end if
+      
+      ! The vector structure is already prepared, but the entries are missing.
+      !
+      ! At first set up the corresponding linear form (f,Phi_j):
+      rlinform%itermCount = 1
+      rlinform%Idescriptors(1) = DER_FUNC
+      
+      ! ... and then discretise the RHS to the first subvector of
+      ! the block vector using the discretisation structure of the 
+      ! first block.
+      !
+      ! We pass our collection structure as well to this routine, 
+      ! so the callback routine has access to everything what is
+      ! in the collection.
+      !
+      ! Note that the vector is unsorted after calling this routine!
+      !
+      ! Initialise the collection for the assembly process with callback routines.
+      ! Basically, this stores the simulation time in the collection if the
+      ! simulation is nonstationary.
+      call cc_initCollectForAssembly (rproblem,rproblem%rcollection)
+
+      ! Discretise the X-velocity part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
+                rrhs%RvectorBlock(1),coeff_RHS_x,&
+                rproblem%rcollection)
+
+      ! And the Y-velocity part:
+      call linf_buildVectorScalar (&
+                p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
+                rrhs%RvectorBlock(2),coeff_RHS_y,&
+                rproblem%rcollection)
+                             
+      ! Is the moving-frame formulatino active?
+      call parlst_getvalue_int (rproblem%rparamList,'CC-DISCRETISATION',&
+          'imovingFrame',imovingFrame,0)
+          
+      if (imovingFrame .ne. 0) then
+      
+        ! Get the velocity and acceleration from the callback routine.
+        call getMovingFrameVelocity (Dvelocity,Dacceleration,rproblem%rcollection)
+              
+        ! Assemble a constant RHS with the returned acceleration using the 
+        ! above coeff_RHS_const, this realises the moving frame in the 
+        ! inner of the domain. We pass the constant function in DquickAccess(1).
+        
+        ! Discretise the X-velocity part:
+        rlocalColl%DquickAccess(1) = Dacceleration(1)
+        call linf_buildVectorScalar (&
+                  p_rdiscretisation%RspatialDiscr(1),rlinform,.false.,&
+                  rrhs%RvectorBlock(1),coeff_RHS_const,&
+                  rlocalcoll)
+
+        ! And the Y-velocity part:
+        rlocalColl%DquickAccess(1) = Dacceleration(2)
+        call linf_buildVectorScalar (&
+                  p_rdiscretisation%RspatialDiscr(2),rlinform,.false.,&
+                  rrhs%RvectorBlock(2),coeff_RHS_const,&
+                  rlocalcoll)
+      
+      end if
                                 
-    ! Clean up the collection (as we are done with the assembly, that is it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      ! Clean up the collection (as we are done with the assembly, that is it.
+      call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+      
+    end if
 
   end subroutine
 

@@ -19,6 +19,12 @@
 !# 4.) cc_doneParameters
 !#     -> Clean up the problem structure
 !#
+!# 5.) cc_initRhsAssembly
+!#     -> Initialises an assembly structure for creating the RHS.
+!#
+!# 6.) cc_doneRhsAssembly
+!#     -> Releases the RHS assembly structure.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -40,6 +46,7 @@ module ccinitgeneralparameters
   use spdiscprojection
   use nonlinearsolver
   use paramlist
+  use vectorio
   
   use collection
   use convection
@@ -76,7 +83,7 @@ contains
 !</subroutine>
 
     type(t_parlist) :: rparlist
-    character(LEN=SYS_STRLEN) :: sstring,smaster
+    character(LEN=SYS_STRLEN) :: smaster
     logical :: bexists
 
     ! Init parameter list that accepts parameters for output files
@@ -98,16 +105,13 @@ contains
     
     ! Now the real initialisation of the output including log file stuff!
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'smsgLog',sstring,'''''')
-    read(sstring,*) slogfile
+                                'smsgLog',slogfile,'',bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'serrorLog',sstring,'''''')
-    read(sstring,*) serrorfile
+                                'serrorLog',serrorfile,'',bdequote=.true.)
 
     call parlst_getvalue_string (rparlist,'GENERALOUTPUT',&
-                                'sbenchLog',sstring,'''''')
-    read(sstring,*) sbenchlogfile
+                                'sbenchLog',sbenchlogfile,'',bdequote=.true.)
     
     ! That temporary parameter list is not needed anymore.
     call parlst_done (rparlist)
@@ -328,6 +332,122 @@ contains
 
     ! Deallocate memory
     deallocate(rproblem%RlevelInfo)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_initRhsAssembly (rparlist,rdiscretisation,rrhsAssembly)
+  
+!<description>
+  ! Initialises a RHS assembly structure based on the parameters in the DAT
+  ! file.
+!</description>
+  
+!<input>
+  ! Parameter list with parameters.
+  type(t_parlist), intent(in) :: rparlist
+  
+  ! Discretisation structure of the topmost level where the RHS exists.
+  type(t_blockDiscretisation), intent(inout), target :: rdiscretisation
+!</input>
+
+!<output>
+  ! RHS assembly structure, initialised by parameters in rparlist.
+  type(t_rhsAssembly), intent(out) :: rrhsAssembly
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    character(len=SYS_STRLEN) :: sarray
+
+    ! Just get the parameters.
+    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
+        'irhs',rrhsAssembly%ctype,0)
+    
+    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
+        'irhsFirstIndex',rrhsAssembly%ifirstindex,0)
+
+    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
+        'irhsFileCount',rrhsAssembly%inumfiles,0)
+
+    call parlst_getvalue_int (rparlist,'CC-DISCRETISATION',&
+        'irhsFormatted',rrhsAssembly%iformatted,1)
+
+    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
+        'drhsTimeInit',rrhsAssembly%dtimeInit,0.0_DP)
+
+    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
+        'drhsTimeMax',rrhsAssembly%dtimeMax,0.0_DP)
+
+    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
+        'drhsMultiplyX',rrhsAssembly%dmultiplyX,1.0_DP)
+
+    call parlst_getvalue_double (rparlist,'CC-DISCRETISATION',&
+        'drhsMultiplyY',rrhsAssembly%dmultiplyY,1.0_DP)
+    
+    call parlst_getvalue_string (rparlist,'CC-DISCRETISATION',&
+        'sfilenameRHS',rrhsAssembly%sfilename,'',bdequote=.true.)
+
+    if ((rrhsAssembly%ctype .eq. 3) .or. (rrhsAssembly%ctype .eq. 4)) then
+      if (rrhsAssembly%sfilename .eq. "") then
+        call output_line ("No filename for the RHS specified!", &
+            OU_CLASS_ERROR,OU_MODE_STD,"cc_initRhs")
+        call sys_halt()
+      end if
+    end if
+
+    ! Is this a stationary solution based on a file?
+    if ((rrhsAssembly%ctype .eq. 3) .or. (rrhsAssembly%ctype .eq. 4)) then
+    
+      ! Create a RHS vector and read it from the file.
+      call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector)
+      
+      ! Read in the RHS now?
+      if (rrhsAssembly%ctype .eq. 3) then
+        call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector, sarray, .true.,&
+            0, rrhsAssembly%sfilename, rrhsAssembly%iformatted .ne. 0)
+      else
+        ! Create also the 2nd vector. Both vectors are used as temp vectors
+        ! when reading in the RHS during the simulation.
+        call lsysbl_createVectorBlock (rdiscretisation,rrhsAssembly%rrhsVector2)
+      end if
+        
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine cc_doneRhsAssembly (rrhsAssembly)
+  
+!<description>
+  ! Cleans up a RHS structure.
+!</description>
+  
+!<inputoutput>
+  ! RHS assembly structure to be cleaned up.
+  type(t_rhsAssembly), intent(inout) :: rrhsAssembly
+!</inputoutput>
+
+!</subroutine>
+
+    ! Is this a stationary solution based on a file?
+    if (rrhsAssembly%ctype .eq. 3) then
+      call lsysbl_releaseVector (rrhsAssembly%rrhsVector)
+    else if (rrhsAssembly%ctype .eq. 4) then
+      call lsysbl_releaseVector (rrhsAssembly%rrhsVector)
+      call lsysbl_releaseVector (rrhsAssembly%rrhsVector2)
+    end if
+
+    rrhsAssembly%ctype = 0
+    rrhsAssembly%icurrentRhs = -1
+    rrhsAssembly%icurrentRhs2 = -1
 
   end subroutine
 

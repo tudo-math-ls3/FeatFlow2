@@ -159,15 +159,6 @@ dviscoyield = 1.0
 
 RE = 1000
 
-# Type of right hand side. 
-# 0=zero
-# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
-#   before the simulation
-# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
-#   in every timestep of the simulation
-
-iRHS = 2
-
 # Type of bdry. conditions.
 # 0=DIRICHLET stationary, 
 # 1=Pressure drop nonstationary, 
@@ -188,6 +179,63 @@ iBoundary = 2
 # and the posiprocessing.
 
 imovingFrame = 0
+
+# ------------------------------------------------------------------------
+
+# Type of right hand side. 
+# 0=zero
+# 1=steady inhomog., analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   before the simulation
+# 2=nonsteady force, analytically defined by coeff_RHS_x/coeff_RHS_y 
+#   in every timestep of the simulation
+# 3=Stationary RHS prescribed by a file.
+# 4=Nonstationary RHS prescribed by a sequence of files.
+#   The files are linearly interpolated in time if necessary.
+#   The parameters srhsfilename, drhsXXXX and irhsXXXX below
+#   define the file sequence.
+
+iRHS = 2
+
+# Fir irhs=4: Basic filename of the file sequence defining the right hand
+# side. An index ".00000", ".00001",... is appended to this filename.
+# The files are uniformly distributed in the time interval 
+# [drhsTimeInit..drhsTimeMax] and interpolated in time if necessary.
+
+sfilenameRHS = ""
+
+# Index of the first RHS-file. Standard=0 which starts the file sequence
+# with extension ".00000".
+
+irhsFirstIndex = 0
+
+# Number of files in the file sequence.
+
+irhsFileCount = 0
+
+# Defines if the files in the file sequence are formatted.
+# =0: unformatted. =1: Formatted (standard)
+
+irhsFormatted = 1
+
+# Defines the starting point in time of the right hand side defined by
+# a file sequence. Standard=default initial time.
+
+drhsTimeInit = %{TIME-DISCRETISATION.dtimeInit}
+
+# Defines the maximum simulation time for the file sequence defining
+# the RHS. Standard=Default max. time.
+
+drhsTimeMax = %{TIME-DISCRETISATION.dtimeMax}
+
+# Multiplier for the RHS, X-component. If a RHS was read from a file sequence, 
+# it is multiplied by this value before being used.
+
+drhsMultiplyX = 1.0
+
+# Multiplier for the RHS, Y-component. If a RHS was read from a file sequence, 
+# it is multiplied by this value before being used.
+
+drhsMultiplyY = 1.0
 
 # ------------------------------------------------------------------------
 

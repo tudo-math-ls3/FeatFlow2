@@ -208,7 +208,7 @@ contains
     
     call stat_startTimer(rtimerMatrixGeneration)
     
-    call cc_allocMatVec (p_rproblem,rvector,rrhs)    
+    call cc_allocMatVec (p_rproblem,rvector,rrhs)
     
     call stat_stopTimer(rtimerMatrixGeneration)
     call output_lbrk ()
@@ -230,6 +230,12 @@ contains
     end if
     call cc_initInitialSolution (p_rproblem,rvector)
 
+    if (p_rproblem%MSHOW_Initialisation .ge. 1) then
+      call output_separator (OU_SEP_MINUS)
+      call output_line('Initialising RHS vector...')
+    end if
+    call cc_initRHSAssembly (p_rproblem%rparamList,rrhs%p_rblockDiscr,p_rproblem%rrhsAssembly)
+
     ! Now choose the algorithm. Stationary or time-dependent simulation?
     if (p_rproblem%itimedependence .eq. 0) then
     
@@ -240,7 +246,9 @@ contains
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating RHS vector...')
       end if
-      call cc_generateBasicRHS (p_rproblem,rrhs)
+      call cc_generateBasicRHS (p_rproblem,&
+          p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
+          p_rproblem%rrhsAssembly,rrhs)
       
       ! Generate discrete boundary conditions
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -277,7 +285,9 @@ contains
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating RHS vector...')
       end if
-      call cc_generateBasicRHS (p_rproblem,rrhs)
+      call cc_generateBasicRHS (p_rproblem,&
+          p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
+          p_rproblem%rrhsAssembly,rrhs)
       
       ! Initialise the boundary conditions, but 
       ! do not implement any boundary conditions as the nonstationary solver
@@ -311,6 +321,7 @@ contains
     call cc_writeSolution (p_rproblem,rvector)
     
     ! Cleanup
+    call cc_doneRHSAssembly (p_rproblem%rrhsAssembly)
     call cc_doneMatVec (p_rproblem,rvector,rrhs)
     call cc_doneBC (p_rproblem)
     call cc_doneDiscretisation (p_rproblem)

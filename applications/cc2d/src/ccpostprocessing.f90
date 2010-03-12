@@ -183,19 +183,19 @@ contains
     call stat_startTimer(rtimer)
 
     ! Calculate body forces.
-    call cc_calculateBodyForces (rvector,rproblem)
+    call cc_calculateBodyForces (rvector,0.0_DP,rproblem)
     
     ! Calculate point values
-    call cc_evaluatePoints (rvector,rproblem)
+    call cc_evaluatePoints (rvector,0.0_DP,rproblem)
 
     ! Calculate flux values
-    call cc_evaluateFlux (rvector,rproblem)
+    call cc_evaluateFlux (rvector,0.0_DP,rproblem)
     
     ! Calculate the divergence
     call cc_calculateDivergence (rvector,rproblem)
     
     ! Error analysis, comparison to reference function.
-    call cc_errorAnalysis (rvector,rproblem)
+    call cc_errorAnalysis (rvector,0.0_DP,rproblem)
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     call cc_writeUCD (rpostprocessing, rvector, rproblem)
@@ -212,7 +212,7 @@ contains
 !<subroutine>
 
   subroutine cc_postprocessingNonstat (rproblem,rvectorPrev,&
-      dtimePrev,rvector,dtime,istep,rpostprocessing)
+      dtimePrev,rvector,dtime,rvectorInt,dtimeInt,istep,rpostprocessing)
   
 !<description>
   ! Postprocessing of solutions of stationary simulations.
@@ -242,6 +242,13 @@ contains
   ! Time of the current timestep.
   real(dp), intent(in) :: dtime
   
+  ! Interpolated (in time) solution vector. Velocity and pressure
+  ! represent the same point in time.
+  type(t_vectorBlock), intent(in) :: rvectorInt
+  
+  ! Time of the interpolated solution vector.
+  real(dp), intent(in) :: dtimeInt
+  
   ! Number of the timestep. =0: initial solution
   integer, intent(in) :: istep
 !</input>
@@ -253,12 +260,17 @@ contains
     real(DP) :: dminTime, dmaxTime, dtimeDifferenceUCD
     real(DP) :: dtimeDifferenceFilm, dpptime
     integer :: itime1,itime2,iinterpolateSolutionUCD,iinterpolateSolutionFilm
+    integer :: ipostprocTimeInterpSolution
     integer :: iwriteSolDeltaSteps
     type(t_vectorBlock) :: rintVector
     real(dp) :: dweight,dwriteSolDeltaTime
 
     call stat_clearTimer(rtimer)
     call stat_startTimer(rtimer)
+
+    ! Whether to apply postprocessing to rvector ot rvectorInt
+    call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
+        'ipostprocTimeInterpSolution', ipostprocTimeInterpSolution, 1)
 
     ! Think about writing out the solution...
     call parlst_getvalue_double (rproblem%rparamList, 'CC-DISCRETISATION', &
@@ -290,17 +302,31 @@ contains
       end if
     end if    
     
-    ! Calculate body forces.
-    call cc_calculateBodyForces (rvector,rproblem)
-    
-    ! Calculate point values
-    call cc_evaluatePoints (rvector,rproblem)
+    if (ipostprocTimeInterpSolution .ne. 0) then
+      ! Calculate body forces.
+      call cc_calculateBodyForces (rvectorInt,dtimeInt,rproblem)
+      
+      ! Calculate point values
+      call cc_evaluatePoints (rvectorInt,dtimeInt,rproblem)
 
-    ! Calculate the divergence
-    call cc_calculateDivergence (rvector,rproblem)
+      ! Calculate the divergence
+      call cc_calculateDivergence (rvectorInt,rproblem)
 
-    ! Error analysis, comparison to reference function.
-    call cc_errorAnalysis (rvector,rproblem)
+      ! Error analysis, comparison to reference function.
+      call cc_errorAnalysis (rvectorInt,dtimeInt,rproblem)
+    else
+      ! Calculate body forces.
+      call cc_calculateBodyForces (rvector,dtime,rproblem)
+      
+      ! Calculate point values
+      call cc_evaluatePoints (rvector,dtime,rproblem)
+
+      ! Calculate the divergence
+      call cc_calculateDivergence (rvector,rproblem)
+
+      ! Error analysis, comparison to reference function.
+      call cc_errorAnalysis (rvector,dtime,rproblem)
+    end if
     
     ! Write the UCD export file (GMV, AVS,...) as configured in the DAT file.
     !
@@ -336,8 +362,7 @@ contains
         if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
             .or. (dtimePrev .eq. dtime)) then
           ! No interpolation
-          call cc_writeUCD (rpostprocessing, rvector, rproblem, &
-              rproblem%rtimedependence%dtime)
+          call cc_writeUCD (rpostprocessing, rvector, rproblem, dtime)
         else
           ! Interpolate and write out the interpolated solution.
           call lsysbl_copyVector (rvectorPrev,rintVector)
@@ -382,8 +407,7 @@ contains
         if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &
             .or. (dtimePrev .eq. dtime)) then
           ! No interpolation
-          call cc_writeFilm (rpostprocessing, rvector, rproblem, &
-              rproblem%rtimedependence%dtime)
+          call cc_writeFilm (rpostprocessing, rvector, rproblem, dtime)
         else
           ! Interpolate and write out the interpolated solution.
           call lsysbl_copyVector (rvectorPrev,rintVector)
@@ -407,7 +431,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_errorAnalysis (rsolution,rproblem)
+  subroutine cc_errorAnalysis (rsolution,dtime,rproblem)
 
 !<description>
   ! Performs error analysis on a given solution rsolution as specified
@@ -418,6 +442,9 @@ contains
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in) :: rsolution
+  
+  ! Solution time. =0 for stationary simulations.
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
@@ -515,7 +542,7 @@ contains
           write (iunit,'(A)') '# timestep time ||u-reference||_L2 ||p-reference||_L2'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_sdEL(derrorVel,10)) // ' ' &
             // trim(sys_sdEL(derrorP,10))
         write (iunit,'(A)') trim (stemp)
@@ -570,7 +597,7 @@ contains
           write (iunit,'(A)') '# timestep time ||u-reference||_H1'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_sdEL(derrorVel,10))
         write (iunit,'(A)') trim(stemp)
         close (iunit)
@@ -610,7 +637,7 @@ contains
           write (iunit,'(A)') '# timestep time 1/2||u||^2_L2 ||u||_L2 ||u_1||_L2 ||u_2||_L2'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_sdEL(denergy,10)) // ' ' &
             // trim(sys_sdEL(sqrt(Derr(1)**2+Derr(2)**2),10)) // ' ' &
             // trim(sys_sdEL(Derr(1),10)) // ' ' &
@@ -708,7 +735,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_calculateBodyForces (rsolution,rproblem)
+  subroutine cc_calculateBodyForces (rsolution,dtime,rproblem)
 
 !<description>
   ! Calculates body forces as configured in the .DAT file.
@@ -718,6 +745,9 @@ contains
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
+  
+  ! Evaluation time. Must be set to 0.0 for stationary simulations.
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
@@ -897,7 +927,7 @@ contains
           write (iunit,'(A)') '# timestep time bdc horiz vert'
         end if
         stemp = trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' &
-            // trim(sys_sdEL(rproblem%rtimedependence%dtime,10)) // ' ' &
+            // trim(sys_sdEL(dtime,10)) // ' ' &
             // trim(sys_siL(ibodyForcesBdComponent,10)) // ' ' &
             // trim(sys_sdEL(Dforces(1),10)) // ' '&
             // trim(sys_sdEL(Dforces(2),10))
@@ -977,7 +1007,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_evaluatePoints (rsolution,rproblem)
+  subroutine cc_evaluatePoints (rsolution,dtime,rproblem)
 
 !<description>
   ! Evaluates the solution in a number of points as configured in the DAT file.
@@ -986,6 +1016,9 @@ contains
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
+  
+  ! Solution time. =0 for stationary simulations.
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
@@ -1080,7 +1113,7 @@ contains
       end if
       stemp = &
           trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
-          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+          trim(sys_sdEL(dtime,10))
       write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
       do i=1,npoints
         stemp = ' ' //&
@@ -1106,7 +1139,7 @@ contains
 
 !<subroutine>
 
-  subroutine cc_evaluateFlux (rsolution,rproblem)
+  subroutine cc_evaluateFlux (rsolution,dtime,rproblem)
 
 !<description>
   ! Evaluates the flux thropugh a set of lines as configured in the DAT file.
@@ -1115,6 +1148,9 @@ contains
 !<input>
   ! Solution vector to compute the norm/error from.
   type(t_vectorBlock), intent(in), target :: rsolution
+  
+  ! Simulation time. =0 for stationary simulations
+  real(DP), intent(in) :: dtime
 !</input>
 
 !<inputoutput>
@@ -1189,7 +1225,7 @@ contains
       end if
       stemp = &
           trim(sys_siL(rproblem%rtimedependence%itimeStep,10)) // ' ' // &
-          trim(sys_sdEL(rproblem%rtimedependence%dtime,10))
+          trim(sys_sdEL(dtime,10))
       write (iunit,ADVANCE='NO',FMT='(A)') trim(stemp)
       do i=1,nlines
         stemp = ' ' //&
@@ -1679,7 +1715,7 @@ contains
     ! Piecewise constant space:
     call spdiscr_deriveDiscr_triquad (&
                  p_rdiscr%RspatialDiscr(1), &
-		 EL_P0, EL_Q0, CUB_G1_T, CUB_G1X1,&
+                 EL_P0, EL_Q0, CUB_G1_T, CUB_G1X1,&
                  rpostprocessing%rdiscrConstant)
 
     ! Piecewise linear space:
