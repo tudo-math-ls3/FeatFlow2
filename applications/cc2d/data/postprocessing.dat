@@ -258,10 +258,10 @@ sfilenamePointValues = '%{ssolutiondirectory}/pointvalues'
 # that defines the starting and ending point of the line.
 #
 # Example: Don't evaluate anything:
-#   cevaluateFlux(0) =
+#   cevaluateFluxValues(0) =
 #
 # Example: Evaluate the flux through the line (0.5,0.5)->(0.5,0.0)
-#   cevaluateFlux(1) =
+#   cevaluateFluxValues(1) =
 #     0.5 0.5 0.5 0.0
 
 cevaluateFluxValues(0) =
