@@ -3388,13 +3388,38 @@ rstartmatrix = transpose(reshape(&
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
         case(3)
+          ! Get random number for element
           call random_number(random1)
-          random2= iPart/rParticles%npart
+          
+          ! Set starting element for the particle
+          rParticles%p_element(iPart)= int(p_rtriangulation%NEL*random1 + 1)
+          
+          ! Get random number for barycentric coordinates
+          call random_number(random1)
+          call random_number(random2)
+
+          ! Set barycentric coordinates          
+          rParticles%p_lambda1(iPart)= random1
+          rParticles%p_lambda2(iPart)= (1-rParticles%p_lambda1(iPart))*random2
+          rParticles%p_lambda3(iPart)= 1-rParticles%p_lambda1(iPart)-rParticles%p_lambda2(iPart)
+          
           ! Set startingpositions of the particle
-          rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
-          rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_xpos(iPart)= &
+                 p_DvertexCoords(1,p_IverticesAtElement(1,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda1(iPart)+&
+                 p_DvertexCoords(1,p_IverticesAtElement(2,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda2(iPart)+&
+                 p_DvertexCoords(1,p_IverticesAtElement(3,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda3(iPart)
+          rParticles%p_ypos(iPart)= &
+                 p_DvertexCoords(2,p_IverticesAtElement(1,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda1(iPart)+&
+                 p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda2(iPart)+&
+                 p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))*&
+                 rParticles%p_lambda3(iPart)
+          rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
+          rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
      
         end select
  
@@ -3517,6 +3542,10 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
 
+    ! Subroutine to compute the new position of the particles
+    call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+
+
     write(sfilename,'(i0)') rParticles%iTimestep
     sfilenamenew='particleflow'//trim(sfilename)//'.vtk'
 
@@ -3550,9 +3579,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
       write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
 
     end do
-
-    ! Subroutine to compute the new position of the particles
-    call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
 
     ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)

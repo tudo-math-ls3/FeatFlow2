@@ -68,7 +68,7 @@ search = midpoint
 #	ymax = maxval(p_DvertexCoords(2,:))
 # 1 individual startingposition
 # 2 read starting position from file
-# 3 uniformly distributed
+# 3 uniformly distributed over the domain
 startpos = 3
 
 # minimum particle-position in x-direction 
@@ -332,7 +332,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.250
+dfinalTime = 0.500
 
 # initial time step size
 dinitialStep = 1e-3

@@ -4327,26 +4327,26 @@ contains
  !               Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
     case('midpoint')
 
-	    distToMid = 10000.0d0
+	    distToMid = 10000.0_dp
 
 	    gotoNextElm: do ite = 1, itemax
 	    
 		    ! Calculate the distances to the midpoints
-		    distances = 10000.0d0
+		    distances = 10000.0_dp
    
 		    do i = 1, 3 
 		      if (p_IneighboursAtElement(i,rParticles%p_element(iPart)) > 0) then
 			    adj = p_IneighboursAtElement(i,rParticles%p_element(iPart))
-			    distances(i+1) = (rParticles%p_xpos(iPart)-rParticles%p_midpoints_el(1,adj))**2.0d0 +&
-								 (rParticles%p_ypos(iPart)-rParticles%p_midpoints_el(2,adj))**2.0d0
+			    distances(i+1) = (rParticles%p_xpos(iPart)-rParticles%p_midpoints_el(1,adj))**2.0_dp +&
+								 (rParticles%p_ypos(iPart)-rParticles%p_midpoints_el(2,adj))**2.0_dp
 			  end if
 		    end do
 		    
 		    ! Distance of the current element to the new position
 		    distances(1) = (rParticles%p_xpos(iPart)-&
-		                        rParticles%p_midpoints_el(1,rParticles%p_element(iPart)))**2.0d0+&
+		                        rParticles%p_midpoints_el(1,rParticles%p_element(iPart)))**2.0_dp+&
 		                   (rParticles%p_ypos(iPart)-&
-		                        rParticles%p_midpoints_el(2,rParticles%p_element(iPart)))**2.0d0
+		                        rParticles%p_midpoints_el(2,rParticles%p_element(iPart)))**2.0_dp
 		
 		    ! Position with the smallest distance
 		    minl = minloc(distances,1)
@@ -4533,7 +4533,7 @@ contains
       ! Take the old elementnumber
 	  rParticles%p_element(iPart) = currentelm
 	  ! Check if the is/was a particle-wall-collision
-	  call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
+	  !call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
   end subroutine eulerlagrange_wrongelement
@@ -4815,14 +4815,27 @@ contains
           rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rstartmatrix,1)*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
-            
+         
+        case(3)
+          ! Get random number for element
+          call random_number(random1)
+          
+          ! Set starting element for the particle
+          rParticles%p_element(iPart)= int(p_rtriangulation%NEL*random1 + 1)
+          
+          ! Get random number for barycentric coordinates
+          call random_number(random1)
+          call random_number(random2)
+          
+          ! Set startingpositions of the particle
+          rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
+          rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
+              
         end select
  
         ! Set initial values for the particles
-        rParticles%p_xvelo(iPart)= velopartx
-        rParticles%p_yvelo(iPart)= veloparty
-        rParticles%p_xvelo_old(iPart)= velopartx
-        rParticles%p_yvelo_old(iPart)= veloparty
         rParticles%p_xvelo_gas(iPart)= 0d0
         rParticles%p_yvelo_gas(iPart)= 0d0
         rParticles%p_xvelo_gas_old(iPart)= 0d0
@@ -5093,22 +5106,22 @@ contains
 				       			           rParticles%norm_val*proj_norm*bdy_norm(2)
 			end if
 			exit Boundary_Search
+	        rParticles%p_bdy_check(iPart) = 0
+
+	        ! Find the new element for the particle
+	        call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
+
+	        ! Calculate barycentric coordinates
+	        call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+
+	        ! Wrong element
+	        if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
+		         abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
+		        call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
+	        end if
 		end if
 	end do Boundary_Search
 
-    rParticles%p_bdy_check(iPart) = 0
-
-    ! Find the new element for the particle
-    call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
-
-    ! Calculate barycentric coordinates
-    call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
-
-    ! Wrong element
-    if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
-         abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
-        call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
-    end if
 
 
   end subroutine eulerlagrange_checkboundary
@@ -5156,7 +5169,7 @@ contains
 	integer :: i, current
 	real(DP) :: c_pi
 
-    !rParticles%p_PartVol=0
+    rParticles%p_PartVol=0
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -5179,15 +5192,15 @@ contains
         ! Store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
-		                (rParticles%p_lambda1(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda1(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
 		                p_DelementVolume(p_IverticesAtElement(1,current))
 		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
-		                (rParticles%p_lambda2(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda2(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
 		                p_DelementVolume(p_IverticesAtElement(2,current))
 		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
-		                (rParticles%p_lambda3(i)*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda3(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
 		                p_DelementVolume(p_IverticesAtElement(3,current))
 
 	end do
