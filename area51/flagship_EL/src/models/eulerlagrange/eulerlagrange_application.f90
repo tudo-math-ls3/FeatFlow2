@@ -484,7 +484,6 @@ module eulerlagrange_application
     call storage_free (rParticles%h_mass)
     call storage_free (rParticles%h_midpoints_el)
     call storage_free (rParticles%h_alpha_n)
-    call storage_free (rParticles%h_bdy_check)
     call storage_free (rParticles%h_bdy_time)
     call storage_free (rParticles%h_PartVol)
 
@@ -3188,8 +3187,6 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                             ST_NEWBLOCK_NOINIT)
     call storage_new ('euler_lagrange', 'Particle:bdy_time', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_time, &
                             ST_NEWBLOCK_NOINIT)
-    call storage_new ('euler_lagrange', 'Particle:bdy_check', rParticles%npart, ST_DOUBLE, rParticles%h_bdy_check, &
-                            ST_NEWBLOCK_NOINIT)
 
     md_el_length(1)=2
     md_el_length(2)=p_rtriangulation%NEL
@@ -3233,7 +3230,6 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
     call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
     call storage_getbase_double (rParticles%h_bdy_time, rParticles%p_bdy_time)
-    call storage_getbase_double (rParticles%h_bdy_check, rParticles%p_bdy_check)
 
     call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
     call storage_getbase_double (rParticles%h_PartVelox, rParticles%p_PartVelox)
@@ -3437,7 +3433,6 @@ rstartmatrix = transpose(reshape(&
         rParticles%p_alpha_n(iPart)= 0
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0
-        rParticles%p_bdy_check(iPart)= 0
         
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
