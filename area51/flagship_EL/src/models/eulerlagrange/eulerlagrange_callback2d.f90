@@ -4821,6 +4821,10 @@ contains
           call random_number(random1)
           call random_number(random2)
           
+          partymin= minval(p_DvertexCoords(2,:))
+          partymax= maxval(p_DvertexCoords(2,:))
+          partxmin= minval(p_DvertexCoords(1,:))
+        
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
           rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
@@ -5025,89 +5029,83 @@ contains
 			end if
 
 			! x-coordinate of the first vertex of the boundary (counterclockwise)
-!			x(1)= p_DvertexCoords(1,bdy_Koords(1))
-!			! x-coordinate of the distance from the first to the second vertex of the boundary
-!			x(2)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1)) 
-!			! x-coordinate of the old position of the particle
-!			x(3)= rParticles%p_xpos_old(iPart)
-!			! x-coordinate of the distance from the old to the new position
-!			x(4)= rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart)
-!			! Same for the y-coordinate
-!			y(1)= p_DvertexCoords(2,bdy_Koords(1))
-!			y(2)= p_DvertexCoords(2,bdy_Koords(2)) - p_DvertexCoords(2,bdy_Koords(1))
-!			y(3)= rParticles%p_ypos_old(iPart)
-!			y(4)= rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart)
-!
-!			
-!			if ((x(4)*y(2)).NE.(y(4)*x(2))) then
-!				s=(x(4)*(y(3)-y(1))-y(4)*(x(3)-x(1)))/(x(4)*y(2)-y(4)*x(2))
-!				! Calculate the point wehre the particle collide with the boundary
-!				bdy_point(1)= x(1) + s*x(2)
-!				bdy_point(2)= y(1) + s*y(2)
-!				! Calculate the the time to the collision (dependent on the timestep)
-!				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2+& 
-!											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2))&
-!											/(sqrt((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2+&
-!											(rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart))**2))
-!			    rParticles%p_xpos(iPart) = bdy_point(1)
-!			    rParticles%p_ypos(iPart) = bdy_point(2)
-!
-!
-!		        ! Rest of the velocity-vector
-!		        velo_rest(1)= rParticles%p_xpos(iPart) - bdy_point(1)
-!		        velo_rest(2)= rParticles%p_ypos(iPart) - bdy_point(2)
-!
-!		        ! Tangent in x-direction
-!		        bdy_tang(1)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1))
-!		        ! Tangent in y-direction
-!		        bdy_tang(2)= p_DvertexCoords(2,bdy_Koords(2)) - p_DvertexCoords(2,bdy_Koords(1))
-!		        tang_norm = sqrt(bdy_tang(1)**2+bdy_tang(2)**2)
-!		        bdy_tang(1)= bdy_tang(1)/tang_norm
-!		        bdy_tang(2)= bdy_tang(2)/tang_norm
-!		        ! Normal in x-direction
-!		        bdy_norm(1)= bdy_tang(2)
-!		        ! Normal in y-direction
-!		        bdy_norm(2)= -bdy_tang(1)
-!
-!		        ! Projection to the boundary
-!		        proj_tang = velo_rest(1)*bdy_tang(1)+velo_rest(2)*bdy_tang(2)
-!		        proj_norm = velo_rest(1)*bdy_norm(1)+velo_rest(2)*bdy_norm(2)
-!
-!			    ! Calculate the rest-vector of the movement
-!			    bdy_move(1)= rParticles%tang_val*proj_tang*bdy_tang(1)+&
-!							 rParticles%norm_val*proj_norm*bdy_norm(1)
-!			    bdy_move(2)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
-!							 rParticles%norm_val*proj_norm*bdy_norm(2)
-!
-!			    ! Compute the new coordinates after the collision
-!			    rParticles%p_xpos(iPart) = rParticles%p_xpos(iPart) + bdy_move(1)
-!			    rParticles%p_ypos(iPart) = rParticles%p_ypos(iPart) + bdy_move(2)
-!
-!			    ! Projection to the boundary
-!			    proj_tang = (rParticles%p_xpos_old(iPart) - rParticles%p_xpos(iPart))*bdy_tang(1)+&
-!						    (rParticles%p_ypos_old(iPart) - rParticles%p_ypos(iPart))*bdy_tang(2)
-!			    proj_norm = (rParticles%p_xpos_old(iPart) - rParticles%p_xpos(iPart))*bdy_norm(1)+&
-!				    		(rParticles%p_ypos_old(iPart) - rParticles%p_ypos(iPart))*bdy_norm(2)
-!
-!                ! New particle velocity after the collision
-!			    rParticles%p_xvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(1)+&
-!				    				       rParticles%norm_val*proj_norm*bdy_norm(1)
-!			    rParticles%p_yvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
-!				       			           rParticles%norm_val*proj_norm*bdy_norm(2)
-!			end if
-!			exit Boundary_Search
-!
-!	        ! Find the new element for the particle
-!	        call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
-!
-!	        ! Calculate barycentric coordinates
-!	        call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
-!
-!	        ! Wrong element
-!	        if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
-!		         abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
-!		        call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
-!	        end if
+			x(1)= p_DvertexCoords(1,bdy_Koords(1))
+			! x-coordinate of the distance from the first to the second vertex of the boundary
+			x(2)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1)) 
+			! x-coordinate of the old position of the particle
+			x(3)= rParticles%p_xpos_old(iPart)
+			! x-coordinate of the distance from the old to the new position
+			x(4)= rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart)
+			! Same for the y-coordinate
+			y(1)= p_DvertexCoords(2,bdy_Koords(1))
+			y(2)= p_DvertexCoords(2,bdy_Koords(2)) - p_DvertexCoords(2,bdy_Koords(1))
+			y(3)= rParticles%p_ypos_old(iPart)
+			y(4)= rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart)
+
+			
+			if ((x(4)*y(2)).NE.(y(4)*x(2))) then
+				s=(x(4)*(y(3)-y(1))-y(4)*(x(3)-x(1)))/(x(4)*y(2)-y(4)*x(2))
+				! Calculate the point of collision with the boundary
+				bdy_point(1)= x(1) + s*x(2)
+				bdy_point(2)= y(1) + s*y(2)
+				! Calculate the the time to the collision (dependent on the timestep)
+				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2+& 
+											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2))&
+											/(sqrt((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2+&
+											(rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart))**2))
+			    rParticles%p_xpos(iPart) = bdy_point(1)
+			    rParticles%p_ypos(iPart) = bdy_point(2)
+
+		        ! Rest of the velocity-vector
+		        velo_rest(1)= rParticles%p_xpos(iPart) - bdy_point(1)
+		        velo_rest(2)= rParticles%p_ypos(iPart) - bdy_point(2)
+
+		        ! Tangent in x-direction
+		        bdy_tang(1)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1))
+		        ! Tangent in y-direction
+		        bdy_tang(2)= p_DvertexCoords(2,bdy_Koords(2)) - p_DvertexCoords(2,bdy_Koords(1))
+		        tang_norm = sqrt(bdy_tang(1)**2+bdy_tang(2)**2)
+		        bdy_tang(1)= bdy_tang(1)/tang_norm
+		        bdy_tang(2)= bdy_tang(2)/tang_norm
+		        ! Normal in x-direction
+		        bdy_norm(1)= bdy_tang(2)
+		        ! Normal in y-direction
+		        bdy_norm(2)= -bdy_tang(1)
+
+		        ! Projection to the boundary
+		        proj_tang = velo_rest(1)*bdy_tang(1)+velo_rest(2)*bdy_tang(2)
+		        proj_norm = velo_rest(1)*bdy_norm(1)+velo_rest(2)*bdy_norm(2)
+
+			    ! Calculate the rest-vector of the movement
+			    bdy_move(1)= rParticles%tang_val*proj_tang*bdy_tang(1)+&
+							 rParticles%norm_val*proj_norm*bdy_norm(1)
+			    bdy_move(2)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
+							 rParticles%norm_val*proj_norm*bdy_norm(2)
+
+			    ! Compute the new coordinates after the collision
+			    rParticles%p_xpos(iPart) = rParticles%p_xpos(iPart) + bdy_move(1)
+			    rParticles%p_ypos(iPart) = rParticles%p_ypos(iPart) + bdy_move(2)
+
+			    ! Projection to the boundary
+			    proj_tang = (rParticles%p_xpos_old(iPart) - rParticles%p_xpos(iPart))*bdy_tang(1)+&
+						    (rParticles%p_ypos_old(iPart) - rParticles%p_ypos(iPart))*bdy_tang(2)
+			    proj_norm = (rParticles%p_xpos_old(iPart) - rParticles%p_xpos(iPart))*bdy_norm(1)+&
+				    		(rParticles%p_ypos_old(iPart) - rParticles%p_ypos(iPart))*bdy_norm(2)
+
+                ! New particle velocity after the collision
+			    rParticles%p_xvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(1)+&
+				    				       rParticles%norm_val*proj_norm*bdy_norm(1)
+			    rParticles%p_yvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
+				       			           rParticles%norm_val*proj_norm*bdy_norm(2)
+			end if
+
+	        ! Find the new element for the particle
+	        call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
+
+	        ! Calculate barycentric coordinates
+	        call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+
+			exit Boundary_Search
 		end if
 	end do Boundary_Search
 
@@ -5177,6 +5175,9 @@ contains
 
         ! Element of the current particle
 		current= rParticles%p_element(i)
+
+        ! Calculate barycentric coordinates
+        call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,i)
 
         ! Store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &

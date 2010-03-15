@@ -42,7 +42,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 1000
+nPart = 5000
 
 
 #-------------------------------------------------------------------------------
@@ -57,6 +57,16 @@ search = midpoint
 #-------------------------------------------------------------------------------
 # startingposition of the particles
 #-------------------------------------------------------------------------------
+
+# 0 random startingposition 
+#	xmin = minval(p_DvertexCoords(1,:))
+#	xmax = 0.2*maxval(p_DvertexCoords(1,:))
+#	ymin = minval(p_DvertexCoords(2,:))
+#	ymax = maxval(p_DvertexCoords(2,:))
+# 1 individual startingposition
+# 2 read starting position from file
+# 3 uniformly distributed over the domain
+startpos = 3
 
 # minimum particle-position in x-direction
 xmin = 0
@@ -105,7 +115,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = -9.81
+gravityy = 0 #-9.81
 
 
 #-------------------------------------------------------------------------------
@@ -318,7 +328,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.1
+dfinalTime = 0.5
 
 # initial time step size
 dinitialStep = 0.001

@@ -57,6 +57,16 @@ search = midpoint
 # startingposition of the particles
 #-------------------------------------------------------------------------------
 
+# 0 random startingposition 
+#	xmin = minval(p_DvertexCoords(1,:))
+#	xmax = 0.2*maxval(p_DvertexCoords(1,:))
+#	ymin = minval(p_DvertexCoords(2,:))
+#	ymax = maxval(p_DvertexCoords(2,:))
+# 1 individual startingposition
+# 2 read starting position from file
+# 3 uniformly distributed over the domain
+startpos = 3
+
 # minimum particle-position in x-direction
 xmin = 0
 # maximum particle-position in x-direction
@@ -282,7 +292,7 @@ iprelimiting = 1
 # 1 = GMV
 # 2 = AVS
 # 3 = VTK
-iformatUCD = 1
+iformatUCD = 3
 
 # time interval for UCD output
 dstepUCD = 0.01

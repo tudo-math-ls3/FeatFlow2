@@ -88,7 +88,7 @@ filestartpoints = bart.txt
 #-------------------------------------------------------------------------------
 
 # particle-mass
-particlemass = 1e-15
+particlemass = 1e-18
 
 # particle-diameter
 particlediam = 1e-9
@@ -278,7 +278,7 @@ istabilisation = 1
 iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.001
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel

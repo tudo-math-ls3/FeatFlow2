@@ -1604,7 +1604,7 @@ module eulerlagrange_application
     type(t_problemLevel), intent(in) :: rproblemLevel
 
     ! particles
-    type(t_particles), intent(in), optional :: rParticles
+    type(t_particles), intent(inout), optional :: rParticles
 
     ! OPTIONAL: solution vector for primal problem
     type(t_vectorBlock), intent(in), optional :: rsolutionPrimal
@@ -1631,6 +1631,10 @@ module eulerlagrange_application
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
     character(len=SYS_NAMELEN) :: cvariable
     integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
+
+    ! Current particlenumber
+    integer :: iPart
+    character(LEN=20) :: sfilename, sfilenamenew
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -1895,6 +1899,21 @@ module eulerlagrange_application
     ! Write UCD file
     call ucd_write  (rexport)
     call ucd_release(rexport)
+
+    write(sfilename,'(i0)') rParticles%iTimestep
+    sfilenamenew='particleflow'//trim(sfilename)//'.vtk'
+
+    open(20+rParticles%iTimestep,file='out/video/'//sfilenamenew)
+
+    do iPart = 1, rParticles%nPart
+
+      write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
+
+    end do
+
+    close(unit=20+rParticles%iTimestep)
+    
+    rParticles%iTimestep=rParticles%iTimestep+1
 
   end subroutine eulerlagrange_outputSolution
 
@@ -3520,7 +3539,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     
     ! Current particlenumber
     integer :: iPart
-    character(LEN=20) :: sfilename, sfilenamenew
 
     real(DP) :: dx,dy
     real(DP), dimension(2,4) :: DcornerCoords
@@ -3540,11 +3558,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Subroutine to compute the new position of the particles
     call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
 
-
-    write(sfilename,'(i0)') rParticles%iTimestep
-    sfilenamenew='particleflow'//trim(sfilename)//'.vtk'
-
-    open(20+rParticles%iTimestep,file='out/video/'//sfilenamenew)
 
     do iPart = 1, rParticles%nPart
       ! Subroutine to find the element with the particle
@@ -3571,8 +3584,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
       end if
 
-      write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
-
     end do
 
     ! Subroutine to calculate the volume part of the particles
@@ -3581,8 +3592,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Subroutine to calculate the velocity of the particles 
     call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
 
-    close(unit=20+rParticles%iTimestep)
-    rParticles%iTimestep=rParticles%iTimestep+1
 
 end subroutine eulerlagrange_step
 
