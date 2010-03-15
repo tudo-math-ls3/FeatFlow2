@@ -5555,9 +5555,9 @@ END IF
     DO iel = 1,nelements
         DO icub = 1,npointsPerElement
             ! first term
-            Dcoefficients(1,icub,iel) = dtstep * D ( DvaluesFevl(1,icub,iel), D_1, N )
+            Dcoefficients(1,icub,iel) = dtstep * D_1
             ! second term
-            Dcoefficients(2,icub,iel) = dtstep * D ( DvaluesFevl(1,icub,iel), D_1, N )
+            Dcoefficients(2,icub,iel) = dtstep * D_1
         END DO
     END DO
 
