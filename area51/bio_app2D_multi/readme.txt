@@ -1,0 +1,1 @@
+This is a 2D-fundament version for the future 3D case. 11.09.2009
