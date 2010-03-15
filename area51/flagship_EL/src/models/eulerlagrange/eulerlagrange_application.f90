@@ -3435,7 +3435,10 @@ rstartmatrix = transpose(reshape(&
                  rParticles%p_lambda3(iPart)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
-     
+        case default
+            call output_line('Invalid starting position!', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'flagship_startpos')
+            call sys_halt()
         end select
  
         ! Set initial values for the particles

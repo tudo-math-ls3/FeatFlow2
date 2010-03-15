@@ -4484,9 +4484,9 @@ contains
 
     ! Store the current element
 	currentelm = rParticles%p_element(iPart)
-	dxi1=0d0
-	dxi2=0d0
-	dxi3=0d0
+	dxi1=0.0_dp
+	dxi2=0.0_dp
+	dxi3=0.0_dp
 	dx= rParticles%p_xpos(iPart)
 	dy= rParticles%p_ypos(iPart)
 	
@@ -4645,12 +4645,12 @@ contains
         p_rtriangulation%h_DvertexCoords,p_DvertexCoords)
 
 
-    rho_g= 0d0 
-    C_W=0d0 
-    Re_p=0d0 
-    Velo_rel=0d0
-    dt=0d0
-    c_pi=0d0
+    rho_g= 0.0_dp 
+    C_W=0.0_dp 
+    Re_p=0.0_dp 
+    Velo_rel=0.0_dp
+    dt=0.0_dp
+    c_pi=0.0_dp
     
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
@@ -4663,7 +4663,7 @@ contains
     call lsyssc_getbase_double(rvector2, p_Ddata2)
     call lsyssc_getbase_double(rvector3, p_Ddata3)
  
-    c_pi= 3.14159265358979323846264338327950288
+    c_pi= 3.14159265358979323846264338327950288_dp
 
     ! Loop over the particles
     do iPart = 1, rParticles%nPart
@@ -4709,35 +4709,35 @@ contains
 	! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
 	! with \nu_g=\frac{\eta_g}{\rho_g}
 	!
-	Re_p= (rho_g*0.5*rParticles%p_diam(iPart)/rParticles%nu_g)*(sqrt((rParticles%p_xvelo_gas(iPart)- &
-	       rParticles%p_xvelo_old(iPart))**2+&
-		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2))
+	Re_p= (rho_g*0.5_dp*rParticles%p_diam(iPart)/rParticles%nu_g)*(sqrt((rParticles%p_xvelo_gas(iPart)- &
+	       rParticles%p_xvelo_old(iPart))**2.0_dp+&
+		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp))
 
 	! Calculate the drag force coefficient
 	if (Re_p<1000) then
-		C_W= 24/Re_p*(1+0.15*Re_p**0.687)
+		C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
 	else
-		C_W= 24/Re_p
+		C_W= 24.0_dp/Re_p
 	end if
 
 	! Calculate alpha_n
-	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8 
+	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8.0_dp 
 
 	! Calculate the relative velocity
-	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2 +&
-	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2)
+	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2.0_dp +&
+	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2.0_dp)
 
 	! Calculate new velocity of the particle
 	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
-								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25 * rParticles%p_diam(iPart)**2 &
+								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25_dp * rParticles%p_diam(iPart)**2.0_dp &
 								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * rParticles%gravity(1))/&
 								(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
-								0.25*rParticles%p_diam(iPart)**2)
+								0.25*rParticles%p_diam(iPart)**2.0_dp)
 	rParticles%p_yvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_yvelo_old(iPart)+&
-								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25*rParticles%p_diam(iPart)**2 &
+								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25_dp*rParticles%p_diam(iPart)**2.0_dp &
 								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*rParticles%gravity(2))/&
     							(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
-    							0.25*rParticles%p_diam(iPart)**2)
+    							0.25*rParticles%p_diam(iPart)**2.0_dp)
 
 	!---------------------------------------------------------------------------------
 	! Calculate the new position of the particle
@@ -4772,7 +4772,7 @@ contains
 		  
           partxmin= minval(p_DvertexCoords(1,:))
           partxmax= minval(p_DvertexCoords(1,:))+&
-                    0.2*(maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+                    0.2_dp*(maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
           partymin= minval(p_DvertexCoords(2,:))
           partymax= maxval(p_DvertexCoords(2,:))
 
@@ -4830,17 +4830,22 @@ contains
           rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
-              
+          
+         case default
+            call output_line('Invalid starting position!', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'flagship_startpos')
+            call sys_halt()
+             
         end select
  
         ! Set initial values for the particles
-        rParticles%p_xvelo_gas(iPart)= 0d0
-        rParticles%p_yvelo_gas(iPart)= 0d0
-        rParticles%p_xvelo_gas_old(iPart)= 0d0
-        rParticles%p_yvelo_gas_old(iPart)= 0d0
-        rParticles%p_alpha_n(iPart)= 0
+        rParticles%p_xvelo_gas(iPart)= 0.0_dp
+        rParticles%p_yvelo_gas(iPart)= 0.0_dp
+        rParticles%p_xvelo_gas_old(iPart)= 0.0_dp
+        rParticles%p_yvelo_gas_old(iPart)= 0.0_dp
+        rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
-        rParticles%p_bdy_time(iPart)= 0
+        rParticles%p_bdy_time(iPart)= 0.0_dp
         
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
@@ -5049,10 +5054,10 @@ contains
 				bdy_point(1)= x(1) + s*x(2)
 				bdy_point(2)= y(1) + s*y(2)
 				! Calculate the the time to the collision (dependent on the timestep)
-				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2+& 
-											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2))&
-											/(sqrt((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2+&
-											(rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart))**2))
+				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2.0_dp+& 
+											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2.0_dp))&
+											/(sqrt((rParticles%p_xpos(iPart) - rParticles%p_xpos_old(iPart))**2.0_dp+&
+											(rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart))**2.0_dp))
 			    rParticles%p_xpos(iPart) = bdy_point(1)
 			    rParticles%p_ypos(iPart) = bdy_point(2)
 
@@ -5064,7 +5069,7 @@ contains
 		        bdy_tang(1)= p_DvertexCoords(1,bdy_Koords(2)) - p_DvertexCoords(1,bdy_Koords(1))
 		        ! Tangent in y-direction
 		        bdy_tang(2)= p_DvertexCoords(2,bdy_Koords(2)) - p_DvertexCoords(2,bdy_Koords(1))
-		        tang_norm = sqrt(bdy_tang(1)**2+bdy_tang(2)**2)
+		        tang_norm = sqrt(bdy_tang(1)**2.0_dp+bdy_tang(2)**2.0_dp)
 		        bdy_tang(1)= bdy_tang(1)/tang_norm
 		        bdy_tang(2)= bdy_tang(2)/tang_norm
 		        ! Normal in x-direction
@@ -5169,7 +5174,7 @@ contains
     call storage_getbase_double(&
          p_rtriangulation%h_DelementVolume, p_DelementVolume)
 
-    c_pi= 3.14159265358979323846264338327950288
+    c_pi= 3.14159265358979323846264338327950288_dp
 
 	do i= 1, rParticles%nPart
 
@@ -5182,15 +5187,15 @@ contains
         ! Store the volumefraction of the particle in the gridpoints (with barycentric coordinates)
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
-		                (abs(rParticles%p_lambda1(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda1(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
 		                p_DelementVolume(p_IverticesAtElement(1,current))
 		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
-		                (abs(rParticles%p_lambda2(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda2(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
 		                p_DelementVolume(p_IverticesAtElement(2,current))
 		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
-		                (abs(rParticles%p_lambda3(i))*c_pi*0.25*rParticles%p_diam(i)**2)/&
+		                (abs(rParticles%p_lambda3(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
 		                p_DelementVolume(p_IverticesAtElement(3,current))
 
 	end do
