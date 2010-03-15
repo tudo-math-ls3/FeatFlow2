@@ -1142,7 +1142,7 @@ contains
                           rnonlinearIteration%DresidualInit(2)**2)
             dres    = sqrt(rnonlinearIteration%DresidualOld(1)**2 + &
                           rnonlinearIteration%DresidualOld(2)**2)
-            
+                          
             dtempdef = dres / dresInit
             
             if (bassembleNewton) then

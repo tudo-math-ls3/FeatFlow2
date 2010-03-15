@@ -2396,7 +2396,7 @@ contains
       dCenterYold=p_rgeometryObject%rcoord2D%Dorigin(2)
       
       ! some physical parameters
-      dvolume  = (p_rparticleCollection%p_rParticles(ipart)%drad)**2 * SYS_PI
+      dvolume  = 8.630466461181641E-002
       dmasssl  = p_rparticleCollection%p_rParticles(ipart)%drho * dvolume 
       ddmasssl = (p_rparticleCollection%p_rParticles(ipart)%drho-1.0_dp) * dvolume 
       
