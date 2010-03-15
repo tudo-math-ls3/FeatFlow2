@@ -371,6 +371,7 @@ contains
     ! local variables
     type(t_ccnonlinearIteration) :: rnonlinearIterationTmp
     type(t_nonlinearCCMatrix) :: rnonlinearCCMatrix
+    type(t_timer) :: rtimerRHSgeneration
     
     ! DEBUG!!!
     !REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
@@ -448,9 +449,14 @@ contains
 
     ! generate f_n+1 into the rrhs overwriting the previous rhs.
     ! Do not implement any BC`s! We need the "raw" RHS for the next timestep.
+    call stat_clearTimer(rtimerRHSgeneration)
+    call stat_startTimer(rtimerRHSgeneration)
     call cc_generateBasicRHS (rproblem,&
         rproblem%RlevelInfo(rproblem%NLMAX)%rasmTempl,&
         rproblem%rrhsassembly,rrhs)
+    call stat_stopTimer(rtimerRHSgeneration)
+    rproblem%rstatistics%dtimeRHSAssembly = &
+        rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
     
     ! Add w_3*f_{n+1} to the current RHS.     
     call lsysbl_vectorLinearComb(rrhs,rtempVectorRhs,&

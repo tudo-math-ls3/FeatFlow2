@@ -1624,6 +1624,8 @@ contains
           else 
             ! Read the file.
             sfilename = trim(rrhsAssembly%sfilename)//"."//sys_si0(iidx1,5)
+            call output_line ("Reading RHS file """//trim(sfilename)//""".",&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector, sarray, .true.,&
                 0, sfilename, rrhsAssembly%iformatted .ne. 0)
             rrhsAssembly%icurrentRhs = iidx1
@@ -1640,6 +1642,8 @@ contains
           else 
             ! Read the file.
             sfilename = trim(rrhsAssembly%sfilename)//"."//sys_si0(iidx2,5)
+            call output_line ("Reading RHS file """//trim(sfilename)//""".",&
+                coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
             call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector2, sarray, .true.,&
                 0, sfilename, rrhsAssembly%iformatted .ne. 0)
             rrhsAssembly%icurrentRhs2 = iidx2

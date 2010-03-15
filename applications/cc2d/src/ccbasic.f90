@@ -376,6 +376,9 @@ module ccbasic
     
     ! Total time for matrix assembly
     real(DP) :: dtimeMatrixAssembly = 0.0_DP
+
+    ! Total time for RHS assembly
+    real(DP) :: dtimeRHSAssembly = 0.0_DP
     
     ! Total time for defect vector calculation
     real(DP) :: dtimeDefectCalculation = 0.0_DP

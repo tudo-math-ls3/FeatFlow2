@@ -408,6 +408,8 @@ contains
       
       ! Read in the RHS now?
       if (rrhsAssembly%ctype .eq. 3) then
+        call output_line ("Reading RHS file """//trim(rrhsAssembly%sfilename)//""".",&
+            coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG )
         call vecio_readBlockVectorHR (rrhsAssembly%rrhsVector, sarray, .true.,&
             0, rrhsAssembly%sfilename, rrhsAssembly%iformatted .ne. 0)
       else

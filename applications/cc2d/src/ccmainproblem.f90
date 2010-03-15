@@ -101,7 +101,7 @@ contains
     ! Timer objects for stopping time
     type(t_timer) :: rtimerTotal
     type(t_timer) :: rtimerGridGeneration
-    type(t_timer) :: rtimerMatrixGeneration
+    type(t_timer) :: rtimerMatrixGeneration,rtimerRHSgeneration
     type(t_timer) :: rtimerSolver
     
     integer :: i
@@ -246,9 +246,14 @@ contains
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating RHS vector...')
       end if
+      call stat_clearTimer(rtimerRHSgeneration)
+      call stat_startTimer(rtimerRHSgeneration)
       call cc_generateBasicRHS (p_rproblem,&
           p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
           p_rproblem%rrhsAssembly,rrhs)
+      call stat_stopTimer(rtimerRHSgeneration)
+      p_rproblem%rstatistics%dtimeRHSAssembly = &
+          p_rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
       
       ! Generate discrete boundary conditions
       if (p_rproblem%MSHOW_Initialisation .ge. 1) then
@@ -285,9 +290,14 @@ contains
         call output_separator (OU_SEP_MINUS)
         call output_line('Generating RHS vector...')
       end if
+      call stat_clearTimer(rtimerRHSgeneration)
+      call stat_startTimer(rtimerRHSgeneration)
       call cc_generateBasicRHS (p_rproblem,&
           p_rproblem%RlevelInfo(p_rproblem%NLMAX)%rasmTempl,&
           p_rproblem%rrhsAssembly,rrhs)
+      call stat_stopTimer(rtimerRHSgeneration)
+      p_rproblem%rstatistics%dtimeRHSAssembly = &
+          p_rproblem%rstatistics%dtimeRHSAssembly + rtimerRHSgeneration%delapsedReal
       
       ! Initialise the boundary conditions, but 
       ! do not implement any boundary conditions as the nonstationary solver
@@ -376,6 +386,9 @@ contains
 
     call output_line ("Total time for optimal damping:         "//&
       trim(sys_sdL(p_rproblem%rstatistics%dtimeOptimalCorrection,10)))
+
+    call output_line ("Total time for RHS assembly:            "//&
+      trim(sys_sdL(p_rproblem%rstatistics%dtimeRHSAssembly,10)))
       
     call output_line ("Total time for matrix assembly:         "//&
       trim(sys_sdL(p_rproblem%rstatistics%dtimeMatrixAssembly,10)))
