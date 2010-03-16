@@ -87,7 +87,7 @@ module ccmatvecassembly
   use collection
   use feevaluation
   use convection
-  
+  use scalarpde
   use ccbasic
   use cccallback
   
@@ -923,7 +923,7 @@ contains
     type(t_collection) :: rcollection
     integer, dimension(:), pointer :: p_IedgesDirichletBC
     type(t_matrixScalar) :: rMass1
-    type(t_bilinearform) :: rform
+    type(t_bilinearForm) :: rform
     
       ! Standard value for dvectorWeight is = -1.
       dvecWeight = -1.0_DP
