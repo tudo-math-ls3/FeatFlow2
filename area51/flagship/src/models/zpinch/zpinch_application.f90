@@ -1946,21 +1946,15 @@ contains
     real(DP) :: dmassTransport0, dmassTransport
 
     ! Get timer structures
-    p_rtimerPrePostprocess =>&
-        collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
-    p_rtimerSolution =>&
-        collct_getvalue_timer(rcollection, 'rtimerSolution')
-    p_rtimerErrorEstimation =>&
-        collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
-    p_rtimerAdaptation =>&
-        collct_getvalue_timer(rcollection, 'rtimerAdaptation')
-    p_rtimerTriangulation =>&
-        collct_getvalue_timer(rcollection, 'rtimerTriangulation')
-    p_rtimerAssemblyCoeff =>&
-        collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
+    p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
+    p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
+    p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
+    p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
+    p_rtimerAssemblyCoeff => collct_getvalue_timer(rcollection, 'rtimerAssemblyCoeff')
 
     ! Set pointers to solver structures
-    p_rsolverEuler     => solver_getNextSolver(rsolver, 1)
+    p_rsolverEuler => solver_getNextSolver(rsolver, 1)
     p_rsolverTransport => solver_getNextSolver(rsolver, 2)
 
     ! Set pointers to solution vectors
@@ -2005,9 +1999,9 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
 
-    ! Redistribute the density
-    call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
-        p_rproblemLevel, p_rsolutionEuler, rcollection)
+!!$    ! Redistribute the density
+!!$    call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
+!!$        p_rproblemLevel, p_rsolutionEuler, rcollection)
 
     ! Impose boundary conditions
     select case(ndimension)
@@ -2048,10 +2042,10 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime,&
         p_rsolutionTransport, rcollection)
 
-    ! Redistribute the tracer
-    call zpinch_redistributeMassTransport(rparlist,&
-        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
-        rcollection)
+!!$    ! Redistribute the tracer
+!!$    call zpinch_redistributeMassTransport(rparlist,&
+!!$        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
+!!$        rcollection)
 
     ! Impose boundary conditions
     call bdrf_filterVectorExplicit(rbdrCondTransport,&
