@@ -218,16 +218,18 @@ foreach my $testfile (@defaultSettingsFiles) {
 	my $lineno = 0;
 	LINE: while (<TESTFILE>) {
 	    $lineno++;
-	    # Ignore comments (i.e. lines starting with a '#')
-	    next LINE if ($_ =~ m/^\#/);
-	    # Ignore empty lines
-	    next LINE if ($_ =~ m/^\s+$/);
+	    my $origline = $_;
 
 	    # Remove any inlined comments
 	    $_ =~ s/\#.+$//;
 
 	    # Remove trailing white space
 	    $_ =~ s/\s+$//;
+
+	    # Ignore comments (i.e. lines starting with a '#')
+	    next LINE if ($_ =~ m/^\s*\#/);
+	    # Ignore empty lines
+	    next LINE if ($_ =~ m/^\s*$/);
 
 	    # Match a line of format
 	    # keyword  =  entry
@@ -238,7 +240,8 @@ foreach my $testfile (@defaultSettingsFiles) {
 	    if (! (defined($1) && defined($2))) {
 		die "\n$progname: ERROR:\n" .
 		    "  Line $lineno in file <$testfile> has unknown format:\n" .
-		    "  $_\n\n";
+		    "  genuine line   : <$origline>\n" .
+		    "  normalised line: <$_>\n\n";
 	    }
 
 	    # Store new settings as defaults for next entry.
@@ -352,16 +355,18 @@ foreach my $testfile (@testfiles) {
     my $lineno = 0;
     LINE: while (<TESTFILE>) {
 	$lineno++;
-	# Ignore comments (i.e. lines starting with a '#')
-	next LINE if ($_ =~ m/^\#/);
-	# Ignore empty lines
-	next LINE if ($_ =~ m/^\s+$/);
+	my $origline = $_;
 
 	# Remove any inlined comments
 	$_ =~ s/\#.+$//;
 
 	# Remove trailing white space
 	$_ =~ s/\s+$//;
+
+	# Ignore comments (i.e. lines starting with a '#')
+	next LINE if ($_ =~ m/^\s*\#/);
+	# Ignore empty lines
+	next LINE if ($_ =~ m/^\s*$/);
 
 	# Store test ID
 	if ($_ =~ m%^\s*testid\s*=\s*(.+)$%i) {
@@ -403,7 +408,8 @@ foreach my $testfile (@testfiles) {
 	    if (! (defined($1) && defined($2))) {
 		die "\n$progname: ERROR:\n" .
 		    "  Line $lineno in file <$testfile> has unknown format:\n" .
-		    "  $_\n\n";
+		    "  genuine line   : <$origline>\n" .
+		    "  normalised line: <$_>\n\n";
 	    }
 
 	    # Store new settings as defaults for next entry.
@@ -700,7 +706,9 @@ ID: foreach my $testid (@idsToCode) {
 	unless ($cl{'overwrite-log-directory'}) {
 	    if ( -d "$test{$testid}{LOGDIR}.prev" ) {
 		unlink <$test{$testid}{LOGDIR}.prev/*>;
-		rmdir "$test{$testid}{LOGDIR}.prev";
+		rmdir $test{$testid}{LOGDIR} . ".prev" ||
+		    die "\n$progname: ERROR:\n" .
+		        "  Cannot remove directory <$test{$testid}{LOGDIR}.prev>: $!\n";
 	    }
 	    # rename existing (clobbering any existing *.prev directory) and create a new one.
 	    File::Copy::move("$test{$testid}{LOGDIR}", "$test{$testid}{LOGDIR}.prev") ||
