@@ -67,21 +67,21 @@ search = midpoint
 #	ymin = minval(p_DvertexCoords(2,:))
 #	ymax = maxval(p_DvertexCoords(2,:))
 # 1 individual startingposition
-# 2 read starting position from file
+# 2 initialize the starting position by the data of a graymap image
 # 3 uniformly distributed over the domain
-startpos = 3
+startpos = 2
+
+# PGM-file for startingpositions
+filestartpoints = data/eulerlagrange/2d/tux.pgm
 
 # minimum particle-position in x-direction 
 xmin = 1.5e-4
 # maximum particle-position in x-direction
-xmax = 4e-2
+xmax = 8e-2
 # minimum particle-position in y-direction 
 ymin = 1.5e-3
 # maximum particle-position in y-direction
 ymax = 9.0e-2
-
-# txt-file for startingpositions ('*' for startingpoints)
-filestartpoints = bart.txt
 
 #-------------------------------------------------------------------------------
 # mass and diameter of the particle

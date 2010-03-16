@@ -207,6 +207,7 @@ module eulerlagrange_callback2d
   use linearsystemscalar
   use paramlist
   use problem
+  use pprocsolution
   use solveraux
   use storage
   use thermodynamics
@@ -4630,11 +4631,15 @@ contains
     real(DP) :: partxmin, partxmax, partymin, partymax
 
     ! Velocity of the particles
-    real(DP) :: velopartx, veloparty, random1, random2
+    real(DP) :: velopartx, veloparty, random1, random2, random3
 
-    ! Variables for the startingposition
-    integer, dimension(14,14) :: rstartmatrix
-    integer :: j1, j2
+    ! Variables for starting position from PGM-file
+    integer, dimension(:,:), pointer :: p_Idata
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: nvt,ix,iy,ivt
+    type(t_pgm) :: rpgm
+    real(DP), dimension(:), pointer :: p_Ddata
+    character(LEN=SYS_STRLEN) :: ssolutionname
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -4765,6 +4770,31 @@ contains
 	    ! get variable for startingposition
         call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
+        ! Initialisation for starting position from PGM-file
+        if (istartpos == 2) then
+            ! Get global configuration from parameter list
+            call parlst_getvalue_string(rparlist,&
+                  'Eulerlagrange', 'filestartpoints', ssolutionName)
+
+            ! Initialize solution from portable graymap image
+            call ppsol_readPGM(0, ssolutionName, rpgm)
+
+            ! Set pointer for image data
+            call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
+            
+            ! Determine minimum/maximum values of array
+            xmin = huge(DP); xmax = -huge(DP)
+            ymin = huge(DP); ymax = -huge(DP)
+
+            do ivt = 1, p_rtriangulation%nvt
+                xmin = min(xmin, partxmin)
+                xmax = max(xmax, partxmax)
+                ymin = min(ymin, partymin)
+                ymax = max(ymax, partymax)
+            end do
+
+        end if
+
 	    select case(istartpos)
         case(0)
   		  ! Get randomnumber
@@ -4796,24 +4826,34 @@ contains
           rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
         
         case(2)
-          do
+         call random_number(random3)
+  
+         do
             ! Get random numbers
             call random_number(random1)
 		    call random_number(random2)
-		    ! Get point of the matrix
-            j1 = int(random1*size(rstartmatrix,1)-1)+1
-            j2 = int(random2*size(rstartmatrix,2)-1)+1
+	
+	        partxmin= minval(p_DvertexCoords(1,:))
+            partxmax= minval(p_DvertexCoords(1,:))+&
+                    (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+            partymin= minval(p_DvertexCoords(2,:))
+            partymax= maxval(p_DvertexCoords(2,:))
+	    
+		    ! Get point in the array
+            rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+
+            ix = 1+(rpgm%width-1)*(rParticles%p_xpos(iPart)-xmin)/(xmax-xmin)
+            if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
+
+            iy = rpgm%height-(rpgm%height-1)*(rParticles%p_ypos(iPart)-ymin)/(ymax-ymin)
+            if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
+
             ! If there can be particles, exit loop
-            if (rstartmatrix(j1,j2).eq.1) exit
+            if (random3 .le. real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)) exit
           end do
         
-          ! Get random numbers
-		  call random_number(random1)
-		  call random_number(random2)
-  
-          ! Set startingpositions of the particle
-          rParticles%p_xpos(iPart)= partxmin + (j2+random1-0.5_dp)/size(rstartmatrix,2)*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rstartmatrix,1)*(partymax - partymin)
+          ! Set particle positions
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
          
@@ -4847,6 +4887,12 @@ contains
         rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0.0_dp
+ 
+        if (istartpos == 2) then
+            ! Release portable graymap image
+            call ppsol_releasePGM(rpgm)
+        end if
+
         
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
@@ -5008,6 +5054,48 @@ contains
 	! Save the current element of the particle
 	current = rParticles%p_element(iPart)
 
+
+!call gaux_getIntersection_ray2D
+!  elemental subroutine gaux_getIntersection_ray2D(&
+!      dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
+!  
+!!<description>
+!  ! Calculates the intersection point of two 2D rays given by 
+!  ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
+!!</description>
+!
+!!<input>
+!  ! First point on ray 1.
+!  real(DP), intent(in) :: dx0,dy0
+!  
+!  ! A second point on ray 1. Must be different to (dx1,dy1)
+!  real(DP), intent(in) :: dx1,dy1
+!  
+!  ! First point on ray 2.
+!  real(DP), intent(in) :: dx2,dy2
+!  
+!  ! A second point on ray 2. Must be different to (dx3,dy3)
+!  real(DP), intent(in) :: dx3,dy3
+!!</input>
+!
+!!<result>
+!  ! Intersection point.
+!  ! If the two rays do not intersect or are identical, this is set to (0,0).
+!  real(DP), intent(out) :: dx,dy
+!
+!  ! Returns the type of intersection between the rays.
+!  ! =-1: The rays are the same
+!  ! = 0: The rays do not intersect.
+!  ! = 1: The rays intersect in exactly one point.
+!  integer, intent(out) :: iintersect
+!  
+!  ! Parameter value of the intersection.
+!  ! The intersection point (dx,dy) can be found at position
+!  ! (dx,dy) = (dx0,dy0) + da*(dx1-dx0,dy1-dy0).
+!  ! If iintersect<>1, da is set to 0.
+!  real(DP), intent(out) :: da
+!!</result>
+
 	! Loop over all boundary elements
 	Boundary_Search: do i_NVBD = 1, p_rtriangulation%NVBD
 
@@ -5162,7 +5250,10 @@ contains
 	integer :: i, current, ivt
 	real(DP) :: c_pi
 
+    ! Clean array for new computation of the volume fraction 
     rParticles%p_PartVol= 0
+    
+    ! Rise the counter for new volume fraction computation
     rParticles%iPartVolCount= rParticles%iPartVolCount+1
 
     ! Set pointer to triangulation
@@ -5202,6 +5293,7 @@ contains
 
 	end do
 
+    ! Store the volume fraction for the average volume fraction
     do ivt= 1, p_rtriangulation%NVT
         rParticles%p_PartVolAver(ivt)= rParticles%p_PartVolAver(ivt) + rParticles%p_PartVol(ivt)
     end do

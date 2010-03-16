@@ -1785,14 +1785,14 @@ module eulerlagrange_application
           elseif (trim(cvariable) .eq. 'vol_partaver') then
           
             do ivt= 1, rproblemLevel%rtriangulation%NVT
-                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)/(rParticles%iPartVolCount+1)
+                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)/rParticles%iPartVolCount
             end do
           
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, rParticles%p_PartVolaver)
 
             do ivt= 1, rproblemLevel%rtriangulation%NVT
-                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)*(rParticles%iPartVolCount+1)
+                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)*rParticles%iPartVolCount
             end do
 
           else
@@ -3126,7 +3126,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Local variables
     integer :: ivt, iPart, iel
 
-    real(DP) :: random1, random2
+    real(DP) :: random1, random2, random3
 
     ! Midpoints of the elements
     integer(I32) :: h_midpoints
@@ -3154,9 +3154,14 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Kinematic viscosity of the gas
     real(DP) :: gas_nu
   
-    ! Matrix for the startingposition
-    integer, dimension(14,14) :: rstartmatrix
-    integer :: j1, j2
+    ! Variables for starting position from PGM-file
+    integer, dimension(:,:), pointer :: p_Idata
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    integer :: nvt,ix,iy
+    type(t_pgm) :: rpgm
+    real(DP), dimension(:), pointer :: p_Ddata
+    character(LEN=SYS_STRLEN) :: ssolutionname
+
   
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -3341,42 +3346,48 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0
     rParticles%p_PartVolAver= 0
+    rParticles%iPartVolCount= 1    
     rParticles%p_PartVelox= 0
     rParticles%p_PartVeloy= 0
 
     ! Set boundaryconditions for the particles
     select case(boundbehav)
     case (0)
-        rParticles%tang_val= 1.0d0
-        rParticles%norm_val= 1.0d0
+        rParticles%tang_val= 1.0_dp
+        rParticles%norm_val= 1.0_dp
     case (1)
-        rParticles%tang_val= 1.0d0
-        rParticles%norm_val= 0.0d0
+        rParticles%tang_val= 1.0_dp
+        rParticles%norm_val= 0.0_dp
     case default
       call output_line('Invalid boundaryconditions!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_boundbehav')
       call sys_halt()
     end select
 
-! TODO: Verallgemeinerung mit externer txt-Datei!!!!!!
-rstartmatrix = transpose(reshape(&
-(/&
-0,1,0,1,0,1,0,1,0,1,0,0,0,0,&
-0,1,1,0,1,0,1,0,1,0,1,1,0,0,&
-0,1,0,0,0,0,0,0,0,0,0,1,0,0,&
-0,1,0,0,1,1,0,0,0,1,1,1,0,0,&
-1,1,0,0,1,1,0,0,0,1,1,1,0,0,&
-1,1,0,0,0,0,0,0,0,0,0,1,1,0,&
-0,1,0,0,0,0,0,0,0,0,0,1,1,0,&
-0,1,0,0,0,0,1,0,0,0,0,1,0,0,&
-0,1,0,0,0,0,0,1,1,1,1,1,0,0,&
-0,0,1,0,0,0,0,0,0,1,0,0,0,0,&
-0,0,0,1,0,0,0,0,1,0,0,0,0,0,&
-0,0,1,0,0,0,0,0,0,1,0,0,0,0,&
-0,0,0,0,0,0,0,0,0,0,0,0,0,0,&
-0,0,0,0,0,0,0,0,0,0,0,0,0,0&
-/),&
-(/14,14/)))
+    ! Initialisation for starting position from PGM-file
+    if (istartpos == 2) then
+        ! Get global configuration from parameter list
+        call parlst_getvalue_string(rparlist,&
+              'Eulerlagrange', 'filestartpoints', ssolutionName)
+
+        ! Initialize solution from portable graymap image
+        call ppsol_readPGM(0, ssolutionName, rpgm)
+
+        ! Set pointer for image data
+        call storage_getbase_int2D(rpgm%h_Idata, p_Idata)
+        
+        ! Determine minimum/maximum values of array
+        xmin = huge(DP); xmax = -huge(DP)
+        ymin = huge(DP); ymax = -huge(DP)
+
+        do ivt = 1, p_rtriangulation%nvt
+            xmin = min(xmin, partxmin)
+            xmax = max(xmax, partxmax)
+            ymin = min(ymin, partymin)
+            ymax = max(ymax, partymax)
+        end do
+
+    end if
 
 
     ! Initialize data for each particle
@@ -3384,6 +3395,11 @@ rstartmatrix = transpose(reshape(&
   
         select case(istartpos)
         case(0)
+       
+          !-------------------------------------------------------------------------
+          ! Initialize the starting position by random numbers
+          !-------------------------------------------------------------------------
+
   		  ! Get randomnumber
 		  call random_number(random1)
 		  call random_number(random2)
@@ -3402,7 +3418,12 @@ rstartmatrix = transpose(reshape(&
 
 
         case(1)
-  		  ! Get randomnumber
+         
+          !-------------------------------------------------------------------------
+          ! Initialize the starting position by individual starting position
+          !-------------------------------------------------------------------------
+
+		  ! Get randomnumber
 		  call random_number(random1)
 		  call random_number(random2)
 		  
@@ -3413,24 +3434,48 @@ rstartmatrix = transpose(reshape(&
           rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
         
         case(2)
-          do
+        
+          !-------------------------------------------------------------------------
+          ! Initialize the starting position by the data of a graymap image
+          !-------------------------------------------------------------------------
+  
+         call random_number(random3)
+
+         do
+            ! Get random numbers
             call random_number(random1)
 		    call random_number(random2)
-            j1 = int(random1*size(rstartmatrix,1)-1)+1
-            j2 = int(random2*size(rstartmatrix,2)-1)+1
-            if (rstartmatrix(j1,j2).eq.1) exit
+	
+	        partxmin= minval(p_DvertexCoords(1,:))
+            partxmax= minval(p_DvertexCoords(1,:))+&
+                    (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+            partymin= minval(p_DvertexCoords(2,:))
+            partymax= maxval(p_DvertexCoords(2,:))
+	    
+		    ! Get point in the array
+            rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
+            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+
+            ix = 1+(rpgm%width-1)*(rParticles%p_xpos(iPart)-xmin)/(xmax-xmin)
+            if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
+
+            iy = rpgm%height-(rpgm%height-1)*(rParticles%p_ypos(iPart)-ymin)/(ymax-ymin)
+            if (iy .lt. 1 .or. iy .gt. rpgm%height) cycle
+
+            ! If there can be particles, exit loop
+            if (random3 .le. real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)) exit
           end do
         
-          ! Get random numbers
-		  call random_number(random1)
-		  call random_number(random2)
-  
-          ! Set startingpositions of the particle
-          rParticles%p_xpos(iPart)= partxmin + (j2+random1-0.5_dp)/size(rstartmatrix,2)*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymax - (j1+random2-0.5_dp)/size(rstartmatrix,1)*(partymax - partymin)
+          ! Set particle positions
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
+        
         case(3)
+       
+          !-------------------------------------------------------------------------
+          ! Initialize the starting position uniformly distributed over the domain
+          !-------------------------------------------------------------------------
+
           ! Get random number for element
           call random_number(random1)
           
@@ -3463,6 +3508,7 @@ rstartmatrix = transpose(reshape(&
                  rParticles%p_lambda3(iPart)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
+          
         case default
             call output_line('Invalid starting position!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_startpos')
@@ -3487,16 +3533,28 @@ rstartmatrix = transpose(reshape(&
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
-        ! calculate barycentric coordinates
+        ! Calculate barycentric coordinates
         call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
 
-        ! wrong element
+        ! Wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
                   abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
     end do
+    
+    if (istartpos == 2) then
+        ! Release portable graymap image
+        call ppsol_releasePGM(rpgm)
+    end if
+    
+    ! Subroutine to calculate the volume part of the particles
+    call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
+
+    ! Subroutine to calculate the velocity of the particles 
+    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
+
 
 end subroutine eulerlagrange_init
 
