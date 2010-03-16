@@ -62,12 +62,12 @@ endif
 
 # Specify -openmp for all Intel compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77LIBS := -openmp $(CFLAGSF77LIBS)
-CFLAGSF77     := -openmp $(CFLAGSF77)
-CFLAGSF90     := -openmp $(CFLAGSF90)
-CFLAGSC       := -openmp $(CFLAGSC)
-CFLAGSCXX     := -openmp $(CFLAGSCXX)
-LDFLAGS       := -openmp $(LDFLAGS)
+CFLAGSF77LIBS := -DUSE_OPENMP -openmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -openmp $(CFLAGSF77)
+CFLAGSF90     := -DUSE_OPENMP -openmp $(CFLAGSF90)
+CFLAGSC       := -DUSE_OPENMP -openmp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -openmp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -openmp $(LDFLAGS)
 endif
 
 # WARNING WARNING WARNING

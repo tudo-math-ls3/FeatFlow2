@@ -48,12 +48,12 @@ CXXVERSION = $(CXX) -V 2>&1 1>/dev/null | head -n 1
 
 # Specify -xopenmp for all Sun compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77LIBS := -xopenmp $(CFLAGSF77LIBS)
-CFLAGSF77     := -xopenmp $(CFLAGSF77)
-CFLAGSF90     := -xopenmp $(CFLAGSF90)
-CFLAGSC       := -xopenmp $(CFLAGSC)
-CFLAGSCXX     := -xopenmp $(CFLAGSCXX)
-LDFLAGS       := -xopenmp $(LDFLAGS)
+CFLAGSF77LIBS := -DUSE_OPENMP -xopenmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -xopenmp $(CFLAGSF77)
+CFLAGSF90     := -DUSE_OPENMP -xopenmp $(CFLAGSF90)
+CFLAGSC       := -DUSE_OPENMP -xopenmp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -xopenmp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -xopenmp $(LDFLAGS)
 endif
 
 # WARNING WARNING WARNING

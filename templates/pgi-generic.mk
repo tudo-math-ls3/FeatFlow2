@@ -52,12 +52,12 @@ endif
 
 # Specify -openmp for all PGI compilers
 ifeq ($(strip $(OPENMP)), YES)
-CFLAGSF77LIBS := -mp $(CFLAGSF77LIBS)
-CFLAGSF77     := -mp $(CFLAGSF77)
+CFLAGSF77LIBS := -DUSE_OPENMP -mp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
 CFLAGSF90     := -mp $(CFLAGSF90)
-CFLAGSC       := -mp $(CFLAGSC)
-CFLAGSCXX     := -mp $(CFLAGSCXX)
-LDFLAGS       := -mp $(LDFLAGS)
+CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -mp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
 endif
 
 # WARNING WARNING WARNING

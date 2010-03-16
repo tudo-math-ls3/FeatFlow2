@@ -63,6 +63,17 @@ CXXVERSION = $(CXX) -version 2>&1 | head -n 4
 # start solving something. This is no longer an issue with v. 3.1.
 
 
+# Specify -fopenmp for all Pathscale compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77LIBS := -DUSE_OPENMP -mp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -mp $(CFLAGSF77)
+CFLAGSF90     := -DUSE_OPENMP -mp $(CFLAGSF90)
+CFLAGSC       := -DUSE_OPENMP -mp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -mp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -mp $(LDFLAGS)
+endif
+
+
 ifeq ($(strip $(OPT)), EXPENSIVE)
 # increases link time to 2 minutes per application, but is well worth it.
 CFLAGSF77     := -ipa $(CFLAGSF77)

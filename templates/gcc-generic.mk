@@ -67,6 +67,17 @@ ifneq (,$(findstring 4.4.,$(GFORTRANVERSION)))
 endif
 
 
+# Specify -fopenmp for all gcc compilers
+ifeq ($(strip $(OPENMP)), YES)
+CFLAGSF77LIBS := -DUSE_OPENMP -fopenmp $(CFLAGSF77LIBS)
+CFLAGSF77     := -DUSE_OPENMP -fopenmp $(CFLAGSF77)
+CFLAGSF90     := -DUSE_OPENMP -fopenmp $(CFLAGSF90)
+CFLAGSC       := -DUSE_OPENMP -fopenmp $(CFLAGSC)
+CFLAGSCXX     := -DUSE_OPENMP -fopenmp $(CFLAGSCXX)
+LDFLAGS       := -DUSE_OPENMP -fopenmp $(LDFLAGS)
+endif
+
+
 ifeq ($(call optimise), YES)
 # ****************************************** #
 # First version of optimised compiler flags! #
@@ -105,7 +116,6 @@ CFLAGSC       := -DUSE_COMPILER_GCC $(CFLAGSC) -g -fbounds-check #-pg
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) #-pg
 endif
-
 
 
 ##############################################################################
