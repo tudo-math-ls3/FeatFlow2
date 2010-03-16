@@ -178,6 +178,8 @@ contains
     
     integer :: itimestepping
     
+    real(dp) :: dCFL, dgravconst
+    
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -207,6 +209,9 @@ contains
     ! To the final time
     call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'ttfinal', ttfinal)
     
+    ! To the final time
+    call parlst_getvalue_double(rparlist, 'PROBLEM', 'gravconst', dgravconst)
+    
     ! Type of finite element to use
     call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
     
@@ -229,12 +234,15 @@ contains
     case (0)
       ielementType = EL_DG_T0_2D
       ilimiting = 0
+      dCFL = 1.0_dp
     case (1)
       ielementType = EL_DG_T1_2D
       ilimiting = 1
+      dCFL = 0.3_dp
     case (2)
       ielementType = EL_DG_T2_2D
       ilimiting = 2
+      dCFL = 0.18_dp
     end select
     
     
@@ -476,7 +484,8 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     nullify(p_rpreconditioner)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initUMFPACK4 (p_rsolverNode)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 0
@@ -552,11 +561,13 @@ contains
     
     if (ttfinal > 0.0_dp)then
     timestepping: do
+    
+       call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
 
        ! Compute solution from time step t^n to time step t^{n+1}
        write(*,*)
        write(*,*)
-       write(*,*) 'TIME STEP:', ttime
+       write(*,*) 'TIME STEP:', ttime, dt
        write(*,*)
        
        call profiler_measure(rprofiler,1)

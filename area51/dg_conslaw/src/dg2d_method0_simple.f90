@@ -443,7 +443,8 @@ contains
     ! to the solver, so that the solver automatically filters
     ! the vector during the solution process.
     nullify(p_rpreconditioner)
-    call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
+    call linsol_initUMFPACK4 (p_rsolverNode)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 0

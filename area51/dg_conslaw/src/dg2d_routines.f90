@@ -56,6 +56,8 @@ module dg2d_routines
 	  real(DP), dimension(:), pointer :: p_DedgeLength
 	  ! Midpoints of the elements
 	  real(dp), dimension(:,:), pointer :: p_DmidPoints
+	  ! Pointer to dx/dy
+    real(DP), dimension(:,:), pointer:: p_Ddxdy
 	end type 
 	
 	type t_profiler
@@ -1577,6 +1579,7 @@ end subroutine
     
     duc = p_Ddata(IdofGlob(1))
     
+    ! elem_igetNVE(celement)
     NVE = 4
     
     do ivt = 1, NVE
@@ -1615,6 +1618,7 @@ end subroutine
   do iel = 1, NEL
   
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -2067,6 +2071,7 @@ end subroutine
   do iel = 1, NEL
     
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -2108,6 +2113,7 @@ end subroutine
   do iel = 1, NEL
   
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -2277,6 +2283,7 @@ end subroutine
   ! Pointer to IverticesAtEdge in the triangulation
   integer, dimension(:,:), pointer :: p_IverticesAtEdge
   real(dp) :: dedgeLength
+  integer :: ncorners
   
   
   ! Get pointers to the needed arrays from the triangulation
@@ -2383,7 +2390,25 @@ end subroutine
           p_DvertexCoords(2,p_IverticesAtElement(3,iel))+&
           p_DvertexCoords(2,p_IverticesAtElement(4,iel)))/4.0_dp
    end do
+   
+   
   
+  ! *** Calculate dx and dy ***
+  
+  ! Allocate space for midpoints
+  allocate(raddTriaData%p_Ddxdy(2,NEL))
+  
+  ncorners = 4
+  
+  do iel = 1, NEL
+    raddTriaData%p_Ddxdy(1,iel) = &
+          maxval(p_DvertexCoords(1,p_IverticesAtElement(1:ncorners,iel))) - &
+          minval(p_DvertexCoords(1,p_IverticesAtElement(1:ncorners,iel)))
+         
+    raddTriaData%p_Ddxdy(2,iel) = &
+          maxval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel))) - &
+          minval(p_DvertexCoords(2,p_IverticesAtElement(1:ncorners,iel)))
+   end do
   
 
   end subroutine
@@ -2422,83 +2447,14 @@ end subroutine
   ! Deallocate the midpoints
   deallocate(raddTriaData%p_DmidPoints)
   
+  ! Deallocate dx and dy
+  deallocate(raddTriaData%p_Ddxdy)
+  
   end subroutine
   
   
   
   
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -3520,6 +3476,7 @@ end subroutine
     
     duc = p_Ddata(IdofGlob(1))
     
+    ! elem_igetNVE(celement)
     NVE = 4
     
     do ivt = 1, NVE
@@ -3558,6 +3515,7 @@ end subroutine
   do iel = 1, NEL
   
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -3805,6 +3763,7 @@ end subroutine
   do iel = 1, NEL
     
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -3846,6 +3805,7 @@ end subroutine
   do iel = 1, NEL
   
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -4065,6 +4025,7 @@ end subroutine
   
   ! Number of vertices per element
   !NVE = p_rtriangulation%NVE
+  ! elem_igetNVE(celement)
   NVE = 4
   
   ! Number of vertives at boundary
@@ -4409,6 +4370,7 @@ end subroutine
 !  do iel = 1, NEL
 !    
 !    ! Get number of corner vertices
+!    ! elem_igetNVE(celement)
 !    NVE = 4
 !    
 !    ! Get midpoint of the element
@@ -4450,6 +4412,7 @@ end subroutine
   do iel = 1, NEL
   
     ! Get number of corner vertices
+    ! elem_igetNVE(celement)
     NVE = 4
     
     ! Get midpoint of the element
@@ -4742,6 +4705,7 @@ end subroutine
   
   ! Number of vertices per element
   !NVE = p_rtriangulation%NVE
+  ! elem_igetNVE(celement)
   NVE = 4
   
   ! Number of vertives at boundary
@@ -5038,6 +5002,98 @@ end subroutine
   
   
   
+!****************************************************************************
   
+!<subroutine>  
+  
+  subroutine getDtByCfl (rvectorBlock, raddTriaData, dCFL, dt, dgravconst)
+
+!<description>
+
+  ! Gets the timestepsize dt to fit the given CFL number
+
+!</description>
+
+!<input>
+! The additional triangulation data
+  type(t_additionalTriaData), intent(in):: raddTriaData
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+  real(dp), intent(in) :: dCFL, dgravconst
+!</input>
+
+!<output>
+  real(dp), intent(out) :: dt
+!</output>
+  
+!</subroutine>
+  
+  ! Local variables
+  
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  integer(I32) :: celement
+  
+  integer :: NEL, iel
+  
+  integer, dimension(:), allocatable :: IelIdx
+  integer, dimension(:,:), allocatable :: IdofGlob
+  
+  real(dp), dimension(:), pointer :: p_Ddata
+  
+  real(dp), dimension(3) :: DQ
+  
+  real(dp) :: dh, du, dv, dc, ddx, ddy
+
+  
+  
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+
+  ! Get number of elements
+  NEL = p_rtriangulation%NEL
+  
+  celement = p_rspatialDiscr%RelementDistr(1)%celement
+  
+  allocate(IelIdx(NEL))
+  
+  do iel = 1, NEL
+    IelIdx(iel) = iel
+  end do
+  
+  allocate(IdofGlob(elem_igetNDofLoc(celement),NEL))
+  
+  ! Get global DOFs of the elements  
+  call dof_locGlobMapping_mult(p_rspatialDiscr, IelIdx, IdofGlob)
+  
+  call lsysbl_getbase_double (rvectorBlock, p_Ddata)
+  
+  dt = SYS_MAXREAL
+  
+  do iel = 1, NEL
     
+    DQ = p_Ddata(rvectorBlock%RvectorBlock(:)%iidxFirstEntry+IdofGlob(1,iel)-1)
+    
+    dh = DQ(1)
+    du = abs(DQ(2)/dh)
+    dv = abs(DQ(3)/dh)
+    dc = sqrt(dh*dgravconst)
+    ddx = raddTriaData%p_Ddxdy(1,iel)
+    ddy = raddTriaData%p_Ddxdy(2,iel)
+    
+    dt = min(dt,dCFL/((du+dc)/ddx+(dv+dc)/ddy))
+    
+  end do
+  
+  
+  ! Deallocate memory
+  deallocate(IdofGlob,IelIdx)
+  
+end subroutine
+  
+  
 end module

@@ -1321,7 +1321,7 @@ contains
           
 
 !          ! Zylinders
-!          if (Dpoints(1,ipoint,iel)<10.0_dp) then
+!          if (Dpoints(1,ipoint,iel)<15.0_dp) then
 !            Dcoefficients (1,ipoint,iel)=1.5_dp
 !          else
 !            Dcoefficients (1,ipoint,iel)=1.0_dp
@@ -1857,6 +1857,7 @@ contains
   real(dp) :: dx, dy
   real(dp) :: dh, du, dv, dnormalPart, dtangentialPart
   real(dp), dimension(3) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
+  real(dp) :: dmaxEV
   
   
   
@@ -1992,6 +1993,37 @@ contains
 !      DfluxValues(ivar,1,ipoint,iel) = 0.0_dp
 !      end do
 !      end if
+
+!      ! *** Local Lax-Friedrichs flux *** (NOT WORKING)
+!      DQi = Dsolutionvalues(1,ipoint,iel,:)
+!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+!      
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DF1i = buildFlux(DQi,1)
+!      DF1a = buildFlux(DQa,1)
+!      DF2i = buildFlux(DQi,2)
+!      DF2a = buildFlux(DQa,2)
+!            
+!      ! Calculate Roevalues
+!      DQroe = calculateQroe(DQi,DQa)
+!      
+!      ! First calculate flux in x-direction
+!      DFx= 0.5_dp*(DF1i+DF1a)
+!      
+!      ! First calculate flux in y-direction
+!      DFy= 0.5_dp*(DF2i+DF2a)
+!                   
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = 0.5_dp*(DFx*normal(1,iel) + DFy*normal(2,iel))
+!      
+!      ! Get estimate for biggest eigenvalue
+!      dmaxEV = abs(normal(1,iel)*maxval(abs(buildEigenvalues(DQroe,1)))) + abs(normal(2,iel)*maxval(abs(buildEigenvalues(DQroe,2))))
+!      DFlux = DFlux - dmaxEV*(DQa - DQi)
+!      
+!      ! Save the calculated flux
+!      DfluxValues(:,1,ipoint,iel) = DFlux
+      
+      
       
     end do ! ipoint
   end do ! iel
