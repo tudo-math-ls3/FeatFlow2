@@ -2033,7 +2033,7 @@ ifeq ($(call optimise), YES)
 VERBOSEOPTFLAGS = \
          -m32 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
          --param l1-cache-line-size=64 --param l2-cache-size=3072 \
-	 -mtune=core2 -fPIC -ftree-vectorize
+	 -mtune=core2 -ftree-vectorize
 
 CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
 CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
@@ -2276,7 +2276,7 @@ ifeq ($(call optimise), YES)
 VERBOSEOPTFLAGS = \
          -m64 -march=core2 -msse4.1 -mcx16 -msahf --param l1-cache-size=32 \
          --param l1-cache-line-size=64 --param l2-cache-size=3072 \
-	 -mtune=core2 -fPIC -ftree-vectorize
+	 -mtune=core2 -ftree-vectorize
 
 CFLAGSF77LIBS := $(VERBOSEOPTFLAGS) $(CFLAGSF77LIBS)
 CFLAGSF77     := $(VERBOSEOPTFLAGS) $(CFLAGSF77)
