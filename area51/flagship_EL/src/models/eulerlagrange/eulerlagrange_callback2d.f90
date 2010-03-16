@@ -297,9 +297,10 @@ module eulerlagrange_callback2d
       ! midpoints of the element 
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
-      ! volumepart of the particles 
-      integer(I32) :: h_PartVol
-      real(DP), dimension(:), pointer :: p_PartVol
+      ! volume fraction of the particles 
+      integer(I32) :: h_PartVol, h_PartVolAver
+      real(DP), dimension(:), pointer :: p_PartVol, p_PartVolAver
+      integer :: iPartVolCount
       ! volumepart of the particles 
       integer(I32) :: h_PartVelox, h_PartVeloy
       real(DP), dimension(:), pointer :: p_PartVelox, p_PartVeloy
@@ -5158,10 +5159,11 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
 
     ! Local variables
-	integer :: i, current
+	integer :: i, current, ivt
 	real(DP) :: c_pi
 
-    rParticles%p_PartVol=0
+    rParticles%p_PartVol= 0
+    rParticles%iPartVolCount= rParticles%iPartVolCount+1
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -5199,6 +5201,10 @@ contains
 		                p_DelementVolume(current)
 
 	end do
+
+    do ivt= 1, p_rtriangulation%NVT
+        rParticles%p_PartVolAver(ivt)= rParticles%p_PartVolAver(ivt) + rParticles%p_PartVol(ivt)
+    end do
 
 
   end subroutine eulerlagrange_calcvolpart

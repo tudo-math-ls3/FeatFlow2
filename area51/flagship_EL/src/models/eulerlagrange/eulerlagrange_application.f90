@@ -486,6 +486,7 @@ module eulerlagrange_application
     call storage_free (rParticles%h_alpha_n)
     call storage_free (rParticles%h_bdy_time)
     call storage_free (rParticles%h_PartVol)
+    call storage_free (rParticles%h_PartVolAver)
 
 
   end subroutine eulerlagrange_app
@@ -1624,13 +1625,18 @@ module eulerlagrange_application
 
     ! persistent variable
     integer, save :: ifilenumber = 1
-    
+   
     ! local variables
     type(t_ucdExport) :: rexport
     type(t_vectorScalar) :: rvector1, rvector2, rvector3, rvector4, rvector5, rvector6
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
     character(len=SYS_NAMELEN) :: cvariable
-    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable
+    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable, ivt
+
+
+    ! Local variables
+	integer :: i, current
+	real(DP) :: c_pi
 
     ! Current particlenumber
     integer :: iPart
@@ -1776,6 +1782,19 @@ module eulerlagrange_application
             call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, rParticles%p_PartVol)
 
+          elseif (trim(cvariable) .eq. 'vol_partaver') then
+          
+            do ivt= 1, rproblemLevel%rtriangulation%NVT
+                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)/(rParticles%iPartVolCount+1)
+            end do
+          
+            call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, rParticles%p_PartVolaver)
+
+            do ivt= 1, rproblemLevel%rtriangulation%NVT
+                rParticles%p_PartVolaver(ivt)= rParticles%p_PartVolaver(ivt)*(rParticles%iPartVolCount+1)
+            end do
+
           else
 
             ! Standard treatment for scalar quantity
@@ -1854,7 +1873,12 @@ module eulerlagrange_application
          
               call ucd_addVariableVertexBased (rexport, cvariable,&
                 UCD_VAR_STANDARD, rParticles%p_PartVol)
-                
+ 
+           elseif (trim(cvariable) .eq. 'vol_partaver') then
+          
+            call ucd_addVariableVertexBased (rexport, cvariable,&
+                UCD_VAR_STANDARD, rParticles%p_PartVolAver)
+               
           else
             
             ! Standard treatment for scalar quantity
@@ -1912,10 +1936,7 @@ module eulerlagrange_application
     end do
 
     close(unit=20+rParticles%iTimestep)
-
-    ! Subroutine to calculate the velocity of the particles 
-    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
-  
+    
     rParticles%iTimestep=rParticles%iTimestep+1
 
   end subroutine eulerlagrange_outputSolution
@@ -3217,12 +3238,14 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_new ('euler_lagrange', 'Elements:midpoints', md_el_length, ST_DOUBLE, rParticles%h_midpoints_el, &
                             ST_NEWBLOCK_NOINIT)
     ! Volumepart of the particles
-    call storage_new ('euler_lagrange', 'Elements:particlevolume', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVol, &
+    call storage_new ('euler_lagrange', 'Vertices:particlevolume', p_rtriangulation%NVT, ST_DOUBLE, rParticles%h_PartVol, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Vertices:particlevolumeaver', p_rtriangulation%NVT, ST_DOUBLE, rParticles%h_PartVolAver, &
                             ST_NEWBLOCK_NOINIT)
     ! Velocity of the particles
-    call storage_new ('euler_lagrange', 'Elements:particlevelocityx', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVelox, &
+    call storage_new ('euler_lagrange', 'Vertices:particlevelocityx', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVelox, &
                             ST_NEWBLOCK_NOINIT)
-    call storage_new ('euler_lagrange', 'Elements:particlevelocityy', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVeloy, &
+    call storage_new ('euler_lagrange', 'Vertices:particlevelocityy', p_rtriangulation%NEL, ST_DOUBLE, rParticles%h_PartVeloy, &
                             ST_NEWBLOCK_NOINIT)
    
     call storage_getbase_double (rParticles%h_xpos, rParticles%p_xpos)
@@ -3254,6 +3277,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_double (rParticles%h_bdy_time, rParticles%p_bdy_time)
 
     call storage_getbase_double (rParticles%h_PartVol, rParticles%p_PartVol)
+    call storage_getbase_double (rParticles%h_PartVolAver, rParticles%p_PartVolAver)
     call storage_getbase_double (rParticles%h_PartVelox, rParticles%p_PartVelox)
     call storage_getbase_double (rParticles%h_PartVeloy, rParticles%p_PartVeloy)
     call storage_getbase_double2D (rParticles%h_midpoints_el, rParticles%p_midpoints_el)
@@ -3316,6 +3340,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%iTimestep= 0
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0
+    rParticles%p_PartVolAver= 0
     rParticles%p_PartVelox= 0
     rParticles%p_PartVeloy= 0
 
@@ -3594,6 +3619,10 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
     ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
+
+    ! Subroutine to calculate the velocity of the particles 
+    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
+
 
 end subroutine eulerlagrange_step
 

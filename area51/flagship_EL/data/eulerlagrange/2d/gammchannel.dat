@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 5000
+nPart = 50000
 
 
 #-------------------------------------------------------------------------------
@@ -287,13 +287,14 @@ sucdsolution = out/gammchannel
 sucderror = out/gammchannel_error
 
 # variables for ucd output
-sucdvariable(6) =
+sucdvariable(7) =
  density
  velocity
  energy
  pressure
  velo_part
  vol_part
+ vol_partaver
 
 
 ################################################################################
