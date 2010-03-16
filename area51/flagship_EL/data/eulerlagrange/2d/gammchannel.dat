@@ -278,7 +278,7 @@ istabilisation = 1
 iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.001
+dstepUCD = 0.01
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel

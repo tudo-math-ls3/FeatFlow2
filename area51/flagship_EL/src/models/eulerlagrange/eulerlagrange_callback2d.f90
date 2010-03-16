@@ -5188,15 +5188,15 @@ contains
 		rParticles%p_PartVol(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(1,current)) + &
 		                (abs(rParticles%p_lambda1(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
-		                p_DelementVolume(p_IverticesAtElement(1,current))
+		                p_DelementVolume(current)
 		rParticles%p_PartVol(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(2,current)) + &
 		                (abs(rParticles%p_lambda2(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
-		                p_DelementVolume(p_IverticesAtElement(2,current))
+		                p_DelementVolume(current)
 		rParticles%p_PartVol(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVol(p_IverticesAtElement(3,current)) + &
 		                (abs(rParticles%p_lambda3(i))*c_pi*0.25_dp*rParticles%p_diam(i)**2.0_dp)/&
-		                p_DelementVolume(p_IverticesAtElement(3,current))
+		                p_DelementVolume(current)
 
 	end do
 
@@ -5270,7 +5270,7 @@ contains
 		rParticles%p_PartVelox(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVelox(p_IverticesAtElement(2,current)) + &
 		                (rParticles%p_xvelo(i))/&
-		                p_DelementVolume(p_IverticesAtElement(2,current))
+		                p_DelementVolume(current)
 		rParticles%p_PartVelox(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVelox(p_IverticesAtElement(3,current)) + &
 		                (rParticles%p_xvelo(i))/&
@@ -5278,7 +5278,7 @@ contains
 		rParticles%p_PartVeloy(p_IverticesAtElement(1,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(1,current)) + &
 		                (rParticles%p_yvelo(i))/&
-		                p_DelementVolume(p_IverticesAtElement(1,current))
+		                p_DelementVolume(current)
 		rParticles%p_PartVeloy(p_IverticesAtElement(2,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(2,current)) + &
 		                (rParticles%p_yvelo(i))/&
@@ -5286,7 +5286,7 @@ contains
 		rParticles%p_PartVeloy(p_IverticesAtElement(3,current))= &
 		                rParticles%p_PartVeloy(p_IverticesAtElement(3,current)) + &
 		                (rParticles%p_yvelo(i))/&
-		                p_DelementVolume(p_IverticesAtElement(3,current))
+		                p_DelementVolume(current)
 
 	end do
 

@@ -1912,7 +1912,10 @@ module eulerlagrange_application
     end do
 
     close(unit=20+rParticles%iTimestep)
-    
+
+    ! Subroutine to calculate the velocity of the particles 
+    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
+  
     rParticles%iTimestep=rParticles%iTimestep+1
 
   end subroutine eulerlagrange_outputSolution
@@ -3591,10 +3594,6 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
     ! Subroutine to calculate the volume part of the particles
     call eulerlagrange_calcvolpart(p_rproblemLevel,rParticles)
-
-    ! Subroutine to calculate the velocity of the particles 
-    call eulerlagrange_calcvelopart(p_rproblemLevel,rParticles)
-
 
 end subroutine eulerlagrange_step
 
