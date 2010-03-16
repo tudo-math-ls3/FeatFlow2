@@ -47,6 +47,7 @@
 		<Filter Name="1D"/>
 		<Filter Name="2D">
 		<File RelativePath="..\src\shallowwater2d.f90"/>
+		<File RelativePath="..\src\shallowwater2d_callback.f90"/>
 		<File RelativePath="..\src\shallowwater2d_routines.f90"/></Filter>
 		<Filter Name="3D"/>
 		<Filter Name="main">

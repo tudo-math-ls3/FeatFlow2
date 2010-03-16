@@ -20,7 +20,7 @@ module shallowwater2d_routines
   end type t_array
 
 integer, parameter :: scalardisstype = 1
-  ! integer, parameter				:: nvar2d = 3
+   !integer, parameter				:: nvar2d = 3
   
   
   integer, parameter :: deltabtype = 3
