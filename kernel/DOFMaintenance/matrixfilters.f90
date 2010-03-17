@@ -470,12 +470,11 @@ contains
   
 !<description>
   ! Modifies a scalar matrix to add an additional equation which implements
-  ! $int_{\Omega) v = 0$ for all $v$. This adds another row to the matrix
-  ! which sums up all vector entries when being applied to a vector.
-  ! Note that this produces a rectangular matrix with NROW+1 rows in comparison
-  ! to the original one!
+  ! <tex>$\int_{\Omega} v = 0$</tex> for all <tex>$v$</tex>. This adds another row to the
+  ! matrix which sums up all vector entries when being applied to a vector.  Note that
+  ! this produces a rectangular matrix with NROW+1 rows in comparison to the original one!
   !
-  ! This filter can be used e.g. to impose the condition $int_{\Omega) v = 0$
+  ! This filter can be used e.g. to impose the condition <tex>$\int_{\Omega} v = 0$</tex>
   ! to a matrix which is passed to an external linear solver (like UMFPACK)
   ! which cannot use filtering to cope with indefiniteness!
   !

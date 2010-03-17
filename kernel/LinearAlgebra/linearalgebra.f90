@@ -6341,7 +6341,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(SP) function lalg_normSngl (Fx,cnorm,iposMax,n) result(resnorm)
   
@@ -6373,7 +6373,7 @@ contains
   ! -1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   real(SP) :: SASUM, SNRM2
   integer :: ISAMAX
@@ -6423,7 +6423,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(DP) function lalg_normDble (Dx,cnorm,iposMax,n) result(resnorm)
   
@@ -6456,7 +6456,7 @@ contains
   ! -1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   real(DP) :: DASUM,DNRM2
   integer :: IDAMAX
@@ -6506,7 +6506,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(QP) function lalg_normQuad (Qx,cnorm,iposMax,n) result(resnorm)
   
@@ -6539,7 +6539,7 @@ contains
   ! -1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   !real(QP) :: QASUM,QNRM2,IQAMAX
 
@@ -6624,7 +6624,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(SP) function lalg_errorNormSngl (Fx,Fy,cnorm,iposMax,n) result(resnorm)
   
@@ -6657,7 +6657,7 @@ contains
   ! < 0 >1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   real(SP) :: stemp
   integer :: i,j,isize
@@ -6727,7 +6727,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(DP) function lalg_errorNormDble (Dx,Dy,cnorm,iposMax,n,Dw) result(resnorm)
   
@@ -6765,7 +6765,7 @@ contains
   ! -1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   real(DP) :: dtemp
   integer :: i,j,isize
@@ -6851,7 +6851,7 @@ contains
 
   ! ***************************************************************************
 
-!<subroutine>
+!<function>
 
   real(QP) function lalg_errorNormQuad (Qx,Qy,cnorm,iposMax,n,Qw) result(resnorm)
   
@@ -6889,7 +6889,7 @@ contains
   ! -1, if an error occurred (unknown norm).
 !</result>
   
-!</subroutine>
+!</function>
 
   real(QP) :: qtemp
   integer :: i,j,isize

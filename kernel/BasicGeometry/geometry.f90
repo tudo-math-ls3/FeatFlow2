@@ -800,7 +800,7 @@ module geometry
 ! *****************************************************************************  
   
 !<typeblock> 
-  ! The 3d version of a particle descriptor, see above for a describtion
+  ! The 3d version of a particle descriptor, see above for a description
   type t_particleDescriptor3D
   
     ! this routines initializes a Particle collection
@@ -2853,7 +2853,7 @@ end subroutine
   ! This routine calculates the projection of a point onto an ellipse's
   ! boundary.
   !
-  ! This is probably the most complicated routine in this module ^_^
+  ! This is probably the most complicated routine in this module
   ! The algorithm for the projection was based on the following paper:
   !
   ! -> David Eberly - Distance from a Point to an Ellipse in 2D
@@ -6015,6 +6015,8 @@ end subroutine
   
 ! ***************************************************************************
 
+!<subroutine>
+
   subroutine geom_ellipsoid_calcSignedDistance (rgeomObject, Dcoord, ddistance)
 
 !<description>
@@ -6114,6 +6116,8 @@ end subroutine
   
   ! ***************************************************************************
   
+!<subroutine>
+
   subroutine geom_triangulate(rgeomObject, hpolyHandle, bconvertToWorld)
                               
 !<description>

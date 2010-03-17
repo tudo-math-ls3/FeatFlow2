@@ -179,8 +179,8 @@ contains
     ! e.g., if NVT vertices numbered by 1..NVT are present in the graph so
     ! that the table look-up can be performed in time O(1). If the graph 
     ! consists of NVT vertices which can be labeled arbitrarily, e.g.,
-    ! 1.. (1^k)*NVT, k>> 1, then an enormous amount of memory would be wasted
-    ! for the look-up tables. Then it makes sense to define the graph as
+    ! <tex>1.. ($1^k$)*NVT, k >> 1</tex>, then an enormous amount of memory would be
+    ! wasted for the look-up tables. Then it makes sense to define the graph as
     ! "not dense". In this case, the tables are used sequentially if new
     ! vertices are inserted but finding the correct table number for vertex
     ! ivt requires a search in the binary tree, i.e. time O(log NVT).

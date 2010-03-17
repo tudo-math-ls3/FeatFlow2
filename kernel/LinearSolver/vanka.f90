@@ -13004,7 +13004,7 @@ contains
     !     Block Gauss-Seidel on Schur Complement
     !=======================================================================
     !
-    ! If you need a describtion with fancy ASCII arts abou the algorithm
+    ! If you need a description with fancy ASCII arts abou the algorithm
     ! that is implemented below, scroll up to the 2D version.
 
     ! So we start with a loop over all elements
@@ -13293,7 +13293,7 @@ contains
     !     Block Gauss-Seidel on Schur Complement
     !=======================================================================
     !
-    ! If you need a describtion with fancy ASCII arts abou the algorithm
+    ! If you need a description with fancy ASCII arts abou the algorithm
     ! that is implemented below, scroll up to the 2D version.
 
     ! So we start with a loop over all elements

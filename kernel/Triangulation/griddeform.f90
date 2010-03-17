@@ -338,6 +338,7 @@ module griddeform
 contains
 
 !<subroutine>
+
   subroutine griddef_deformationInit(rgriddefInfo,NLMIN,NLMAX,rboundary,iStyle,iadaptSteps,iodesteps)
   
 !<description>
@@ -1031,13 +1032,13 @@ contains
     !
   !</description>
 
-  !<inputout>
+  !<inputoutput>
     ! structure containing all parameter settings for grid deformation
     type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     integer, intent(in) :: iLevel
 
-  !</inputout>
+  !</inputoutput>
 
     ! A callback routine for the monitor function
     include 'intf_monitorfct.inc'
@@ -1088,10 +1089,10 @@ contains
     ! level. 
   !</description>
 
-  !<inputout>
+  !<inputoutput>
     ! structure containing all parameter settings for grid deformation
     type(t_griddefInfo), intent(inout) :: rgriddefInfo
-  !</inputout>
+  !</inputoutput>
 
 !</subroutine>
 
@@ -1242,14 +1243,15 @@ contains
     ! level. 
   !</description>
 
-  !<inputout>
+  !<inputoutput>
     ! structure containing all parameter settings for grid deformation
     type(t_griddefInfo), intent(inout) :: rgriddefInfo
 
     ! this function should get the current level, do dedide, if
     ! the number of steps should be adaptively on this level.
+  !</inputoutput>
     
-!<\subroutine>
+!</subroutine>
 
     ! local variables
     integer :: ilevel,idef
@@ -1928,7 +1930,8 @@ contains
   
   !****************************************************************************
 
-!<subroutine>    
+!<subroutine>
+
   subroutine griddef_normaliseFctsInvAux(rgriddefInfo,iLevel,&
                                          dValue1,dValue2,dOm)
 
@@ -1946,8 +1949,6 @@ contains
   integer, intent(in) :: iLevel
 
 !</inputoutput>
-
-!</subroutine>
 
 !<output>
   ! Array receiving the calculated error.

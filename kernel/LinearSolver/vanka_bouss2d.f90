@@ -57,19 +57,19 @@
 !# 
 !# 1.) Solve the last equation to get the temperature t:
 !#
-!#                         t := N^-1 * f_t
+!#     <tex> $$                  t := N^-1 * f_t  $$ </tex>
 !#
 !# 2.) Calculate the Schur-Complement of A:
 !#
-!#                       S := -C + D * A^-1 * B
+!#     <tex> $$                  S := -C + D * A^-1 * B  $$ </tex>
 !#
 !# 3.) Calculate pressure:
 !#
-!#          p := S^-1 * (D * A^-1 * (f_u - M * t) + K * t - f_p)
+!#     <tex> $$ p := S^-1 * (D * A^-1 * (f_u - M * t) + K * t - f_p) $$ </tex>
 !#
 !# 4.) Calculate velocity:
 !#
-!#                   u := A^-1 * (f_u - M * t - B * p)
+!#     <tex> $$ u := A^-1 * (f_u - M * t - B * p) $$ </tex>
 !#
 !# </purpose>
 !##############################################################################
@@ -97,8 +97,6 @@ module vanka_bouss2d
 
 !<constantblock description="Vanka type identifiers for the 2D Boussinesq Class">
 
-!</constantblock>
-
   ! Diagonal-type VANKA
   integer, parameter, public :: VANKATP_BOUSS2D_DIAG       = 0
 
@@ -111,7 +109,9 @@ module vanka_bouss2d
   ! Pressure-DOF based VANKA, fast variant ("SPSOR")
   integer, parameter, public :: VANKATP_BOUSS2D_PDOF_FAST  = 3
 
-!<constants>
+!</constantblock>
+
+!</constants>
 
 
 !<types>
@@ -884,6 +884,8 @@ contains
 
   ! ***************************************************************************
 
+!<subroutine>
+
   subroutine vanka_BS2D_Q1TQ0Q1_js(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
@@ -1328,6 +1330,8 @@ contains
 
   ! ***************************************************************************
   
+!<subroutine>
+
   subroutine vanka_BS2D_Q1TQ0Q1_bd(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>
@@ -1791,6 +1795,8 @@ contains
 
   ! ***************************************************************************
   
+!<subroutine>
+
   subroutine vanka_BS2D_Q1TQ0Q1_fc(rvanka, rvector, rrhs, domega, IelementList)
   
 !<description>

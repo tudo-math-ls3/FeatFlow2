@@ -100,10 +100,10 @@
 !#   =0 in the other corner points. Outside of this patch, the function
 !#   is identically =0.
 !#
-!#   If you call one such a function $phi_i$, the whole function 
-!#   $u:R^2 \to R$ is then defined as a sum
+!#   If you call one such a function <tex>$phi_i$</tex>, the whole function 
+!#   <tex>$u:R^2 \to R$</tex> is then defined as a sum
 !#
-!#     $$ u(x,y) = \sum_i  u_i  phi_i(x,y) $$
+!#     <tex>$$ u(x,y) = \sum_i  u_i  phi_i(x,y) $$</tex>
 !#
 !#   where the coefficients $u_i$ can be modified to change the whole
 !#   function. This set ${u_i}$ are called "Degrees of Freedom" of the FE

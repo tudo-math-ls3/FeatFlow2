@@ -514,7 +514,7 @@ contains
     type(t_stack), intent(inout) :: rstack
     real(DP), intent(inout) :: ddata
 !</inputoutput>
-!</function>
+!</subroutine>
 
     real(DP), dimension(:), pointer :: StackData
     

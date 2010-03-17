@@ -47,6 +47,7 @@ module vanka_optcontrol
   integer, parameter, public :: VANKATP_NAVSTOPTC2D_DIAG = 0
 
 !</constantblock>
+!</constants>
 
 !<types>
 

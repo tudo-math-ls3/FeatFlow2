@@ -23,7 +23,7 @@
 !#
 !#   These filters realise simple vector filters like 
 !#   - implementation of Dirichlet boundary conditions
-!#   - filter a vector to be in $L^2_0$
+!#   - filter a vector to be in <tex>$L^2_0$</tex>
 !#   or similar.
 !#   The name comes from the ability to be able to be used as a filter
 !#   when solving a *linear system*. Some iterative solvers like BiCGStab
@@ -61,7 +61,7 @@
 !#
 !#  1.) vecfil_normaliseToL20Sca
 !#      -> Linear filter
-!#      -> Normalise a scalar vector to be in the space $L^2_0$.
+!#      -> Normalise a scalar vector to be in the space <tex>$L^2_0$</tex>.
 !#
 !#  2.) vecfil_discreteBCsol
 !#      -> Linear filter
@@ -95,7 +95,7 @@
 !#
 !#  8.) vecfil_subvectorToL20
 !#      -> Linear filter
-!#      -> Normalise a subvector of a block vector to be in the space $L^2_0$.
+!#      -> Normalise a subvector of a block vector to be in the space <tex>$L^2_0$</tex>.
 !#
 !#  9.) vecfil_discreteNLSlipBCdef
 !#      -> Nonlinear filter
@@ -122,7 +122,7 @@
 !#      -> scalar vector.
 !#
 !#  4.) vecfil_normaliseToL20Sca (rx)
-!#      -> Normalises a scalar vector to bring it into the space $L^2_0$.
+!#      -> Normalises a scalar vector to bring it into the space <tex>$L^2_0$</tex>.
 !#
 !#  5.) vecfil_imposePressureDropBC (rx,dtimeweight,rpdbcStructure)
 !#      -> Implements discrete pressure drop BC`s into a block vector.
@@ -554,7 +554,7 @@ contains
   subroutine vecfil_normaliseToL20Sca (rx)
 
 !<description>
-  ! This routine normalises a scalar vector to bring it into the space $L^2_0$.
+  ! This routine normalises a scalar vector to bring it into the space <tex>$L^2_0$</tex>.
 !</description>
   
 !<inputoutput>
@@ -1839,9 +1839,9 @@ contains
   subroutine vecfil_subvectorToL20 (rx,isubvector)
 
 !<description>
-  ! This routine realises the 'subvector to $L^2_0$' filter.
+  ! This routine realises the 'subvector to <tex>$L^2_0$</tex>' filter.
   ! The subvector isubvector of the block vector rx is normalised
-  ! with vecfil_normaliseScalarToL20 to bring it to the space $L^2_0$.
+  ! with vecfil_normaliseScalarToL20 to bring it to the space <tex>$L^2_0$</tex>.
 !</description>
   
 !<inputoutput>

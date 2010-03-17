@@ -176,6 +176,8 @@ contains
 
 !************************************************************************
 
+!<subroutine>
+
   subroutine error_print_aux(&
        iline, sfile, icode, sroutine, bcritical, &
        iarg1, iarg2, &

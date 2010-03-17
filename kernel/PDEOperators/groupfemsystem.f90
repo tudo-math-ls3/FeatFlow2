@@ -507,6 +507,7 @@ contains
 
   ! *****************************************************************************
 
+!<subroutine>
   subroutine gfsys_initStabilisationScalar(rmatrixTemplate, rafcstab,&
       NVARtransformed)
 

@@ -227,7 +227,8 @@ contains
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
-  ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
   type(t_vectorBlock), intent(in) :: rcorrVector
   
   ! Either NULL() or a pointer to a filter chain which must be applied
@@ -244,7 +245,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! The optimal correction parameter $\alpha$ for the coarse grid correction.
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
   real(DP), intent(out) :: dalpha
 !</output>
 
@@ -306,7 +307,8 @@ contains
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
-  ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
   type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
@@ -323,7 +325,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! The optimal correction parameter $\alpha$ for the coarse grid correction.
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
   real(DP), intent(out) :: dalpha
 !</output>
 
@@ -399,7 +401,8 @@ contains
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
-  ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
   type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
@@ -419,7 +422,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! The optimal correction parameter $\alpha$ for the coarse grid correction.
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
   real(DP), intent(out) :: dalpha
 !</output>
 
@@ -504,7 +507,8 @@ contains
   ! The correction vector which war calculated with the coarse grid
   ! and is to be added to the solution vector:
   !   x = x + alpha * correction
-  ! (with correction=$P^{-1}(b-Ax)$ and $P^{-1}=$multigrid on the coarse level.
+  ! (with correction=<tex>$P^{-1}(b-Ax)$</tex> and <tex>$P^{-1}=$</tex> multigrid on the
+  ! coarse level.
   type(t_vectorBlock), intent(in) :: rcorrVector
 
   ! Either NULL() or a pointer to a filter chain which must be applied
@@ -521,7 +525,7 @@ contains
 !</inputoutput>
 
 !<output>
-  ! The optimal correction parameter $\alpha$ for the coarse grid correction.
+  ! The optimal correction parameter <tex>$\alpha$</tex> for the coarse grid correction.
   real(DP), intent(out) :: dalpha
 !</output>
 

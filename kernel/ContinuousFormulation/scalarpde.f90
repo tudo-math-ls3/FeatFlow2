@@ -39,8 +39,8 @@ module scalarpde
   !
   ! Example: Let us take a look at the 2D equation
   !
-  !    $   \int_{\Omega}  ( \nabla u , \nabla v )  dx $
-  !    $ = \int_{\Omega}  1*u_x*v_x  +  1*u_y*v_y  dx $
+  !    <tex>$   \int_{\Omega}  ( \nabla u , \nabla v )  dx $</tex>
+  !    <tex>$ = \int_{\Omega}  1*u_x*v_x  +  1*u_y*v_y  dx $</tex>
   !
   ! This bilinear form consists of two additive terms. Both terms have
   ! a constant coefficient '1' in front of them and consist of a combination
@@ -97,13 +97,13 @@ module scalarpde
   !
   ! Example: For w:R2->R let us take a look at the 2D equation
   !
-  !    $   \int_{\Omega}  w ( \nabla u , \nabla v )  dx $
-  !    $ = \int_{\Omega}  ( F(w) \nabla u , \nabla v )  dx $
-  !    $ = \int_{\Omega}  f_1(w)*1*u_x*v_x  +  f_2(w)*1*u_y*v_y  dx $
-  !    $ = \int_{\Omega}  w*1*u_x*v_x  +  w*1*u_y*v_y  dx $
+  !    <tex>$   \int_{\Omega}  w ( \nabla u , \nabla v )  dx $</tex>
+  !    <tex>$ = \int_{\Omega}  ( F(w) \nabla u , \nabla v )  dx $</tex>
+  !    <tex>$ = \int_{\Omega}  f_1(w)*1*u_x*v_x  +  f_2(w)*1*u_y*v_y  dx $</tex>
+  !    <tex>$ = \int_{\Omega}  w*1*u_x*v_x  +  w*1*u_y*v_y  dx $</tex>
   !
-  ! with $F=matrix([f_1,0],[0,f_2])$ specifying derivative quantifiers
-  ! to be applied to w, here e.g. $f_1(w) = f_2(w) = w$.
+  ! with <tex>$F=matrix([f_1,0],[0,f_2])$</tex> specifying derivative quantifiers
+  ! to be applied to w, here e.g. <tex>$f_1(w) = f_2(w) = w$</tex>.
   !
   ! This trilinear form consists of two additive terms. Both terms have
   ! a constant coefficient '1' in front of them and consist of a combination
@@ -169,8 +169,8 @@ module scalarpde
   !
   ! Example: Let us take a look at the 2D equation
   !
-  !    $   \int_{\Omega}  ( f, v )   dx $
-  !    $ = \int_{\Omega}  1*f*v      dx $
+  !    <tex>$   \int_{\Omega}  ( f, v )   dx $</tex>
+  !    <tex>$ = \int_{\Omega}  1*f*v      dx $</tex>
   !
   ! This bilinear form consists of one additive term. The term has
   ! a constant coefficient '1' in front and consist of a combination

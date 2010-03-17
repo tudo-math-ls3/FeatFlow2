@@ -110,7 +110,7 @@
 !# There is no support for the 'mlprj_performInterpolation' routine using
 !# L2-projection, and it is NOT planned to implement it! If you want to
 !# restrict a solution vector using L2-projection you will need to do it by
-!# yourself ^_^
+!# yourself
 !# 
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# --> Some notes on the matrix-based grid transfer <--
@@ -128,7 +128,7 @@
 !# There is no support for the 'mlprj_performInterpolation' routine using
 !# matrix-based grid transfer, and it is NOT planned to implement it! If you
 !# want to restrict a solution vector using a matrix you will need to do it
-!# by yourself ^_^
+!# by yourself
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# --> Some notes on the projection hierarchy <--
@@ -10418,7 +10418,7 @@ contains
 !<inputoutput>
   ! The scalar projection structure for which the matrices are to be set.
   type(t_interlevelProjectionScalar), intent(inout) :: rprojection 
-!</inputout>
+!</inputoutput>
 
 !</subroutine>
 
@@ -10664,7 +10664,7 @@ contains
 !<inputoutput>
   ! The scalar projection structure for which the matrix is to be set.
   type(t_interlevelProjectionScalar), intent(inout) :: rprojection 
-!</inputout>
+!</inputoutput>
 
 !</subroutine>
 

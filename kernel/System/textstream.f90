@@ -450,11 +450,11 @@ contains
   type(t_textstream), intent(in) :: rtextstream
 !</input>
 
-!<returns>
+!<result>
   ! true, if the read position is at the end of the stream.
-!</returns>
+!</result>
 
-!</subroutine>
+!</function>
 
     tstream_eof = rtextstream%ipositionRead .ge. rtextstream%ipositionWrite
 
@@ -475,11 +475,11 @@ contains
   type(t_textstream), intent(in) :: rtextstream
 !</input>
 
-!<returns>
+!<result>
   ! Number of lines in the buffer.
-!</returns>
+!</result>
 
-!</subroutine>
+!</function>
 
     tstream_length = rtextstream%ilineCount
 
@@ -500,11 +500,11 @@ contains
   type(t_textstream), intent(in) :: rtextstream
 !</input>
 
-!<returns>
+!<result>
   ! Current line number.
-!</returns>
+!</result>
 
-!</subroutine>
+!</function>
 
     tstream_pos = rtextstream%icurrentLine
 

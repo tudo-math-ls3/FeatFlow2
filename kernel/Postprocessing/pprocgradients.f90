@@ -227,6 +227,8 @@ contains
 
   !****************************************************************************
 
+!<subroutine>
+
   subroutine ppgrd_calcGradientError (rvectorScalar, derror, cgradType,&
                                       cgradSubtype, rerror)
 

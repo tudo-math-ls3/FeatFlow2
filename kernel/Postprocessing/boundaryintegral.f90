@@ -504,6 +504,8 @@ contains
 
   !****************************************************************************
 
+!<subroutine>
+
   subroutine ffunctionFEevaluation2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
         Dvalues, rcollection)
     
@@ -653,6 +655,8 @@ contains
   end subroutine
 
   !****************************************************************************
+
+!<subroutine>
 
   subroutine ffunctionNormalDeriv2D (DpointsRef, Dpoints, ibct, DpointPar, Ielements, &
         Dvalues, rcollection)

@@ -318,12 +318,12 @@ module externalstorage
 
 !</types>
 
-!<globals>
+!<publicvars>
 
   ! Global memory management structure
   type(t_exstorageBlock), save, target :: rbaseExternal
 
-!</globals>
+!</publicvars>
 
   interface exstor_new
     module procedure exstor_new1D

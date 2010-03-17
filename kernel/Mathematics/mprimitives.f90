@@ -1705,6 +1705,8 @@ contains
 
   !************************************************************************
 
+!<subroutine>
+
   subroutine mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
 
 !<description>
@@ -2268,6 +2270,8 @@ contains
 
   !************************************************************************
 
+!<subroutine>
+
   subroutine mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
@@ -2349,6 +2353,8 @@ contains
   end subroutine mprim_SVD_backsubst1
 
   !************************************************************************
+
+!<subroutine>
 
   subroutine mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 

@@ -3554,10 +3554,14 @@ contains
     write(iunit,FMT='(A)')
     write(iunit,FMT='(A)') '<!-- Created with Featflow2 (http://www.featflow.de/) -->'
     write(iunit,FMT='(A)')
+!<!--
+    ! Hide this block from the automatic documentation parser to prevent
+    ! strings like "<polygon" being regarded as XML tags:
     write(iunit,FMT='(A)') '<svg version="1.0"'
     write(iunit,FMT='(A)') ' xmlns="http://www.w3.org/2000/svg"'
     write(iunit,FMT='(A)') ' xmlns:xlink="http://www.w3.org/1999/xlink"'
-    
+
+ 
     if (present(width)) then
       xsize=width
     else
@@ -3724,7 +3728,7 @@ contains
     write(iunit,FMT='(A)') ']]>'
     write(iunit,FMT='(A)') '</script>'
     write(iunit,FMT='(A)') '</defs>'
-       
+
     !---------------------------------------------------------------------------
     ! Output all elements
     !---------------------------------------------------------------------------
@@ -3750,7 +3754,7 @@ contains
                MARK_ASIS_QUAD)
             write(iunit,FMT='(A)') '<polygon id="el'//trim(sys_siL(iel,9))//&
                 '" fill="white" stroke="black" stroke-width="1"'
-            
+
           ! Element is marked for green refinement
           case(MARK_REF_TRIA2TRIA_1,&
                MARK_REF_TRIA2TRIA_2,&
@@ -4102,6 +4106,8 @@ contains
     ! Close XML-file
     write(iunit,FMT='(A)') '</svg>'
     close(iunit)
+
+    ! Unhide from here from the automatic documentation parser: -->
 
   end subroutine hadapt_writeGridSVG2D
 

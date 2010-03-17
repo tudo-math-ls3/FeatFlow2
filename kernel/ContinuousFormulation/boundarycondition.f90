@@ -224,7 +224,7 @@ module boundarycondition
     integer :: ctype = BC_DONOTHING
     
     ! Number of equations, this BC refers to. This is usually =1 but can be
-    ! higher if the BC couples multiple equations (like $u_x + u_y = c$ or so).
+    ! higher if the BC couples multiple equations (like <tex>$u_x + u_y = c$</tex> or so).
     ! Normally, this is the length of the Iequations list below, but the 
     ! meaning might be different for special type BC`s.
     integer :: nequations = 0

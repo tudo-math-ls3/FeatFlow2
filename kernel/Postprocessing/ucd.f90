@@ -6617,6 +6617,7 @@ contains
   ! The ucd export structure containing data.
   type(t_ucdExport), intent(in) :: rexport
 !</input>
+!</subroutine>
 
     integer :: i
 

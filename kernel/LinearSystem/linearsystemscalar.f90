@@ -3269,7 +3269,7 @@ contains
 
   !****************************************************************************
 
-!<subroutine>
+!<function>
   
   real(DP) function lsyssc_scalarProduct (rx, ry)
   
@@ -3290,7 +3290,7 @@ contains
   ! The scalar product (rx,ry) of the two vectors.
 !</result>
 
-!</subroutine>
+!</function>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata1dp
@@ -3349,7 +3349,7 @@ contains
   end function
 
   !****************************************************************************
-!<subroutine>
+!<function>
   
   real(DP) function lsyssc_scalarProductMatVec (rx, ry)
   
@@ -3371,7 +3371,7 @@ contains
   ! The scalar product (rx,ry) of the two vectors.
 !</result>
 
-!</subroutine>
+!</function>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata1dp
@@ -9746,7 +9746,7 @@ contains
   end subroutine
   
   !****************************************************************************
-!<subroutine>
+!<function>
   
   real(DP) function lsyssc_vectorNorm (rx,cnorm,iposMax)
   
@@ -9779,7 +9779,7 @@ contains
   ! The scalar product (rx,ry) of the two block vectors.
 !</result>
 
-!</subroutine>
+!</function>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata
@@ -9817,10 +9817,10 @@ contains
   subroutine lsyssc_invertedDiagMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
-  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
+  ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
   ! of the matrix rmatrix with the vector rvectorSrc and stores the result 
   ! into the vector rvectorDst:
-  !   $$rvectorDst = dscale * D^{-1} * rvectorSrc$$
+  !   <tex>$$rvectorDst = dscale * D^{-1} * rvectorSrc$$ </tex>
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   

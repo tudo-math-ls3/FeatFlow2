@@ -7260,6 +7260,8 @@ p_InodalPropertyDest = -4711
 
   ! ***************************************************************************************
 
+!<subroutine>
+
   subroutine tria_cellGroupGreedy (rtriangulation, ngroups, Icells, IcellIndex, IelementGroup)
   
 !<description>
@@ -7290,6 +7292,8 @@ p_InodalPropertyDest = -4711
   ! the ID of the group, that element belongs to.
   integer, dimension(:), intent(out) :: IelementGroup
 !</output>
+
+!</subroutine>
 
     ! local variables
     integer :: igroup, ibdelement, ifreeelement, iel, ineigh, nfreeelements, ive
@@ -11034,6 +11038,8 @@ p_InodalPropertyDest = -4711
 
   contains
 
+  !<subroutine>
+
     subroutine convert_QuadToTria (nel, nelquad, IverticesAtElement, Kvert_triang)
 
   !<description>
@@ -11060,6 +11066,8 @@ p_InodalPropertyDest = -4711
     ! array [1..4,1..nel+nelquad] of integer
     integer, dimension(:,:), intent(out)  :: Kvert_triang
   !</output>
+
+  !</subroutine>
   
       ! local variables
       integer :: i,j

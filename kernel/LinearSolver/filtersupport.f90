@@ -31,7 +31,7 @@
 !#   to apply such a filter chain to a vector or a matrix.
 !#   Examples for such filters are:
 !#   - Implement Dirichlet boundary conditions into a matrix/vector,
-!#   - Filter a vector to be in $L^2_0$.
+!#   - Filter a vector to be in <tex>$L^2_0$</tex>.
 !#
 !# b) 'Nonlinear' filters are usually used inside of a nonlinear loop.
 !#   Filters of this type are somehow 'special', as they usually need
@@ -70,7 +70,7 @@
 !#    The above initialisation sets up a filter chain the implementation 
 !#    of Dirichlet boundary conditions on the real boundary and on 
 !#    fictitious boundary components to a vector and filters the 3rd 
-!#    component of a block vector into the space $L^2_0$.
+!#    component of a block vector into the space <tex>$L^2_0$</tex>.
 !#
 !# c) Either apply the filter chain to a matrix or vector, e.g.
 !#
@@ -161,7 +161,7 @@ module filtersupport
   ! fictitious boundary into a matrix.
   integer, parameter, public :: FILTER_DISCBCMATFICT     =  8
 
-  ! Vector filter for bringing a subvector of a vector to the space $L^2_0$.
+  ! Vector filter for bringing a subvector of a vector to the space <tex>$L^2_0$</tex>.
   integer, parameter, public :: FILTER_TOL20             =  9
 
   ! Vector filter for bringing the vector sum (small l1-norm) to mean value 0.
@@ -186,7 +186,7 @@ module filtersupport
     
     ! Information tag for the TOL20 filter if ifilterType=FILTER_TOL20:
     ! Number of the subvector that should be filtered to be in the
-    ! space $L^2_0$.
+    ! space <tex>$L^2_0$</tex>.
     integer                            :: itoL20component = 0
     
     ! Information tag for the SMALLL1TOL0 filter if ifilterType=FILTER_SMALLL1TO0:
@@ -273,11 +273,11 @@ contains
         call vecfil_discreteFBCdef (rx)
 
       case (FILTER_TOL20)
-        ! Bring the subvector itoL20component of rx to the space $L^2_0$:
+        ! Bring the subvector itoL20component of rx to the space <tex>$L^2_0$</tex>:
         call vecfil_subvectorToL20 (rx,RfilterChain(i)%itoL20component)
 
       case (FILTER_SMALLL1TO0)
-        ! Bring the subvector itoL20component of rx to the space $L^2_0$:
+        ! Bring the subvector itoL20component of rx to the space <tex>$L^2_0$</tex>:
         call vecfil_subvectorSmallL1To0 (rx,RfilterChain(i)%ismallL1to0component)
 
       case default

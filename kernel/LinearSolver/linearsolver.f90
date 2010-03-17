@@ -267,25 +267,25 @@
 !#
 !# A short explaination: Let us assume we want to solve a linear system:
 !#
-!#                  $$ Ax=b $$
+!#                  <tex>$$ Ax=b $$</tex>
 !#
-!# For this we have a linear solver $P^{-1} \approx A^{-1}$ (Gauss elimination
+!# For this we have a linear solver <tex>$P^{-1} \approx A^{-1}$</tex> (Gauss elimination
 !# or whatever), so we get our solution vector x by saying:
 !#
-!#                 $$ x = P^{-1} b $$
+!#                 <tex>$$ x = P^{-1} b $$</tex>
 !#
 !# This is the usual way how to deal with a linear system in Numrics 1,
 !# but it is a little bit hard to deal with in computer science. But we can
 !# deal with the linear system more easily if we perform a simple
 !# modification to this equation:
 !# 
-!#                          $$ Ax = b $$
+!# <tex>                    $$ Ax = b $$
 !# $$ \Rightarrow        P^{-1}Ax = P^{-1}b             $$ 
 !# $$ \Rightarrow               0 = P^{-1} (b-Ax)       $$
 !#
-!# $$ \Rightarrow         x_{n+1} = x_n  +  P^{-1} (b-Ax) $$
+!# $$ \Rightarrow         x_{n+1} = x_n  +  P^{-1} (b-Ax) $$</tex>
 !#
-!# So the linear solver $P^{-1}$ can equivalently be used in a defect
+!# So the linear solver <tex>$P^{-1}$</tex> can equivalently be used in a defect
 !# correction approach as a preconditioner for the defect $(b-Ax)$!
 !# This can obviously be done for every linear solver.
 !# So, this allows us to make a normalisation: 
@@ -300,11 +300,11 @@
 !# The xxx_solve routines are all formulated that way, that they accept
 !# the defect vector $d := (b-Ax)$ and overwrite it by the preconditioned
 !# defect: 
-!#             $$ d := P^{-1}d $$
+!#    <tex>    $$ d := P^{-1}d $$   </tex>
 !#
 !# which is actually the same as solving the linear system 
 !#
-!#             $$ Pd_{new} = d $$ 
+!#    <tex>    $$ Pd_{new} = d $$   </tex>
 !#
 !# with the right hand side $d$ being a defect vector given from outside. 
 !# Solving $Pd_{new} = d$ can then be done by an arbitrary linear solver, 
@@ -320,7 +320,7 @@
 !#   When calling this routine with x:=0, the defect is exactly the RHS, so
 !#   this routine falls back to the solution method known from Numerics 1:
 !#
-!#      $$  x_{new}  =  x + P^{-1}(b-Ax)  =  P^{-1}b  $$
+!#  <tex>  $$  x_{new}  =  x + P^{-1}(b-Ax)  =  P^{-1}b  $$   </tex>
 !#
 !#  FAQ - Frequently asked Questions
 !# ----------------------------------
@@ -377,8 +377,8 @@
 !#     Yes, i have only the Jacobi preconditioner. To get a Jacobi iteration,
 !#     you must use it as a preconditioner in a defect correction loop:
 !#
-!#       $$ x_{n+1}  =  x_n  +  \omega D^{-1}  (b-Ax) $$
-!#          ------------------  ^^^^^^^^^^^^^  ------  Defect correction loop
+!#    <tex> $$ x_{n+1}  =  x_n  +  \omega D^{-1}  (b-Ax) $$ </tex>
+!#    <!--  ------------------  ^^^^^^^^^^^^^  ------  Defect correction loop -->
 !#                              Jacobi preconditioner
 !#     So,
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
@@ -541,13 +541,13 @@
 !#     that most preconditioners scale the preconditioned defect by this
 !#     value. For example when UMFPACK is used for preconditioning,
 !#     UMFPACK returns:
-!#                       rd := domega A^(-1) rd
+!#      <tex> $$         rd := domega A^(-1) rd  $$ </tex>
 !#
 !#     thus one should usually use domega=1. 'Direct' solvers usually
 !#     act this ways. Exceptions for this rule are algorithms that use this
 !#     parameter for 'internal damping' like SOR:
 !#
-!#                       rd := (D + domega L)^-1 rd
+!#      <tex> $$         rd := (D + domega L)^-1 rd  $$ </tex>
 !#
 !#     i.e. here not the defect is damped but the operator itself.
 !#
@@ -700,13 +700,13 @@ module linearsolver
   integer, parameter, public :: LINSOL_ALG_UNDEFINED     = 0
   
   ! Preconditioned defect correction (Richardson iteration);
-  ! $x_{n+1} = x_n + \omega P^{-1} (b-Ax)$
+  ! <tex>$x_{n+1} = x_n + \omega P^{-1} (b-Ax)$</tex>
   integer, parameter, public :: LINSOL_ALG_DEFCORR       = 1
   
-  ! Jacobi iteration $x_1 = x_0 + \omega D^{-1} (b-Ax_0)$
+  ! Jacobi iteration <tex>$x_1 = x_0 + \omega D^{-1} (b-Ax_0)$</tex>
   integer, parameter, public :: LINSOL_ALG_JACOBI        = 2
   
-  ! SOR/GS iteration $x_1 = x_0 + \omega (D+\omega L)^{-1}(b-Ax_0)$
+  ! SOR/GS iteration <tex>$x_1 = x_0 + \omega (D+\omega L)^{-1}(b-Ax_0)$</tex>
   integer, parameter, public :: LINSOL_ALG_SOR           = 4
   
   ! SSOR iteration
@@ -1112,7 +1112,7 @@ module linearsolver
     ! Damping parameter for preconditioner. The t_linsolNode structure
     ! represents a preconditioner operator of the form:
     !
-    !                    d --> omega * P^-1 * d
+    !              <tex>$d --> omega * P^-1 * d$</tex>
     !
     ! The actual result of the solver algorithm is scaled by domega
     ! after the solving process.
@@ -3186,7 +3186,7 @@ contains
     ! Method-specific remarks:
     ! The linear system $Ax=b$ is reformulated into a one-step defect-correction 
     ! approach
-    !     $$ x  =  x_0  +  A^{-1}  ( b - A x_0 ) $$
+    ! <tex>   $$ x  =  x_0  +  A^{-1}  ( b - A x_0 ) $$  </tex>
     ! The standard solver P configured in rsovlverNode above is then used to 
     ! solve
     !     $$ Ay = b-Ax_0 $$
@@ -3296,12 +3296,12 @@ contains
   ! changing rsolverNode%domega to a value $\not =1$. In this case, the
   ! defect correction iteration changes to the Richardson iteration
   !
-  !    $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n) $$
+  ! <tex>  $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n) $$  </tex>
   !
   ! By specifying an additional preconditioner, it is possible to perform
   ! the preconditioned defect correction iteration
   !
-  !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax_n) $$
+  ! <tex>  $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax_n) $$  </tex>
   !
   ! By specifying an additional filter, the defect vector is filtered before
   ! each preconditioner step.
@@ -3854,7 +3854,7 @@ contains
 
     ! We want to perform <= nmaxIterations of the form
     !
-    !    $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax) $$
+    ! <tex>   $$ x_{n+1}  =  x_n  +  \omega P^{-1} (b-Ax) $$  </tex>
     !
     ! At first, set up our temporary vectors, which holds the current
     ! 'solution' and the current 'defect'. We already allocated them 
@@ -3924,9 +3924,9 @@ contains
           call linsol_precondDefect (p_rprecSubnode,p_rdef)
         end if
         
-        ! In p_rdef, we now have the current residuum $P^{-1} (b-Ax)$.
+        ! In p_rdef, we now have the current residuum <tex>$P^{-1} (b-Ax)$</tex>.
         ! Add it (damped) to the current iterate p_x to get
-        !   $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$
+        ! <tex>  $$ x  :=  x  +  \omega P^{-1} (b-Ax) $$  </tex>
         call lsysbl_vectorLinearComb (p_rdef ,p_rx,domega,1.0_DP)
         
         ! Calculate the residuum for the next step : (b-Ax)
@@ -4590,7 +4590,7 @@ contains
   
 !<description>
   ! Applies the SOR preconditioner onto the defect vector rd by solving
-  !  $$ x = omega * relax * (D + relax * L)^{-1} * d $$
+  ! <tex> $$ x = omega * relax * (D + relax * L)^{-1} * d $$ </tex>
   ! rd will be overwritten by the preconditioned defect vector x.
   !
   ! The matrix must have been attached to the system before calling
@@ -4969,7 +4969,7 @@ contains
   
 !<description>
   ! Applies the SSOR preconditioner onto the defect vector rd by solving
-  !  $$ (D + relax * L) * D^{-1} * (D + relax * U) x = d.$$
+  ! <tex> $$ (D + relax * L) * D^{-1} * (D + relax * U) x = d.$$ </tex>
   ! rd will be overwritten by the preconditioned defect vector x.
   !
   ! The matrix must have been attached to the system before calling
@@ -5108,11 +5108,11 @@ contains
 
       ! We want to perform the following preconditioning step:
       !
-      ! (D + relax * L) * D^{-1} * (D + relax * U) * x = d
+      ! <tex> $$ (D + relax * L) * D^{-1} * (D + relax * U) * x = d $$ </tex>
       !
       ! <==>
       !
-      ! (D + relax * L) * (I + relax * D^{-1} * U) * x = d
+      ! <tex> $$ (D + relax * L) * (I + relax * D^{-1} * U) * x = d $$ </tex>
       !
       ! Now the literature comes up with the brilliant idea to scale the
       ! result x of the equation above by the factor 1/(relax*(2-relax)),
@@ -5172,7 +5172,7 @@ contains
       ! What we now have to solve is the following system to get another
       ! (auxiliary) vector z:
       !
-      ! (I + relax * D^{-1} * U) * z = y
+      ! <tex> $$ (I + relax * D^{-1} * U) * z = y $$ </tex>
       !
       ! <==>
       !                       n
@@ -11994,9 +11994,9 @@ contains
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</input>
 
-!<return>
+!<result>
   ! The number of levels in the MG solver.
-!</return>
+!</result>
   
 !</function>
 
@@ -12972,11 +12972,11 @@ contains
   ! rx is assumed to be of 'defect' type. There are two types of smoothing
   ! processes, depending on which type of preconditioner rsolverNode is:
   ! 1.) If rsolverNode is an iterative solver, linsol_smoothCorrection
-  !     calls the associated solver P to compute $x=P^{-1}b$ using
+  !     calls the associated solver P to compute <tex>$x=P^{-1}b$</tex> using
   !     rsolverNode%nmaxIterations iterations.
   ! 2.) If rsolverNode is a 1-step solver, linsol_smoothCorrection
   !     performs rsolverNode%nmaxIterations defect correction steps
-  !      $$ x := x + P^{-1} (b-Ax) $$
+  !     <tex> $$ x := x + P^{-1} (b-Ax) $$ </tex>
   !     with $x_0=0$.
   !
   ! The matrix must have been attached to the system before calling
@@ -13134,7 +13134,7 @@ contains
     ! This is a 1-step solver, we have to emulate the smoothing
     ! iterations. Perform rsolverNode%nmaxIterations steps of the
     ! form
-    !     $$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$
+    !     <tex>$$ x_{n+1} = x_n + P^{-1}(b-Ax_n) $$</tex>
     ! with $x_0 = 0$.
     
     bfilter = associated(p_RfilterChain)
@@ -14069,9 +14069,9 @@ contains
   type(t_linsolNode), intent(inout) :: rsolverNode
 !</input>
 
-!<return>
+!<result>
   ! The number of levels in the MG solver.
-!</return>
+!</result>
   
 !</function>
 

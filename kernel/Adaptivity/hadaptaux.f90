@@ -558,7 +558,7 @@ contains
     ! number of vertices per element
     integer :: nve
 !</result>
-!</function
+!</function>
 
     ! Which spatial dimension do we have?
     select case(rhadapt%ndim)

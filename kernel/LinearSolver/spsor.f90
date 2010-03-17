@@ -30,7 +30,7 @@
 !# Step 1: Update u:
 !# - - - - - - - - -
 !#
-!#              u_{k+1} := u_k + P^{-1} * ( f - A * u_k - B * p_k )
+!# <tex> $$     u_{k+1} := u_k + P^{-1} * ( f - A * u_k - B * p_k )  $$ </tex>
 !#
 !# where P is the SOR-preconditioner matrix:
 !#
@@ -44,7 +44,7 @@
 !#
 !# where S is an approximation of the inverse of the Schur-Complement of A:
 !#
-!#              S \approx ( -D * A^{-1} * B )^{-1}
+!# <tex> $$      S \approx ( -D * A^{-1} * B )^{-1}   $$ </tex>
 !#
 !#
 !# TODO: document the matrix S
@@ -3477,7 +3477,7 @@ contains
   !
   !                U * u = f - omega*B*p
   !
-  ! where U := id + ( 1/omega * diag(A) )^{-1} * ltri(A)
+  ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * ltri(A) $</tex>
   !
 !</description>
 
@@ -3561,7 +3561,7 @@ contains
   !               ( U1  0  ) * ( u1 ) = ( f1 ) - omega * ( B1 ) * ( p )
   !               ( 0   U2 )   ( u2 )   ( f2 )           ( B2 )
   !
-  ! where Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai)
+  ! where <tex>$ Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai) $</tex>
   !
 !</description>
 
@@ -3655,7 +3655,7 @@ contains
   !               ( 0   U2 0  )   ( u2 )   ( f2 )           ( B2 )
   !               ( 0   0  U3 )   ( u3 )   ( f3 )           ( B3 )
   !
-  ! where Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai)
+  ! where <tex>$ Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai) $</tex>
   !
 !</description>
 
@@ -3752,7 +3752,7 @@ contains
   !
   !              U * u = f - A2 * u2 - B * p
   !
-  ! where U := id + ( 1/omega * diag(A) )^{-1} * utri(A)
+  ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * utri(A) $</tex>
   !
 !</description>
 
@@ -3849,7 +3849,7 @@ contains
   !
   !              U * u = f - A2 * u2 - A3 * u3 - B * p
   !
-  ! where U := id + ( 1/omega * diag(A) )^{-1} * utri(A)
+  ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * utri(A) $</tex>
   !
 !</description>
 

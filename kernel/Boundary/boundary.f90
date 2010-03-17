@@ -2011,9 +2011,13 @@ contains
 
   contains
   
+!<subroutine>
+
     subroutine getNormal (isegType,cpar,dparLoc,dseglength,istartidx,DsegInfo,dnx,dny)
       
+!<description>
     ! Calculates the normal of a point on a specific boundary segment.
+!</description>
     
     !<input>
     
@@ -2043,6 +2047,7 @@ contains
     real(DP), intent(out) :: dnx,dny
     
     !</output>
+!</subroutine>
     
       ! local variables
       real(DP) :: dploc,dphi,dnorm

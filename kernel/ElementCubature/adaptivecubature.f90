@@ -55,14 +55,14 @@ contains
   subroutine adcub_determineSummedCubature(ccubType,depsRel,depsAbs,rtriangulation,&
       Ielements,ffunctionRefSimple,rcollection)
 
-!<descrption>
+!<description>
   ! Determines an adaptive cubature formula which is accurate enough
   ! to integrate the function ffunctionReference on the elements Ielements
   ! of the mesh rtriangulation.
   !
   ! The cubature rule is determined in such a way, that the relative and
   ! absolute error is lower than depsRel / depsAbs.
-!</descrption>
+!</description>
 
 !<inputoutput>
   ! Cubature type identifier.
@@ -147,10 +147,10 @@ contains
   subroutine adcub_integrateFunction(dvalue,ccubType,rtriangulation,Ielements,&
       ffunctionRefSimple,rcollection)
 
-!<descrption>
+!<description>
   ! Integrates a scalar function ffunctionReference on a set of elements
   ! Ielements of a given mesh rtriangulation with a cubature formula ccubType.
-!</descrption>
+!</description>
 
 !<input>
   ! Cubature type identifier of the cubature formula to use for integration.

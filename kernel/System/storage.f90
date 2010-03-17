@@ -348,12 +348,12 @@ module storage
 
 !</types>
 
-!<globals>
+!<publicvars>
 
   ! Global memory management structure
   type(t_storageBlock), private, save, target :: rbase
 
-!</globals>
+!</publicvars>
 
   interface storage_new
     module procedure storage_new1D
@@ -11142,6 +11142,8 @@ contains
 !<result>
   integer :: ctype
 !</result>
+
+!</function>
 
     ! local variable
     character(len=(len(stype))) :: sdatatype

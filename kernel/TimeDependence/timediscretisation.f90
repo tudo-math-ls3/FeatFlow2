@@ -67,6 +67,7 @@ module timediscretisation
   public :: tdiscr_infoStatistics
   public :: tdiscr_copy
 
+!<constants>
 !<constantblock description="Time discretisation type identifiers">
 
   ! Theta-scheme (implicit/explicit Euler, Crank Nicolson)
@@ -309,6 +310,7 @@ contains
   ! The time discrtisation structure to be initialised.
   type(t_timeDiscretisation), intent(out) :: rtimediscrDest
 !</inputoutput>
+!</subroutine>
 
     ! As long as we do not do anything fancy (like allocating memory),
     ! we can do a flat copy.

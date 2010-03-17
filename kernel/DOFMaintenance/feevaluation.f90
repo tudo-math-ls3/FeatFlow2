@@ -706,6 +706,7 @@ contains
   end subroutine
 
 !  ! ***************************************************************************
+!<!-- // hide from automatic documentation parser
 !
 !!<subroutine>
 !
@@ -972,6 +973,7 @@ contains
 !    DEALLOCATE(Idofs)
 !
 !  END SUBROUTINE
+! // unhide from automatic documentation parser -->
 
   ! ***************************************************************************
 
@@ -1242,8 +1244,8 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
-  ! is not allowed e.g.. 
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
 !</description>
 
 !<input>
@@ -1407,8 +1409,8 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
-  ! is not allowed e.g.. 
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
 !</description>
 
 !<input>
@@ -1537,8 +1539,8 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
-  ! is not allowed e.g.. 
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
   !
   ! The interface of this routine is designed to be called in callback
   ! functions during linearform and bilinearform evaluation.
@@ -1688,8 +1690,8 @@ contains
   ! This routine is specialised to evaluate in multiple elements. For this
   ! purpose, the caller must make sure, that the same finite element type
   ! is used on all elements where to evaluate!
-  ! So, evaluating 'simultaneously' on some $Q_1$ and some $P_1$ elements
-  ! is not allowed e.g.. 
+  ! So, evaluating 'simultaneously' on some <tex>$Q_1$</tex> and some <tex>$P_1$</tex>
+  ! elements is not allowed e.g..
 !</description>
 
 !<input>

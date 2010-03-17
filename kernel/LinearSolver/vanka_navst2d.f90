@@ -30,7 +30,7 @@
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !# How do I add Vanka support for a new discretisation?
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# Unless you have some extraordinary wishes, this job is pretty easy ^_^
+!# Unless you have some extraordinary wishes, this job is pretty easy
 !#
 !# At the bottom of this file you will find two templates: one for the 'full'
 !# and one for the 'diagonal' Vanka variant. Search this file for $TEMPLATE$
@@ -70,15 +70,15 @@
 !# 
 !# 1.) Calculate the Schur-Complement of A:
 !#
-!#                       S := C - D * A^-1 * B
+!#     <tex> $$          S := C - D * A^-1 * B   $$ </tex>
 !#
 !# 2.) Calculate pressure:
 !#
-!#                  p := S^-1 * (f_p - D * A^-1 * f_u)
+!#     <tex> $$          p := S^-1 * (f_p - D * A^-1 * f_u)  $$ </tex>
 !#
 !# 3.) Calculate velocity:
 !#
-!#                      u := A^-1 * (f_u - B * p)
+!#     <tex> $$          u := A^-1 * (f_u - B * p)  $$ </tex>
 !# 
 !# </purpose>
 !##############################################################################
@@ -115,6 +115,8 @@ module vanka_navst2d
   integer, parameter, public :: VANKATP_NAVST2D_FULL = 1
 
 !</constantblock>
+!</constants>
+
 
 !<types>
 
@@ -517,6 +519,8 @@ contains
   end subroutine
 
   ! ***************************************************************************
+
+!<subroutine>
 
   subroutine vanka_NS2D_Q1TQ0_js(rvanka, rsol, rrhs, niterations, domega, &
                                  IelementList)
@@ -993,6 +997,8 @@ contains
 
   ! ***************************************************************************
   
+!<subroutine>
+
   subroutine vanka_NS2D_Q1TQ0_bd(rvanka, rsol, rrhs, niterations, domega, &
                                  IelementList)
   
@@ -1470,6 +1476,8 @@ contains
 
   ! ***************************************************************************
   
+!<subroutine>
+
   subroutine vanka_NS2D_Q1TQ0_fc(rvanka, rsol, rrhs, niterations, domega, &
                                  IelementList)
   
@@ -1933,6 +1941,9 @@ contains
   ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   ! $TEMPLATE$ for 'diagonal' Vanka
 
+!<!-- // hide from automatic documentation parser
+!<subroutine>
+!
 !  subroutine vanka_NS2D_$TODO$(rvanka, rsol, rrhs, niterations, domega, &
 !                               IelementList)
 !  
@@ -2253,6 +2264,8 @@ contains
   
   ! $TEMPLATE$ for 'full' Vanka
   
+!<subroutine>
+!
 !  subroutine vanka_NS2D_$TODO$(rvanka, rsol, rrhs, niterations, domega, &
 !                               IelementList)
 !  
@@ -2553,5 +2566,6 @@ contains
 !    end do ! iter
 !    
 !  end subroutine
+! // unhide from automatic documentation parser -->
 
 end module

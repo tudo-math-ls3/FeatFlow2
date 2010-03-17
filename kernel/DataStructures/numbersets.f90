@@ -365,9 +365,9 @@ contains
   type(t_directAccessIntSet), intent(in) :: rset
 !</input>
 
-!<returns>
+!<result>
   ! Number of elements in the set.
-!</returns>
+!</result>
 
 !</function>
     integer :: i,j,k,ncount
@@ -438,9 +438,9 @@ contains
   integer, intent(out), optional :: nelementsInList
 !</output>
 
-!<returns>
+!<result>
   ! Number of elements in the set.
-!</returns>
+!</result>
 
 !</subroutine>
 
@@ -523,9 +523,9 @@ contains
   type(t_directAccessIntSet), intent(inout) :: rset
 !</inputoutput>
 
-!<returns>
+!<result>
   ! Number of elements in the set.
-!</returns>
+!</result>
 
 !</subroutine>
 

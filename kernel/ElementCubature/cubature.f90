@@ -10,8 +10,8 @@
 !# A cubature formula is identified by its cubature ID CUB_xxxx.
 !# By calling cub_getCubPoints with one of the ID`s, one gets the coordinates
 !# and weights of that specific cubature formula on the reference element
-!# (either $[-1,1]^2$ or the triangle $(0,0), (0,1), (1,0)$ (depending
-!# on whether it is a cubature formulas for triangles or quadrilaterals.
+!# (either <tex>$[-1,1]^2$</tex> or the triangle <tex>$(0,0), (0,1), (1,0)$</tex>
+!# (depending on whether it is a cubature formulas for triangles or quadrilaterals.
 !#
 !# Furthermore, the routine cub_igetID allows to translate a string into
 !# a cubature formula ID.
@@ -1023,10 +1023,10 @@ contains
 
   recursive subroutine cub_getCubature(ccubType, Dpoints, Domega)
 
-!<descrption>
+!<description>
   ! This routine returns the cubature point coordinates and the corresponding
   ! weights for a given cubature type identifier.
-!</descrption>
+!</description>
 
 !<input>
   ! id of the cubature formula to be set
@@ -1957,7 +1957,7 @@ contains
 
 !<description>
   ! This routine initializes the coordinates and weight fields according 
-  ! to the selected cubature formula. The integration domain is $[-1,1]^n$.
+  ! to the selected cubature formula. The integration domain is <tex>$[-1,1]^n$</tex>.
   ! In the case of one-dimensional integration, only cub_dxi(i,1) is used. 
   ! The coordinates of the cubature points on triangles are given in 
   ! barycentric coordinates.

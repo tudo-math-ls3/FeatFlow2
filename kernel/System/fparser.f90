@@ -592,7 +592,7 @@ module fparser
   !****************************************************************************
   !****************************************************************************
 
-!<globals>
+!<publicvars>
 
   ! Global number of predefined/user-defined constants
   integer, save :: nconstants = 0 
@@ -612,7 +612,7 @@ module fparser
   ! Global expression string for parser
   character(LEN=FPAR_STRLEN), dimension(FPAR_MAXEXPRESSIONS), save :: CexpressionString
 
-!</globals>
+!</publicvars>
 
   !****************************************************************************
   !****************************************************************************
@@ -689,7 +689,7 @@ contains
   
 !<subroutine>
 
-  subroutine fparser_init
+  subroutine fparser_init()
 
 !<description>
     ! Initialize function parser
@@ -720,7 +720,7 @@ contains
 
 !<subroutine>
 
-  subroutine fparser_done
+  subroutine fparser_done()
 
 !<description>
     ! Release function parser

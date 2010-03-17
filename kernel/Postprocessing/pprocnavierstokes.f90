@@ -2262,11 +2262,11 @@ contains
 
     pure subroutine ppns3D_det(Dcoords,iface,Dcub,ncubp,Ddetj)
 
-!<describtion>
+!<description>
   ! This routine calculates the "determinant" of a bilinear quadrilateral
   ! transformation from the 2D reference quadrilateral onto a hexahedron
   ! face in 3D.
-!</describtion>
+!</description>
     
 !<input>
     ! The coordinates of the eight corner vertices of the hexahedron

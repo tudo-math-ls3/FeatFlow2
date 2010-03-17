@@ -290,7 +290,7 @@ module genoutput
 
 !</constants>  
 
-!<globals>
+!<publicvars>
 
   ! Current benchmark file logging policy.
   ! =0: None. Do not log anything to the benchmark log file.
@@ -300,7 +300,7 @@ module genoutput
   !     OU_BENCHLOG is specified in coutputMode or not.
   integer, public, save :: cbenchLogPolicy = 1
 
-!</globals>
+!</publicvars>
 
   interface output_line
     module procedure output_line_std
@@ -536,7 +536,7 @@ contains
 
 !************************************************************************************
 
-!<subroutine>
+!<function>
 
   function output_reformatMsg (smessage, coutputClass, ssubroutine) result (s)
 
@@ -562,7 +562,7 @@ contains
 
   character(LEN=len(smessage)+20+SYS_NAMELEN) :: s
 
-!</subroutine>
+!</function>
 
     logical :: bsub
     integer :: ioc

@@ -1203,7 +1203,7 @@ contains
   
   ! ***************************************************************************
 
-!<function>
+!<subroutine>
   
   pure subroutine gaux_calcDistPEdg2D(DpointA,Dedge1,Dedge2,dist,t)
 
@@ -1227,7 +1227,7 @@ contains
 !<result>
   ! The distance
 !</result>
-!</function>
+!</subroutine>
   ! parameter in the edge equation: edge=Dedge1+t*(Dedge2-Dedge1), t in [0,1]
   real(dp) :: r2
   real(DP), dimension(2) :: r,YP
@@ -1304,6 +1304,8 @@ contains
   end subroutine
 
 !************************************************************************
+
+!<subroutine>
 
   pure subroutine gaux_isInElement_hexa_aligned(dx,dy,dz,Dpoints,binside)
   

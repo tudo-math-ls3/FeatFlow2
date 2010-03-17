@@ -381,8 +381,8 @@ contains
   ! The discretisation is assumed to be conformal, i.e. the DOF`s
   ! of all finite elements must 'match'. 
   ! The linear form is defined by
-  !        (f,$phi_i$), i=1..*
-  ! with $Phi_i$ being the test functions defined in the discretisation
+  !        <tex>(f,$\phi_i$), i=1..*</tex>
+  ! with <tex>$\phi_i$</tex> being the test functions defined in the discretisation
   ! structure.
   ! In case the array for the vector entries does not exist, the routine
   ! allocates memory in size of the vector of the heap for the vector entries
@@ -406,7 +406,7 @@ contains
 
   
   ! A callback routine which is able to calculate the values of the
-  ! function $f$ which is to be discretised.
+  ! function <tex>$f$</tex> which is to be discretised.
   include 'intf_coefficientVectorSc.inc'
   optional :: fcoeff_buildVectorSc_sim
 !</input>

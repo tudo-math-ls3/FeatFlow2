@@ -261,7 +261,7 @@ contains
     integer, intent(in) :: day
 
     integer             :: ivalue
-!</function>
+!</input>
 
 !<result>
   ! Julian date.

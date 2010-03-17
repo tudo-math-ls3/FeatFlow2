@@ -316,7 +316,7 @@ module fsystem
 
 !************************************************************************
 
-!<globals>
+!<publicvars>
   ! global system configuration
   type (t_sysconfig), target, save :: sys_sysconfig
   
@@ -333,7 +333,7 @@ module fsystem
   ! respect this setting but do not explicitely use this variable.
   real(DP), save :: sys_dtimeMax = 0.0_DP
 
-!</globals>
+!</publicvars>
 
 !************************************************************************
 
@@ -2132,13 +2132,13 @@ contains
   
 ! ****************************************************************************************
 
-!<subroutine>
+!<function>
   integer function sys_ncommandLineArgs()
 
   !<description>
     ! Calculates the number of command line arguments.
   !</description>
-!</subroutine>
+!</function>
 
 #ifndef HAS_INTRINSIC_IARGC
     ! Definition of iargc needed for

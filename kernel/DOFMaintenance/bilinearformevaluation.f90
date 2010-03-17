@@ -2201,6 +2201,7 @@ contains
   end subroutine
 
 !  !****************************************************************************
+!<!-- // hide from automatic documentation parser
 !
 !!<subroutine>
 !
@@ -2610,7 +2611,7 @@ contains
 !      !        |     |     |  *  .
 !      !        #-----#-----#. . .#
 !      !
-!      ! --> On element IEL, the basis function at "X" only interacts
+!      ! ~~> On element IEL, the basis function at "X" only interacts
 !      !     with the basis functions in "O". Elements in the 
 !      !     neighbourhood ("*") have no support, therefore we only have
 !      !     to collect all "O" DOF`s.
@@ -3491,7 +3492,7 @@ contains
 !      !        |     |     |  *  .
 !      !        #-----#-----#. . .#
 !      !
-!      ! --> On element IEL, the basis function at "X" only interacts
+!      ! ~~> On element IEL, the basis function at "X" only interacts
 !      !     with the basis functions in "O". Elements in the 
 !      !     neighbourhood ("*") have no support, therefore we only have
 !      !     to collect all "O" DOF`s.
@@ -3933,6 +3934,7 @@ contains
 !  
 !  END SUBROUTINE
 !
+! // unhide from automatic documentation parser -->
   !****************************************************************************
 
 !<subroutine>

@@ -2107,7 +2107,7 @@ contains
   end subroutine
 
     ! ***************************************************************************
-!<subroutine>
+!<function>
 
   elemental integer function spdiscr_igetNDofLocMax(rdiscretisation)
   
@@ -2120,7 +2120,7 @@ contains
   type(t_spatialDiscretisation), intent(in) :: rdiscretisation
 !</input>
 
-!</subroutine>
+!</function>
 
     ! local variables
     integer :: i,imax

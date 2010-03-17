@@ -2278,10 +2278,10 @@ contains
   subroutine lsysbl_invertedDiagBlockMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
-  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
+  ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
   ! of the diagonal blocks in the matrix rmatrix with the vector rvectorSrc and 
   ! stores the result into the vector rvectorDst:
-  !   $$rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks$$
+  !   <tex>$$rvectorDst_i = dscale * D_i^{-1} * rvectorSrc_i  , i=1..nblocks$$</tex>
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   
@@ -2331,10 +2331,10 @@ contains
   subroutine lsysbl_invertedDiagScalarMatVec (rmatrix,rvectorSrc,dscale,rvectorDst)
   
 !<description>
-  ! This routine multiplies the weighted inverted diagonal $domega*D^{-1}$
+  ! This routine multiplies the weighted inverted diagonal <tex>$domega*D^{-1}$</tex>
   ! of matrix rmatrix with the vector rvectorSrc and  stores the result
   ! into the vector rvectorDst:
-  !   $$rvectorDst_i = dscale * D^{-1} * rvectorSrc_i  , i=1..nblocks$$
+  !   <tex>$$rvectorDst_i = dscale * D^{-1} * rvectorSrc_i  , i=1..nblocks$$</tex>
   ! Both, rvectorSrc and rvectorDst may coincide.
 !</description>
   
@@ -2859,7 +2859,7 @@ contains
   end function
 
   !****************************************************************************
-!<subroutine>
+!<function>
   
   real(DP) function lsysbl_vectorNorm (rx,cnorm,iposMax)
   
@@ -2888,7 +2888,7 @@ contains
   ! < 0, if an error occurred (unknown norm).
 !</result>
 
-!</subroutine>
+!</function>
 
   ! local variables
   real(DP), dimension(:), pointer :: p_Ddata
