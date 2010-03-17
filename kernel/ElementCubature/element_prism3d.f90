@@ -694,8 +694,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_R1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                  Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_R1_3D_sim (celement, Dcoords, Djac, Ddetj, &
+                             Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 

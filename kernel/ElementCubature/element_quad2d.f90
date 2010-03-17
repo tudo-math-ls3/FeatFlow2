@@ -669,8 +669,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_Q1_sim (celement, Dcoords, Djac, Ddetj, &
-                               Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_Q1_sim (celement, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -1426,8 +1430,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_Q2_sim (celement, Dcoords, Djac, Ddetj, &
-                               Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_Q2_sim (celement, Dcoords, Djac, Ddetj, &
+                          Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3841,8 +3849,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_E030_sim (celement, Dcoords, Djac, Ddetj, &
-                                 Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_E030_sim (celement, Dcoords, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4342,8 +4354,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_EB30_sim (celement, Dcoords, Djac, Ddetj, &
-                                 Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_EB30_sim (celement, Dcoords, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -5658,8 +5674,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_E031_sim (celement, Dcoords, Djac, Ddetj, &
-                                 Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_E031_sim (celement, Dcoords, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -6292,8 +6312,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_E050_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
-                                 Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_E050_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -7053,8 +7077,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_EB50_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
-                                 Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_EB50_sim (celement, Dcoords, ItwistIndex, Djac, Ddetj, &
+                            Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -8958,7 +8986,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_E050_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_E050_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -9203,7 +9235,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_EB50_2D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_EB50_2D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -10394,8 +10430,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_DG_T1_2D_sim (celement, Dcoords, Djac, Ddetj, &
-                                     Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_DG_T1_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                                Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -11132,8 +11172,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_DG_T2_2D_sim (celement, Dcoords, Djac, Ddetj, &
-                                     Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_DG_T2_2D_sim (celement, Dcoords, Djac, Ddetj, &
+                                Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 

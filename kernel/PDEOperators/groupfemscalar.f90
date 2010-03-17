@@ -3143,7 +3143,7 @@ contains
       integer :: iedge,i,j
       
       ! Loop over all edges
-      !$omp parallel do private(i,j,f_ij,r_ij)
+      !$omp parallel do private(i,j,f1_ij,f2_ij,r_ij)
       do iedge = 1, NEDGE
         
         ! Get node numbers and matrix positions

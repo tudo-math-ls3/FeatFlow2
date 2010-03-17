@@ -4354,7 +4354,7 @@ contains
 		    minl = minloc(distances,1)
 
 		    ! Check if the distance didn't change
-		    if (minl .EQ. 1) exit gotoNextElm
+		    if (minl .eq. 1) exit gotoNextElm
 
 		    ! Store element with the lowest distance
 		    rParticles%p_element(iPart) = p_IneighboursAtElement(minl-1,rParticles%p_element(iPart))
@@ -4519,7 +4519,7 @@ contains
             call gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
           
             ! If the particle is in the element, then exit loop
-            if (binside .eq. .true.) then
+            if (binside) then
                 exit SearchVertex
             end if 
             
@@ -4531,7 +4531,7 @@ contains
     call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
 
     ! If the particle is still outside the element
-    if ((abs(dxi1)+abs(dxi2)+abs(dxi3)) .GE. 1.00001) then
+    if ((abs(dxi1)+abs(dxi2)+abs(dxi3)) .ge. 1.00001) then
       ! Take the old elementnumber
 	  rParticles%p_element(iPart) = currentelm
 	  ! Check if the is/was a particle-wall-collision
@@ -4902,7 +4902,7 @@ contains
 
         ! Wrong element
         if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
-                  abs(rParticles%p_lambda3(iPart))-1) .GE. 0.00001) then
+                  abs(rParticles%p_lambda3(iPart))-1) .ge. 0.00001) then
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
@@ -5116,7 +5116,7 @@ contains
 			end do e_search
 
 			! In bdy_Koord(1) is the first vertex of the boundary (counterclockwise)
-			if (bdy_first(1) .GE. bdy_first(2)) then
+			if (bdy_first(1) .ge. bdy_first(2)) then
 				change_bdy = bdy_Koords(1)
 				bdy_Koords(1)= bdy_Koords(2)
 				bdy_Koords(2)= change_bdy
@@ -5137,7 +5137,7 @@ contains
 			y(4)= rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart)
 
 			
-			if ((x(4)*y(2)).NE.(y(4)*x(2))) then
+			if ((x(4)*y(2)).ne.(y(4)*x(2))) then
 				s=(x(4)*(y(3)-y(1))-y(4)*(x(3)-x(1)))/(x(4)*y(2)-y(4)*x(2))
 				! Calculate the point of collision with the boundary
 				bdy_point(1)= x(1) + s*x(2)

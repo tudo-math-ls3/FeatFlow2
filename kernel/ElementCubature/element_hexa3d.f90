@@ -774,8 +774,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_Q1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                  Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_Q1_3D_sim (celement, Dcoords, Djac, Ddetj, &
+                             Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -1448,8 +1452,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_E030_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                    Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_E030_3D_sim (celement, Dcoords, Djac, Ddetj, &
+                               Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -2110,8 +2118,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_E031_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                    Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_E031_3D_sim (celement, Dcoords, Djac, Ddetj, &
+                               Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3460,7 +3472,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q1_3D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q1_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -3672,7 +3688,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Q2_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4380,7 +4400,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_E030_3D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_E030_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -4592,7 +4616,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_E031_3D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_E031_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 

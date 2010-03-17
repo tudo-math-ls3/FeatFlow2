@@ -678,8 +678,12 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_Y1_3D_sim (celement, Dcoords, Djac, Ddetj, &
-                                  Bder, Dbas, npoints, nelements, Dpoints)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_Y1_3D_sim (celement, Dcoords, Djac, Ddetj, &
+                             Bder, Dbas, npoints, nelements, Dpoints)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 
@@ -888,7 +892,11 @@ contains
   
 !<subroutine>  
 
-  pure subroutine elem_eval_Y1_3D (celement, reval, Bder, Dbas)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine elem_eval_Y1_3D (celement, reval, Bder, Dbas)
 
 !<description>
   ! This subroutine simultaneously calculates the values of the basic 

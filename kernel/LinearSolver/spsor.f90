@@ -2836,8 +2836,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_solveDDS(n,Du1,Du2,Dup,Df,KldD,KcolD,DD1,DD2,&
-                                     dsfD1,dsfD2,DS,domega)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_solveDDS(n,Du1,Du2,Dup,Df,KldD,KcolD,DD1,DD2,&
+                                dsfD1,dsfD2,DS,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -2896,8 +2900,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_solveDDDS(n,Du1,Du2,Du3,Dup,Df,KldD,KcolD,&
-                                      DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_solveDDDS(n,Du1,Du2,Du3,Dup,Df,KldD,KcolD,&
+                                 DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -2958,8 +2966,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_multDD(n,Du1,Du2,Dw,Df,KldD,KcolD,DD1,DD2,&
-                                   dsfD1,dsfD2)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_multDD(n,Du1,Du2,Dw,Df,KldD,KcolD,DD1,DD2,&
+                              dsfD1,dsfD2)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -3011,8 +3023,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_multDDD(n,Du1,Du2,Du3,Dw,Df,KldD,KcolD,&
-                                    DD1,DD2,DD3,dsfD1,dsfD2,dsfD3)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_multDDD(n,Du1,Du2,Du3,Dw,Df,KldD,KcolD,&
+                               DD1,DD2,DD3,dsfD1,dsfD2,dsfD3)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -3923,8 +3939,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_precDDS(n,Du1,Du2,Dup,KldD,KcolD,DD1,DD2,&
-                                    dsfD1,dsfD2,DS,domega)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_precDDS(n,Du1,Du2,Dup,KldD,KcolD,DD1,DD2,&
+                               dsfD1,dsfD2,DS,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:
@@ -3983,8 +4003,12 @@ contains
 
 !<subroutine>
 
-  pure subroutine spsor_aux_precDDDS(n,Du1,Du2,Du3,Dup,KldD,KcolD,&
-                                     DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
+#ifndef USE_OPENMP
+  pure &
+#endif
+
+  subroutine spsor_aux_precDDDS(n,Du1,Du2,Du3,Dup,KldD,KcolD,&
+                                DD1,DD2,DD3,dsfD1,dsfD2,dsfD3,DS,domega)
 
 !<description>
   ! INTERNAL AUXILIARY ROUTINE:

@@ -654,8 +654,12 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
+
+#ifndef USE_OPENMP
+  pure &
+#endif
   
-  pure subroutine qsol_mvmult_CG(n,Kld,Kcol,Da,Dx,Dy,dalpha)
+  subroutine qsol_mvmult_CG(n,Kld,Kcol,Da,Dx,Dy,dalpha)
   
 !<description>
   ! PRIVATE AUXILIARY ROUTINE:

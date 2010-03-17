@@ -1157,7 +1157,11 @@ contains
     !**************************************************************
     ! Set variable stored in interleave format
 
-    pure subroutine setVarInterleaveformat(neq, nvar, ivar, Dvalue, Ddata)
+#ifndef USE_OPENMP
+    pure &
+#endif
+
+    subroutine setVarInterleaveformat(neq, nvar, ivar, Dvalue, Ddata)
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue
@@ -1178,7 +1182,11 @@ contains
     !**************************************************************
     ! Set variable stored in block format
 
-    pure subroutine setVarBlockformat(neq, nvar, ivar, Dvalue, Ddata)
+#ifndef USE_OPENMP
+    pure &
+#endif
+
+    subroutine setVarBlockformat(neq, nvar, ivar, Dvalue, Ddata)
 
       integer, intent(in) :: neq, nvar, ivar
       real(DP), dimension(:), intent(in) :: Dvalue

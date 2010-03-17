@@ -7111,7 +7111,11 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+#ifndef USE_OPENMP
+    pure &
+#endif
+
+    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
@@ -7151,7 +7155,7 @@ contains
       integer :: iedge,ij,i,j
       
       ! Loop over all edges
-      !$omp paralle do private(i,j,ij)
+      !$omp parallel do private(i,j,ij)
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
@@ -7866,7 +7870,11 @@ contains
     !**************************************************************
     ! Combine two fluxes: flux2 := flux2+dscale*alpha*flux2
 
-    pure subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
+#ifndef USE_OPENMP
+    pure &
+#endif
+
+    subroutine doCombineFluxes(NVAR, NEDGE, dscale, Dalpha, Dflux1, Dflux2)
 
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1
       real(DP), dimension(:), intent(in) :: Dalpha
@@ -7906,7 +7914,7 @@ contains
       integer :: iedge,ij,i,j
       
       ! Loop over all edges
-      !$omp paralle do private(i,j,ij)
+      !$omp parallel do private(i,j,ij)
       do iedge = 1, NEDGE
 
         ! Get node numbers and matrix positions
