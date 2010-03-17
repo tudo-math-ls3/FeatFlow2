@@ -549,9 +549,15 @@ include $(TEMPLATESDIR)/blas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto.*),yes)
+ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto2),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
 
@@ -1261,16 +1267,28 @@ include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto.*),yes)
-# Use Goto BLAS
-include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
 endif
+
+
+ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto),yes)
+# Use GotoBLAS
+include $(TEMPLATESDIR)/gotoblas-generic.mk
+endif
+
+
+ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto2),yes)
+# Use GotoBLAS 2
+include $(TEMPLATESDIR)/gotoblas2-generic.mk
+# Workaround for linker problem:
+# ld: hidden symbol `__svml_cosf4' in libsvml.a(svml_stub_scos4.o) is referenced by DSO
+ifeq ($(call match,$(ID),pc64-opteronx2-linux-intel-goto2.*),yes)
+LIBS := $(LIBS) -lsvml
+endif
+endif
+
 
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-.*),yes)
 # Add preprocessor flag to enable 64bit UMFPACK support.
