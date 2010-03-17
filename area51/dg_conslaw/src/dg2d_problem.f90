@@ -110,7 +110,7 @@ contains
 
 
 
-  ! This routine builds the trafo matrix T for the jacobian DF of the flux in direction d
+  ! This routine builds the trafo matrix T for the jacobian DF of the flux in direction d (right eigenvalues)
   ! This means :   invTrafo * DF * Trafo    = D (diagonal matrix)
   ! or         :   Trafo    * D  * invTrafo = DF
   ! So to get the characteristic variables, the conservative variables have to be multiplied by
@@ -171,7 +171,7 @@ contains
 
 
 
-  ! This routine builds the inverse of the trafo matrix T for the jacobian DF of the flux in direction d
+  ! This routine builds the inverse of the trafo matrix T for the jacobian DF of the flux in direction d (left eigenvalues)
   ! This means :   invTrafo * DF * Trafo    = D (diagonal matrix)
   ! or         :   Trafo    * D  * invTrafo = DF
   ! So to get the characteristic variables, the conservative variables have to be multiplied by
@@ -445,6 +445,92 @@ contains
        end if
 !     end if ! dry or wet bed
   end function buildFlux
+  
+  
+  
+  
+  
+  
+  ! This routine builds the right eigenvectors for the mixed jacobian
+  function buildMixedR(Q,a,b) result(R)
+
+    ! Right eigenvectors
+    real(DP), dimension(3,3)	:: R
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3
+    
+    ! Temp array
+    real(dp), dimension(3) :: T
+    
+    if (abs(a)<10*SYS_EPSREAL) then
+    
+      R = buildTrafo(Q,2)
+      
+      T = R(:,2)
+      R(:,2) = R(:,3)
+      R(:,3) = R(:,1)
+      R(:,1) = T
+    
+    else
+    
+      c1 = a*Q(2)+b*Q(3)
+      c2 = Q(1)*(a*a+b*b)
+      c3 = sqrt(c2*Q(1)*Q(1)*g)
+    
+    
+      ! Build matrix of right eigenvectors
+      R(1,1) = 0.0_DP
+      R(2,1) = -b/a
+      R(3,1) = 1.0_dp
+      R(1,2) = 1.0_DP
+      R(2,2) = ((c1+c3)*a+b*b*Q(2)-a*b*Q(3))/c2
+      R(3,2) = ((c1+c3)*b+a*a*Q(3)-a*b*Q(2))/c2
+      R(1,3) = 1.0_DP
+      R(2,3) = ((c1-c3)*a+b*b*Q(2)-a*b*Q(3))/c2
+      R(3,3) = ((c1-c3)*b+a*a*Q(3)-a*b*Q(2))/c2
+    end if
+    
+  end function 
+  
+  
+  
+  ! This routine builds the left eigenvectors for the mixed jacobian
+  function buildMixedL(Q,a,b) result(L)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: L
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3
+    
+    c1 = a*Q(2)+b*Q(3)
+    c2 = Q(1)*(a*a+b*b)
+    c3 = sqrt(c2*Q(1)*Q(1)*g)
+    
+    
+       ! Build matrix of left eigenvectors
+       L(1,1) = -a*(a*Q(3)-b*Q(2))/c2
+       L(2,1) = -0.5_dp*(c1-c3)/c3
+       L(3,1) = 0.5_dp*(c1+c3)/c3
+       L(1,2) = -a*b/(a*a+b*b)
+       L(2,2) = 0.5*a*c2/(c3*(a*a+b*b))
+       L(3,2) = -0.5*a*c2/(c3*(a*a+b*b))
+       L(1,3) = a*a/(a*a+b*b)
+       L(2,3) = 0.5_dp*b*c2/(c3*(a*a+b*b))
+       L(3,3) = -0.5_dp*b*c2/(c3*(a*a+b*b))
+    
+  end function 
 
     
 end module

@@ -394,7 +394,6 @@ contains
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rimf2,.true.,&
          ST_DOUBLE)
          
-
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
 !    ! conditions.
@@ -546,6 +545,7 @@ contains
        if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
+       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
     
     
     ! error detection
@@ -632,6 +632,7 @@ contains
        if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsoltempBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
+       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
 
     
        
@@ -694,6 +695,7 @@ contains
         if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsoltempBlock, 1)
         if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
         if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
 
 
        ! Step 3/3
@@ -751,6 +753,7 @@ contains
        if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
+       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
 
 !       
 !       ! Test, if the solution has converged
@@ -897,7 +900,7 @@ contains
       if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
       if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
-  
+      if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
        
  
 
