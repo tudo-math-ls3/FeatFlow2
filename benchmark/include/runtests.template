@@ -179,8 +179,6 @@ VALGRIND_ARGS=""
 #VALGRIND_ARGS="${VALGRIND_ARGS} --suppressions=include/valgrind.suppressions.pc-opteronx2-linux64-gcc-blas-ompi.supp"
 
 
-
-
 # ===================================================================
 # End of customisation section
 # ===================================================================
@@ -210,9 +208,32 @@ fb_initialiseEnv() {
     # Per host on line.
     #
     # Syntax of Open MPI 1.3.x rankfile:
-    #   rank <rank no.>=<hostname>  slot=<core no.>:<socket no.>
+    #   rank <rank no.>=<hostname>  slot=<socket no.>:<core no.>
     # Per rank one line. Hence, a different rank file is required for different
     # number of processes/parallel blocks.
+    #
+    # Example:
+    # The following hostfile/rankfile combination treats our GPU cluster as if
+    # it only had one socket, ie, only one dualcore CPU instead of two:
+    #
+    # --hostfile
+    # ashenvale   slots=4 max_slots=4
+    # azeroth     slots=4 max_slots=4
+    # kalimdor    slots=4 max_slots=4
+    # stonetalon  slots=4 max_slots=4
+    #
+    # --rankfile
+    # rank 0=azeroth    slot=0:0
+    # rank 1=azeroth    slot=1:0
+    # rank 2=azeroth    slot=1:1
+    # rank 3=ashenvale  slot=1:0
+    # rank 4=ashenvale  slot=1:1
+    # rank 5=kalimdor   slot=1:0
+    # rank 6=kalimdor   slot=1:1
+    # rank 7=stonetalon slot=1:0
+    # rank 8=stonetalon slot=1:1
+    #
+    # Note that azeroth also runs the master, on a separate socket in this example.
 
 
     # A shell function that creates a hostfile and prints it to screen
@@ -660,7 +681,10 @@ fb_raiseUnknownError() {
     echo " "
     echo "No valid FEAT2 log file slaveresult.[0-9] found."
     echo " "
-    \cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL} || echo "Error creating backup of ${EXECUTIONLOG}."
+    if test -s ${EXECUTIONLOG}; then
+	\cp -p ${EXECUTIONLOG} ${EXECUTIONLOG}.${TESTID}.lev${MGLEVEL} || \
+	    echo "Error creating backup of ${EXECUTIONLOG}."
+    fi
 }
 
 
@@ -706,6 +730,10 @@ fb_runAndEvalBenchmarkTest() {
 	    echo "# Warning: The function fb_runAndEvalBenchmarkTest is not prepared to handle application class <${CLASS}>."
     esac
 
+    # print out some general information (continued)
+
+    echo
+
     startdate=`date | awk '{print $4}'`
 
     echo "START : "${startdate}
@@ -743,10 +771,10 @@ fb_runAndEvalBenchmarkTest() {
 		;;
 
 	    *)
-	    # No compatibility testing for unhandled architecture.
+		# No compatibility testing for unhandled architecture.
 		string=" "
 	esac
-	stdoutput=`file ${appname} | grep "${string}"`
+	stdoutput=`POSIXLY_CORRECT=1 file ${appname} | grep "${string}"`
 	if test -z "${stdoutput}"; then
 	    # Binary incompatible
 	    echo "Binary <${appname}> incompatible. Please re-make / re-link."
@@ -757,18 +785,20 @@ fb_runAndEvalBenchmarkTest() {
 	    # always 1.
 	    ntasks=1
 
-	    # In case of parallel execution one more process than
+	    # In case of MPI execution one more process than
 	    # parallel blocks is needed
 	    EXECMODE="`echo ${EXECMODE} | tr '[a-z]' '[A-Z]'`"
-	    if test "${EXECMODE}" = "PARALLEL"; then
+	    if test "${EXECMODE}" = "MPI"; then
 		ntasks=`expr $ntasks + 1`
 	    fi
 
-#	    if test -n "${NPART}" -a "${NPART}" != "FROM_FILE"; then
-#		ntasks=${NPART}
-#		ntasks=`expr $ntasks + 1`
-#		AUTOPART=YES
-#		export AUTOPART
+#	    if test -n "${NPART}"; then
+#		if test "${NPART}" != "FROM_FILE"; then
+#		    ntasks=${NPART}
+#		    ntasks=`expr $ntasks + 1`
+#		    AUTOPART=YES
+#		    export AUTOPART
+#		fi
 #	    fi
 
 #	    # Automatically detect whether binary has been built with MARMOT 
@@ -803,6 +833,8 @@ fb_runAndEvalBenchmarkTest() {
 #		VISOUTPUTFILE=solution
 #	    fi
 #	    export VISOUTPUTFILE
+#	    VISOUTPUTBASE=$VISOUTPUTFILE
+#	    export VISOUTPUTBASE
 
 	    case "${CLASS}" in
 		# OpenGL tests need write permission to NVIDIA device.
@@ -818,6 +850,9 @@ fb_runAndEvalBenchmarkTest() {
 
 	    # Loop over all multigrid levels
 	    for currentmglevel in `echo ${MGLEVELS} | sed 's/,/ /g'`; do
+#		VISOUTPUTFILE=${VISOUTPUTBASE}-lev${currentmglevel}
+#		export VISOUTPUTFILE
+
 		# If execution failed in a previous loop, exit the loop. Why?
 		# Well, after all: Failed is failed.
 		if test "${KEEPGOING}" = "0" -a ${execfailed} -eq 1; then
@@ -826,7 +861,7 @@ fb_runAndEvalBenchmarkTest() {
 		MGLEVEL=${currentmglevel}
 		export MGLEVEL
 
-#		\rm ${LOGDIR}/slaveresult.* ${LOGDIR}/feastlog.* ${EXECUTIONLOG} 1>/dev/null 2>&1
+#		\rm ${LOGDIR}/slaveresult.* ${LOGDIR}/feastlog.* ${EXECUTIONLOG} 1> /dev/null 2>&1
 		\rm ${EXECUTIONLOG} 1>/dev/null 2>&1
 
 		# #########################
@@ -854,19 +889,30 @@ fb_runAndEvalBenchmarkTest() {
 		    fi
 		fi
 
+
+		# Passing an argument to the program to be debugged does not work.
+		# Store config file under default config file name.
+		# This copy operation is limited to debug sessions as debug sessions are
+		# usually performed one at a time. In a scheduling environment, several
+		# copy/remove operations might occur simultaneously - which might raise
+		# problems.
+		if test "${DEBUGGER}" != "0"; then
+		    \cp -p ${MASTERDAT} master.dat
+		fi
+
 		# ############################
-		# parallel
+		# MPI
 		case "${EXECMODE}" in
 		    # ############################
 		    MPI)
 			# boot up MPI universe
 			eval ${MPISTART} ${outputredirect}
 
-			echo -n "Running "${currentmglevel}".... "
+			printf "Running "${currentmglevel}".... "
 
 			# DDT settings (w/o PBS)
 			case "`echo ${DEBUGGER} | tr '[a-z]' '[A-Z]'`" in
-			    # parallel, normal execution
+			    # MPI, normal execution
 			    0)
 				# Submitted via PBS?
 #				if test "${PBS_ENVIRONMENT+set}" = set ; then
@@ -963,18 +1009,18 @@ fb_runAndEvalBenchmarkTest() {
 					use_numactl=1;
 				    fi
 				fi
-				if test $use_numactl -gt 1; then
-				    echo -n "Running "${currentmglevel}" (with NUMACTL).... "
-				    echo numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE}
+				if test $use_numactl -eq 1; then
+				    printf "Running "${currentmglevel}" (with NUMACTL).... "
+#				    echo numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE}
 				    eval numactl --cpubind=0 --membind=0 ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				else
-				    echo -n "Running "${currentmglevel}" (without NUMACTL).... "
+				    printf "Running "${currentmglevel}" (without NUMACTL).... "
 				    eval ${PWD}/${appname} ${DATFILE} ${outputredirect}
 				fi
 				;;
 
 			    DDT)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 
 				# Issue warning when Intel, PGI or Pathscale compiler are being used.
 				if test -n "`echo ${BUILDID} | grep intel-`" -o \
@@ -1001,12 +1047,12 @@ fb_runAndEvalBenchmarkTest() {
 
 			    VALGRIND)
 				# use valgrind
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 				eval valgrind ${VALGRIND_ARGS} ${PWD}/${appname} ${outputredirect}
 				;;
 
 			    GDB)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 
 				# use gdb
 				echo
@@ -1021,23 +1067,28 @@ fb_runAndEvalBenchmarkTest() {
 				;;
 
 			    DBX)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 				eval dbx -r  ${PWD}/${appname} ${outputredirect}
 				;;
 
 			    RUN_DBX)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 				# run_dbx settings
 				eval run_dbx ${PWD}/${appname} ${outputredirect}
 				;;
 
 			    DDD)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 				ddd ${PWD}/${appname}
 				;;
 
+			    PATHDB)
+				printf "Running "${currentmglevel}".... "
+				pathdb ${PWD}/${appname}
+				;;
+
 			    PGI)
-				echo -n "Running "${currentmglevel}".... "
+				printf "Running "${currentmglevel}".... "
 				pgdbg ${PWD}/${appname}
 				;;
 
@@ -1062,7 +1113,16 @@ fb_runAndEvalBenchmarkTest() {
 			    echo "Done"
 			fi
 			;;
-		esac # serial/parallel
+		esac # serial/MPI
+
+
+		# This remove operation is limited to debug sessions as debug sessions are
+		# usually performed one at a time. In a scheduling environment, several
+		# copy/remove operations might occur simultaneously - which might raise
+		# problems.
+		if test "${DEBUGGER}" != "0"; then
+		    rm -f master.dat
+		fi
 
 
 		# Aggregate the content of the benchmark result file
@@ -1087,14 +1147,33 @@ fb_runAndEvalBenchmarkTest() {
 			;;
 
 		    *)
-			TABLE_HEADER='unhandled application/test class'
+			TABLE_HEADER="
+WARNING! For this application / test class there are no instructions
+         coded in runtests.template that would generate output
+         (preferably a single line per program run) that can be
+         compared against a reference output. Resorting as a fail back
+         to this program run's complete screen output - which is
+         considered lazy and bad practice, because the complete output
+         is prone to frequently change only marginally!
+"
 			;;
 		esac
 	    done # end loop over all refinement levels
 
 
-	    # Determine filename for the results
+	    # Determine filename for the results and remove file if its exists
 	    FILENAME="test"${TESTID}".result"
+	    if test "${DIFFERENTSERIALRESULT}" = "true" -o "${DIFFERENTSERIALRESULT}" = "1"; then
+		case "${EXECMODE}" in
+		    MPI)
+			FILENAME="test"${TESTID}".mpi.result"
+			;;
+		    SERIAL)
+			FILENAME="test"${TESTID}".serial.result"
+			;;
+		esac
+	    fi
+	    test -s results/${BUILDID}/${FILENAME} && rm -f results/${BUILDID}/${FILENAME}
 
 	    testall=`expr ${testall} + 1`
 
@@ -1117,6 +1196,19 @@ fb_runAndEvalBenchmarkTest() {
 		    echo
 		fi
 
+		echo "Displaying fragmented results."
+		if test -s ${LOGDIR}/${RESULTFILE}.all-levels; then
+		    echo "${TABLE_HEADER}"
+		    cat ${LOGDIR}/${RESULTFILE}.all-levels
+		    echo
+
+		    # Store fragmented results to disk
+		    \cp ${LOGDIR}/${RESULTFILE}.all-levels results/${BUILDID}/${FILENAME}
+		else
+		    echo "[None available.]"
+		    echo
+		fi
+
 	    # Everything's fine, compare result with reference solution
 	    else
 		echo
@@ -1128,12 +1220,12 @@ fb_runAndEvalBenchmarkTest() {
 		fi
 
 		# Store results to disk
-		\cp ${LOGDIR}/${RESULTFILE} results/${BUILDID}/${FILENAME}
+		\cp ${LOGDIR}/${RESULTFILE}.all-levels results/${BUILDID}/${FILENAME}
 
 		# Compare with reference solution
 		if test -r refsol/${BUILDID}/${FILENAME}; then
-		    echo "Comparing current with reference solution..."
-		    diff -w results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME} >& ${LOGDIR}/diffresult
+		    echo "Comparing reference with current solution..."
+		    diff -w refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME} 1> ${LOGDIR}/diffresult 2>&1
 		    # Check whether reference and current solution match
 		    if test $? -eq 0; then
 			echo "TEST OK"
@@ -1151,8 +1243,8 @@ fb_runAndEvalBenchmarkTest() {
 			cat ${LOGDIR}/diffresult
 			echo
 			echo "Difference:"
-#			perl include/diff_refsol_result.pl "${APPL}" results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME}
-			diff results/${BUILDID}/${FILENAME} refsol/${BUILDID}/${FILENAME}
+#			perl include/diff_refsol_result.pl "${APPL}" refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME}
+			diff refsol/${BUILDID}/${FILENAME} results/${BUILDID}/${FILENAME}
 			echo
 		    fi
 		else
@@ -1165,19 +1257,47 @@ fb_runAndEvalBenchmarkTest() {
 		    cat results/${BUILDID}/${FILENAME}
 		    echo
 		fi
+	    fi
 
-		if test ${execfailed} -eq 0 -o "${KEEPGOING}" != "0"; then
-		    # For some applications a couple of postprocessing steps,
-		    # after having done all the refinement levels, is wanted. E.g.
-		    # to compute L2 error reduction rates
-		    case "${APPL}" in
-			# example code from FEAST as no FEAT2 app uses this feature so far
-			matmod)
-			    grep "FBMARK" ${LOGDIR}/feastlog.001
-			    ;;
-		    esac
-		fi
-    	    fi
+	    if test ${execfailed} -eq 0 -o "${KEEPGOING}" != "0"; then
+		# For some applications a couple of postprocessing steps,
+		# after having done all the refinement levels, is wanted. E.g.
+		# to compute L2 error reduction rates
+		case "${APPL}" in
+		    FEASTbasicops)
+			# Store settings used to generate the binary that runs
+			# the benchmark test IDs SBBLAS* for later evaluation
+			# using the script fbenchmark2/bin/generate_sbblasconf.
+			if test "${TESTFEATURE}" = "sparse_banded_blas"; then
+			    ( cd src_basicops;
+			      printf "Hostname           : ";
+			      hostname;
+			      printf "Date               : ";
+			      date;
+			      printf "Configuration      : ";
+			      make --no-print-directory .libidonly;
+			      printf "Compiler version   : ";
+			      make --no-print-directory .sbblascompilerversion;
+			      printf "Compiler options   : ";
+			      make --no-print-directory .sbblascompileroptions; ) > ${LOGDIR}/compilersettings;
+			fi
+			;;
+
+		    FEASTmatmod)
+			grep "FBMARK" ${LOGDIR}/feastlog.001
+			;;
+
+		    FEASTnavsto|FEASTstokes)
+			echo "error reduction rates"
+			if test -s results/${BUILDID}/${FILENAME}; then
+			    perl include/comparenavstokes.pl results/${BUILDID}/${FILENAME}
+			else
+			    echo "[None available.]"
+			    echo
+			fi
+			;;
+		esac
+	    fi
 
 	    # Clean up
 #	    /bin/rm feastlog.* ${EXECUTIONLOG} diffresult 1> /dev/null 2>&1
