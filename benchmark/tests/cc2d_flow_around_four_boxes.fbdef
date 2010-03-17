@@ -1,0 +1,33 @@
+# -*- mode: sh -*-
+#
+# Description of the file format:
+# This file is supposed to be a simple ASCII text file. Settings are
+# defined per line via
+#   keyword  = value
+# The scope of a keyword/value setting is from its definition till
+# being overwritten or till the end of file.
+# A test definition starts with
+#   testid       = ARBITRARY_TESTNAME
+# All keyword/value settings defined earlier - as well as those defined in
+# the file defaults.fbdef - are automatically assigned to this test definition.
+# The value of any keyword can, of course, be subsequently overwritten
+# via a line "keyword = value". This updated keyword/value setting will then
+# be the default for any subsequently defined test.
+# Anything behind a hash sign (#) is regarded as comment.
+#
+# Every keyword found is exported as environment variable (in uppercase).
+# The case of the corresponding values is left untouched.
+
+#============================================================
+# global settings for all CC2D tests defined in this file
+#============================================================
+
+appl = cc2d
+class = DEFAULT
+
+testid   = CC2D_FLOW_AROUND_FOUR_BOXES
+descr    = channel flow around four box shaped obstacles, CC2D, stationary Navier-Stokes
+datfile  = ./data/apps_cc2d/master_flow_around_four_boxes.dat
+# call program several times, each time with a different maximum multigrid level,
+# e.g. to calculate some error-reduction rates.
+mglevels = 4
