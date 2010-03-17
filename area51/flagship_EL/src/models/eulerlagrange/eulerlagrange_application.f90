@@ -86,10 +86,10 @@
 !#         compressible eulerlagrange equations.
 !#
 !# 12.) eulerlagrange_init
-!#      -> 
+!#      -> Initialization for the particles
 !#
 !# 13.) eulerlagrange_step
-!#      ->  
+!#      -> Calculates the particle motion in each timestep
 !#
 !#
 !# The following auxiliary routines are available:
@@ -3386,6 +3386,9 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             ymin = min(ymin, partymin)
             ymax = max(ymax, partymax)
         end do
+        
+        write(*,*) ''
+        write(*,*) 'Initialization with graymap!   ...this can take a minute!'
 
     end if
 
@@ -3439,16 +3442,17 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
           ! Initialize the starting position by the data of a graymap image
           !-------------------------------------------------------------------------
   
-         call random_number(random3)
-
+         if (modulo(10*iPart,rParticles%npart)==0) write(*,*) int(100*iPart/rParticles%npart), '%'
+       
          do
             ! Get random numbers
             call random_number(random1)
 		    call random_number(random2)
-	
+            call random_number(random3)
+         
 	        partxmin= minval(p_DvertexCoords(1,:))
             partxmax= minval(p_DvertexCoords(1,:))+&
-                    (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+                     (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
             partymin= minval(p_DvertexCoords(2,:))
             partymax= maxval(p_DvertexCoords(2,:))
 	    
@@ -3465,7 +3469,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             ! If there can be particles, exit loop
             if (random3 .le. real(p_Idata(ix,iy),DP)/real(rpgm%maxgray,DP)) exit
           end do
-        
+               
           ! Set particle positions
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
