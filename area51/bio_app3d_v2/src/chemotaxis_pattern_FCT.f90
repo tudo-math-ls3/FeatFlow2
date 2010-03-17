@@ -359,7 +359,7 @@ module chemotaxis_pattern_FCT
         if (.not. sys_getenv_string("PREDIR", spredir)) spredir = './pre'
 
         ! At first, read in the basic triangulation.
-        call tria_readTriFile3D (rtriangulation, trim(spredir)//'/wuerfel.tri')
+        call tria_readTriFile3D (rtriangulation, trim(spredir)//'/16cube.tri')
 
         ! Refine it.
         call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation)
@@ -857,6 +857,9 @@ module chemotaxis_pattern_FCT
 !
 ! ----------------------------
 !
+       if(steps .NE. 0 .OR. (.NOT.(quit))) then
+            itimestep = itimestep -1
+        end if
  ! write the steady_state_array in a file
     call io_openFileForWriting(stat_ouput, iunit, SYS_REPLACE)
         if (iunit .eq. -1) then 
@@ -864,43 +867,48 @@ module chemotaxis_pattern_FCT
         else
             write (iunit, '(A)' ) "steady_state_array"
             write (iunit, '(A, F5.3, A, F5.3)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
+            write (iunit, '(A, I, A, F5.3)') "Level = ", NLMAX, "     dtstep = ", dtstep
+            write (iunit, '(A, F5.3, A, I)') "Tol = ", TOL, "     norm = ", CTRLNORM
             write (iunit, '(A)') "steady state of u :"
-            do iwrite=1,itimestep-1
+            do iwrite=1,itimestep
                 write (iunit, '(E20.10)') steady_state_array(1,iwrite )
             end do
-            if (steps ==0 .AND. quit) then 
-                print *, steady_state_array(1,itimestep )
-                write (iunit, '(E20.10)') steady_state_array(1,itimestep )
-            end if
+!             if (steps ==0 .AND. quit) then 
+! !                 print *, steady_state_array(1,itimestep )
+!                 write (iunit, '(E20.10)') steady_state_array(1,itimestep )
+!             end if
             write (iunit, '(A)') "steady state of c :"
-            do iwrite=1,itimestep-1
+            do iwrite=1,itimestep
                 write (iunit, '(E20.10)') steady_state_array(2,iwrite )
             end do
-            if (steps ==0 .AND. quit) then 
-                write (iunit, '(E20.10)') steady_state_array(2,itimestep )
-            end if
+!             if (steps ==0 .AND. quit) then 
+!                 write (iunit, '(E20.10)') steady_state_array(2,itimestep )
+!             end if
 
         end if
+
     call io_openFileForWriting(stat_ouput//"_abs_error", iunit, SYS_REPLACE)
         if (iunit .eq. -1) then 
             call error_print(ERR_IO_FILEIO,"io_openFileForWriting", ERR_CRITICAL)
         else
             write (iunit, '(A)' ) "absolute_error"
             write (iunit, '(A, F5.3, A, F5.3)') "ALPHA= ", convecRelaxation, "     BETA= ", PHI
+            write (iunit, '(A, I, A, F5.3)') "Level = ", NLMAX, "     dtstep = ", dtstep
+            write (iunit, '(A, F5.3, A, I)') "Tol = ", TOL, "     norm = ", CTRLNORM
             write (iunit, '(A)') "|| u_n - u^* || : "
-            do iwrite=1,itimestep-1
+            do iwrite=1,itimestep
                 write (iunit, '(E20.10)') absolute_error(1,iwrite )
             end do
-            if (steps ==0 .AND. quit) then 
-                write (iunit, '(E20.10)') absolute_error(1,itimestep )
-            end if
+!             if (steps ==0 .AND. quit) then 
+!                 write (iunit, '(E20.10)') absolute_error(1,itimestep )
+!             end if
             write (iunit, '(A)') "|| c_n - c^* || : "
-            do iwrite=1,itimestep-1
+            do iwrite=1,itimestep
                 write (iunit, '(E20.10)') absolute_error(2,iwrite )
             end do
-            if (steps ==0 .AND. quit) then 
-                write (iunit, '(E20.10)') absolute_error(2,itimestep )
-            end if
+!             if (steps ==0 .AND. quit) then 
+!                 write (iunit, '(E20.10)') absolute_error(2,itimestep )
+!             end if
 
         end if
 
@@ -918,7 +926,7 @@ module chemotaxis_pattern_FCT
             select case (gmvfolder)
                 case (0)
                     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                            'gmvcpld/solutionEND.gmv.pattern.'//trim(sys_si0L(itimestep-1,6)))
+                            'gmvcpld/solutionEND.gmv.pattern.'//trim(sys_si0L(itimestep,6)))
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
                     call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
@@ -928,7 +936,7 @@ module chemotaxis_pattern_FCT
                     call ucd_release (rexport)
                 case default
                     call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                            'gmvcpld2/solutionEND.gmv.pattern.'//trim(sys_si0L(itimestep-1,5)))
+                            'gmvcpld2/solutionEND.gmv.pattern.'//trim(sys_si0L(itimestep,6)))
                     call lsyssc_getbase_double (rcellBlock%RvectorBlock(1),p_Ddata)
                     call ucd_addVariableVertexBased (rexport,'cells',UCD_VAR_STANDARD, p_Ddata)
                     call lsyssc_getbase_double (rvectorBlockchemo%RvectorBlock(1),p_Ddata)
@@ -965,11 +973,11 @@ module chemotaxis_pattern_FCT
         print *, "R = ",R
 
         print *, "---------------------------"
-        if ( quit ) then
+!         if ( quit ) then
             print *, "stopped @  timestep = ", itimestep," out of ",ntimesteps
-        else
-            print *, "stopped @  timestep = ", itimestep-1," out of ",ntimesteps
-        end if
+!         else
+!             print *, "stopped @  timestep = ", itimestep-1," out of ",ntimesteps
+!         end if
         print*, "----------------------------"
         print*, "--------TIMESTATS-----------"
         print*, "max time per iteration : ",time_max
@@ -979,27 +987,27 @@ module chemotaxis_pattern_FCT
         print*, "SOLVING FOR C :"
         print*,"max iteration needed :",iteration_c_max
         print *,"min iteration needed :", iteration_c_min
-        if ( quit ) then
+!         if ( quit ) then
             print*, "average iterations needed :", iteration_c_average / itimestep
-        else
-            print*, "average iterations needed :", iteration_c_average / (itimestep-1)
-        end if
+!         else
+!             print*, "average iterations needed :", iteration_c_average / (itimestep-1)
+!         end if
         print*, "SOLVING FOR U :"
         print*,"max iteration needed :", iteration_u_max
         print *,"min iteration needed :", iteration_u_min
-        if ( quit ) then
+!         if ( quit ) then
             print*, "average iterations needed :", iteration_u_average / itimestep
-        else
-            print*, "average iterations needed :", iteration_u_average / (itimestep-1)
-        end if
+!         else
+!             print*, "average iterations needed :", iteration_u_average / (itimestep-1)
+!         end if
         print*, "SOLVING FOR U ( DEF_CORR ) :"
         print*,"max iteration needed :", iteration_defcorr_max
         print *,"min iteration needed :", iteration_defcorr_min
-        if ( quit ) then
+!         if ( quit ) then
             print*, "average iterations needed :", iteration_defcorr_average / itimestep
-        else 
-            print*, "average iterations needed :", iteration_defcorr_average / (itimestep-1)
-        end if
+!         else 
+!             print*, "average iterations needed :", iteration_defcorr_average / (itimestep-1)
+!         end if
                             
         print *,"############ differenece to steady state in c ################"
                         print *,cerror
@@ -1385,6 +1393,9 @@ module chemotaxis_pattern_FCT
         ! An object for saving the boundary mesh region
         type(t_meshregion) :: rmeshRegion
 
+        integer, dimension(:) :: iarray
+        integer :: inat
+        
         print *,">>start of the subroutine chemo_initBC ... "
         
         call bcasm_initDiscreteBC(rdiscreteBC) 
@@ -1402,8 +1413,15 @@ module chemotaxis_pattern_FCT
                                           getBoundaryValuesMR_cell)
         end if    
 
+        inat => rmeshregion%NAT
+        iarray => rmeshRegion%h_IfaceIdx
+
+print*,"inat = ", inat
+
         ! Free the mesh region structure as we will not need it anymore
         call mshreg_done(rmeshRegion)
+
+        
 
         print *,">>end of the subroutine chemo_initBC ... "
     end subroutine
@@ -1630,7 +1648,7 @@ module chemotaxis_pattern_FCT
             call collct_setvalue_vecsca ( rcollection , 'cbvector2' , rcell , .true.)
             call collct_setvalue_vecsca ( rcollection , 'rvector_x' , rtempVecX, .true.)
             call collct_setvalue_vecsca ( rcollection , 'rvector_y' , rtempVecY, .true.)
-            call collct_setvalue_vecsca ( rcollection , 'rvector_z' , rtempVecZ, .true.)            
+            call collct_setvalue_vecsca ( rcollection , 'rvector_z' , rtempVecZ, .true.)
             rcollection%DquickAccess(1) = dtstep
             rcollection%DquickAccess(2) = CHI 
             rcollection%DquickAccess(3) = GAMMA
@@ -1642,7 +1660,7 @@ module chemotaxis_pattern_FCT
             rform%Idescriptors(1,2) = DER_FUNC3D
             rform%Idescriptors(2,2) = DER_DERIV3D_Y
             rform%Idescriptors(1,3) = DER_FUNC3D
-            rform%Idescriptors(2,3) = DER_DERIV3D_Z            
+            rform%Idescriptors(2,3) = DER_DERIV3D_Z
             rform%ballCoeffConstant = .false.
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
@@ -1676,14 +1694,14 @@ module chemotaxis_pattern_FCT
             !call chemo_artdiff( rmassmatrix, rK, dedge, kedge, nedge, aedge_mass )
 
             ! Since we use a 1st order approx of the time-deriv. (backward euler) we add the 
-            ! lumped massmatrix to the existing matrix            
+            ! lumped massmatrix to the existing matrix
             call lsyssc_matrixLinearComb(rK, -dtstep, rmatrix, 1.0_DP, rmatrix,.false.,.false.,.true.,.true.)
             
             ! Adding the diffusion-part of the model, since this can also be non-linear
             ! we use the callback function coeff_hillen_laplace
             rcollection%DquickAccess(1) = dtstep
             rcollection%DquickAccess(2) = D_1
-            rcollection%DquickAccess(3) = N            
+            rcollection%DquickAccess(3) = N
             rform%itermCount = 3
             rform%Idescriptors(1,1) = DER_DERIV3D_X
             rform%Idescriptors(2,1) = DER_DERIV3D_X
