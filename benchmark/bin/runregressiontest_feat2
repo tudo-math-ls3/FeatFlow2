@@ -599,6 +599,12 @@ fb_customise() {
             # We always load (modulo exceptions hard-coded below) the most recent version as
             # determined by the module system installed on these machines.
 	    case "$FORCEBUILDID" in
+		ia64-itanium2x2-linux-intel-mkl)
+		    modules=""
+		    modules="$modules intel/cc64/10.1.021 intel/fc64/10.1.021 intel/mkl64/10.2_update_3"
+		    COMPILERNAME="Intel 10.1"
+		    ;;
+
 		pc64-opteron-linux-gcc-*)
 		    modules=""
 		    modules="$modules gcc/4.3.3"
@@ -617,6 +623,12 @@ fb_customise() {
 		    COMPILERNAME="SunStudio"
 		    ;;
 
+		pc64-opteronx2-linux-gcc-goto2)
+		    modules=""
+		    modules="$modules gcc/4.4.3 gotoblas2/gcc/1.13"
+		    COMPILERNAME="GCC 4.4.3"
+		    ;;
+
 		# default build ID
 		pc64-opteron-linux-intel-*|*)
 		    modules=""
@@ -631,9 +643,15 @@ fb_customise() {
 
 	    # Make 'module' command and modulefiles available, grepping necessary due to
 	    # stupid non-default verbosity levels of different module installations
-	    . /usr/local/Modules/default/init/sh && \
-		module use /usr/local/Modules/modulefiles && \
-		module add $modules > $AUXILIARYLOG 2>&1
+	    if [ -r /usr/local/Modules ]; then
+		. /usr/local/Modules/default/init/sh && \
+		    module use /usr/local/Modules/modulefiles && \
+		    module add $modules > $AUXILIARYLOG 2>&1
+	    elif [ -r /sfw/Modules ]; then
+		. /sfw/Modules/default/init/sh && \
+		    module use /sfw/Modules/modulefiles && \
+		    module add $modules > $AUXILIARYLOG 2>&1
+	    fi
 	    #grep -v Duplicate $AUXILIARYLOG > $AUXILIARYLOG
 	    if [ -s $AUXILIARYLOG ]; then
 		MAILSUBJECT="$MAILPREFIX Loading of modules failed ($HOSTNAME - $COMPILERNAME - $TESTSUITE.fbconf)"
@@ -1131,7 +1149,7 @@ fb_runBenchmarkOnLiDO() {
 
     # Add a remark to the logfile when we did not wait till
     # the last job had finished.
-    if test $iteration -gt $maxwaitcycles; then
+    if [ $iteration -gt $maxwaitcycles ]; then
 	(echo "Giving up waiting for scheduled jobs to finish"; \
 	 echo "after "`expr $iteration \* $sleeptime / 60 / 60`" hours.") >> $GLOBALLOG
     fi
