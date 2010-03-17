@@ -98,7 +98,7 @@ GENERIC   = 0
 
 # Try to find more sophisticated compiler settings
 ifeq ($(FFCPU),athlon64)
-OPTFLAGS  += -tpp7 -xW -us -pad -funroll-loops
+OPTFLAGS  += -mtune=pentium4 -us -pad -funroll-loops
 GENERIC   = 0
 endif
 
