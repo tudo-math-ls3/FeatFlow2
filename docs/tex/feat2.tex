@@ -92,6 +92,8 @@
 \parskip1em
 \renewcommand{\arraystretch}{1.5}
 
+\input{definitions}
+
 \begin{document}
 
 \begin{titlepage}
@@ -136,16 +138,18 @@ WWW: http://www.featflow.de/feast, Email:feast@mathematik.uni-dortmund.de
 
 \include{modules_overview}
 
-\include{modules_overview_dynamic}
+%\include{modules_overview_dynamic}
+\include{modules_dynamic}
 
-\include{modules_overview_application}
+%\include{modules_overview_application}
 
-\include{modules_description_dynamic}
+%\include{modules_description_dynamic}
 
 
 % ---- Bibliography ----
 %
 
+\nocite{Turek1997c,Turek1998}
 \bibliography{fbmathlit}
 
 \end{document}
