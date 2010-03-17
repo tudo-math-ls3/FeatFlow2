@@ -589,7 +589,17 @@ fb_customise() {
 	    test -z "$MYUSER" && MYUSER="$LOGNAME"
 	    # If all fails then use "featflow"
 	    test -z "$MYUSER" && MYUSER="featflow"
-	    MAILX="mailx -r feat2users@math.tu-dortmund.de"
+	    if test -n "`uname -a | grep Ubuntu`"; then
+		# 'mailx -r feat2users@math.tu-dortmund.de' is not portable,
+		# it is available on openSuSE 1x.x, but not on Ubuntu.
+		REPLYTO=feat2users@math.tu-dortmund.de
+		export REPLYTO;
+		MAILX="mailx"
+	    elif test "`hostname`" = "hellboy"; then
+		MAILX="mailx -r feat2users@math.tu-dortmund.de"
+	    else
+		MAILX="mailx"
+	    fi
 	    FROMADDRESS="$MYUSER@math.tu-dortmund.de"
 	    # on these machines, several benchmark instances run in parallel without
 	    # any queuing system, so enable manual synchronisation via filesystem
@@ -603,30 +613,43 @@ fb_customise() {
 		    modules=""
 		    modules="$modules intel/cc64/10.1.021 intel/fc64/10.1.021 intel/mkl64/10.2_update_3"
 		    COMPILERNAME="Intel 10.1"
-		    ;;
-
-		pc64-opteron-linux-gcc-*)
-		    modules=""
-		    modules="$modules gcc/4.3.3"
-		    COMPILERNAME="gcc 4.3.3"
-		    ;;
-
-		pc64-opteron-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules sunstudio"
-		    COMPILERNAME="SunStudio"
-		    ;;
-
-		pc64-opteron-linux-sunstudio-*)
-		    modules=""
-		    modules="$modules sunstudio"
-		    COMPILERNAME="SunStudio"
+		    COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
+		    CREATEDOCU="no"  # no latex available on our Itanium server
 		    ;;
 
 		pc64-opteronx2-linux-gcc-goto2)
 		    modules=""
 		    modules="$modules gcc/4.4.3 gotoblas2/gcc/1.13"
 		    COMPILERNAME="GCC 4.4.3"
+		    COMPILEWITHPROCS=1   # compile serially to allow users to see why and where compilation fails
+		    CREATEDOCU="yes"
+		    ;;
+
+		pc64-opteron-linux-gcc-*)
+		    modules=""
+		    modules="$modules gcc/4.3.3"
+		    modules="$modules gotoblas tetex/3.0"
+		    COMPILERNAME="gcc 4.3.3"
+		    COMPILEWITHPROCS=2
+		    CREATEDOCU="yes"
+		    ;;
+
+		pc64-opteron-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules sunstudio"
+		    modules="$modules gotoblas tetex/3.0"
+		    COMPILERNAME="SunStudio"
+		    COMPILEWITHPROCS=2
+		    CREATEDOCU="yes"
+		    ;;
+
+		pc64-opteron-linux-sunstudio-*)
+		    modules=""
+		    modules="$modules sunstudio"
+		    modules="$modules gotoblas tetex/3.0"
+		    COMPILERNAME="SunStudio"
+		    COMPILEWITHPROCS=2
+		    CREATEDOCU="yes"
 		    ;;
 
 		# default build ID
@@ -634,12 +657,15 @@ fb_customise() {
 		    modules=""
 		    modules="$modules intel/cce/10.1.021 intel/fce/10.1.021"
 #		    modules="$modules intel/cce/9.1.045 intel/fce/9.1.040"
+		    modules="$modules gotoblas tetex/3.0"
 		    COMPILERNAME="Intel 10.1"
+		    COMPILEWITHPROCS=2
+		    CREATEDOCU="yes"
 		    ;;
 	    esac
 
 	    USEMODULES="yes"
-	    modules="$modules gotoblas tetex/3.0"
+#	    modules="$modules gotoblas tetex/3.0"
 
 	    # Make 'module' command and modulefiles available, grepping necessary due to
 	    # stupid non-default verbosity levels of different module installations
@@ -658,8 +684,6 @@ fb_customise() {
 		echo "" | $MAILX -s "$MAILSUBJECT" $RECIPIENT < $AUXILIARYLOG
 		fb_exit 1
 	    fi
-	    COMPILEWITHPROCS=2
-	    CREATEDOCU="yes"
 	    ;;
     esac
 }
