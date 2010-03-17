@@ -3283,23 +3283,20 @@ END IF
             ! For the andriy test-case
             ! eg. u_analytic = x*(16-x)
             !      c_analytic = x+y+z
-            Dcoefficients(1,icub,iel) = dtstep*( 2_DP + 2_DP + 2_DP + convecRelaxation*(2_DP-2_DP*x) & 
-								    + convecRelaxation*(2_DP-2_DP*y) & 
-								    + convecRelaxation*(2_DP-2_DP*z) )            
+            Dcoefficients(1,icub,iel) = dtstep*( (2.0_DP +2.0_DP+2.0_DP) / 768.0_DP&
+                                                           + convecRelaxation*(16.0_DP-2.0_DP*x) /18432.0_DP&  
+							   + convecRelaxation*(16.0_DP-2.0_DP*y) /18432.0_DP&
+							   + convecRelaxation*(16.0_DP-2.0_DP*z) / 18432.0_DP )
 
-            !16_DP + 2*x) )
-            !Dcoefficients(1,icub,iel) = dtstep*(2*y*(y-16_DP)*z*(z-16_DP)+ & 
-            !                                    2*x*(x-16_DP)*z*(z-16_DP)+ & 
-            !                                    2*x*(x-16_DP)*y*(y-16_DP))!- &
-            ! chemo convective term 
-            !                                    (2*x-16)*y*(y-16_DP)*z*(z-16_DP) - &
-            !                                    (2*y-16)*x*(x-16_DP)*z*(z-16_DP) - &
-            !                                    (2*z-16)*y*(y-16_DP)*x*(x-16_DP) )
-            !Dcoefficients(1,icub,iel) = 0.0_DP
-            
+!             Dcoefficients(1,icub,iel) = dtstep*( (2.0_DP +2.0_DP+2.0_DP)&
+!                                                            + convecRelaxation*(16.0_DP-2.0_DP*x) &  
+! 							   + convecRelaxation*(16.0_DP-2.0_DP*y) &
+! 							   + convecRelaxation*(16.0_DP-2.0_DP*z) )
+
+
         END DO
-    END DO    
-    
+    END DO
+
   end subroutine
   !end of coeff_hillenX_RHS_rfu
   
@@ -6859,7 +6856,8 @@ END IF
             real(DP) :: x,y,z
             real(DP) :: func_result
 
-            func_result = x*(2_DP-x) + y*(2_DP-y) + z*(2_DP-z) 
+            func_result = (z*(16.0_DP-z)+y*(16.0_DP-y)+x*(16.0_DP-x))/768.0_DP
+! + y*(16.0_DP-y) + z*(16.0_DP-z) ) /100.0_DP
 
         end function userPresc_cellsSol
 
@@ -6869,7 +6867,8 @@ END IF
             real(DP) :: x,y,z
             real(DP) :: func_result
 
-            func_result = x + y + z
+            func_result = (x + z + y) / 24.0_DP
+! + z) / 10.0_DP
 
         end function userPresc_chemoSol
 
@@ -6895,7 +6894,8 @@ END IF
             ! eg. u_analytic = x * (16-x)
             !      c_analytic = x+y+z
         !!!func_result = x*(16_DP-x)
-        func_result = x*(2_DP-x) + y*(2_DP-y) + z*(2_DP-z) 
+        func_result = userPresc_cellsSol(x,y,z)
+! (x*(16.0_DP-x) + y*(16.0_DP-y) + z*(16.0_DP-z)) / 100.0_DP
         
         !func_result = x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
 
@@ -6929,7 +6929,8 @@ END IF
         !func_result = x**2+y+z
             ! RS: andriy and linear test-case
         !!!func_result = x+y+z
-        func_result = x+y+z 
+        func_result = userPresc_chemoSol(x,y,z)
+! (x+y+z ) / 10.0_DP
                 
         !func_result = -x*(x-16_DP)*y*(y-16_DP)*z*(z-16_DP)
         !func_result = x*(x-16_DP)+y*(y-16_DP)+z*(z-16_DP)
@@ -7458,10 +7459,13 @@ END IF
                 Dvalues(icub,iel) = userPresc_chemoSol( x, y, z )
             ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
                 Dvalues(icub,iel) = 1.0_DP
+!/24.0_DP
             ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
                 Dvalues(icub,iel) = 1.0_DP
+!/24.0_DP
             ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
                 Dvalues(icub,iel) = 1.0_DP
+!/24.0_DP!1.0_DP/8.0_DP
             END IF
 
         END DO
@@ -7573,11 +7577,14 @@ END IF
             IF (cderivative .EQ. DER_FUNC3D) THEN
                 Dvalues(icub,iel) = userPresc_cellsSol( x, y, z )
             ELSE IF (cderivative .EQ. DER_DERIV3D_X) THEN
-                Dvalues(icub,iel) = 2_DP - 2*Dpoints(1,icub,iel)
+                Dvalues(icub,iel) = (16.0_DP - 2*Dpoints(1,icub,iel)) 
+!/ 768.0_DP
             ELSE IF (cderivative .EQ. DER_DERIV3D_Y) THEN
-                Dvalues(icub,iel) = 2_DP - 2*Dpoints(2,icub,iel)
+                Dvalues(icub,iel) = (16.0_DP - 2*Dpoints(2,icub,iel))
+ !/ 768.0_DP
             ELSE IF (cderivative .EQ. DER_DERIV3D_Z) THEN
-                Dvalues(icub,iel) = 2_DP - 2*Dpoints(3,icub,iel)
+                Dvalues(icub,iel) = (16.0_DP - 2*Dpoints(3,icub,iel)) 
+!/ 768.0_DP
             END IF
 
         END DO
