@@ -2,25 +2,25 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 4
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
+#prmname = ./pre/QUAD.prm
 #prmname = ./pre/zehnm.prm
 #prmname = ./pre/zylinderuse.prm
-#prmname = ./pre/threezylindergrob.prm
+prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
 
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
+#triname = ./pre/QUAD.tri
 #triname = ./pre/zehnm.tri
 #triname = ./pre/zylinderuse.tri
-#triname = ./pre/threezylindergrob.tri
+triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
 
@@ -38,7 +38,7 @@ FEkind = 1
 dt = 0.001
 
 # Final time
-ttfinal = 0.05
+ttfinal = 30.0
 
 
 [SOLVER]
@@ -76,3 +76,19 @@ gravconst = 1.0
 
 # How fine shall be the DG output file (Default = 3)
 extrapoints = 0
+
+# Name of output file
+ofile = ./gmv/u2d
+
+# Type of output
+# 1 = gmv
+# 2 = vtk
+outtype = 2
+
+# Create files for video?
+# 0: No
+# 1: Yes
+makevideo = 1
+
+# Make gmv snapshot every ... seconds (should be n*dt)
+videotimestep = 0.05

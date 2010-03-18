@@ -677,7 +677,7 @@ contains
     write(*,*) ''
     write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
-    call dg2gmv(rsol,iextraPoints)
+!    call dg2gmv(rsol,iextraPoints,'u2d',-1)
     
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection

@@ -1320,19 +1320,19 @@ contains
 !          end if
           
 
-!          ! Zylinders
-!          if (Dpoints(1,ipoint,iel)<15.0_dp) then
-!            Dcoefficients (1,ipoint,iel)=1.5_dp
-!          else
-!            Dcoefficients (1,ipoint,iel)=1.0_dp
-!          end if
+          ! Zylinders
+          if (Dpoints(1,ipoint,iel)<15.0_dp) then
+            Dcoefficients (1,ipoint,iel)=1.5_dp
+          else
+            Dcoefficients (1,ipoint,iel)=1.0_dp
+          end if
 
-            ! Water reservoir
-            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
-              Dcoefficients (1,ipoint,iel)=1.5_dp
-            else
-              Dcoefficients (1,ipoint,iel)=1.0_dp
-            end if
+!            ! Water reservoir
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
+!              Dcoefficients (1,ipoint,iel)=1.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!            end if
 
 !            ! Circular Dambreak
 !            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
@@ -1903,8 +1903,8 @@ contains
         
 !        ! No BCs
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)!*max(abs(normal(1,iel)),0.0_dp)*(-1.0_dp)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)!*max(abs(normal(2,iel)),0.0_dp)*(-1.0_dp)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
         
         ! Reflecting BCs
         ! Calculate x- and y- velocity from momentum

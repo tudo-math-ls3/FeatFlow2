@@ -180,6 +180,13 @@ contains
     
     real(dp) :: dCFL, dgravconst
     
+    ! Name of output file
+    character (LEN=SYS_STRLEN) :: sofile
+    
+    integer :: imakeVideo, ifilenumber, ioutputtype
+    
+    real(dp) :: dvideotimestep, dvideotime
+     
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -228,7 +235,19 @@ contains
     call parlst_getvalue_int(rparlist, 'METHOD', 'timestepping', itimestepping, 1)
     
     ! What type of limiter to use
-    call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0) 
+    call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0)
+    
+    ! The output file
+    call parlst_getvalue_string (rparlist, 'OUTPUT', 'ofile', sofile, 'gmv/u2d')
+    
+    ! Make gmv snapshots for video? Default=No.
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'makevideo', imakevideo, 0)
+    
+    ! Type of output files (1 = gmv, 2 = vtk)
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'outtype', ioutputtype, 1)
+    
+    ! Make gmv snapshot every ... seconds (should be n*dt)
+    call parlst_getvalue_double(rparlist, 'OUTPUT', 'videotimestep', dvideotimestep)
     
     select case (ielementType)
     case (0)
@@ -244,6 +263,10 @@ contains
       ilimiting = 2
       dCFL = 0.18_dp
     end select
+    
+    ! For video files
+    ifilenumber = -1
+    dvideotime = 0.0_dp
     
     
     
@@ -540,17 +563,37 @@ contains
     rlinformconv%Idescriptors(1) = DER_DERIV_X
     rlinformconv%Idescriptors(2) = DER_DERIV_Y
     
-       if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
-       if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
-       if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
-       if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
-       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
-       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
+    if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsolBlock, 1)
+    if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsolBlock, 1)
+    if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsolBlock, 1)
+    if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
+    if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
+    if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
+    if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+    
+        
+    ! Write first video file (the initial conditions)
+    ! If we want to make a video
+    if (imakevideo == 1) then
+
+      write(*,*) ''
+      write(*,*) 'Writing videofile'
+      
+      ifilenumber = ifilenumber + 1
+      
+      select case (ioutputtype)
+        case (1)
+          ! Output solution to gmv file
+          call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+        case (2)
+          ! Output solution to vtk file
+          call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+      end select
+      
+      dvideotime = dvideotimestep
+    end if
     
     
-    ! error detection
-    !call    lsyssc_getbase_double(rsolBlock%RvectorBlock(3),p_ddata)
-    !write(*,*) p_ddata
     
    select case (itimestepping)
    case (1)
@@ -563,6 +606,8 @@ contains
     timestepping: do
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
+       dt= 0.5_dp*dt
+       if (dt>ttfinal-ttime) dt = ttfinal-ttime
 
        ! Compute solution from time step t^n to time step t^{n+1}
        write(*,*)
@@ -633,6 +678,7 @@ contains
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
+       if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
 
     
        
@@ -696,6 +742,7 @@ contains
         if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
         if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
         if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
+        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
 
 
        ! Step 3/3
@@ -754,6 +801,7 @@ contains
        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
+       if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
 
 !       
 !       ! Test, if the solution has converged
@@ -769,6 +817,26 @@ contains
        ! If we would go beyond the final time in our next time step,
        ! then reduce the timestep
        !if (ttfinal-ttime<dt) dt = ttfinal-ttime
+       
+       ! If we want to make a video
+        if ((imakevideo == 1).and.(ttime>dvideotime-0.001_DP*dt)) then
+
+          write(*,*) ''
+          write(*,*) 'Writing videofile'
+          
+          ifilenumber = ifilenumber + 1
+          
+          select case (ioutputtype)
+            case (1)
+              ! Output solution to gmv file
+              call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+            case (2)
+              ! Output solution to vtk file
+              call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+          end select
+          
+          dvideotime = dvideotime + dvideotimestep
+        end if
 
        ! Leave the time stepping loop if final time is reached
        if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
@@ -901,7 +969,7 @@ contains
       if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsolBlock)
       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
-       
+      if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
  
 
 
@@ -960,20 +1028,22 @@ contains
 !    call lsyssc_copyVector(rsoltemp,rsol)
 !    
 !    
-!    
-!    
-!    
-!    
-    
     
     
     write(*,*) ''
     write(*,*) 'Writing solution to file'
-    ! Output solution to gmv file
-    call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints)
-    ! Output solution to vtk file
-    call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints)
-    
+      
+    ifilenumber = -1
+      
+    select case (ioutputtype)
+      case (1)
+        ! Output solution to gmv file
+        call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+      case (2)
+        ! Output solution to vtk file
+        call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+    end select
+      
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
      call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
