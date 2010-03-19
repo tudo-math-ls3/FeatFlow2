@@ -293,8 +293,8 @@ module eulerlagrange_callback2d
       integer(I32) :: h_lambda1, h_lambda2, h_lambda3, h_lambda4
       real(DP), dimension(:), pointer :: p_lambda1, p_lambda2, p_lambda3, p_lambda4
       ! diameter, mass and alpha_n 
-      integer(I32) :: h_diam, h_mass, h_alpha_n
-      real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n
+      integer(I32) :: h_diam, h_mass, h_alpha_n, h_temp
+      real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n, p_temp
       ! midpoints of the element 
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
@@ -4296,7 +4296,7 @@ contains
     ! Variables for midpoints_el
 	real(DP), dimension(1:5) :: distances
 	integer :: i, adj, minl, ite
-	integer, parameter :: itemax = 10000
+	integer, parameter :: itemax = 100000
 	real(DP) :: distToMid
 
     ! Set pointer to triangulation
@@ -4333,9 +4333,9 @@ contains
 
 	    gotoNextElm: do ite = 1, itemax
 	    
-		    ! Calculate the distances to the midpoints
 		    distances = 10000.0_dp
    
+		    ! Calculate the distances to the midpoints
 		    do i = 1, 3 
 		      if (p_IneighboursAtElement(i,rParticles%p_element(iPart)) > 0) then
 			    adj = p_IneighboursAtElement(i,rParticles%p_element(iPart))
@@ -4359,7 +4359,7 @@ contains
 		    ! Store element with the lowest distance
 		    rParticles%p_element(iPart) = p_IneighboursAtElement(minl-1,rParticles%p_element(iPart))
 		    distToMid = distances(minl)
-		    
+
 	    end do gotoNextElm
 	    
     case default
@@ -5019,7 +5019,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
 
     ! local variables	
-	integer :: i_NVBD, current, i, j, ij, jj
+	integer :: i_NVBD, current, i, j, ij, jj, iintersect
 	real(DP), dimension(4) :: x,y
 	real(DP) :: s
 	real(DP), dimension(2) :: velo_rest
@@ -5053,48 +5053,6 @@ contains
 
 	! Save the current element of the particle
 	current = rParticles%p_element(iPart)
-
-
-!call gaux_getIntersection_ray2D
-!  elemental subroutine gaux_getIntersection_ray2D(&
-!      dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
-!  
-!!<description>
-!  ! Calculates the intersection point of two 2D rays given by 
-!  ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
-!!</description>
-!
-!!<input>
-!  ! First point on ray 1.
-!  real(DP), intent(in) :: dx0,dy0
-!  
-!  ! A second point on ray 1. Must be different to (dx1,dy1)
-!  real(DP), intent(in) :: dx1,dy1
-!  
-!  ! First point on ray 2.
-!  real(DP), intent(in) :: dx2,dy2
-!  
-!  ! A second point on ray 2. Must be different to (dx3,dy3)
-!  real(DP), intent(in) :: dx3,dy3
-!!</input>
-!
-!!<result>
-!  ! Intersection point.
-!  ! If the two rays do not intersect or are identical, this is set to (0,0).
-!  real(DP), intent(out) :: dx,dy
-!
-!  ! Returns the type of intersection between the rays.
-!  ! =-1: The rays are the same
-!  ! = 0: The rays do not intersect.
-!  ! = 1: The rays intersect in exactly one point.
-!  integer, intent(out) :: iintersect
-!  
-!  ! Parameter value of the intersection.
-!  ! The intersection point (dx,dy) can be found at position
-!  ! (dx,dy) = (dx0,dy0) + da*(dx1-dx0,dy1-dy0).
-!  ! If iintersect<>1, da is set to 0.
-!  real(DP), intent(out) :: da
-!!</result>
 
 	! Loop over all boundary elements
 	Boundary_Search: do i_NVBD = 1, p_rtriangulation%NVBD
@@ -5136,12 +5094,13 @@ contains
 			y(3)= rParticles%p_ypos_old(iPart)
 			y(4)= rParticles%p_ypos(iPart) - rParticles%p_ypos_old(iPart)
 
-			
-			if ((x(4)*y(2)).ne.(y(4)*x(2))) then
-				s=(x(4)*(y(3)-y(1))-y(4)*(x(3)-x(1)))/(x(4)*y(2)-y(4)*x(2))
-				! Calculate the point of collision with the boundary
-				bdy_point(1)= x(1) + s*x(2)
-				bdy_point(2)= y(1) + s*y(2)
+            ! Compute collisionpoint at the boundary
+            call gaux_getIntersection_ray2D(&
+                  x(1),y(1),x(2),y(2),x(3),y(3),x(4),y(4), bdy_point(1),bdy_point(2), iintersect, s)
+
+            ! If the two rays intersect
+            if (iintersect==1) then
+                
 				! Calculate the the time to the collision (dependent on the timestep)
 				rParticles%p_bdy_time(iPart)= (sqrt((bdy_point(1) - rParticles%p_xpos_old(iPart))**2.0_dp+& 
 											(bdy_point(2) - rParticles%p_ypos_old(iPart))**2.0_dp))&
@@ -5191,16 +5150,21 @@ contains
 				    				       rParticles%norm_val*proj_norm*bdy_norm(1)
 			    rParticles%p_yvelo(iPart)= rParticles%tang_val*proj_tang*bdy_tang(2)+&
 				       			           rParticles%norm_val*proj_norm*bdy_norm(2)
-			end if
 
-	        ! Find the new element for the particle
-	        call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
+    	        ! Find the new element for the particle
+	            call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
-	        ! Calculate barycentric coordinates
-	        call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+	            ! Calculate barycentric coordinates
+	            call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
 
-			exit Boundary_Search
-		end if
+			    exit Boundary_Search
+			
+	        elseif (iintersect == 0) then
+            
+            end if
+            
+       end if
+
 	end do Boundary_Search
 
 
@@ -5385,7 +5349,6 @@ contains
 		                rParticles%p_PartVeloy(p_IverticesAtElement(3,current)) + &
 		                (rParticles%p_yvelo(i))/&
 		                p_DelementVolume(current)
-
 	end do
 
   end subroutine eulerlagrange_calcvelopart

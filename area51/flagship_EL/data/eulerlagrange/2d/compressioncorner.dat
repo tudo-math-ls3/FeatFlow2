@@ -64,9 +64,13 @@ search = midpoint
 #	ymin = minval(p_DvertexCoords(2,:))
 #	ymax = maxval(p_DvertexCoords(2,:))
 # 1 individual startingposition
-# 2 read starting position from file
+# 2 initialize the starting position by the data of a graymap image
 # 3 uniformly distributed over the domain
 startpos = 3
+
+# PGM-file for startingpositions
+filestartpoints = data/eulerlagrange/2d/tux.pgm
+
 
 # minimum particle-position in x-direction
 xmin = 0
@@ -119,11 +123,29 @@ gravityy = 0 #-9.81
 
 
 #-------------------------------------------------------------------------------
+# temperature
+#-------------------------------------------------------------------------------
+
+# temperature of the particles in Kelvin
+parttemp = 0
+
+#-------------------------------------------------------------------------------
 # gasphase
 #-------------------------------------------------------------------------------
 
 # kinematic viscosity of the gas
 gas_nu = 1e-5
+
+
+#-------------------------------------------------------------------------------
+# output particle phase (additional to the data of the output file of the gasphase)
+#-------------------------------------------------------------------------------
+
+# 0 no output
+# 1 only particle positions
+# 2 position, velocity, diameter and temperatur of the particles
+ipartoutput = 2
+
 
 ################################################################################
 
@@ -283,13 +305,14 @@ sucdsolution = out/compressioncorner
 sucderror = out/compressioncorner_error
 
 # variables for ucd output
-sucdvariable(6) =
+sucdvariable(7) =
  density
  velocity
  energy
  pressure
  velo_part
  vol_part
+ vol_partaver
 
 
 ################################################################################
@@ -328,7 +351,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.5
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 0.001

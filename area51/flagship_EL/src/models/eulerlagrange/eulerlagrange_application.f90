@@ -482,6 +482,7 @@ module eulerlagrange_application
     call storage_free (rParticles%h_element)
     call storage_free (rParticles%h_diam)
     call storage_free (rParticles%h_mass)
+    call storage_free (rParticles%h_temp)
     call storage_free (rParticles%h_midpoints_el)
     call storage_free (rParticles%h_alpha_n)
     call storage_free (rParticles%h_bdy_time)
@@ -1631,7 +1632,7 @@ module eulerlagrange_application
     type(t_vectorScalar) :: rvector1, rvector2, rvector3, rvector4, rvector5, rvector6
     real(DP), dimension(:), pointer :: p_Dsolution, p_Ddata1, p_Ddata2, p_Ddata3, p_Ddata4, p_Ddata5, p_Ddata6
     character(len=SYS_NAMELEN) :: cvariable
-    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable, ivt
+    integer :: iformatUCD, isystemFormat, isize, ndim, nvar, ivariable, nvariable, ivt, ipartoutput
 
 
     ! Local variables
@@ -1651,6 +1652,8 @@ module eulerlagrange_application
         trim(soutputName), 'iformatucd', iformatUCD)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemformat', isystemformat)
+    call parlst_getvalue_int(rparlist,&
+        'Eulerlagrange', 'ipartoutput', ipartoutput)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, sucdsolution,&
@@ -1929,11 +1932,56 @@ module eulerlagrange_application
 
     open(20+rParticles%iTimestep,file='out/video/'//sfilenamenew)
 
-    do iPart = 1, rParticles%nPart
+    select case(ipartoutput)
+      case (0)
+      
+      case (1)
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
+        end do
+          
+      case (2)           
+        write(20+rParticles%iTimestep,*) '<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">'
+        write(20+rParticles%iTimestep,*) '  <UnstructuredGrid>'
+        write(20+rParticles%iTimestep,*) '      <Piece NumberOfPoints="', rParticles%nPart, '" NumberOfCells="0">'
+        write(20+rParticles%iTimestep,*) '          <Points>'
+        write(20+rParticles%iTimestep,*) '<DataArray name="Position" type="Float32" NumberOfComponents="3" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart), '0'
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '</Points>'
+        write(20+rParticles%iTimestep,*) '<PointData  Vectors="vector">'
+        write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Velocity" NumberOfComponents="3" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_xvelo(iPart), rParticles%p_yvelo(iPart), '0'
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Diameter" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_diam(iPart)
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Temperature" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_temp(iPart)
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '</PointData>'
+        write(20+rParticles%iTimestep,*) '      <Cells>'
+        write(20+rParticles%iTimestep,*) '          <DataArray type="Int32" Name="connectivity" format="ascii">'
+        write(20+rParticles%iTimestep,*) '          </DataArray>'
+        write(20+rParticles%iTimestep,*) '          <DataArray type="Int32" Name="offsets" format="ascii">'
+        write(20+rParticles%iTimestep,*) '          </DataArray>'
+        write(20+rParticles%iTimestep,*) '       <DataArray type="UInt8" Name="types" format="ascii">'
+        write(20+rParticles%iTimestep,*) '       </DataArray>'
+        write(20+rParticles%iTimestep,*) '     </Cells>'
+        write(20+rParticles%iTimestep,*) '   </Piece>'
+        write(20+rParticles%iTimestep,*) '</UnstructuredGrid>'
+        write(20+rParticles%iTimestep,*) '</VTKFile>'
 
-      write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
+    end select
 
-    end do
 
     close(unit=20+rParticles%iTimestep)
     
@@ -3137,7 +3185,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     real(DP) :: partxmin, partxmax, partymin, partymax
 
     ! Velocity, mass and diameter of the particles
-    real(DP) :: velopartx, veloparty, particlediam, particlemass
+    real(DP) :: velopartx, veloparty, particlediam, particlemass, parttemp
 
     ! Gravity
     real(DP) :: gravityx, gravityy
@@ -3186,6 +3234,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
                             ST_NEWBLOCK_NOINIT)
 
     call storage_new ('euler_lagrange', 'Particle:diameter', rParticles%npart, ST_DOUBLE, rParticles%h_diam, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:temperatur', rParticles%npart, ST_DOUBLE, rParticles%h_temp, &
                             ST_NEWBLOCK_NOINIT)
     call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
                             ST_NEWBLOCK_NOINIT)
@@ -3278,6 +3328,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_double (rParticles%h_lambda4, rParticles%p_lambda4)
     call storage_getbase_double (rParticles%h_diam, rParticles%p_diam)
     call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
+    call storage_getbase_double (rParticles%h_temp, rParticles%p_temp)
     call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
     call storage_getbase_double (rParticles%h_bdy_time, rParticles%p_bdy_time)
 
@@ -3323,6 +3374,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Get particle-mass and diameter
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
 
     ! Get values for gravity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "gravityx", gravityx)
@@ -3530,10 +3582,11 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         rParticles%p_yvelo_gas_old(iPart)= 0d0
         rParticles%p_diam(iPart)= particlediam
         rParticles%p_mass(iPart)= particlemass
+        rParticles%p_temp(iPart)= parttemp
         rParticles%p_alpha_n(iPart)= 0
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0
-        
+                
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
@@ -3647,28 +3700,15 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-
     ! Subroutine to compute the new position of the particles
     call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
-
 
     do iPart = 1, rParticles%nPart
       ! Subroutine to find the element with the particle
       call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
  
-      dx= rParticles%p_xpos(iPart)
-      dy= rParticles%p_ypos(iPart)
-      
-      DcornerCoords(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,rParticles%p_element(iPart)))
-      DcornerCoords(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,rParticles%p_element(iPart)))
-      DcornerCoords(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,rParticles%p_element(iPart)))
-      DcornerCoords(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,rParticles%p_element(iPart)))
-      DcornerCoords(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))
-      DcornerCoords(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))
- 
-      ! Get barycentric coordinates
-      call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,&
-            rParticles%p_lambda1(iPart),rParticles%p_lambda2(iPart),rParticles%p_lambda3(iPart))
+	  ! Calculate barycentric coordinates
+	  call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
                    
       ! Check if particle is in the wrong element
       IF ((abs(rParticles%p_lambda1(iPart))+&
