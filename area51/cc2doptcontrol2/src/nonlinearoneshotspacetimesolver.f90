@@ -435,8 +435,10 @@ contains
             dinitDefNorm * min(&
         
               ! Try to gain quadratic convergence, but get at most only a little but
-              ! more digits than depsRel.
-              max(rnlstsolver%dinexactNewtonEpsRel * rnlstsolver%depsRel,&
+              ! more digits than depsRel. If depsAbs is lower, take that as a bound.
+              max(&
+                  min(rnlstsolver%dinexactNewtonEpsRel * rnlstsolver%depsRel,&
+                      rnlstsolver%depsAbs),&
                   dtempDef**rnlstsolver%dinexactNewtonExponent),&
                 
               ! Get at least dinexactNewtonEpsRel.
