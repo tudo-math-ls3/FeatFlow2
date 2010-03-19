@@ -424,6 +424,7 @@ contains
         ! Switch off the relative stopping criterion in the linear solver:
         
         rnlstsolver%p_rspaceTimePrec%depsRel = 0.0_DP
+        rnlstsolver%p_rspaceTimePrec%istoppingcriterion = SPTILS_STOP_STANDARD
         
         ! Calculate the new absolute stopping criterion:
         
@@ -445,6 +446,7 @@ contains
           ! For the coarse grid solver, we choose the same stopping criterion.
           ! But just for safetyness, the coarse grid solver should gain at least
           ! one digit!
+          rnlstsolver%p_rcgrSolver%istoppingcriterion = SPTILS_STOP_STANDARD
           rnlstsolver%p_rcgrSolver%depsRel = 1.0E-1_DP
           rnlstsolver%p_rcgrSolver%depsAbs = rnlstsolver%p_rspaceTimePrec%depsAbs
         end if

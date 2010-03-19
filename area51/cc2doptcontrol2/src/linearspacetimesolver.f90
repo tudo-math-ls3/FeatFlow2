@@ -221,39 +221,39 @@ module linearspacetimesolver
 !<constantblock description="Algorithm identifiers">
 
   ! Undefined algorithm
-  integer, parameter :: SPTILS_ALG_UNDEFINED     = 0
+  integer, parameter, public :: SPTILS_ALG_UNDEFINED     = 0
   
   ! Preconditioned defect correction (Richardson iteration);
   ! $x_{n+1} = x_n + \omega P^{-1} (b-Ax)$
-  integer, parameter :: SPTILS_ALG_DEFCORR       = 1
+  integer, parameter, public :: SPTILS_ALG_DEFCORR       = 1
   
   ! Block Jacobi preconditioner which applies a spatial preconditioner
   ! to each diagonal block of the coupled space-time system.
-  integer, parameter :: SPTILS_ALG_BLOCKJACOBI   = 2
+  integer, parameter, public :: SPTILS_ALG_BLOCKJACOBI   = 2
   
   ! Block Gauss-Seidel preconditioner
-  integer, parameter :: SPTILS_ALG_BlockFBSOR    = 4
+  integer, parameter, public :: SPTILS_ALG_BlockFBSOR    = 4
   
   ! CG iteration (preconditioned) 
-  integer, parameter :: SPTILS_ALG_CG            = 6
+  integer, parameter, public :: SPTILS_ALG_CG            = 6
 
   ! BiCGStab iteration (left preconditioned) 
-  integer, parameter :: SPTILS_ALG_BICGSTAB      = 7
+  integer, parameter, public :: SPTILS_ALG_BICGSTAB      = 7
 
   ! BiCGStab iteration (right preconditioned) 
-  integer, parameter :: SPTILS_ALG_BICGSTABRIGHT = 8
+  integer, parameter, public :: SPTILS_ALG_BICGSTABRIGHT = 8
 
   ! UMFPACK solver
-  integer, parameter :: SPTILS_ALG_UMFPACK4      = 11
+  integer, parameter, public :: SPTILS_ALG_UMFPACK4      = 11
 
   ! Multigrid iteration
-  integer, parameter :: SPTILS_ALG_MULTIGRID     = 9
+  integer, parameter, public :: SPTILS_ALG_MULTIGRID     = 9
   
   ! Forward-backward simulation
-  integer, parameter :: SPTILS_ALG_FBSIM         = 13
+  integer, parameter, public :: SPTILS_ALG_FBSIM         = 13
 
   ! Time-VANKA with forward-backward simulation for subblocks
-  integer, parameter :: SPTILS_ALG_TIMEVANKA     = 14
+  integer, parameter, public :: SPTILS_ALG_TIMEVANKA     = 14
 
 !</constantblock>
 
@@ -262,7 +262,7 @@ module linearspacetimesolver
 !<constantblock description="Error constants returned by initialisation routines">
 
   ! Initialisation routine went fine
-  integer, parameter :: SPTILS_ERR_NOERROR       = 0
+  integer, parameter, public :: SPTILS_ERR_NOERROR       = 0
   
 !</constantblock>
 
@@ -297,14 +297,14 @@ module linearspacetimesolver
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use both, i.e. the iteration stops when both,
   !    the relative AND the absolute stopping criterium holds
-  integer, parameter :: SPTILS_STOP_STANDARD     = 0
+  integer, parameter, public :: SPTILS_STOP_STANDARD     = 0
 
   ! Use 'minimum' stopping criterion.
   ! If depsRel>0: use relative stopping criterion.
   ! If depsAbs>0: use abs stopping criterion.
   ! If both are > 0: use one of them, i.e. the iteration stops when the
   !    either the relative OR the absolute stopping criterium holds
-  integer, parameter :: SPTILS_STOP_ONEOF        = 1
+  integer, parameter, public :: SPTILS_STOP_ONEOF        = 1
   
 !</constantblock>
 
