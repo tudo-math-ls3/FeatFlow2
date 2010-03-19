@@ -612,7 +612,7 @@ contains
        ! Compute solution from time step t^n to time step t^{n+1}
        write(*,*)
        write(*,*)
-       write(*,*) 'TIME STEP:', ttime, dt
+       write(*,*) 'TIME STEP: t =', ttime,'dt =', dt
        write(*,*)
        
        call profiler_measure(rprofiler,1)

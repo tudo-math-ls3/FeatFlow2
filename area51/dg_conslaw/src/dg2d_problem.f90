@@ -500,6 +500,39 @@ contains
   
   
   
+  ! This routine builds the diagonalmatrix of the absolut value of the eigenvalues
+  function buildMixedaLambda(Q,a,b) result(aLambda)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: L
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, lambda1, lambda2, lambda3
+    
+    c1 = a*Q(2)+b*Q(3)
+    c2 = Q(1)*(a*a+b*b)
+    c3 = sqrt(c2*Q(1)*Q(1)*g)
+    
+    ! Calculate eigenvalues
+    lambda1 = c1/Q(1)
+    lambda2 = (c1+c3)/Q(1)
+    lambda3 = (c1-c3)/Q(1)
+    
+    aLambda = 0.0_dp
+    
+    ! Build matrix of left eigenvectors
+    aLambda(1,1) = abs(lambda1)
+    aLambda(2,2) = abs(lambda2)
+    aLambda(3,3) = abs(lambda3)
+    
+  end function 
+
+
   ! This routine builds the left eigenvectors for the mixed jacobian
   function buildMixedL(Q,a,b) result(L)
 
@@ -531,6 +564,7 @@ contains
        L(3,3) = -0.5_dp*b*c2/(c3*(a*a+b*b))
     
   end function 
+
 
     
 end module

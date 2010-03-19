@@ -28,7 +28,7 @@ triname = ./pre/threezylindergrob.tri
 # 0: DG T0
 # 1: DG T1
 # 2: DG T2
-FEkind = 1
+FEkind = 2
 
 
 
@@ -48,7 +48,7 @@ ttfinal = 30.0
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 9
+limiter = 10
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
@@ -75,7 +75,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 0
+extrapoints = 3
 
 # Name of output file
 ofile = ./gmv/u2d

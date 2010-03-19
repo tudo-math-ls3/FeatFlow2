@@ -1857,6 +1857,7 @@ contains
   real(dp) :: dx, dy
   real(dp) :: dh, du, dv, dnormalPart, dtangentialPart
   real(dp), dimension(3) :: DF1i, DF1a, DF2i, DF2a, DFx, DFy
+  real(dp), dimension(3,3) :: DL, DR, DaLambda
   real(dp) :: dmaxEV
   
   
@@ -2022,6 +2023,38 @@ contains
 !      
 !      ! Save the calculated flux
 !      DfluxValues(:,1,ipoint,iel) = DFlux
+
+!      ! *** Upwind flux without dimensional splitting ***
+!      
+!      ! Get solution values on the in and outside
+!      DQi = Dsolutionvalues(1,ipoint,iel,:)
+!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+!      
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DF1i = buildFlux(DQi,1)
+!      DF1a = buildFlux(DQa,1)
+!      DF2i = buildFlux(DQi,2)
+!      DF2a = buildFlux(DQa,2)
+!            
+!      ! Calculate Roevalues
+!      DQroe = calculateQroe(DQi,DQa)
+!      
+!      ! First calculate flux in x-direction
+!      DFx= 0.5_dp*(DF1i+DF1a)
+!      
+!      ! First calculate flux in y-direction
+!      DFy= 0.5_dp*(DF2i+DF2a)
+!      
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+!      
+!      ! Add artificial diffusion
+!      DL       = buildMixedL       (QRoe,normal(1,iel),normal(2,iel))
+!      DaLambda = buildMixedaLambda (QRoe,normal(1,iel),normal(2,iel))
+!      DR       = buildMixedR       (QRoe,normal(1,iel),normal(2,iel))
+!      
+!      ! Save the calculated flux
+!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(buildMixedaLambda,matmul(DL,DQa - DQi)))
       
       
       

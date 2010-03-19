@@ -5313,7 +5313,7 @@ end subroutine
           
       if (iidx>0) then
       ! Dimensional splitting
-      do idim = 4, 4
+      do idim = 3, 4
         ! Now we need the trafo matrices
         if(idim<3) then
         DL = buildInvTrafo(DVec,idim)
@@ -5782,7 +5782,7 @@ real(dp), dimension(:) :: Dvalues
       
       if (iidx.ne.0) then
       ! Dimensional splitting
-      do idim = 4, 4
+      do idim = 3, 4
         ! Now we need the trafo matrices
         if(idim<3) then
         DL = buildInvTrafo(DQchar,idim)
