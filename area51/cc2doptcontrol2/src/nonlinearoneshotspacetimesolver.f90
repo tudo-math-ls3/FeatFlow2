@@ -438,7 +438,7 @@ contains
               ! more digits than depsRel. If depsAbs is lower, take that as a bound.
               max(&
                   min(rnlstsolver%dinexactNewtonEpsRel * rnlstsolver%depsRel,&
-                      rnlstsolver%depsAbs),&
+                      0.1_DP*rnlstsolver%depsAbs/dinitDefNorm),&
                   dtempDef**rnlstsolver%dinexactNewtonExponent),&
                 
               ! Get at least dinexactNewtonEpsRel.
