@@ -8451,13 +8451,13 @@ contains
       call stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
 
-      ! Calculate total number of space-MG-steps
-      rsolverNode%niteLinSolveSpace = &
-          p_rsubnode%niteLinSolveSpaceCoarse + p_rsubnode%niteLinSolveSpaceSmooth +&
-          p_rsubnode%niteLinSolveSpaceSmoothFine
-
     end if
     
+    ! Calculate total number of space-MG-steps
+    rsolverNode%niteLinSolveSpace = &
+        p_rsubnode%niteLinSolveSpaceCoarse + p_rsubnode%niteLinSolveSpaceSmooth +&
+        p_rsubnode%niteLinSolveSpaceSmoothFine
+
     ! As the solution vector on the finest level shared its memory with rd,
     ! we just calculated the new correction vector!
       
