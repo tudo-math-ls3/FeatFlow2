@@ -405,7 +405,7 @@ contains
 !<subroutine>
 
   subroutine optcana_analyticalError (rglobalData,rconstraints,rsolution,rreference,&
-      derrorU,derrorP,derrorLambda,derrorXi,boutput)
+      DerrorU,DerrorP,DerrorLambda,DerrorXi,boutput)
 
 !<description>
   ! Computes the L2-error $||y-y0||_2$ of the given solution y to a reference
@@ -431,16 +431,32 @@ contains
 
 !<output>
   ! Returns information about the error. ||y-y0||_{L^2}.
-  real(DP), intent(out) :: derrorU
+  ! DerrorU(1) = on the interval [0,T]
+  ! DerrorU(2) = on the interval [0,T)
+  ! DerrorU(3) = on the interval (0,T]
+  ! DerrorU(4) = on the interval (0,T)
+  real(DP), dimension(:), intent(out) :: DerrorU
 
   ! Returns information about the error in the pressure. ||p-p0||_{L^2}.
-  real(DP), intent(out) :: derrorP
+  ! DerrorP(1) = on the interval [0,T]
+  ! DerrorP(2) = on the interval [0,T)
+  ! DerrorP(3) = on the interval (0,T]
+  ! DerrorP(4) = on the interval (0,T)
+  real(DP), dimension(:), intent(out) :: DerrorP
 
   ! Returns information about the error. ||lambda-lambda0||_{L^2}.
-  real(DP), intent(out) :: derrorLambda
+  ! DerrorLambda(1) = on the interval [0,T]
+  ! DerrorLambda(2) = on the interval [0,T)
+  ! DerrorLambda(3) = on the interval (0,T]
+  ! DerrorLambda(4) = on the interval (0,T)
+  real(DP), dimension(:), intent(out) :: DerrorLambda
 
   ! Returns information about the error in the pressure. ||xi-xi0||_{L^2}.
-  real(DP), intent(out) :: derrorXi
+  ! DerrorXi(1) = on the interval [0,T]
+  ! DerrorXi(2) = on the interval [0,T)
+  ! DerrorXi(3) = on the interval (0,T]
+  ! DerrorXi(4) = on the interval (0,T)
+  real(DP), dimension(:), intent(out) :: DerrorXi
 !</output>
   
 !</subroutine>
@@ -448,6 +464,7 @@ contains
     ! local variables
     integer :: isubstep,i
     real(DP) :: dtstep,dtimePrimal,dtimeDual
+    real(DP) :: derrU, derrP, derrLambda, derrXi
     real(DP),dimension(6) :: Derr
     type(t_collection) :: rcollection
     type(t_vectorBlock) :: rtempVector
@@ -463,10 +480,10 @@ contains
     ! current subvector z for the callback routines.
     call collct_init(rcollection)
     
-    derrorU = 0.0_DP
-    derrorP = 0.0_DP
-    derrorLambda = 0.0_DP
-    derrorXi = 0.0_DP
+    DerrorU(:) = 0.0_DP
+    DerrorP(:) = 0.0_DP
+    DerrorLambda(:) = 0.0_DP
+    DerrorXi(:) = 0.0_DP
 
     do isubstep = 1,rsolution%NEQtime
     
@@ -523,65 +540,140 @@ contains
           
       call ansol_doneEval (rcollection,"SOL")
       
-      ! Ignore the solution of the 0th step (initial solution).
-      ! They don't contribute to the dual solution!
-      
-      if (isubstep .gt. 0) then
-      
-        ! The same for the dual equation.
-        ! Dual velocity, primal pressure.
-        ! In rtempVector(4..6) is the dual solution at time dtimeDual,
-        ! so we don't have to evaluate the flow again!
+      ! The same for the dual equation.
+      ! Dual velocity, primal pressure.
+      ! In rtempVector(4..6) is the dual solution at time dtimeDual,
+      ! so we don't have to evaluate the flow again!
 
-        call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
-        do i=4,5
-          rcollection%IquickAccess(1) = i
-          call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
-              optcana_evalFunction,rcollection)
-        end do
-        
-        i=3
+      call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
+      do i=4,5
         rcollection%IquickAccess(1) = i
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
-            
-        ! Dual pressure only in the last timestep.
-        if (isubstep .eq. rsolution%NEQtime) then
-          i=6
-          rcollection%IquickAccess(1) = i
-          call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
-              optcana_evalFunction,rcollection)
-        end if
-
-        call ansol_doneEval (rcollection,"SOL")
-      else
-        Derr(4:6) = 0.0_DP
+      end do
+      
+      i=3
+      rcollection%IquickAccess(1) = i
+      call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+          optcana_evalFunction,rcollection)
+          
+      ! Dual pressure only in the last timestep.
+      if (isubstep .eq. rsolution%NEQtime) then
+        i=6
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+            optcana_evalFunction,rcollection)
       end if
 
+      call ansol_doneEval (rcollection,"SOL")
+
+      ! Get the errors in that timestep.
+      derrU = sqrt(Derr(1)**2 + Derr(2)**2)
+      derrP = Derr(3)
+      derrLambda = sqrt(Derr(4)**2 + Derr(5)**2)
+      derrXi = Derr(6)
+
       ! We use the summed trapezoidal rule.
+      ! Watch out with the start/end of the time interval when
+      ! plugging the values into the error arrays.
       if (isubstep .eq. 1) then
         
-        derrorU = derrorU + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
-        derrorP = derrorP + Derr(3)**2 * dtstep
+        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU
+        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP
+        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda
+        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi
 
-      else if ((isubstep .eq. 2) .or. (isubstep .eq. rsolution%NEQtime)) then
+        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU
+        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP
+        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda
+        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi
+      
+      end if
 
-        ! 2nd substep is first solution in the dual.
-
-        derrorU = derrorU + (Derr(1)**2 + Derr(2)**2) * dtstep
-        derrorP = derrorP + Derr(3)**2 * dtstep
+      if (isubstep .eq. 2) then
         
-        derrorLambda = derrorLambda + 0.5_DP*(Derr(4)**2 + Derr(5)**2) * dtstep
-        derrorXi = derrorXi + Derr(6)**2 * dtstep
-      
-      else
-      
-        derrorU = derrorU + (Derr(1)**2 + Derr(2)**2) * dtstep
-        derrorP = derrorP + Derr(3)**2 * dtstep
+        DerrorU(1)      = DerrorU(1)      + derrU
+        DerrorP(1)      = DerrorP(1)      + derrP
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda
+        DerrorXi(1)     = DerrorXi(1)     + derrXi
 
-        derrorLambda = derrorLambda + (Derr(4)**2 + Derr(5)**2) * dtstep
-        derrorXi = derrorXi + Derr(6)**2 * dtstep
+        DerrorU(2)      = DerrorU(2)      + derrU
+        DerrorP(2)      = DerrorP(2)      + derrP
+        DerrorLambda(2) = DerrorLambda(2) + derrLambda
+        DerrorXi(2)     = DerrorXi(2)     + derrXi
       
+        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU
+        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP
+        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda
+        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi
+
+        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU
+        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP
+        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda
+        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi
+      
+      end if
+
+      if ((isubstep .ge. 3) .and. (isubstep .le. rsolution%NEQtime-2)) then
+        
+        DerrorU(1)      = DerrorU(1)      + derrU
+        DerrorP(1)      = DerrorP(1)      + derrP
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda
+        DerrorXi(1)     = DerrorXi(1)     + derrXi
+
+        DerrorU(2)      = DerrorU(2)      + derrU
+        DerrorP(2)      = DerrorP(2)      + derrP
+        DerrorLambda(2) = DerrorLambda(2) + derrLambda
+        DerrorXi(2)     = DerrorXi(2)     + derrXi
+      
+        DerrorU(3)      = DerrorU(3)      + derrU
+        DerrorP(3)      = DerrorP(3)      + derrP
+        DerrorLambda(3) = DerrorLambda(3) + derrLambda
+        DerrorXi(3)     = DerrorXi(3)     + derrXi
+
+        DerrorU(4)      = Derroru(4)      + derrU
+        DerrorP(4)      = DerrorP(4)      + derrP
+        DerrorLambda(4) = DerrorLambda(4) + derrLambda
+        DerrorXi(4)     = DerrorXi(4)     + derrXi
+      
+      end if
+      
+      if (isubstep .eq. rsolution%NEQtime-1) then
+        
+        DerrorU(1)      = DerrorU(1)      + derrU
+        DerrorP(1)      = DerrorP(1)      + derrP
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda
+        DerrorXi(1)     = DerrorXi(1)     + derrXi
+
+        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU
+        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP
+        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda
+        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi
+      
+        DerrorU(3)      = DerrorU(3)      + derrU
+        DerrorP(3)      = DerrorP(3)      + derrP
+        DerrorLambda(3) = DerrorLambda(3) + derrLambda
+        DerrorXi(3)     = DerrorXi(3)     + derrXi
+
+        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU
+        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP
+        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda
+        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi
+      
+      end if
+
+      if (isubstep .eq. rsolution%NEQtime) then
+        
+        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU
+        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP
+        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda
+        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi
+
+        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU
+        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP
+        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda
+        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi
+
       end if
       
       if (boutput) then
@@ -597,10 +689,10 @@ contains
     end do
 
     ! Get the error return values.    
-    derrorU = sqrt(derrorU)
-    derrorP = sqrt(derrorP)
-    derrorLambda = sqrt(derrorLambda)
-    derrorXi = sqrt(derrorXi)
+    DerrorU = sqrt(DerrorU*dtstep)
+    DerrorP = sqrt(DerrorP*dtstep)
+    DerrorLambda = sqrt(DerrorLambda*dtstep)
+    DerrorXi = sqrt(DerrorXi*dtstep)
 
     ! Release temnp vector and temp data
     call lsysbl_releaseVector (rtempVector)

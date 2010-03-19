@@ -675,7 +675,7 @@ contains
   type(t_vectorBlock) :: rvecTemp
   integer :: istep
   real(dp) :: dtimePrimal,dtimeDual,dtstep
-  real(DP), dimension(4) :: Derror
+  real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
 
     ! -------------------------------------------------------------------------
     ! Visualisation output, force calculation
@@ -706,12 +706,27 @@ contains
       call optcana_analyticalError (rsettings%rglobalData,&
           rsettings%rsettingsOptControl%rconstraints,&
           rvector,rpostproc%ranalyticRefFunction,&
-          Derror(1),Derror(2),Derror(3),Derror(4),.true.)
+          DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
       call output_lbrk()
-      call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
-      call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
-      call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
-      call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
+      call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))   
+      call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))   
+      call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))   
+      call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))   
+      
+      call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))   
+      call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))   
+      call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))   
+      call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))   
+      
+      call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))   
+      call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))   
+      call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))   
+      call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))   
+
+      call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))   
+      call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))   
+      call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))   
+      call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
     end if
 
     ! Should we calculate the functional?

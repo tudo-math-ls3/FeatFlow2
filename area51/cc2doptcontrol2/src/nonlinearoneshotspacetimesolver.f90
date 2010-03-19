@@ -303,7 +303,7 @@ contains
     ! local variables
     integer :: nlevels, ierror, ilev
     real(dp) :: dinitDefNorm,ddefNorm,dlastDefNorm,dtempdef,delapsedReal
-    real(DP), dimension(4) :: Derror
+    real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
     
     ! Some statistical data
     type(t_timer) :: rtimeFactorisationStep,rtimerMGstep
@@ -468,15 +468,31 @@ contains
       ! If error analysis has to be performed, we can calculate
       ! the real error.
       if (rpostproc%icalcError .eq. 1) then
-        call optcana_analyticalError (rsettings%rglobalData,&
-            rsettings%rsettingsOptControl%rconstraints,&
-            rx,rpostproc%ranalyticRefFunction,&
-            Derror(1),Derror(2),Derror(3),Derror(4),.true.)
         if (rnlstsolver%ioutputLevel .ge. 1) then
-          call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
-          call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
-          call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
-          call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
+          call optcana_analyticalError (rsettings%rglobalData,&
+              rsettings%rsettingsOptControl%rconstraints,&
+              rx,rpostproc%ranalyticRefFunction,&
+              DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
+              
+          call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))   
+          call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))   
+          call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))   
+          call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))   
+          
+          call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))   
+          call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))   
+          call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))   
+          call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))   
+          
+          call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))   
+          call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))   
+          call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))   
+          call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))   
+
+          call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))   
+          call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))   
+          call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))   
+          call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
         end if
       end if
       call stat_stopTimer (rnlstsolver%rtimePostprocessing)
@@ -631,15 +647,31 @@ contains
     ! If error analysis has to be performed, we can calculate
     ! the real error.
     if (rpostproc%icalcError .eq. 1) then
-      call optcana_analyticalError (rsettings%rglobalData,&
-          rsettings%rsettingsOptControl%rconstraints,&
-          rx,rpostproc%ranalyticRefFunction,&
-          Derror(1),Derror(2),Derror(3),Derror(4),.true.)
       if (rnlstsolver%ioutputLevel .ge. 1) then
-        call output_line ('||y-y0||           = '//trim(sys_sdEL(Derror(1),10)))   
-        call output_line ('||p-p0||           = '//trim(sys_sdEL(Derror(2),10)))   
-        call output_line ('||lambda-lambda0|| = '//trim(sys_sdEL(Derror(3),10)))   
-        call output_line ('||xi-xi0||         = '//trim(sys_sdEL(Derror(4),10)))   
+        call optcana_analyticalError (rsettings%rglobalData,&
+            rsettings%rsettingsOptControl%rconstraints,&
+            rx,rpostproc%ranalyticRefFunction,&
+            DerrorU,DerrorP,DerrorLambda,DerrorXi,.true.)
+            
+        call output_line ('||y-y0||_[0,T]           = '//trim(sys_sdEL(DerrorU(1),10)))   
+        call output_line ('||y-y0||_[0,T)           = '//trim(sys_sdEL(DerrorU(2),10)))   
+        call output_line ('||y-y0||_(0,T]           = '//trim(sys_sdEL(DerrorU(3),10)))   
+        call output_line ('||y-y0||_(0,T)           = '//trim(sys_sdEL(DerrorU(4),10)))   
+        
+        call output_line ('||p-p0||_[0,T]           = '//trim(sys_sdEL(DerrorP(1),10)))   
+        call output_line ('||p-p0||_[0,T)           = '//trim(sys_sdEL(DerrorP(2),10)))   
+        call output_line ('||p-p0||_(0,T]           = '//trim(sys_sdEL(DerrorP(3),10)))   
+        call output_line ('||p-p0||_(0,T)           = '//trim(sys_sdEL(DerrorP(4),10)))   
+        
+        call output_line ('||lambda-lambda0||_[0,T] = '//trim(sys_sdEL(DerrorLambda(1),10)))   
+        call output_line ('||lambda-lambda0||_[0,T) = '//trim(sys_sdEL(DerrorLambda(2),10)))   
+        call output_line ('||lambda-lambda0||_(0,T] = '//trim(sys_sdEL(DerrorLambda(3),10)))   
+        call output_line ('||lambda-lambda0||_(0,T) = '//trim(sys_sdEL(DerrorLambda(4),10)))   
+
+        call output_line ('||xi-xi0||_[0,T]         = '//trim(sys_sdEL(DerrorXi(1),10)))   
+        call output_line ('||xi-xi0||_[0,T)         = '//trim(sys_sdEL(DerrorXi(2),10)))   
+        call output_line ('||xi-xi0||_(0,T]         = '//trim(sys_sdEL(DerrorXi(3),10)))   
+        call output_line ('||xi-xi0||_(0,T)         = '//trim(sys_sdEL(DerrorXi(4),10)))   
       end if
     end if
     call stat_stopTimer (rnlstsolver%rtimePostprocessing)
