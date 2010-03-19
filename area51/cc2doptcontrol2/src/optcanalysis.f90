@@ -578,101 +578,101 @@ contains
       ! plugging the values into the error arrays.
       if (isubstep .eq. 1) then
         
-        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU
-        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP
-        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda
-        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi
+        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU**2
+        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP**2
+        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda**2
+        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi**2
 
-        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU
-        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP
-        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda
-        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi
+        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU**2
+        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP**2
+        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda**2
+        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi**2
       
       end if
 
       if (isubstep .eq. 2) then
         
-        DerrorU(1)      = DerrorU(1)      + derrU
-        DerrorP(1)      = DerrorP(1)      + derrP
-        DerrorLambda(1) = DerrorLambda(1) + derrLambda
-        DerrorXi(1)     = DerrorXi(1)     + derrXi
+        DerrorU(1)      = DerrorU(1)      + derrU**2
+        DerrorP(1)      = DerrorP(1)      + derrP**2
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda**2
+        DerrorXi(1)     = DerrorXi(1)     + derrXi**2
 
-        DerrorU(2)      = DerrorU(2)      + derrU
-        DerrorP(2)      = DerrorP(2)      + derrP
-        DerrorLambda(2) = DerrorLambda(2) + derrLambda
-        DerrorXi(2)     = DerrorXi(2)     + derrXi
+        DerrorU(2)      = DerrorU(2)      + derrU**2
+        DerrorP(2)      = DerrorP(2)      + derrP**2
+        DerrorLambda(2) = DerrorLambda(2) + derrLambda**2
+        DerrorXi(2)     = DerrorXi(2)     + derrXi**2
       
-        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU
-        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP
-        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda
-        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi
+        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU**2
+        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP**2
+        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda**2
+        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi**2
 
-        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU
-        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP
-        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda
-        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi
+        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU**2
+        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP**2
+        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda**2
+        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi**2
       
       end if
 
       if ((isubstep .ge. 3) .and. (isubstep .le. rsolution%NEQtime-2)) then
         
-        DerrorU(1)      = DerrorU(1)      + derrU
-        DerrorP(1)      = DerrorP(1)      + derrP
-        DerrorLambda(1) = DerrorLambda(1) + derrLambda
-        DerrorXi(1)     = DerrorXi(1)     + derrXi
+        DerrorU(1)      = DerrorU(1)      + derrU**2
+        DerrorP(1)      = DerrorP(1)      + derrP**2
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda**2
+        DerrorXi(1)     = DerrorXi(1)     + derrXi**2
 
-        DerrorU(2)      = DerrorU(2)      + derrU
-        DerrorP(2)      = DerrorP(2)      + derrP
-        DerrorLambda(2) = DerrorLambda(2) + derrLambda
-        DerrorXi(2)     = DerrorXi(2)     + derrXi
+        DerrorU(2)      = DerrorU(2)      + derrU**2
+        DerrorP(2)      = DerrorP(2)      + derrP**2
+        DerrorLambda(2) = DerrorLambda(2) + derrLambda**2
+        DerrorXi(2)     = DerrorXi(2)     + derrXi**2
       
-        DerrorU(3)      = DerrorU(3)      + derrU
-        DerrorP(3)      = DerrorP(3)      + derrP
-        DerrorLambda(3) = DerrorLambda(3) + derrLambda
-        DerrorXi(3)     = DerrorXi(3)     + derrXi
+        DerrorU(3)      = DerrorU(3)      + derrU**2
+        DerrorP(3)      = DerrorP(3)      + derrP**2
+        DerrorLambda(3) = DerrorLambda(3) + derrLambda**2
+        DerrorXi(3)     = DerrorXi(3)     + derrXi**2
 
-        DerrorU(4)      = Derroru(4)      + derrU
-        DerrorP(4)      = DerrorP(4)      + derrP
-        DerrorLambda(4) = DerrorLambda(4) + derrLambda
-        DerrorXi(4)     = DerrorXi(4)     + derrXi
+        DerrorU(4)      = Derroru(4)      + derrU**2
+        DerrorP(4)      = DerrorP(4)      + derrP**2
+        DerrorLambda(4) = DerrorLambda(4) + derrLambda**2
+        DerrorXi(4)     = DerrorXi(4)     + derrXi**2
       
       end if
       
       if (isubstep .eq. rsolution%NEQtime-1) then
         
-        DerrorU(1)      = DerrorU(1)      + derrU
-        DerrorP(1)      = DerrorP(1)      + derrP
-        DerrorLambda(1) = DerrorLambda(1) + derrLambda
-        DerrorXi(1)     = DerrorXi(1)     + derrXi
+        DerrorU(1)      = DerrorU(1)      + derrU**2
+        DerrorP(1)      = DerrorP(1)      + derrP**2
+        DerrorLambda(1) = DerrorLambda(1) + derrLambda**2
+        DerrorXi(1)     = DerrorXi(1)     + derrXi**2
 
-        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU
-        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP
-        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda
-        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi
+        DerrorU(2)      = DerrorU(2)      + 0.5_DP*derrU**2
+        DerrorP(2)      = DerrorP(2)      + 0.5_DP*derrP**2
+        DerrorLambda(2) = DerrorLambda(2) + 0.5_DP*derrLambda**2
+        DerrorXi(2)     = DerrorXi(2)     + 0.5_DP*derrXi**2
       
-        DerrorU(3)      = DerrorU(3)      + derrU
-        DerrorP(3)      = DerrorP(3)      + derrP
-        DerrorLambda(3) = DerrorLambda(3) + derrLambda
-        DerrorXi(3)     = DerrorXi(3)     + derrXi
+        DerrorU(3)      = DerrorU(3)      + derrU**2
+        DerrorP(3)      = DerrorP(3)      + derrP**2
+        DerrorLambda(3) = DerrorLambda(3) + derrLambda**2
+        DerrorXi(3)     = DerrorXi(3)     + derrXi**2
 
-        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU
-        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP
-        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda
-        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi
+        DerrorU(4)      = DerrorU(4)      + 0.5_DP*derrU**2
+        DerrorP(4)      = DerrorP(4)      + 0.5_DP*derrP**2
+        DerrorLambda(4) = DerrorLambda(4) + 0.5_DP*derrLambda**2
+        DerrorXi(4)     = DerrorXi(4)     + 0.5_DP*derrXi**2
       
       end if
 
       if (isubstep .eq. rsolution%NEQtime) then
         
-        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU
-        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP
-        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda
-        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi
+        DerrorU(1)      = DerrorU(1)      + 0.5_DP*derrU**2
+        DerrorP(1)      = DerrorP(1)      + 0.5_DP*derrP**2
+        DerrorLambda(1) = DerrorLambda(1) + 0.5_DP*derrLambda**2
+        DerrorXi(1)     = DerrorXi(1)     + 0.5_DP*derrXi**2
 
-        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU
-        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP
-        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda
-        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi
+        DerrorU(3)      = DerrorU(3)      + 0.5_DP*derrU**2
+        DerrorP(3)      = DerrorP(3)      + 0.5_DP*derrP**2
+        DerrorLambda(3) = DerrorLambda(3) + 0.5_DP*derrLambda**2
+        DerrorXi(3)     = DerrorXi(3)     + 0.5_DP*derrXi**2
 
       end if
       
