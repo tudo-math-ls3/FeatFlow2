@@ -199,7 +199,7 @@ contains
 
     real(DP) :: drefFactor, dcurrentfactor
     integer :: ntime1,ntime2,nspace1,nspace2
-    integer :: icurrent, i, nmax
+    integer :: icurrent, i, j, nmax
     
     ! Cut off the levels if necessary.
     ntime1 = max(nminTime,1)
@@ -218,13 +218,13 @@ contains
       rhierarchy%nlevels = ntime2-ntime1+1
       allocate(rhierarchy%p_IlevelDef(2,rhierarchy%nlevels))
       rhierarchy%p_IlevelDef(1,:) = nspace2
-      rhierarchy%p_IlevelDef(2,:) = (/1:rhierarchy%nlevels/)
+      rhierarchy%p_IlevelDef(2,:) = (/(j,j=1,rhierarchy%nlevels)/)
       
     else if (drefFactor .eq. 0.0_DP) then
       ! Refinement only in space
       rhierarchy%nlevels = nspace2-nspace1+1
       allocate(rhierarchy%p_IlevelDef(2,rhierarchy%nlevels))
-      rhierarchy%p_IlevelDef(1,:) = (/1:rhierarchy%nlevels/)
+      rhierarchy%p_IlevelDef(1,:) = (/(j,j=1,rhierarchy%nlevels)/)
       rhierarchy%p_IlevelDef(2,:) = ntime2
 
     else if (drefFactor .ge. 1.0_DP) then
@@ -237,7 +237,7 @@ contains
       ! Initialise the level counter depending on how much levels we have
       rhierarchy%nlevels = min(ntime2-ntime1+1,nmax)
       allocate(rhierarchy%p_IlevelDef(2,rhierarchy%nlevels))
-      rhierarchy%p_IlevelDef(2,:) = (/1:rhierarchy%nlevels/)
+      rhierarchy%p_IlevelDef(2,:) = (/(j,j=1,rhierarchy%nlevels)/)
 
       ! Initialise the space levels
       icurrent = nspace2

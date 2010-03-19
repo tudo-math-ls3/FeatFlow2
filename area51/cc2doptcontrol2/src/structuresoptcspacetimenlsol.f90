@@ -158,6 +158,9 @@ module structuresoptcspacetimenlsol
   
     ! <!-- Output -->
 
+    ! Number of linear iterations of all spatial preconditioners.
+    integer :: nlinearIterationsSpace = 0
+
     ! Number of linear iterations
     integer :: nlinearIterations = 0
 
@@ -336,6 +339,8 @@ contains
         trim(sys_siL(rsolver%nnonlinearIterations,10)))
     call output_line ('#iterations preconditioner         = '//&
         trim(sys_siL(rsolver%nlinearIterations,10)))
+    call output_line ('#iterations space-preconditioners  = '//&
+        trim(sys_siL(rsolver%nlinearIterationsSpace,10)))
     call output_line ('Total time for postprocessing      = '// &
         trim(sys_sdL(rsolver%rtimePostprocessing%delapsedReal,10)))
 

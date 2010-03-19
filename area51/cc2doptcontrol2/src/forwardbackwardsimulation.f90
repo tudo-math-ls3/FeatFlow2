@@ -442,6 +442,15 @@ module forwardbackwardsimulation
     ! Whether there are Neumann boundary components in the BC`s.
     logical :: bhasNeumann
     
+    !<!-- Statistical data -->
+    
+    ! Returns the number of iterations, a linear subsolver needed 
+    ! for preconditioning
+    integer :: nlinearIterations = 0
+    
+    ! Time needed for solving linear systems.
+    real(DP) :: dtimeLinearSolver = 0.0_DP
+    
   end type
 
 !</typeblock>
@@ -2431,6 +2440,10 @@ contains
       call stat_startTimer (rtimer)
       call linsol_precondDefect (p_rsolverNode,rd)
       call stat_stopTimer (rtimer)
+      
+      ! Return statistical data in the preconditioner structure.
+      rpreconditioner%nlinearIterations = p_rsolverNode%iiterations
+      rpreconditioner%dtimeLinearSolver = rtimer%delapsedReal
 
       ! Release the numeric factorisation of the matrix.
       ! We don't release the symbolic factorisation, as we can use them
@@ -3373,12 +3386,15 @@ contains
         rsimsolver%rpreconditioner%cspace,rsimsolver%p_rboundaryConditions,&
         rsimsolver%p_rmatrix)
     
-    ! Initialise timers
+    ! Initialise timers & statistics
     call stat_clearTimer(rtimerNonlinearSolver)
     call stat_clearTimer(rtimerMatrixAssembly)
     call stat_clearTimer(rtimerPostproc)
     call stat_clearTimer(rtimerDefectCalc)
     call stat_clearTimer(rtimerTotal)
+    
+    rsimsolver%nlinearIterations = 0
+    rsimsolver%dtimeLinearSolver = 0.0_DP
     
     call stat_startTimer(rtimerTotal)
     
@@ -3849,11 +3865,11 @@ contains
         call fbsim_precondSpaceDefect (rsimsolver%rpreconditioner,&
             rdefectPrimal,blocalsuccess,rsimsolver%rnonlinearIteration)
             
-          ! Gather statistics
-          rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
-              rsimsolver%rnonlinearIteration%dtimeLinearSolver
-          rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
-              rsimsolver%rnonlinearIteration%nlinearIterations
+        ! Gather statistics
+        rsimsolver%dtimeLinearSolver = rsimsolver%dtimeLinearSolver + &
+            rsimsolver%rnonlinearIteration%dtimeLinearSolver
+        rsimsolver%nlinearIterations = rsimsolver%nlinearIterations + &
+            rsimsolver%rnonlinearIteration%nlinearIterations
 
         if (rsimSolver%ioutputLevel .ge. 2) then
           call output_line ("fbsim_simulate: Forward Iteration "//&

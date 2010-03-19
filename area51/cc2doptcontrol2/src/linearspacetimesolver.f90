@@ -503,6 +503,10 @@ module linearspacetimesolver
     ! STATISTICS OUTPUT: Time for solving problems in space.
     type(t_timer) :: rtimeSpacePrecond
     
+    ! STATISTICS OUTPUT: Total number of iterations that the linear solvers
+    ! in space needed.
+    integer :: niteLinSolveSpace = 0
+    
     ! Structure of the space time matrix that the solver should use.
     type(t_ccoptSpaceTimeMatrix) :: rmatrix
     
@@ -949,6 +953,18 @@ module linearspacetimesolver
     
     ! STATISTICS OUTPUT: Time needed for prolongation/restriction
     type(t_timer) :: rtimeProlRest
+    
+    ! STATISTICS OUTPUT: Total number of iterations, the linear solver in space
+    ! needed for all coarse mesh solutions.
+    integer :: niteLinSolveSpaceCoarse = 0
+    
+    ! STATISTICS OUTPUT: Total number of iterations, the linear solvers in space
+    ! needed during the smoothing processes.
+    integer :: niteLinSolveSpaceSmooth = 0
+
+    ! STATISTICS OUTPUT: Total number of iterations, the linear solvers in space
+    ! needed during the smoothing processes on the finest mesh.
+    integer :: niteLinSolveSpaceSmoothFine = 0
     
   end type
   
@@ -2060,6 +2076,7 @@ contains
     rsolverNode%iresult = 0
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeDefCorr
@@ -2151,6 +2168,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_rdef)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+              p_rprecSubnode%niteLinSolveSpace
         end if
         
         ! In p_rdef, we now have the current residuum $P^{-1} (b-Ax)$.
@@ -2583,6 +2602,7 @@ contains
     real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Dsol
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
     
     ! Get a pointer to our preconditioner
     p_rpreconditioner => rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecond
@@ -2655,6 +2675,8 @@ contains
       call stat_startTimer (rsolverNode%rtimeSpacePrecond)
       call fbsim_precondSpaceDefect (p_rpreconditioner,rtempVectorD,bsuccess)
       call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
+      rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+          p_rpreconditioner%nlinearIterations
     
       ! Scale by omega*drelax -- drelax for the relaxation and domega for the damping.
       call lsysbl_scaleVector (rtempVectorD,rsolverNode%domega*rsolverNode%drelax)
@@ -2997,6 +3019,7 @@ contains
     real(dp) :: dnorm
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
     
     ! Get a pointer to our preconditioner
     p_rpreconditioner => rsolverNode%p_rsubnodeBlockFBSOR%rspatialPrecond
@@ -3319,6 +3342,8 @@ contains
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
         call fbsim_precondSpaceDefect (p_rpreconditioner,rtempVectorD,bsuccess)
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
+        rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+            p_rpreconditioner%nlinearIterations
 
         ! Load the current solution into rtempVectorX to create the
         ! new SOR iterate. rtempVectorX still contains the old iterate x_n!
@@ -3503,6 +3528,8 @@ contains
         call stat_startTimer (rsolverNode%rtimeSpacePrecond)
         call fbsim_precondSpaceDefect (p_rpreconditioner,rtempVectorD,bsuccess)
         call stat_stopTimer (rsolverNode%rtimeSpacePrecond)
+        rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+            p_rpreconditioner%nlinearIterations
 
         ! Load the current solution into rtempVectorX to create the
         ! new SOR iterate. rtempVectorX still contains the old iterate x_n!
@@ -5569,6 +5596,7 @@ contains
     ! Status reset
     rsolverNode%iresult = 0
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStab
@@ -5658,6 +5686,8 @@ contains
       ! solver structure.
       call sptils_precondDefect (p_rprecSubnode,p_DR)
       call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+          p_rprecSubnode%niteLinSolveSpace
       
       if (.not. bstopOnRealResiduum) then
         ! We scale the absolute stopping criterion by the difference
@@ -5769,6 +5799,8 @@ contains
               ! solver structure.
               call sptils_precondDefect (p_rprecSubnode,p_DR)
               call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+              rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+                  p_rprecSubnode%niteLinSolveSpace
             end if
             
             call sptivec_copyVector(p_DR,p_DR0)
@@ -5826,6 +5858,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DPA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+              p_rprecSubnode%niteLinSolveSpace
         end if
 
         dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
@@ -5858,6 +5892,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DSA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+              p_rprecSubnode%niteLinSolveSpace
         end if
         
         domega1 = sptivec_scalarProduct (p_DSA,p_DR)
@@ -6466,6 +6502,7 @@ contains
     ! Status reset
     rsolverNode%iresult = 0
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
     
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeBiCGStabRight
@@ -6611,6 +6648,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DPA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+              p_rprecSubnode%niteLinSolveSpace
 
           ! Filter the defect for boundary conditions in space and time.
           call tbc_implementInitCondDefect (&
@@ -6656,6 +6695,8 @@ contains
           ! solver structure.
           call sptils_precondDefect (p_rprecSubnode,p_DSA)
           call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+          rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+              p_rprecSubnode%niteLinSolveSpace
 
           ! Filter the defect for boundary conditions in space and time.
           call tbc_implementInitCondDefect (&
@@ -6756,6 +6797,8 @@ contains
       ! solver structure.
       call sptils_precondDefect (p_rprecSubnode,rd)
       call stat_addTimers (p_rprecSubnode%rtimeSpacePrecond,rsolverNode%rtimeSpacePrecond)
+      rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+          p_rprecSubnode%niteLinSolveSpace
 
       ! Filter the defect for boundary conditions in space and time.
       call tbc_implementInitCondDefect (&
@@ -7543,13 +7586,14 @@ contains
 !</subroutine>
 
     integer :: i
-    integer :: iiterations
+    integer :: iiterations,niteLinSolveSpace
     real(DP) :: dres,dresInit
     type(t_ccoptSpaceTimeMatrix), pointer :: p_rmatrix
     type(t_timer) :: rtimer
     !DEBUG: REAL(DP), DIMENSION(:), POINTER :: p_Ddata,p_Ddata2
     
     call stat_clearTimer (rtimer)
+    niteLinSolveSpace = 0
     
     ! Cancel if nmaxIterations = number of smoothing steps is =0.
     if (rsolverNode%nmaxIterations .le. 0) return
@@ -7617,6 +7661,7 @@ contains
       ! Stop the time for space-preconditioning and sum it up. Return the sum as result.
       call sptils_precondDefect(rsolverNode,rtemp)
       call stat_addTimers (rsolverNode%rtimeSpacePrecond,rtimer)
+      niteLinSolveSpace = niteLinSolveSpace + rsolverNode%niteLinSolveSpace
       call sptivec_vectorLinearComb (rtemp,rx,1.0_DP,1.0_DP)
       
     end do
@@ -7624,7 +7669,10 @@ contains
     ! DEBUG!!!
     !call sptivec_saveToFileSequence (rx,'(''smoothout.txt.'',I5.5)',.true.)
     
+    ! Return needed time and iterations of spatial solver
+    ! again via the structure.
     rsolverNode%rtimeSpacePrecond = stat_rcloneTimer (rtimer)
+    rsolverNode%niteLinSolveSpace = niteLinSolveSpace
 
     ! Probably print the final residuum
     if (rsolverNode%ioutputLevel .ge. 2) then
@@ -7699,11 +7747,15 @@ contains
     ! Getch some information
     p_rsubnode => rsolverNode%p_rsubnodeMultigrid
     
-    ! Initialise timers
+    ! Initialise timers and statistics
     call stat_clearTimer (p_rsubnode%rtimeSmoothing)
     call stat_clearTimer (p_rsubnode%rtimeCoarseGridSolver)
     call stat_clearTimer (p_rsubnode%rtimeLinearAlgebra)
     call stat_clearTimer (p_rsubnode%rtimeProlRest)
+    
+    p_rsubnode%niteLinSolveSpaceCoarse = 0
+    p_rsubnode%niteLinSolveSpaceSmooth = 0
+    p_rsubnode%niteLinSolveSpaceSmoothFine = 0
     
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
 
@@ -7753,6 +7805,8 @@ contains
       call stat_startTimer (p_rsubnode%rtimeCoarseGridSolver)
       call sptils_precondDefect(p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver,rd)
       call stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
+      p_rsubnode%niteLinSolveSpaceCoarse = p_rsubnode%niteLinSolveSpaceCoarse + &
+          p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%niteLinSolveSpace
       
       ! Sum up the time for space preconditioning
       call stat_addTimers (&
@@ -7897,6 +7951,15 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
                 call stat_stopTimer (p_rsubnode%rtimeSmoothing)
+
+                ! For the max. level, count the #smoothing steps separately.
+                if (ilev .lt. nlmax) then
+                  p_rsubnode%niteLinSolveSpaceSmooth = p_rsubnode%niteLinSolveSpaceSmooth &
+                      + p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%niteLinSolveSpace
+                else
+                  p_rsubnode%niteLinSolveSpaceSmoothFine = p_rsubnode%niteLinSolveSpaceSmoothFine &
+                      + p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%niteLinSolveSpace
+                end if
 
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpreSmoother%rtimeSpacePrecond,&
@@ -8056,6 +8119,8 @@ contains
                                       p_rsubnode%p_Rlevels(ilev)%rsolutionVector)
                                       
             call stat_stopTimer (p_rsubnode%rtimeCoarseGridSolver)
+            p_rsubnode%niteLinSolveSpaceCoarse = p_rsubnode%niteLinSolveSpaceCoarse &
+                + p_rsubnode%p_Rlevels(ilev)%p_rcoarseGridSolver%niteLinSolveSpace
 
             ! Sum up the time for space preconditioning
             call stat_addTimers (&
@@ -8171,6 +8236,14 @@ contains
                     p_rsubnode%p_Rlevels(ilev)%rtempVector,&
                     p_rsubnode%p_Rlevels(ilev)%rprjVector)
                 call stat_stopTimer (p_rsubnode%rtimeSmoothing)
+                ! For the max. level, count the #smoothing steps separately.
+                if (ilev .lt. nlmax) then
+                  p_rsubnode%niteLinSolveSpaceSmooth = p_rsubnode%niteLinSolveSpaceSmooth &
+                      + p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%niteLinSolveSpace
+                else
+                  p_rsubnode%niteLinSolveSpaceSmoothFine = p_rsubnode%niteLinSolveSpaceSmoothFine &
+                      + p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%niteLinSolveSpace
+                end if
 
                 call stat_addTimers (&
                     p_rsubnode%p_Rlevels(ilev)%p_rpostSmoother%rtimeSpacePrecond,&
@@ -8377,6 +8450,11 @@ contains
       call stat_subTimers (p_rsubnode%rtimeSmoothing,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeCoarseGridSolver,p_rsubnode%rtimeLinearAlgebra)
       call stat_subTimers (p_rsubnode%rtimeProlRest,p_rsubnode%rtimeLinearAlgebra)
+
+      ! Calculate total number of space-MG-steps
+      rsolverNode%niteLinSolveSpace = &
+          p_rsubnode%niteLinSolveSpaceCoarse + p_rsubnode%niteLinSolveSpaceSmooth +&
+          p_rsubnode%niteLinSolveSpaceSmoothFine
 
     end if
     
@@ -8902,6 +8980,7 @@ contains
     real(dp) :: dres
 
     call stat_clearTimer (rsolverNode%rtimeSpacePrecond)
+    rsolverNode%niteLinSolveSpace = 0
 
     ! We iterate once forward in time and once backward in time using
     ! the simulation solvers. Clear the temp vector at first, which
@@ -8922,6 +9001,9 @@ contains
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
           rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
 
+      rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+          rsolverNode%p_rsubnodeFBsim%rforwardsolver%nlinearIterations
+
       if (.not. bsuccess) then
         call output_line("Forward sweep broke down during iteration "//trim(sys_siL(ite,10)),&
             OU_CLASS_WARNING,OU_MODE_STD,'sptils_precFBsim')
@@ -8934,6 +9016,9 @@ contains
           rsolverNode%p_rsubnodeFBsim%rtempVector, rd, &
           rsolverNode%p_rsettings%roptcBDC, 1, rd%p_rtimeDiscr%nintervals, &
           rsolverNode%rmatrix%p_rsolution, rsolverNode%p_rsubnodeFBsim%drelax, bsuccess)
+
+      rsolverNode%niteLinSolveSpace = rsolverNode%niteLinSolveSpace + &
+          rsolverNode%p_rsubnodeFBsim%rbackwardsolver%nlinearIterations
       
       if (.not. bsuccess) then
         call output_line("Backward sweep broke down during iteration "//trim(sys_siL(ite,10)),&

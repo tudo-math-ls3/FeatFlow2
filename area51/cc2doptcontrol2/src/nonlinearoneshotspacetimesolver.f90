@@ -390,6 +390,7 @@ contains
 
     rnlstsolver%nnonlinearIterations = 0
     rnlstsolver%nlinearIterations = 0
+    rnlstsolver%nlinearIterationsSpace = 0
     
     do while ((rnlstsolver%nnonlinearIterations .lt. rnlstsolver%nminIterations) .or. &
               ((((ddefNorm .gt. rnlstsolver%depsRel*dinitDefNorm) .or. &
@@ -541,6 +542,8 @@ contains
       ! preconditioning
       rnlstsolver%nlinearIterations = &
           rnlstsolver%nlinearIterations + rnlstsolver%p_rspaceTimePrec%iiterations
+      rnlstsolver%nlinearIterationsSpace = rnlstsolver%nlinearIterationsSpace + &
+          rnlstsolver%p_rspaceTimePrec%niteLinSolveSpace
 
       call stat_addtimers (rtimerMGStep,rnlstsolver%rtimerPreconditioner)
       call stat_addtimers (rtimeFactorisationStep,rnlstsolver%rtimeFactorisation)
