@@ -151,6 +151,8 @@ module linearspacetimesolver
   use bilinearformevaluation
   use linearformevaluation
   use matrixmodification
+  use discretebc
+  use discretefbc
   
   use collection
   use convection
