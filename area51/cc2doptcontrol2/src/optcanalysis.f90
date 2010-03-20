@@ -533,10 +533,12 @@ contains
             optcana_evalFunction,rcollection)
       end if
       
-      i=6
-      rcollection%IquickAccess(1) = i
-      call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
-          optcana_evalFunction,rcollection)
+      if (isubstep .ne. rsolution%NEQtime) then
+        i=6
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+            optcana_evalFunction,rcollection)
+      end if
           
       call ansol_doneEval (rcollection,"SOL")
       
@@ -552,10 +554,12 @@ contains
             optcana_evalFunction,rcollection)
       end do
       
-      i=3
-      rcollection%IquickAccess(1) = i
-      call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
-          optcana_evalFunction,rcollection)
+      if (isubstep .ne. 0) then
+        i=3
+        rcollection%IquickAccess(1) = i
+        call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
+            optcana_evalFunction,rcollection)
+      end if
           
       ! Dual pressure only in the last timestep.
       if (isubstep .eq. rsolution%NEQtime) then

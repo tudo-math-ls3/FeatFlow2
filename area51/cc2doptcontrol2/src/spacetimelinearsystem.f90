@@ -714,7 +714,7 @@ contains
 
         rnonlinearSpatialMatrix%Dalpha(2,2) = dtimeCoupling * (-1.0_DP)/dtstep
         
-        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta)
+        rnonlinearSpatialMatrix%Dtheta(2,2) = (1.0_DP-dtheta) * dtimeCoupling
         
         if (ipressureFullyImplicit .eq. 0) then
           rnonlinearSpatialMatrix%Deta(2,2) = dtimeCoupling * (1.0_DP-dtheta)
@@ -722,18 +722,18 @@ contains
 
         if (.not. bconvectionExplicit) then
         
-          rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+          rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
+              (- (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
           
-          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
+                ((1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
         else
 
-          rnonlinearSpatialMatrix%Dgamma(2,2) = &
-              - dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+          rnonlinearSpatialMatrix%Dgamma(2,2) = dtimeCoupling * &
+              (- dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
           
-          rnonlinearSpatialMatrix%DnewtonT(2,2) = &
-                dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
+          rnonlinearSpatialMatrix%DnewtonT(2,2) = dtimeCoupling * &
+                (dtheta * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP))
 
         end if
 
@@ -781,7 +781,7 @@ contains
           rnonlinearSpatialMatrix%Dgamma(1,1) = dtimeCoupling * &
               (1.0_DP-dtheta) * real(1-rspaceTimeMatrix%rdiscrData%p_rphysicsPrimal%iequation,DP)
           
-          rnonlinearSpatialMatrix%Dnewton(1,1) = &
+          rnonlinearSpatialMatrix%Dnewton(1,1) = dtimeCoupling * &
               (1.0_DP-dtheta) * dnewton
 
         else

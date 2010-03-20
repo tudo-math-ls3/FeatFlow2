@@ -372,9 +372,9 @@ contains
 
         ! Multiply the last RHS of the dual equation -z by theta+gamma/dtstep, that's it.
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
-            dweightoldd + roptimalControl%dgammaC/dtstep)
+            dweightnewd + roptimalControl%dgammaC/dtstep)
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
-            dweightoldd + roptimalControl%dgammaC/dtstep)
+            dweightnewd + roptimalControl%dgammaC/dtstep)
 
       end if
 
