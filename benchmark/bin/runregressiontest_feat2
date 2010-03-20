@@ -985,7 +985,7 @@ fb_prepareForRun() {
 	    fb_exit 1
 	fi
     else
-	BENCHMARKDIR="$BASEDIR/benchmark"
+	BENCHMARKDIR="$BASEDIR/Featflow2/benchmark"
 	test $DEBUG -gt 0 && echo "# Using benchmark directory <$BENCHMARKDIR> directly for execution"
     fi
 }
@@ -1228,9 +1228,9 @@ fb_createDocumentation() {
     if [ "$CREATEDOCU""x" = "yesx" ]; then
 
 	# clone docs directory
-	docsdir="$BASEDIR/docs_""$HOSTNAME"
+	docsdir="$BASEDIR/Featflow2/docs_""$HOSTNAME"
 	mkdir $docsdir
-	cd $BASEDIR/docs
+	cd $BASEDIR/Featflow2/docs
 	tar -cf - . | ( cd $docsdir; tar -xpf - )
 	cd $docsdir
 	# Tell GNU 'make' to keep going (-k') in case of errors.
