@@ -534,22 +534,16 @@ contains
     call storage_new ('linf_buildVectorDble_conf', 'vector', &
                         NEQ, ST_DOUBLE, rvectorScalar%h_Ddata, &
                         ST_NEWBLOCK_ZERO)
-    call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
+    call lsyssc_getbase_double (rvectorScalar,p_Ddata)
 
   else
   
     ! Get information about the vector:
     NEQ = rvectorScalar%NEQ
   
-    call storage_getbase_double (rvectorScalar%h_Ddata,p_Ddata)
+    ! Get the data array.
+    call lsyssc_getbase_double (rvectorScalar,p_Ddata)
     
-    ! Maybe the vector is a partial vector of a larger one.
-    ! Let the pointer point to the right position.
-    if (rvectorScalar%iidxFirstEntry .ne. 1) then
-      p_Ddata => p_Ddata (rvectorScalar%iidxFirstEntry : &
-                          rvectorScalar%iidxFirstEntry + rvectorScalar%NEQ - 1)
-    end if
-
     ! If desired, clear the vector before assembling.
     if (bclear) then
       call lalg_clearVectorDble (p_Ddata)
