@@ -63,8 +63,6 @@
 !# 6.) bilf_releaseAssemblyData
 !#     > Release 'local' memory, needed for assembling matrix entries.
 !#
-!# </purpose>
-!#
 !# NOTE:
 !#   In Windows if OpenMP is activated, this source file must not be processed
 !#   with checking for uninitialised variables enabled! The Intel Fortran
@@ -203,6 +201,7 @@
 !#  other parts of the domain may be assembled with the standard cubature 
 !#  formula.
 !#
+!# </purpose>
 !##############################################################################
 
 module bilinearformevaluation
