@@ -2355,11 +2355,11 @@ contains
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
 
-    ! section names
+    ! local variables
+    type(t_ucdExport) :: rimport
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
-
-    ! local variables
+    character(LEN=SYS_STRLEN) :: sucdimport
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat, discretisation
     integer :: isize, ipreadapt, npreadapt, ndimension
@@ -2538,6 +2538,23 @@ contains
 
     end if
 
+    
+    ! Get name of import file (if any)
+    call parlst_getvalue_string(rparlist,&
+        trim(soutputName), 'sucdimport', sucdimport, '')
+    
+    ! Do we have to read in a precomdputed solution?
+    if (trim(sucdimport) .ne. '') then
+      call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
+      call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
+      call ucd_getSimulationTime(rimport, rtimestep%dTime)
+      call euler_setVariables(rimport, rsolution)
+      call ucd_release(rimport)
+      
+      ! Set time for solution output
+      dtimeUCD = rtimestep%dinitialTime
+    end if
+    
     ! Attach the boundary condition
     call solver_setBoundaryCondition(rsolver, rbdrCond, .true.)
 
@@ -2551,7 +2568,7 @@ contains
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
     !---------------------------------------------------------------------------
-return
+
     timeloop: do
 
       ! Check for user interaction
