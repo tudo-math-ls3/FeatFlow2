@@ -739,6 +739,7 @@ class LaTeXExporter:
         (r'#', '\\#'),
         (r'%', '\\%'),
         (r'\s->\s', ' $\\to$ '),
+        (r' -> ', ' $\\to$ '),
         (re.escape(r'^'), '\\symbol{94}'),
         (re.escape(r'&'), '\\&'),
         ('.', lambda s, t: t)
