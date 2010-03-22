@@ -12980,7 +12980,7 @@ contains
   
 !<description>
   ! This routine performs a smoothing process on the vector rx
-  ! belonging to a linear system <tex>$ Ax=b $<tex>.
+  ! belonging to a linear system <tex>$ Ax=b $</tex>.
   ! rsolverNode identifies a solver structure that is converted to a
   ! smoother using linsol_convertToSmoother: The number of smoothing
   ! steps is written to rsolverNode%nmaxIterations and 
