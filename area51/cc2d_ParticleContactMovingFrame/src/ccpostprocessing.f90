@@ -2612,7 +2612,7 @@ contains
       ! we already calculated earlier; so we just need to divide...
       ! moment of inertia 
       dimomir  = &
-      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/4.0_dp 
+      dmasssl*((p_rparticleCollection%p_rParticles(ipart)%drad)**2)/2.0_dp 
       
       ! Mean resistance forces for the given time step
       dfx = 0.5_dp * (p_rparticleCollection%p_rParticles(ipart)%rResForceX(2) &
