@@ -82,6 +82,7 @@
 !#
 !# Let's take a look at a simple example:
 !#
+!# <verb>
 !#        +------+    +------+
 !#        |      |    |      |
 !#        |   +--+    +--+   |
@@ -92,8 +93,10 @@
 !#        |   +----------+   |
 !#        |                  |
 !#        +------------------+
+!# </verb>
 !#
 !# The figure above is made of 3 analytic objects:
+!# <verb>
 !#                                                        R
 !#                S_1                                   +----+
 !#        +------------------+                          |    |
@@ -106,9 +109,11 @@
 !#        |                  |       +----------+
 !#        |                  |
 !#        +------------------+
+!# </verb>
 !#
 !# One possible tree for the figure above would look like this:
 !#
+!# <verb>
 !#      INTERSECTION
 !#           |
 !#     +-----+------------+
@@ -118,6 +123,7 @@
 !#                  +-----+-----+
 !#                  |           |
 !#                 S_2          R
+!# </verb>
 !#
 !#
 !#
@@ -166,6 +172,7 @@
 !# After calling geom_composed_addNode, the object that is passed as the
 !# sub-object is set undefined.
 !# In the code above, in line(s)
+!# <verb>
 !#  1 -  3  S is undefined
 !#       4  S is defined as the small square
 !#  5 - 12  S represents the small square
@@ -175,6 +182,7 @@
 !# 18 - 22  S represents the big square
 !#      23  S is passed to geom_composed_addNode
 !# 24 - 30  S is undefined
+!# </verb>
 !#
 !#
 !# III. Some hints about adding objects into the tree
@@ -186,6 +194,7 @@
 !#
 !# Here's a small list for all analytic geometry objects and a rating of how
 !# expensive the inside-outside-test routines are (++ = cheap, -- = expensive): 
+!# <verb>
 !# Circle..........: ++
 !# Ellipse.........:  +
 !# Square..........:  +
@@ -193,6 +202,7 @@
 !# Convex Polygon..:  -
 !# General Polygon.: --
 !# Composed Object.: worst of its sub-objects
+!# </verb>
 !#
 !#
 !# IV. Boundary approximation
@@ -540,9 +550,11 @@ module geometry
     ! because of a circular dependency of the t_geometryObject type!
     type(t_geometryComposed), pointer   :: p_rcomposed
     
+    ! <!--
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 2D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
+    ! -->
     ! Structure for the circle object
     type(t_geometryCircle)     :: rcircle
     
@@ -561,9 +573,11 @@ module geometry
     ! Structure for the NURBS object
     type(t_geometryNURBS)      :: rNURBS
 
+    ! <!--
     ! -=-=-=-=-=-=-=-=-=-=-=
     ! = 3D object subnodes -
     ! -=-=-=-=-=-=-=-=-=-=-=
+    ! -->
 
     ! Structure for the sphere object
     type(t_geometrySphere)     :: rsphere
@@ -808,6 +822,7 @@ module geometry
     ! pparameters is a double array of size [4,iparticles]
     ! The structure of this array is as follows:
     !           
+    ! <verb>
     !       [1,i]:= initial x position of the i-th particle
     !       [2,i]:= initial y position of the i-th particle
     !       [3,i]:= initial z position of the i-th particle
@@ -815,6 +830,7 @@ module geometry
     !               in later versions we want this to be the radius
     !               of the smallest circumfering sphere...
     !       [5,i]:= the density of the i-th particle
+    ! </verb>
            
     ! the particle data
     real(DP), dimension(:,:), pointer :: pparameters

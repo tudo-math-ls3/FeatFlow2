@@ -9,6 +9,7 @@
 !# structure. The parameters can later be accessed by the program.
 !#
 !# A typical .INI file has the following structure:
+!# <verb>
 !# -------------------------snip------------------------------
 !# # this is a data file
 !#
@@ -31,6 +32,7 @@
 !#   data-line3
 !#   data-line4
 !# -------------------------snip------------------------------
+!# </verb>
 !# the .INI file is build up by different sections.
 !# Each section starts with the section name enclosed by
 !# brackets ('[...]'), followed by a list of parameters 
@@ -59,6 +61,7 @@
 !# The parameter list also allows to specify variables as subvariables
 !# of other variables. Take a look at the following example:
 !# 
+!# <verb>
 !# -------------------------snip------------------------------
 !# NLMIN=1
 !# ACOMPLEXSTRING=! %{NLMIN} ! %{imainelement} ! %{SECTION1.ilist:3}
@@ -73,25 +76,30 @@
 !#   ghi
 !#   jkl
 !# -------------------------snip------------------------------
+!# </verb>
 !# When reading the file, the parameter "ACOMPLEXSTRING" is automatically
 !# expanded to the value "! 1 ! 5 ! ghi" by using other variables from
 !# the parameter file. The following syntax is allowed here to refer
 !# to other parameters:
 !#
+!# <verb>
 !#  %{NAME}               - A variable from the unnamed section
 !#  %{NAME:idx}           - Value number idx of variable NAME 
 !#                          from the unnamed section
 !#  %{NAME:idx}           - Variable NAME from section SECTION
 !#  %{SECTION.NAME:idx}   - Value number idx of variable NAME 
 !#                          from section SECTION
+!# </verb>
 !#
 !# The environment variable feature
 !# ================================
 !# DAT files may refer to environment variables. Example:
+!# <verb>
 !# -------------------------snip------------------------------
 !# NLMIN=1
 !# NLMAX=$NLMAXENV
 !# -------------------------snip------------------------------
+!# </verb>
 !# In this case, it is assumed that $NLMAXENV is an environment
 !# variable of the system where the program runs. So when NLMAX
 !# is requested, the value of the environment variable $NLMAXENV
@@ -102,6 +110,7 @@
 !# An INI file may contain references to subfiles. Subfiles must
 !# be specified at the beginning of an INI file with the following 
 !# syntax:
+!# <verb>
 !# -------------------------snip------------------------------
 !# # this is a data file which imports a couple of subfiles
 !#
@@ -124,6 +133,7 @@
 !# parameter3 = 'this string replaces parameter3 from the child-files'
 !# ...
 !# -------------------------snip------------------------------
+!# </verb>
 !#
 !# parlst_readfromfile will at first read all subfiles and then
 !# evaluate the data in the main file. Data in the main file will

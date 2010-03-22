@@ -1051,13 +1051,13 @@ contains
     ! which are adjacent to the current elements. The new element is assigned
     ! the total number of elements currently present in the triangulation
     ! increased by one.
-    !
+    ! <verb>
     !    initial line               subdivided line
     !
     ! (e1)    iel      (e2)      (e1) iel   nel+1 (e2)
     !     +-----------+              +-----+-----+
     !     i1          i2             i1    i3    i2
-    !
+    ! </verb>
 !</description>
 
 !<input>

@@ -732,7 +732,10 @@ class LaTeXExporter:
     TEX = Scanner([
         (r'<tex>.+?</tex>', lambda s, t: t.replace('<tex>','').replace('</tex>', '')),
         (r'<verb>.+?</verb>', lambda s, t: t.replace('<verb>','\\begin{verbatim}').replace('</verb>', '\\end{verbatim}')),
-        (r'<code>.+?</code>', lambda s, t: t.replace('<verb>','\\begin{verbatim}').replace('</verb>', '\\end{verbatim}')),
+        (r'<code>.+?</code>', lambda s, t: t.replace('<code>','\\begin{verbatim}').replace('</code>', '\\end{verbatim}')),
+        (r'<bf>.+?</bf>', lambda s, t: t.replace('<bf>','\\textbf{').replace('</bf>', '}')),
+        (r'<ul>.+?</ul>', lambda s, t: t.replace('<ul>','\\underline{').replace('</ul>', '}')),
+        (r'<it>.+?</it>', lambda s, t: t.replace('<it>','\\textit{').replace('</it>', '}')),
         ('\\$', '\\$'),
         ('_', '\\_'),
         (r'\\', '\\\\'),

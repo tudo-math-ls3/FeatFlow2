@@ -32,7 +32,9 @@
 !#    displayed in 5 groups separated by hyphens, in the form 8-4-4-4-
 !#    12 for a total of 36 characters. For example:
 !#    
+!# <verb>
 !#        550e8400-e29b-41d4-a716-446655440000
+!# </verb>
 !#    
 !#    A UUID may also be used with a specific identifier intentionally 
 !#    used repeatedly to identify the same thing in different contexts. 
@@ -44,7 +46,7 @@
 !#    implementing the IUnknown interface, it is always referenced by 
 !#    the same identifier: 00000000-0000-0000-C000-000000000046.
 !#    
-!#    Version 1 (MAC address)
+!#    <bf> Version 1 (MAC address) </bf>
 !#    
 !#    Conceptually, the original (version 1) generation scheme for 
 !#    UUIDs was to concatenate the UUID version with the MAC address of 
@@ -55,7 +57,7 @@
 !#    'opaque'; it reveals both the identity of the computer that 
 !#    generated the UUID and the time at which it did so.
 !#    
-!#    Version 2 (DCE Security)
+!#    <bf> Version 2 (DCE Security) </bf>
 !#    
 !#    Version 2 UUIDs are similar to Version 1 UUIDs, with the upper 
 !#    byte of the clock sequence replaced by the identifier for a 
@@ -64,7 +66,7 @@
 !#    replaced by the user`s POSIX UID or GID (with the "local domain" 
 !#    identifier indicating which it is).[1][2]
 !#    
-!#    Version 3 (MD5 hash)
+!#    <bf> Version 3 (MD5 hash) </bf>
 !#    
 !#    Version 3 UUIDs use a scheme deriving a UUID via MD5 from a URL, 
 !#    a fully qualified domain name, an Object identifier, a 
@@ -83,14 +85,14 @@
 !#    form with hyphens separating the parts relevant in other UUID 
 !#    versions.
 !#    
-!#    Version 4 (random)
+!#    <bf> Version 4 (random) </bf>
 !#    
 !#    Version 4 UUIDs use a scheme relying only on random numbers. This 
 !#    algorithm sets the version number, as well as two reserved bits. 
 !#    All other bits are set using a random or pseudorandom data 
 !#    source.
 !#    
-!#    Version 5 (SHA-1 hash)
+!#    <bf> Version 5 (SHA-1 hash) </bf>
 !#    
 !#    Version 5 UUIDs use a scheme with SHA-1 hashing, otherwise it is 
 !#    the same idea as in version 3. RFC 4122 states that version 5 is 

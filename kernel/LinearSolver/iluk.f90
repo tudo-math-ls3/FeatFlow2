@@ -234,11 +234,13 @@ contains
 !  and the pointers are not set.  An estimate of the additional
 !  work space needed is returned in mneed, but this is only a guess.
 !
+!  <verb>
 !     Randall Bramley and Xiaoge Wang
 !     Department of Computer Science
 !     Indiana University
 !     email: bramley@cs.indiana.edu
 !     Sun Jan  2 11:09:18 EST 1994
+!  </verb>
 !
 !
 !  Warnings:
@@ -527,6 +529,7 @@ contains
 ! is replaced with a small quantity based on machine epsilon, the sign
 ! of the pivot element, and the norm of the current row.
 !
+! <verb>
 !========================================================================
 !   Matlab code for computing this factorization is:
 !
@@ -542,6 +545,7 @@ contains
 !
 !
 !========================================================================
+! </verb>
 !
 !  The process can be viewed best in the dense case, shown here
 !  for k = 4 and n = 6.  Rows 1 through 3 have been computed and
@@ -553,6 +557,7 @@ contains
 !  triangular solve and the vector*matrix update, both phases have
 !  the same form and can be computed with the same loop.
 !
+! <verb>
 !  Stage 0: Copy row 1 of A over to row 1 of LU.
 !
 !  Stage 1: Compute LU(4,1), as LU(4,1)/U(1,1).
@@ -710,18 +715,22 @@ contains
 !           -------------------------------------
 !
 !  Stages 8 onwards: Go on to the next row, repeating above process.
+! </verb>
 !
 !  Note:  When applying updates from previous rows to the
 !  current one, we only need apply those for which there is a
 !  corresponding nonzero in the current row of LU; otherwise the
 !  multiplier would be zero.
 !
+! <verb>
 !     Randall Bramley and Xiaoge Wang
 !     Department of Computer Science
 !     Indiana University
 !     email: bramley@cs.indiana.edu
 !     Sun Jun 26 09:51:56 EST 1994
+! </verb>
 !
+! <verb>
 !========================================================================
 !     a, colind, rwptr    :  Matrix A in CSR format
 !     lu, jlu, uptr: Data structure for L/U matrix in MSR format.
@@ -767,6 +776,7 @@ contains
 !  rwnrm            : row norm of current row; used for determining small
 !		      diagonal element replacement.
 !  nrw              : number of nonzeros in current row of A.
+! </verb>
 !
 !========================================================================
 
@@ -941,11 +951,9 @@ contains
 !<subroutine>
       subroutine iluk_srtr(num,q)
  !<description>
-!========================================================================
-!========================================================================
-!
 !  Implement shell sort, with hardwired increments.  The algorithm for
 !  sorting entries in A(0:n-1) is as follows:
+! <verb>
 !----------------------------------------------------------------
 !  inc = initialinc(n)
 !  while inc >= 1
@@ -961,6 +969,7 @@ contains
 !     inc = nextinc(inc,n)
 !  end while
 !----------------------------------------------------------------
+! </verb>
 !
 !  The increments here are 1, 4, 13, 40, 121, ..., (3**i - 1)/2, ...
 !  In this case, nextinc(inc,n) = (inc-1)/3.  Usually shellsort
@@ -975,11 +984,13 @@ contains
 !  Any set of increments with 1 as the first one will result in a
 !  true sorting algorithm.
 !
+! <verb>
 !     Randall Bramley
 !     Department of Computer Science
 !     Indiana University
 !     email: bramley@cs.indiana.edu
 !     Mon Jan 17 20:47:45 EST 1994
+! </verb>
 !
 !========================================================================
 !</description>

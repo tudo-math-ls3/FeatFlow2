@@ -46,23 +46,23 @@
 !#
 !# Proceed as follows:
 !#
-!# 1.) CALL output_init ()
+!# 1.) call output_init ()
 !#     -> Initialise the output system for output on the terminal
 !#
 !#     Alternatively one can use:
 !#
-!#     CALL output_init ('mylogfile.txt')
+!#     call output_init ('mylogfile.txt')
 !#     -> Opens a log file 'mylogfile.txt' for the output additional to
 !#        terminal output
 !#
 !#     Alternatively one can use
 !# 
-!#     CALL output_init ('mylogfile.txt','myerrorlogfile.txt')
+!#     call output_init ('mylogfile.txt','myerrorlogfile.txt')
 !#     -> Opens a log file 'mylogfile.txt' for the output and
 !#        'myerrorlogfile.txt' for error output (both additionally to
 !#        terminal output).
 !#     
-!# 2.) CALL output_line ('This is a message')
+!# 2.) call output_line ('This is a message')
 !#
 !#     -> Writes a message to the terminal. If output_init was used
 !#        before, output_line_std will also write the message to the log file.
@@ -70,28 +70,28 @@
 !#     Alternatively, one can specify where to write output to by using
 !#     different variants of output_line:
 !#
-!#     a) CALL output_lbrk ()
+!#     a) call output_lbrk ()
 !#
 !#     -> Writes an empty line to the terminal and log file. This is the same
-!#        as CALL output_line ('').
+!#        as call output_line ('').
 !#
-!#     b) CALL output_line('A message only to the terminal.', &
+!#     b) call output_line('A message only to the terminal.', &
 !#                         OU_CLASS_MSG,OU_MODE_TERM)
 !#
 !#     -> Writes a message only to the terminal
 !#
-!#     c) CALL output_line ('A message only to the log file.', &
+!#     c) call output_line ('A message only to the log file.', &
 !#                          OU_CLASS_MSG,OU_MODE_LOG)
 !#
 !#     -> Writes a message only to the log file
 !#
-!#     d) CALL output_line ('A special debug message.', &
+!#     d) call output_line ('A special debug message.', &
 !#                          OU_CLASS_TRACE1,OU_MODE_STD,'mysubroutine')
 !#
 !#     -> Writes a debug message with '*** (mysubroutine):' in front to the 
 !#        terminal and the log file. This is usually used for debug purposes.
 !#
-!#     e) CALL output_line ('This is an error message.', &
+!#     e) call output_line ('This is an error message.', &
 !#                          OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
 !#
 !#     -> Writes a debug message with 'Error (mysubroutine):' in front to the 
@@ -99,40 +99,40 @@
 !#
 !#       or even simpler:
 !#
-!#        CALL output_line ('This is an error message.',OU_CLASS_ERROR)
-!#        CALL output_line ('This is an warning message.',OU_CLASS_WARNING)
+!#        call output_line ('This is an error message.',OU_CLASS_ERROR)
+!#        call output_line ('This is an warning message.',OU_CLASS_WARNING)
 !#
-!#     f) CALL output_separator (OU_SEP_MINUS)
+!#     f) call output_separator (OU_SEP_MINUS)
 !#
 !#     -> Writes a separation line with '-' signs to the terminal / log file
 !#
 !#     g) MT = 1
-!#        CALL output_simple (MT,'A log file message.')
+!#        call output_simple (MT,'A log file message.')
 !#     
 !#     -> Writes a message to the log file, not to the terminal. FEAT1.0
 !#        compatibility routine for "MT=1"
 !#
 !#     h) MT = 2
-!#        CALL output_simple (MT,'A log file message')
+!#        call output_simple (MT,'A log file message')
 !#     
 !#     -> Writes a message to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
 !#
 !#     i) MT = 2
-!#        CALL output_simple (MT)
+!#        call output_simple (MT)
 !#     
 !#     -> Writes an empty line to the terminal and to the log file. FEAT1.0
 !#        compatibility routine for "MT=2".
 !#
 !#     i) MT = 2
-!#        CALL output_simple_sep (MT,OU_SEP_MINUS)
+!#        call output_simple_sep (MT,OU_SEP_MINUS)
 !#     
 !#     -> Writes a separation line with '-' signs to the terminal and 
 !#        to the log file. FEAT1.0 compatibility routine for "MT=2".
 !#
 !#     For futher possibilities, consider the documentation out output_line.
 !#
-!# 3.) CALL output_done()
+!# 3.) call output_done()
 !#
 !#     -> Closes the output channel(s).
 !#
@@ -148,20 +148,20 @@
 !# To activate the benchmark log file, one has to specify an additional
 !# parameter in the call to output_init:
 !#
-!#    CALL output_init ('mylogfile.txt','myerrorlogfile.txt','benchmarkresultfile')
+!#    call output_init ('mylogfile.txt','myerrorlogfile.txt','benchmarkresultfile')
 !#
 !# This opens a file 'benchmarkresultfile' where benchmark data is written to.
 !# To write a string to this file, the application has to call output_line
 !# with an extended output-mode:
 !#
-!#   CALL output_line('A message only to the benchmark log.', &
+!#   call output_line('A message only to the benchmark log.', &
 !#                    OU_CLASS_MSG,OU_MODE_BENCHLOG)
 !#
 !# This writes a message directly to the benchmark log file. It is also possible
 !# to write out data to the standard terminal plus the benchmark log file
 !# by combining the output mode constants:
 !#
-!#   CALL output_line('A message only to the benchmark log.', &
+!#   call output_line('A message only to the benchmark log.', &
 !#                    OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
 !#
 !# In all cases, the additional constant OU_MODE_BENCHLOG must be manually

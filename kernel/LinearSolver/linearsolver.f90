@@ -16,12 +16,16 @@
 !#         <tex> $$Ax = b$$ </tex>
 !#     with A being an arbitrary block matrix
 !# 2.) Saddle-point block matrices of the form
+!#     <verb>
 !#           [A  B1] (x) = (f1)
 !#           [B2  0] (y)   (f2)
+!#     </verb>
 !#     with a regular block matrix A and general block matrices B1 and B2
 !# 3.) Saddle-point-like block matrices of the form
+!#     <verb>
 !#           [A  B1] (x) = (f1)
 !#           [B2  C] (y)   (f2)
+!#     </verb>
 !#     with a regular block matrix A, general block matrices B1 and B2
 !#     and a 'stabilisation' matrix $C \sim 0$.
 !#
@@ -307,7 +311,7 @@
 !#    <tex>    $$ Pd_{new} = d $$   </tex>
 !#
 !# with the right hand side $d$ being a defect vector given from outside. 
-!# Solving $Pd_{new} = d$ can then be done by an arbitrary linear solver, 
+!# Solving <tex>$ Pd_{new} = d $</tex> can then be done by an arbitrary linear solver, 
 !# e.g. BiCGStab, UMFPACK (which takes $P=A$ and solves directly using Gauss),
 !# or can even be the application pf a single Jacobi or ILU(s) 
 !# preconditioner - everything is the same!
@@ -336,17 +340,20 @@
 !#
 !#     a) No filtering of the vectors:
 !#
+!# <verb>
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 !#
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
 !#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+!# </verb>
 !#
 !#      -> p_rsolverNode is the solver identifying your BiCGStab(ILU(0)) 
 !#         solver.
 !#
 !#     b) Filter the defect vector for Dirichlet boundary conditions
 !#
+!# <verb>
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 !#      TYPE(t_filterChain), DIMENSION(1), TARGET :: RfilterChain
 !#
@@ -354,6 +361,7 @@
 !#      RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 !#      CALL linsol_initMILUs1x1 (p_rpreconditioner,0,0.0_DP)
 !#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner,RfilterChain)
+!# </verb>
 !#
 !#      -> p_rsolverNode is the solver identifying your BiCGStab(ILU(0)) 
 !#         solver.
@@ -361,15 +369,17 @@
 !# 2.) In numerics 1 I learned the pure Richardson iteration. Where can I
 !#     find it?
 !#
-!#     Pure Richardson iteration ($x_{n+1} = x_n + \omega (b-Ax)$) is called
+!#     Pure Richardson iteration (<tex>$x_{n+1} = x_n + \omega (b-Ax)$</tex>) is called
 !#     'defect correction' here. Set up a defect correction solver and
 !#     modify the domega parameter in the solver node:
 !#
+!# <verb>
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 !#
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
 !#      p_rsolverNode%domega = 0.001   ! or whatever you like
+!# </verb>
 !#
 !# 3.) And where is the good old Jacobi iteration hidden? There is only that
 !#     preconditioner!?!
@@ -378,23 +388,29 @@
 !#     you must use it as a preconditioner in a defect correction loop:
 !#
 !#    <tex> $$ x_{n+1}  =  x_n  +  \omega D^{-1}  (b-Ax) $$ </tex>
-!#    <!--  ------------------  ^^^^^^^^^^^^^  ------  Defect correction loop -->
-!#                              Jacobi preconditioner
+!#    <!--  ------------------  ^^^^^^^^^^^^^  ------  Defect correction loop 
+!#                              Jacobi preconditioner                         -->
+!#
 !#     So,
+!#
+!# <verb>
 !#      TYPE(t_linsolNode), POINTER :: p_rsolverNode,p_rpreconditioner
 !#
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initJacobi (p_rpreconditioner,0.7_DP)
 !#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
+!# </verb>
 !#
 !#    Alternatively, you can use the domega parameter from the defect
-!#    correction to specify the $\omega$, while using no damping parameter
+!#    correction to specify the <tex>$\omega$</tex>, while using no damping parameter
 !#    in the actual Jacobi preconditioner:
 !#
+!# <verb>
 !#      NULLIFY(p_rpreconditioner)
 !#      CALL linsol_initJacobi (p_rpreconditioner)
 !#      CALL linsol_initDefCorr (p_rsolverNode,p_rpreconditioner)
 !#      p_rsolverNode%domega = 0.7_DP
+!# </verb>
 !#
 !#  4.) I want to plug in my own solver XY. What do I have to do?
 !#
@@ -403,6 +419,7 @@
 !#      a preconditioner in another one. If you want to create your
 !#      own solver and plug it into here, use the following guideline
 !#      of what to do:
+!# <verb>
 !#      a) Add new solver identifier LINSOL_ALG_xxxx
 !#      b) Create solver-specific substructure (t_linsolSubnodeXXXX) if 
 !#         necessary and add a pointer to the subnode in the main solver 
@@ -428,6 +445,7 @@
 !#          - linsol_precondDefect
 !#          - linsol_setMatrices
 !#         Add calls to the new solver routines there.
+!# </verb>
 !#      That is it, your solver should now be able to work ;-)
 !#
 !#  5.) And what if I need temporary vectors in my solver?
@@ -569,6 +587,7 @@
 !#      manually initialising the projection structure. There are two
 !#      possibilities for that:
 !#
+!# <verb>
 !#      a) Complete user defined projection.
 !#         Here the user has do define all projection structures as follows:
 !#
@@ -612,6 +631,7 @@
 !#
 !#        Here, the projection structure is maintained by the solver and
 !#        automatically released.
+!# </verb>
 !# </purpose>
 !##############################################################################
 
@@ -3151,7 +3171,7 @@ contains
   
 !<description>
   ! This routine starts the solution process to solve a linear system of the
-  ! form $Ax=b$. The solver configuration must be given by rsolverNode.
+  ! form <tex>$Ax=b$</tex>. The solver configuration must be given by rsolverNode.
   ! rb is the right hand side vector of the system. rx is an
   ! initial solution vector, which will be overwritten by the solution.
   !
@@ -3184,7 +3204,7 @@ contains
 !</subroutine>
     
     ! Method-specific remarks:
-    ! The linear system $Ax=b$ is reformulated into a one-step defect-correction 
+    ! The linear system <tex>$ Ax=b $</tex> is reformulated into a one-step defect-correction 
     ! approach
     ! <tex>   $$ x  =  x_0  +  A^{-1}  ( b - A x_0 ) $$  </tex>
     ! The standard solver P configured in rsovlverNode above is then used to 
@@ -3193,12 +3213,12 @@ contains
     ! and the solution $x$ is then calculated by $x=x+y$. 
     
     ! Calculate the defect:
-    ! To build (b-Ax), copy the RHS to the temporary vector
+    ! To build <tex>$ (b-Ax) $</tex>, copy the RHS to the temporary vector
     ! and make a matrix/vector multiplication.
     call lsysbl_copyVector (rb,rtemp)
     call lsysbl_blockMatVec (rsolverNode%rsystemMatrix, rx, rtemp, -1.0_DP, 1.0_DP)
     
-    ! Call linsol_precondDefect to solve the subproblem $Ay = b-Ax$.
+    ! Call linsol_precondDefect to solve the subproblem <tex>$ Ay = b-Ax $</tex>.
     ! This overwrites rtemp with the correction vector.
     call linsol_precondDefect (rsolverNode,rtemp)
 
@@ -3293,7 +3313,7 @@ contains
   !    <tex> $$ x_{n+1}  =  x_n  +  (b-Ax_n) $$ </tex>
   ! with $x_0:=0$. 
   ! It is possible to include a damping parameter to this operation by 
-  ! changing rsolverNode%domega to a value $\not =1$. In this case, the
+  ! changing rsolverNode%domega to a value <tex>$ \not =1 $</tex>. In this case, the
   ! defect correction iteration changes to the Richardson iteration
   !
   ! <tex>  $$ x_{n+1}  =  x_n  +  \omega(b-Ax_n) $$  </tex>
@@ -3760,8 +3780,8 @@ contains
   recursive subroutine linsol_precDefCorr (rsolverNode,rd)
   
 !<description>
-  ! Applies the Defect Correction preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies the Defect Correction preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -4236,8 +4256,8 @@ contains
   subroutine linsol_precJacobi (rsolverNode,rd)
   
 !<description>
-  ! Applies the Jacobi preconditioner $D \in A$ to the defect 
-  ! vector rd and solves $Dd_{new} = d$.
+  ! Applies the Jacobi preconditioner <tex>$ D \in A $<tex> to the defect 
+  ! vector rd and solves <tex>$ Dd_{new} = d $<tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -5108,11 +5128,9 @@ contains
 
       ! We want to perform the following preconditioning step:
       !
-      ! <tex> $$ (D + relax * L) * D^{-1} * (D + relax * U) * x = d $$ </tex>
+      ! <tex>             $$ (D + relax * L) * D^{-1} * (D + relax * U) * x = d $$ 
       !
-      ! <==>
-      !
-      ! <tex> $$ (D + relax * L) * (I + relax * D^{-1} * U) * x = d $$ </tex>
+      ! $$ \Leftrightarrow   (D + relax * L) * (I + relax * D^{-1} * U) * x = d $$ </tex>
       !
       ! Now the literature comes up with the brilliant idea to scale the
       ! result x of the equation above by the factor 1/(relax*(2-relax)),
@@ -5807,8 +5825,8 @@ contains
   subroutine linsol_precVANKA (rsolverNode,rd)
   
 !<description>
-  ! Applies the VANKA preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies the VANKA preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -6256,8 +6274,8 @@ contains
   subroutine linsol_precSPSOR (rsolverNode,rd)
   
 !<description>
-  ! Applies the SP-SOR preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies the SP-SOR preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -6908,8 +6926,8 @@ contains
   subroutine linsol_precUMFPACK4 (rsolverNode,rd)
   
 !<description>
-  ! Applies UMFPACK preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies UMFPACK preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -7410,8 +7428,8 @@ contains
   subroutine linsol_precILU0 (rsolverNode,rd)
   
 !<description>
-  ! Applies ILU(0) preconditioner $LU \approx A$ to the defect 
-  ! vector rd and solves $LUd_{new} = d$.
+  ! Applies ILU(0) preconditioner <tex>$ LU \approx A $<tex> to the defect 
+  ! vector rd and solves <tex>$ LUd_{new} = d $<tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -7827,8 +7845,8 @@ contains
   subroutine linsol_precMILUS1x1 (rsolverNode,rd)
   
 !<description>
-  ! Applies (M)ILU(s) preconditioner $LU \approx A$ to the defect 
-  ! vector rd and solves $LUd_{new} = d$.
+  ! Applies (M)ILU(s) preconditioner <tex>$ LU \approx A $<tex> to the defect 
+  ! vector rd and solves <tex>$ LUd_{new} = d $<tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -8374,8 +8392,8 @@ contains
   recursive subroutine linsol_precCG (rsolverNode,rd)
   
 !<description>
-  ! Applies CG preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies CG preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -9265,8 +9283,8 @@ contains
   recursive subroutine linsol_precBiCGStab (rsolverNode,rd)
   
 !<description>
-  ! Applies BiCGStab preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies BiCGStab preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -10263,8 +10281,8 @@ contains
   recursive subroutine linsol_precGMRES (rsolverNode,rd)
   
 !<description>
-  ! Applies GMRES(m) preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies GMRES(m) preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -11304,8 +11322,8 @@ contains
   recursive subroutine linsol_precSchur (rsolverNode,rd)
   
 !<description>
-  ! Applies Schur-Complement preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies Schur-Complement preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The matrix must have been attached to the system before calling
@@ -12962,7 +12980,7 @@ contains
   
 !<description>
   ! This routine performs a smoothing process on the vector rx
-  ! belonging to a linear system $Ax=b$.
+  ! belonging to a linear system <tex>$ Ax=b $<tex>.
   ! rsolverNode identifies a solver structure that is converted to a
   ! smoother using linsol_convertToSmoother: The number of smoothing
   ! steps is written to rsolverNode%nmaxIterations and 
@@ -12976,8 +12994,8 @@ contains
   !     rsolverNode%nmaxIterations iterations.
   ! 2.) If rsolverNode is a 1-step solver, linsol_smoothCorrection
   !     performs rsolverNode%nmaxIterations defect correction steps
-  !     <tex> $$ x := x + P^{-1} (b-Ax) $$ </tex>
-  !     with $x_0=0$.
+  !     <tex> $$ x := x + P^{-1} (b-Ax) $$
+  !     with $x_0=0$ </tex>.
   !
   ! The matrix must have been attached to the system before calling
   ! this routine, and the initStructure/initData routines
@@ -13215,14 +13233,14 @@ contains
   recursive subroutine linsol_precMultigrid (rsolverNode,rd)
   
 !<description>
-  ! Applies Multigrid preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies Multigrid preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The structure of the levels (pre/postsmoothers, interlevel projection
   ! structures) must have been prepared with linsol_addMultigridLevel
   ! before calling this routine.
-  ! The matrices $A$ on all levels must be attached to the solver previously 
+  ! The matrices <tex>$ A $</tex> on all levels must be attached to the solver previously 
   ! by linsol_setMatrices.
   
 !</description>
@@ -15313,15 +15331,15 @@ contains
   recursive subroutine linsol_precMultigrid2 (rsolverNode,rd)
   
 !<description>
-  ! Applies Multigrid preconditioner $P \approx A$ to the defect 
-  ! vector rd and solves $Pd_{new} = d$.
+  ! Applies Multigrid preconditioner <tex>$ P \approx A $</tex> to the defect 
+  ! vector rd and solves <tex>$ Pd_{new} = d $</tex>.
   ! rd will be overwritten by the preconditioned defect.
   !
   ! The structure of the levels (pre/postsmoothers, interlevel projection
   ! structures) must have been prepared by setting the level parameters
   ! before calling this routine. (The parameters of a specific level
   ! can be get by calling linsol_getMultigridLevel2).
-  ! The matrices $A$ on all levels must be attached to the solver previously 
+  ! The matrices <tex>$ A $</tex> on all levels must be attached to the solver previously 
   ! by linsol_setMatrices.
   
 !</description>

@@ -246,8 +246,8 @@
 !#      -> Auxiliary routine for merge sort
 !#
 !#
-!#  FAQ - Some explainations
-!# --------------------------
+!#  FAQ - Some explainations  \\
+!# -------------------------- \\
 !# 1.) When reading the refinement routine, there is written something about
 !#     'raw' meshes and 'standard' meshes. What does that mean?
 !#
@@ -261,7 +261,7 @@
 !#     allowes to convert a quad mesh in a triangular mesh, which would
 !#     be much harder if all adjacency information is already computed.
 !#     Another possibile thing what can be done with such a 'raw' mesh is to
-!#     DO quicker pre-refinement with routines like 
+!#     do quicker pre-refinement with routines like 
 !#     tria_quickRefine2LevelOrdering. This routine refines the mesh without
 !#     computing everything and is therefore a little bit faster than a
 !#     subsequent application of tria_refine2LevelOrdering onto a 'standard'
@@ -289,26 +289,32 @@
 !#
 !#     Well, to read a mesh and prepare it to be used as single mesh, use:
 !#
-!#       CALL tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtria,rboundary)
+!# <code>
+!#       call tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
+!#       call tria_initStandardMeshFromRaw (rtria,rboundary)
+!# </code>
 !#
 !#     If you want to refine a mesh let us say 4 times after reading it, use:
 !#
-!#       CALL tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
-!#       CALL tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!# <code>
+!#       call tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
+!#       call tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
+!#       call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!# </code>
 !# 
 !#     If you want to generate level 1..4 for a multiple-grid structure, use
 !#
-!#       TYPE(t_triangulation), DIMENSION(4) :: rtriangulation
+!# <code>
+!#       type(t_triangulation), dimension(4) :: rtriangulation
 !#
-!#       CALL tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-!#       DO ilev=2,4
-!#         CALL tria_refine2LevelOrdering (rtriangulation(ilev-1),&
+!#       call tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
+!#       call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!#       do ilev=2,4
+!#         call tria_refine2LevelOrdering (rtriangulation(ilev-1),&
 !#             rtriangulation(ilev), rboundary)
-!#         CALL tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary)
-!#       END DO
+!#         call tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary)
+!#       end do
+!# </code>
 !#
 !# 4.) What is the tria_compress2LevelOrdHierarchy for?
 !#
@@ -321,22 +327,26 @@
 !#
 !#     Generate the triangulation:
 !#
-!#       TYPE(t_triangulation), DIMENSION(4) :: rtriangulation
+!# <code>
+!#       type(t_triangulation), dimension(4) :: rtriangulation
 !#
-!#       CALL tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
-!#       CALL tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-!#       DO ilev=2,4
-!#         CALL tria_refine2LevelOrdering (rtriangulation(ilev-1),&
+!#       call tria_readTriFile2D (rtriangulation(1), 'somemesh.tri', rboundary)
+!#       call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!#       do ilev=2,4
+!#         call tria_refine2LevelOrdering (rtriangulation(ilev-1),&
 !#             rtriangulation(ilev), rboundary)
-!#         CALL tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary)
-!#       END DO
+!#         call tria_initStandardMeshFromRaw (rtriangulation(ilev),rboundary)
+!#       end do
+!# </code>
 !#
 !#    Remove redundant data
 !#
-!#       DO ilev=4-1,1
-!#         CALL tria_compress2LevelOrdHierarchy (rtriangulation(ilev+1),&
+!# <code>
+!#       do ilev=4-1,1
+!#         call tria_compress2LevelOrdHierarchy (rtriangulation(ilev+1),&
 !#              rtriangulation(ilev))
-!#       END DO
+!#       end do
+!# </code>
 !#
 !#    One should note that afterwards, each change of vertex coordinates on the
 !#    fine grid directly affects the vertex coordinates on all coarse grid
@@ -354,6 +364,7 @@
 !#
 !#   2D: Think about an edge adjacent to two elements:
 !#
+!# <verb>
 !#     ------+------
 !#           |
 !#           |
@@ -361,6 +372,7 @@
 !#           |
 !#           |
 !#     ------+------
+!# </verb>
 !#
 !#   We define the edge E to belong to the element with the smaller number.
 !#   When 'looking' from element 10 to the edge, the edge becomes twist
@@ -371,10 +383,12 @@
 !#
 !#   Each cell in 2D has 4 edges. The entry ItwistIndexEdges(iel) defines a
 !#   bitfield where the corresponding bit is set if the twist index is 1. So:
+!# <verb>
 !#    Bit 0 = twist index of edge 1
 !#    Bit 1 = twist index of edge 2
 !#    Bit 2 = twist index of edge 3
 !#    ...
+!# </verb>
 !#
 !#   3D: In 3D the situation is slightly more complicated. Here we have twist indices
 !#   for edges as well as for faces.
@@ -385,9 +399,11 @@
 !#   that there are up to 4 edges on each face and up to 6 faces on an element
 !#   (which is the case for hexahedrals). Then the bitfield looks like this:
 !#
+!# <verb>
 !#     Bit         | 31..24 | 23..20 | 19..16 | 15..12 | 11..8  | 7..4   | 3..0
 !#     ------------+--------+--------+--------+--------+--------+--------+--------
 !#     Twist index | undef. | Face 6 | Face 5 | Face 4 | Face 3 | Face 2 | Face 1
+!# </verb>
 !#
 !#   Furthermore, the array ItwistIndexFaces defines for each element the orientation
 !#   of the faces. This is a 2D array of the form ItwistIndexFaces(iface,ielement).
@@ -396,6 +412,7 @@
 !#   elements separately from each other; the face should be thought of being
 !#   shared by the elements:)
 !#
+!# <verb>
 !#                         
 !#         ----------3              2-------
 !#                  /|             /|
@@ -411,6 +428,8 @@
 !#              |/             |/    
 !#      --------1  --------->  4-------
 !#                   =4
+!#
+!# <verb>
 !#
 !#   Every face has it is own local numbering, which is independent of the
 !#   local numbering of the vertices on the cell: While the cell has local
@@ -474,9 +493,11 @@
 !#   property array attached that allows to determine the origin of
 !#   a fine grid vertex, edge, face or element.
 !#
-!#       CALL tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
-!#       CALL tria_initMacroNodalProperty (rtriangulation)
-!#       CALL tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
+!# <code>
+!#       call tria_readTriFile2D (rtriangulation, 'somemesh.tri', rboundary)
+!#       call tria_initMacroNodalProperty (rtriangulation)
+!#       call tria_quickRefine2LevelOrdering(4,rtriangulation,rboundary)
+!# </code>
 !#
 !#   Note that the macro nodal property array is part of the extended raw
 !#   mesh as soon as tria_initMacroNodalProperty is called. It is not necessary
@@ -824,6 +845,7 @@ module triangulation
     ! maintained by another triangulation structure and must not
     ! be deleted by TRIDEL. When the bit is 0, the array is a real
     ! copy of another array and must be deleted in TRIDEL.
+    ! <verb>
     ! Bit  0: DvertexCoords          is a copy of another structure (DCORVG)
     ! Bit  1: DfreeVertexCoordinates is a copy of another structure (DCORMG)
     ! Bit  2: IverticesAtElement     is a copy of another structure (KVERT)
@@ -863,6 +885,7 @@ module triangulation
     ! Bit 28: ItwistIndexEdges +
     !         ItwistIndexFaces       is a copy of another structure
     ! Bit 29: ImacroNodalProperty    is a copy of another structure
+    ! </verb>
     integer(I32)             :: iduplicationFlag = 0
   
     ! Dimension of the triangulation.
@@ -931,6 +954,7 @@ module triangulation
     integer                  :: NNelAtEdge = 0
     
     ! Number of elements with a defined number of vertices per element.
+    ! <verb>
     ! InelOfType(TRIA_NVELINE1D) = number of lines in the mesh (1D).
     ! InelOfType(TRIA_NVETRI2D)  = number of triangles in the mesh (2D).
     ! InelOfType(TRIA_NVEQUAD2D) = number of quads in the mesh (2D).
@@ -938,6 +962,7 @@ module triangulation
     ! InelOfType(TRIA_NVEPRIS3D) = number of prisms in the mesh (3D).
     ! InelOfType(TRIA_NVETET3D)  = number of tetrahedra in the mesh (3D).
     ! InelOfType(TRIA_NVEHEXA3D) = number of hexahedra in the mesh (3D).
+    ! </verb>
     integer, dimension(TRIA_MAXNVE) :: InelOfType = 0
   
     ! Number of vertices per edge; normally = 0.
@@ -1497,11 +1522,11 @@ module triangulation
     integer :: NEL = 0
     
     ! Array with the coordinates of the vertices defining the cells.
-    ! DIMENSION(#dimensions,#vertices)
+    ! dimension(#dimensions,#vertices)
     real(DP), dimension(:,:), pointer :: p_DvertexCoords => null()
     
     ! Array defining the connectivity.
-    ! DIMENSION(max. #vertices per element, #elements)
+    ! dimension(max. #vertices per element, #elements)
     integer, dimension(:,:), pointer :: p_IverticesAtElement => null()
     
     ! Array defining the nodal property of all vertices in the set.
@@ -1509,7 +1534,7 @@ module triangulation
     
     ! Array with parameter values for all vertices in the
     ! cell set that are located on the physical boundary.
-    ! DIMENSION(#vertices).
+    ! dimension(#vertices).
     ! Vertices not on the boundary are identified by DvertexPar(.) = -1.
     real(DP), dimension(:), pointer :: p_DallVerticesParameterValue => null()
     
@@ -1675,7 +1700,7 @@ contains
   !    which has to be updated. Recover all vectors of rbackupTriangulation 
   !    by those of rtriangulation.
   !    (I.e. those arrays which were duplicated by a previous
-  !    CALL to iduplicationFlag with IUPD=0.)
+  !    call to iduplicationFlag with IUPD=0.)
   !    iduplicationFlag can used to specify which data do copy
   !    from rtriangulation to rbackupTriangulation. It is OR`ed
   !    with rbackupTriangulation%iduplicationFlag to get the actual
@@ -2840,7 +2865,7 @@ contains
       if (checkGen(iflag, TR_GEN_ITWISTINDEX))&
           call tria_genTwistIndex (rtriangulation)
       
-      ! CALL tria_genElementVolume3D (rtriangulation)
+      ! call tria_genElementVolume3D (rtriangulation)
     
     case DEFAULT
       call output_line ('Triangulation structure not initialised!', &
@@ -3925,7 +3950,7 @@ contains
       integer :: i
       real(DP) :: dx,dy
       integer :: iel,ivtoffset !,ielbd
-      !INTEGER, DIMENSION(:), POINTER :: p_IelementsAtBoundaryCoarse
+      !INTEGER, dimension(:), POINTER :: p_IelementsAtBoundaryCoarse
       integer, dimension(:,:), pointer :: p_IverticesAtElementCoarse
       integer, dimension(:,:), pointer :: p_IverticesAtElementFine
       integer, dimension(:,:), pointer :: p_IedgesAtElementCoarse
@@ -3958,7 +3983,7 @@ contains
       ! If this is a pure triangle mesh, there is nothing to do.
       if (ubound(p_IverticesAtElementCoarse,1) .le. TRIA_NVETRI2D) return
       
-      ! CALL storage_getbase_int (rsourceTriangulation%h_IelementsAtBoundary,&
+      ! call storage_getbase_int (rsourceTriangulation%h_IelementsAtBoundary,&
       !     p_IelementsAtBoundaryCoarse)
 
       call storage_getbase_int2d(&
@@ -5244,9 +5269,9 @@ p_InodalPropertyDest = -4711
   !
   ! Example: 
   !
-  !   DO I=NLMAX-1,NLMIN,-1             
-  !     CALL tria_compress2LevelOrdHierarchy (rtria(i+1),rtria(i))
-  !   END DO
+  !   do I=NLMAX-1,NLMIN,-1             
+  !     call tria_compress2LevelOrdHierarchy (rtria(i+1),rtria(i))
+  !   end do
   !
   ! Afterwards, the finest mesh contains all coordinates and the coarse grid
   ! coordinates are part of the fine grid coordinates.
@@ -6770,7 +6795,7 @@ p_InodalPropertyDest = -4711
       ! Ok, let us catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL do PRIVATE(ibct,ivbd)
       do ivt = 1, rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -6789,7 +6814,7 @@ p_InodalPropertyDest = -4711
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !%OMP END PARALLEL DO
+      !%OMP END PARALLEL do
         
     end subroutine genRawBoundary2D
 
@@ -7233,7 +7258,7 @@ p_InodalPropertyDest = -4711
       ! Ok, let us catch the actual vertices.
       !      
       ! Check all vertices to find out, which vertices are on the boundary.
-      !%OMP PARALLEL DO PRIVATE(ibct,ivbd)
+      !%OMP PARALLEL do PRIVATE(ibct,ivbd)
       do ivt=1,rtriangulation%NVT
         if (p_InodalProperty(ivt) .gt. 0) then
           ! id of the boundary component
@@ -7252,7 +7277,7 @@ p_InodalPropertyDest = -4711
           p_IverticesAtBoundary (ivbd) = ivt
         end if
       end do
-      !%OMP END PARALLEL DO
+      !%OMP END PARALLEL do
      
     end subroutine genRawBoundary2D
 
@@ -7281,14 +7306,14 @@ p_InodalPropertyDest = -4711
 !</input>
 
 !<output>
-  ! Array with cell numbers, sorted for the groups. DIMENSION(NEL)
+  ! Array with cell numbers, sorted for the groups. dimension(NEL)
   integer, dimension(:), intent(out)  :: Icells
   
   ! Array with indices for the groups. IcellIndex(i) defines the starting position
-  ! of group i in Icells. DIMENSION(1:ngroups+1)
+  ! of group i in Icells. dimension(1:ngroups+1)
   integer, dimension(:), intent(out) :: IcellIndex
   
-  ! Array of DIMENSION(NEL). For every element, the corresponding entry receives
+  ! Array of dimension(NEL). For every element, the corresponding entry receives
   ! the ID of the group, that element belongs to.
   integer, dimension(:), intent(out) :: IelementGroup
 !</output>
@@ -7824,7 +7849,7 @@ p_InodalPropertyDest = -4711
   integer, intent(in) :: npointsPerEdge
   
   ! OPTIONAL: Array with parameter values of the points on the edge.
-  ! DIMENSION(npointsPerEdge). DparValue is a value in the range [0,1]
+  ! dimension(npointsPerEdge). DparValue is a value in the range [0,1]
   ! and specifies the 'relative position' or 'parameter value' of each 
   ! point on the edge. If not specified, tria_getPointsOnEdge assumes a regular
   ! distribution of points, defined by the number of points on the edge.
@@ -7845,7 +7870,7 @@ p_InodalPropertyDest = -4711
 !<output>
   ! Coordinates of the regularly distributed points on all the edges
   ! of the triangulation.
-  !   DIMENSION(space-dimension, npointsPerEdge * #edges)
+  !   dimension(space-dimension, npointsPerEdge * #edges)
   ! Here, Dcoords(:,1..npointsPerEdge) receives the coordinates of the 
   ! points on the first edge, Dcoords(:,npointsPerEdge+1:2*npointsPerEdge)
   ! the coordinates on edge number 2 etc.
@@ -9265,7 +9290,7 @@ p_InodalPropertyDest = -4711
   ! OPTIONAL: Boundary structure that defines the domain.
   ! If not specified, information about boundary vertices (e.g. 
   ! parameter values of edge midpoints in 2D) are not initialised.
-  !TYPE(t_boundary), INTENT(in), OPTIONAL :: rboundary
+  !type(t_boundary), INTENT(in), OPTIONAL :: rboundary
 !</input>
 
 !<output>

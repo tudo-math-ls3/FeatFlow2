@@ -7,8 +7,10 @@
 !# This module contains a set of routines which calculate an approximation
 !# of a Schur-complement matrix S of a saddle-point matrix of the style
 !#
+!# <verb>
 !#                             ( A  B )
 !#                             ( D  0 )
+!# </verb>
 !#
 !# where the exact Schur-complement matrix S is given as
 !#
@@ -25,9 +27,9 @@
 !#        2D saddle-point system.
 !#
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# Detailed information on the approximation assembly variants
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
+!# Detailed information on the approximation assembly variants\\
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Basically, all currently implemented algorithms calculate the approximation
 !# of S by replacing <tex>$A^{-1}$</tex> by an approximation.
 !#
@@ -37,21 +39,21 @@
 !# than an approximation with the 'normal' stencil.
 !#
 !#
-!# -> SCHUR_TYPE_MAIN_DIAGONAL <-
-!# ------------------------------
+!# -> SCHUR_TYPE_MAIN_DIAGONAL <- \\
+!# ------------------------------ \\
 !# This variant approximates <tex>$A^{-1}$</tex> by the inverse of the main diagonal of A.
 !# This is the most simple and cheapest variant, which should do a good job
 !# for Stokes systems.
 !#
 !#
-!# -> SCHUR_TYPE_LUMP_DIAGONAL <-
-!# ------------------------------
+!# -> SCHUR_TYPE_LUMP_DIAGONAL <- \\
+!# ------------------------------ \\
 !# This variant approximates <tex>$A^{-1}$</tex> by the inverse of the lumped diagonal
 !# matrix of A, i.e. a diagonal matrix L with
 !#
-!#                                  n
-!#          <tex>$$       L_ii :=  sum a_ij      $$</tex>
-!#                                 j=1
+!#                                  
+!#          <tex>$$       L_{ii} :=  \sum_{j=1}^n  a_ij      $$</tex>
+!#                                 
 !#
 !# This variant calculates the L_ii 'on the fly' without modifying the original
 !# matrix A. This variant should only be used if A is (mostly) a mass matrix.
@@ -62,8 +64,8 @@
 !# main diagonal blocks A11, A22 and (in 3D) A33 of A.
 !#
 !#
-!# -> SCHUR_TYPE_LOCAL_INVERSE <-
-!# ------------------------------
+!# -> SCHUR_TYPE_LOCAL_INVERSE <- \\
+!# ------------------------------ \\
 !# THIS ONE IS EXPERIMENTAL, USE AT YOUR OWN RISK!
 !# This variant is a little difficult to explain, as it approximates <tex>$A^{-1}$</tex>
 !# by local inverse matrices. The algorithm assembles the entries of S by

@@ -124,9 +124,10 @@
 !#  and additional information, as far as necessary. The exact layout is
 !#  defined as follows:
 !#
-!#%     Bit | 31 ... 24 23 ... 16 | 15 ... 10 | 9   8 | 7 ............ 0|
-!#%     -----------------------------------------------------------------
-!#%         |         ****        | unused    |dimens |     trafo-ID    |
+!#  <verb>
+!#     Bit | 31 ... 24 23 ... 16 | 15 ... 10 | 9   8 | 7 ............ 0|
+!#     -----------------------------------------------------------------
+!#         |         ****        | unused    |dimens |     trafo-ID    |
 !#
 !#   Bits 0..7   specify the type of transformation (triangular, quad, 
 !#               linear, quadratic, ...). The different ID`s for this
@@ -165,6 +166,7 @@
 !#                               Bit 19:=1 2nd edge maps nonlinear
 !#                               Bit 20:=1 3rd edge maps nonlinear
 !#                               Bit 21:=1 4th edge maps nonlinear
+!#   </verb>
 !#
 !#   Note: As long as the isoparametric mapping is not implemented, bits 16-31
 !#   are unused!

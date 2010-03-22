@@ -9,8 +9,10 @@
 !# The SP-SOR algorithm is a special solver for saddle-point systems,
 !# i.e. systems of the following structure:
 !#
+!# <verb>
 !#                        ( A  B ) * ( u ) = ( f )
 !#                        ( D  0 )   ( p )   ( g )
+!# </verb>
 !#
 !#
 !# WARNING !
@@ -21,13 +23,13 @@
 !# converge.
 !#
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-!# SP-SOR Algorithm Description
-!# ----------------------------
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=\\
+!# SP-SOR Algorithm Description\\
+!# ----------------------------\\
 !#
 !# Basically, one SP-SOR iteration consists of two steps:
 !#
-!# Step 1: Update u:
+!# Step 1: Update u:\\
 !# - - - - - - - - -
 !#
 !# <tex> $$     u_{k+1} := u_k + P^{-1} * ( f - A * u_k - B * p_k )  $$ </tex>
@@ -37,7 +39,7 @@
 !# <tex> $$     P := ( 1/omega * diagonal(A) + lower_triangular(A) )  $$ </tex>
 !#
 !#
-!# Step 2: Update p:
+!# Step 2: Update p:\\
 !# - - - - - - - - -
 !#
 !# <tex> $$     p_{k+1} := p_k + omega * S * ( g - D * u_{k+1} )  $$ </tex>

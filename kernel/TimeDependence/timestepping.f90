@@ -38,6 +38,7 @@
 !#
 !# Well, that is simple. It is like this:
 !#
+!# <code>
 !#    TYPE(t_explicitTimeStepping) :: tstepping
 !#
 !#    ! Initialise time stepping  
@@ -51,6 +52,7 @@
 !#      CALL timstp_nextSubstep (tstepping)
 !#
 !#    END DO
+!# </code>
 !#
 !# First initialise the time stepping scheme by timstp_init, then call
 !# timstp_nextSubstep in a loop to proceed from time dcurrentTime
@@ -68,6 +70,7 @@
 !#   In this case, one can use timstp_nextSubstepTime and 
 !#   timstp_nextSubstepWeights. The usage is as follows:
 !#
+!# <code>
 !#    TYPE(t_explicitTimeStepping) :: tstepping
 !#
 !#    ! Initialise time stepping  
@@ -86,6 +89,7 @@
 !#      CALL timstp_nextSubstepWeights (tstepping)
 !#
 !#    END DO
+!# </code>
 !#
 !# </purpose>
 !##############################################################################

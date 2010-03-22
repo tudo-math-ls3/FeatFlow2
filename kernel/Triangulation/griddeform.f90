@@ -10,57 +10,81 @@
 !#
 !# 1.) griddef_deformationInit
 !#     -> Initialise a griddeform structure
+!#
 !# 2.) griddef_DeformationDone
 !#     -> release a griddeform structure
+!#
 !# 3.) griddef_freeLevels
 !#     -> release the resources we needed for
 !#        the grid deformation levels
+!#
 !# 4.) griddef_calcMonitorFunction
 !#     -> creates a monitor function from a given error distribution
+!#
 !# 5.) griddef_prepareDeformation
 !#     -> allocate needed resources
+!#
 !# 6.) griddef_performDeformation
 !#     -> main routine for the grid deformation process
+!#
 !# 6a.)griddef_computeAdapSteps
 !#     -> computes the number of adaption steps
+!#
 !# 7.) griddef_performOneDefStep
 !#     -> performs one deformation step of the (basic,enhanced) deformation method
+!#
 !# 8.) griddef_getArea
 !#     -> auxilliary function to get the area in all the elements,
 !#     -> put it in a Q0 vector and then project the Q0 Vector to a Q1 vector
+!#
 !# 9.) griddef_buildMonFuncTest
 !#    -> build a test monitor function
+!#
 !# 10.)  griddef_normaliseFctsNum
 !#     -> normalise our functions
+!#
 !# 11.) griddef_blendmonitor
 !#     -> blend the monitor function
+!#
 !# 12.) griddef_normaliseFctsInv
 !#     -> normalise the function inverse
+!#
 !# 13.) griddef_normaliseFctsInvAux
 !#     -> auxilliary routine for the function inverse
+!#
 !# 14.) griddef_createMatrixDef
 !#     -> create the matrix of the deformation poisson problem
+!#
 !# 15.) griddef_createRHS
 !#     -> create the rhs of the deformation poisson problem
+!#
 !# 16.) griddef_moveMesh
 !#     -> solve the ode and move the mesh
+!#
 !# 17.) griddef_performEE
 !#     -> performs Explicit euler to solve the ODE for all 
 !#        innter vertices
+!#
 !# 18.) griddef_perform_boundary2
 !#     -> performs the explicit euler on the boundary
 !#        vertices.
+!#
 !# 19.) griddef_evalPhi_Known
 !#    -> auxilliary routine for the ODE solver
+!#
 !# 20.) griddef_evalphi_ray
 !#    -> auxilliary routine for the ODE solver
+!#
 !# 21.) griddef_evalphi_ray_bound
 !#    -> auxilliary routine for the ODE solver
+!#
 !# 22.) griddef_getAreaDeformed
 !#    -> compute the area distribution in the deformed, mainly
 !#       for debugging purposes
+!#
 !# 23.) griddef_qMeasureM1
 !#    -> compute the quality measure m1
+!#
 !# 24.) griddef_buildHGrid
 !#    -> ?
 !#      

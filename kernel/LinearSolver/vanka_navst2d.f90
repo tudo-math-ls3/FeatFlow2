@@ -7,9 +7,11 @@
 !# This module contains the vanka driver for 2D Navier-Stokes systems.
 !# The most general version of a 2D Navier-System looks as follows:
 !#
+!# <verb>
 !#                     / A11 A12 B1 \
 !#                     | A21 A22 B2 |
 !#                     \ D1  D2  C  /
+!# </verb>
 !#
 !# The following matrices are optional: A12, A21, C
 !# It is silently assumed that the following conditions hold:
@@ -27,9 +29,9 @@
 !# the D-matrices must NOT be virtually transposed!
 !#
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# How do I add Vanka support for a new discretisation?
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
+!# How do I add Vanka support for a new discretisation?\\
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Unless you have some extraordinary wishes, this job is pretty easy
 !#
 !# At the bottom of this file you will find two templates: one for the 'full'
@@ -45,27 +47,33 @@
 !# Once you are finished with that, Vanka should be able to work with your
 !# new implementation.
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# Solving the local Navier-Stokes System
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
+!# Solving the local Navier-Stokes System\\
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Our local Navier-Stokes system looks as follows:
 !# 
+!# <verb>
 !#                   / A11 A12 B1 \   / u1 \   / f_u1 \
 !#                   | A21 A22 B2 | * | u2 | = | f_u2 |
 !#                   \ D1  D2  C  /   \ p  /   \ f_p  /
+!# </verb>
 !#
 !# First, we will rewrite our system:
 !#
+!# <verb>
 !# A := / A11 A12 \     B := / B1 \     D := ( D1 D2 )
 !#      \ A21 A22 /          \ B2 /
 !#
 !# u := / u1 \     f_u := / f_u1 \
 !#      \ u1 /            \ f_u2 /
+!# </verb>
 !#
 !# Now our system looks as follows:
 !#
+!# <verb>
 !#                   / A B \ * / u \ = / f_u \
 !#                   \ D C /   \ p /   \ f_p /
+!# </verb>
 !#
 !# 
 !# 1.) Calculate the Schur-Complement of A:

@@ -45,11 +45,12 @@
 !#      -> Reformat a standard date to a Julian date
 !#
 !#
-!#  Usage of timers
-!# -----------------
+!#  Usage of timers  \\
+!# ----------------- \\
 !# To calculate the computation time of another routine, one has to use
 !# the t_timer structure. This can be done as follows:
 !#
+!# <code>
 !#   ! Declare a timer structure
 !#   TYPE(t_timer) :: rtimer
 !#
@@ -67,6 +68,7 @@
 !#
 !#   ! Print the wall clock time that was necessary for the computation
 !#   WRITE(*,*) "Time for computation: ",rtimer%delapsedReal
+!# </code>
 !#
 !# Note that there may be some confusion in case, OpenMP is used! Use 
 !# rtimer%delapsedReal to get the real computation time of the program and
@@ -84,7 +86,9 @@
 !#    do not want to waste time too much time in timer handling, use
 !#    short-term timers by calling
 !#
+!# <code>
 !#      CALL stat_startTimer(rtimer,STAT_TIMERSHORT)
+!# </code>
 !#
 !#    These timers are much faster to handle than standard timers as they
 !#    calculate processor cycles (at least in most cases, depending on the
@@ -95,13 +99,21 @@
 !# b) for larger algorithms which do not need exact timing, use either
 !#    a long-term timer by calling
 !#
+!# <code>
 !#      CALL stat_startTimer(rtimer,STAT_TIMERSHORT)
+!# </code>
 !#
 !#    or a standard timer by calling
 !#
+!# <code>
 !#      CALL stat_startTimer(rtimer,STAT_TIMERSTANDARD)
+!# </code>
+!#
 !#    or
+!#
+!# <code>
 !#      CALL stat_startTimer(rtimer).
+!# </code>
 !# 
 !#    A long-term timer calculates the time with a granularity of milliseconds.
 !#    A standard timer automatically chooses the most accurate time measurement

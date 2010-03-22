@@ -199,6 +199,7 @@
 !#     bitX=0. Finally, the integer associated to this 5-bitfiled is the element
 !#     marker. Here, is the table of bitfields and markers
 !#
+!#     <verb>
 !#     bit4  bit3  bit2  bit1  bit0   integer   description
 !#      0     0     0     0     0        0       triangle, not marked
 !#      0     0     0     0     1        1       quadrilateral, not marked
@@ -248,6 +249,7 @@
 !#      1     1     1     0     1       29       quadrilateral, marked for blue refinement
 !#      1     1     1     1     0       30       n.a.
 !#      1     1     1     1     1       31       quadrilateral marked for 1:4 red refinement
+!#     </verb>
 !#
 !#
 !# 3.) Ok, and what does the state of an element mean?
@@ -4881,6 +4883,7 @@ contains
     !
     ! The situation is as follows:
     !
+    ! <verb>
     !  +---------------------+            +---------------------+
     !  |                     |            |          .          |
     !  |                     |            |          .          |
@@ -4894,6 +4897,7 @@ contains
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
     !  +---------------------+            +---------------------+
+    ! </verb>
     !
     ! "Sitting" on element IEL0 we want to update the element lists:
     !
@@ -5034,6 +5038,7 @@ contains
     !
     ! The situation is as follows:
     !
+    ! <verb>
     !  +---------------------+            +---------------------+
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
@@ -5047,6 +5052,7 @@ contains
     !  |          .          |            |          .          |
     !  |          .          |            |          .          |
     !  +---------------------+            +---------------------+
+    ! </verb>
     !
     ! If IEL0 and IELMID0 are the same, then thins subroutine is identical
     ! to subroutine update_EkemNeighb2D_1to2 which is called in this case
@@ -5258,6 +5264,7 @@ contains
     ! The new element is assigned the total number of elements currently 
     ! present in the triangulation increased by one.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                            i3
@@ -5271,6 +5278,7 @@ contains
     !     /X            \               /X     |     X\
     !    +---------------+             +-------+-------+
     !   i1 (e1)     (e4) i2            i1 (e1) i4 (e4) i2
+    ! </verb>
     !
 !</description>
 
@@ -5394,6 +5402,7 @@ contains
     ! The new elements are assigned the total number of elements currently present
     ! in the triangulation increased by one and two, respectively.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                        i3
@@ -5407,6 +5416,7 @@ contains
     !     /X            \           /X     |/ +1 X\
     !    +---------------+         +-------+-------+
     !   i1 (e1)     (e4) i2       i1 (e1) i4  (e4) i2
+    ! </verb>
     !
 !</description>
 
@@ -5593,6 +5603,7 @@ contains
     ! The new elements are assigned the total number of elements currently present
     ! in the triangulation increased by one, two and three, respectively.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                        i3
@@ -5606,6 +5617,7 @@ contains
     !     /X            \           /X +1 \X/ +2 X\
     !    +---------------+         +-------+-------+
     !   i1 (e1)     (e4) i2       i1 (e1)  i4 (e4) i2
+    ! </verb>
     !
 !</description>
 
@@ -5734,6 +5746,7 @@ contains
     ! The new element is assigned the total number of elements currently present
     ! in the triangulation increased by one.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)     (e3) i3          i4 (e7)  i6 (e3) i3
@@ -5747,6 +5760,7 @@ contains
     !      |*              |            |*      |       |
     !      +---------------+            +-------+-------+
     !     i1 (e1)     (e5) i2          i1 (e1)  i5 (e5) i2
+    ! </verb>
     ! 
 !</description>
 
@@ -5880,6 +5894,7 @@ contains
     ! The new elements are assigned the total number of elements currently 
     ! present in the triangulation increased by one and two, respectively.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)      (e3) i3          i4 (e7)     (e3) i3
@@ -5893,6 +5908,7 @@ contains
     !      |*               |            |* iel \X/  +1 *| 
     !      +----------------+            +-------+-------+
     !     i1 (e1)      (e5) i2          i1 (e1)  i5 (e5) i2
+    ! </verb>
     !
 !</description>
 
@@ -6040,6 +6056,7 @@ contains
     ! The new elements are assigned the total number of elements currently 
     ! present in the triangulation increased by one, two an three, respectively.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)      (e3) i3          i4 (e7)     (e3) i3
@@ -6053,6 +6070,7 @@ contains
     !      |*               |            |*     \  / +1 *|
     !      +----------------+            +-------+-------+
     !     i1 (e1)      (e5) i2          i1 (e1)  i5 (e5) i2
+    ! </verb>
     !
 !</description>
 
@@ -6205,6 +6223,7 @@ contains
     ! The new elements are assigned the total number of elements currently present
     ! in the triangulation increased by one, two and three, respectively.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)      (e3) i3          i4 (e7) i7  (e3) i3
@@ -6218,6 +6237,7 @@ contains
     !      |*               |            |*      |      *|
     !      +----------------+            +-------+-------+
     !     i1 (e1)      (e5) i2          i1 (e1) i5  (e5) i2
+    ! </verb>
     !
 !</description>
 
@@ -6356,6 +6376,7 @@ contains
     ! from the elemental states so that the first node of each triangle
     ! is located at the midpoint of the bisected edge.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                         i3
@@ -6369,6 +6390,7 @@ contains
     !     /X     |     X\            /X iel\X/jel X\
     !    +-------+-------+          +-------+-------+
     !   i1(e1,e7)i4(e4,e8)i2       i1(e1,e7)i4(e4,e8)i2
+    ! </verb>
     !
 !</description>
 
@@ -6490,6 +6512,7 @@ contains
     ! Depending on the given state of the element, the corresponding
     ! neighboring element is given explicitly.
     !
+    ! <verb>
     !     initial quadrilateral      subdivided quadrilateral
     !
     !     i4(e7,e3)i7(f5,f1)i3         i4(e7,e3)i7(f5,f1)i3
@@ -6503,6 +6526,7 @@ contains
     !      |*      |       |            |*      |      *|
     !      +-------+-------+            +-------+-------+
     !     i1(e1,e5)i5(f3,f7)i2         i1(e1,e5)i5(f3,f7)i2
+    ! </verb>
     ! 
 !</description>
 
@@ -6650,7 +6674,8 @@ contains
     ! left element, IEL2 denots the right element and IEL3 stands for 
     ! the triangle which connects IEL1 and IEL2.
     !
-    ! initial quadrilateral      subdivided quadrilateral
+    ! <verb>
+    !   initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)     (e3) i2          i4 (e7)  i7 (e3)  i3
     !      +---------------+            +-------+-------+
@@ -6663,6 +6688,7 @@ contains
     !      |*     \X/     *|            |*      |      *|
     !      +-------+-------+            +-------+-------+
     !     i1(e1,e9)i5(e5,e10)i2        i1(e1,e9)i5(e5,e10)i2
+    ! </verb>
     !
 !</description>
 
@@ -6815,6 +6841,7 @@ contains
     ! make up the inner "diamond" of the refinement, whereas IEL1 and IEL4
     ! are the right and left outer triangles, respectively.
     !
+    ! <verb>
     !    initial quadrilateral         subdivided quadrilateral
     !
     !     i4 (e7)     (e3) i3           i4 (e7)  i7 (e3) i3
@@ -6828,6 +6855,7 @@ contains
     !      |*     \  /iel2*| (e2)        |*      |      *| (e2)
     !      +-------+-------+             +-------+-------+
     !     i1(e1,e9)i5(e5,e10)i2         i1(e1,e9)i5(e5,e10)i2
+    ! </verb>
     !
 !</description>
 
@@ -6983,6 +7011,7 @@ contains
     ! is adopted. If the macro element is an outer red triangle, then the states
     ! 2 and 8 are trapped and converted into state 4.
     !
+    ! <verb>
     !     initial triangle           subdivided triangle
     !
     !            i3                        i3
@@ -6996,6 +7025,7 @@ contains
     !     /X     |     X\           /X            \
     !    +-------+-------+         +---------------+
     !    i1 (e1) i4 (e4) i2        i1 (e1)    (e4) i2
+    ! </verb>
     !
 !</description>
 
@@ -7165,6 +7195,7 @@ contains
     ! 1-tria : 4-tria refinement into the original macro triangle.
     ! By definition, iel is the number of the inner red triangle.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                        i3
@@ -7178,6 +7209,7 @@ contains
     !     /Xiel1\X/iel2X\           /             \
     !    +-------+-------+         +---------------+
     !   i1 (e1)  i4 (e4) i2       i1  (e1)   (e4)  i2
+    ! </verb>
     !
 !</description>
 
@@ -7369,6 +7401,7 @@ contains
     ! triangle. The number of the second triangle will be the number of the 
     ! "first" element neighbor of the inner triangle.
     !
+    ! <verb>
     !    initial triangle           subdivided triangle
     !
     !            i3                        i3
@@ -7382,6 +7415,7 @@ contains
     !     /Xiel1\X/iel2X\           /X jel1|jel2 X\
     !    +-------+-------+         +-------+-------+
     !    i1 (e1) i4 (e4) i2        i1 (e1) i4 (e4)  i2
+    ! </verb>
     !
 !</description>
 
@@ -7745,6 +7779,7 @@ contains
     ! JEL is oriented such that local numbering starts at the vertex of the
     ! macro element, that is, such that the first vertex is the oldest one.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)      (e3) i3          i4 (e7) i7  (e3) i3
@@ -7758,6 +7793,7 @@ contains
     !      |*      |      *|             |*              |
     !      +-------+-------+             +---------------+
     !     i1 (e1) i5  (e5) i2           i1 (e1)     (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -7957,6 +7993,7 @@ contains
     ! JEL1 and JEL2 are oriented such that local numbering starts at the vertices
     ! of the macro element, that is, such that the first vertex is the oldest one.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7) i7  (e3) i3          i4 (e7)  i7  (e3) i3
@@ -7970,6 +8007,7 @@ contains
     !      |*      |      *|             |*      |       |
     !      +-------+-------+             +-------+-------+
     !     i1 (e1) i5  (e5) i2           i1 (e1) i5  (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8154,6 +8192,7 @@ contains
     ! starts at the vertices of the macro element and the local numbering
     ! numbering of the interior triangle starts at the edge midpoint.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7) i7  (e3) i3          i4 (e7)      (e3) i3
@@ -8167,6 +8206,7 @@ contains
     !      |*      |      *|             |*     \X/     *|
     !      +-------+-------+             +-------+-------+
     !     i1 (e1) i5  (e5) i2           i1 (e1) i5  (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8340,6 +8380,7 @@ contains
     ! starts at the vertices of the macro element and the local numbering
     ! numbering of the interior triangle starts at the edge midpoint.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7) i7  (e3) i3          i4 (e7)      (e3) i3
@@ -8353,6 +8394,7 @@ contains
     !      |*      |      *|             |*iel -\ / iel1*|
     !      +-------+-------+             +-------+-------+
     !     i1 (e1) i5  (e5) i2           i1 (e1) i5  (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8457,6 +8499,7 @@ contains
     ! JEL is oriented such that local numbering starts at the vertex of the
     ! macro element, that is, such that the first vertex is the oldest one.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7) i7  (e3) i3          i4 (e7)      (e3) i3
@@ -8470,6 +8513,7 @@ contains
     !      |*      |      *|             |*              |
     !      +-------+-------+             +---------------+
     !     i1 (e1) i5  (e5) i2           i1 (e1)     (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8690,6 +8734,7 @@ contains
     ! starts at the vertices of the macro element and the local numbering
     ! numbering of the interior triangle starts at the edge midpoint.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7) i7  (e3) i3          i4 (e7)      (e3) i3
@@ -8703,6 +8748,7 @@ contains
     !      |*      |      *|             |*     \X/     *|
     !      +-------+-------+             +-------+-------+
     !     i1 (e1) i5  (e5) i2           i1 (e1) i5  (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8796,6 +8842,7 @@ contains
     ! This subroutine combines three triangles resulting from a
     ! 1-quad : 3-tria refinement into the macro quadrilateral.
     !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)     (e3) i3          i4 (e7)      (e3) i3
@@ -8809,6 +8856,7 @@ contains
     !      |*     \X/     *|             |*              |
     !      +-------+-------+             +---------------+
     !     i1 (e1) i5  (e5) i2           i1 (e1)     (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -8998,7 +9046,7 @@ contains
     ! 1-quad : 4-tria refinement into the macro quadrilateral.
     ! The remaining element JEL is the ones with the smallest element number.
     ! The numbering convention follows the strategy used for refinement.
-    !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)  i7 (e3) i3          i4 (e7)      (e3) i3
@@ -9012,6 +9060,7 @@ contains
     !      |/---/    iel1 *|             |*              |
     !      +---------------+             +---------------+
     !     i1 (e1)     (e5) i2           i1 (e1)     (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
@@ -9215,7 +9264,7 @@ contains
     ! 1-quad : 4-tria refinement into three green triangles. The remaining 
     ! elements JEL1, JEL2 and JEL3 are the ones with the smallest element number.
     ! The numbering convention follows the strategy used for refinement. 
-    !
+    ! <verb>
     !    initial quadrilateral      subdivided quadrilateral
     !
     !     i4 (e7)  i7 (e3) i3          i4 (e7)      (e3) i3
@@ -9229,6 +9278,7 @@ contains
     !      |/---/    iel1 *|             |---/     jel1 *|
     !      +---------------+             +---------------+
     !     i1 (e1)     (e5) i2           i1 (e1)     (e5) i2
+    ! </verb>
 !</description>
 
 !<input>
