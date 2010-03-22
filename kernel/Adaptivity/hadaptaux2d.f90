@@ -144,8 +144,8 @@
 !#      -> Computes the state of an element after rotation in 2D
 !#
 !#
-!#  FAQ - Some explanation
-!# -----------------------
+!#  FAQ - Some explanation  \\
+!# ------------------------ \\
 !# 1.) So, how does red-green grid refinement work in detail?
 !#
 !#     In general, a conforming mesh in two spatial dimensions consists of 
