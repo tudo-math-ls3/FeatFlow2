@@ -56,8 +56,8 @@
 !# a line not enclosed by apostrophes, the rest of the line is
 !# ignored as a comment.
 !#
-!# The subvariables feature
-!# ========================
+!# The subvariables feature \\
+!# ======================== \\
 !# The parameter list also allows to specify variables as subvariables
 !# of other variables. Take a look at the following example:
 !# 
@@ -91,8 +91,8 @@
 !#                          from section SECTION
 !# </verb>
 !#
-!# The environment variable feature
-!# ================================
+!# The environment variable feature \\
+!# ================================ \\
 !# DAT files may refer to environment variables. Example:
 !# <verb>
 !# -------------------------snip------------------------------
@@ -105,8 +105,8 @@
 !# is requested, the value of the environment variable $NLMAXENV
 !# is returned.
 !#
-!# The subfile feature
-!# ===================
+!# The subfile feature \\
+!# =================== \\
 !# An INI file may contain references to subfiles. Subfiles must
 !# be specified at the beginning of an INI file with the following 
 !# syntax:

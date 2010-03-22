@@ -52,8 +52,8 @@
 !# which are explained in the following. The remainder of the 
 !# module is hidden to the calling program.
 !#
-!# Step 1 - Initialization
-!# -----------------------
+!# Step 1 - Initialization \\
+!# ----------------------- \\
 !# The parser module has to be initialized for the simultaneous evaluation of 
 !# n functions by calling the module subroutine initp one time in your Fortran 
 !# code:

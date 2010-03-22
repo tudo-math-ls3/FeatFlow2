@@ -10,25 +10,25 @@
 !# The following routines can be found in this module:
 !#
 !# 1.) pperr_scalarVec
-!#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
-!#        analytic reference function or the $L_1$-norm, $L_2$-norm
+!#     -> Calculate <tex>$ L_1 $</tex>-error, $L_2$-error or $H_1$-error to an
+!#        analytic reference function or the <tex>$ L_1 $</tex>-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
 !#   <tex>
 !#   $$ \int_\Omega u-u_h dx , \qquad \int_\Omega \nabla u-\nabla u_h dx $$
 !#   </tex>
 !#
 !# 2.) pperr_scalar
-!#     -> Calculate, e.g., $L_1$-error, $L_2$-error or $H_1$-error to an
-!#        analytic reference function or the $L_1$-norm, $L_2$-norm
+!#     -> Calculate, e.g., <tex>$ L_1 $</tex>-error, $L_2$-error or $H_1$-error to an
+!#        analytic reference function or the <tex>$ L_1 $</tex>-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
 !#   <tex>
 !#   $$ \int_\Omega w(u-u_h) dx , \qquad \int_\Omega w(\nabla u-\nabla u_h) dx $$
 !#   </tex>
 !#
 !# 3.) pperr_scalarBoundary2d
-!#     -> On a 2D boundary segment, calculate $L_1$-error, $L_2$-error 
+!#     -> On a 2D boundary segment, calculate <tex>$ L_1 $</tex>-error, $L_2$-error 
 !#        or $H_1$-error to an analytic reference function or the 
-!#        $L_1$-norm, $L_2$-norm or $H_1$-norm of a FE function.
+!#        <tex>$ L_1 $</tex>-norm, $L_2$-norm or $H_1$-norm of a FE function.
 !#   <tex>
 !#   $$ \int_\Gamma u-cu_h dx , \qquad \int_\Gamma \nabla u-c\nabla u_h dx $$
 !#   </tex>
@@ -99,7 +99,7 @@ module pprocerror
   ! $H_1$-error/norm
   integer, parameter, public :: PPERR_H1ERROR = 2
 
-  ! $L_1$-error/norm
+  ! <tex>$ L_1 $</tex>-error/norm
   integer, parameter, public :: PPERR_L1ERROR = 3
 
   ! Mean value error/norm
