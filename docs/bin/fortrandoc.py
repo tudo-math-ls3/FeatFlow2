@@ -1054,7 +1054,7 @@ class Module:
     # RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]*', re.MULTILINE)
     RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]?', re.MULTILINE)
     RE_ONLY_HASH = re.compile(r'^[ \t]*#+[ \t]*$', re.MULTILINE)
-    RE_BEGIN_HASH = re.compile(r'^[ \t]*#[ \t]*', re.MULTILINE)
+    RE_BEGIN_HASH = re.compile(r'^[ \t]*#[ \t]?', re.MULTILINE)
     RE_END_HASH = re.compile(r'[ \t]*#[ \t]*$', re.MULTILINE)
 
     def clean_description(self, text):
