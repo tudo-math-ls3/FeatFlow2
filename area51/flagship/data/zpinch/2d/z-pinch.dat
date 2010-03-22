@@ -392,11 +392,12 @@ sucdimport =
 sucderror = out/
 
 # variables for ucd output
-sucdvariable(4) =
+sucdvariable(5) =
  density
  velocity
  energy
  pressure
+ advect
 
 
 ################################################################################
