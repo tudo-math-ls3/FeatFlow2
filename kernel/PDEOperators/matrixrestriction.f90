@@ -9,20 +9,22 @@
 !# construction of coarse grid matrix operators from fine grid matrices by the
 !# Galerkin approach (c.f. p. 224ff in Turek`s book).
 !#
-!# In the Galerkin approach a coarse grid matrix $A_{2h}$ 
+!# In the Galerkin approach a coarse grid matrix <tex>$A_{2h}$</tex>
 !# is build from a fine grid matrix $A_h$ with the help of the prolongation
-!# operator $P_{2h}^h$ and the restriction operator $R_{h}^{2h}$ using
+!# operator <tex>$P_{2h}^h$</tex> and the restriction operator
+!# <tex>$R_{h}^{2h}$</tex> using
 !#
 !#       <tex> $$ A_{2h}  =  P_{2h}^h  A_h  R_{h}^{2h}. $$ </tex>
 !#
-!# This is equivalent to the standard approach $a_{ij} = a_h(\phi_j,\phi_i)$
+!# This is equivalent to the standard approach
+!# <tex>$a_{ij} = a_h(\phi_j,\phi_i)$</tex>
 !# in the case of conformal finite elements, but yields a different matrix
 !# in the case of nonconformal FE spaces.
 !#
 !# The routines in this file allow for some situations (discretisation
-!# with $\tilde Q_1$ e.g.) to rebuild some lines in a given matrix according
-!# to this approach. This is a kind of stabilisation in case the mesh elements
-!# show high aspect ratios.
+!# with <tex>$\tilde Q_1$</tex> e.g.) to rebuild some lines in a given matrix
+!# according to this approach. This is a kind of stabilisation in case the mesh
+!# elements show high aspect ratios.
 !#
 !# The following subroutines can be found here:
 !#
@@ -44,11 +46,11 @@ module matrixrestriction
   use element
   use spatialdiscretisation
   use linearsystemscalar
-  
+
   implicit none
-  
+
   private
-  
+
   public :: mrest_matrixRestrictionEX3Y
 
 contains
@@ -59,22 +61,22 @@ contains
 
   subroutine mrest_matrixRestrictionEX3Y (rfineMatrix,rcoarseMatrix,&
                                           iARindicator, dARbound)
-  
+
 !<description>
-  ! This routine rebuilds some line in the scalar coarse grid matrix 
-  ! rcoarseMatrix with the help of the Galerkin approach using the scalar 
-  ! fine grid matrix rfineMatrix. Only the lines of those DOF`s will be 
-  ! rebuild where the elements that belong to the DOF show too high aspect 
+  ! This routine rebuilds some line in the scalar coarse grid matrix
+  ! rcoarseMatrix with the help of the Galerkin approach using the scalar
+  ! fine grid matrix rfineMatrix. Only the lines of those DOF`s will be
+  ! rebuild where the elements that belong to the DOF show too high aspect
   ! ratios.
   !
   ! The routine works only for matrices that are build using a uniform
-  ! discretisation with $\tilde Q_1$.
+  ! discretisation with <tex>$\tilde Q_1$</tex>.
 !</description>
 
 !<input>
   ! Fine grid matrix.
   type(t_matrixScalar), intent(in) :: rfineMatrix
-  
+
   ! Aspect-ratio indicator. Configures when to rebuild a line of the
   ! coarse matrix by constant restriction.
   ! <=0: do nothing, do not modify coarse grid matrix
@@ -82,13 +84,13 @@ contains
   !  =2: switch depending on aspect ratio of current element
   !      and aspect ratio of neighbour element
   integer, intent(in) :: iARindicator
-  
+
   ! Maximum allowed aspect ratio. Rows in the matrix corresponding
   ! to elements (i.e. a DOF`s of an element) with an aspect ratio
   ! larger than dARbound are rebuild with the Galerkin approach
   ! by constant restriction.
   real(DP), intent(in) :: dARbound
-  
+
 !</input>
 
 !<inputoutput>
@@ -118,31 +120,31 @@ contains
     integer, dimension(:,:), pointer    :: p_IedgesAtElementCoarse
     integer, dimension(:,:), pointer    :: p_IedgesAtElementFine
     integer, dimension(:,:), pointer   :: p_IverticesAtElementCoarse
-    
+
     integer, dimension(:), pointer       :: p_KldCoarse,p_KldFine
     integer, dimension(:), pointer       :: p_KdiagonalCoarse,p_KdiagonalFine
     integer, dimension(:), pointer       :: p_KcolCoarse,p_KcolFine
     real(DP), dimension(:), pointer                   :: p_DaCoarse,p_DaFine
     real(DP) :: dv1,dv2,dv3,dv4,dv5,dv6,dv7,dv8,dv9,dv10,dv11,dv12
-    
+
     ! No modification if the parameters are out of bounds!
     if (iARindicator .le. 0) return
     if (dARbound .lt. 0.0_DP) return
-    
+
     ! At first some basic checks if we are able to complete our task at all.
-    
+
     if ((rfineMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .or. &
        (rcoarseMatrix%cmatrixFormat .ne. LSYSSC_MATRIX9)) then
       print *,'mrest_matrixRestrictionEX3Y: Only format 9 matrices supported!'
       call sys_halt()
     end if
-    
+
     if ((iand(rfineMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .or. &
         (iand(rcoarseMatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0)) then
       print *,'mrest_matrixRestrictionEX3Y: Matrix must not be transposed!'
       call sys_halt()
     end if
-    
+
     if ((rfineMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM) .or. &
         (rcoarseMatrix%p_rspatialDiscrTest%ccomplexity .ne. SPDISC_UNIFORM)) then
       print *,'mrest_matrixRestrictionEX3Y: Only uniform discretisation supported!'
@@ -154,7 +156,7 @@ contains
       print *,'mrest_matrixRestrictionEX3Y: Only double precision matrices supported!'
       call sys_halt()
     end if
-    
+
     if ((rfineMatrix%isortStrategy .gt. 0) .or. &
         (rcoarseMatrix%isortStrategy .gt. 0)) then
       print *,'mrest_matrixRestrictionEX3Y: Sorted matrices not supported!'
@@ -183,7 +185,7 @@ contains
 
     ! Fetch all the information we need from the triangulation and the matrices
     ! for easier access:
-    
+
     call storage_getbase_int2d(p_rtriaCoarse%h_IneighboursAtElement, &
                                p_IneighboursAtElementCoarse)
     call storage_getbase_int2d(p_rtriaCoarse%h_IedgesAtElement, &
@@ -196,7 +198,7 @@ contains
 
     call storage_getbase_int2d(p_rtriaCoarse%h_IverticesAtElement, &
                                p_IverticesAtElementCoarse)
-                               
+
     call storage_getbase_double2d(p_rtriaCoarse%h_DvertexCoords, &
                                   p_DvertexCoordsCoarse)
 
@@ -208,10 +210,10 @@ contains
     call lsyssc_getbase_Kcol (rfineMatrix,p_KcolFine)
     call lsyssc_getbase_Kdiagonal (rfineMatrix,p_KdiagonalFine)
     call lsyssc_getbase_double (rfineMatrix,p_DaFine)
-    
+
     nvt1 = p_rtriaCoarse%NVT
     nvt2 = p_rtriaFine%NVT
-    
+
     ! Loop through all elements of the coarse grid.
 
     do iel=1,p_rtriaCoarse%NEL
@@ -231,7 +233,7 @@ contains
       !             | IELA1  |
       !             |        |
       !             +--------+
-      
+
       ielAdjacent(0) = iel
       ielAdjacent(1) = p_IneighboursAtElementCoarse(1,iel)
       ielAdjacent(2) = p_IneighboursAtElementCoarse(2,iel)
@@ -277,7 +279,7 @@ contains
       !     |    Iiel(4)   |     Iiel(3)   |
       !     |              |               |
       !     |                              |
-      !     X----------- iel  -------------X 
+      !     X----------- iel  -------------X
       !     |                              |
       !     |              |               |
       !     |    Iiel(1)   |     Iiel(2)   |
@@ -289,7 +291,7 @@ contains
       ! iel on the coarse grid:
 
       edgeloop: do iedge=1,4
-      
+
         ! We assign:
         !
         ! iedge1 = local number of current edge
@@ -310,12 +312,12 @@ contains
         !        |    Iiel(1)   |     Iiel(2)   |
         !        |              |               |
         !        |              |               |
-        !        ===============O================  
+        !        ===============O================
         !                    iedge1=1
         !
         ! Now, assign iadj1, iadj2 and iadj4 the numbers of the
         ! neighbouring elements on these three edges:
-        
+
         iadj1 = ielAdjacent(iedge1)
         iadj2 = ielAdjacent(iedge2)
         iadj4 = ielAdjacent(iedge4)
@@ -337,10 +339,10 @@ contains
 
         iel1=Iiel(iedge1)
         iel2=Iiel(iedge2)
-      
+
         ! i.e.:
         !
-        !      O------------ iel ------------O     
+        !      O------------ iel ------------O
         !      |                             |
         !      |              |              |
         !      |     iel1     |     iel2     |
@@ -374,14 +376,14 @@ contains
         if (iadj1.ne.0) then
 
           ! In case our current element (and probably our neighbour) has to
-          ! big jump in the aspect ratio, the matrix does not have to be modified, 
+          ! big jump in the aspect ratio, the matrix does not have to be modified,
           ! we skip the modification.
           !
           ! Both aspect ratios in-range?
 
           if ((daspectRatio(0) .lt. dARbound) .and. &
-              (daspectRatio (iedge) .lt. dARbound)) cycle edgeloop      
-        
+              (daspectRatio (iedge) .lt. dARbound)) cycle edgeloop
+
           ! At least one element is out-of-bounds.
           ! Check if it is the current element and if the neighbour element
           ! is important or not.
@@ -390,14 +392,14 @@ contains
               (daspectRatio(0) .lt. darbound)) cycle edgeloop
 
         else
-      
+
           ! No neighbour. Only the aspect ratio of the current element
-          ! decides on whether the matrix is modified or not. 
+          ! decides on whether the matrix is modified or not.
 
           if (daspectRatio(0) .lt. dARbound) cycle edgeloop
 
         endif
-        
+
         ! Ok, we are in the case where the matrix must be modified
         ! because of too large anisotropy.
         !
@@ -431,10 +433,10 @@ contains
         im5 =p_IedgesAtElementFine(1,iel2)
         im6 =p_IedgesAtElementFine(3,iel1)
         im7 =p_IedgesAtElementFine(2,iel2)
-      
+
         ! i.e.:
         !
-        !             im6            im7 
+        !             im6            im7
         !       +------O----- iel ----O-------+
         !       |4            3|3            2|
         !       |     iel1     |     iel2     |
@@ -442,20 +444,20 @@ contains
         !       |              |              |
         !       |1            2|4            1|
         !       1=======O======+=======O======2
-        !              im1            im2      
+        !              im1            im2
         !
         ! If there is a neighbour element on the coarse grid,
         ! we have to calculate the DOF`s on that neighbour element:
 
 
         if (iadj1.ne.0) then
-      
+
           ! Loop through the four edges on the neighbour element
           ! to find the edge adjacent to our current element iel:
-      
+
           do jedge=1,4
             if (p_IneighboursAtElementCoarse(jedge,iadj1).eq.iel) exit
-          end do  
+          end do
 
           !           4--------3
           !           |        |
@@ -485,13 +487,13 @@ contains
           ! that correspond to the DOF`s we have to take into account
           ! in the constant prolongation/restriction, i.e.:
           !
-          ! iedge4 O----         iel1         ----O iedge2  
+          ! iedge4 O----         iel1         ----O iedge2
           !        |                              |
           !        |                              |
           !        |                              |
           !        |              |               |
           !        |              |               |
-          !        4==============O===============3  
+          !        4==============O===============3
           !        |         jedge=jedge1=3       |
           !        |                              |
           !        |                              |
@@ -503,23 +505,23 @@ contains
           !        |                              |
           !        |                              |
           !        |                              |
-          !        1==============O===============2  
+          !        1==============O===============2
           !
           ! Get the global DOF`s on the coarse grid corresponding to
           ! these two edges:
- 
+
           imid4 =p_IedgesAtElementCoarse(jedge2,iadj1)
           imid5 =p_IedgesAtElementCoarse(jedge4,iadj1)
 
           ! i.e.
           !
-          !         O----         iel          ----O       
+          !         O----         iel          ----O
           !         |                              |
           !         |                              |
           !         |                              |
           !         |              |               |
           !         |              |               |
-          !         4==============O===============3  
+          !         4==============O===============3
           !         |         jedge=jedge1=3       |
           !         |                              |
           !         |                              |
@@ -531,7 +533,7 @@ contains
           !         |                              |
           !         |                              |
           !         |                              |
-          !         1==============O===============2  
+          !         1==============O===============2
           !
           ! Get the elements adjacent to iadj1 along these two edges:
 
@@ -564,19 +566,19 @@ contains
 
           ! i.e.
           !
-          !      O------------ iel -------------O       
+          !      O------------ iel -------------O
           !      |                              |
           !      |              |               |
           !      |     iel1     |     iel2      |
           !      |      v       |      v        |
           !      |1     v       |      v       2|
-          !      +======v=======O======v========+  
+          !      +======v=======O======v========+
           !      |4     v       |      v       3|
           !      |      v       |      v        |
           !      |     jel2     |     jel1      |
           !      |              |               |
           !      |                              |
-          !      O----------- iadj1 ------------O       
+          !      O----------- iadj1 ------------O
           !      |                              |
           !      |              |               |
           !      |              |               |
@@ -596,35 +598,35 @@ contains
 
           ! i.e.:
           !
-          !       O----         iel          ----O       
+          !       O----         iel          ----O
           !       |                              |
           !       |                              |
           !       |                              |
           !       |              |               |
           !       |              |               |
-          !       4==============+===============3  
+          !       4==============+===============3
           !       |1            4|2             1|
           !       |     jel2     |     jel1      |
           !  im10 O              O im8           O im9
           !       |              |               |
-          !       |2            3|3             4|      
-          !       +------O---- iadj1 ----O-------+      
+          !       |2            3|3             4|
+          !       +------O---- iadj1 ----O-------+
           !       |4   im12     3|3    im11     2|
           !       |              |               |
           !       |              |               |
           !       |              |               |
           !       |1            2|4             1|
-          !       1==============+===============2  
+          !       1==============+===============2
 
 
         else
 
           ! In case there is no neighbour iadj1, set im8=0 to indicate that.
           im8 =0
-          
+
         end if
-        
-        ! Finally, the IMx variables now contain the numbers of the global 
+
+        ! Finally, the IMx variables now contain the numbers of the global
         ! DOF`s on the following edges:
         !
         !       |     im6             im7      |
@@ -639,8 +641,8 @@ contains
         !       |              |               |
         !  im10 O              O im8           O im9
         !       |              |               |
-        !       |                              |      
-        !       +------O---- iadj1 ----O-------+      
+        !       |                              |
+        !       +------O---- iadj1 ----O-------+
         !       |    im12            im11      |
         !
         ! Finally initialise some variables for later computations.
@@ -652,15 +654,15 @@ contains
         dval5=0.0_DP
 
         ! Now use the values of the fine grid matrix at the positions IMx
-        ! to cvalculate the entries in the coarse grid matrix at 
+        ! to cvalculate the entries in the coarse grid matrix at
         ! imid1,...,imid5 with the Galerkin approach.
         !
-        ! This corresponds to an application of the prolongation and 
+        ! This corresponds to an application of the prolongation and
         ! restriction operator to the fine grid matrix:
 
         ild = getXYindex (im1,im3,p_KcolFine,p_KldFine)
         dv1=p_DaFine(p_KdiagonalFine(im1))+p_DaFine(ild)
-   
+
         if (im8.ne.0) then
           ild = getXYindex (im1,im8,p_KcolFine,p_KldFine)
           dv1=dv1+p_DaFine(ild)
@@ -780,7 +782,7 @@ contains
 
         ild = getXYindex (imid2,imid1,p_KcolCoarse,p_KldCoarse)
         p_DaCoarse(ild)=dval2
-      
+
         ild = getXYindex (imid3,imid1,p_KcolCoarse,p_KldCoarse)
         p_DaCoarse(ild)=dval3
 
@@ -791,10 +793,10 @@ contains
           ild = getXYindex (imid5,imid1,p_KcolCoarse,p_KldCoarse)
           p_DaCoarse(ild)=dval5
         endif
-        
+
         ! We finished with the current edge imid1. Switch to the
         ! next edge in counterclockwise sense and go on.
-        
+
       end do edgeloop
 
       ! Current element finished. Proceed with next element
@@ -802,13 +804,13 @@ contains
     end do
 
     ! That is it.
-    
+
   contains
 
     ! -----------------------------------------------------------------------
     ! Auxiliary routine: Get X/Y-Index
     !
-    ! Performs a search for the index ild such that matrix(IX,IY)=KLA(ild) 
+    ! Performs a search for the index ild such that matrix(IX,IY)=KLA(ild)
     ! holds. I.e. searches in the matrix array for the index belonging
     ! to the position IX/IY, so that the caller can modify this matrix
     ! element directly.
@@ -824,17 +826,17 @@ contains
 
       ! input: Column structure of the matrix
       integer, dimension(:), intent(in) :: Kcol
-      
+
       ! input: Row structure of the matrix
       integer, dimension(:), intent(in) :: Kld
-    
+
       ! result: index of entry (ix,iy) in the matrix array.
       ! =-1, if the entry does not exist.
-    
+
       ! local variables:
       integer :: ild
       integer :: icol
-      
+
       ! Look through row IY:
 
       do ild=Kld(IY),Kld(IY+1)-1
@@ -845,11 +847,11 @@ contains
           return
         end if
       end do
-      
+
       ! Otherwise: error - this element does not exist in our matrix
       ! indicate that by returning -1. This will usually result in an 'array
       ! of bounds exception' in our caller if compiled in DEBUG mode.
-      
+
       getXYindex = -1
 
     end function

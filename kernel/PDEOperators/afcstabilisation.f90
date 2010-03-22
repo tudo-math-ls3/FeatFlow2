@@ -1219,8 +1219,8 @@ contains
     ! element matrix (rmatrix). The matrix coefficients are
     ! henceforth given by
     !   a_ij=1 if there exists some edge ij, a_ij=0 otherwise
-    ! Now, let Z=A^2. Then z_ij>0 if and only if there exists a path
-    ! of length two connecting nodes i and j. This is due
+    ! Now, let <tex>$Z=A^2$</tex>. Then z_ij>0 if and only if there
+    ! exists a path of length two connecting nodes i and j. This is due
     !   z_ij=sum_k(a_ik*a_kj)>0 <=> ex. k : a_ik=1 and a_kj=1.
 !</description>
 

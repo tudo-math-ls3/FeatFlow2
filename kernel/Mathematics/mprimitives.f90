@@ -1589,10 +1589,11 @@ contains
     
 !<description>
     ! Compute the Kronecker delta symbol 
-    ! $\delta_{ij}\left\{\begin{array}{ll}
+    ! <tex> $$
+    !  \delta_{ij}\left\{\begin{array}{ll}
     !  1 & i=j\\
     !  0 & i\ne j
-    !  \end{array}\right.$
+    !  \end{array}\right. $$</tex>
 !</description>
 
 !<input>

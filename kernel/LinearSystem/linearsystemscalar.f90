@@ -13033,8 +13033,8 @@ contains
 
 !<subroutine>
 
-  subroutine lsyssc_multMatMat (rmatrixA,rmatrixB,rmatrixC,bmemory&
-      &,bsymb,bnumb,bisExactStructure)
+  subroutine lsyssc_multMatMat (rmatrixA,rmatrixB,rmatrixC,bmemory,&
+      bsymb,bnumb,bisExactStructure)
 
 !<description>
     ! Computes the matrix-matrix-product 

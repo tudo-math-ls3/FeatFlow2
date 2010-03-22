@@ -25,14 +25,15 @@
 !#
 !#        <tex> $$  u_n  :=  J^{-1} d_n  $$ </tex>
 !#
-!#     with a preconditioner $J^{-1}$. This can be a Jacobian, a linear solver,
-!#     a matrix, the inverse of a lumped mass matrix or similar.
+!#     with a preconditioner <tex>$J^{-1}$</tex>. This can be a Jacobian,
+!#     a linear solver, a matrix, the inverse of a lumped mass matrix or
+!#     similar.
 !#
 !# 3.) Correction
 !#
 !#        <tex> $$  x_{n+1}  :=  x_n  +  \omega u_n  $$ </tex>
 !#
-!#     $\omega$ is usually = 1.
+!#     <tex>$\omega$</tex> is usually = 1.
 !#
 !#
 !# The following routines can be found here:
@@ -781,8 +782,8 @@ contains
   
 !<description>
   ! This routine installs a linear solver node as preconditioner to the
-  ! nonlinear solver. The linear solver $J^{-1}$ is called after each
-  ! defect calculation to precondition the defect:
+  ! nonlinear solver. The linear solver <tex>$J^{-1}$</tex> is called after
+  ! each defect calculation to precondition the defect:
   !    <tex> $$  x_{n+1}  =  x_n  +  J^{-1} (b-A(x)x)  $$ </tex>
 !</description>
 
@@ -827,7 +828,7 @@ contains
   !
   ! 2.) Preconditioning of the nonlinear defect
   !        <tex> $$  u_n  :=  J^{-1} d_n  $$ </tex>
-  !     with a preconditioner $J^{-1}$. The preconditioner can be
+  !     with a preconditioner <tex>$J^{-1}$</tex>. The preconditioner can be
   !     a) a matrix (if rsolverNode%cpreconditioner=NLSOL_PREC_MATRIX) or
   !     b) a lumped mass matrix (if rsolverNode%cpreconditioner=NLSOL_PREC_LMASS) or
   !     c) a linear solver (if rsolverNode%cpreconditioner=NLSOL_PREC_LINSOL) or
@@ -840,8 +841,8 @@ contains
   !
   ! 3.) Correction
   !         <tex> $$  x_{n+1}  :=  x_n  +  \omega u_n  $$ </tex>
-  !     $\omega$ is usually = 1. A user defined callback routine fcb_precondDefect
-  !     can modify $\omega$ in every iteration.
+  !     <tex>$\omega$</tex> is usually = 1. A user defined callback routine fcb_precondDefect
+  !     can modify <tex>$\omega$</tex> in every iteration.
   !
   ! If present, the callback routine fcb_resNormCheck is called in every iteration.
   ! This routine can check the residuum for convergence/divergence and can print
@@ -886,7 +887,7 @@ contains
   include 'intf_nlsolcallback.inc'
   
   ! OPTIONAL: Preconditioning routine. This routine accepts a defect vector rd
-  ! and replaces it by a preconditioned defect vector $J^{-1} rd$. 
+  ! and replaces it by a preconditioned defect vector <tex>$J^{-1} rd$</tex>.
   ! If this parameter is not present, the preconditioner is either a matrix
   ! or there is no preconditioner (depending on the variable
   ! rsolverNode\%cpreconditioner).
@@ -1167,7 +1168,7 @@ contains
   include 'intf_nlsolcallback.inc'
   
   ! OPTIONAL: Preconditioning routine. This routine accepts a defect vector rd
-  ! and replaces it by a preconditioned defect vector $J^{-1} rd$. 
+  ! and replaces it by a preconditioned defect vector <tex>$J^{-1} rd$</tex>.
   ! If this parameter is not present, the preconditioner is either a matrix
   ! or there is no preconditioner (depending on the variable
   ! rsolverNode\%cpreconditioner).
