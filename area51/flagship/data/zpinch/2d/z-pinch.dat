@@ -19,11 +19,10 @@ application = zpinch
 [Zpinch]
 ################################################################################
 
-# compressible Euler model
-application_euler = euler
-
-# scalar transport model
-application_transport = transport
+# sub-applications
+subapplication(2) =
+  Euler
+  Transport
 
 # file which contains the application specific data
 indatfile = data/zpinch/2d/z-pinch.indat
@@ -34,7 +33,7 @@ ndimension = 2
 # type of coordinate system
 # 1 = Cartesian coordinates (x-y)
 # 2 = Cylindrical coordinates (r-z)
-icoords = 1
+icoordinateSystem = 1
 
 # type of Lorentz force term treatment
 # 0 = segregated approach

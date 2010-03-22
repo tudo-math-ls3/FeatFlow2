@@ -114,13 +114,18 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_app(rparlist)
+  subroutine zpinch_app(rparlist, ssectionName)
 
 !<description>
     ! This is the main application for the simplified MHD equations. It
     ! is a so-called driver routine which can be used to start a
     ! standalone MHD simulation.
 !</description>
+
+!<input>
+    ! name of the top-most section of the application
+    character(len=*), intent(in) :: ssectionName
+!</input>
 
 !<inputoutput>
     ! parameter list
@@ -207,9 +212,9 @@ contains
 
     ! Retrieve section names of sub-applications
     call parlst_getvalue_string(rparlist,&
-        'zpinch', 'application_euler', ssectionNameEuler)
+        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
     call parlst_getvalue_string(rparlist,&
-        'zpinch', 'application_transport', ssectionNameTransport)
+        ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
 
     ! Overwrite configuration from command line arguments. After this
     ! subroutine has been called, the parameter list remains unchanged
@@ -249,7 +254,7 @@ contains
     ! Read in all constants, predefined expressions
     ! and functions from the parameter files
     call parlst_getvalue_string(rparlist,&
-        'zpinch', 'indatfile', sindatfileName)
+        ssectionName, 'indatfile', sindatfileName)
     call fparser_parseFileForKeyword(rfparser,&
         sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(rfparser,&
@@ -280,14 +285,14 @@ contains
         'rfparser', rfparser, .true.)
 
     ! Initialize the solver structures
-    call zpinch_initSolvers(rparlist, 'zpinch', rtimestep, rsolver)
+    call zpinch_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
     nlmin = solver_getMinimumMultigridlevel(rsolver)
     nlmax = solver_getMaximumMultigridlevel(rsolver)
 
     ! Initialize the abstract problem structure
-    call zpinch_initProblem(rparlist, 'zpinch',&
+    call zpinch_initProblem(rparlist, ssectionName,&
         nlmin, nlmax, rproblem, rcollection)
 
     ! Initialize the individual problem levels
@@ -330,9 +335,9 @@ contains
     if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
 
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'zpinch',&
+      call parlst_getvalue_string(rparlist, ssectionName,&
           'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist, 'zpinch',&
+      call parlst_getvalue_int(rparlist, ssectionName,&
           'ndimension', ndimension)
 
       ! Initialize the boundary condition for the Euler model
@@ -363,12 +368,12 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call zpinch_solveTransientPrimal(rparlist, 'zpinch',&
+        call zpinch_solveTransientPrimal(rparlist, ssectionName,&
             ssectionNameEuler, ssectionNameTransport, rbdrCondEuler,&
             rbdrCondTransport, rproblem, rtimestep, rsolver,&
             rsolution, rcollection)
 
-        call zpinch_outputSolution(rparlist, 'zpinch',&
+        call zpinch_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
         
       else
@@ -380,7 +385,7 @@ contains
     else
 
       ! Just output the computational mesh and exit
-      call zpinch_outputSolution(rparlist, 'zpinch',&
+      call zpinch_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
 
     end if
@@ -534,9 +539,9 @@ contains
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'application_euler', ssectionNameEuler)
+        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'application_transport', ssectionNameTransport)
+        ssectionName, 'subapplication', ssectionNameTransport, isubstring=2)
 
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'trifile', rproblemDescriptor%trifile)
@@ -928,13 +933,13 @@ contains
     character(LEN=SYS_STRLEN) :: slorentzforceName
     real(DP) :: dscale
     integer :: isystemFormat, consistentMassMatrix, lumpedMassMatrix
-    integer :: neq, nvar, icomp, icoords
+    integer :: neq, nvar, icomp, icoordinateSystem
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
         ssectionName, 'slorentzforcename', slorentzforceName)
     call parlst_getvalue_int(rparlist,&
-        ssectionName, 'icoords', icoords)
+        ssectionName, 'icoordinateSystem', icoordinateSystem)
     call parlst_getvalue_int(rparlist,&
           ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(rparlist,&
@@ -983,7 +988,7 @@ contains
     case (SYSTEM_INTERLEAVEFORMAT)
 
       ! What type of coordinate system are we?
-      select case(icoords)
+      select case(icoordinateSystem)
       case(1)
         call calcForceXYInterleaveFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
@@ -1002,7 +1007,7 @@ contains
 
     case (SYSTEM_BLOCKFORMAT)
       ! What type of coordinate system are we?
-      select case(icoords)
+      select case(icoordinateSystem)
       case(1)
         call calcForceXYBlockFormat(dscale, neq, nvar,&
             p_DvertexCoords, p_Kld, p_Kcol, p_DconsistentMassMatrix,&
@@ -1556,7 +1561,7 @@ contains
         trim(soutputName), 'iformatucd', iformatUCD)
 
     call parlst_getvalue_string(rparlist,&
-        ssectionName, 'application_euler', ssectionNameEuler)
+        ssectionName, 'subapplication', ssectionNameEuler, isubstring=1)
     call parlst_getvalue_int(rparlist,&
         ssectionNameEuler, 'isystemformat', isystemformat)
     
@@ -1928,13 +1933,12 @@ contains
     ! Vector for source term
     type(t_vectorBlock), dimension(2) :: rforce
 
-    ! Section names
-    character(LEN=SYS_STRLEN) :: sadaptivityName
-    character(LEN=SYS_STRLEN) :: soutputName
-    character(LEN=SYS_STRLEN) :: ucdimport
-
     ! local variables
     type(t_ucdExport) :: rimport
+    character(LEN=SYS_STRLEN) :: sadaptivityName
+    character(LEN=SYS_STRLEN) :: soutputName
+    character(LEN=SYS_STRLEN) :: sucdimport
+    
     real(dp) :: dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     real(dp) :: dscaleLorentzForceTerm
     integer :: templateMatrix, systemMatrix, isystemFormat
@@ -1998,7 +2002,7 @@ contains
     call euler_initSolution(rparlist, ssectionNameEuler,&
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
-
+    
 !!$    ! Redistribute the density
 !!$    call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
 !!$        p_rproblemLevel, p_rsolutionEuler, rcollection)
@@ -2067,6 +2071,11 @@ contains
     call parlst_getvalue_double(rparlist,&
         trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
 
+    
+    call zpinch_outputSolution(rparlist, ssectionName,&
+        p_rproblemLevel, rsolution, rtimestep%dTime)
+    stop
+    
 
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure and perform pre-adaptation
@@ -2224,11 +2233,11 @@ contains
 
     ! Get name of import file (if any)
     call parlst_getvalue_string(rparlist,&
-        trim(soutputName), 'ucdimport', ucdimport, '')
+        trim(soutputName), 'sucdimport', sucdimport, '')
 
     ! Do we have to read in a precomdputed solution?
-    if (trim(ucdimport) .ne. '') then
-      call ucd_readGMV(ucdimport, rimport, p_rproblemLevel%rtriangulation)
+    if (trim(sucdimport) .ne. '') then
+      call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
       call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
       call ucd_getSimulationTime(rimport, rtimestep%dTime)
       call euler_setVariables(rimport, p_rsolutionEuler)

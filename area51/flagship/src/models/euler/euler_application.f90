@@ -164,13 +164,18 @@ contains
 
 !<subroutine>
 
-  subroutine euler_app(rparlist)
+  subroutine euler_app(rparlist, ssectionName)
 
 !<description>
     ! This is the main application for the compressible Euler
     ! equations.  It is a so-called driver routine which can be used
     ! to start a standalone Euler simulation.
 !</description>
+
+!<input>
+    ! name of the top-most section of the application
+    character(len=*), intent(in) :: ssectionName
+!</input>
 
 !<inputoutput>
     ! parameter list
@@ -258,7 +263,7 @@ contains
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call euler_parseCmdlArguments(rparlist)
-    call euler_adjustParameterlist(rparlist, 'euler')
+    call euler_adjustParameterlist(rparlist, ssectionName)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
@@ -289,7 +294,7 @@ contains
     ! Read in all constants, predefined expressions
     ! and functions from the parameter file
     call parlst_getvalue_string(rparlist,&
-        'euler', 'indatfile', sindatfileName)
+        ssectionName, 'indatfile', sindatfileName)
     call fparser_parseFileForKeyword(rfparser,&
         sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(rfparser,&
@@ -301,21 +306,21 @@ contains
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
 
     ! Initialize the solver structures
-    call euler_initSolvers(rparlist, 'euler', rtimestep, rsolver)
+    call euler_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call euler_initProblem(rparlist, 'euler',&
+    call euler_initProblem(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
-    call euler_initAllProblemLevels(rparlist, 'euler',&
+    call euler_initAllProblemLevels(rparlist, ssectionName,&
         rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
-    call parlst_getvalue_int(rparlist, 'euler',&
+    call parlst_getvalue_int(rparlist, ssectionName,&
         'systemMatrix', systemMatrix)
-    call parlst_getvalue_int(rparlist, 'euler',&
+    call parlst_getvalue_int(rparlist, ssectionName,&
         'isystemFormat', isystemFormat)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
         rsolver, systemMatrix, isystemFormat, UPDMAT_ALL)
@@ -332,13 +337,15 @@ contains
     if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then
 
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'euler', 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist, 'euler', 'ndimension', ndimension)
-
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'algorithm', algorithm)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'ndimension', ndimension)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'sprimalbdrcondname', sbdrcondName)
+      
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist,&
-          'euler', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
           '['//trim(sbdrcondName)//']', ndimension)
 
@@ -349,11 +356,11 @@ contains
         ! Solve the primal formulation for #
         ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call euler_solveTransientPrimal(rparlist, 'euler',&
+        call euler_solveTransientPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection)
 
-        call euler_outputSolution(rparlist, 'euler',&
+        call euler_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolutionPrimal,&
             dtime=rtimestep%dTime)
 
@@ -366,7 +373,7 @@ contains
     else
 
       ! Just output the computational mesh and exit
-      call euler_outputSolution(rparlist, 'euler',&
+      call euler_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
 
     end if

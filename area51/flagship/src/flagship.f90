@@ -136,15 +136,15 @@ program flagship
   call output_separator(OU_SEP_MINUS)
 
 
-  ! Call application module
+  ! Switch to application module
   if (trim(application) .eq. 'transport') then
-    call transp_app(rparlist)
+    call transp_app(rparlist, 'transport')
 
   elseif (trim(application) .eq. 'euler') then
-    call euler_app(rparlist)
+    call euler_app(rparlist, 'euler')
 
   elseif (trim(application) .eq. 'zpinch') then
-    call zpinch_app(rparlist)
+    call zpinch_app(rparlist, 'zpinch')
 
   else
     call output_line('Invalid application name!',&
