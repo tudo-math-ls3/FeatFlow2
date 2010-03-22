@@ -294,7 +294,7 @@ istabilisation = 1
 # 0 = no output
 # 1 = GMV
 # 2 = AVS
-# 3 = VTK
+# 3 = Paraview (VTK)
 iformatUCD = 3
 
 # time interval for UCD output
