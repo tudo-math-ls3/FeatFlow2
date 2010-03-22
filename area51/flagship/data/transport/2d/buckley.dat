@@ -87,8 +87,10 @@ srhsname = @rhs
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
+# 1 = analytical initial solution: pointwise values
 # 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 1
 
 # section name of initial solution
@@ -231,7 +233,6 @@ sucderror = out/buckley_error
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # type of time-stepping algorithm
@@ -304,7 +305,6 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # minimum multigrid level number
@@ -346,7 +346,6 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking
@@ -428,7 +427,6 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking
@@ -507,7 +505,6 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -619,7 +616,6 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
