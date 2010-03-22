@@ -60,8 +60,8 @@
 !#      -> Coarsens two neighbouring lines into a single line
 !#
 !#
-!#  FAQ - Some explanation
-!# -----------------------
+!#  FAQ - Some explanation \\
+!# ----------------------- \\
 !# 1.) So, how does grid refinement wirk in detail?
 !#
 !#     In 1D, grid refinement is very easy. Each element (i.e. line)
@@ -69,7 +69,6 @@
 !#     inserted at the midpoint of the element. That is it.
 !#
 !# 2.) 
-
 !# </purpose>
 !##############################################################################
 
