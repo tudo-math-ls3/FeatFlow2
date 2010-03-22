@@ -113,6 +113,7 @@
 !#
 !# Operations are evaluated in the correct order:
 !#
+!# <verb>
 !#  ()             expressions in brackets first
 !#  -A             unary minus (or plus)
 !#  A**B A^B       exponentiation (A raised to the power B)
@@ -122,11 +123,14 @@
 !#                 comparison between A and B (result is either 0 or 1)
 !#  A&B            result is 1 if int(A) and int(B) differ from 0, else 0.
 !#  A|B            result is 1 if int(A) or int(B) differ from 0, else 0.
+!# </verb>
 !#
 !# The function string can contain integer or real constants. To be recognized
 !# as explicit constants these must conform to the format
 !#
-!# [+|-][nnn][.nnn][e|E|d|D[+|-]nnn]
+!# <verb>
+!#  [+|-][nnn][.nnn][e|E|d|D[+|-]nnn]
+!# </verb>
 !#
 !# where nnn means any number of digits. The mantissa must contain at least
 !# one digit before or following an optional decimal point. Valid exponent 
@@ -136,6 +140,7 @@
 !# Note that the function parser is case insensitive.
 !# The following mathematical functions are supported
 !#
+!# <verb>
 !# abs(A)    : Absolute value of A. If A is negative, returns -A otherwise
 !#             returns A.
 !# acos(A)   : Arc-cosine of A. Returns the angle, measured in radians,
@@ -180,15 +185,18 @@
 !# tan(A)    : Tangent of A. Returns the tangent of the angle A, where A
 !#             is measured in radians.
 !# tanh(A)   : Same as tan() but for hyperbolic tangent.
+!# </verb>
 !#
 !# The parser also supports a number of standard constants in the function
 !# string. All constants start with an underscore '_'. The following constants
 !# are defined by default:
 !#
+!# <verb>
 !# _PI       : Gives the number $pi$.
 !# _EXP      : Gives the number $e$
 !# _INFTY    : Gives the maximum possible number in double precision, defined
 !#             in fsystem by SYS_INFINITY.
+!# </verb>
 !#
 !# In addition, the use can define his own global constant which are available
 !# throughout the complete function parser as it is the case for the standard
