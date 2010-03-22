@@ -3443,7 +3443,7 @@ contains
   
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
-  !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
+  !   <tex> $$  Dy   =   cx * rMatrix * rx   +   cy * ry  $$ </tex>
 !</description>
   
 !<input>

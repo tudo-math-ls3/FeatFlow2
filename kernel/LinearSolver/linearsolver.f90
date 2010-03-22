@@ -13,7 +13,7 @@
 !# The solvers basically deal with block systems of the following form:
 !#
 !# 1.) General linear systems of the form
-!#         $$Ax = b$$
+!#         <tex> $$Ax = b$$ </tex>
 !#     with A being an arbitrary block matrix
 !# 2.) Saddle-point block matrices of the form
 !#           [A  B1] (x) = (f1)
@@ -3189,7 +3189,7 @@ contains
     ! <tex>   $$ x  =  x_0  +  A^{-1}  ( b - A x_0 ) $$  </tex>
     ! The standard solver P configured in rsovlverNode above is then used to 
     ! solve
-    !     $$ Ay = b-Ax_0 $$
+    !     <tex> $$ Ay = b-Ax_0 $$ </tex>
     ! and the solution $x$ is then calculated by $x=x+y$. 
     
     ! Calculate the defect:
@@ -3290,7 +3290,7 @@ contains
   ! deleted by linsol_releaseSolver.
   !
   ! The defect correction performs nmaxIterations iterations of the type
-  !    $$ x_{n+1}  =  x_n  +  (b-Ax_n) $$
+  !    <tex> $$ x_{n+1}  =  x_n  +  (b-Ax_n) $$ </tex>
   ! with $x_0:=0$. 
   ! It is possible to include a damping parameter to this operation by 
   ! changing rsolverNode%domega to a value $\not =1$. In this case, the

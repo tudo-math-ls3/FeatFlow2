@@ -200,19 +200,19 @@ contains
   ! X- and Y-direction.
   !
   ! The body forces are defined as the integrals
-  !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
-  !
+  ! <tex>
+  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
   ! Usually in benchmark-like geometries there is:
-  !
-  !   $$ df1 = RHO*NU = (density of the fluid)*viscosity$$
+  ! <tex>
+  !   $$ df1 = RHO*NU = (\text{density of the fluid}) * \text{viscosity}$$
   !   $$ df2 = RHO*DIST*UMEAN**2
-  !          = (density of the fluid)*(length of the obstacle facing the flow)
-  !           *(mean velocity of the fluid)^2 $$
-  !
+  !          = (\text{density of the fluid)*(length of the obstacle facing the flow})
+  !           *(\text{mean velocity of the fluid})^2 $$
+  ! </tex>
   ! which influences this routine to calculate the drag-/lift coefficients
   ! instead of the forces. The actual forces are calculated by
   ! setting df1=1.0 and df2=2.0, which is the standard setting when
@@ -1230,19 +1230,19 @@ contains
   ! X- and Y-direction.
   !
   ! The body forces are defined as the integrals
-  !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
-  !
+  ! <tex>
+  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
   ! Usually in benchmark-like geometries there is:
-  !
-  !   $$ df1 = RHO*NU = (density of the fluid)*viscosity$$
+  ! <tex>
+  !   $$ df1 = RHO*NU = (\text{density of the fluid}) * \text{viscosity}$$
   !   $$ df2 = RHO*DIST*UMEAN**2
-  !          = (density of the fluid)*(length of the obstacle facing the flow)
-  !           *(mean velocity of the fluid)^2 $$
-  !
+  !          = (\text{density of the fluid)*(length of the obstacle facing the flow})
+  !           *(\text{mean velocity of the fluid})^2 $$
+  ! </tex>
   ! which influences this routine to calculate the drag-/lift coefficients
   ! instead of the forces. The actual forces are calculated by
   ! setting df1=1.0 and df2=2.0, which is the standard setting when
@@ -1878,20 +1878,20 @@ contains
   ! X-, Y- and Z-direction.
   !
   ! The body forces are defined as the integrals
-  !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
-  !    Dforces(3) = 2/df2 * int_s [df1 dut/dn n_z + p n_z] ds 
-  !
+  ! <tex> 
+  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  !    $$ Dforces(3) = 2/df2 * int_s [df1 dut/dn n_z + p n_z] ds $$
+  ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
   ! Usually in benchmark-like geometries there is:
-  !
-  !   $$ df1 = RHO*NU = (density of the fluid)*viscosity$$
+  ! <tex>
+  !   $$ df1 = RHO*NU = (\text{density of the fluid}) * \text{viscosity}$$
   !   $$ df2 = RHO*DIST*UMEAN**2
-  !          = (density of the fluid)*(length of the obstacle facing the flow)
-  !           *(mean velocity of the fluid)^2 $$
-  !
+  !          = (\text{density of the fluid)*(length of the obstacle facing the flow})
+  !           *(\text{mean velocity of the fluid})^2 $$
+  ! </tex>
   ! which influences this routine to calculate the drag-/lift coefficients
   ! instead of the forces. The actual forces are calculated by
   ! setting df1=1.0 and df2=2.0, which is the standard setting when
@@ -2781,19 +2781,19 @@ contains
   ! X- and Y-direction.
   !
   ! The body forces are defined as the integrals
-  !
-  !    Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds 
-  !    Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds 
-  !
+  ! <tex>
+  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  ! </tex>
   ! where df1 and df2 allow to weight different integral parts.
   !
   ! Usually in benchmark-like geometries there is:
-  !
-  !   $$ df1 = RHO*NU = (density of the fluid)*viscosity$$
+  ! <tex>
+  !   $$ df1 = RHO*NU = (\text{density of the fluid}) * \text{viscosity}$$
   !   $$ df2 = RHO*DIST*UMEAN**2
-  !          = (density of the fluid)*(length of the obstacle facing the flow)
-  !           *(mean velocity of the fluid)^2 $$
-  !
+  !          = (\text{density of the fluid)*(\text{length of the obstacle facing the flow})
+  !           *(\text{mean velocity of the fluid})^2 $$
+  ! </tex>
   ! which influences this routine to calculate the drag-/lift coefficients
   ! instead of the forces. The actual forces are calculated by
   ! setting df1=1.0 and df2=2.0, which is the standard setting when

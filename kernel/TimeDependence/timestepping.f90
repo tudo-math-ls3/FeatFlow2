@@ -123,30 +123,35 @@ module timestepping
   ! The time stepping scheme is designed to discretise a rather general
   ! equation in time for a solution $u$ and a time variable $t$:
   !
-  !               $$ u_t(x,t) + N(u(x,t)) = f(x,t) $$
+  !               <tex> $$ u_t(x,t) + N(u(x,t)) = f(x,t) $$ </tex>
   !
   ! Given a time step $k$ and a time stepping scheme parameter $\theta$, 
   ! this is discretised in as:
+  ! <tex>
   !
   !  $$ (u_{n+1} - u_n) / k  +  \theta N(u_{n+1})
   !
   !    = -(1-\theta) N(u_n)  +  \theta f_{n+1}  +  (1-\theta) f_n $$
   !
+  ! </tex>
   ! Now, regroup this equation with $u_{n+1}$ on the LHS and $u_n$ on the
   ! RHS and give the coefficients in front of all terms an appropriate
   ! name. Then the time stepping scheme realised by this structure yields:
+  ! <tex>
   !
   ! $$ u_{n+1} + dweightMatrixLHS*N(u_n+1) 
   !
   ! =  u_n + dweightMatrixRHS*N(u_n)  +  dweightNewRHS*f_{n+1}  +  dweightOldRHS*f_n $$
   !
+  ! </tex>
   ! If the simulation has steady (in)homogenuous boundary conditions
   ! and a One-Step Theta-Scheme is used, the RHS build from f_{n+1}
   ! and f_n can be simplified. In this case:
-  ! 
+  ! <tex>
   !  $$  dweightNewRHS*f_n+1  +  dweightOldRHS*f_n
   !    = dweightNewRHS*f_n    +  dweightOldRHS*f_n
   !    = dweightStationaryRHS*f_n                    $$
+  ! </tex>
 
   type t_explicitTimeStepping
   

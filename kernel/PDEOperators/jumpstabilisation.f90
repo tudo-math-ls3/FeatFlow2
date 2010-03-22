@@ -181,9 +181,10 @@ contains
   ! Unified edge oriented jump stabilisation.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
+  ! <tex>
   ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
-  !            \int_E [grad u] [grad v] ds$$
-  !
+  !            \int_E [grad u] [grad v] ds $$
+  ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   !
   ! For a rerefence about the stabilisation, see
@@ -990,9 +991,10 @@ contains
   ! hexahedron elements.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
+  ! <tex>
   ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
-  !
+  ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   !
   ! For a rerefence about the stabilisation, see
@@ -1383,9 +1385,10 @@ contains
   ! hexahedron elements.
   !
   ! Adds the unified edge oriented jump stabilisation to the matrix rmatrix:
+  ! <tex>
   ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds$$
-  !
+  ! </tex>
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   !
   ! For a rerefence about the stabilisation, see
@@ -1704,8 +1707,10 @@ contains
   ! Performs a matrix vector multiplication
   !   y := cx * J x + cy y
   ! with J being the stabilisation matrix of the operator
+  ! <tex>
   ! $$< Ju,v > = \sum_E \max(\gamma^{*} * \nu * h_E, \gamma h_E^2) 
   !            \int_E [grad u] [grad v] ds.$$
+  ! </tex>
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   ! The matrix rtemplateMat must contain the structure of a FE template
@@ -2441,7 +2446,9 @@ contains
   ! Unified edge oriented jump stabilisation.
   !
   ! Adds the reactive jump stabilisation to the matrix rmatrix:
+  ! <tex>
   ! $$< Ju,v > = \sum_E \gamma \nu 1/|E| \int_E [u] [v] ds$$
+  ! </tex>
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   !
@@ -3030,7 +3037,9 @@ contains
   ! hexahedron elements.
   !
   ! Adds the reactive jump stabilisation to the matrix rmatrix:
+  ! <tex>
   ! $$< Ju,v > = \sum_E \gamma \nu 1/|E| \int_E [u] [v] ds$$
+  ! </tex>
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   !
@@ -3406,9 +3415,11 @@ contains
   ! Unified edge oriented jump stabilisation.
   !
   ! Performs a matrix vector multiplication
-  !   y := cx * J x + cy y
+  !   <tex> $$ y := cx * J x + cy y $$ </tex>
   ! with J being the stabilisation matrix of the operator
+  ! <tex>
   ! $$< Ju,v > = \sum_E \gamma \nu 1/|E| \int_E [u] [v] ds.$$
+  ! </tex>
   !
   ! Uniform discretisation, double precision structure-7 and 9 matrix.
   ! The matrix rtemplateMat must contain the structure of a FE template

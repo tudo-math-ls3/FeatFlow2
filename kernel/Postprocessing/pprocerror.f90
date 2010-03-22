@@ -13,30 +13,40 @@
 !#     -> Calculate $L_1$-error, $L_2$-error or $H_1$-error to an
 !#        analytic reference function or the $L_1$-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
+!#   <tex>
 !#   $$ \int_\Omega u-u_h dx , \qquad \int_\Omega \nabla u-\nabla u_h dx $$
+!#   </tex>
 !#
 !# 2.) pperr_scalar
 !#     -> Calculate, e.g., $L_1$-error, $L_2$-error or $H_1$-error to an
 !#        analytic reference function or the $L_1$-norm, $L_2$-norm
 !#        or $H_1$-norm of a FE function:
+!#   <tex>
 !#   $$ \int_\Omega w(u-u_h) dx , \qquad \int_\Omega w(\nabla u-\nabla u_h) dx $$
+!#   </tex>
 !#
 !# 3.) pperr_scalarBoundary2d
 !#     -> On a 2D boundary segment, calculate $L_1$-error, $L_2$-error 
 !#        or $H_1$-error to an analytic reference function or the 
 !#        $L_1$-norm, $L_2$-norm or $H_1$-norm of a FE function.
+!#   <tex>
 !#   $$ \int_\Gamma u-cu_h dx , \qquad \int_\Gamma \nabla u-c\nabla u_h dx $$
+!#   </tex>
 !#
 !# 4.) pperr_scalarErrorEstimate
 !#     -> Calculate error to two different scalar vectors of a  FE function:
+!#   <tex>
 !#   $$ \int_\Omega u_h-u_ref dx $$
+!#   </tex>
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is 
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
 !#
 !# 5.) pperr_blockErrorEstimate
 !#     -> Calculate error to two different block vectors of a  FE function:
+!#   <tex>
 !#   $$ \int_\Omega u_h-u_ref dx $$
+!#   </tex>
 !#        where $u_h$ denotes the FE solution vector and $u_ref$ is
 !#        some reference solution vector which is supposed to be a 
 !#        better approximation of the true solution.
@@ -774,11 +784,11 @@ contains
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
-  !   $$ ||y-z||_{L_1}, ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
+  !   <tex> $$ ||y-z||_{L_1}, ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$ </tex>
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}$$
+  !   <tex> $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}$$ </tex>
   !
   ! If the vector rvectorScalar is not specified, it is assumed to be =0.
   !
@@ -955,11 +965,11 @@ contains
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
-  !   $$ ||y-z||_{L_1}, ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1}$$
+  !   <tex> $$ ||y-z||_{L_1}, ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{H_1} $$ </tex>
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1}$$
+  !   <tex> $$ ||y||_{L_1}, ||y||_{L_2}  \textrm{ or }  ||y||_{H_1} $$ </tex>
   !
   ! If ffunctionWeight is specified, the routine calculates the
   ! desired norm over the selected subdomain and/or scales the error
@@ -3458,11 +3468,11 @@ contains
   ! callback function ffunctionReference.
   !
   ! If ffunctionReference is specified, the routine calculates
-  !   $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{L_1}  \textrm{ or }  ||y-z||_{H_1}$$
+  !   <tex> $$ ||y-z||_{L_2}  \textrm{ or }  ||y-z||_{L_1}  \textrm{ or }  ||y-z||_{H_1} $$ </tex>
   ! with $y$=rvectorScalar and $z$=ffunctionReference.
   !
   ! If ffunctionReference is not specified, the routine calculates
-  !   $$ ||y||_{L_2}  \textrm{ or }  ||y||_{L_1}  \textrm{ or }  ||y||_{H_1}.$$
+  !   <tex> $$ ||y||_{L_2}  \textrm{ or }  ||y||_{L_1}  \textrm{ or }  ||y||_{H_1}. $$ </tex>
   !
   ! If the vector rvectorScalar is not specified, it is assumed to be =0.
   !
@@ -4762,15 +4772,15 @@ contains
 !<description>
   ! This routine calculates the standard deviation
   ! 
-  ! $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$
+  ! <tex> $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$ </tex>
   !
   ! of a given FE function $u$ in rvector, whereby
   !
-  ! $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$
+  ! <tex> $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$ </tex>
   !
   ! and each component is computed from the following relation
   !
-  ! $$ \hat x=\int_\Omega x u dx $$
+  ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the 
@@ -4829,15 +4839,15 @@ contains
 !<description>
   ! This routine calculates the standard deviation
   ! 
-  ! $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$
+  ! <tex> $$ \sigma=\sqrt{\int_\Omega r^2 u dx} $$ </tex>
   !
   ! of a given FE function $u$ in rvector, whereby
   !
-  ! $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$
+  ! <tex> $$ r^2=(x-\hat x)^2 + (y-\hat y)^2 + (z-\hat z)^2 $$ </tex>
   !
   ! and each component is computed from the following relation
   !
-  ! $$ \hat x=\int_\Omega x u dx $$
+  ! <tex> $$ \hat x=\int_\Omega x u dx $$ </tex>
   !
   ! Note: For the evaluation of the integrals, ccubTypeEval from the
   ! element distributions in the discretisation structure specifies the 

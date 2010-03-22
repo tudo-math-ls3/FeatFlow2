@@ -143,7 +143,7 @@ contains
   ! analytically given function.
   ! The following iteration is performed for this purpose:
   !
-  !    $$ x_{n+1}  :=  x_n  +  \omega C^{-1} ( f - M x_n ) $$
+  !    <tex> $$ x_{n+1}  :=  x_n  +  \omega C^{-1} ( f - M x_n ) $$ </tex>
   !
   ! with $f$ being a RHS vector generated with fcoeff_buildVectorSc_sim,
   ! $M$ being the consistent mass matrix and $C$ being either the

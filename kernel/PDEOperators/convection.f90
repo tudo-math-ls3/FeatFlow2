@@ -384,7 +384,7 @@ contains
 !<description>
   ! Standard 1st order upwinding method to set up the convection operator
   !  
-  !            $$ u_1 * grad(u_2) $$
+  !            <tex> $$ u_1 * grad(u_2) $$ </tex>
   !
   ! in a matrix or to build a defect vector.
   ! 2D-version (X- and Y-velocity).
@@ -395,7 +395,7 @@ contains
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
   !
-  !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
+  !  <tex> $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$ </tex>
   !
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
@@ -629,7 +629,7 @@ contains
 !<description>
   ! Standard 1st order upwinding method to set up the convection operator
   !  
-  !            $$ u_1 * grad(u_2) $$
+  !            <tex> $$ u_1 * grad(u_2) $$ </tex>
   !
   ! in a matrix or to build a defect vector.
   ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
@@ -640,7 +640,7 @@ contains
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
   !
-  !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
+  !  <tex> $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$ <tex>
   !
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
@@ -664,7 +664,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -673,7 +673,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -683,7 +683,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlineareity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -1325,9 +1325,9 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
-  ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! <tex> 
+  !   $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
+  ! </tex>
   ! in a matrix or to build a defect vector. 
   ! 2D-version (X- and Y-velocity).
   !
@@ -1336,9 +1336,9 @@ contains
   ! vectors contains the X- and which contains the Y-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -1563,9 +1563,9 @@ contains
                   clocalh, Du1,Ddef1, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
-  ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! <tex> 
+  !   $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
+  ! </tex>
   ! in a matrix or to build a defect vector with that.
   ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
   ! double precision vectors/matrix.
@@ -1574,9 +1574,9 @@ contains
   ! (u1Xvel,u1Yvel) a primary and (u2Xvel,u2Yvel) a secondary velocity field.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -1599,7 +1599,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -1618,7 +1618,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlinearity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -2534,9 +2534,9 @@ contains
                   clocalh,Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
-  ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! <tex> 
+  !   $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
+  ! </tex>
   ! in a matrix or to build a defect vector with that.
   ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
   ! double precision vectors/matrix.
@@ -2545,9 +2545,9 @@ contains
   ! (u1Xvel,u1Yvel) a primary and (u2Xvel,u2Yvel) a secondary velocity field.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
-  !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
-  !
+  ! <tex>
+  !   $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -2570,7 +2570,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -2579,7 +2579,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -2589,7 +2589,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlinearity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -3511,14 +3511,14 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  (                dalpha * MASS  
   !                  +              dbeta * STOKES  
   !                  +             ddelta * u_1 * grad(.) 
   !                  +            dnewton * (.) * grad(u_1)
   !                  +   ddeltaTransposed * grad(.)^T * u_1
   !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector.
   ! 2D-version (X- and Y-velocity).
   !
@@ -3527,9 +3527,9 @@ contains
   ! vectors contains the X- and which contains the Y-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -3796,14 +3796,14 @@ contains
                   Du1,Du2,Ddef1,Ddef2, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  (                dalpha * MASS  
   !                  +              dbeta * STOKES  
   !                  +             ddelta * u_1 * grad(.) 
   !                  +            dnewton * (.) * grad(u_1)
   !                  +   ddeltaTransposed * grad(.)^T * u_1
   !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector with that.
   ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
   ! double precision vectors/matrix.
@@ -3815,9 +3815,9 @@ contains
   ! (u1Xvel,u1Yvel) a primary and (u2Xvel,u2Yvel) a secondary velocity field.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -3840,7 +3840,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -3849,7 +3849,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -3859,7 +3859,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlineareity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -5315,10 +5315,10 @@ contains
       end if
 
       ! Transposed Newton operator
-      !
-      !  dnewtonTransposed * grad(u_1)^T * (.) ) $$
-      !  = dnewtonTransposed * [ (dx DU1) (dx DU2) ] 
-      !                        [ (dy DU1) (dy DU2) ]
+      ! 
+      ! <tex> $$ dnewtonTransposed * grad(u_1)^T * (.) ) $$ </tex>
+      !        = dnewtonTransposed * [ (dx DU1) (dx DU2) ] 
+      !                              [ (dy DU1) (dy DU2) ]
       !
       ! Should we assemble the transposed Newton matrices?
       if (dnewtonTransposed .ne. 0.0_DP) then
@@ -6055,9 +6055,9 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector.
   ! 3D-version (X-, Y- and Z-velocity).
   !
@@ -6066,9 +6066,9 @@ contains
   ! vectors contains the X-, Y- and which contains the Z-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -6301,9 +6301,9 @@ contains
                   Du1,Du2,Du3,Ddef1,Ddef2,Ddef3,DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector with that.
   ! 3D-version (X-, Y- and Z-velocity), uniform $\tilde Q_1$ discretisation,
   ! double precision vectors/matrix.
@@ -6313,9 +6313,9 @@ contains
   ! velocity field.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -6338,7 +6338,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -6347,7 +6347,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -6357,7 +6357,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlinearity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -7321,9 +7321,9 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector.
   ! 3D-version (X-, Y- and Z-velocity).
   !
@@ -7333,7 +7333,7 @@ contains
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
   !
-  !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
+  !  <tex> $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$ </tex>
   !
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
@@ -7650,9 +7650,9 @@ contains
                   clocalH,bALE, Du1,Du2,Du3,Ddef1,Ddef2,Ddef3, DmeshVelocity)
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
-  !
+  ! </tex>
   ! in a matrix or to build a defect vector with that.
   ! 3D-version (X-, Y- and Z-velocity), uniform $\tilde Q_1$ discretisation,
   ! double precision vectors/matrix.
@@ -7664,9 +7664,9 @@ contains
   ! (u1Xvel,u1Yvel) a primary and (u2Xvel,u2Yvel) a secondary velocity field.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -7689,7 +7689,7 @@ contains
   !     dweight2 = 0, u2Xvel/u2Yvel = undefined
   !   So the upwinding scheme only uses one velocity field.
   !   Such a call e.g. adds the integral
-  !                $$ ( u_1 * grad(.) , v )_{\Omega} $$
+  !                <tex> $$ ( u_1 * grad(.) , v )_{\Omega} $$ </tex>
   !   to the system matrix.\\
   !
   !  2.) In case that there are two velocity fields representing
@@ -7698,7 +7698,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -7708,7 +7708,7 @@ contains
   !   too. By setting cdef=1,2, this routine incorporates the nonlinearity
   !   into that vector, using the formula
   !
-  !            $$ D = D - dtheta * UUx * grad (Ux) $$
+  !            <tex> $$ D = D - dtheta * UUx * grad (Ux) $$ </tex>
   !   
   !  4.) If bALE=true, a mesh velocity field is added to the nonlineareity
   !   according to the formula  "U * grad (U-DmeshVelocity)".
@@ -9847,9 +9847,9 @@ contains
   ! vectors contains the X- and which contains the Y-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -10018,9 +10018,9 @@ contains
   ! vectors contains the X- and which contains the Y-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -10185,9 +10185,9 @@ contains
   ! vectors contains the X- and which contains the Y-velocity.
   ! The final velocity vector field is then computed as a weighted average
   ! of these two:
-  !
+  ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
-  !
+  ! </tex>
   ! $u_2 = rsolution(.)$ defines the second velocity field inside of
   ! the grad-term.
   !
@@ -10349,14 +10349,14 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  (                dalpha * MASS  
   !                  +              dbeta * dnu * LAPLACE
   !                  +             ddelta * u * grad(.) 
   !                  +            dnewton * (.) * grad(u)
   !                  +   ddeltaTransposed * grad(.)^T * u
   !                  +  dnewtonTransposed * grad(u)^T * (.) ) $$
-  !
+  ! </tex>
   ! into a matrix rmatrix. 2D-version (X- and Y-velocity). The optional 
   ! parameter u=rvelocity defines the evaluation point of the nonlinearity
   ! if there is one.
@@ -10423,14 +10423,14 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  (                dalpha * MASS  
   !                  +              dbeta * dnu * LAPLACE
   !                  +             ddelta * u * grad(.) 
   !                  +            dnewton * (.) * grad(u)
   !                  +   ddeltaTransposed * grad(.)^T * u
   !                  +  dnewtonTransposed * grad(u)^T * (.) ) $$
-  !
+  ! </tex>
   ! into a defect vector rd:
   !  rd = rd - operator(rvelocity)*rx. 2D-version (X- and Y-velocity). The optional 
   ! parameter u=rvelocity defines the evaluation point of the nonlinearity
@@ -10508,14 +10508,14 @@ contains
 
 !<description>
   ! Standard streamline diffusion method to set up the operator
-  !  
+  ! <tex> 
   ! $$ dtheta  *  (                dalpha * MASS  
   !                  +              dbeta * dnu * LAPLACE
   !                  +             ddelta * u * grad(.) 
   !                  +            dnewton * (.) * grad(u)
   !                  +   ddeltaTransposed * grad(.)^T * u
   !                  +  dnewtonTransposed * grad(u)^T * (.) ) $$
-  !
+  ! </tex>
   ! 2D-version (X- and Y-velocity). The optional 
   ! parameter u=rvelocity defines the evaluation point of the nonlinearity
   ! if there is one.
@@ -11705,10 +11705,10 @@ contains
         end if
 
         ! Transposed Newton operator
-        !
-        !  dnewtonTransposed * grad(u_1)^T * (.) ) $$
-        !  = dnewtonTransposed * [ (dx DU1) (dx DU2) ] 
-        !                        [ (dy DU1) (dy DU2) ]
+        ! 
+        !  <tex> $$ dnewtonTransposed * grad(u_1)^T * (.) ) $$ </tex>
+        !         = dnewtonTransposed * [ (dx DU1) (dx DU2) ] 
+        !                               [ (dy DU1) (dy DU2) ]
         !
         ! Should we assemble the transposed Newton matrices?
         if (rconfig%dnewtonT .ne. 0.0_DP) then

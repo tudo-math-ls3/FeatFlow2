@@ -643,7 +643,7 @@ contains
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !   $$ \nabla\cdot({\bf v}u) $$
+    !   <tex> $$ \nabla\cdot({\bf v}u) $$ </tex>
     !
     ! Note that this routine serves as a wrapper for block vectors. If there
     ! is only one block, then the corresponding scalar routine is called.
@@ -716,7 +716,7 @@ contains
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !     $$ \nabla\cdot({\bf v}u) $$
+    !     <tex> $$ \nabla\cdot({\bf v}u) $$ </tex>
     !
     ! This routine can be used to apply the following discretisations:
     !

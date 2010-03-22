@@ -3836,14 +3836,14 @@ contains
     !**************************************************************    
     ! Calculate the averaged gradient values
     ! In principal, it suffices to solve the linear system
-    ! $$ (P^T * P) * x = (P^T) * b$$
+    !   <tex> $$ (P^T * P) * x = (P^T) * b $$ </tex>
     ! for the unknown $x$. However, least-squares fitting is known
     ! to be ill-conditions. An alternative is suggested in
     !
     ! J.E. Akin, Finite Element Analysis with Error Estimation
     !
     ! Akin suggests to perform a singular value decomposition (SVD)
-    ! of the matrix (P^T * P) and perform back substitution.
+    ! of the matrix (<tex> $ P^T * P $ </tex>) and perform back substitution.
     ! That is exactly, what is done in this subroutine.
     
     subroutine calc_patchAverages_mult(IelementsInPatchIdx, npatches, &
@@ -3906,14 +3906,14 @@ contains
     !**************************************************************    
     ! Calculate the averaged gradient values
     ! In principal, it suffices to solve the linear system
-    ! $$ (P^T * P) * x = (P^T) * b$$
+    ! <tex> $$ (P^T * P) * x = (P^T) * b $$ </tex>
     ! for the unknown $x$. However, least-squares fitting is known
     ! to be ill-conditions. An alternative is suggested in
     !
     ! J.E. Akin, Finite Element Analysis with Error Estimation
     !
     ! Akin suggests to perform a singular value decomposition (SVD)
-    ! of the matrix (P^T * P) and perform back substitution.
+    ! of the matrix (<tex> $ P^T * P $ </tex>) and perform back substitution.
     ! That is exactly, what is done in this subroutine.
     
     subroutine calc_patchAverages_sim(IelementsInPatchIdx, npatches, &

@@ -139,7 +139,7 @@ contains
   ! This routine assembles a simple Finite element matrix into rmatrix.
   ! "Simple" means here, that a matrix entry consists of exactly one
   ! trial/test function pair and a constant coefficient:
-  ! $$ a_ij = int_{\Omega} \alpha * \psi^j_k * \phi^i_l $$
+  !   <tex> $$ a_ij = int_{\Omega} \alpha * \psi^j_k * \phi^i_l $$ </tex>
   ! With $k,l$ being derivative quantifiers.
   ! This allowes to assemble mass matrices or similar matrices
   ! directly. (A mass matrix for example can be assembled using

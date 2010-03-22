@@ -34,13 +34,13 @@
 !#
 !# where P is the SOR-preconditioner matrix:
 !#
-!#              P := ( 1/omega * diagonal(A) + lower_triangular(A) )
+!# <tex> $$     P := ( 1/omega * diagonal(A) + lower_triangular(A) )  $$ </tex>
 !#
 !#
 !# Step 2: Update p:
 !# - - - - - - - - -
 !#
-!#              p_{k+1} := p_k + omega * S * ( g - D * u_{k+1} )
+!# <tex> $$     p_{k+1} := p_k + omega * S * ( g - D * u_{k+1} )  $$ </tex>
 !#
 !# where S is an approximation of the inverse of the Schur-Complement of A:
 !#

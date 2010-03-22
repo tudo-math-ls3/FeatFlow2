@@ -2166,7 +2166,7 @@ contains
  
 !<description>
   ! Performs a matrix vector multiplicationwith a given scalar matrix:
-  !    $$ Dy   =   cx * rMatrix * rx   +   cy * ry $$
+  !    <tex>  $$  Dy   =   cx * rMatrix * rx   +   cy * ry  $$  </tex>
   ! Vector and matrix must be compatible to each other (same size, sorting 
   ! strategy,...).
 !</description>

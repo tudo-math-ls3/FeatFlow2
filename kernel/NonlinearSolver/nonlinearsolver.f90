@@ -6,14 +6,15 @@
 !# <purpose>
 !# This module contains a black box nonlinear solver using a defect correction
 !# loop. The solver basically performs the following iteration:
-!#
+!# <tex>
 !#     $$  x_{n+1}  =  x_n  +  J^{-1} ( b - A(x_n) x_n )  $$
+!# </tex>
 !#
 !# The defect correction loop is split into three tasks:
 !#
 !# 1.) Calculation of nonlinear defect
 !#
-!#         $$  d_n  :=  b - A(x_n)x_n  $$
+!#        <tex> $$  d_n  :=  b - A(x_n)x_n  $$ </tex>
 !#
 !#     The calculation of the nonlinear defect is performed user defined.
 !#     The nonlinear loop itself does not know anything about the matrix.
@@ -22,14 +23,14 @@
 !#
 !# 2.) Preconditioning of the nonlinear defect
 !#
-!#         $$  u_n  :=  J^{-1} d_n  $$
+!#        <tex> $$  u_n  :=  J^{-1} d_n  $$ </tex>
 !#
 !#     with a preconditioner $J^{-1}$. This can be a Jacobian, a linear solver,
 !#     a matrix, the inverse of a lumped mass matrix or similar.
 !#
 !# 3.) Correction
 !#
-!#         $$  x_{n+1}  :=  x_n  +  \omega u_n  $$
+!#        <tex> $$  x_{n+1}  :=  x_n  +  \omega u_n  $$ </tex>
 !#
 !#     $\omega$ is usually = 1.
 !#
@@ -638,7 +639,7 @@ contains
   ! This routine installs a standard matrix preconditioner into the nonlinear
   ! subroutine. rmatrix =: P is a block matrix which is multiplied to the defect
   ! vector in every iteration:
-  !    $$  x_{n+1}  =  x_n  +  P (b-A(x)x)  $$
+  !   <tex> $$  x_{n+1}  =  x_n  +  P (b-A(x)x)  $$ </tex>
 !</description>
 
 !<input>
@@ -675,7 +676,7 @@ contains
   ! subroutine. rmatrix is a scalar matrix. The matrix is added as 1x1 block
   ! matrix preconditioner P := [rmatrix] to the solver node and is multiplied 
   ! to the defect vector in every iteration:
-  !    $$  x_{n+1}  =  x_n  +  P (b-A(x)x)  $$
+  !    <tex> $$  x_{n+1}  =  x_n  +  P (b-A(x)x)  $$ </tex>
 !</description>
 
 !<input>
@@ -712,7 +713,7 @@ contains
   ! subroutine. rmatrix =: M is a block matrix which contains only diagonal 
   ! blocks with lumped mass matrices. this matrix is is multiplied to the defect
   ! vector in every iteration:
-  !    $$  x_{n+1}  =  x_n  +  M^{-1} (b-A(x)x)  $$
+  !    <tex> $$  x_{n+1}  =  x_n  +  M^{-1} (b-A(x)x)  $$ </tex>
 !</description>
 
 !<input>
@@ -748,7 +749,7 @@ contains
   ! subroutine. rmatrix is a scalar matrix. The matrix is added as 1x1 block
   ! matrix preconditioner P := [rmatrix] to the solver node and its inverse
   ! is multiplied to the defect vector in every iteration:
-  !    $$  x_{n+1}  =  x_n  +  M^{-1} (b-A(x)x)  $$
+  !    <tex> $$  x_{n+1}  =  x_n  +  M^{-1} (b-A(x)x)  $$ </tex>
 !</description>
 
 !<input>
@@ -782,7 +783,7 @@ contains
   ! This routine installs a linear solver node as preconditioner to the
   ! nonlinear solver. The linear solver $J^{-1}$ is called after each
   ! defect calculation to precondition the defect:
-  !    $$  x_{n+1}  =  x_n  +  J^{-1} (b-A(x)x)  $$
+  !    <tex> $$  x_{n+1}  =  x_n  +  J^{-1} (b-A(x)x)  $$ </tex>
 !</description>
 
 !<input>
@@ -816,16 +817,16 @@ contains
              
 !<description>
   ! This routine invokes the nonlinear defect correction iteration
-  !     $$  x_{n+1}  =  x_n  +  J^{-1} ( b - A(x_n) x_n )  $$
+  !    <tex> $$  x_{n+1}  =  x_n  +  J^{-1} ( b - A(x_n) x_n )  $$ </tex>
   !
   ! The defect correction loop is split into three tasks:
   !
   ! 1.) Calculation of nonlinear defect
-  !         $$  d_n  :=  b - A(x_n)x_n  $$
+  !        <tex> $$  d_n  :=  b - A(x_n)x_n  $$ </tex>
   !     For this purpose, the callback routine fcb_getDefect is called.
   !
   ! 2.) Preconditioning of the nonlinear defect
-  !         $$  u_n  :=  J^{-1} d_n  $$
+  !        <tex> $$  u_n  :=  J^{-1} d_n  $$ </tex>
   !     with a preconditioner $J^{-1}$. The preconditioner can be
   !     a) a matrix (if rsolverNode%cpreconditioner=NLSOL_PREC_MATRIX) or
   !     b) a lumped mass matrix (if rsolverNode%cpreconditioner=NLSOL_PREC_LMASS) or
@@ -838,7 +839,7 @@ contains
   !        called for the preconditioning.
   !
   ! 3.) Correction
-  !         $$  x_{n+1}  :=  x_n  +  \omega u_n  $$
+  !         <tex> $$  x_{n+1}  :=  x_n  +  \omega u_n  $$ </tex>
   !     $\omega$ is usually = 1. A user defined callback routine fcb_precondDefect
   !     can modify $\omega$ in every iteration.
   !

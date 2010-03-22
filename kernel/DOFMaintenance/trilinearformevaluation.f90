@@ -14,18 +14,18 @@
 !#
 !# A 'trilinear form' is in our context a bilinear form whose coefficient
 !# function may depend on a Finite Element function:
-!#
+!# <tex>
 !#   $$ a(u,phi_i,psi_j)  =  \int c(x,y) f(u) g(\psi_j) h(\phi_i) $$
-!#
+!# </tex>
 !# with f,g,h derivative operators. Therefore, there is no
 !# special 'create structure' routine; the structure is generated based on the
 !# underlying bilinear form, which steps from the idea of treating u as
 !# a variable coefficient:
-!#
+!# <tex>
 !#   $$ a_u(phi_i,psi_j)  =  \int c_u(x,y) g(\psi_j) h(\phi_i), $$
 !#
 !#   $$ c_u = c*f(u) $$
-!# 
+!# </tex>
 !# </purpose>
 !##############################################################################
 
@@ -76,7 +76,9 @@ contains
 !<description>
   ! This routine calculates the entries of a finite element matrix using
   ! a trilinear form
+  ! <tex>
   !     $$ a(u,phi_i,psi_j)  =  \int c(x,y) f(u) g(\psi_j) h(\phi_i) $$
+  ! </tex>
   ! The function $u$ is specified in rvector. The derivative quantifier
   ! rform(Idescriptors(1,.) specifies f(.), i.e. whether to take function 
   ! values, derivatives or what else to get the function value f(u).

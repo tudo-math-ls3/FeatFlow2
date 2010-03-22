@@ -9,17 +9,17 @@
 !#
 !# 1.) bdint_integral2D
 !#     -> Calculates the boundary integral
-!#            $$ int_{\Gamma} f(x) dx $$
+!#            <tex> $$ int_{\Gamma} f(x) dx $$ </tex>
 !#        for an arbitrary function $f(x)$.
 !#
 !# 2.) bdint_scalarBoundaryInt2D
 !#     -> Calculates the boundary integral
-!#            $$ int_{\Gamma} f_h(x) dx $$
+!#            <tex> $$ int_{\Gamma} f_h(x) dx $$ </tex>
 !#        for an arbitrary scalar FE function $f_h(x)$.
 !#
 !# 3.) bdint_normalDerivativeInt2D
 !#     -> Calculates the integral of the normal derivative
-!#            $$ int_{\Gamma} \partial_n f_h(x) dx $$
+!#            <tex> $$ int_{\Gamma} \partial_n f_h(x) dx $$ </tex>
 !#        for an arbitrary scalar FE function $f_h(x)$.
 !# </purpose>
 !#########################################################################
@@ -445,7 +445,7 @@ contains
 
 !<description>
   ! This function calculates the boundary integral
-  !    $$ int_{\Gamma} f_h(x) dx $$
+  !    <tex> $$ int_{\Gamma} f_h(x) dx $$ </tex>
   ! for the scalar FE function $f_h$ specified in rvectorScalar.
   ! rboundaryRegion allows to specify a region on the boundary where
   ! the integral is computed; if not specified, the integral is
@@ -597,7 +597,7 @@ contains
 
 !<description>
   ! This function calculates the boundary integral
-  !    $$ int_{\Gamma} grad(f_h(x))*n dx $$
+  !    <tex> $$ int_{\Gamma} grad(f_h(x))*n dx $$ </tex>
   ! for the block FE function $f_h$ specified in rvectorScalar.
   ! rboundaryRegion allows to specify a region on the boundary where
   ! the integral is computed; if not specified, the integral is

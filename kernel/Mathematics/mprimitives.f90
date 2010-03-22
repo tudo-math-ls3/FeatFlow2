@@ -1712,7 +1712,7 @@ contains
 !<description>
     ! This subroutine computes the factorisation for a singular value
     ! decomposition. Given an ndim-by-mdim matrix Da, the routine
-    ! decomposes it into the product $$ A = U * D * B^T$$
+    ! decomposes it into the product <tex>$ A = U * D * B^T $</tex>
     ! where $U$ overwrites the matrix A and is returned in its memory
     ! position, $D$ is a diagonal matrix returned as vector Dd and
     ! $B$ is an n-by-n square matrix which is returned (instead

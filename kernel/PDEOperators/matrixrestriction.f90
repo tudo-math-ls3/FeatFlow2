@@ -13,7 +13,7 @@
 !# is build from a fine grid matrix $A_h$ with the help of the prolongation
 !# operator $P_{2h}^h$ and the restriction operator $R_{h}^{2h}$ using
 !#
-!#       $$ A_{2h}  =  P_{2h}^h  A_h  R_{h}^{2h}. $$
+!#       <tex> $$ A_{2h}  =  P_{2h}^h  A_h  R_{h}^{2h}. $$ </tex>
 !#
 !# This is equivalent to the standard approach $a_{ij} = a_h(\phi_j,\phi_i)$
 !# in the case of conformal finite elements, but yields a different matrix
