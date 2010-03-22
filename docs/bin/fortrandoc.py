@@ -731,12 +731,15 @@ class LaTeXExporter:
 
     TEX = Scanner([
         (r'<tex>.+?</tex>', lambda s, t: t.replace('<tex>','').replace('</tex>', '')),
+        (r'<verb>.+?</verb>', lambda s, t: t.replace('<verb>','\\begin{verbatim}').replace('</verb>', '\\end{verbatim}')),
         ('\\$', '\\$'),
         ('_', '\\_'),
         (r'\\', '\\\\'),
         (r'#', '\\#'),
         (r'%', '\\%'),
-        #(re.escape(r'^'), '\\symbol{94}'),
+        (r'\s->\s', ' $\\to$ '),
+        (re.escape(r'^'), '\\symbol{94}'),
+        (re.escape(r'&'), '\\&'),
         ('.', lambda s, t: t)
     ], re.DOTALL)
         
@@ -1043,7 +1046,8 @@ class Module:
         
 
     # regular expressions for description cleanup
-    RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]*', re.MULTILINE)
+    # RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]*', re.MULTILINE)
+    RE_BEGIN_EXCLMARKS = re.compile(r'^[ \t]*![ \t]?', re.MULTILINE)
     RE_ONLY_HASH = re.compile(r'^[ \t]*#+[ \t]*$', re.MULTILINE)
     RE_BEGIN_HASH = re.compile(r'^[ \t]*#[ \t]*', re.MULTILINE)
     RE_END_HASH = re.compile(r'[ \t]*#[ \t]*$', re.MULTILINE)
