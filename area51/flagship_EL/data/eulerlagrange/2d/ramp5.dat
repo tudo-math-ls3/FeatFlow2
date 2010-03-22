@@ -210,7 +210,6 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # type of time-stepping algorithm
@@ -283,7 +282,6 @@ depsSteady = 1e-6
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # minimum multigrid level number
@@ -325,7 +323,6 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -407,7 +404,6 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # norm to use for defect checking
@@ -486,7 +482,6 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -598,7 +593,6 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking
