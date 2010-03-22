@@ -679,14 +679,14 @@ class LaTeXExporter:
             for var in fn.outputvars:
                 self.write_variable_or_group(var, f)
 
-        f.writelines([self.cmd('sectionerrors'), '\n\n'])
         if fn.errors:
+            f.writelines([self.cmd('sectionerrors'), '\n\n'])
             f.writelines([self.begin('description'), '\n'])
             for error, desc in fn.errors:
                 f.writelines([r'\item[\constant{%s}] %s' % (self.texify(error), self.texify(desc)), '\n'])
             f.writelines([self.end('description'), '\n\n'])
-        else:
-            f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
+        #else:
+        #    f.writelines([self.begin('desc'), 'Error codes missing.\n', self.end('desc')])
 
         f.writelines([
             self.end('functiondef'), '\n\n',
