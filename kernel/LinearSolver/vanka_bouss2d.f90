@@ -57,19 +57,19 @@
 !# 
 !# 1.) Solve the last equation to get the temperature t:
 !#
-!#     <tex> $$                  t := N^-1 * f_t  $$ </tex>
+!#     <tex> $$                  t := N^{-1} * f_t  $$ </tex>
 !#
 !# 2.) Calculate the Schur-Complement of A:
 !#
-!#     <tex> $$                  S := -C + D * A^-1 * B  $$ </tex>
+!#     <tex> $$                  S := -C + D * A^{-1} * B  $$ </tex>
 !#
 !# 3.) Calculate pressure:
 !#
-!#     <tex> $$ p := S^-1 * (D * A^-1 * (f_u - M * t) + K * t - f_p) $$ </tex>
+!#     <tex> $$ p := S^{-1} * (D * A^{-1} * (f_u - M * t) + K * t - f_p) $$ </tex>
 !#
 !# 4.) Calculate velocity:
 !#
-!#     <tex> $$ u := A^-1 * (f_u - M * t - B * p) $$ </tex>
+!#     <tex> $$ u := A^{-1} * (f_u - M * t - B * p) $$ </tex>
 !#
 !# </purpose>
 !##############################################################################

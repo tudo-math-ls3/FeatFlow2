@@ -547,7 +547,7 @@
 !#     act this ways. Exceptions for this rule are algorithms that use this
 !#     parameter for 'internal damping' like SOR:
 !#
-!#      <tex> $$         rd := (D + domega L)^-1 rd  $$ </tex>
+!#      <tex> $$         rd := (D + domega L)^{-1} rd  $$ </tex>
 !#
 !#     i.e. here not the defect is damped but the operator itself.
 !#
@@ -1112,7 +1112,7 @@ module linearsolver
     ! Damping parameter for preconditioner. The t_linsolNode structure
     ! represents a preconditioner operator of the form:
     !
-    !              <tex>$d --> omega * P^-1 * d$</tex>
+    !              <tex>$d --> omega * P^{-1} * d$</tex>
     !
     ! The actual result of the solver algorithm is scaled by domega
     ! after the solving process.

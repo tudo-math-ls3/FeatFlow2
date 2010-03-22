@@ -70,15 +70,15 @@
 !# 
 !# 1.) Calculate the Schur-Complement of A:
 !#
-!#     <tex> $$          S := C - D * A^-1 * B   $$ </tex>
+!#     <tex> $$          S := C - D * A^{-1} * B   $$ </tex>
 !#
 !# 2.) Calculate pressure:
 !#
-!#     <tex> $$          p := S^-1 * (f_p - D * A^-1 * f_u)  $$ </tex>
+!#     <tex> $$          p := S^{-1} * (f_p - D * A^{-1} * f_u)  $$ </tex>
 !#
 !# 3.) Calculate velocity:
 !#
-!#     <tex> $$          u := A^-1 * (f_u - B * p)  $$ </tex>
+!#     <tex> $$          u := A^{-1} * (f_u - B * p)  $$ </tex>
 !# 
 !# </purpose>
 !##############################################################################

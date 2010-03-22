@@ -12,7 +12,7 @@
 !#
 !# where the exact Schur-complement matrix S is given as
 !#
-!#             <tex>$$     S := -D * A^-1 * B   $$</tex>
+!#             <tex>$$     S := -D * A^{-1} * B   $$</tex>
 !#
 !# See the comment block below the routine list for more detailed information
 !# on how exactly the approximation is assembled, as there are multiple
@@ -73,7 +73,7 @@
 !# Assume that the algorithm is currently processing row i of S, then the
 !# entry S(i,j) is defined as:
 !#
-!#            <tex>$$ S(i,j) := D(i,:) * T_i^-1 * B(:,j)  $$</tex>
+!#            <tex>$$ S(i,j) := D(i,:) * T_i^{-1} * B(:,j)  $$</tex>
 !#
 !# where T_i is the local m by m sub-matrix of A, with m being the number of
 !# non-zero entries in row i of D, where T_i contains all non-zero entries A_kl
@@ -522,10 +522,10 @@ contains
   ! The matrix structure of S
   integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
-  ! The scaling factor for D1 * A11^-1 * B1
+  ! The scaling factor for D1 * A11^{-1} * B1
   real(DP), intent(in) :: dsf1
 
-  ! The scaling factor for D2 * A22^-1 * B2
+  ! The scaling factor for D2 * A22^{-1} * B2
   real(DP), intent(in) :: dsf2
 !</input>
 
@@ -654,10 +654,10 @@ contains
   ! The matrix structure of S
   integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
-  ! The scaling factor for D1 * A11^-1 * B1
+  ! The scaling factor for D1 * A11^{-1} * B1
   real(DP), intent(in) :: dsf1
 
-  ! The scaling factor for D2 * A22^-1 * B2
+  ! The scaling factor for D2 * A22^{-1} * B2
   real(DP), intent(in) :: dsf2
 !</input>
 
@@ -782,10 +782,10 @@ contains
   ! The matrix structure of S
   integer, dimension(*), intent(in) :: p_IrowS, p_IcolS
 
-  ! The scaling factor for D1 * A11^-1 * B1
+  ! The scaling factor for D1 * A11^{-1} * B1
   real(DP), intent(in) :: dsf1
 
-  ! The scaling factor for D2 * A22^-1 * B2
+  ! The scaling factor for D2 * A22^{-1} * B2
   real(DP), intent(in) :: dsf2
 !</input>
 
