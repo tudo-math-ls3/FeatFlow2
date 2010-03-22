@@ -2163,15 +2163,18 @@ contains
     !
     ! The return value of this function depends on the format of the command line
     ! argument. There are three cases:
+    !
     ! a) Simple option: "option", or svalue not specified
     !  Here, soption = "option" and
     !        svalue  = "".
     !        iformat = 0.
     !  Can be used to store e.g. paths like "./data".
+    !
     ! b) Short options: "-option" or "-option=value".
     !  Here, soption = "option" and
     !        svalue  = "value" or "" if no value is specified.
     !        iformat = 1.
+    !
     ! c) long options: "--option" or "--option=value".
     !  Here, soption = "option" and
     !        svalue  = "value" or "" if no value is specified.

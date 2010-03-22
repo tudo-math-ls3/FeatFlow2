@@ -70,25 +70,30 @@
 !#   with checking for uninitialised variables enabled! The Intel Fortran
 !#   compiler usually gets messed up with that!
 !#
-!# Frequently asked questions
-!# --------------------------
+!# Frequently asked questions \\
+!# -------------------------- \\
 !#
 !# 1.) How to assemble a matrix?
 !#
 !#  To assemble a matrix, you first have to specify a bilinear form, a matrix and
 !#  a spatial discretisation structure that defines the FE spaces to use.
 !#
+!#  <code>
 !#    type(t_bilinearForm) :: rform
 !#    type(t_matrixScalar) :: rmatrix
 !#    type(t_spatialDiscretisation) :: rdiscretisation
+!#  </code>
 !#
 !#  In a first step, we use the discretisation structure to assemble the
 !#  shape of the matrix, e.g. for format 9:
 !#
+!#  <code>
 !#    call bilf_createMatrixStructure (rdiscretisation,LSYSSC_MATRIX9,rmatrix)
+!#  </code>
 !#
 !#  Then we set up a bilinear form structure, e.g. for the Laplace operator:
 !#
+!#  <code>
 !#    rform%itermCount = 2
 !#    rform%Idescriptors(1,1) = DER_DERIV_X
 !#    rform%Idescriptors(2,1) = DER_DERIV_X
@@ -99,6 +104,7 @@
 !#    rform%BconstantCoeff = .true.
 !#    rform%Dcoefficients(1)  = 1.0 
 !#    rform%Dcoefficients(2)  = 1.0 
+!#  </code>
 !#
 !#  This e.g. initialises a bilinear form for the Laplace operator with 
 !#  constant coefficients. If you want to have nonconstant coefficients,
@@ -108,7 +114,9 @@
 !#
 !#  In the next step, use the bilinear form to create the matrix entries:
 !#
+!#  <code>
 !#    call bilf_buildMatrixScalar (rform,.true.,rmatrix)
+!#  </code>
 !#
 !#  that is it.
 !#
@@ -118,7 +126,9 @@
 !#  an element, a cubature formula and a list of elements where to assemble.
 !#  The call
 !#
+!#  <code>
 !#    call bilf_buildMatrixScalar2 (rform,.true.,rmatrix)
+!#  </code>
 !#
 !#  assembles a matrix just like the call to bilf_buildMatrixScalar, but using
 !#  another technique which you can also use if you want to assemble parts
@@ -132,6 +142,7 @@
 !#  Laplace operator on these elements. We start like before, defining
 !#  a bilinear form, some structures and create the matrix structure:
 !#
+!#  <code>
 !#    type(t_bilinearForm) :: rform
 !#    type(t_matrixScalar) :: rmatrix
 !#    type(t_spatialDiscretisation) :: rdiscretisation
@@ -150,25 +161,34 @@
 !#    rform%BconstantCoeff = .true.
 !#    rform%Dcoefficients(1)  = 1.0 
 !#    rform%Dcoefficients(2)  = 1.0 
+!#  </code>
 !#
 !#  We manually reserve memory for our matrix:
 !#
+!#  <code>
 !#    call lsyssc_allocEmptyMatrix (rmatrix,LSYSSC_SETM_ZERO)
+!#  </code>
 !#
 !#  Now we initialise the matrix assembly structure for the assembly
 !#
+!#  <code>
 !#    call bilf_initAssembly(rmatrixAssembly,rform,EL_Q1,EL_Q1,CUB_G2_2D)
+!#  </code>
 !#
 !#  and assemble only on the elements 501..750 which we specify in Ielements:
 !#
+!#  <code>
 !#    do i=501,750
 !#      Ielements(i-500) = i
 !#    end do
 !#    call bilf_assembleSubmeshMatrix9(rmatrixAssembly,rmatrix,IelementList)
+!#  </code>
 !#
 !#  Finally, we release the assembly structure.
 !#
+!#  <code>
 !#    call bilf_doneAssembly(rmatrixAssembly)
+!#  </code>
 !#
 !#  So the result is a matrix with the Laplace operator assembled only in
 !#  the elements 501..750. That way, the user has the ability to

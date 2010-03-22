@@ -74,27 +74,33 @@
 !# 3.) linf_releaseAssemblyData
 !#     -> Release 'local' memory, needed for assembling vector entries.
 !#
-!# Frequently asked questions
-!# --------------------------
+!# Frequently asked questions \\
+!# -------------------------- \\
 !#
 !# 1.) How to assemble a rhs-vector?
 !#
 !#  To assemble a vector, you first have to specify a linear form, a vector and
 !#  a spatial discretisation structure that defines the FE spaces to use.
 !#
+!#  <code>
 !#    type(t_linearForm) :: rform
 !#    type(t_linfVectorAssembly) :: rvector
 !#    type(t_spatialDiscretisation) :: rdiscretisation
+!#  </code>
 !#
 !#  We set up a linear form structure, e.g. for the Laplace operator:
 !#
+!#  <code>
 !#    rform%itermCount = 1
 !#    rform%Idescriptors(1) = DER_FUNC
+!#  </code>
 !#
 !#  This e.g. initialises a linear form for evaluating a function.
 !#  In the next step, use the linear form to create the vector entries:
 !#
+!#  <code>
 !#    call linf_buildVectorScalar (rdiscretisation,rform,.true.,rvector,coeff_RHS)
+!#  </code>
 !#
 !#  where coeff_RHS is a callback routine returning the RHS function. That is it.
 !#
@@ -104,7 +110,9 @@
 !#  an element, a cubature formula and a list of elements where to assemble.
 !#  The call
 !#
+!#  <code>
 !#    call linf_buildVectorScalar2 (rform,.true.,rvector,coeff_RHS)
+!#  </code>
 !#
 !#  assembles a vector just like the call to linf_buildVectorScalar, but using
 !#  another technique which you can also use if you want to assemble parts
@@ -118,30 +126,40 @@
 !#  RHS on these elements. We start like before, defining
 !#  a linear form, some structures and create the matrix structure:
 !#
+!#  <code>
 !#    type(t_linearForm) :: rform
 !#    type(t_vectorScalar) :: rvector
 !#    type(t_vectorAssembly) :: rvectorAssembly
 !#    type(t_spatialDiscretisation) :: rdiscretisation
+!#  </code>
 !#
 !#  We set up a linear form structure, e.g. for the Laplace operator:
 !#
+!#  <code>
 !#    rform%itermCount = 1
 !#    rform%Idescriptors(1) = DER_FUNC
+!#  </code>
 !#
 !#  Create the vector:
 !#
+!#  <code>
 !#    call lsyssc_createVecByDiscr (rdiscretisation,rx,.true.)
+!#  </code>
 !#
 !#  Initialise the vector assembly structure for the assembly
 !#
+!#  <code>
 !#    call linf_initAssembly(rvectorAssembly,rform,EL_Q1,CUB_G2_2D)
+!#  </code>
 !#
 !#  and assemble only on the elements 501..750 which we specify in Ielements:
 !#
+!#  <code>
 !#    do i=501,750
 !#      Ielements(i-500) = i
 !#    end do
 !#    call linf_assembleSubmeshVector (rvectorAssembly,rvector,IelementList)
+!#  </code>
 !#
 !#  Finally, we release the assembly structure.
 !#
