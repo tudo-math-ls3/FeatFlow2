@@ -387,7 +387,7 @@ contains
   !
   ! is a set of node indices of the same colour, i.e.:
   !
-  !         For all a, b in S, a != b ==> a is not adjacent to b
+  !         For all a, b in S, a != b  ->  a is not adjacent to b
   !
   ! The number of colours used is implicitly given by UBOUND(p_Icpt,1)-1.
 !</description>
