@@ -4851,16 +4851,30 @@ contains
   ! when finished:
   !
   ! a) Create a new submatrix based on a discretisation structure for the subblocks:
-  !      lsysbl_createMatBlockByDiscr(rdiscr,rdest)
+  ! <code>
+  !      call lsysbl_createMatBlockByDiscr(rdiscr,rdest)
+  ! </code>
+  !
   ! b) Extract a submatrix:
-  !      lsysbl_extractSubmatrix (rsource,rdest,a,b,c,d)
+  ! <code>
+  !      call lsysbl_extractSubmatrix (rsource,rdest,a,b,c,d)
+  ! </code>
+  
   ! c) Do some local modifications, e.g.
+  ! <code>
   !      rdest%RmatrixBlock(1,1)%dscaleFactor = 5.0
   !      ...
+  ! </code>
+  !
   ! d) Move the matrix back to its original position:
-  !      lsysbl_moveToSubmatrix (rdest,rsource,a,c)
+  ! <code>
+  !      call lsysbl_moveToSubmatrix (rdest,rsource,a,c)
+  ! </code>
+  !
   ! e) Release the temporary matrix:
-  !      lsysbl_releaseMatrix (rdest)
+  ! <code>
+  !      call lsysbl_releaseMatrix (rdest)
+  ! </code>
   !
   ! During step c), the original matrix rsource is 'delayed', nothing should be done
   ! with it until reintegration with lsysbl_moveToSubmatrix.

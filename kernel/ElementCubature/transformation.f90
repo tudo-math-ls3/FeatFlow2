@@ -115,8 +115,8 @@
 !#      -> Find the coordinates on the reference hexahedron
 !#         for a given point in real world coordinates
 !#
-!#  FAQ - Some explainations
-!# --------------------------
+!#  FAQ - Some explainations  \\
+!# -------------------------- \\
 !# 1.) How is the ID code ctrafoType of the transformation defined?
 !#
 !#  The ID code of a transformation is a 32 bit integer field. The different

@@ -127,8 +127,8 @@
 !#
 !#
 !#
-!# II. Creating composed geometry objects
-!# --------------------------------------
+!# II. Creating composed geometry objects \\
+!# -------------------------------------- \\
 !# To create a geometry object, you need to build up the tree in bottom-up
 !# order, i.e. you first create the analytic geometry objects and connect them
 !# using composed objects using the geom_composed_addNode routine.
@@ -185,8 +185,8 @@
 !# </verb>
 !#
 !#
-!# III. Some hints about adding objects into the tree
-!# --------------------------------------------------
+!# III. Some hints about adding objects into the tree \\
+!# -------------------------------------------------- \\
 !# If you plan to call the inside-outside-test or distance calculation routines
 !# on a composed object, it is recommended to add the sub-objects for which the
 !# inside-outside-test is cheap to calculate before the sub-objects for which
@@ -205,8 +205,8 @@
 !# </verb>
 !#
 !#
-!# IV. Boundary approximation
-!# --------------------------
+!# IV. Boundary approximation \\
+!# -------------------------- \\
 !# Unlike other analytic geometry objects (e.g. circles, squares, etc.)
 !# the boundary of a composed object is described by a set of points, which are
 !# an approximation of the composed object's boundary.

@@ -25,8 +25,8 @@
 !# 4.) elprep_releaseElementSet
 !#     -> Releases an evaluation set for multiple points on multiple elements.
 !#
-!#  Frequently Asked Questions
-!# ----------------------------
+!#  Frequently Asked Questions  \\
+!# ---------------------------- \\
 !#
 !# 1.) How to evaluate a finite element? What are the routines here for?
 !#

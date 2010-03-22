@@ -191,7 +191,7 @@ contains
 !</input>
 
 !<result>
-  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+  ! The value of the parabolic profile at position <tex>$dpos \in [0,dmax]$</tex>.
 !</result>
 !</function>
 
@@ -216,7 +216,7 @@ contains
 !</input>
 
 !<result>
-  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+  ! The value of the parabolic profile at position <tex>$dpos \in [0,dmax]$</tex>.
 !</result>
 !</function>
 
@@ -247,7 +247,7 @@ contains
 !</input>
 
 !<result>
-  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+  ! The value of the parabolic profile at position <tex>$dpos \in [0,dmax]$</tex>.
 !</result>
 !</function>
 
@@ -278,7 +278,7 @@ contains
 !</input>
 
 !<result>
-  ! The value of the parabolic profile at position $dpos \in [0,dmax]$.
+  ! The value of the parabolic profile at position <tex>$dpos \in [0,dmax]$</tex>.
 !</result>
 !</function>
 
@@ -571,7 +571,7 @@ contains
 !</input>
 
 !<output>
-  ! destination square matrix; receives $A^{-1}$.
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(2,2), intent(out) :: Db
   
   ! TRUE, if successful. FALSE if the system is indefinite.
@@ -619,7 +619,7 @@ contains
 !</input>
 
 !<output>
-  ! destination square matrix; receives $A^{-1}$.
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(3,3), intent(out) :: Db
 
   ! TRUE, if successful. FALSE if the system is indefinite.
@@ -675,7 +675,7 @@ contains
 !</input>
 
 !<output>
-  ! destination square matrix; receives $A^{-1}$.
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(4,4), intent(out) :: Db
 
   ! TRUE, if successful. FALSE if the system is indefinite.
@@ -833,7 +833,7 @@ contains
 !</input>
 
 !<output>
-  ! destination square matrix; receives $A^{-1}$.
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(5,5), intent(out) :: Db
 
   ! TRUE, if successful. FALSE if the system is indefinite.
@@ -972,7 +972,7 @@ contains
 !</input>
 
 !<output>
-  ! destination square matrix; receives $A^{-1}$.
+  ! destination square matrix; receives <tex>$ A^{-1} $</tex>.
   real(DP), dimension(6,6), intent(out) :: Db
 
   ! TRUE, if successful. FALSE if the system is indefinite.
@@ -1665,27 +1665,29 @@ contains
   elemental subroutine mprim_quadraticInterpolation (dx,d1,d2,d3,dy)
   
 !<description>
+  ! <tex>
   ! Calculates a quadratic interpolation. dx is a value in the range $[-1,1]$.
   ! The routine calculates the value $dy:=p(dx)$ with $p(.)$ being the quadratic
   ! interpolation polynomial with $p(-1)=d1$, $p(0)=d2$ and $p(1)=d3$.
+  ! </tex>
 !</description>
   
 !<input>
-  ! The parameter value in the range $[-1,1]$ where the polynomial should be evaluated.
+  ! The parameter value in the range <tex>$ [-1,1] $</tex> where the polynomial should be evaluated.
   real(DP), intent(in) :: dx
   
-  ! The value $p(-1)$.
+  ! The value <tex>$ p(-1) $</tex>.
   real(DP), intent(in) :: d1
 
-  ! The value $p(0)$.
+  ! The value <tex>$ p(0) $</tex>.
   real(DP), intent(in) :: d2
 
-  ! The value $p(1)$.
+  ! The value $ p(1) $</tex>.
   real(DP), intent(in) :: d3
 !</input>
 
 !<output>
-  ! The value $p(dx)$.
+  ! The value <tex>$ p(dx) $</tex>.
   real(DP), intent(out) :: dy
 !</output>
   
@@ -1711,9 +1713,10 @@ contains
   subroutine mprim_SVD_factorise(Da,mdim,ndim,Dd,Db,btransposedOpt)
 
 !<description>
+    ! <tex>
     ! This subroutine computes the factorisation for a singular value
     ! decomposition. Given an ndim-by-mdim matrix Da, the routine
-    ! decomposes it into the product <tex>$ A = U * D * B^T $</tex>
+    ! decomposes it into the product $ A = U * D * B^T $
     ! where $U$ overwrites the matrix A and is returned in its memory
     ! position, $D$ is a diagonal matrix returned as vector Dd and
     ! $B$ is an n-by-n square matrix which is returned (instead
@@ -1723,7 +1726,8 @@ contains
     ! that matrix A is stored in transposed format. Note that 
     ! matrices D and B are not affected by this fact.
     !
-    ! The details of this algorithm are given in numerical recipes in F90
+    ! The details of this algorithm are given in numerical recipes in F90.
+    ! </tex>
 !</description>
 
 !<input>
@@ -2276,8 +2280,10 @@ contains
   subroutine mprim_SVD_backsubst1(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
-    ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
-    ! matrix $A$ has been decomposed into $Da$, $Dd$ and $Db$ by the routine
+    ! This subroutine solves <tex>$ A * x = f $</tex> for vector <tex>$ x $</tex>, 
+    ! where the rectangular
+    ! matrix $A$ has been decomposed into <tex>$ Da $</tex>, <tex>$ Dd $</tex> 
+    ! and <tex>$ Db $</tex> by the routine
     ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
     ! to indicate that matrix A is stored in transposed format.
 !</description>
@@ -2360,13 +2366,13 @@ contains
   subroutine mprim_SVD_backsubst2(Da,mdim,ndim,Dd,Db,Dx,Df,btransposedOpt)
 
 !<description>
-    ! This subroutine solves $A * x = f$ for vector $x$, where the rectangular
-    ! matrix $A$ has been decomposed into $Da$, $Dd$ and $Db$ by the routine
+    ! This subroutine solves <tex>$ A * x = f $</tex> for vector $x$, where the rectangular
+    ! matrix $A$ has been decomposed into <tex>$ Da $</tex>, $Dd$ and <tex>$ Db $</tex> by the routine
     ! mprim_SVD_factorise. The optional parameter btransposedOpt can be used
     ! to indicate that matrix A is stored in transposed format.
     !
     ! Note that this routine does exactly the same as mprim_SVD_backsubst1.
-    ! The only difference is, that the right-hand side vector $f$ is given
+    ! The only difference is, that the right-hand side vector <tex>$ f $</tex> is given
     ! as a 2D-array, whereby the product of both dimensions must agree with
     ! the corresponding dimensions of the rectangular matrix $A$.
 !</description>

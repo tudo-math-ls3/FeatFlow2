@@ -39,15 +39,15 @@
 !# than an approximation with the 'normal' stencil.
 !#
 !#
-!# -> SCHUR_TYPE_MAIN_DIAGONAL <- \\
-!# ------------------------------ \\
+!#  SCHUR_TYPE_MAIN_DIAGONAL  \\
+!# -------------------------- \\
 !# This variant approximates <tex>$A^{-1}$</tex> by the inverse of the main diagonal of A.
 !# This is the most simple and cheapest variant, which should do a good job
 !# for Stokes systems.
 !#
 !#
-!# -> SCHUR_TYPE_LUMP_DIAGONAL <- \\
-!# ------------------------------ \\
+!#  SCHUR_TYPE_LUMP_DIAGONAL  \\
+!# -------------------------- \\
 !# This variant approximates <tex>$A^{-1}$</tex> by the inverse of the lumped diagonal
 !# matrix of A, i.e. a diagonal matrix L with
 !#
@@ -64,8 +64,8 @@
 !# main diagonal blocks A11, A22 and (in 3D) A33 of A.
 !#
 !#
-!# -> SCHUR_TYPE_LOCAL_INVERSE <- \\
-!# ------------------------------ \\
+!#  SCHUR_TYPE_LOCAL_INVERSE  \\
+!# -------------------------- \\
 !# THIS ONE IS EXPERIMENTAL, USE AT YOUR OWN RISK!
 !# This variant is a little difficult to explain, as it approximates <tex>$A^{-1}$</tex>
 !# by local inverse matrices. The algorithm assembles the entries of S by

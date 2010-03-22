@@ -72,7 +72,7 @@
 !#
 !# <code>
 !#  call fparser_parseFunction (Parser, i, FuncStr, Var)
-!# <code>
+!# </code>
 !#
 !# The variable names as they appear in the string FuncStr have to be passed 
 !# in the one-dimensional string array Var (zero size of Var is acceptable). 
