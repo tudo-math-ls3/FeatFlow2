@@ -12,9 +12,9 @@
 !# very efficiently for the various variable values. The evaluation is 
 !# straightforward and no recursions are done (uses stack arithmetic).
 !#
-!# ------------------------------------------------------------------------
-!# Copyright notice
-!# ------------------------------------------------------------------------
+!# ------------------------------------------------------------------------ \\
+!# Copyright notice \\
+!# ------------------------------------------------------------------------ \\
 !# (a) This module is based on the "Fortran 90 function parser V1.1" 
 !#     written by Roland Schmehl < Roland.Schmehl@mach.uni-karlsruhe.de >
 !#     The original Fortran90 source code is available from:
@@ -34,16 +34,18 @@
 !#     in the C++ library and the recursive evaluation of functions by means
 !#     of eval(...) is not implemented in this version.
 !#
-!# ------------------------------------------------------------------------
-!# Basic usage
-!# ------------------------------------------------------------------------
+!# ------------------------------------------------------------------------ \\
+!# Basic usage \\
+!# ------------------------------------------------------------------------ \\
 !#
-!# Step 0 - Module Import
-!# ----------------------
+!# Step 0 - Module Import \\
+!# ---------------------- \\
 !# In all program units where you want to use the function parser procedures 
 !# and variables you must import the module by:
 !#
-!# USE fparser
+!# <code>
+!#  use fparser
+!# </code>
 !#
 !# This command imports only 6 public names: fparser_create, fparser_release, 
 !# fparser_parseFunction, fparser_evalFunction, fparser_ErrorMsg and EvalErrType
@@ -56,36 +58,42 @@
 !# n functions by calling the module subroutine initp one time in your Fortran 
 !# code:
 !# 
-!# CALL fparser_create (Parser, n)
+!# <code>
+!#  call fparser_create (Parser, n)
+!# </code>
 !# 
 !# This allocates i=1,...,n internal data structures used by the byte-compiler 
 !# and subsequently by the bytecode-interpreter in the bytecode object Comp.
 !#
-!# Step 2 - Function parsing
-!# -------------------------
+!# Step 2 - Function parsing \\
+!# ------------------------- \\
 !# The i-th function string FuncStr is parsed (checked and compiled) into the 
 !# i-th bytecode by calling the module subroutine parsef:
 !#
-!# CALL fparser_parseFunction (Parser, i, FuncStr, Var)
+!# <code>
+!#  call fparser_parseFunction (Parser, i, FuncStr, Var)
+!# <code>
 !#
 !# The variable names as they appear in the string FuncStr have to be passed 
 !# in the one-dimensional string array Var (zero size of Var is acceptable). 
 !# The number of variables is implicitly passed by the dimension of this array. 
 !# For some notes on the syntax of the function string see below.
 !#
-!# Step 3 - Function evaluation
-!# ----------------------------
+!# Step 3 - Function evaluation \\
+!# ---------------------------- \\
 !# The i-th function value is evaluated for a specific set of variable values 
 !# by calling the module function evalf:
 !#
-!# a = fparser_evalFunction (Parser, i, Val)
+!# <code>
+!#  a = fparser_evalFunction (Parser, i, Val)
+!# </code>
 !#
 !# The variable values are passed in the one-dimensional array Val which must 
 !# have the same dimension as array Var. 
 !#
-!# ------------------------------------------------------------------------
-!# Error handling
-!# ------------------------------------------------------------------------
+!# ------------------------------------------------------------------------ \\
+!# Error handling \\
+!# ------------------------------------------------------------------------ \\
 !# 
 !# An error in the function parsing step leads to a detailed error message 
 !# (Type and position of error) and program termination.
@@ -96,9 +104,9 @@
 !# bytecode-interpreter can be obtained by calling the character function 
 !# fparser_ErrorMsg (Parser) with the parser object as an argument.
 !#
-!# ------------------------------------------------------------------------
-!# Function string syntax
-!# ------------------------------------------------------------------------
+!# ------------------------------------------------------------------------ \\
+!# Function string syntax \\
+!# ------------------------------------------------------------------------ \\
 !#
 !# Although they have to be passed as array elements of the same declared 
 !# length (Fortran 90 restriction), the variable names can be of arbitrary 

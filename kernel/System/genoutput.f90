@@ -46,6 +46,7 @@
 !#
 !# Proceed as follows:
 !#
+!# <verb>
 !# 1.) call output_init ()
 !#     -> Initialise the output system for output on the terminal
 !#
@@ -135,9 +136,10 @@
 !# 3.) call output_done()
 !#
 !#     -> Closes the output channel(s).
+!# </code>
 !#
-!# Logging benchmark data
-!# ----------------------
+!# Logging benchmark data \\
+!# ---------------------- \\
 !# The output library furthermore supports the (semi-)automatic output of
 !# deterministic data to a so callen 'benchmark log file'. This is typically
 !# used to write out data to a specific file which is compared to reference
@@ -148,21 +150,27 @@
 !# To activate the benchmark log file, one has to specify an additional
 !# parameter in the call to output_init:
 !#
+!# <code>
 !#    call output_init ('mylogfile.txt','myerrorlogfile.txt','benchmarkresultfile')
+!# </code>
 !#
 !# This opens a file 'benchmarkresultfile' where benchmark data is written to.
 !# To write a string to this file, the application has to call output_line
 !# with an extended output-mode:
 !#
+!# <code>
 !#   call output_line('A message only to the benchmark log.', &
 !#                    OU_CLASS_MSG,OU_MODE_BENCHLOG)
+!# </code>
 !#
 !# This writes a message directly to the benchmark log file. It is also possible
 !# to write out data to the standard terminal plus the benchmark log file
 !# by combining the output mode constants:
 !#
+!# <code>
 !#   call output_line('A message only to the benchmark log.', &
 !#                    OU_CLASS_MSG,OU_MODE_STD+OU_MODE_BENCHLOG)
+!# </code>
 !#
 !# In all cases, the additional constant OU_MODE_BENCHLOG must be manually
 !# specified as logging to the benchmark log file is not done automatically.

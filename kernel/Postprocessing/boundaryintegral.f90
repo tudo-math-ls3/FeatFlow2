@@ -9,18 +9,18 @@
 !#
 !# 1.) bdint_integral2D
 !#     -> Calculates the boundary integral
-!#            <tex> $$ int_{\Gamma} f(x) dx $$ </tex>
-!#        for an arbitrary function $f(x)$.
+!#            <tex> $$ \int_{\Gamma} f(x) dx $$ </tex>
+!#        for an arbitrary function <tex>$ f(x) $</tex>.
 !#
 !# 2.) bdint_scalarBoundaryInt2D
 !#     -> Calculates the boundary integral
-!#            <tex> $$ int_{\Gamma} f_h(x) dx $$ </tex>
-!#        for an arbitrary scalar FE function $f_h(x)$.
+!#            <tex> $$ \int_{\Gamma} f_h(x) dx $$ </tex>
+!#        for an arbitrary scalar FE function <tex>$ f_h(x) $</tex>.
 !#
 !# 3.) bdint_normalDerivativeInt2D
 !#     -> Calculates the integral of the normal derivative
-!#            <tex> $$ int_{\Gamma} \partial_n f_h(x) dx $$ </tex>
-!#        for an arbitrary scalar FE function $f_h(x)$.
+!#            <tex> $$ \int_{\Gamma} \partial_n f_h(x) dx $$ </tex>
+!#        for an arbitrary scalar FE function <tex>$ f_h(x) $</tex>.
 !# </purpose>
 !#########################################################################
 

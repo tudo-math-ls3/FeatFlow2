@@ -72,9 +72,9 @@
 !# 15.) mlprj_performInterpolationHier
 !#      -> Performs an interpolöation using a projection hierarchy
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# --> Some notes on the L2-Projection grid transfer <--
-!# -----------------------------------------------------
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
+!#  Some notes on the L2-Projection grid transfer  \\
+!# ----------------------------------------------- \\
 !# The possibility to choose 'real' L2-projection for multi-level grid
 !# transfer has been added mainly for research purposes, especially with
 !# non-conforming elements.
@@ -104,17 +104,19 @@
 !#     restriction involves solving a linear system with the fine mesh mass
 !#     matrix.
 !#
-!# ------------
-!# - WARNING! -
-!# ------------
+!# <verb>
+!# ------------ 
+!# - WARNING! - 
+!# ------------ 
+!# </verb>
 !# There is no support for the 'mlprj_performInterpolation' routine using
 !# L2-projection, and it is NOT planned to implement it! If you want to
 !# restrict a solution vector using L2-projection you will need to do it by
 !# yourself
 !# 
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# --> Some notes on the matrix-based grid transfer <--
-!# ----------------------------------------------------
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
+!#  Some notes on the matrix-based grid transfer  \\
+!# ---------------------------------------------- \\
 !# There also is a possibility to directly specify a matrix for grid transfer.
 !# In this case, when prolongating a coarse mesh solution, the prolongation
 !# matrix is multiplied by the coarse mesh solution vector to get the fine
@@ -122,22 +124,25 @@
 !# prolongation matrix is multiplied by the fine mesh defect vector to get
 !# the coarse mesh defect vector.
 !#
+!# <verb>
 !# ------------
 !# - WARNING! -
 !# ------------
+!# </verb>
 !# There is no support for the 'mlprj_performInterpolation' routine using
 !# matrix-based grid transfer, and it is NOT planned to implement it! If you
 !# want to restrict a solution vector using a matrix you will need to do it
 !# by yourself
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# --> Some notes on the projection hierarchy <--
-!# ----------------------------------------------
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
+!#  Some notes on the projection hierarchy  \\
+!# ---------------------------------------- \\
 !#
 !# The projection hierarchy can be used to maintain the projection
 !# between a set of levels. For its use, one has to prepare the structure
 !# with a set of commands like this:
 !#
+!# <code>
 !#   type(t_interlevelProjectionHier) :: rprjHierarchy
 !#
 !#   call mlprj_initPrjHierarchy(rprjHierarchy,nlmin,nlmax)
@@ -149,6 +154,7 @@
 !#   ... rprjHierarchy%p_Rprojection(ilevel) with special parameters
 !#   ...
 !#   call mlprj_commitPrjHierarchy (rprjHierarchy)
+!# </code>
 !#
 !# The above code initialises the hierarchy for levels nlmin..nlmax,
 !# attaches the discretisation structures of these levels and
@@ -161,7 +167,9 @@
 !# When the computation is finished, the whole structure must be released
 !# with
 !#
+!# <code>
 !#   call mlprj_releasePrjHierarchy (rprjHierarchy)
+!# </code>
 !#
 !# </purpose>
 !##############################################################################

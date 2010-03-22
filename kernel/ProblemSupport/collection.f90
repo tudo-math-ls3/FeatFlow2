@@ -47,6 +47,7 @@
 !# A collection is similar to a large INI file containing all basic 
 !# information. One can think of the following structure:
 !#
+!# <verb>
 !# -------------------SNIP--------------------
 !#
 !# PROBLEM_TYPE   = 'CC2DSTATIONARY'
@@ -101,6 +102,7 @@
 !# ... (parameters for the grid adaption)
 !#
 !# -------------------SNIP--------------------
+!# </verb>
 !# Additionally to these 'named variables', the collection contains
 !# a small integer and double precision 'temporary quick access'
 !# array directly in the t_collection structure with size of at
@@ -163,8 +165,8 @@
 !#  1.) collct_cleanupvalue
 !#      -> Cleans up a value structure.
 !#
-!# GUILDLINE
-!# ---------
+!# GUILDLINE \\
+!# --------- \\
 !# Here a small guidline how and when to use a collection:
 !#
 !# HOLDING PROBLEM DEPENDENT DATA FOR CALLBACK ROUTINES,
@@ -208,6 +210,7 @@
 !#  but do not use this feature for storing long-life information!
 !#  Example:
 !#
+!# <code>
 !#    PROGRAM Test
 !#      TYPE(t_collection) :: rcollection
 !#      ...
@@ -231,6 +234,7 @@
 !#      END IF
 !#      ...
 !#    END SUBROUTINE
+!# </code>
 !#
 !#  rcollection%p_rvectorQuickAccessX and rcollection%p_rmatrixQuickAccessX
 !#  provides pointers for some user defined matrices and vectors which

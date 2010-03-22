@@ -71,11 +71,11 @@
 !# of a composed object.
 !#
 !# 
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-!# Composed Geometry Objects
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-!# I. General information
-!# ----------------------
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= \\
+!# Composed Geometry Objects \\
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-= \\
+!# I. General information \\
+!# ---------------------- \\
 !# Composed geometry objects are build up as a tree structure here. Every inner
 !# node of the tree is a quantor (union or intersection) and every leaf of the
 !# tree is an analytic geometry object.

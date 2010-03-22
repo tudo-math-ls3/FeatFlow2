@@ -17,11 +17,11 @@
 !# 2.) cgcor_release
 !#     -> Releases a coarse grid correction structure
 !#
-!# 3.) cgcor_calcOptimalCorrection  - Calculate the optimal alpha
-!#                                    for the correction.
+!# 3.) cgcor_calcOptimalCorrection  
+!#     -> Calculate the optimal alpha for the correction.
 !#
-!#  FAQ - Frequently asked Questions
-!# ----------------------------------
+!#  FAQ - Frequently asked Questions  \\
+!# ---------------------------------- \\
 !# 1.) What is this p_DequationWeights-parameter in the t_coarseGridCorrection
 !#     structure for? I cannot understand?
 !#
@@ -30,16 +30,20 @@
 !#   calculating residuals. Imagine you want to calculate the residual
 !#   of a 2D Navier-Stokes system:
 !#
+!# <verb>
 !#    (r1)     (r1)   (A11  A12  B1)  (x1)
 !#    (r2)  =  (r2) - (A21  A22  B2)  (x2)
 !#    (rp)     (rp)   (D1   D2     )  (xp)
+!# </verb>
 !#
 !#   Now imagine that you set the array p_DequationWeights to (1,1,-1); then,
 !#   residuals are calculated of the following system:
 !# 
+!# <verb>
 !#    (r1)     ( f1)   ( A11    A12  B1)  (x1)
 !#    (r2)  =  ( f2) - ( A21    A22  B2)  (x2)
 !#    (rp)     (-fp)   (-D1    -D2     )  (xp)
+!# </verb>
 !#
 !#   i.e. the 3rd equation is multiplied by -1. This is just a small trick
 !#   to get better convergence rates by enforcing/destroying symmetry in

@@ -29,44 +29,44 @@
 !# parametric elements) or on the real element (for nonparametric elements).\\
 !#
 !# There is also a couple of auxiliary routines which help to deal with
-!# a finite element:\\
+!# a finite element:
 !#
 !# 1.) elem_igetNDofLoc
 !#     -> determines the number of local degrees of freedom for a finite 
-!#        element\\
+!#        element
 !#
 !# 2.) elem_igetNVE
 !#     -> get the number of vertices in the element primitive/element shape
-!#        of the Finite Element (3=triangular, 4=quad)\\
+!#        of the Finite Element (3=triangular, 4=quad)
 !#
 !# 3.) elem_igetCoordSystem
-!#     -> get the type of coordinate system, a Finite Element uses\\
+!#     -> get the type of coordinate system, a Finite Element uses
 !#
 !# 4.) elem_igetTrafoType
 !#     -> Determine the type of transformation from the reference element
-!#        to the real element.\\
+!#        to the real element.
 !#
 !# 5.) elem_igetDimension
-!#     -> Determine the dimension of an element; 1D, 2D, 3D,...\\
+!#     -> Determine the dimension of an element; 1D, 2D, 3D,...
 !#
 !# 6.) elem_isNonparametric
-!#     -> Check whether an element is parametric or nonparametric\\
+!#     -> Check whether an element is parametric or nonparametric
 !#
 !# 7.) elem_getPrimaryElement
 !#     -> Returns the element identifier of the 'primary' element without
-!#        any subtype information, which identifies an element family.\\
+!#        any subtype information, which identifies an element family.
 !#
 !# 8.) elem_generic 
 !#     -> Realises a generic element which can be used to evaluate a finite 
 !#        element depending on its element identifier - in contrast to the 
 !#        standard evaluation routines, which ignore the element quantifier 
-!#        as they 'know' what they are...\\
+!#        as they 'know' what they are...
 !#
 !# 9.) elem_generic_mult
-!#     -> The multiple-point-evaluation routine for a generic element.\\
+!#     -> The multiple-point-evaluation routine for a generic element.
 !#
 !# 10.) elem_generic_sim
-!#     -> The multiple-point/element-evaluation routine for a generic element.\\
+!#     -> The multiple-point/element-evaluation routine for a generic element.
 !#
 !# 11.) elem_getEvaluationTag
 !#     -> Returns for an element it is 'evaluation tag'. This is a bitfield
@@ -77,14 +77,15 @@
 !#      -> Convert a string with an element identifier to the corresponding
 !#         element id.
 !#
-!#  FAQ - Some explainations
-!# --------------------------
+!#  FAQ - Some explainations  \\
+!# -------------------------- \\
 !# 1.) What is an element and what are Degrees Of Freedoms (DOF`s)?
 !#
 !#   Imagine a triangulation of a domain with quadrilateral polygons, e.g.
 !#   rectangles or even squares. Take for example four of these squares and
 !#   form a large square, called a "patch", like
 !#
+!#   <verb>
 !#       O-----O-----O
 !#       |     |     |
 !#       |     |     |
@@ -92,6 +93,7 @@
 !#       |     |     |
 !#       |     |     |
 !#       O-----O-----O
+!#   </verb>
 !#
 !#   A point-based finite element basis function like <tex>$Q_1$</tex> is a function
 !#   that is =1 at the center of this patch and =0 in all the other corner
@@ -100,17 +102,19 @@
 !#   =0 in the other corner points. Outside of this patch, the function
 !#   is identically =0.
 !#
-!#   If you call one such a function <tex>$phi_i$</tex>, the whole function 
+!#   <tex>
+!#   If you call one such a function $\phi_i$, the whole function 
 !#   <tex>$u:R^2 \to R$</tex> is then defined as a sum
 !#
-!#     <tex>$$ u(x,y) = \sum_i  u_i  phi_i(x,y) $$</tex>
+!#     $$ u(x,y) = \sum_i  u_i  \phi_i(x,y) $$
 !#
 !#   where the coefficients $u_i$ can be modified to change the whole
 !#   function. This set ${u_i}$ are called "Degrees of Freedom" of the FE
 !#   function $u$. If the $\phi_i$ are chosen to be =1 in the center
-!#   and =0 in the other corners (like in <tex>$P_1$</tex> and <tex>$Q_1$</tex>, by `lucky 
+!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by `lucky 
 !#   chance` the $u_i$ are exactly the values of $u$ in these points --
 !#   $u_i = u(x_i,y_i)$.
+!#   </tex>
 !#
 !#   An "element" in the sense of this library focuses on one single
 !#   polygon, not on the whole patch.
@@ -126,22 +130,26 @@
 !#   Do I really have to check all element types at the beginning of the
 !#   routine? That would be legthy!?! Like in
 !#
-!#    SUBROUTINE abc (celement)
+!# <code>
+!#    subroutine abc (celement)
 !#    ...
-!#      IF ( (celement .NE. EL_E030) .AND. (celement .NE. EL_EM30) ...) THEN
-!#        CALL sys_halt()
-!#      END IF
+!#      if ( (celement .ne. EL_E030) .and. (celement .ne. EL_EM30) ...) then
+!#        call sys_halt()
+!#      end if
+!# </code>
 !#
 !#   No you do not need to. The simplest method for such element families:
 !#   Use elem_getPrimaryElement! This returns an element identifier
 !#   identifying all elements 'of the same type'. The above can be
 !#   shortened this way to:
 !#
-!#    SUBROUTINE abc (celement)
+!# <code>
+!#    subroutine abc (celement)
 !#    ...
-!#      IF (elem_getPrimaryElement(celement) .NE. EL_Q1T) THEN
-!#        CALL sys_halt()
-!#      END IF
+!#      if (elem_getPrimaryElement(celement) .ne. EL_Q1T) then
+!#        call sys_halt()
+!#      end if
+!# </code>
 !#
 !#   Which directly describes all <tex>$\tilde Q_1$</tex> elements. If you additionally
 !#   want to check it whether it is parametric/nonparametric, use an
@@ -150,11 +158,15 @@
 !#   Of course, for 'standard' elements, elem_getPrimaryElement does nothing.
 !#   So writing for <tex>$Q_1$</tex> for example,
 !#
-!#      IF (elem_getPrimaryElement(celement) .NE. EL_Q1) THEN
+!# <code>
+!#      if (elem_getPrimaryElement(celement) .ne. EL_Q1) then
+!# </code>
 !#
 !#   is exactly the same as
 !#
-!#      IF (celement .NE. EL_Q1) THEN
+!# <code>
+!#      if (celement .ne. EL_Q1) then
+!# </code>
 !#
 !#   but the first version is cleaner :-)
 !#
@@ -166,9 +178,10 @@
 !#   Every element identifier consists of a 32 bit integer, which is coded as
 !#   follows:
 !#
-!#% Bit | 31 ... 24 23 ... 16 | 15                | 14 ... 10 | 9   8 | 7 ............ 0|
-!#% -------------------------------------------------------------------------------------
-!#%     |         ****        | =1: nonparametric | unused    |dimens |  Element number |
+!# <verb>
+!# Bit | 31 ... 24 23 ... 16 | 15                | 14 ... 10 | 9   8 | 7 ............ 0|
+!# -------------------------------------------------------------------------------------
+!#     |         ****        | =1: nonparametric | unused    |dimens |  Element number |
 !#
 !#   Bits 0..7   specifies the element number/family (1=P1, 11=Q1,...).
 !#   Bits 8+ 9   encodes the dimension of the element. =1: 1D, =2: 2D, =3: 3D.
@@ -214,16 +227,21 @@
 !#                               Bit 19:=1 2nd edge maps nonlinear
 !#                               Bit 20:=1 3rd edge maps nonlinear
 !#                               Bit 21:=1 4th edge maps nonlinear
+!# </verb>
 !#
 !#   To obtain the actual element identifier, one must mask out all bits 
 !#   except for bit 0..7, i.e. to check whether an element is Q1~, one can use
 !#   elem_getPrimaryElement, which masks out all unimportant bits with IAND:
 !#
-!#     if ( elem_getPrimaryElement(celement) .EQ. EL_Q1T ) then ...
+!# <code>
+!#     if ( elem_getPrimaryElement(celement) .eq. EL_Q1T ) then ...
+!# </code>
 !#
 !#   or to check all variants
 !#
-!#     if ( (celement .eq. EL_E030) .OR. (celement .eq. EL_EM30). OR. ...) then ...
+!# <code>
+!#     if ( (celement .eq. EL_E030) .or. (celement .eq. EL_EM30) .or. ...) then ...
+!# </code>
 !# 
 !#   When it is clear that it is a <tex>$\tilde Q_1$</tex> element, one can have a closer
 !#   look which variant it is -- if this is necessary.
@@ -691,7 +709,7 @@ contains
     character(len=len(selemName)+1) :: selem
     
     ! SELECT CASE is not allowed for strings (although supported by a majority
-    ! of compilers), therefore we have to use a couple of IF-commands :(
+    ! of compilers), therefore we have to use a couple of if-commands :(
     ! select case(trim(sys_upcase(scubName)))
 
     selem = trim(sys_upcase(selemName))

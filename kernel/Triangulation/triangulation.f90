@@ -429,7 +429,7 @@
 !#      --------1  --------->  4-------
 !#                   =4
 !#
-!# <verb>
+!# </verb>
 !#
 !#   Every face has it is own local numbering, which is independent of the
 !#   local numbering of the vertices on the cell: While the cell has local

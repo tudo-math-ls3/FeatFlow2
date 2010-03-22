@@ -1825,7 +1825,7 @@ contains
   subroutine griddef_normaliseFctsNum(rgriddefInfo,dScale1,dScale2,iLevel)
   !<description>
     ! We normalize the functions f and g so that
-    ! dScale1 * int_omega f = dScale2 * int_omega g = |omega|
+    ! <tex>$$ dScale1 * \int_\Omega f = dScale2 * \int_\Omega g = |\Omega|  $$</tex>
     ! 
   !</description>
 

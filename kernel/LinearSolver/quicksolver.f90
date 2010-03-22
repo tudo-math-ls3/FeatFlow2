@@ -664,8 +664,8 @@ contains
 !<description>
   ! PRIVATE AUXILIARY ROUTINE:
   ! This routine performs two tasks at once:
-  ! 1. Calculate y := A * x
-  ! 2. Calculate alpha := < x, A*x > = < x, y >
+  ! 1. Calculate <tex>$  y := A * x                      $</tex>
+  ! 2. Calculate <tex>$  alpha := < x, A*x > = < x, y >  $</tex>
   !
   ! This routine is used by the CG solvers in this module.
 !</description>
@@ -1236,23 +1236,23 @@ contains
   ! This routine applies a Schur Complement decomposition to a 2x2 saddle point
   ! matrix where only entries on the diagonals of the diagonal blocks exist.
   !
-  ! <!--
-  !
   ! The system that is to be solved here is assumed to have the following shape:
   !
+  ! <verb>
   !   (  A             +----------+  ) ( U ) = ( F )
   !   (       ..       |    B     |  ) ( U )   ( F )
   !   (             A  +----------+  ) ( U )   ( F )
   !   (  +----------+  C             ) ( U )   ( F )
   !   (  |    D     |       ..       ) ( U )   ( F )
   !   (  +----------+             C  ) ( U )   ( F )
+  ! </verb>
   !
   ! or in short:
   !
+  ! <verb>
   !   ( A B ) = (U) = (F)
   !   ( D C )   (U)   (F)
-  !
-  ! -->
+  ! </verb>
 !</description>
 
 !<input>
@@ -1490,20 +1490,18 @@ contains
   ! but also systems with the offdiagonals with some rows/columns
   ! distance from the diagonal.
   !
-  ! <!--
-  !
   ! The system that is to be solved here is assumed to have the following shape:
   !
+  ! <verb>
   !   (  A      B         ) ( U ) = ( F )
   !   (     ..     ..     ) ( U )   ( F )
   !   (  D      A      B  ) ( U )   ( F )
   !   (     ..     ..     ) ( U )   ( F )
   !   (         D      A  ) ( U )   ( F )
+  ! </verb>
   !
   ! The basic algorithm used here can be found e.g. at
   !   [ http://en.wikipedia.org/wiki/Tridiagonal_matrix_algorithm ]
-  !
-  ! -->
 !</description>
 
 !<input>

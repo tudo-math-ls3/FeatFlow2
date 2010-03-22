@@ -7,10 +7,12 @@
 !# This module contains the vanka driver for 2D Boussinesq systems.
 !# The most general version of a 2D Boussinesq-System looks as follows:
 !#
+!# <verb>
 !#                     / A11 A12 B1 M1 \
 !#                     | A21 A22 B2 M2 |
 !#                     | D1  D2  C  K  |
 !#                     \ 0   0   0  N  /
+!# </verb>
 !#
 !# The following matrices are optional: A12, A21, C, M1, M2, K
 !# It is silently assumed that the following conditions hold:
@@ -30,29 +32,35 @@
 !# Please note that in contrast to the 'old' Navier-Stokes Vanka methods,
 !# the D-matrices must NOT be virtually transposed!
 !#
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-!# Solving the local Boussinesq System
-!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
+!# Solving the local Boussinesq System \\
+!# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=- \\
 !# Our local Boussinesq system looks as follows:
 !# 
+!# <verb>
 !#                   / A11 A12 B1 M1 \   / u1 \   / f_u1 \
 !#                   | A21 A22 B2 M2 | * | u2 | = | f_u2 |
 !#                   | D1  D2  C  K  |   | p  |   | f_p  |
 !#                   \ 0   0   0  N  /   \ t  /   \ f_t  /
+!# </verb>
 !#
 !# First, we will rewrite our system:
 !#
+!# <verb>
 !# A := / A11 A12 \     B := / B1 \     M := / M1 \    D := ( D1 D2 )
 !#      \ A21 A22 /          \ B2 /          \ M2 /
 !#
 !# u := / u1 \     f_u := / f_u1 \
 !#      \ u1 /            \ f_u2 /
+!# </verb>
 !#
 !# Now our system looks as follows:
 !#
+!# <verb>
 !#                   / A B M \   / u \   / f_u \
 !#                   | D C K | * | p | = | f_p |
 !#                   \ 0 0 N /   \ t /   \ f_t /
+!# </verb>
 !#
 !# 
 !# 1.) Solve the last equation to get the temperature t:

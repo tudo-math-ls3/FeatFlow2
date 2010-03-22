@@ -22,8 +22,8 @@
 !# that loops about all subvectors of a given vector to implement the
 !# discrete boundary conditions.
 !#
-!# 'Linear' and 'nonlinear' filters
-!# --------------------------------
+!# 'Linear' and 'nonlinear' filters \\
+!# -------------------------------- \\
 !# There exist two types of filters: 'Linear' and 'nonlinear' ones:
 !#
 !# a) 'Linear' filters can be applied by a filter chain when solving
@@ -49,23 +49,27 @@
 !# 2.) filter_applyFilterChainMat
 !#     -> Applies a given filter chain onto a (block) matrix.
 !#
-!# How to use filters
-!# ------------------
+!# How to use filters \\
+!# ------------------ \\
 !# Using filters is rather easy:
 !#
 !# a) Declare an array of size FILTER_MAXFILTERS:
 !#
+!# <code>
 !#      TYPE(t_filterChain), DIMENSION(FILTER_MAXFILTERS) :: RfilterChain
+!# </code>
 !#
 !# b) All filters in this chain are automatically initialised to type
 !#    FILTER_NOFILTER by the framework. Initialise the first couple of
 !#    entries in that array to the filter you need, e.g.:
 !#
+!# <code>
 !#      RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 !#      RfilterChain(2)%ifilterType = FILTER_DISCBCDEFFICT
 !#
 !#      RfilterChain(3)%ifilterType = FILTER_TOL20
 !#      RfilterChain(3)%itoL20component = 3
+!# </code>
 !#
 !#    The above initialisation sets up a filter chain the implementation 
 !#    of Dirichlet boundary conditions on the real boundary and on 
@@ -74,14 +78,18 @@
 !#
 !# c) Either apply the filter chain to a matrix or vector, e.g.
 !#
+!# <code>
 !#      filter_applyFilterChainVec (rx, RfilterChain)
 !#      filter_applyFilterChainMat (rmatrix, RfilterChain)
+!# </code>
 !#
 !#    or specify it when initialising a linear solver, e.g.
 !#
+!# <code>
 !#      TYPE(t_filterChain), DIMENSION(FILTER_MAXFILTERS), POINTER :: p_filterChain
 !#      p_filterChain => RfilterChain
 !#      CALL linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,p_filterChain)
+!# </code>
 !# 
 !# Notes: 
 !# a) The filter chain is processed until FILTER_NOFILTER is reached.

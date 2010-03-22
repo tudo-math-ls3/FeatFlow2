@@ -12,8 +12,8 @@
 !#
 !# 1.) anprj_analytL2projectionByMass
 !#     -> Performs defect correction with the consistent and lumped mass 
-!#        matrix of a FE space to calculate the consistent $L_2$ projection
-!#        of an analytically given function.
+!#        matrix of a FE space to calculate the consistent <tex>$ L_2 $</tex>
+!#        projection of an analytically given function.
 !#
 !# 2.) anprj_discrDirect
 !#     -> Evaluates an analytically given function and creates the 
@@ -24,7 +24,7 @@
 !#
 !#
 !# 4.) anprj_analytL2projectionConstrained
-!#     -> Performs L2-projection using the lumped mass matrix and applies
+!#     -> Performs an L2-projection using the lumped mass matrix and applies
 !#        constrained mass antidiffusive to improve the resolution
 !# </purpose>
 !##############################################################################

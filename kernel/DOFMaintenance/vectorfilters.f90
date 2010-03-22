@@ -14,8 +14,8 @@
 !# conditions into a vector.
 !# Also other filters can be found here, e.g. normalisation ov vectors, etc.
 !#
-!# 'Linear' and 'nonlinear' vector filters
-!# ---------------------------------------
+!# 'Linear' and 'nonlinear' vector filters \\
+!# --------------------------------------- \\
 !# There are two elemental types of vector filters realised here:
 !# 'Linear' filters and 'nonlinear' filters:
 !#

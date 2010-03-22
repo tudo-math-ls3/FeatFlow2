@@ -2485,8 +2485,10 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Performs an SOR iteration on the following equation:
   !
+  ! <verb>
   !              ( A1  0  ) * ( u1 ) = ( f1 ) - ( B1 ) * ( p )
   !              ( 0   A2 )   ( u2 )   ( f2 )   ( B2 )
+  ! </verb>
   !
 !</description>
 
@@ -2573,9 +2575,11 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Performs an SOR iteration on the following equation:
   !
+  ! <verb>
   !              ( A1  0  0  ) * ( u1 ) = ( f1 ) - ( B1 ) * ( p )
   !              ( 0   A2 0  )   ( u2 )   ( f2 )   ( B2 )
   !              ( 0   0  A3 )   ( u3 )   ( f3 )   ( B3 )
+  ! </verb>
   !
 !</description>
 
@@ -2671,7 +2675,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Performs an SOR iteration on the following equation:
   !
+  ! <verb>
   !                A * u1 = f - A2 * u2 - B*p
+  ! </verb>
   !
 !</description>
 
@@ -2756,7 +2762,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Performs an SOR iteration on the following equation:
   !
+  ! <verb>
   !                A * u1 = f - A2 * u2 - A3 * u3 - B*p
+  ! </verb>
   !
   ! where A2 and A3 share the same structure
 !</description>
@@ -2849,7 +2857,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                p := p + relax * S * (f - D1 * u1 - D2 * u2)
+  ! </verb>
   !
   ! where S is a diagonal matrix, and D1 and D2 share the same structure
 !</description>
@@ -2913,7 +2923,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                p := p + relax * S * (f - D1 * u1 - D2 * u2 - D3 * u3)
+  ! </verb>
   !
   ! where S is a diagonal matrix, and D1, D2 and D3 share the same structure
 !</description>
@@ -2979,7 +2991,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                w := f - D1 * u1 - D2 * u2
+  ! </verb>
   !
   ! where D1 and D2 share the same structure
 !</description>
@@ -3036,7 +3050,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                w := f - D1 * u1 - D2 * u2 - D3 * u3
+  ! </verb>
   !
   ! where D1, D2 and D3 share the same structure
 !</description>
@@ -3097,7 +3113,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !                L * u = f
+  ! </verb>
   !
   ! where L := 1/omega * diag(A) + ltri(A)
   !
@@ -3162,8 +3180,10 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              ( L1  0  ) * ( u1 ) = ( f1 )
   !              ( 0   L2 )   ( u2 )   ( f2 )
+  ! </verb>
   !
   ! where Li := 1/omega * diag(Ai) + ltri(Ai)
   !
@@ -3233,9 +3253,11 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              ( L1  0  0  ) * ( u1 ) = ( f1 )
   !              ( 0   L2 0  )   ( u2 )   ( f2 )
   !              ( 0   0  L3 )   ( u3 )   ( f3 )
+  ! </verb>
   !
   ! where Li := 1/omega * diag(Ai) + ltri(Ai)
   !
@@ -3309,7 +3331,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              L * u = f - A2 * u2
+  ! </verb>
   !
   ! where L := 1/omega * diag(A) + ltri(A)
   !
@@ -3391,7 +3415,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              L * u = f - A2 * u2 - A3 * u3
+  ! </verb>
   !
   ! where L := 1/omega * diag(A) + ltri(A)
   !
@@ -3477,7 +3503,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !                U * u = f - omega*B*p
+  ! </verb>
   !
   ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * ltri(A) $</tex>
   !
@@ -3560,8 +3588,10 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !               ( U1  0  ) * ( u1 ) = ( f1 ) - omega * ( B1 ) * ( p )
   !               ( 0   U2 )   ( u2 )   ( f2 )           ( B2 )
+  ! </verb>
   !
   ! where <tex>$ Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai) $</tex>
   !
@@ -3653,9 +3683,11 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !               ( U1  0  0  ) * ( u1 ) = ( f1 ) - omega * ( B1 ) * ( p )
   !               ( 0   U2 0  )   ( u2 )   ( f2 )           ( B2 )
   !               ( 0   0  U3 )   ( u3 )   ( f3 )           ( B3 )
+  ! </verb>
   !
   ! where <tex>$ Ui := id + ( 1/omega * diag(Ai) )^{-1} * ltri(Ai) $</tex>
   !
@@ -3752,7 +3784,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              U * u = f - A2 * u2 - B * p
+  ! </verb>
   !
   ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * utri(A) $</tex>
   !
@@ -3849,7 +3883,9 @@ contains
   !
   ! Solves the following system:
   !
+  ! <verb>
   !              U * u = f - A2 * u2 - A3 * u3 - B * p
+  ! </verb>
   !
   ! where <tex>$ U := id + ( 1/omega * diag(A) )^{-1} * utri(A) $</tex>
   !
@@ -3952,7 +3988,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                p := relax * S * (p - D1 * u1 - D2 * u2)
+  ! </verb>
   !
   ! where S is a diagonal matrix, and D1 and D2 share the same structure
 !</description>
@@ -4016,7 +4054,9 @@ contains
   ! INTERNAL AUXILIARY ROUTINE:
   ! Calculates:
   !
+  ! <verb>
   !                p := relax * S * (p - D1 * u1 - D2 * u2 - D3 * u3)
+  ! </verb>
   !
   ! where S is a diagonal matrix, and D1, D2 and D3 share the same structure
 !</description>

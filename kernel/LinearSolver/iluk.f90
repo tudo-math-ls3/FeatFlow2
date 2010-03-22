@@ -489,12 +489,13 @@ contains
                   relax, ierr, colptrs, milu)
 
 !<description>
+!<verb>
 !**********************************************************************
 !                   SPLIB Copyright (C) 1995                         **
 !                     Indiana University                             **
 !**********************************************************************
-
-!========================================================================
+!</verb>
+!
 !
 ! Numerical factorization with given sparsity pattern identified in
 ! the MSR data structure  jlu.

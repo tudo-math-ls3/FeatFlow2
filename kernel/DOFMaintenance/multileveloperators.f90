@@ -25,9 +25,9 @@
 !#      -> Assembles the entries of a interpolation matrix based on element-
 !#         wise L2-projection.
 !#
-!# ----------------------------------------------------------------------------
-!# A small note on conformal discretisations
-!# ----------------------------------------------------------------------------
+!# ---------------------------------------------------------------------------- \\
+!# A small note on conformal discretisations \\
+!# ---------------------------------------------------------------------------- \\
 !# Basically, all routines implemented in this module are able to handle
 !# conformal discretisations - under a few conditions:
 !#

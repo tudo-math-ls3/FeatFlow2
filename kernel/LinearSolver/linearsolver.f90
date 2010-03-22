@@ -260,8 +260,8 @@
 !#     -> Release the projection information
 !#
 !#
-!# Implementational details / structure of the solver library
-!# ----------------------------------------------------------
+!# Implementational details / structure of the solver library \\
+!# ---------------------------------------------------------- \\
 !# When going through this library, a newcomer would think: 
 !#
 !#       'Where are the solvers? I can only find preconditioners!?!'
@@ -326,8 +326,8 @@
 !#
 !#  <tex>  $$  x_{new}  =  x + P^{-1}(b-Ax)  =  P^{-1}b  $$   </tex>
 !#
-!#  FAQ - Frequently asked Questions
-!# ----------------------------------
+!#  FAQ - Frequently asked Questions  \\
+!# ---------------------------------- \\
 !# Ok, the solver library seems to be a little bit complicated. Therefore
 !# here a small chapter about how to set up specific tasks for newbies:
 !#

@@ -93,6 +93,7 @@
 !#
 !# The typical usage of this module is as follows:
 !#
+!# <code>
 !#   ! Initialise external storage managemeng
 !#   CALL exstor_init (999,100)
 !#   
@@ -106,6 +107,7 @@
 !# 
 !#   ! Clean up the external storage management.
 !#   CALL exstor_done()
+!# </code>
 !#
 !# </purpose>
 !##############################################################################

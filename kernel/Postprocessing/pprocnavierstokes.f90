@@ -201,8 +201,8 @@ contains
   !
   ! The body forces are defined as the integrals
   ! <tex>
-  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
-  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  !    $$ Dforces(1) = 2/df2 * \int_\Gamma [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * \int_\Gamma [df1 dut/dn n_x + p n_y] ds $$
   ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
@@ -1232,8 +1232,8 @@ contains
   !
   ! The body forces are defined as the integrals
   ! <tex>
-  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
-  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  !    $$ Dforces(1) = 2/df2 * \int_\Gamma [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * \int_\Gamma [df1 dut/dn n_x + p n_y] ds $$
   ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
@@ -1881,9 +1881,9 @@ contains
   !
   ! The body forces are defined as the integrals
   ! <tex>
-  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
-  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
-  !    $$ Dforces(3) = 2/df2 * int_s [df1 dut/dn n_z + p n_z] ds $$
+  !    $$ Dforces(1) = 2/df2 * \int_\Gamma [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * \int_\Gamma [df1 dut/dn n_x + p n_y] ds $$
+  !    $$ Dforces(3) = 2/df2 * \int_\Gamma [df1 dut/dn n_z + p n_z] ds $$
   ! </tex>
   ! where df1 and df2 allow to weight different integral parts
   !
@@ -2785,8 +2785,8 @@ contains
   !
   ! The body forces are defined as the integrals
   ! <tex>
-  !    $$ Dforces(1) = 2/df2 * int_s [df1 dut/dn n_y - p n_x] ds $$
-  !    $$ Dforces(2) = 2/df2 * int_s [df1 dut/dn n_x + p n_y] ds $$
+  !    $$ Dforces(1) = 2/df2 * \int_\Gamma [df1 dut/dn n_y - p n_x] ds $$
+  !    $$ Dforces(2) = 2/df2 * \int_\Gamma [df1 dut/dn n_x + p n_y] ds $$
   ! </tex>
   ! where df1 and df2 allow to weight different integral parts.
   !

@@ -30,7 +30,7 @@
 !#
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
-!# How do I add Vanka support for a new discretisation?\\
+!# How do I add Vanka support for a new discretisation? \\
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Unless you have some extraordinary wishes, this job is pretty easy
 !#
@@ -48,7 +48,7 @@
 !# new implementation.
 !#
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
-!# Solving the local Navier-Stokes System\\
+!# Solving the local Navier-Stokes System \\
 !# -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-\\
 !# Our local Navier-Stokes system looks as follows:
 !# 
