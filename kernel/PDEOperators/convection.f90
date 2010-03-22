@@ -125,21 +125,21 @@ module convection
     ! Stabilisation parameter.
     ! If cupwType=CONV_UPW_SAMARSKJI:
     !  -1.0 = simple Upwind,
-    !  >= 0:  Samarskji upwind with parameter $\theta=$ dupsam.
+    !  >= 0:  Samarskji upwind with parameter <tex>$ \theta $</tex> dupsam.
     !         Standard value = 0.1.
     real(DP) :: dupsam = 0.1_DP
     
     ! Whether the viscosity is constant.
     logical :: bconstViscosity = .true.
     
-    ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant.
+    ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant.
     ! We set this to infinity, what quickly leads to a program crash if the
     ! application does not initialise that properly!
     real(DP) :: dnu = SYS_INFINITY
     
-    ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+    ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
     ! For time-dependent problems, this can be set to the step size
-    ! in the $\Theta$-scheme.
+    ! in the <tex>$ \Theta $</tex>-scheme.
     real(DP) :: dtheta = 1.0_DP
     
     ! Whether to use the ALE method for computing the convective operator.
@@ -165,7 +165,7 @@ module convection
     ! Whether the viscosity is constant.
     logical :: bconstViscosity = .true.
     
-    ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+    ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
     real(DP) :: dnu = 1.0_DP
     
     ! Weighting factor for the mass matrix.
@@ -188,12 +188,12 @@ module convection
     
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
-    ! in the $\Theta$-scheme. For stationary problems, 1.0_DP must
+    ! in the <tex>$ \Theta $</tex>-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
     real(DP) :: dtheta = 1.0_DP
     
-    ! Weighting factor for the Newton matrix (Frechet derivative $\cdot\Nabla u$ of
-    ! the convective operator $u\Nabla u$, used for preconditioning).
+    ! Weighting factor for the Newton matrix (Frechet derivative <tex>$ \cdot\Nabla u $</tex> of
+    ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
     
@@ -229,7 +229,7 @@ module convection
   
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
-    ! in the $\Theta$-scheme. For stationary problems, 1.0_DP must
+    ! in the <tex>$ \Theta $</tex>-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
     real(DP) :: dtheta = 1.0_DP
     
@@ -246,7 +246,7 @@ module convection
     ! callback routine.
     logical :: bconstNu = .true.
     
-    ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant.
+    ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant.
     real(DP) :: dnu = 1.0_DP
 
     ! Whether the mass matrix coefficient dalpha is constant.
@@ -285,8 +285,8 @@ module convection
     real(DP) :: ddeltaT = 0.0_DP
     
     ! Weighting factor for the Newton matrix (grad(u))*(.)
-    ! (-> Frechet derivative $\cdot\Nabla u$ of
-    ! the convective operator $u\Nabla u$, used for preconditioning).
+    ! (-> Frechet derivative <tex>$ \cdot\Nabla u $</tex> of
+    ! the convective operator <tex>$ u\Nabla u $</tex>, used for preconditioning).
     ! A value of 0.0 deactivates the Newton matrix.
     real(DP) :: dnewton = 0.0_DP
     
@@ -316,7 +316,7 @@ module convection
     ! Whether the viscosity is constant.
     logical :: bconstViscosity = .true.
     
-    ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+    ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
     real(DP) :: dnu            = 1.0_DP
     
     ! Line integral cubature formula for discretising the Jump.
@@ -327,8 +327,8 @@ module convection
     ! Type of Jump stabilisation.
     ! One of the CONV_JUMP_xxxx-constants. Standard is unified edge
     ! stabilisation.
-    ! CONV_JUMP_UNIFIEDEDGE: $ \sum_E \gamma h_E^2 \int_E [grad u] [grad v] ds $
-    ! CONV_JUMP_REACTIVE:    $ \sum_E gamma nu 1/|E| \int_E [u] [v] ds $
+    ! CONV_JUMP_UNIFIEDEDGE: <tex>$ \sum_E \gamma h_E^2 \int_E [grad u] [grad v] ds $</tex>
+    ! CONV_JUMP_REACTIVE:    <tex>$ \sum_E gamma nu 1/|E| \int_E [u] [v] ds $</tex>
     integer               :: cjump = CONV_JUMP_UNIFIEDEDGE
   
     ! 1st Relaxation parameter for the Jump stabilisation.
@@ -347,7 +347,7 @@ module convection
   
     ! Weighting factor of the complete operator.
     ! For time-dependent problems, this can be set to the step size
-    ! in the $\Theta$-scheme. For stationary problems, 1.0_DP must
+    ! in the <tex>$ \Theta $</tex>-scheme. For stationary problems, 1.0_DP must
     ! be used to assembly the not-weighted operator matrix.
     real(DP)              :: dtheta = 1.0_DP
     
@@ -397,7 +397,7 @@ contains
   !
   !  <tex> $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$ </tex>
   !
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -412,10 +412,10 @@ contains
 
 !<input>
 
-  ! Primary velocity field for the computation of $u_1$
+  ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
   
-  ! Secondary velocity field for the computation of $u_1$
+  ! Secondary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
@@ -471,7 +471,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -642,7 +642,7 @@ contains
   !
   !  <tex> $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$ <tex>
   !
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -693,16 +693,16 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -725,12 +725,12 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
       
   ! Whether or not to use the ALE method
@@ -744,11 +744,11 @@ contains
   ! Triangulation structure specifying the underlying mesh.
   type(t_triangulation), intent(in) :: rtriangulation
 
-  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
-  ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
   
@@ -1339,7 +1339,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -1360,10 +1360,10 @@ contains
 
 !<input>
 
-  ! Primary velocity field for the computation of $u_1$
+  ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
   
-  ! Secondary velocity field for the computation of $u_1$
+  ! Secondary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
@@ -1409,7 +1409,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -1577,7 +1577,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -1608,7 +1608,7 @@ contains
   !   that of the previous time step), dweight1/dweight2 defines how these both
   !   velocity vectors should be weighted to compute the actual
   !   velocity field for the assembling:
-  !               $$ U_act = dweight1*u1vel + dweight2*u2vel $$
+  !               <tex> $$ U_act = dweight1*u1vel + dweight2*u2vel $$ </tex>
   !   This is e.g. used for the linear extrapolation technique to
   !   reconstruct a velocity from two previous time steps...\\
   !
@@ -1633,16 +1633,16 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -1665,7 +1665,7 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
@@ -1674,9 +1674,9 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
@@ -1693,7 +1693,7 @@ contains
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
-  ! optional: velocity vector $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: velocity vector <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
@@ -2548,7 +2548,7 @@ contains
   ! <tex>
   !   $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -2599,16 +2599,16 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -2631,7 +2631,7 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
@@ -2640,9 +2640,9 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
@@ -2659,11 +2659,11 @@ contains
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
-  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
-  ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
   
@@ -3530,7 +3530,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -3549,10 +3549,10 @@ contains
 
 !<input>
 
-  ! Primary velocity field for the computation of $u_1$
+  ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
   
-  ! Secondary velocity field for the computation of $u_1$
+  ! Secondary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
@@ -3601,7 +3601,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -3818,7 +3818,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -3869,16 +3869,16 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -3901,7 +3901,7 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
@@ -3910,9 +3910,9 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
@@ -3944,11 +3944,11 @@ contains
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
-  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
-  ! Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
   
@@ -6069,7 +6069,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -6084,10 +6084,10 @@ contains
 
 !<input>
 
-  ! Primary velocity field for the computation of $u_1$
+  ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
   
-  ! Secondary velocity field for the computation of $u_1$
+  ! Secondary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
@@ -6144,7 +6144,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -6316,7 +6316,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -6367,22 +6367,22 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Primary Z-velocity of $u_1$
+  ! Primary Z-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Zvel
 
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
-  ! Secondary Z-velocity of $u_1$
+  ! Secondary Z-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Zvel
 
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -6405,7 +6405,7 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
@@ -6414,9 +6414,9 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
@@ -6433,15 +6433,15 @@ contains
   ! DmeshVelocity(2,:) gives the Y-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
-  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
-  ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
   
-  ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
 
@@ -7335,7 +7335,7 @@ contains
   !
   !  <tex> $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$ </tex>
   !
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -7354,10 +7354,10 @@ contains
 
 !<input>
 
-  ! Primary velocity field for the computation of $u_1$
+  ! Primary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecPrimary
   
-  ! Secondary velocity field for the computation of $u_1$
+  ! Secondary velocity field for the computation of <tex>$ u_1 $</tex>
   type(t_vectorBlock), intent(in), target :: rvecSecondary
   
   ! Weighting factor for rvecPrimary.
@@ -7410,7 +7410,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -7667,7 +7667,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dweight1 * u1vel  +  dweight2 * u2vel $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -7718,22 +7718,22 @@ contains
 
 !<input>
 
-  ! Primary X-velocity of $u_1$
+  ! Primary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Xvel
   
-  ! Primary Y-velocity of $u_1$
+  ! Primary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Yvel
   
-  ! Primary Z-velocity of $u_1$
+  ! Primary Z-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u1Zvel
   
-  ! Secondary X-velocity of $u_1$
+  ! Secondary X-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Xvel
   
-  ! Secondary Y-velocity of $u_1$
+  ! Secondary Y-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Yvel
   
-  ! Secondary Z-velocity of $u_1$
+  ! Secondary Z-velocity of <tex>$ u_1 $</tex>
   real(DP), dimension(:), intent(in) :: u2Zvel
   
   ! Computation/defect correction method. One of the CONV_MODxxxx constants:
@@ -7756,7 +7756,7 @@ contains
   !          =0: Samarskji upwind
   real(DP), intent(in) :: dupsam
   
-  ! Viscosity parameter $\nu = 1/Re$ if viscosity is constant
+  ! Viscosity parameter <tex>$ \nu = 1/Re $</tex> if viscosity is constant
   real(DP), intent(in) :: dnu 
   
   ! Weighting factor for the mass matrix.
@@ -7765,9 +7765,9 @@ contains
   ! Weighting factor for the Stokes matrix. (Stokes matrix = 1/Re * Laplace)
   real(DP), intent(in) :: dbeta
 
-  ! Weighting factor of the convective operator: $\theta * u*grad(u)$. 
+  ! Weighting factor of the convective operator: <tex>$ \theta * u*grad(u) $</tex>. 
   ! For time-dependent problems, this can be set to the step size
-  ! in the $\Theta$-scheme.
+  ! in the <tex>$ \Theta $</tex>-scheme.
   real(DP), intent(in) :: dtheta 
   
   ! Weighting factor for the nonlinear term
@@ -7792,15 +7792,15 @@ contains
   ! DmeshVelocity(3,:) gives the Z-velocity.
   real(DP), dimension(:,:), intent(in), optional :: DmeshVelocity(:,:)
   
-  ! optional: X-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: X-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du1
   
-  ! optional: Y-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Y-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du2
   
-  ! optional: Z-velocity of $u_2$. Must be present if cdef=CONV_MODDEFECT
+  ! optional: Z-velocity of <tex>$ u_2 $</tex>. Must be present if cdef=CONV_MODDEFECT
   ! or cdef=CONV_MODBOTH.
   real(DP), dimension(:), intent(in), optional :: Du3
   
@@ -9850,7 +9850,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -9894,7 +9894,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -10021,7 +10021,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -10069,7 +10069,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -10188,7 +10188,7 @@ contains
   ! <tex>
   !  $$ u_1  =  dprimWeight * rvecPrimary  +  dsecWeight * rvecSecondary $$
   ! </tex>
-  ! $u_2 = rsolution(.)$ defines the second velocity field inside of
+  ! <tex>$ u_2 = rsolution(.) $</tex> defines the second velocity field inside of
   ! the grad-term.
   !
   ! The switch cdef decides on whether the routine sets up the nonlinear
@@ -10232,7 +10232,7 @@ contains
   ! Must have the same structure as rsolution/rvecPrimary/rvecSecondary.
   ! Must be present if cdef=CONV_MODDEFECT or =CONV_MODBOTH.
   ! The nonlinear part is subtracted from this vector: 
-  ! $r = r - \theta * u_1*grad(u_2)$
+  ! <tex>$ r = r - \theta * u_1*grad(u_2) $</tex>
   type(t_vectorBlock), intent(inout), optional, target :: rdefect
 !</inputoutput>
 
@@ -10377,7 +10377,7 @@ contains
   ! Can be omitted if there is no nonlinearity to be assembled.
   type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
-  ! OPTIONAL: A callback routine for a nonconstant $\nu$.
+  ! OPTIONAL: A callback routine for a nonconstant <tex>$ \nu $</tex>.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
@@ -10458,7 +10458,7 @@ contains
   ! Can be omitted if there is no nonlinearity to be assembled.
   type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
-  ! OPTIONAL: A callback routine for a nonconstant $\nu$.
+  ! OPTIONAL: A callback routine for a nonconstant <tex>$ \nu $</tex>.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
@@ -10583,7 +10583,7 @@ contains
   ! Can be omitted if there is no nonlinearity to be assembled.
   type(t_vectorBlock), intent(in), target, optional :: rvelocity
 
-  ! OPTIONAL: A callback routine for a nonconstant $\nu$.
+  ! OPTIONAL: A callback routine for a nonconstant <tex>$ \nu $</tex>.
   ! Must be present if dnu is set to be nonconstant by rconfig%bconstNu=.false.
   ! or rconfig%bconstAlpha=.false..
   include '../DOFMaintenance/intf_sdcoefficient.inc'
