@@ -257,17 +257,17 @@ module multilevelprojection
     ! If element "EM30" is used e.g., prolongation for "EM30", "EM31",
     ! "E031" and "E030" is possible, although performance will suffer
     ! in using the "wrong" prolongation. An error will be displayed if
-    ! the DOF`s do not fit together at all, e.g. when using $Q_1$
-    ! prolongation when using $Q_2$ for the discretisation.
+    ! the DOF`s do not fit together at all, e.g. when using <tex>$Q_1$</tex>
+    ! prolongation when using <tex>$Q_2$</tex> for the discretisation.
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' prolongation
     ! (i.e. that configured by the spatial discretisation) should be used.
     integer(I32)                :: ielementTypeProlongation = EL_UNDEFINED
     
     ! Order of the prolongation to use. 
-    ! -1=use default prolongation (e.g. linear for $Q_1$, quadratic for 
-    !    $Q_2$,...). Some elements allow to configure the type of the 
-    !    prolongation, e.g. when $Q_2$ is used, apart from -1 the following 
+    ! -1=use default prolongation (e.g. linear for <tex>$Q_1$</tex>, quadratic for 
+    !    <tex>$Q_2$</tex>,...). Some elements allow to configure the type of the 
+    !    prolongation, e.g. when <tex>$Q_2$</tex> is used, apart from -1 the following 
     !    values are allowed:
     ! 0=constant prolongation
     ! 1=linear prolongation of a once refined mesh
@@ -311,17 +311,17 @@ module multilevelprojection
     ! If element "EM30" is used e.g., restriction for "EM30", "EM31",
     ! "E031" and "E030" is possible, although performance will suffer
     ! in using the "wrong" restriction. An error will be displayed if
-    ! the DOF`s do not fit together at all, e.g. when using $Q_1$
-    ! restriction when using $Q_2$ for the discretisation.
+    ! the DOF`s do not fit together at all, e.g. when using <tex>$Q_1$</tex>
+    ! restriction when using <tex>$Q_2$</tex> for the discretisation.
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' restriction
     ! (i.e. that configured by the spatial discretisation) should be used.
     integer(I32)                :: ielementTypeRestriction = EL_UNDEFINED
 
     ! Order of the restriction to use. 
-    ! -1=use default restriction (e.g. linear for $Q_1$, quadratic for 
-    !    $Q_2$,...). Some elements allow to configure the type of the 
-    !    restriction, e.g. when $Q_2$ is used, apart from -1 the following 
+    ! -1=use default restriction (e.g. linear for <tex>$Q_1$</tex>, quadratic for 
+    !    <tex>$Q_2$</tex>,...). Some elements allow to configure the type of the 
+    !    restriction, e.g. when <tex>$Q_2$</tex> is used, apart from -1 the following 
     !    values are allowed:
     ! 0=constant restriction
     ! 1=linear restriction of a once refined mesh
@@ -365,7 +365,7 @@ module multilevelprojection
     ! solution to a lower level. Must fit to the element type of the 
     ! discretisation concerning the DOF`s.
     ! An error will be displayed if the DOF`s do not fit together at 
-    ! all, e.g. when using $Q_1$ interpolation when using $Q_2$ 
+    ! all, e.g. when using <tex>$Q_1$</tex> interpolation when using <tex>$Q_2$</tex> 
     ! for the discretisation.
     !
     ! A value of EL_UNDEFINED indicates that the 'natural' interpolation
@@ -374,9 +374,9 @@ module multilevelprojection
     
     ! Order of the interpolation to use when interpolating a solution vector
     ! to a lower level.
-    ! -1=use default interpolation (e.g. linear for $Q_1$, quadratic for 
-    !    $Q_2$,...). Some elements allow to configure the type of the 
-    !    interpolation, e.g. when $Q_2$ is used, apart from -1 the following 
+    ! -1=use default interpolation (e.g. linear for <tex>$Q_1$</tex>, quadratic for 
+    !    <tex>$Q_2$</tex>,...). Some elements allow to configure the type of the 
+    !    interpolation, e.g. when <tex>$Q_2$</tex> is used, apart from -1 the following 
     !    values are allowed:
     ! 0=constant interpolation
     ! 1=linear interpolation of a once refined mesh
@@ -4754,7 +4754,7 @@ contains
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
-  ! $Q_1$, uniform triangulation, double precision vector.
+  ! <tex>$Q_1$</tex>, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -5003,7 +5003,7 @@ contains
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
-  ! $Q_1$, uniform triangulation, double precision vector.
+  ! <tex>$Q_1$</tex>, uniform triangulation, double precision vector.
   ! Experimental FEAST MIRROR variant, zeroes the entries on the boundary.
 !</description>
   
@@ -5328,7 +5328,7 @@ contains
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
-  ! $Q_2$, uniform triangulation, double precision vector.
+  ! <tex>$Q_2$</tex>, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -5433,7 +5433,7 @@ contains
   
 !<description>
   ! Restricts a RHS vector from a fine grid to a coarse grid.
-  ! $Q_2$, uniform triangulation, double precision vector.
+  ! <tex>$Q_2$</tex>, uniform triangulation, double precision vector.
 !</description>
 
 !<input>  
@@ -5590,7 +5590,7 @@ contains
   
 !<description>
   ! Interpolates a solution vector from a fine grid to a coarse grid.
-  ! $Q_2$, uniform triangulation, double precision vector.
+  ! <tex>$Q_2$</tex>, uniform triangulation, double precision vector.
 !</description>
   
 !<input>
@@ -8205,7 +8205,7 @@ contains
   
 !<description>
   ! Prolongate a solution vector from a coarse grid to a fine grid.
-  ! $Q_1$, uniform triangulation, double precision vector.
+  ! <tex>$Q_1$</tex>, uniform triangulation, double precision vector.
 !</description>
   
 !<input>

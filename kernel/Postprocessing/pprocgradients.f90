@@ -543,7 +543,7 @@ contains
 !<description>
   ! Calculates the recovered gradient of a scalar finite element function
   ! by standard interpolation. Supports conformal discretisations
-  ! with $P_1$, $Q_1$, $P_2$ and $Q_2$ mixed in the destination vector.
+  ! with <tex>$P_1$, $Q_1$, $P_2$ and $Q_2$</tex> mixed in the destination vector.
 !</description>
 
 !<input>
@@ -1201,7 +1201,7 @@ contains
     ! Calculates the recovered gradient of a scalar finite element function
     ! by means of the superconvergent patch recovery technique suggested
     ! by Zienkiewicz and Zhu. Supports conformal discretisations in arbitrary
-    ! spatial dimensions with $P_1$, $Q_1$, $P_2$ and $Q_2$ finite elements
+    ! spatial dimensions with <tex>$P_1$, $Q_1$, $P_2$ and $Q_2$</tex> finite elements
     ! mixed in the source and destination vectors.
 !</description>
 
@@ -4082,7 +4082,7 @@ contains
     ! Calculates the recovered gradient of a scalar finite element function
     ! by means of the limited gradient averaging technique suggested by 
     ! M. Möller and D. Kuzmin. Supports conformal discretisations in arbitrary
-    ! spatial dimensions with $P_1$ and $Q_1$ finite elements mixed in the
+    ! spatial dimensions with <tex>$P_1$ and $Q_1$</tex> finite elements mixed in the
     ! source and destination vectors.
 !</description>
 

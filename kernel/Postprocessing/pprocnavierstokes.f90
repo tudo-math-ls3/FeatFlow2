@@ -2393,7 +2393,7 @@ contains
   ! Note 2: Currently, this routine only supports Q1~ for the velocity
   ! subvectors in rvector. rdestVector is calculated in the Q1 space,
   ! so the discretisation structure in rdestVector must describbe a
-  ! $Q_1$ discretisation!
+  ! <tex>$Q_1$</tex> discretisation!
 !</description>
 
 !<input>

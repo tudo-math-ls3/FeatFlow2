@@ -18,7 +18,7 @@
 !#
 !# 3.) spdp_stdProjectionToP1Q1Scalar
 !#     -> Project a scalar solution vector to another one discretised by
-!#        $P_1$ and/or $Q_1$ elements.
+!#        <tex>$P_1$</tex> and/or <tex>$Q_1$</tex> elements.
 !#
 !# 4.) spdp_projectToVertices
 !#     -> Project a scalar vector from primal space to the vertices of the
@@ -1017,13 +1017,13 @@ contains
   ! another solution vector rdestVector. If necessary, the destination
   ! vector is allocated.
   ! The source vector can be an arbitrary FE solution vector. The destination
-  ! vector will be a solution vector in the $Q_1$ space (for quad
+  ! vector will be a solution vector in the <tex>$Q_1$</tex> space (for quad
   ! elements) and in the $P_1$ space (for triangular elements), respectively.
   ! (Such vertex based solution vectors are typically written out
   ! to external files like GMV during the postprocessing).
   !
   ! If rdestDiscretisation is defined, it must describe a discretisation 
-  ! with $P_1$ and $Q_1$ elements, respectively. 
+  ! with <tex>$P_1$</tex> and <tex>$Q_1$</tex> elements, respectively. 
   ! If rdestDiscretisation is undefined, the routine automatically 
   ! creates and returns rdestDiscretisation for the destination vector 
   ! rdestVector based on the discretisation of the source vector.
@@ -1048,7 +1048,7 @@ contains
   type(t_vectorScalar), intent(inout) :: rdestVector
 
   ! A discretisation structure that defines a discretisation with
-  ! $P_1$ and/or $Q_1$ elements. If undefines, the structure
+  ! $P_1$ and/or <tex>$Q_1$</tex> elements. If undefines, the structure
   ! is automatically created.  
   type(t_spatialDiscretisation), intent(inout) :: rdestDiscretisation
 !</inputoutput>

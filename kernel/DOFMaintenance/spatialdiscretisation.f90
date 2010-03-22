@@ -173,10 +173,10 @@ module spatialdiscretisation
 !<typeblock>
   
   ! Element distribution structure. This structure collects for one type
-  ! of element (e.g. $Q_1$), on which geometric element primitives it is
+  ! of element (e.g. <tex>$Q_1$</tex>), on which geometric element primitives it is
   ! to be used. In the t_spatialDiscretisation there is a list of these
   ! element structures for each type of element. This e.g. allows to use
-  ! triangular elements with $P_1$, quad elements with $Q_1$ and possible
+  ! triangular elements with <tex>$P_1$</tex>, quad elements with <tex>$Q_1$</tex> and possible
   ! isoparametric "surface" elements to be mixed in the triangulation.
   !
   ! The structure is assigned to a triangulation by means of the 'parent'
@@ -277,7 +277,7 @@ module spatialdiscretisation
     ! corresponding element subset.
     !
     ! Example: Think of a mixed mesh of triangles and quads, discretised
-    !  with $P_1$ and $Q_1$. Then there are two disjunct element sets,
+    !  with <tex>$P_1$</tex> and <tex>$Q_1$</tex>. Then there are two disjunct element sets,
     !  one with triangles, one with quads. Every triangle gets a running
     !  number (1,2,3,...) and every quad gets a running number (1,2,3,...).
     !  These numbers are stored here, corresponding to each element.

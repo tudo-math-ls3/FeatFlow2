@@ -614,7 +614,7 @@ contains
   ! One assumes that there is an additional 'virtual' layer of cells added to
   ! a boundary edge. This leads to a slight matrix modification for all
   ! DOF`s on that boundary edge. 
-  ! Example: For a 5-point stencil with $Q_1$, boundary DOF`s get matrix
+  ! Example: For a 5-point stencil with <tex>$Q_1$</tex>, boundary DOF`s get matrix
   ! weights "2, 1, -1/2, -1/2" (center, left, top, bottom), while inner 
   ! points get matrix weights "4, -1, -1, -1, -1" (center and all surroundings).
   ! To make bondary DOF`s behave like inner DOF`s, the entries in 

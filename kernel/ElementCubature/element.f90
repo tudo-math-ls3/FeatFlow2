@@ -93,7 +93,7 @@
 !#       |     |     |
 !#       O-----O-----O
 !#
-!#   A point-based finite element basis function like $Q_1$ is a function
+!#   A point-based finite element basis function like <tex>$Q_1$</tex> is a function
 !#   that is =1 at the center of this patch and =0 in all the other corner
 !#   points. On each of the squares, the function is a polynom, which
 !#   coefficients are chosen in such a way, that it is =1 in the center and
@@ -108,7 +108,7 @@
 !#   where the coefficients $u_i$ can be modified to change the whole
 !#   function. This set ${u_i}$ are called "Degrees of Freedom" of the FE
 !#   function $u$. If the $\phi_i$ are chosen to be =1 in the center
-!#   and =0 in the other corners (like in $P_1$ and $Q_1$, by `lucky 
+!#   and =0 in the other corners (like in <tex>$P_1$</tex> and <tex>$Q_1$</tex>, by `lucky 
 !#   chance` the $u_i$ are exactly the values of $u$ in these points --
 !#   $u_i = u(x_i,y_i)$.
 !#
@@ -122,7 +122,7 @@
 !#   celement=EL_Q1 identifies a Q1-element.
 !#
 !# 3.) I wrote a subroutine which works for a special element family. More 
-!#   precisely for example, my routine works for all variants of $\tilde Q_1$.
+!#   precisely for example, my routine works for all variants of <tex>$\tilde Q_1$</tex>.
 !#   Do I really have to check all element types at the beginning of the
 !#   routine? That would be legthy!?! Like in
 !#
@@ -143,12 +143,12 @@
 !#        CALL sys_halt()
 !#      END IF
 !#
-!#   Which directly describes all $\tilde Q_1$ elements. If you additionally
+!#   Which directly describes all <tex>$\tilde Q_1$</tex> elements. If you additionally
 !#   want to check it whether it is parametric/nonparametric, use an
 !#   additional check with elem_isNonparametric!
 !#
 !#   Of course, for 'standard' elements, elem_getPrimaryElement does nothing.
-!#   So writing for $Q_1$ for example,
+!#   So writing for <tex>$Q_1$</tex> for example,
 !#
 !#      IF (elem_getPrimaryElement(celement) .NE. EL_Q1) THEN
 !#
@@ -183,12 +183,12 @@
 !#                               stable on cruel elements.
 !#                    Bit 18:=0: Standard handling
 !#                           =1: No scaling of the local coodinate system for 
-!#                               nonparametric $\tilde Q_1$ element. Slightly faster but 
+!#                               nonparametric <tex>$\tilde Q_1$</tex> element. Slightly faster but 
 !#                               less stable on cruel elements.
 !#               Q1HN: Bit 16/17: These three bits encode the local number of the edge
 !#                               where there is a hanging node.
 !#                               =0: local edge 1, =1: local edge 2,...
-!#               P2ISO: Bit 16/17: These three bits encode how many edges of the $P_2$
+!#               P2ISO: Bit 16/17: These three bits encode how many edges of the <tex>$P_2$</tex>
 !#                               element are to be handled with an isoparametric mapping
 !#                               to the reference element. 
 !#                               =0: isoparametric mapping with one edge not linear
@@ -200,7 +200,7 @@
 !#                               Bit 18:=1 1st edge maps nonlinear
 !#                               Bit 19:=1 2nd edge maps nonlinear
 !#                               Bit 20:=1 3rd edge maps nonlinear
-!#               Q2ISO: Bit 16/17: These three bits encode how many edges of the $Q_2$
+!#               Q2ISO: Bit 16/17: These three bits encode how many edges of the <tex>$Q_2$</tex>
 !#                               element are to be handled with an isoparametric mapping
 !#                               to the reference element. 
 !#                               =0: isoparametric mapping with one edge not linear
@@ -225,7 +225,7 @@
 !#
 !#     if ( (celement .eq. EL_E030) .OR. (celement .eq. EL_EM30). OR. ...) then ...
 !# 
-!#   When it is clear that it is a $\tilde Q_1$ element, one can have a closer
+!#   When it is clear that it is a <tex>$\tilde Q_1$</tex> element, one can have a closer
 !#   look which variant it is -- if this is necessary.
 !#
 !#   Final note: For implementational reasons, the bits 8+9+16..31 coincide --
@@ -366,7 +366,7 @@ module element
   integer(I32), parameter, public :: EL_P3_2D   = EL_P3
   integer(I32), parameter, public :: EL_E003_2D = EL_P3
 
-  ! ID for rotated linear $\tilde P1$ element (Crouzeix-Raviart)
+  ! ID for rotated linear <tex>$\tilde P_1$</tex> element (Crouzeix-Raviart)
   integer(I32), parameter, public :: EL_P1T     = EL_2D + 20
   integer(I32), parameter, public :: EL_P1T_2D  = EL_P1T
 
@@ -406,32 +406,32 @@ module element
   integer(I32), parameter, public :: EL_QP1NPD   = EL_QP1 + EL_NONPARAMETRIC + 2**17
   integer(I32), parameter, public :: EL_QP1NPD_2D = EL_QP1NPD
 
-  ! General rotated bilinear $\tilde Q1$ element, all variants (conformal, 
+  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element, all variants (conformal, 
   ! nonconformal, parametric, nonparametric).
   ! Simplest variant is: parametric, edge midpoint-value based.
   integer(I32), parameter, public :: EL_Q1T     = EL_2D + 30
   integer(I32), parameter, public :: EL_Q1T_2D  = EL_Q1T
 
-  ! General rotated bilinear $\tilde Q1$ element with bubble, 
+  ! General rotated bilinear <tex>$\tilde Q_1$</tex> element with bubble, 
   ! all variants (conformal, nonconformal, parametric, nonparametric).
   integer(I32), parameter, public :: EL_Q1TB    = EL_2D + 31
   integer(I32), parameter, public :: EL_Q1TB_2D = EL_Q1TB
 
-  ! General rotated biquadratic $\tilde Q2$ element, all variants.
+  ! General rotated biquadratic <tex>$\tilde Q_2$</tex> element, all variants.
   integer(I32), parameter, public :: EL_Q2T     = EL_2D + 35
   integer(I32), parameter, public :: EL_Q2T_2D  = EL_Q2T
 
-  ! General rotated biquadratic $\tilde Q2$ element with bubble, all variants.
+  ! General rotated biquadratic <tex>$\tilde Q_2$</tex> element with bubble, all variants.
   integer(I32), parameter, public :: EL_Q2TB    = EL_2D + 37
   integer(I32), parameter, public :: EL_Q2TB_2D = EL_Q2TB
   
-  ! Quadrilateral $Q_1$ element with one hanging node. In the property
+  ! Quadrilateral <tex>$Q_1$</tex> element with one hanging node. In the property
   ! bitfield of the element identifier, the local number of the edge where there
   ! is a hanging node must be encoded! (i.e. one must add a corresponding
   ! value to the constant EL_Q1HN1 to get the actual element identifier!)
   integer(I32), parameter, public :: EL_Q1HN1 = EL_2D + 40
   
-  ! Quadrilateral $Q_2$ element with isoparametric mapping from the reference
+  ! Quadrilateral <tex>$Q_2$</tex> element with isoparametric mapping from the reference
   ! to the real element. In the property bitfield, one must set the corresponding
   ! bits to identify the edge that should map isoparametric!
   integer(I32), parameter, public :: EL_Q2ISO = EL_2D + 50
@@ -582,27 +582,27 @@ module element
   integer(I32), parameter, public :: EL_EB50    = EL_Q2TB
   integer(I32), parameter, public :: EL_EB50_2D = EL_EB50
   
-  ! ID of $Q_2$ element with hierarchical basis functions.
+  ! ID of <tex>$Q_2$</tex> element with hierarchical basis functions.
   ! WARNING: Do not use this element, as it is highly experimental and is not
   ! yet supported by the majority of the kernel routines!
   integer(I32), parameter, public :: EL_Q2H_2D = EL_Q2_2D + 2**16
   
-  ! Isoparametric $Q_2$ element with one edge mapped nonlinear from the reference
+  ! Isoparametric <tex>$Q_2$</tex> element with one edge mapped nonlinear from the reference
   ! to the real element. Additionally, one bit in the property bitfield must
   ! be set to identify the edge.
   integer(I32), parameter, public :: EL_Q2ISO1 = EL_Q2ISO 
 
-  ! Isoparametric $Q_2$ element with two edges mapped nonlinear from the reference
+  ! Isoparametric <tex>$Q_2$</tex> element with two edges mapped nonlinear from the reference
   ! to the real element. Additionally, two bits in the property bitfield must
   ! be set to identify the edges.
   integer(I32), parameter, public :: EL_Q2ISO2 = EL_Q2ISO + 2**16
 
-  ! Isoparametric $Q_2$ element with three edges mapped nonlinear from the reference
+  ! Isoparametric <tex>$Q_2$</tex> element with three edges mapped nonlinear from the reference
   ! to the real element. Additionally, three bits in the property bitfield must
   ! be set to identify the edges.
   integer(I32), parameter, public :: EL_Q2ISO3 = EL_Q2ISO + 2**17
 
-  ! Isoparametric $Q_2$ element with four edges mapped nonlinear from the reference
+  ! Isoparametric <tex>$Q_2$</tex> element with four edges mapped nonlinear from the reference
   ! to the real element. Additionally, four bits in the property bitfield must
   ! be set to identify the edges.
   integer(I32), parameter, public :: EL_Q2ISO4 = EL_Q2ISO + 2**16 + 2**17
@@ -1229,7 +1229,7 @@ contains
   ! This function returns for a given element type the type of the coordinate
   ! system. Whenever an element of this type is evaluated, it expects the
   ! coordinates where to evaluate in the coordinates of this coordinate
-  ! system. For example, triangular $P_1$ elements usually work in the
+  ! system. For example, triangular <tex>$P_1$</tex> elements usually work in the
   ! barycentric triangular coordinate system, identified by the coordinate
   ! system identifier TRAFO_CS_BARY2DTRI.
 !</description>
@@ -1629,17 +1629,17 @@ contains
 
 !<description>
   ! Determines the 'primary' element type identifier. For standard elements
-  ! like $Q_1$, there is usually celement=elem_getPrimaryElement(celement).
-  ! But some elements like $\tilde Q_1$ have different modifications,
+  ! like <tex>$Q_1$</tex>, there is usually celement=elem_getPrimaryElement(celement).
+  ! But some elements like <tex>$\tilde Q_1$</tex> have different modifications,
   ! which are encoded in celement. In this case, elem_getPrimaryElement
   ! returns the element identifier of the element without any
   ! modification; this can be seen as 'standard' or 'primary' element
   ! type.
-  ! In case of $\tilde Q_1$ for example, there is
+  ! In case of <tex>$\tilde Q_1$</tex> for example, there is
   !    elem_getPrimaryElement(EL_E030) = elem_getPrimaryElement(EL_EM30)
   !  = elem_getPrimaryElement(EL_E031) = elem_getPrimaryElement(EL_EM31)
   !  = EL_Q1T,
-  ! which identifies the 'general' $\tilde Q_1$ element.
+  ! which identifies the 'general' <tex>$\tilde Q_1$</tex> element.
 !</description>
   
 !<result>

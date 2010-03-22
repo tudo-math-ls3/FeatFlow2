@@ -34,7 +34,7 @@
 !#
 !#  7.) vanka_init2DSPQ1TQ0simple
 !#      -> Initialise specialised VANKA solver for 2D saddle point problems
-!#         with $\tilde Q_1/Q_0$ discretisation.
+!#         with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Deprecated, ist not used.
 !#
 !#  8.) vanka_init2DNavierStokes 
@@ -47,46 +47,46 @@
 !#
 !# 10.) vanka_2DSPQ1TQ0simple
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $\tilde Q_1/Q_0$ discretisation
+!#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation
 !#
 !# 11.) vanka_2DSPQ1TQ0simpleConf
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $\tilde Q_1/Q_0$ discretisation.
+!#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 12.) vanka_2DSPQ1TQ0simpleCoupConf
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $\tilde Q_1/Q_0$ discretisation.
+!#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
 !# 13.) vanka_2DSPQ1TQ0fullConf
 !#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle 
-!#         point problems with $\tilde Q_1/Q_0$ discretisation.
+!#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 14.) vanka_2DSPQ1TQ0fullCoupConf
 !#      -> Perform one step of the specialised 'full' VANKA solver for 2D saddle 
-!#         point problems with $\tilde Q_1/Q_0$ discretisation.
+!#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#         This variant can handle fully coupled matrices.
 !#
 !# 15.) vanka_2DSPQ2QP1simple
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $Q_2/QP_1$ discretisation. Diagonal VANKA approach.
+!#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Diagonal VANKA approach.
 !#
 !# 16.) vanka_2DSPQ2QP1full
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $Q_2/QP_1$ discretisation. Full VANKA approach.
+!#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Full VANKA approach.
 !#
 !# 17.) vanka_2DSPQ2QP1simpleConf
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $Q_2/QP_1$ discretisation. Diagonal VANKA approach.
+!#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Diagonal VANKA approach.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 18.) vanka_2DSPQ2QP1fullConf
 !#      -> Perform one step of the specialised VANKA solver for 2D saddle point 
-!#         problems with $Q_2/QP_1$ discretisation. Full VANKA approach.
+!#         problems with <tex>$Q_2/QP_1$</tex> discretisation. Full VANKA approach.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 19.) vanka_init2DNavierStokesOptC
@@ -107,16 +107,16 @@
 !#
 !# 23.) vanka_3DSPQ1TQ0simple
 !#      -> Perform one step of the specialised VANKA solver for 3D saddle point 
-!#         problems with $\tilde Q_1/Q_0$ discretisation
+!#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation
 !#
 !# 24.) vanka_3DSPQ1TQ0simpleConf
 !#      -> Perform one step of the specialised VANKA solver for 3D saddle point 
-!#         problems with $\tilde Q_1/Q_0$ discretisation.
+!#         problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 25.) vanka_3DSPQ1TQ0fullConf
 !#      -> Perform one step of the specialised 'full' VANKA solver for 3D saddle 
-!#         point problems with $\tilde Q_1/Q_0$ discretisation.
+!#         point problems with <tex>$\tilde Q_1/Q_0$</tex> discretisation.
 !#         Applies VANKA only to a subset of all elements in the domain.
 !#
 !# 26.) vanka_2DSPQ2QP1simpleCoupConf
@@ -129,11 +129,11 @@
 !#  - vanka_general
 !#  - vanka_init2DSPQ1TQ0simple
 !# vanka_general was designed to work with everything. vanka_init2DSPQ1TQ0simple was
-!# designed to work with the 2D Navier Stokes problem, uniform $\tilde Q_1/Q_0$
+!# designed to work with the 2D Navier Stokes problem, uniform <tex>$\tilde Q_1/Q_0$</tex>
 !# discretisation. It used the 'diagonal' VANKA approach.
 !#
 !# Over the time, there was a 'full' VANKA variant added as well as variants that
-!# were designed to work with $Q_2/QP_1$ discretisations. However, each variant
+!# were designed to work with <tex>$Q_2/QP_1$</tex> discretisations. However, each variant
 !# had to be chosen carefully, as all variants were rather specialised to a
 !# special uniform discretisation.
 !#

@@ -632,7 +632,7 @@ contains
   !            <tex> $$ u_1 * grad(u_2) $$ </tex>
   !
   ! in a matrix or to build a defect vector.
-  ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 2D-version (X- and Y-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! u1Xvel,u1Yvel, u2Xvel,u2Yvel are two velocity field vectors, 
@@ -1567,7 +1567,7 @@ contains
   !   $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
   ! </tex>
   ! in a matrix or to build a defect vector with that.
-  ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 2D-version (X- and Y-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! u1Xvel,u1Yvel, u2Xvel,u2Yvel are two velocity field vectors, 
@@ -2538,7 +2538,7 @@ contains
   !   $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
   ! </tex>
   ! in a matrix or to build a defect vector with that.
-  ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 2D-version (X- and Y-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! u1Xvel,u1Yvel, u2Xvel,u2Yvel are two velocity field vectors, 
@@ -3805,7 +3805,7 @@ contains
   !                  +  dnewtonTransposed * grad(u_1)^T * (.) ) $$
   ! </tex>
   ! in a matrix or to build a defect vector with that.
-  ! 2D-version (X- and Y-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 2D-version (X- and Y-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! The routine supports fully coupled matrices, and the generation of the Newton
@@ -6305,7 +6305,7 @@ contains
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
   ! </tex>
   ! in a matrix or to build a defect vector with that.
-  ! 3D-version (X-, Y- and Z-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 3D-version (X-, Y- and Z-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! u1Xvel,u1Yvel,u1Zvel,u2Xvel,u2Yvel,u2Zvel are two velocity field vectors, 
@@ -7654,7 +7654,7 @@ contains
   ! $$ dtheta  *  ( dalpha * MASS  +  dbeta * STOKES  +  ddelta * u_1 * grad(u_2) ) $$
   ! </tex>
   ! in a matrix or to build a defect vector with that.
-  ! 3D-version (X-, Y- and Z-velocity), uniform $\tilde Q_1$ discretisation,
+  ! 3D-version (X-, Y- and Z-velocity), uniform <tex>$\tilde Q_1$</tex> discretisation,
   ! double precision vectors/matrix.
   !
   ! The routine supports fully coupled matrices, and the generation of the Newton

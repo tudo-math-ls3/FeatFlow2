@@ -103,7 +103,7 @@ module sortstrategy
   
   ! Row-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=0.)
-  ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
+  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where 
   ! the DOF`s can be identified with X/Y/Z coordinates.
   ! Coincides with the sorting strategy of FEAST for simple-type domains
   ! like the unit square.
@@ -111,14 +111,14 @@ module sortstrategy
   
   ! Column-wise sorting for point coordinate. 
   ! (As calculated by sstrat_calcXYZsorting with idirection=1.)
-  ! Only for special type of discretisations ($Q_1$, $\tilde Q_1$), where 
+  ! Only for special type of discretisations (<tex>$Q_1$</tex>, <tex>$\tilde Q_1$</tex>), where 
   ! the DOF`s can be identified with X/Y/Z coordinates.
   integer, parameter, public :: SSTRAT_ZYXCOORD     = 4
   
   ! General FEAST renumbering.
   ! The DOF`s are numbered rowwise, independent of the geometrical
   ! structure of the domain.
-  ! Only for special type of discretisations ($Q_1$) and tensor product meshes.
+  ! Only for special type of discretisations (<tex>$Q_1$</tex>) and tensor product meshes.
   integer, parameter, public :: SSTRAT_FEAST        = 5
   
   ! Stochastic renumbering / Random permutation.
@@ -963,8 +963,8 @@ contains
     !
     ! This sorting strategy can only applied for special type discretisations
     ! where the DOF`s of the finite elements coincides with some sort of
-    ! point coordinates in the domain (like $Q_1$, edge midpoint based
-    ! $\tilde Q_1$). If this is not the case, the routine will stop the 
+    ! point coordinates in the domain (like <tex>$Q_1$</tex>, edge midpoint based
+    ! <tex>$\tilde Q_1$</tex>). If this is not the case, the routine will stop the 
     ! program.
     !
     ! The algorithm acceps a scalar discretisation structure rdiscretisation and
@@ -1026,7 +1026,7 @@ contains
                        rdiscretisation%RelementDistr(1)%celement))
       case (EL_Q1,EL_P1)
       
-        ! $Q_1$-element. Take the vertex coordinates as DOF`s and sort for that.
+        ! Q_1-element. Take the vertex coordinates as DOF`s and sort for that.
         call storage_getbase_double2d (&
             rdiscretisation%p_rtriangulation%h_DvertexCoords,p_Dcoords)
             
@@ -1035,7 +1035,7 @@ contains
       
       case (EL_Q2)
       
-        ! $Q_2$-element. Allocate an array for all the coordinates
+        ! Q_2-element. Allocate an array for all the coordinates
         nvt = rdiscretisation%p_rtriangulation%NVT
         nmt = rdiscretisation%p_rtriangulation%NMT
         nel = rdiscretisation%p_rtriangulation%NEL
@@ -1088,7 +1088,7 @@ contains
 
       case (EL_Q1T)
       
-        ! $\tilde Q_1$-element. Take the edge midpoint coordinates as DOF`s
+        ! Q_1~-element. Take the edge midpoint coordinates as DOF`s
         ! and sort for that. We have to calculate the midpoints for that...
         Isize(1) = rdiscretisation%p_rtriangulation%ndim
         Isize(2) = rdiscretisation%p_rtriangulation%NMT
@@ -1207,7 +1207,7 @@ contains
     ! all DOF`s.
     !
     ! The renumbering strategy is only applicable to special-type 
-    ! discretisations (like $Q_1$) and tensor product meshes (FEAST macros).
+    ! discretisations (like <tex>$Q_1$</tex>) and tensor product meshes (FEAST macros).
     ! If this is not the case, the routine will stop the program.
     !
     ! The algorithm acceps a scalar discretisation structure rdiscretisation and
