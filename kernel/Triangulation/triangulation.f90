@@ -7809,7 +7809,7 @@ p_InodalPropertyDest = -4711
   ! E.g. if npointsPerEdge=3, the routine will place 3 points
   ! on each edge and calculate their coordinates. By default, the points will
   ! be distributed regularly, so in this example at the 'relative position'
-  ! {0.25, 0.5, 0.75) of the edge. If the caller wants to specify a different
+  ! (0.25, 0.5, 0.75) of the edge. If the caller wants to specify a different
   ! position of the points manually, the DparValue array can be specified.
   !
   ! Another example: By calling this routine with npointsPerEdge=1, the 
