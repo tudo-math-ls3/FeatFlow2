@@ -57,7 +57,6 @@ COMPILER_SETTINGS = env_compiler_settings
 # Directory where Makefile template files are stored
 TEMPLATESDIR = $(FEAT2BASEDIR)/templates
 
-
 ##############################################################################
 # functions
 #
@@ -254,7 +253,7 @@ TOKEN6 := 0
 
 
 ################################### Alpha ####################################
-
+#if (m/^ifeq \(\$\(call match,\$\(ID\),(.*)\),yes\)\s*$/) {
 ifeq ($(call match,$(ID),alpha-ev6-osf1-cf90-.*),yes)
 # invokes the Compaq Fortran 77/90 (formerly DIGITAL Fortran 77/90)
 # compiler, local umfpack
@@ -554,13 +553,30 @@ ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
-
 ifeq ($(call match,$(ID),pc-athlon64-linux-.*-goto2),yes)
 # Use Goto BLAS
 include $(TEMPLATESDIR)/gotoblas2-generic.mk
 endif
 
+################################# Phenom II x4 ##################################
+ifeq ($(call match,$(ID),pc64-phenomIIx4-linux-gcc-.*),yes)
+# invokes the gfortran Fortran 77/90 compiler, local umfpack
+include $(TEMPLATESDIR)/pc-generic.mk
+include $(TEMPLATESDIR)/gcc-generic.mk
+ifeq ($(call optimise), YES)
+CFLAGSF77LIBS := -march=amdfam10 $(CFLAGSF77LIBS)
+CFLAGSF77     := -march=amdfam10 $(CFLAGSF77)
+CFLAGSF90     := -march=amdfam10 $(CFLAGSF90)
+CFLAGSC       := -march=amdfam10 $(CFLAGSC)
+CFLAGSCXX     := -march=amdfam10 $(CFLAGSCXX)
+LDFLAGS       := -march=amdfam10 $(LDFLAGS)
+endif
+endif
 
+ifeq ($(call match,$(ID),pc64-phenomIIx4-linux-.*-blas.*),yes)
+# Use self-compiled local BLAS
+include $(TEMPLATESDIR)/blas-generic.mk
+endif
 
 ################################# Turion X2 ##################################
 
