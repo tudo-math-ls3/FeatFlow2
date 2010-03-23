@@ -2476,6 +2476,22 @@ sub create_feastAppMakefile {
         "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
         "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
         "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
+        "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n" .
+
+    # inshape path settings
+        "# inshape library path settings\n" .
+        "\$(OBJDIR_LIB)/libinshape2d.a clean-inshape2d purge-inshape2d: \\\n" .
+        "\tDIR = \$(FEAT2BASEDIR)/librariesNEW/inshape\n\n" .
+
+    # inshape library
+        "# Create inshape library\n" .
+        ".PHONY: \$(OBJDIR_LIB)/libinshape2d.a\n" .
+        "\$(OBJDIR_LIB)/libinshape2d.a:\n" .
+        "\t\@echo \"# Building inshape library\"\n" .
+        "\t(cd \$(DIR) && \\\n" .
+        "\t    $makeInMakefile -f Makefile.FEAT2 \$\@ \\\n" .
+        "\t\tFORTRAN=\"\$(F77)\" OPTS=\"\$(CFLAGSF77LIBS)\" \\\n" .
+        "\t\tARCH=\"\$(AR)\" RANLIB=\"\$(RANLIB)\" \\\n" .
         "\t\tOBJDIR=\"\$(OBJDIR_LIB)\")\n\n";
 
     # Clean rule for every library
@@ -4151,7 +4167,6 @@ sub get_sourcefilelist {
 # Function: Build list of valid build IDs from MAKEFILE_INC
 sub get_validIDs {
     my $filename = &concat_filename($FEAT2BASEDIR, $MAKEFILE_CPU_INC);
-
     open(FILE, "<" , $filename) or
 	die "\n$progname: ERROR:\n".
             INITIAL_MESSAGE .
