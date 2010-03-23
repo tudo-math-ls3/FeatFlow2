@@ -57,7 +57,7 @@ case ${id} in
 	x86_64) arch="pc64";;	
 	*) arch="pc";;
     esac
-
+		
     #generic version
     cpu=x86
 
@@ -120,6 +120,7 @@ case ${id} in
 	    esac
 	    ;;
 
+	
 	# AMD
 	AuthenticAMD)
 	    case "$family" in
@@ -150,6 +151,11 @@ case ${id} in
                         65) cpu="opteronx2";;
                         72) cpu="turionx2";;
                         *) cpu="athlon64";;
+        esac
+        ;;
+		16)                        
+				case "$model" in
+					4) cpu="phenomIIx4"
 		    esac
 		    ;;
 		*) cpu="i386";;
