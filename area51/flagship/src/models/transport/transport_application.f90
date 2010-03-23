@@ -429,7 +429,7 @@ contains
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'algorithm', algorithm)
       call parlst_getvalue_int(rparlist,&
-          ssectionName, & 'ndimension', ndimension)
+          ssectionName, 'ndimension', ndimension)
       call parlst_getvalue_string(rparlist,&
           ssectionName, 'sprimalbdrcondname', sbdrcondName)
 
