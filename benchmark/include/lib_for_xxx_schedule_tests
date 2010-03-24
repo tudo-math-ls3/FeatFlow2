@@ -57,12 +57,20 @@ submits the job file to the scheduler.
       Based on this prefix, it can be automatically detected from 'qsub'
       output when all benchmark jobs (using the same compiler) are finished.
       Default: $JOBFILEPREFIX
-  --wallclocklimit <email address>, -w <email address>
+  --wallclocklimit <wallclock time>, -w <wallclock time>
       Optional parameter that allows to specify the maximum allowed
       wallclock time the job may use; the cluster environment usually
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
+  --corespernode <cores>, -c <cores>
+      Allows to define how many cores should be allocated on the cluster
+      per processor. If not being set, the standard behaviour is to allocate
+      all cores of a processor to prevent a processor from being shared
+      by multiple tasks. This is necessary e.g. for correct timings.
+      Manually specifying e.g. a 1 here allows to share one processor for
+      multiple tasks if e.g. the execution time is not important.
+      Default: $CORESPERNODE
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -120,6 +128,12 @@ fb_readargs() {
 
 	  --wallclocklimit|-w*)  # wallclock time address
 	      WALLCLOCKLIMIT="$2"
+	      shift
+	      shift
+	      ;;
+
+	  --corespernode|-c*)  # wallclock time address
+	      CORESPERNODE="$2"
 	      shift
 	      shift
 	      ;;
