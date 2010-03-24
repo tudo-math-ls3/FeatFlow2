@@ -225,7 +225,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -307,7 +306,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
 
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -405,7 +403,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
 
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -498,7 +495,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
 
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -592,7 +588,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
 
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -686,7 +681,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -904,7 +898,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -989,7 +982,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -1079,7 +1071,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -1177,7 +1168,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
@@ -1258,7 +1248,6 @@ contains
     type(t_boundary), intent(in), optional :: rboundary
     end subroutine
   end interface
-  external :: fgetDiscr
   
   ! OPTIONAL: Collection structure which is passed to fgetDiscr.
   type(t_collection), intent(inout), optional :: rcollection
