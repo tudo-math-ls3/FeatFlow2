@@ -13,7 +13,7 @@ BiCGStab: Iteration 8,  !!RES!! = 2.663084871984265E-01
 BiCGStab: Iteration 9,  !!RES!! = 2.076057093647684E-01
 BiCGStab: Iteration 10,  !!RES!! = 1.591266884534251E-01
 BiCGStab: Iteration 11,  !!RES!! = 1.151824632467469E-01
-BiCGStab: Iteration 12,  !!RES!! = 7.551064592743360E-02
+BiCGStab: Iteration 12,  !!RES!! = 7.551064592743359E-02
 BiCGStab: Iteration 13,  !!RES!! = 4.202541156804582E-02
 BiCGStab: Iteration 14,  !!RES!! = 1.663833233471559E-02
 BiCGStab: Iteration 15,  !!RES!! = 6.429215804823357E-14
@@ -77,8 +77,8 @@ BiCGStab: Iteration 23,  !!RES!! = 2.373662095432488E-04
 BiCGStab: Iteration 24,  !!RES!! = 1.794244560072132E-04
 BiCGStab: Iteration 25,  !!RES!! = 1.281861184017832E-04
 BiCGStab: Iteration 26,  !!RES!! = 8.519014530130914E-05
-BiCGStab: Iteration 27,  !!RES!! = 5.165241446468632E-05
-BiCGStab: Iteration 28,  !!RES!! = 2.797503429464639E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165241446468631E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797503429464638E-05
 BiCGStab: Iteration 29,  !!RES!! = 1.389681356502446E-05
 BiCGStab: Iteration 30,  !!RES!! = 8.163291251923911E-06
 BiCGStab: Iteration 31,  !!RES!! = 6.846067204133943E-06
@@ -131,7 +131,7 @@ BiCGStab: Iteration 20,  !!RES!! = 1.133830186680806E-04
 BiCGStab: Iteration 21,  !!RES!! = 8.317765396934877E-05
 BiCGStab: Iteration 22,  !!RES!! = 5.966621317341368E-05
 BiCGStab: Iteration 23,  !!RES!! = 4.117498518085569E-05
-BiCGStab: Iteration 24,  !!RES!! = 2.764053874341101E-05
+BiCGStab: Iteration 24,  !!RES!! = 2.764053874341102E-05
 BiCGStab: Iteration 25,  !!RES!! = 1.638091538879165E-05
 BiCGStab: Iteration 26,  !!RES!! = 9.607471177086024E-06
 BiCGStab: Iteration 27,  !!RES!! = 6.113042988983993E-06
@@ -174,14 +174,14 @@ H1-error: 3.7268393199E-02
 Calculating Poisson-2D-Problem with method 1 - EM30
 ---------------------------------------------------
 UMFPACK: !!Initial RES!! = 2.098843860710978E-02
-UMFPACK: !!solution!!    = 5.182340172412564E-01 Status = 0
+UMFPACK: !!solution!!    = 5.182340172412562E-01 Status = 0
 L2-error: 1.8029470064E-03
 H1-error: 1.9708230651E-01
 
 Calculating Poisson-2D-Problem with method 1 - Robin BC
 -------------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 1.557757976461175E-01
-BiCGStab: Iteration 1,  !!RES!! = 3.362909565705416E-02
+BiCGStab: Iteration 1,  !!RES!! = 3.362909565705417E-02
 BiCGStab: Iteration 2,  !!RES!! = 1.537276547803551E-02
 BiCGStab: Iteration 3,  !!RES!! = 9.554297588233876E-03
 BiCGStab: Iteration 4,  !!RES!! = 6.848348704391156E-03
@@ -196,7 +196,7 @@ BiCGStab: Iteration 12,  !!RES!! = 1.525888494148546E-03
 BiCGStab: Iteration 13,  !!RES!! = 1.350864854058895E-03
 BiCGStab: Iteration 14,  !!RES!! = 1.202620704072936E-03
 BiCGStab: Iteration 15,  !!RES!! = 1.068741843482598E-03
-BiCGStab: Iteration 16,  !!RES!! = 9.419148068194249E-04
+BiCGStab: Iteration 16,  !!RES!! = 9.419148068194247E-04
 BiCGStab: Iteration 17,  !!RES!! = 8.227436818476856E-04
 BiCGStab: Iteration 18,  !!RES!! = 7.311384819796525E-04
 BiCGStab: Iteration 19,  !!RES!! = 6.622223467426302E-04
@@ -204,7 +204,7 @@ BiCGStab: Iteration 20,  !!RES!! = 6.001701533109744E-04
 BiCGStab: Iteration 21,  !!RES!! = 5.472766528470371E-04
 BiCGStab: Iteration 22,  !!RES!! = 4.980235310305067E-04
 BiCGStab: Iteration 23,  !!RES!! = 4.564638861248163E-04
-BiCGStab: Iteration 24,  !!RES!! = 4.166487642782568E-04
+BiCGStab: Iteration 24,  !!RES!! = 4.166487642782569E-04
 BiCGStab: Iteration 25,  !!RES!! = 3.814942949797921E-04
 BiCGStab: Iteration 26,  !!RES!! = 3.454930883913315E-04
 BiCGStab: Iteration 27,  !!RES!! = 3.109151056784785E-04
@@ -221,13 +221,13 @@ BiCGStab: Iteration 37,  !!RES!! = 5.074721986270459E-05
 BiCGStab: Iteration 38,  !!RES!! = 4.303943574042647E-05
 BiCGStab: Iteration 39,  !!RES!! = 3.482404795485132E-05
 BiCGStab: Iteration 40,  !!RES!! = 3.075873457644984E-05
-BiCGStab: Iteration 41,  !!RES!! = 1.533058644884457E-05
+BiCGStab: Iteration 41,  !!RES!! = 1.533058644884456E-05
 BiCGStab: Iteration 42,  !!RES!! = 2.240162060130485E-05
 BiCGStab: Iteration 43,  !!RES!! = 2.021279618050543E-05
 BiCGStab: Iteration 44,  !!RES!! = 1.518174714686347E-05
 BiCGStab: Iteration 45,  !!RES!! = 1.243941335571522E-05
 BiCGStab: Iteration 46,  !!RES!! = 1.099120526941230E-05
-BiCGStab: Iteration 47,  !!RES!! = 7.015923668996287E-06
+BiCGStab: Iteration 47,  !!RES!! = 7.015923668996288E-06
 BiCGStab: Iteration 48,  !!RES!! = 6.454669962178240E-06
 BiCGStab: Iteration 49,  !!RES!! = 6.115688982310179E-06
 BiCGStab: Iteration 50,  !!RES!! = 4.913791687763342E-06
@@ -254,7 +254,7 @@ BiCGStab: Iteration 4,  !!RES!! = 1.282667918923766E-03
 BiCGStab: Iteration 5,  !!RES!! = 1.099367779592615E-03
 BiCGStab: Iteration 6,  !!RES!! = 9.266807125108428E-04
 BiCGStab: Iteration 7,  !!RES!! = 7.539005309299751E-04
-BiCGStab: Iteration 8,  !!RES!! = 6.050779082589436E-04
+BiCGStab: Iteration 8,  !!RES!! = 6.050779082589437E-04
 BiCGStab: Iteration 9,  !!RES!! = 4.826073614890409E-04
 BiCGStab: Iteration 10,  !!RES!! = 3.935392282890196E-04
 BiCGStab: Iteration 11,  !!RES!! = 3.320352206505802E-04
@@ -289,8 +289,8 @@ BiCGStab: Iteration 39,  !!RES!! = 4.533983419406126E-07
 BiCGStab: Iteration 40,  !!RES!! = 2.668821314113388E-07
 BiCGStab: Iteration 41,  !!RES!! = 1.392435241837173E-07
 BiCGStab: Iteration 42,  !!RES!! = 1.088559024387156E-07
-BiCGStab: Iteration 43,  !!RES!! = 8.574572613482408E-08
-BiCGStab: Iteration 44,  !!RES!! = 4.799062868938065E-08
+BiCGStab: Iteration 43,  !!RES!! = 8.574572613482409E-08
+BiCGStab: Iteration 44,  !!RES!! = 4.799062868938066E-08
 BiCGStab: Iteration 45,  !!RES!! = 3.533875889858528E-08
 BiCGStab: Iteration 46,  !!RES!! = 2.658639683892247E-08
 BiCGStab: Iteration 47,  !!RES!! = 1.495190503332987E-08
@@ -352,7 +352,7 @@ Performing L2-projection of solution to Q1 space
 L2prj: Iteration 1,  !!RES!! = 5.042494373739830E-04
 L2prj: Iteration 2,  !!RES!! = 3.865134807864976E-06
 L2prj: Iteration 3,  !!RES!! = 1.061781122098133E-06
-L2prj: Iteration 4,  !!RES!! = 5.714912463577153E-07
+L2prj: Iteration 4,  !!RES!! = 5.714912463577154E-07
 L2prj: Iteration 5,  !!RES!! = 3.392675486972986E-07
 L2prj: Iteration 6,  !!RES!! = 2.091010258538841E-07
 L2prj: Iteration 7,  !!RES!! = 1.314190097768345E-07
@@ -405,8 +405,8 @@ BiCGStab: Iteration 23,  !!RES!! = 2.373662095432488E-04
 BiCGStab: Iteration 24,  !!RES!! = 1.794244560072132E-04
 BiCGStab: Iteration 25,  !!RES!! = 1.281861184017832E-04
 BiCGStab: Iteration 26,  !!RES!! = 8.519014530130914E-05
-BiCGStab: Iteration 27,  !!RES!! = 5.165241446468632E-05
-BiCGStab: Iteration 28,  !!RES!! = 2.797503429464639E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165241446468631E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797503429464638E-05
 BiCGStab: Iteration 29,  !!RES!! = 1.389681356502446E-05
 BiCGStab: Iteration 30,  !!RES!! = 8.163291251923911E-06
 BiCGStab: Iteration 31,  !!RES!! = 6.846067204133943E-06
@@ -440,7 +440,7 @@ Remaining collection statistics:
 
 Calculating Poisson-2D-Problem with method 2 - CM-sorting
 ---------------------------------------------------------
-BiCGStab: Iteration 0,  !!RES!! = 6.586453135709210E-03
+BiCGStab: Iteration 0,  !!RES!! = 6.586453135709212E-03
 BiCGStab: Iteration 1,  !!RES!! = 5.268384515026515E-03
 BiCGStab: Iteration 2,  !!RES!! = 4.441391057095399E-03
 BiCGStab: Iteration 3,  !!RES!! = 3.491010721921933E-03
@@ -450,9 +450,9 @@ BiCGStab: Iteration 6,  !!RES!! = 1.208717533757953E-03
 BiCGStab: Iteration 7,  !!RES!! = 7.728796416951640E-04
 BiCGStab: Iteration 8,  !!RES!! = 4.447279923021016E-04
 BiCGStab: Iteration 9,  !!RES!! = 1.955620271698282E-04
-BiCGStab: Iteration 10,  !!RES!! = 9.311246971702145E-05
+BiCGStab: Iteration 10,  !!RES!! = 9.311246971702148E-05
 BiCGStab: Iteration 11,  !!RES!! = 6.026392169131665E-05
-BiCGStab: Iteration 12,  !!RES!! = 4.819124579130325E-05
+BiCGStab: Iteration 12,  !!RES!! = 4.819124579130324E-05
 BiCGStab: Iteration 13,  !!RES!! = 4.096326914911101E-05
 BiCGStab: Iteration 14,  !!RES!! = 3.462378162937104E-05
 BiCGStab: Iteration 15,  !!RES!! = 2.524017381942369E-05
@@ -468,9 +468,9 @@ BiCGStab: Iteration 23,  !!RES!! = 3.499233786282130E-08
 BiCGStab statistics:
 
 Iterations              : 23
-!!INITIAL RES!!         : 6.586453135709210E-03
+!!INITIAL RES!!         : 6.586453135709212E-03
 !!RES!!                 : 3.499233786282130E-08
-!!RES!!/!!INITIAL RES!! : 5.312774135309083E-06
+!!RES!!/!!INITIAL RES!! : 5.312774135309082E-06
 
 Rate of convergence     : 5.897475505647594E-01
 L2-error: 1.2761656821E-04
@@ -533,8 +533,8 @@ BiCGStab: Iteration 23,  !!RES!! = 2.373662095432488E-04
 BiCGStab: Iteration 24,  !!RES!! = 1.794244560072132E-04
 BiCGStab: Iteration 25,  !!RES!! = 1.281861184017832E-04
 BiCGStab: Iteration 26,  !!RES!! = 8.519014530130914E-05
-BiCGStab: Iteration 27,  !!RES!! = 5.165241446468632E-05
-BiCGStab: Iteration 28,  !!RES!! = 2.797503429464639E-05
+BiCGStab: Iteration 27,  !!RES!! = 5.165241446468631E-05
+BiCGStab: Iteration 28,  !!RES!! = 2.797503429464638E-05
 BiCGStab: Iteration 29,  !!RES!! = 1.389681356502446E-05
 BiCGStab: Iteration 30,  !!RES!! = 8.163291251923911E-06
 BiCGStab: Iteration 31,  !!RES!! = 6.846067204133943E-06
