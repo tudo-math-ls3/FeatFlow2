@@ -71,6 +71,9 @@ submits the job file to the scheduler.
       Manually specifying e.g. a 1 here allows to share one processor for
       multiple tasks if e.g. the execution time is not important.
       Default: $CORESPERNODE
+  --noschedule
+      Creates a job script but does not schedule the job. Used for
+      debugging purposes.
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -115,6 +118,11 @@ fb_readargs() {
 	      exit
 	      ;;
 
+	  --noschedule)    # help screen
+	      NOSCHEDULE=1
+	      shift
+	      ;;
+
 	  --overwrite-log-director*|-o)    # help screen
 	      OVERWRITE_LOG_DIRECTORY=1
 	      shift
@@ -128,12 +136,15 @@ fb_readargs() {
 
 	  --wallclocklimit|-w*)  # wallclock time address
 	      WALLCLOCKLIMIT="$2"
+	      echo "$0: Using wallclocklimit $WALLCLOCKLIMIT"
 	      shift
 	      shift
 	      ;;
 
-	  --corespernode|-c*)  # wallclock time address
+	  --corespernode|-c*)  # Number of cores per node to use
 	      CORESPERNODE="$2"
+	      PPN=":ppn=$CORESPERNODE";
+	      echo "$0: Using $CORESPERNODE nodes"
 	      shift
 	      shift
 	      ;;

@@ -15,6 +15,7 @@ MODULESLOADED=
 OVERWRITE_LOG_DIRECTORY=
 NTASKS=
 WALLCLOCKLIMIT="00:40:00"
+NOSCHEDULE=0
 case "`hostname -f`" in
     *.lidocluster.hp) 
 	# Torque on LiDO-2 is configured to believe every node has
@@ -711,11 +712,15 @@ EOF
 	    echo $0": Jobfile <$jobfile> created."
  	    successfulTests=`expr $successfulTests + 1`
 
-	    echo $0": Submitting <$jobfile>."
-	    # Submit the jobfile. Keep trying to submit it in
-	    # case the maximum number of jobs per user is already
-	    # reached.
-	    fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+      if [ $NOSCHEDULE -ne "1" ]; then
+	      echo $0": Submitting <$jobfile>."
+	      # Submit the jobfile. Keep trying to submit it in
+	      # case the maximum number of jobs per user is already
+	      # reached.
+	      fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+	    else
+	      echo $0": Submitting <$jobfile> skipped."
+	    fi
 	fi
     done
     trap - 2 3 9;
