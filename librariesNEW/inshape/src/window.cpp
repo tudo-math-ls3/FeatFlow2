@@ -411,7 +411,8 @@ void Window::import(void)
     ON::CloseFile( archive_fp );
 
 	
-
+
+
 	if(rc)
 		cout<<"Archive successfully read."<<endl;
 	else
@@ -600,7 +601,8 @@ void Window::LoadAnimatedObj()
     // open file containing opennurbs archive
 	FILE* archive_fp = ON::OpenFile( s.toLatin1(), "rb");
 	if ( !archive_fp ) 
-	{
+	{
+
      
 		cerr<<"Could not open archive "<<sFileName<<endl;
 		exit(0);
