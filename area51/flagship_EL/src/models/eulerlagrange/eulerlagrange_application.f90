@@ -230,6 +230,9 @@ module eulerlagrange_application
     ! Timer for the solution process
     type(t_timer) :: rtimerSolution
 
+    ! Timer for the particle phase computation
+    type(t_timer) ::rtimerParticlephase
+
     ! Timer for the adaptation process
     type(t_timer) :: rtimerAdaptation
 
@@ -301,6 +304,8 @@ module eulerlagrange_application
         'rparlist', rparlist, .true.)
     call collct_setvalue_timer(rcollection,&
         'rtimerSolution', rtimerSolution, .true.)
+    call collct_setvalue_timer(rcollection,&
+        'rtimerParticlephase', rtimerParticlephase, .true.)
     call collct_setvalue_timer(rcollection,&
         'rtimerAdaptation', rtimerAdaptation, .true.)
     call collct_setvalue_timer(rcollection,&
@@ -2019,11 +2024,13 @@ module eulerlagrange_application
     type(t_timer), pointer :: p_rtimerAssemblyMatrix
     type(t_timer), pointer :: p_rtimerAssemblyVector
     type(t_timer), pointer :: p_rtimerPrePostprocess 
+    type(t_timer), pointer :: p_rtimerParticlephase 
     real(DP) :: dtotalTime, dfraction
 
     
     ! Get timer objects from collection
     p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerParticlephase => collct_getvalue_timer(rcollection, 'rtimerParticlephase')
     p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
     p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
     p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
@@ -2043,9 +2050,12 @@ module eulerlagrange_application
     dtotalTime = max(rtimerTotal%delapsedCPU, rtimerTotal%delapsedReal)
     dfraction  = 100.0_DP/dtotalTime
 
-    call output_line('Time for computing solution   : '//&
+    call output_line('Time for gas phase            : '//&
                      trim(adjustl(sys_sdE(p_rtimerSolution%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerSolution%delapsedCPU, 5)))//' %')
+    call output_line('Time for particle phase       : '//&
+                     trim(adjustl(sys_sdE(p_rtimerParticlephase%delapsedCPU, 5)))//'  '//&
+                     trim(adjustl(sys_sdE(dfraction*p_rtimerParticlephase%delapsedCPU, 5)))//' %')
     call output_line('Time for mesh adaptivity      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAdaptation%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAdaptation%delapsedCPU, 5)))//' %')
@@ -2061,7 +2071,7 @@ module eulerlagrange_application
     call output_line('Time for matrix assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyMatrix%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyMatrix%delapsedCPU, 5)))//' %')
-    call output_line('Time for vector assembly:       '//&
+    call output_line('Time for vector assembly      : '//&
                      trim(adjustl(sys_sdE(p_rtimerAssemblyVector%delapsedCPU, 5)))//'  '//&
                      trim(adjustl(sys_sdE(dfraction*p_rtimerAssemblyVector%delapsedCPU, 5)))//' %')
     call output_line('Time for pre-/post-processing : '//&
@@ -2567,6 +2577,7 @@ module eulerlagrange_application
     ! Timer structures
     type(t_timer), pointer :: p_rtimerPrePostprocess
     type(t_timer), pointer :: p_rtimerSolution
+    type(t_timer), pointer :: p_rtimerParticlephase
     type(t_timer), pointer :: p_rtimerErrorEstimation
     type(t_timer), pointer :: p_rtimerAdaptation
     type(t_timer), pointer :: p_rtimerTriangulation
@@ -2586,6 +2597,7 @@ module eulerlagrange_application
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
     p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
+    p_rtimerParticlephase => collct_getvalue_timer(rcollection, 'rtimerParticlephase')
     p_rtimerErrorEstimation => collct_getvalue_timer(rcollection, 'rtimerErrorEstimation')
     p_rtimerAdaptation => collct_getvalue_timer(rcollection, 'rtimerAdaptation')
     p_rtimerTriangulation => collct_getvalue_timer(rcollection, 'rtimerTriangulation')
@@ -2940,8 +2952,17 @@ module eulerlagrange_application
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       ! Euler-Lagrange (compute particle phase)
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      
+      ! Start time measurement for solution procedure
+      call stat_startTimer(p_rtimerParticlephase)
+      
+      ! Subroutine to compute the particle movement
       call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
             rtimestep,rcollection,rParticles)
+            
+      ! Stop time measurement for solution procedure
+      call stat_stopTimer(p_rtimerParticlephase)
+
 
     end do timeloop
 

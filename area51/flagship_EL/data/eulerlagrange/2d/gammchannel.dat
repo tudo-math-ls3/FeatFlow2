@@ -69,7 +69,7 @@ search = midpoint
 # 1 individual startingposition
 # 2 initialize the starting position by the data of a graymap image
 # 3 uniformly distributed over the domain
-startpos = 2
+startpos = 3
 
 # PGM-file for startingpositions
 filestartpoints = data/eulerlagrange/2d/tux.pgm
@@ -147,7 +147,7 @@ gas_nu = 1e-5
 # 0 no output
 # 1 only particle positions
 # 2 position, velocity, diameter and temperatur of the particles
-ipartoutput = 2
+ipartoutput = 1
 
 
 
@@ -353,7 +353,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.500
+dfinalTime = 0.200
 
 # initial time step size
 dinitialStep = 1e-3
