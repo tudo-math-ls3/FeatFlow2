@@ -51,6 +51,11 @@
 !#
 !# 14.) gaux_isIntersection_triangle
 !#      -> test for triangle/line segment intersection
+!#
+!# 15.) gaux_intersect_edgecircle
+!#      -> calculates intersection of edge and circle
+!# 16.) gaux_intersect_quadcircle
+!#      -> calculates intersection of quad and circle
 !# </purpose>
 !##############################################################################
 
@@ -81,6 +86,8 @@ module geometryaux
   public :: gaux_calcDistPEdg2D
   public :: gaux_projectPointPlane
   public :: gaux_isInElement_hexa_aligned
+  public :: gaux_intersect_edgecircle
+  public :: gaux_intersect_quadcircle
 contains
 
   ! ***************************************************************************
@@ -1392,4 +1399,151 @@ contains
   
   end subroutine  
 
+!************************************************************************
+
+!<subroutine>
+
+  pure subroutine gaux_intersect_quadcircle(drad,Dc,Dquad,Iresult,Dintersection)
+  
+!<description>
+  ! This routine calculates the number of intersections
+  ! of a circle with a quad and returns the intersection points
+!</description>
+
+!<input>
+  ! Radius of the circle
+  real(DP), intent(in) :: drad
+  ! the center of the circle
+  real(DP), dimension(2),intent(in) :: Dc
+  
+  ! The four corner vertices of the quad
+  real(DP), dimension(2,4), intent(in) :: Dquad
+!</input>
+
+!<result>
+  ! There are at maximum 8 intersections between a circle and a quad
+  ! if the quad is
+  !
+  !   1----2
+  !   |    |
+  !   4----3
+  ! Iresult(1)=2 if there are 2 intersection on edge 12
+  ! Iresult(1)=1 if there is 1 intersection on edge 12  
+  ! Iresult(1)=0 if there is no intersection on edge 12  
+  ! Iresult(2)=2 if there are 2 intersection on edge 23
+  ! ... and so on  
+  integer, dimension(4), intent(out) :: Iresult
+  ! the possible 8 points of intersection
+  ! if Iresult(1)=2 then Dintersection(:,1-2) stores the
+  ! 2 points of intersection on edge 12
+  ! if Iresult(1)=1 then Dintersection(:,1) stores the
+  ! point of intersection on edge 12 and Dintersection(:,2) is empty
+  ! ... and so on
+  real(DP), dimension(2,8), intent(out) :: Dintersection  
+!</result>
+
+!</subroutine>
+  real(DP), dimension(2,2) :: Dedge
+  real(DP), dimension(2,2) :: Dintersec
+  integer :: i,iintersections
+  
+	Dintersection=0
+	Iresult=0
+	! loop over all edges of the quad
+  do i=1,4
+    iintersections=0
+    Dintersec=0  
+    Dedge(:,1) = Dquad(:,i)    
+    Dedge(:,2) = Dquad(:,mod(i,4)+1)  
+    call gaux_intersect_edgecircle(drad,Dc,Dedge,iintersections,Dintersec)
+    Iresult(i)=iintersections
+    Dintersection(:,2*i-1)=Dintersec(:,1)
+    Dintersection(:,2*i)=Dintersec(:,2)
+  end do
+  
+  end subroutine  
+  
+!************************************************************************  
+  
+  pure subroutine gaux_intersect_edgecircle(drad,Dc,Dedge,iresult,Dintersec)
+
+!<description>
+  ! computes the number and the intersection points of a circle and an edge
+!</description>
+
+!<input>
+  ! radius of the circle
+  real(DP), intent(in) :: drad
+  ! Center of the circle
+  real(DP), dimension(2),intent(in) :: Dc
+  ! The two points of the edge
+  real(DP), dimension(2,2), intent(in) :: Dedge
+!</input>
+
+!<result>
+  ! The coordinates of the intersection points
+  real(DP), dimension(2,2),intent(inout) :: Dintersec
+  ! the number of intersection points on the edge
+  integer, intent(out) :: iresult
+!</result>
+
+!</subroutine>
+  real(dp), dimension(2) :: Ddir,Dp1
+  real(DP), dimension(2) :: Dpv,Ddelta
+  real(DP) :: t,root,delta2,diff,dir2,eps,dirdotdelta,dt1,dt2
+  integer :: i,idresult
+
+  eps=1e-10
+
+  ! initialize by 0
+	idresult = 0
+  Dintersec=0
+
+	! get direction vector of the edge
+	Ddir(:)=Dedge(:,2)-Dedge(:,1)
+
+	Dp1(:)=Dedge(:,1)
+	
+	Ddelta(:)=Dp1(:)-Dc(:)  	
+	
+	dir2=Ddir(1)**2+Ddir(2)**2
+	
+	diff=(Ddelta(1)**2+Ddelta(2)**2)-drad**2
+	
+	dirdotdelta = Ddir(1)*Ddelta(1)+Ddir(2)*Ddelta(2)
+	
+	root = dirdotdelta**2 - dir2*diff
+	
+	! the term under the root is negative, there is no intersection
+	if(root < 0.0_dp)then
+	  return
+	end if
+
+  ! the term under the root is equal to 0, we have one intersection 't'
+	if((0.0 .le. root).and.(root .le. eps))then
+		root=0.0_dp
+		t= -Ddir(1)*Ddelta(1)-Ddir(2)*Ddelta(2) /dir2
+		! we need point of intersection to be on the segment
+		if((0.0_dp .le. t).and.(t .le. 1.0_dp))then
+		  iresult = 1
+		  Dintersec(:,1)=Dp1(:)+ t*Ddir(:)
+		end if
+	! the term under the root is greater than zero
+	! we have to intersections dt1,dt2
+	else
+	  dt1=(-dirdotdelta + root)/dir2
+	  dt2=(-dirdotdelta - root)/dir2
+		if((0.0_dp .le. dt1).and.(dt1 .le. 1.0_dp))then
+		  iresult = iresult + 1
+		  Dintersec(:,1)=Dp1(:)+ dt1*Ddir(:)		  
+		end if
+		if((0.0_dp .le. dt2).and.(dt2 .le. 1.0_dp))then
+		  iresult = iresult + 1
+		  Dintersec(:,2)=Dp1(:)+ dt2*Ddir(:)		  		  
+		end if		
+	end if
+
+  end subroutine  
+
 end module
+
