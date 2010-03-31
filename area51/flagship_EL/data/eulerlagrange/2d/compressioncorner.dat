@@ -85,8 +85,18 @@ ymax = 0
 # mass and diameter of the particle
 #-------------------------------------------------------------------------------
 
+# 0 all particles have the same mass 
+# 1 random mass of the particles (0 to particlemass)
+imasstypepart = 0
+
 # particle-mass
-particlemass = 1e-15
+particlemass = 1e-12
+
+#-------------------------------------------------------------------------------
+
+# 0 all particles have the same diameter 
+# 1 random diameter of the particles (0 to particlediam)
+idiamtype = 0
 
 # particle-diameter
 particlediam = 1e-9
@@ -125,6 +135,10 @@ gravityy = 0 #-9.81
 #-------------------------------------------------------------------------------
 # temperature
 #-------------------------------------------------------------------------------
+
+# 0 all particles have the same diameter 
+# 1 random diameter of the particles (0 to parttemp)
+itemptypepart = 1
 
 # temperature of the particles in Kelvin
 parttemp = 0

@@ -3220,6 +3220,15 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Mode for the startingpositions of the particles
     integer :: istartpos
 
+    ! Mode for the mass of the particles
+    integer :: imasstypepart
+
+    ! Mode for the diameter of the particles
+    integer :: idiamtype
+
+    ! Mode for the temperature of the particles
+    integer :: itemptypepart
+    
     ! Kinematic viscosity of the gas
     real(DP) :: gas_nu
   
@@ -3392,7 +3401,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 
-    ! Get particle-mass and diameter
+    ! Get particle-mass, -temp and -diameter
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
@@ -3410,12 +3419,21 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Get variable for startingposition
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
+    ! Get variable for mass of the particles
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasstypepart", imasstypepart)
+
+    ! Get variable for diameter of the particles
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiamtype", idiamtype)
+
+    ! Get variable for temperature of the particles
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemptypepart", itemptypepart)
+
     ! Store particlesnumber, viscosity of the gas and gravity  
     rParticles%npart = nPart
     rParticles%nu_g= gas_nu
     rParticles%gravity(1)= gravityx
     rParticles%gravity(2)= gravityy
-    rParticles%iTimestep= 0
+    rParticles%iTimestep= 1
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0
     rParticles%p_PartVolAver= 0
@@ -3592,21 +3610,70 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             call sys_halt()
         end select
  
+        ! Set diameter of the particles
+        select case(idiamtype)
+        case (0)
+            rParticles%p_diam(iPart)= particlediam
+            
+        case (1)
+            ! Get random number
+            call random_number(random1)
+            
+            rParticles%p_diam(iPart)= random1*particlediam
+            
+        case default
+          call output_line('Invalid diam type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_diamtype')
+          call sys_halt()
+        end select
+
+        ! Set mass of the particles
+        select case(imasstypepart)
+        case (0)
+            rParticles%p_mass(iPart)= particlemass
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_mass(iPart)= random2*particlemass
+            
+        case default
+          call output_line('Invalid mass type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
+          call sys_halt()
+        end select
+ 
+
+        ! Set temperature of the particles
+        select case(itemptypepart)
+        case (0)
+            rParticles%p_temp(iPart)= particlemass
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_temp(iPart)= random2*parttemp
+            
+        case default
+          call output_line('Invalid temp type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')
+          call sys_halt()
+        end select
+
         ! Set initial values for the particles
         rParticles%p_xvelo(iPart)= velopartx
         rParticles%p_yvelo(iPart)= veloparty
         rParticles%p_xvelo_old(iPart)= velopartx
         rParticles%p_yvelo_old(iPart)= veloparty
-        rParticles%p_xvelo_gas(iPart)= 0d0
-        rParticles%p_yvelo_gas(iPart)= 0d0
-        rParticles%p_xvelo_gas_old(iPart)= 0d0
-        rParticles%p_yvelo_gas_old(iPart)= 0d0
-        rParticles%p_diam(iPart)= particlediam
-        rParticles%p_mass(iPart)= particlemass
-        rParticles%p_temp(iPart)= parttemp
-        rParticles%p_alpha_n(iPart)= 0
+        rParticles%p_xvelo_gas(iPart)= 0.0_dp
+        rParticles%p_yvelo_gas(iPart)= 0.0_dp
+        rParticles%p_xvelo_gas_old(iPart)= 0.0_dp
+        rParticles%p_yvelo_gas_old(iPart)= 0.0_dp
+        rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
-        rParticles%p_bdy_time(iPart)= 0
+        rParticles%p_bdy_time(iPart)= 0.0_dp
                 
         ! Find the start element for each particle
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)

@@ -4625,7 +4625,7 @@ contains
     
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
-    integer :: iPart, istartpos
+    integer :: iPart, istartpos, imasstypepart, idiamtype, itemptypepart
 
     ! Startingpostions of the particles
     real(DP) :: partxmin, partxmax, partymin, partymax
@@ -4635,7 +4635,7 @@ contains
 
     ! Variables for starting position from PGM-file
     integer, dimension(:,:), pointer :: p_Idata
-    real(DP) :: x,y,xmin,ymin,xmax,ymax
+    real(DP) :: x,y,xmin,ymin,xmax,ymax,particlemass,particlediam,parttemp
     integer :: nvt,ix,iy,ivt
     type(t_pgm) :: rpgm
     real(DP), dimension(:), pointer :: p_Ddata
@@ -4767,8 +4767,23 @@ contains
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 	
+	
+        ! Get particle-mass, -temp and -diameter
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
+	
 	    ! get variable for startingposition
         call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
+
+        ! Get variable for mass of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasstypepart", imasstypepart)
+
+        ! Get variable for diameter of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiamtype", idiamtype)
+
+        ! Get variable for temperature of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemptypepart", itemptypepart)
 
         ! Initialisation for starting position from PGM-file
         if (istartpos == 2) then
@@ -4877,6 +4892,57 @@ contains
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_startpos')
             call sys_halt()
              
+        end select
+  
+         ! Set diameter of the particles
+        select case(idiamtype)
+        case (0)
+            rParticles%p_diam(iPart)= particlediam
+            
+        case (1)
+            ! Get random number
+            call random_number(random1)
+            
+            rParticles%p_diam(iPart)= random1*particlediam
+            
+        case default
+          call output_line('Invalid mass type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_diamtype')
+          call sys_halt()
+        end select
+
+        ! Set mass of the particles
+        select case(imasstypepart)
+        case (0)
+            rParticles%p_mass(iPart)= particlemass
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_mass(iPart)= random2*particlemass
+            
+        case default
+          call output_line('Invalid diameter type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
+          call sys_halt()
+        end select
+ 
+        ! Set temperature of the particles
+        select case(itemptypepart)
+        case (0)
+            rParticles%p_temp(iPart)= particlemass
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_temp(iPart)= random2*parttemp
+            
+        case default
+          call output_line('Invalid temp type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')
+          call sys_halt()
         end select
  
         ! Set initial values for the particles
