@@ -1035,14 +1035,14 @@ contains
       
     ifilenumber = -1
       
-    select case (ioutputtype)
-      case (1)
+    !select case (ioutputtype)
+    !  case (1)
         ! Output solution to gmv file
         call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-      case (2)
+    !  case (2)
         ! Output solution to vtk file
         call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
-    end select
+    !end select
       
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
@@ -1076,9 +1076,15 @@ contains
 !    call ucd_release (rexport)
 !    
     ! Calculate the error to the reference function.
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
                        getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    
 !
 !    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
 !                       getReferenceFunction_2D)

@@ -5,5 +5,5 @@
 #
 
 ../../bin/configure \
-	--appname=poisson \
+	--appname=dg_conslaw \
 	$@
