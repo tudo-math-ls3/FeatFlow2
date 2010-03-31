@@ -5392,6 +5392,10 @@ end subroutine
             ! This is the least limiting one
             !Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ) )
           end if
+          
+          ! No limiting at boundary
+          if (iidx<3) Dalphaei(ivar,ivt) = 1.0_dp
+          
         end do
       
       end do ! idim
@@ -5860,6 +5864,12 @@ real(dp), dimension(:) :: Dvalues
             !Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ) )
             
           end if
+          
+          ! No limiting at boundary
+          if (iidx<3) then
+            Dalphaei(ivar,ivt) = 1.0_dp
+          end if
+          
         end do
       
       end do ! idim

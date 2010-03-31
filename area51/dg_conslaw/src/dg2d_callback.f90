@@ -335,23 +335,51 @@ contains
   
 !</subroutine>
 
+integer :: iunit,i,j
+real(dp),dimension(10000) :: Dreference
+real(dp) :: r,n
+
+iunit = sys_getFreeUnit()
+
+open(iunit, file='h')
+
+
+do i = 1, 10000
+  read(iunit,*) Dreference(i)
+
+end do
+
+close(iunit)
+
   select case (cderivative)
   case (DER_FUNC)
+  write(*,*) 'FUNC'
     ! u(x,y) = 16*x*(1-x)*y*(1-y)
     Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
                               Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+                              
+    do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+      r = sqrt(Dpoints(1,i,j)*Dpoints(1,i,j)+Dpoints(2,i,j)*Dpoints(2,i,j))
+      n = 1+1000*r
+      
+     
+      
+       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+
+      !Dvalues(i,j) =Dreference(int(n))
+      !write(*,*)Dreference(int(n))
+      !Dvalues(i,j) =1.0_dp
+      
+    end do
+    end do
+                              
   case (DER_DERIV_X)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
+  write(*,*) 'Error in calculating L2-error'
+    
   case (DER_DERIV_Y)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
+  write(*,*) 'Error in calculating L2-error'
+    
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
@@ -1309,7 +1337,10 @@ contains
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
 !                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
               
-              
+!            ! Water hill at corner
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+           
             
             
 !          ! Riemann problem
@@ -1320,12 +1351,33 @@ contains
 !          end if
           
 
-          ! Zylinders
-          if (Dpoints(1,ipoint,iel)<15.0_dp) then
-            Dcoefficients (1,ipoint,iel)=1.5_dp
-          else
-            Dcoefficients (1,ipoint,iel)=1.0_dp
-          end if
+!          ! Zylinders
+!          if (Dpoints(1,ipoint,iel)<15.0_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
+
+!          ! Bart Simpson
+!          if (Dpoints(1,ipoint,iel)<0.3_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
+
+!          ! Dam Break
+!          if (Dpoints(1,ipoint,iel)<100.0_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
+          
+!          ! Dede Obstacle
+!          if (Dpoints(1,ipoint,iel)<-0.3_dp) then
+!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!          else
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
+!          end if
 
 !            ! Water reservoir
 !            if ( sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2)<0.25_dp) then  
@@ -1334,17 +1386,18 @@ contains
 !              Dcoefficients (1,ipoint,iel)=1.0_dp
 !            end if
 
-!            ! Circular Dambreak
-!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
-!              Dcoefficients (1,ipoint,iel)=2.5_dp
-!            else
-!              Dcoefficients (1,ipoint,iel)=0.5_dp
-!            end if
+            ! Circular Dambreak
+            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+              Dcoefficients (1,ipoint,iel)=2.5_dp
+            else
+              Dcoefficients (1,ipoint,iel)=0.5_dp
+            end if
             
           end do
         end do
       
       case (2) ! Set x-momentum
+      
         Dcoefficients (1,:,:) = 0.0_dp
       
       case (3) ! Set y-momentum
@@ -1902,43 +1955,43 @@ contains
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
-!        ! No BCs
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+        ! No BCs
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
         
-        ! Reflecting BCs
-        ! Calculate x- and y- velocity from momentum
-        dh = Dsolutionvalues(1,ipoint,iel,1)
-        du = Dsolutionvalues(1,ipoint,iel,2)/dh
-        dv = Dsolutionvalues(1,ipoint,iel,3)/dh
-        
-        ! Calculate normal and tangential part
-        dnormalPart     = du*normal(1,iel) + dv*normal(2,iel)
-        dtangentialPart = du*normal(2,iel) - dv*normal(1,iel)
-        
-        ! Invert the normal part
-        dnormalPart     = -dnormalPart
-        dtangentialPart = +dtangentialPart
-        
-        
-!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
-!          write(*,*) du,dv
-!        end if
-        
-        ! Calculate new velocity
-        du = dnormalPart*normal(1,iel) + dtangentialPart*normal(2,iel)
-        dv = dnormalPart*normal(2,iel) - dtangentialPart*normal(1,iel)
-        
-!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
-!          write(*,*) du,dv
-!          write(*,*) ''
-!        end if
-        
-        ! Set new momentum
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = dh
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = dh * du
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = dh * dv
+!        ! Reflecting BCs
+!        ! Calculate x- and y- velocity from momentum
+!        dh = Dsolutionvalues(1,ipoint,iel,1)
+!        du = Dsolutionvalues(1,ipoint,iel,2)/dh
+!        dv = Dsolutionvalues(1,ipoint,iel,3)/dh
+!        
+!        ! Calculate normal and tangential part
+!        dnormalPart     = du*normal(1,iel) + dv*normal(2,iel)
+!        dtangentialPart = du*normal(2,iel) - dv*normal(1,iel)
+!        
+!        ! Invert the normal part
+!        dnormalPart     = -dnormalPart
+!        dtangentialPart = +dtangentialPart
+!        
+!        
+!!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
+!!          write(*,*) du,dv
+!!        end if
+!        
+!        ! Calculate new velocity
+!        du = dnormalPart*normal(1,iel) + dtangentialPart*normal(2,iel)
+!        dv = dnormalPart*normal(2,iel) - dtangentialPart*normal(1,iel)
+!        
+!!        if ((dx>0.1_DP).and.(dx<30.0_DP).and.(dy>0.1_DP).and.(dy<9.90_DP)) then
+!!          write(*,*) du,dv
+!!          write(*,*) ''
+!!        end if
+!        
+!        ! Set new momentum
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = dh
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = dh * du
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = dh * dv
         
       end if
       
@@ -1960,16 +2013,16 @@ contains
       
       ! First calculate flux in x-direction
       DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
-                   !normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
-                   sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
+                   normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
+                   !sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
 
                    
       !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
       
       ! First calculate flux in y-direction
       DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
-                   !normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
-                   sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
+                   normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
+                   !sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
       
       !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
                    
@@ -1979,7 +2032,17 @@ contains
       ! Save the calculated flux
       DfluxValues(:,1,ipoint,iel) = DFlux
       
-!!      ! *** centered flux ***
+!      ! *** centered flux ***
+!      ! Get solution values on the in and outside
+!      DQi = Dsolutionvalues(1,ipoint,iel,:)
+!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+!      
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DF1i = buildFlux(DQi,1)
+!      DF1a = buildFlux(DQa,1)
+!      DF2i = buildFlux(DQi,2)
+!      DF2a = buildFlux(DQa,2)
+!            
 !      DFx= 0.5_dp*(DF1i+DF1a)
 !      DFy= 0.5_dp*(DF2i+DF2a)
 !      
@@ -2049,12 +2112,12 @@ contains
 !      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
 !      
 !      ! Add artificial diffusion
-!      DL       = buildMixedL       (QRoe,normal(1,iel),normal(2,iel))
-!      DaLambda = buildMixedaLambda (QRoe,normal(1,iel),normal(2,iel))
-!      DR       = buildMixedR       (QRoe,normal(1,iel),normal(2,iel))
+!      DL       = buildMixedL       (DQRoe,normal(1,iel),normal(2,iel))
+!      DaLambda = buildMixedaLambda (DQRoe,normal(1,iel),normal(2,iel))
+!      DR       = buildMixedR       (DQRoe,normal(1,iel),normal(2,iel))
 !      
 !      ! Save the calculated flux
-!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(buildMixedaLambda,matmul(DL,DQa - DQi)))
+!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQa - DQi)))
       
       
       

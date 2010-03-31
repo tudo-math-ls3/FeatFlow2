@@ -504,7 +504,7 @@ contains
   function buildMixedaLambda(Q,a,b) result(aLambda)
 
     ! Left eigenvectors
-    real(DP), dimension(3,3)	:: L
+    real(DP), dimension(3,3)	:: aLambda
 
     ! The solution components q1 = h, q2 = uh, q3 = vh
     real(DP), dimension(3), intent(IN)		:: Q
