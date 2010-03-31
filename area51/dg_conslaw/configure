@@ -1,9 +1,7 @@
 #!/bin/sh
-#
-# This small shell script is used to create a default makefile
-# for the application.
-#
 
 ../../bin/configure \
-	--appname=dg_conslaw \
-	$@
+        --appname=dg_conslaw \
+        --programfile=src/dg.f90 \
+        --srclist_app="`ls src/*.f90`" \
+        $@

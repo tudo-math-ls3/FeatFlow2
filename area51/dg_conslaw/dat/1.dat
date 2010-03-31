@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax =9
+nlmax =6
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -20,7 +20,7 @@ prmname = ./pre/zehnm.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
+#triname = ./pre/QUAD.tri
 triname = ./pre/zehnm.tri
 #triname = ./pre/zylinderuse.tri
 #triname = ./pre/threezylindergrob.tri

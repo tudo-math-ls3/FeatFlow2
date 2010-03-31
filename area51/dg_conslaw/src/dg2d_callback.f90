@@ -69,7 +69,7 @@
 !# </purpose>
 !##############################################################################
 
-module poisson2d_callback
+module dg2d_callback
 
   use fsystem
   use storage

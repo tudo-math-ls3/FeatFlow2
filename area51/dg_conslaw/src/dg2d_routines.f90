@@ -37,7 +37,7 @@ module dg2d_routines
   use ucd
   
     
-  use poisson2d_callback
+  use dg2d_callback
     
 
   implicit none

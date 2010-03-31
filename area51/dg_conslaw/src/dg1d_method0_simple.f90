@@ -37,7 +37,7 @@ module poisson1d_method0_simple
   use meshregion
   use discretebc
     
-  use poisson1d_callback
+  use dg1d_callback
   
   implicit none
 
