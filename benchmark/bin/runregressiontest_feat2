@@ -349,12 +349,12 @@ fb_customise() {
 		pc64-penryn-linux-g95-*)
 		    modules=""
 		    modules="$modules gotoblas/shared/64"
-		    modules="$modules g95/32bit-default-integers/0.91"
+		    modules="$modules g95/32bit-default-integers/0.93_2010-03-31"
 #		    modules="$modules g95/64bit-default-integers/0.91"
 		    LIDOJOBNAMEPREFIX=fb-g95
 #		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
 #		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
-		    COMPILERNAME="G95 0.91"
+		    COMPILERNAME="G95 0.93 (2010-03-31)"
 		    ;;
 
 		# GNU compiler suite
@@ -455,11 +455,12 @@ fb_customise() {
 		# G95 compiler suite
 		pc64-opteron-linux-g95-*)
 		    modules=""
-		    modules="$modules g95/int32bit/0.9"
+#		    modules="$modules g95/int32bit/0.9"
+		    modules="$modules g95/int32bit/2010-03-31"
 		    LIDOJOBNAMEPREFIX=fb-g95
 		    # g95 only gives deterministic results if combined with gcc 4.0 or 4.1, nothing higher.
 		    CONFIGUREOPTIONS="$CONFIGUREOPTIONS --cc=gcc4"
-		    COMPILERNAME="G95 0.9"
+		    COMPILERNAME="G95 0.93 (2010-03-31)"
 		    EXTRAMODULEFILESDIRECTORY="/home/buijssen/Cluster-Config/modulefiles"
 		    ;;
 
