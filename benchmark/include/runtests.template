@@ -286,15 +286,15 @@ fb_initialiseEnv() {
 
 		# Itanium2 server
 		"ia64")
-		    if test "x" = "${MPIENV}""x"; then
-			# No default set. Find out whether we are on a
-			# NEC SX gateway Itanium2 server and are using MPI/EX.
-			if test "`which mpirun`" = "/opt/NECmpi/bin/mpirun"; then
-			    MPIENV=MPIEX
-			else
-			    MPIENV=OpenMPI
-			fi
-		    fi
+#		    if test "x" = "${MPIENV}""x"; then
+#			# No default set. Find out whether we are on a
+#			# NEC SX gateway Itanium2 server and are using MPI/EX.
+#			if test "`which mpirun`" = "/opt/NECmpi/bin/mpirun"; then
+#			    MPIENV=MPIEX
+#			else
+#			    MPIENV=OpenMPI
+#			fi
+#		    fi
 
 		    case "${MPIENV}" in
 			# MPI/EX
@@ -322,6 +322,14 @@ fb_initialiseEnv() {
 			# OpenMPI
 			"OpenMPI")
 			    MPIRC='mpirun  -np ${ntasks} '
+			    MPICLEAN='echo'
+			    MPISTART='echo'
+			    MPISTOP='echo'
+			    ;;
+
+			# none
+			*)
+			    MPIRC='echo'
 			    MPICLEAN='echo'
 			    MPISTART='echo'
 			    MPISTOP='echo'
