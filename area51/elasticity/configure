@@ -4,6 +4,68 @@
 # for the application.
 #
 
+######################################################
+# Default behaviour:
+# Do not store object files to home directory, but to some scratch area
+# without quota restrictions. Try to come up with a reasonable name
+# for the object file directories (per application and one for the libraries
+# which are shared among all Featflow2 applications).
+#
+# Q: Why not store object files directly to the home directory, to the
+# same directory where Featflow2 is installed?
+# A: At the Faculty of Mathematics, TU Dortmund and the compute servers 
+# LiDO, JUMP and NEC file system disk quotas are enforced. But everywhere
+# a scratch area providing vast disk space is available - usually without
+# backup. But backup is not needed for object files.
+#
+# Note: this default behaviour can always be overridden by explicitly
+# setting --objdir=<some path> on the command line when invoking this
+# script!
+#
+# Specify its directory prefix here.
+BASEDIR_OBJFILES=${HOME}/nobackup/ff2obj
+
+# To support multiple working copies of Featflow2 which all store their
+# object files beneath ${BASEDIR_OBJFILES}, but which should not interfere
+# which each other, duplicate the hierarchy of these Featflow2 installations
+# beneath ${BASEDIR_OBJFILES}. The procedure can be explained most easily
+# with an example:
+# Consider you have two FF2 installations, one in $HOME/Featflow2 and another
+# in $HOME/tmp/Featflow2, then the object files should go to ${BASEDIR_OBJFILES}/Featflow2
+# and ${BASEDIR_OBJFILES}/tmp/Featflow2, respectively.
+CWD=`/bin/pwd`
+
+# Try to shorten the directory hierarchy below ${BASEDIR_OBJFILES}.
+# Why? Because it is used to create the object directory and some
+# compilers enforce (silently) restrictions on include and module
+# directories (e.g. PGI). Do not let path to object 
+# directory become too long!
+
+# Step 1: 
+#   try to cut off the leading part ending in your username.
+FF2INSTDIR=${CWD}
+# $USER is used later on, but not all Unix systems define
+# this environment variable, Sun Solaris e.g. does not.
+test -z "$USER" && USER="$LOGNAME"
+# Username contained in path name?
+FF2INSTDIR=`echo ${FF2INSTDIR} | sed "s/^.*\/$USER\//\//;"`;
+
+# Step 2: 
+#   remove "Featflow2/"
+FF2INSTDIR=`echo ${FF2INSTDIR} | sed "s/\/Featflow2//;"`;
+
+# Concatenate directory strings to come up with a directory name
+# for Featflow2 application object files
+OBJDIRPREFIX=${BASEDIR_OBJFILES}${FF2INSTDIR}
+
+# Create a likewise directory for all libraries which should
+# be shared among all Featflow2 applications as - being a library - 
+# they have no dependency on the Featflow2 kernel or a Featflow2 application
+# and are all compiled with identical settings.
+OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
+
 ../../bin/configure \
 	--appname=elasticity \
+  --objdir-prefix=${OBJDIRPREFIX} \
+  --objdir-lib-prefix=${OBJDIRLIBPREFIX} \
 	$@
