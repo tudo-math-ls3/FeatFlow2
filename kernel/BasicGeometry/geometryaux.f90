@@ -1464,7 +1464,9 @@ contains
   end subroutine  
   
 !************************************************************************  
-  
+
+!<subroutine>
+
   pure subroutine gaux_intersect_edgecircle(drad,Dc,Dedge,iresult,Dintersec)
 
 !<description>
