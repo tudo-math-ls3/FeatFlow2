@@ -5016,7 +5016,9 @@ contains
     real(DP) :: partxmin, partxmax, partymin, partymax
 
     ! Variables for particle-diameter, -mass and -temperature
-    real(DP) :: particlemass, particlediam, parttemp
+    real(DP) :: particlemass, particlemassmin, particlemassmax
+    real(DP) :: particlediam, particlediammin, particlediammax
+    real(DP) :: parttemp, parttempmin, parttempmax
     integer :: imasspart, idiampart, itemppart
     
     ! Velocity of the particles
@@ -5173,12 +5175,17 @@ contains
         ! get particlevelocity
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
-	
-	
+		
         ! Get particle-mass, -temp and -diameter
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmin", particlemassmin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammin", particlediammin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmin", parttempmin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmax", particlemassmax)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammax", particlediammax)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmax", parttempmax)
 	
 	    ! get variable for startingposition
         call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
@@ -5311,6 +5318,12 @@ contains
             call random_number(random1)
             
             rParticles%p_diam(iPart)= random1*particlediam
+
+        case (2)
+            ! Get random number
+            call random_number(random1)
+            
+            rParticles%p_diam(iPart)= random1*(particlediammax-particlediammin)
             
         case default
           call output_line('Invalid mass type mode!', &
@@ -5329,6 +5342,12 @@ contains
             
             rParticles%p_mass(iPart)= random2*particlemass
             
+        case (2)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_mass(iPart)= random2*(particlemassmax-particlemassmin)
+
         case default
           call output_line('Invalid diameter type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
@@ -5346,6 +5365,12 @@ contains
             
             rParticles%p_temp(iPart)= random2*parttemp
             
+        case (2)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_temp(iPart)= random2*(parttempmax-parttempmin)
+
         case default
           call output_line('Invalid temp type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')

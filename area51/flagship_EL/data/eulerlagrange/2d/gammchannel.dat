@@ -89,19 +89,31 @@ ymax = 9.0e-2
 
 # 0 all particles have the same mass 
 # 1 random mass of the particles (0 to particlemass)
-imasspart = 0
+# 2 random mass of the particles (particlemassmin to particlemassmax)
+imasspart = 2
 
-# particle-mass
+# particle mass in kg
 particlemass = 1e-15
+
+# particle mass minimum in kg
+particlemassmin = 1e-15
+# particle mass maximum in kg
+particlemassmax = 1e-12
 
 #-------------------------------------------------------------------------------
 
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
-idiampart = 1
+# 2 random diameter of the particles (particlediammin to particlediammax)
+idiampart = 2
 
 # particle-diameter
 particlediam = 1e-9
+
+# particle diameter minimum in meter
+particlediammin = 1e-12
+# particle diameter maximum in meter
+particlediammax = 1e-9
 
 
 #-------------------------------------------------------------------------------
@@ -140,14 +152,20 @@ gravityy = 0   #-9.81
 
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to parttemp)
-itemppart = 1
+# 2 random diameter of the particles (parttempmin to parttempmax)
+itemppart = 2
 
 # temperature of the particles in Kelvin
 parttemp = 100
 
+# particle temperature minimum in Kelvin
+parttempmin = 50
+# particle temperature maximum in Kelvin
+parttempmax = 150
+
 
 #-------------------------------------------------------------------------------
-# gasphase
+# gas phase
 #-------------------------------------------------------------------------------
 
 # kinematic viscosity of the gas
@@ -376,7 +394,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 2.00
+dfinalTime = 0.200
 
 # initial time step size
 dinitialStep = 1e-3

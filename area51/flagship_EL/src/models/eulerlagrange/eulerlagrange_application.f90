@@ -1972,6 +1972,17 @@ module eulerlagrange_application
           write(20+rParticles%iTimestep,*) rParticles%p_temp(iPart)
         end do
         write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Mass" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_mass(iPart)
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
+        write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Density" format="ascii">'
+        do iPart = 1, rParticles%nPart
+          write(20+rParticles%iTimestep,*) rParticles%p_mass(iPart)/&
+                                            (rParticles%p_diam(iPart)**2 * 3.14159265358 /4)
+        end do
+        write(20+rParticles%iTimestep,*) '</DataArray>'
         write(20+rParticles%iTimestep,*) '</PointData>'
         write(20+rParticles%iTimestep,*) '      <Cells>'
         write(20+rParticles%iTimestep,*) '          <DataArray type="Int32" Name="connectivity" format="ascii">'
@@ -3205,8 +3216,13 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Startingpostions of the particles
     real(DP) :: partxmin, partxmax, partymin, partymax
 
-    ! Velocity, mass and diameter of the particles
-    real(DP) :: velopartx, veloparty, particlediam, particlemass, parttemp
+    ! Velocity of the particles
+    real(DP) :: velopartx, veloparty
+    
+    ! Variables for particlemass, -diameter and -temperature
+    real(DP) :: particlemass, particlemassmin, particlemassmax
+    real(DP) :: particlediam, particlediammin, particlediammax
+    real(DP) :: parttemp, parttempmin, parttempmax
 
     ! Gravity
     real(DP) :: gravityx, gravityy
@@ -3405,6 +3421,12 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmin", particlemassmin)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammin", particlediammin)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmin", parttempmin)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmax", particlemassmax)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammax", particlediammax)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmax", parttempmax)
 
     ! Get values for gravity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "gravityx", gravityx)
@@ -3624,7 +3646,13 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             call random_number(random1)
             
             rParticles%p_diam(iPart)= random1*particlediam
+ 
+        case (2)
+            ! Get random number
+            call random_number(random1)
             
+            rParticles%p_diam(iPart)= random1*(particlediammax-particlediammin)
+                      
         case default
           call output_line('Invalid diam type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_diamtype')
@@ -3641,7 +3669,13 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             call random_number(random2)
             
             rParticles%p_mass(iPart)= random2*particlemass
+ 
+        case (2)
+            ! Get random number
+            call random_number(random2)
             
+            rParticles%p_mass(iPart)= random2*(particlemassmax-particlemassmin)
+           
         case default
           call output_line('Invalid mass type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
@@ -3659,7 +3693,13 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             call random_number(random2)
             
             rParticles%p_temp(iPart)= random2*parttemp
+
+        case (2)
+            ! Get random number
+            call random_number(random2)
             
+            rParticles%p_temp(iPart)= random2*(parttempmax-parttempmin)
+          
         case default
           call output_line('Invalid temp type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')
