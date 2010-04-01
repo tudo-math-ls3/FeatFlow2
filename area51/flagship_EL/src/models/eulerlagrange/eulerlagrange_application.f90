@@ -3221,13 +3221,13 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     integer :: istartpos
 
     ! Mode for the mass of the particles
-    integer :: imasstypepart
+    integer :: imasspart
 
     ! Mode for the diameter of the particles
-    integer :: idiamtype
+    integer :: idiampart
 
     ! Mode for the temperature of the particles
-    integer :: itemptypepart
+    integer :: itemppart
     
     ! Kinematic viscosity of the gas
     real(DP) :: gas_nu
@@ -3420,26 +3420,30 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
     ! Get variable for mass of the particles
-    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasstypepart", imasstypepart)
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasspart", imasspart)
 
     ! Get variable for diameter of the particles
-    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiamtype", idiamtype)
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiampart", idiampart)
 
     ! Get variable for temperature of the particles
-    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemptypepart", itemptypepart)
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemppart", itemppart)
 
     ! Store particlesnumber, viscosity of the gas and gravity  
     rParticles%npart = nPart
     rParticles%nu_g= gas_nu
     rParticles%gravity(1)= gravityx
     rParticles%gravity(2)= gravityy
-    rParticles%iTimestep= 1
+    rParticles%iTimestep= 0
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
-    rParticles%p_PartVol= 0
-    rParticles%p_PartVolAver= 0
+    rParticles%p_PartVol= 0.0_dp
+    rParticles%p_PartVolAver= 0.0_dp
     rParticles%iPartVolCount= 1    
-    rParticles%p_PartVelox= 0
-    rParticles%p_PartVeloy= 0
+    rParticles%p_PartVelox= 0.0_dp
+    rParticles%p_PartVeloy= 0.0_dp
+    
+    random1= 0.0_dp
+    random2= 0.0_dp
+    random3= 0.0_dp
 
     ! Set boundaryconditions for the particles
     select case(boundbehav)
@@ -3611,7 +3615,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         end select
  
         ! Set diameter of the particles
-        select case(idiamtype)
+        select case(idiampart)
         case (0)
             rParticles%p_diam(iPart)= particlediam
             
@@ -3628,7 +3632,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         end select
 
         ! Set mass of the particles
-        select case(imasstypepart)
+        select case(imasspart)
         case (0)
             rParticles%p_mass(iPart)= particlemass
             
@@ -3646,7 +3650,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
  
 
         ! Set temperature of the particles
-        select case(itemptypepart)
+        select case(itemppart)
         case (0)
             rParticles%p_temp(iPart)= particlemass
             
@@ -3687,7 +3691,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
-    end do
+    end do ! Loop over all particles
     
     if (istartpos == 2) then
         ! Release portable graymap image
@@ -3773,6 +3777,9 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     
     ! Current particlenumber
     integer :: iPart
+    
+    ! One-way or to-way coppling
+    integer :: icouplingpart
 
     real(DP) :: dx,dy
     real(DP), dimension(2,4) :: DcornerCoords
@@ -3788,8 +3795,26 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
-    ! Subroutine to compute the new position of the particles
-    call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+
+    ! One way or twoway coppling?
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "icouplingpart", icouplingpart)
+
+    select case(icouplingpart)
+    case(1)
+        ! Subroutine to compute the new position of the particles
+        call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+    
+    case(2)
+        ! Subroutine to compute the new position of the particles
+        call eulerlagrange_moveparticlestwoway(rparlist,p_rproblemLevel,rsolution,rParticles)
+    
+    case default
+            call output_line('Invalid coppling mode!', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'flagship_coppling')
+            call sys_halt()
+     
+    end select
+
 
     do iPart = 1, rParticles%nPart
       ! Subroutine to find the element with the particle

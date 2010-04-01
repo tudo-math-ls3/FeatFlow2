@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 50
+nPart = 5000
 
 
 #-------------------------------------------------------------------------------
@@ -89,16 +89,16 @@ ymax = 9.0e-2
 
 # 0 all particles have the same mass 
 # 1 random mass of the particles (0 to particlemass)
-imasstypepart = 0
+imasspart = 0
 
 # particle-mass
-particlemass = 1e-12
+particlemass = 1e-15
 
 #-------------------------------------------------------------------------------
 
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
-idiamtype = 0
+idiampart = 1
 
 # particle-diameter
 particlediam = 1e-9
@@ -126,6 +126,7 @@ boundbehav = 0
 #-------------------------------------------------------------------------------
 # gravity
 #-------------------------------------------------------------------------------
+
 # gravity in x-direction
 gravityx = 0
 
@@ -139,7 +140,7 @@ gravityy = 0   #-9.81
 
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to parttemp)
-itemptypepart = 1
+itemppart = 1
 
 # temperature of the particles in Kelvin
 parttemp = 100
@@ -161,6 +162,15 @@ gas_nu = 1e-5
 # 1 only particle positions
 # 2 position, velocity, diameter and temperatur of the particles
 ipartoutput = 2
+
+
+#-------------------------------------------------------------------------------
+# choice coupling mode (one-way or two-way coupling)
+#-------------------------------------------------------------------------------
+
+# 1 one-way coupling (particles have no influence on the gas phase)
+# 2 two-way coupling
+icouplingpart = 1
 
 
 
@@ -366,7 +376,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.200
+dfinalTime = 2.00
 
 # initial time step size
 dinitialStep = 1e-3
