@@ -353,11 +353,8 @@ close(iunit)
 
   select case (cderivative)
   case (DER_FUNC)
-  write(*,*) 'FUNC'
-    ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = 16.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) * &
-                              Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-                              
+    
+                    
     do i = 1, size(Dvalues,1)
     do j = 1, size(Dvalues,2)
       r = sqrt(Dpoints(1,i,j)*Dpoints(1,i,j)+Dpoints(2,i,j)*Dpoints(2,i,j))
@@ -381,6 +378,112 @@ close(iunit)
   write(*,*) 'Error in calculating L2-error'
     
   case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
+  
+
+  end subroutine
+  
+  
+  
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine getCompareFunction_2D (cderivative,rdiscretisation, &
+                nelements,npointsPerElement,Dpoints, &
+                IdofsTest,rdomainIntSubset,&
+                Dvalues,rcollection)
+  
+  use basicgeometry
+  use triangulation
+  use collection
+  use scalarpde
+  use domainintegration
+  
+!<description>
+  ! This subroutine is called during the calculation of errors. It has to compute
+  ! the (analytical) values of a function in a couple of points on a couple
+  ! of elements. These values are compared to those of a computed FE function
+  ! and used to calculate an error.
+  !
+  ! The routine accepts a set of elements and a set of points on these
+  ! elements (cubature points) in in real coordinates.
+  ! According to the terms in the linear form, the routine has to compute
+  ! simultaneously for all these points.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in)                                         :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in)                                         :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in)                                         :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in)                      :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in)              :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional      :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out)                      :: Dvalues
+!</output>
+  
+!</subroutine>
+
+integer :: iel
+
+
+
+  select case (cderivative)
+  case (DER_FUNC)
+                              
+      do iel = 1, size(Dvalues,2)
+      
+      call fevl_evaluate (DER_FUNC, Dvalues(:,iel),&
+                 rcollection%p_rvectorQuickAccess1%RvectorBlock(1), Dpoints(:,:,iel))
+                 
+    end do
+                              
+  case (DER_DERIV_X)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case (DER_DERIV_Y)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case DEFAULT
+    write(*,*) 'Error in calculating L2-error'
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
@@ -1294,12 +1397,30 @@ close(iunit)
     
     character(LEN=*), dimension(2), parameter ::&
          cvariables = (/ (/'x'/), (/'y'/) /)
+         
+    integer :: iunit,i,j
+    real(dp),dimension(10000) :: Dreference
+    real(dp) :: r,n
+
     
     ! Initialise function parser
     call fparser_init()
     call fparser_create(rfparser, 1)
     
     call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
+    
+
+!    iunit = sys_getFreeUnit()
+!
+!    open(iunit, file='h')
+!
+!
+!    do i = 1, 10000
+!      read(iunit,*) Dreference(i)
+!    end do
+!
+!    close(iunit)
+
     
     select case (rcollection%IquickAccess(1))
       case (1) ! Set height variable h
@@ -1333,9 +1454,14 @@ close(iunit)
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
-!            ! Water hill
-!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+            ! Water hill
+            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+                     
+!            ! 'Analytical' solution to circular dambreak
+!            r = sqrt(Dpoints(1,ipoint,iel)*Dpoints(1,ipoint,iel)+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
+!            n = 1+1000*r
+!            Dcoefficients (1,ipoint,iel) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
               
 !            ! Water hill at corner
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
@@ -1386,12 +1512,12 @@ close(iunit)
 !              Dcoefficients (1,ipoint,iel)=1.0_dp
 !            end if
 
-            ! Circular Dambreak
-            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
-              Dcoefficients (1,ipoint,iel)=2.5_dp
-            else
-              Dcoefficients (1,ipoint,iel)=0.5_dp
-            end if
+!            ! Circular Dambreak
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+!              Dcoefficients (1,ipoint,iel)=2.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=0.5_dp
+!            end if
             
           end do
         end do
@@ -2117,7 +2243,7 @@ close(iunit)
 !      DR       = buildMixedR       (DQRoe,normal(1,iel),normal(2,iel))
 !      
 !      ! Save the calculated flux
-!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQa - DQi)))
+!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQa - DQi)))!sign(1.0_dp,normal(1,iel))*(DQa - DQi))))
       
       
       

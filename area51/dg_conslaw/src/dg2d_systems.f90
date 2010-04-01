@@ -99,7 +99,7 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock
     type(t_vectorBlock), target :: rk1, rk2, rdefBlock, rimf1, rimf2
 
 
@@ -177,6 +177,8 @@ contains
     type(t_profiler) :: rprofiler
     
     integer :: itimestepping
+    
+    integer :: iwithoutlimiting
     
     real(dp) :: dCFL, dgravconst
     
@@ -416,6 +418,8 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rimf2,.true.,&
          ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolSaveBlock,.true.,&
+         ST_DOUBLE)
          
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
@@ -537,7 +541,8 @@ contains
     
     
     
-    
+do iwithoutlimiting = 1,2
+if (iwithoutlimiting==2) ilimiter = 0
     
     ! Now set the initial conditions via L2 projection
     rlinformIC%itermCount = 1
@@ -995,10 +1000,10 @@ contains
    
    
    
+   if (iwithoutlimiting==1) call lsysbl_copyVector(rsolBlock,rsolSaveBlock)
    
    
-   
-   
+ end do ! iwithoutlimiting
    
    
    
@@ -1074,16 +1079,30 @@ contains
 !    ! Write the file to disc, that is it.
 !    call ucd_write (rexport)
 !    call ucd_release (rexport)
-!    
-    ! Calculate the error to the reference function.
+!   
+ 
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
+
+    ! Calculate the difference of limited and non-limited solution
+    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getReferenceFunction_2D)
+                       getCompareFunction_2D,rcollection)
     call output_line ('L1-error: ' // sys_sdEL(derror,10) )
 
     ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_2D)
+                       getCompareFunction_2D,rcollection)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
     
 !
 !    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
