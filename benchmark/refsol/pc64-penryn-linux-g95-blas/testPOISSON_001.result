@@ -583,36 +583,36 @@ Calculating Poisson-3D-Problem with method 0 - simple
 -----------------------------------------------------
 BiCGStab: Iteration 0,  !!RES!! = 1.858528455875082E-02
 BiCGStab: Iteration 1,  !!RES!! = 3.946746228649788E-03
-BiCGStab: Iteration 2,  !!RES!! = 7.925380031569376E-04
-BiCGStab: Iteration 3,  !!RES!! = 4.498156820256864E-05
-BiCGStab: Iteration 4,  !!RES!! = 7.843936835732571E-08
+BiCGStab: Iteration 2,  !!RES!! = 7.925380031569375E-04
+BiCGStab: Iteration 3,  !!RES!! = 4.498156820256879E-05
+BiCGStab: Iteration 4,  !!RES!! = 7.843936835734781E-08
 
 BiCGStab statistics:
 
 Iterations              : 4
 !!INITIAL RES!!         : 1.858528455875082E-02
-!!RES!!                 : 7.843936835732571E-08
-!!RES!!/!!INITIAL RES!! : 4.220509409439890E-06
+!!RES!!                 : 7.843936835734781E-08
+!!RES!!/!!INITIAL RES!! : 4.220509409441079E-06
 
-Rate of convergence     : 4.532535540945706E-02
+Rate of convergence     : 4.532535540946026E-02
 L2-error: 7.6477990637E-03
 H1-error: 2.6788335910E-01
 
 Calculating Poisson-3D-Problem with method 1 - multigrid
 --------------------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 1.858528455875082E-02
-Multigrid: Iteration 1,  !!RES!! = 2.919247337852953E-04
-Multigrid: Iteration 2,  !!RES!! = 3.772292992266054E-06
-Multigrid: Iteration 3,  !!RES!! = 4.872152104749720E-08
+Multigrid: Iteration 1,  !!RES!! = 2.919247337852943E-04
+Multigrid: Iteration 2,  !!RES!! = 3.772292992266141E-06
+Multigrid: Iteration 3,  !!RES!! = 4.872152104707122E-08
 
 Multigrid statistics:
 
 Iterations              : 3
 !!INITIAL RES!!         : 1.858528455875082E-02
-!!RES!!                 : 4.872152104749720E-08
-!!RES!!/!!INITIAL RES!! : 2.621510630815542E-06
+!!RES!!                 : 4.872152104707122E-08
+!!RES!!/!!INITIAL RES!! : 2.621510630792622E-06
 
-Rate of convergence     : 1.378850585093107E-02
+Rate of convergence     : 1.378850585089088E-02
 L2-error: 7.6480393177E-03
 H1-error: 2.6788335907E-01
 
