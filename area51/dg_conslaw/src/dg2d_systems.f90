@@ -541,7 +541,7 @@ contains
     
     
     
-do iwithoutlimiting = 1,2
+do iwithoutlimiting = 1,1
 if (iwithoutlimiting==2) ilimiter = 0
     
     ! Now set the initial conditions via L2 projection
@@ -1054,54 +1054,29 @@ if (iwithoutlimiting==2) ilimiter = 0
      call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
 
     
-!    
-!    ! Finally solve the system. As we want to solve Ax=b with
-!    ! b being the real RHS and x being the real solution vector,
-!    ! we use linsol_solveAdaptively. If b is a defect
-!    ! RHS and x a defect update to be added to a solution vector,
-!    ! we would have to use linsol_precondDefect instead.
-!    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
-!    
-!    ! That is it, rvectorBlock now contains our solution. We can now
-!    ! start the postprocessing. 
-!    !
-!    ! Get the path for writing postprocessing files from the environment variable
-!    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-!    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
-!
-!    ! Start UCD export to GMV file:
-!    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-!                       trim(sucddir)//'/u2d_0_simple.gmv')
-!    
-!    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-!    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-!    
-!    ! Write the file to disc, that is it.
-!    call ucd_write (rexport)
-!    call ucd_release (rexport)
-!   
+   
  
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
-
-
-    ! Calculate the difference of limited and non-limited solution
-    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+    ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getCompareFunction_2D,rcollection)
+                       getReferenceFunction_2D)
     call output_line ('L1-error: ' // sys_sdEL(derror,10) )
 
     ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getCompareFunction_2D,rcollection)
+                       getReferenceFunction_2D)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
+
+!    ! Calculate the difference of limited and non-limited solution
+!    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getCompareFunction_2D,rcollection)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getCompareFunction_2D,rcollection)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
 
     
 !

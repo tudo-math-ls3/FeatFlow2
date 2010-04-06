@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax =8
+nlmax =7
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -44,7 +44,7 @@ FEkind = 2
 dt = 0.001
 
 # Final time
-ttfinal = 0.2
+ttfinal = 0.15
 
 
 [SOLVER]

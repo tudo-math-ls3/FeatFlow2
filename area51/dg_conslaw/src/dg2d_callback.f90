@@ -339,12 +339,62 @@ integer :: iunit,i,j
 real(dp),dimension(10000) :: Dreference
 real(dp) :: r,n
 
+! Circular dambreak
+!
+!iunit = sys_getFreeUnit()
+!
+!open(iunit, file='h')
+!
+!
+!do i = 1, 10000
+!  read(iunit,*) Dreference(i)
+!
+!end do
+!
+!close(iunit)
+!
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!      r = sqrt(Dpoints(1,i,j)*Dpoints(1,i,j)+Dpoints(2,i,j)*Dpoints(2,i,j))
+!      n = 1+1000*r
+!      
+!     
+!      
+!       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+!
+!      !Dvalues(i,j) =Dreference(int(n))
+!      !write(*,*)Dreference(int(n))
+!      !Dvalues(i,j) =1.0_dp
+!      
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
+
+
+
+
+! Smooth solution
+
 iunit = sys_getFreeUnit()
 
 open(iunit, file='h')
 
 
-do i = 1, 10000
+do i = 1, 4000
   read(iunit,*) Dreference(i)
 
 end do
@@ -357,8 +407,8 @@ close(iunit)
                     
     do i = 1, size(Dvalues,1)
     do j = 1, size(Dvalues,2)
-      r = sqrt(Dpoints(1,i,j)*Dpoints(1,i,j)+Dpoints(2,i,j)*Dpoints(2,i,j))
-      n = 1+1000*r
+      r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
+      n = 2000+1+1000*r
       
      
       
@@ -1455,7 +1505,7 @@ integer :: iel
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
             ! Water hill
-            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
+            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
                      exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
                      
 !            ! 'Analytical' solution to circular dambreak
