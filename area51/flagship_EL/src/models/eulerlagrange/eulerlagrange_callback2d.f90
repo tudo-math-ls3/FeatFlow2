@@ -297,8 +297,8 @@ module eulerlagrange_callback2d
       integer(I32) :: h_lambda1, h_lambda2, h_lambda3, h_lambda4
       real(DP), dimension(:), pointer :: p_lambda1, p_lambda2, p_lambda3, p_lambda4
       ! diameter, mass and alpha_n 
-      integer(I32) :: h_diam, h_mass, h_alpha_n, h_temp
-      real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n, p_temp
+      integer(I32) :: h_diam, h_mass, h_alpha_n, h_temp, h_density
+      real(DP), dimension(:), pointer :: p_diam, p_mass, p_alpha_n, p_temp, p_density
       ! midpoints of the element 
       integer(I32) :: h_midpoints_el
       real(DP), dimension(:,:), pointer :: p_midpoints_el
@@ -4629,7 +4629,7 @@ contains
     
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
-    integer :: iPart, istartpos, imasspart, idiampart, itemppart
+    integer :: iPart, istartpos
 
     ! Startingpostions of the particles
     real(DP) :: partxmin, partxmax, partymin, partymax
@@ -4637,9 +4637,15 @@ contains
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2, random3
 
+    ! Variables for particle-diameter, -mass and -temperature
+    real(DP) :: particledensity, particledensitymin, particledensitymax
+    real(DP) :: particlediam, particlediammin, particlediammax
+    real(DP) :: parttemp, parttempmin, parttempmax
+    integer :: idensitypart, idiampart, itemppart
+
     ! Variables for starting position from PGM-file
     integer, dimension(:,:), pointer :: p_Idata
-    real(DP) :: x,y,xmin,ymin,xmax,ymax,particlemass,particlediam,parttemp
+    real(DP) :: x,y,xmin,ymin,xmax,ymax
     integer :: nvt,ix,iy,ivt
     type(t_pgm) :: rpgm
     real(DP), dimension(:), pointer :: p_Ddata
@@ -4663,7 +4669,7 @@ contains
     Velo_rel=0.0_dp
     dt=0.0_dp
     c_pi=0.0_dp
-    particlemass= 0.0_dp
+    particledensity= 0.0_dp
     particlediam= 0.0_dp
     
     ! Get values for the startingpositions of the particles
@@ -4887,6 +4893,96 @@ contains
              
         end select
  
+        ! Get particle-mass, -temp and -diameter
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensity", particledensity)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymin", particledensitymin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammin", particlediammin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmin", parttempmin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymax", particledensitymax)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammax", particlediammax)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmax", parttempmax)
+
+        ! Get variable for density of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idensitypart", idensitypart)
+
+        ! Get variable for diameter of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiampart", idiampart)
+
+        ! Get variable for temperature of the particles
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "itemppart", itemppart)
+
+
+        ! Set diameter of the particles
+        select case(idiampart)
+        case (0)
+            rParticles%p_diam(iPart)= particlediam
+            
+        case (1)
+            ! Get random number
+            call random_number(random1)
+            
+            rParticles%p_diam(iPart)= random1*particlediam
+
+        case (2)
+            ! Get random number
+            call random_number(random1)
+            
+            rParticles%p_diam(iPart)= particlediammin+random1*(particlediammax-particlediammin)
+            
+        case default
+          call output_line('Invalid mass type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_diamtype')
+          call sys_halt()
+        end select
+
+        ! Set mass of the particles
+        select case(idensitypart)
+        case (0)
+            rParticles%p_density(iPart)= particledensity
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_density(iPart)= random2*particledensity
+            
+        case (2)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_density(iPart)= particledensitymin+random2*(particledensitymax-particledensitymin)
+
+        case default
+          call output_line('Invalid diameter type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
+          call sys_halt()
+        end select
+ 
+        ! Set temperature of the particles
+        select case(itemppart)
+        case (0)
+            rParticles%p_temp(iPart)= parttemp
+            
+        case (1)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_temp(iPart)= random2*parttemp
+            
+        case (2)
+            ! Get random number
+            call random_number(random2)
+            
+            rParticles%p_temp(iPart)= parttempmin+random2*(parttempmax-parttempmin)
+
+        case default
+          call output_line('Invalid temp type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')
+          call sys_halt()
+        end select
+ 
         ! Set initial values for the particles
         rParticles%p_xvelo_gas(iPart)= 0.0_dp
         rParticles%p_yvelo_gas(iPart)= 0.0_dp
@@ -4895,6 +4991,11 @@ contains
         rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0.0_dp
+
+        ! Set particle mass
+        rParticles%p_mass(iPart)= &
+               rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**2 * 3.14159265358_dp /4.0_dp)
+
  
         if (istartpos == 2) then
             ! Release portable graymap image
@@ -5016,10 +5117,10 @@ contains
     real(DP) :: partxmin, partxmax, partymin, partymax
 
     ! Variables for particle-diameter, -mass and -temperature
-    real(DP) :: particlemass, particlemassmin, particlemassmax
+    real(DP) :: particledensity, particledensitymin, particledensitymax
     real(DP) :: particlediam, particlediammin, particlediammax
     real(DP) :: parttemp, parttempmin, parttempmax
-    integer :: imasspart, idiampart, itemppart
+    integer :: idensitypart, idiampart, itemppart
     
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2, random3
@@ -5032,6 +5133,13 @@ contains
     
     ! Thermal conductivity and heat capacity at constant pressure
     real(DP) :: ThermConductivity_g, HeatCapa_g
+
+    ! Energies of the gas and the particles
+    real(DP) :: E_intern_gas, E_intern_part
+    real(DP) :: E_total_gas, E_total_part
+
+    ! Specific heats at constant volume
+    real(DP) :: c_v_gas, c_v_part
 
     ! Variables for starting position from PGM-file
     integer, dimension(:,:), pointer :: p_Idata
@@ -5128,6 +5236,28 @@ contains
 	       rParticles%p_xvelo_old(iPart))**2.0_dp+&
 		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp))
 
+    ! get values for the energie calculation
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "temp_gas", Temp_gas)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "c_v_gas", c_v_gas)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "c_v_part", c_v_part)
+
+    ! Calculate internal energies for phase k (gas and particles)
+    !
+    ! e_k = c_vk * T_k
+    !
+    E_intern_gas= c_v_gas*Temp_gas
+    E_intern_part= c_v_part*rParticles%p_temp(iPart)
+
+    ! Calculate total energies for phase k (gas and particles)
+    ! 
+    ! E_k= e_k + \frac{1}{2}|u_k|^2
+    !
+    E_total_gas= E_intern_gas + (rParticles%p_xvelo_gas(iPart)**2 + &
+                    rParticles%p_yvelo_gas(iPart)**2)/2
+    E_total_part= E_intern_part + (rParticles%p_xvelo(iPart)**2 + &
+                    rParticles%p_yvelo(iPart)**2)/2
+
+
 	! Calculate the drag force coefficient
 	if (Re_p<1000) then
 		C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
@@ -5177,13 +5307,13 @@ contains
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 		
         ! Get particle-mass, -temp and -diameter
-        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensity", particledensity)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
-        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmin", particlemassmin)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymin", particledensitymin)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammin", particlediammin)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmin", parttempmin)
-        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmax", particlemassmax)
+        call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymax", particledensitymax)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammax", particlediammax)
         call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmax", parttempmax)
 	
@@ -5191,7 +5321,7 @@ contains
         call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
         ! Get variable for mass of the particles
-        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasspart", imasspart)
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idensitypart", idensitypart)
 
         ! Get variable for diameter of the particles
         call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiampart", idiampart)
@@ -5323,7 +5453,7 @@ contains
             ! Get random number
             call random_number(random1)
             
-            rParticles%p_diam(iPart)= random1*(particlediammax-particlediammin)
+            rParticles%p_diam(iPart)= particlediammin+random1*(particlediammax-particlediammin)
             
         case default
           call output_line('Invalid mass type mode!', &
@@ -5332,21 +5462,21 @@ contains
         end select
 
         ! Set mass of the particles
-        select case(imasspart)
+        select case(idensitypart)
         case (0)
-            rParticles%p_mass(iPart)= particlemass
+            rParticles%p_density(iPart)= particledensity
             
         case (1)
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_mass(iPart)= random2*particlemass
+            rParticles%p_density(iPart)= random2*particledensity
             
         case (2)
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_mass(iPart)= random2*(particlemassmax-particlemassmin)
+            rParticles%p_density(iPart)= particledensitymin+random2*(particledensitymax-particledensitymin)
 
         case default
           call output_line('Invalid diameter type mode!', &
@@ -5357,7 +5487,7 @@ contains
         ! Set temperature of the particles
         select case(itemppart)
         case (0)
-            rParticles%p_temp(iPart)= particlemass
+            rParticles%p_temp(iPart)= parttemp
             
         case (1)
             ! Get random number
@@ -5369,7 +5499,7 @@ contains
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_temp(iPart)= random2*(parttempmax-parttempmin)
+            rParticles%p_temp(iPart)= parttempmin+random2*(parttempmax-parttempmin)
 
         case default
           call output_line('Invalid temp type mode!', &
@@ -5385,6 +5515,11 @@ contains
         rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0.0_dp
+ 
+         ! Set particle mass
+        rParticles%p_mass(iPart)= &
+               rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**2 * 3.14159265358_dp /4.0_dp)
+
  
         if (istartpos == 2) then
             ! Release portable graymap image

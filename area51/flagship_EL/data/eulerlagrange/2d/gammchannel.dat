@@ -84,21 +84,21 @@ ymin = 1.5e-3
 ymax = 9.0e-2
 
 #-------------------------------------------------------------------------------
-# mass and diameter of the particle
+# density and diameter of the particle
 #-------------------------------------------------------------------------------
 
-# 0 all particles have the same mass 
-# 1 random mass of the particles (0 to particlemass)
-# 2 random mass of the particles (particlemassmin to particlemassmax)
-imasspart = 2
+# 0 all particles have the same density (particledensity) 
+# 1 random density of the particles (0 to particledensity)
+# 2 random density of the particles (particledensitymin to particledensitymax)
+idensitypart = 0
 
-# particle mass in kg
-particlemass = 1e-15
+# particle mass in kg/m^3
+particledensity = 4000
 
-# particle mass minimum in kg
-particlemassmin = 1e-15
-# particle mass maximum in kg
-particlemassmax = 1e-12
+# particle mass minimum in kg/m^3
+particledensitymin = 0.15
+# particle mass maximum in kg/m^3
+particledensitymax = 0.39
 
 #-------------------------------------------------------------------------------
 
@@ -111,9 +111,9 @@ idiampart = 2
 particlediam = 1e-9
 
 # particle diameter minimum in meter
-particlediammin = 1e-12
+particlediammin = 1e-11
 # particle diameter maximum in meter
-particlediammax = 1e-9
+particlediammax = 1e-10
 
 
 #-------------------------------------------------------------------------------
@@ -143,25 +143,25 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = 0   #-9.81
+gravityy = 0 #-9.81
 
 
 #-------------------------------------------------------------------------------
 # temperature
 #-------------------------------------------------------------------------------
 
-# 0 all particles have the same diameter 
-# 1 random diameter of the particles (0 to parttemp)
-# 2 random diameter of the particles (parttempmin to parttempmax)
-itemppart = 2
+# 0 all particles have the same temperature 
+# 1 random temperature of the particles (0 to parttemp)
+# 2 random temperature of the particles (parttempmin to parttempmax)
+itemppart = 0
 
 # temperature of the particles in Kelvin
-parttemp = 100
+parttemp = 277
 
 # particle temperature minimum in Kelvin
-parttempmin = 50
+parttempmin = 150
 # particle temperature maximum in Kelvin
-parttempmax = 150
+parttempmax = 300
 
 
 #-------------------------------------------------------------------------------
@@ -171,6 +171,18 @@ parttempmax = 150
 # kinematic viscosity of the gas
 gas_nu = 1e-5
 
+# gas temperature in Kelvin
+temp_gas = 277
+
+#-------------------------------------------------------------------------------
+# specitic heats at konstant volumes (in J/kg * K)
+#-------------------------------------------------------------------------------
+
+# gas phase
+c_v_gas = 718
+
+# particle phase
+c_v_part = 1380
 
 #-------------------------------------------------------------------------------
 # output particle phase (additional to the data of the output file of the gasphase)
@@ -178,7 +190,7 @@ gas_nu = 1e-5
 
 # 0 no output
 # 1 only particle positions
-# 2 position, velocity, diameter and temperatur of the particles
+# 2 position, velocity, diameter, mass, density and temperatur of the particles
 ipartoutput = 2
 
 

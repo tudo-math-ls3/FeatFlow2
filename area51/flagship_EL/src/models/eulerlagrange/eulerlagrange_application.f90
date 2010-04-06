@@ -267,7 +267,7 @@ module eulerlagrange_application
     real(DP), dimension(:), pointer :: p_xvelo_gas, p_yvelo_gas, p_zvelo_gas
     real(DP), dimension(:), pointer :: p_xvelo_gas_old, p_yvelo_gas_old, p_zvelo_gas_old
     real(DP), dimension(:), pointer :: p_lambda1, p_lambda2, p_lambda3, p_lambda4
-    real(DP), dimension(:), pointer :: p_mass
+    real(DP), dimension(:), pointer :: p_density
     real(DP), dimension(:), pointer :: p_diam
 
     integer, dimension(:), pointer :: p_element
@@ -486,6 +486,7 @@ module eulerlagrange_application
     call storage_free (rParticles%h_lambda4)
     call storage_free (rParticles%h_element)
     call storage_free (rParticles%h_diam)
+    call storage_free (rParticles%h_density)
     call storage_free (rParticles%h_mass)
     call storage_free (rParticles%h_temp)
     call storage_free (rParticles%h_midpoints_el)
@@ -1978,9 +1979,8 @@ module eulerlagrange_application
         end do
         write(20+rParticles%iTimestep,*) '</DataArray>'
         write(20+rParticles%iTimestep,*) '<DataArray type="Float32" Name="Density" format="ascii">'
-        do iPart = 1, rParticles%nPart
-          write(20+rParticles%iTimestep,*) rParticles%p_mass(iPart)/&
-                                            (rParticles%p_diam(iPart)**2 * 3.14159265358 /4)
+        do iPart = 1, rParticles%nPart   
+          write(20+rParticles%iTimestep,*) rParticles%p_density(iPart)
         end do
         write(20+rParticles%iTimestep,*) '</DataArray>'
         write(20+rParticles%iTimestep,*) '</PointData>'
@@ -3219,8 +3219,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty
     
-    ! Variables for particlemass, -diameter and -temperature
-    real(DP) :: particlemass, particlemassmin, particlemassmax
+    ! Variables for particle density, -diameter and -temperature
+    real(DP) :: particledensity, particledensitymin, particledensitymax
     real(DP) :: particlediam, particlediammin, particlediammax
     real(DP) :: parttemp, parttempmin, parttempmax
 
@@ -3236,8 +3236,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Mode for the startingpositions of the particles
     integer :: istartpos
 
-    ! Mode for the mass of the particles
-    integer :: imasspart
+    ! Mode for the density of the particles
+    integer :: idensitypart
 
     ! Mode for the diameter of the particles
     integer :: idiampart
@@ -3284,6 +3284,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_new ('euler_lagrange', 'Particle:temperatur', rParticles%npart, ST_DOUBLE, rParticles%h_temp, &
                             ST_NEWBLOCK_NOINIT)
     call storage_new ('euler_lagrange', 'Particle:mass', rParticles%npart, ST_DOUBLE, rParticles%h_mass, &
+                            ST_NEWBLOCK_NOINIT)
+    call storage_new ('euler_lagrange', 'Particle:density', rParticles%npart, ST_DOUBLE, rParticles%h_density, &
                             ST_NEWBLOCK_NOINIT)
     call storage_new ('euler_lagrange', 'Particle:alpha_n', rParticles%npart, ST_DOUBLE, rParticles%h_alpha_n, &
                             ST_NEWBLOCK_NOINIT)
@@ -3373,6 +3375,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call storage_getbase_double (rParticles%h_lambda3, rParticles%p_lambda3)
     call storage_getbase_double (rParticles%h_lambda4, rParticles%p_lambda4)
     call storage_getbase_double (rParticles%h_diam, rParticles%p_diam)
+    call storage_getbase_double (rParticles%h_density, rParticles%p_density)
     call storage_getbase_double (rParticles%h_mass, rParticles%p_mass)
     call storage_getbase_double (rParticles%h_temp, rParticles%p_temp)
     call storage_getbase_double (rParticles%h_alpha_n, rParticles%p_alpha_n)
@@ -3417,14 +3420,14 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 
-    ! Get particle-mass, -temp and -diameter
-    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemass", particlemass)
+    ! Get particle-density, -temp and -diameter
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensity", particledensity)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttemp", parttemp)
-    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmin", particlemassmin)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymin", particledensitymin)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammin", particlediammin)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmin", parttempmin)
-    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlemassmax", particlemassmax)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensitymax", particledensitymax)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediammax", particlediammax)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "parttempmax", parttempmax)
 
@@ -3441,8 +3444,8 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! Get variable for startingposition
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "startpos", istartpos)
 
-    ! Get variable for mass of the particles
-    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "imasspart", imasspart)
+    ! Get variable for density of the particles
+    call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idensitypart", idensitypart)
 
     ! Get variable for diameter of the particles
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "idiampart", idiampart)
@@ -3651,7 +3654,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             ! Get random number
             call random_number(random1)
             
-            rParticles%p_diam(iPart)= random1*(particlediammax-particlediammin)
+            rParticles%p_diam(iPart)= particlediammin+random1*(particlediammax-particlediammin)
                       
         case default
           call output_line('Invalid diam type mode!', &
@@ -3659,26 +3662,26 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
           call sys_halt()
         end select
 
-        ! Set mass of the particles
-        select case(imasspart)
+        ! Set density of the particles
+        select case(idensitypart)
         case (0)
-            rParticles%p_mass(iPart)= particlemass
+            rParticles%p_density(iPart)= particledensity
             
         case (1)
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_mass(iPart)= random2*particlemass
+            rParticles%p_density(iPart)= random2*particledensity
  
         case (2)
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_mass(iPart)= random2*(particlemassmax-particlemassmin)
+            rParticles%p_density(iPart)= particledensitymin+random2*(particledensitymax-particledensitymin)
            
         case default
-          call output_line('Invalid mass type mode!', &
-                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_masstype')
+          call output_line('Invalid density type mode!', &
+                           OU_CLASS_ERROR,OU_MODE_STD,'flagship_densitytype')
           call sys_halt()
         end select
  
@@ -3686,7 +3689,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
         ! Set temperature of the particles
         select case(itemppart)
         case (0)
-            rParticles%p_temp(iPart)= particlemass
+            rParticles%p_temp(iPart)= parttemp
             
         case (1)
             ! Get random number
@@ -3698,13 +3701,17 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
             ! Get random number
             call random_number(random2)
             
-            rParticles%p_temp(iPart)= random2*(parttempmax-parttempmin)
+            rParticles%p_temp(iPart)= parttempmin+random2*(parttempmax-parttempmin)
           
         case default
           call output_line('Invalid temp type mode!', &
                            OU_CLASS_ERROR,OU_MODE_STD,'flagship_temptype')
           call sys_halt()
         end select
+
+        ! Set particle mass
+        rParticles%p_mass(iPart)= &
+               rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**2 * 3.14159265358_dp /4.0_dp)
 
         ! Set initial values for the particles
         rParticles%p_xvelo(iPart)= velopartx
