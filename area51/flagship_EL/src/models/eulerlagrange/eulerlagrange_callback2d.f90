@@ -5252,10 +5252,10 @@ contains
     ! 
     ! E_k= e_k + \frac{1}{2}|u_k|^2
     !
-    E_total_gas= E_intern_gas + (rParticles%p_xvelo_gas(iPart)**2 + &
-                    rParticles%p_yvelo_gas(iPart)**2)/2
-    E_total_part= E_intern_part + (rParticles%p_xvelo(iPart)**2 + &
-                    rParticles%p_yvelo(iPart)**2)/2
+    E_total_gas= E_intern_gas + (rParticles%p_xvelo_gas(iPart)**2.0_dp + &
+                    rParticles%p_yvelo_gas(iPart)**2.0_dp)/2.0_dp
+    E_total_part= E_intern_part + (rParticles%p_xvelo(iPart)**2.0_dp + &
+                    rParticles%p_yvelo(iPart)**2.0_dp)/2.0_dp
 
 
 	! Calculate the drag force coefficient
@@ -5368,9 +5368,9 @@ contains
 
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
 
 
         case(1)
@@ -5380,9 +5380,9 @@ contains
 		  
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
         
         case(2)
          call random_number(random3)
@@ -5400,7 +5400,7 @@ contains
 	    
 		    ! Get point in the array
             rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+            rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
 
             ix = 1+(rpgm%width-1)*(rParticles%p_xpos(iPart)-xmin)/(xmax-xmin)
             if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
@@ -5427,7 +5427,7 @@ contains
         
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
           
@@ -5464,18 +5464,21 @@ contains
         ! Set mass of the particles
         select case(idensitypart)
         case (0)
+            !Set particle density
             rParticles%p_density(iPart)= particledensity
             
         case (1)
             ! Get random number
             call random_number(random2)
             
+            !Set particle density
             rParticles%p_density(iPart)= random2*particledensity
             
         case (2)
             ! Get random number
             call random_number(random2)
             
+            !Set particle density
             rParticles%p_density(iPart)= particledensitymin+random2*(particledensitymax-particledensitymin)
 
         case default
@@ -5487,18 +5490,21 @@ contains
         ! Set temperature of the particles
         select case(itemppart)
         case (0)
+            ! Set particle temperature (all particles have the same temperatur)
             rParticles%p_temp(iPart)= parttemp
             
         case (1)
             ! Get random number
             call random_number(random2)
             
+            ! Set particle temperature
             rParticles%p_temp(iPart)= random2*parttemp
             
         case (2)
             ! Get random number
             call random_number(random2)
             
+            ! Set particle temperature (between tempmin an tempmax)
             rParticles%p_temp(iPart)= parttempmin+random2*(parttempmax-parttempmin)
 
         case default

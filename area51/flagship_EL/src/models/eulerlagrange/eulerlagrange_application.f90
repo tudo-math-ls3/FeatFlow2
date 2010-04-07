@@ -1647,7 +1647,7 @@ module eulerlagrange_application
 
     ! Current particlenumber
     integer :: iPart
-    character(LEN=20) :: sfilename, sfilenamenew
+    character(LEN=40) :: sfilename, sfilenamenew
 
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist,&
@@ -1934,19 +1934,22 @@ module eulerlagrange_application
     call ucd_release(rexport)
 
     write(sfilename,'(i0)') rParticles%iTimestep
-    sfilenamenew='particleflow'//trim(sfilename)//'.vtk'
-
-    open(20+rParticles%iTimestep,file='out/video/'//sfilenamenew)
+    
+    sfilenamenew=trim(sucdsolution)//'particles.'//trim(sys_si0(rParticles%iTimestep,5))//'.vtk'
+    
+    open(20+rParticles%iTimestep,file=trim(sfilenamenew))
 
     select case(ipartoutput)
       case (0)
       
       case (1)
+        ! Store only particle positions
         do iPart = 1, rParticles%nPart
           write(20+rParticles%iTimestep,*) rParticles%p_xpos(iPart), rParticles%p_ypos(iPart)
         end do
           
-      case (2)           
+      case (2) 
+        ! Store position, mass, density, diameter, temperature and velocity of the particles          
         write(20+rParticles%iTimestep,*) '<VTKFile type="UnstructuredGrid" version="0.1" byte_order="LittleEndian">'
         write(20+rParticles%iTimestep,*) '  <UnstructuredGrid>'
         write(20+rParticles%iTimestep,*) '      <Piece NumberOfPoints="', rParticles%nPart, '" NumberOfCells="0">'
@@ -3458,7 +3461,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     rParticles%nu_g= gas_nu
     rParticles%gravity(1)= gravityx
     rParticles%gravity(2)= gravityy
-    rParticles%iTimestep= 0
+    rParticles%iTimestep= 1
     rParticles%maxvalx= maxval(p_DvertexCoords(1,:))
     rParticles%p_PartVol= 0.0_dp
     rParticles%p_PartVolAver= 0.0_dp
@@ -3843,21 +3846,21 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
          p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
 
 
-    ! One way or twoway coppling?
+    ! One way or twoway coupling?
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "icouplingpart", icouplingpart)
 
     select case(icouplingpart)
     case(1)
-        ! Subroutine to compute the new position of the particles
+        ! Subroutine to compute the movement of the particles
         call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
     
     case(2)
-        ! Subroutine to compute the new position of the particles
+        ! Subroutine to compute the movement of the particles
         call eulerlagrange_moveparticlestwoway(rparlist,p_rproblemLevel,rsolution,rParticles)
     
     case default
-            call output_line('Invalid coppling mode!', &
-                       OU_CLASS_ERROR,OU_MODE_STD,'flagship_coppling')
+            call output_line('Invalid coupling mode!', &
+                       OU_CLASS_ERROR,OU_MODE_STD,'flagship_coupling')
             call sys_halt()
      
     end select

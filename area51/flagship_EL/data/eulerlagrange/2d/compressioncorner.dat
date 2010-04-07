@@ -82,24 +82,36 @@ ymin = 0
 ymax = 0
 
 #-------------------------------------------------------------------------------
-# mass and diameter of the particle
+# density and diameter of the particle
 #-------------------------------------------------------------------------------
 
-# 0 all particles have the same mass 
-# 1 random mass of the particles (0 to particlemass)
-imasstypepart = 0
+# 0 all particles have the same density (particledensity) 
+# 1 random density of the particles (0 to particledensity)
+# 2 random density of the particles (particledensitymin to particledensitymax)
+idensitypart = 0
 
-# particle-mass
-particlemass = 1e-12
+# particle mass in kg/m^3
+particledensity = 4000
+
+# particle mass minimum in kg/m^3
+particledensitymin = 0.15
+# particle mass maximum in kg/m^3
+particledensitymax = 0.39
 
 #-------------------------------------------------------------------------------
 
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
-idiamtype = 0
+# 2 random diameter of the particles (particlediammin to particlediammax)
+idiampart = 2
 
 # particle-diameter
 particlediam = 1e-9
+
+# particle diameter minimum in meter
+particlediammin = 1e-11
+# particle diameter maximum in meter
+particlediammax = 1e-10
 
 
 #-------------------------------------------------------------------------------
@@ -136,20 +148,39 @@ gravityy = 0 #-9.81
 # temperature
 #-------------------------------------------------------------------------------
 
-# 0 all particles have the same diameter 
-# 1 random diameter of the particles (0 to parttemp)
-itemptypepart = 1
+# 0 all particles have the same temperature 
+# 1 random temperature of the particles (0 to parttemp)
+# 2 random temperature of the particles (parttempmin to parttempmax)
+itemppart = 0
 
 # temperature of the particles in Kelvin
-parttemp = 0
+parttemp = 277
+
+# particle temperature minimum in Kelvin
+parttempmin = 150
+# particle temperature maximum in Kelvin
+parttempmax = 300
+
 
 #-------------------------------------------------------------------------------
-# gasphase
+# gas phase
 #-------------------------------------------------------------------------------
 
 # kinematic viscosity of the gas
 gas_nu = 1e-5
 
+# gas temperature in Kelvin
+temp_gas = 277
+
+#-------------------------------------------------------------------------------
+# specitic heats at konstant volumes (in J / kg * K)
+#-------------------------------------------------------------------------------
+
+# gas phase
+c_v_gas = 718
+
+# particle phase
+c_v_part = 1380
 
 #-------------------------------------------------------------------------------
 # output particle phase (additional to the data of the output file of the gasphase)
@@ -157,8 +188,18 @@ gas_nu = 1e-5
 
 # 0 no output
 # 1 only particle positions
-# 2 position, velocity, diameter and temperatur of the particles
+# 2 position, velocity, diameter, mass, density and temperatur of the particles
 ipartoutput = 2
+
+
+#-------------------------------------------------------------------------------
+# choice coupling mode (one-way or two-way coupling)
+#-------------------------------------------------------------------------------
+
+# 1 one-way coupling (particles have no influence on the gas phase)
+# 2 two-way coupling
+icouplingpart = 2
+
 
 
 ################################################################################

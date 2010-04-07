@@ -175,7 +175,7 @@ gas_nu = 1e-5
 temp_gas = 277
 
 #-------------------------------------------------------------------------------
-# specitic heats at konstant volumes (in J/kg * K)
+# specitic heats at konstant volumes (in J / kg * K)
 #-------------------------------------------------------------------------------
 
 # gas phase
@@ -200,7 +200,7 @@ ipartoutput = 2
 
 # 1 one-way coupling (particles have no influence on the gas phase)
 # 2 two-way coupling
-icouplingpart = 1
+icouplingpart = 2
 
 
 
