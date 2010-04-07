@@ -541,7 +541,7 @@ contains
     
     
     
-do iwithoutlimiting = 1,1
+do iwithoutlimiting = 1,2
 if (iwithoutlimiting==2) ilimiter = 0
     
     ! Now set the initial conditions via L2 projection
@@ -612,6 +612,8 @@ if (iwithoutlimiting==2) ilimiter = 0
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
        dt= 0.5_dp*dt
+       
+       
        if (dt>ttfinal-ttime) dt = ttfinal-ttime
 
        ! Compute solution from time step t^n to time step t^{n+1}
@@ -1056,27 +1058,27 @@ if (iwithoutlimiting==2) ilimiter = 0
     
    
  
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
-
-
-!    ! Calculate the difference of limited and non-limited solution
-!    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+!    ! Calculate the error to the reference function.
 !    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getCompareFunction_2D,rcollection)
+!                       getReferenceFunction_2D)
 !    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
 !
 !    ! Calculate the error to the reference function.
 !    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getCompareFunction_2D,rcollection)
+!                       getReferenceFunction_2D)
 !    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
+
+    ! Calculate the difference of limited and non-limited solution
+    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                       getCompareFunction_2D,rcollection)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+                       getCompareFunction_2D,rcollection)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
 
     
 !

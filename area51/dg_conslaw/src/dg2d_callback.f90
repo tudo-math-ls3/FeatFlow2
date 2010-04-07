@@ -336,7 +336,7 @@ contains
 !</subroutine>
 
 integer :: iunit,i,j
-real(dp),dimension(10000) :: Dreference
+real(dp),dimension(40000) :: Dreference
 real(dp) :: r,n
 
 ! Circular dambreak
@@ -394,7 +394,7 @@ iunit = sys_getFreeUnit()
 open(iunit, file='h')
 
 
-do i = 1, 4000
+do i = 1, 40000
   read(iunit,*) Dreference(i)
 
 end do
@@ -408,7 +408,7 @@ close(iunit)
     do i = 1, size(Dvalues,1)
     do j = 1, size(Dvalues,2)
       r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
-      n = 2000+1+1000*r
+      n = 20000+1+10000*r
       
      
       
@@ -1460,16 +1460,16 @@ integer :: iel
     call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
     
 
-!    iunit = sys_getFreeUnit()
-!
-!    open(iunit, file='h')
-!
-!
-!    do i = 1, 10000
-!      read(iunit,*) Dreference(i)
-!    end do
-!
-!    close(iunit)
+    iunit = sys_getFreeUnit()
+
+    open(iunit, file='h')
+
+
+    do i = 1, 4000
+      read(iunit,*) Dreference(i)
+    end do
+
+    close(iunit)
 
     
     select case (rcollection%IquickAccess(1))
@@ -1511,6 +1511,11 @@ integer :: iel
 !            ! 'Analytical' solution to circular dambreak
 !            r = sqrt(Dpoints(1,ipoint,iel)*Dpoints(1,ipoint,iel)+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
 !            n = 1+1000*r
+!            Dcoefficients (1,ipoint,iel) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+
+!            ! 'Analytical' smooth solution
+!            r = sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp)
+!            n = 2000+1+1000*r
 !            Dcoefficients (1,ipoint,iel) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
               
 !            ! Water hill at corner
