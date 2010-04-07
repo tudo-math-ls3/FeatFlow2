@@ -23,7 +23,7 @@
 # script!
 #
 # Specify its directory prefix here.
-BASEDIR_OBJFILES=${HOME}/nobackup/ff2obj
+BASEDIR_OBJFILES=${HOME}/nobackup/feat2obj
 
 # To support multiple working copies of Featflow2 which all store their
 # object files beneath ${BASEDIR_OBJFILES}, but which should not interfere

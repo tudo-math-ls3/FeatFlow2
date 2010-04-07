@@ -10,13 +10,13 @@ mus="80.194"
 nus="0.3"
 
 # choose MG levels
-mgs="03"
-#mgs="02 03 04 05 06 07 08 09 10"
+mgs="05"
+#mgs="02 03 04 05 06 07 08"
 
 #-----------------------------
 
 # set temporary base name of dat-file and result file
-datFile="elasticity_2d_disp_smallDeform_static"
+datFile="elast_2d_disp_smallDeform_static"
 resultFile="result"
 
 
@@ -111,7 +111,7 @@ tolerance = 1.0e-8
 elementaryPrec = ILU
 
 # MG cycle ('V', 'F' or 'W') (only for MG solver)
-mgCycle = V
+mgCycle = F
 
 # number of smoothing steps (only for MG solver)
 numSmoothingSteps = 2
@@ -157,7 +157,7 @@ echo "*** Moved dat file to ${datFile2}.dat."
 echo "*** Moved result file to ${resultFile2}.log."
 
 echo ""
-echo "*** -----------------------------"
+echo "*** ----------------------------------------------------------"
 echo ""
 
 done # mgs

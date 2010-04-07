@@ -5,73 +5,9 @@
 !#
 !# <purpose>
 !# This module contains callback functions for the elasticity problem that are
-!# used during the matrix/vector assembly for specifying analytical data.
-!# There are three callback functions involved, which may be called depending
-!# on the situation. All of them correspond to a specific interface for
-!# callback functions, defined in 'intf_xxxx.inc' files.
-!#
-!# --- 2D version ---
-!#
-!# 1.) coeff_Laplace_2D
-!#     -> Returns the coefficients for the Laplace matrix. This routine is
-!#        only used if the problem to calculate has nonconstant coefficients!
-!#        Otherwise the routine is dead.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientMatrixSc.inc'
-!#
-!# 2.) coeff_RHS_Vol_u1_2D
-!#     -> Returns analytical values for the right hand side(f1) of the Laplace
-!#        equation. 2D case.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 3.) coeff_RHS_Vol_u2_2D
-!#     -> Returns analytical values for the right hand side(f2) of the Laplace
-!#        equation. 2D case.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 4.) coeff_RHS_surfX_2D
-!#     -> Returns analytical values for the right hand side(f1) of neumann bounfary
-!#        part(which is added to volumetric part). 2D case.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 5.) coeff_RHS_surfY_2D
-!#     -> Returns analytical values for the right hand side(f2) of neumann bounfary
-!#        part(which is added to volumetric part). 2D case.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 6.) getStressTensor
-!#     -> Returns Stress Tensorwhich is used to calculate normal value in
-!#        above two routines. 2D case.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 7.) getReferenceFunction_u1_2D
-!#     -> Returns the values of the analytic function and its derivatives,
-!#        corresponding to coeff_RHS_Vol_u1_2D
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the FE function in comparison to the analytic
-!#        function
-!#
-!# 8.) getReferenceFunction_u2_2D
-!#     -> Returns the values of the analytic function and its derivatives,
-!#        corresponding to coeff_RHS_Vol_u2_2D
-!#     -> Is only used for the postprocessing to calculate the $L_2$- and
-!#        $H_1$-error of the FE function in comparison to the analytic
-!#        function
-!#
-!# 9.) getBoundaryValues_2D
-!#     -> Returns analytic values on the (Dirichlet) boundary of the
-!#        problem to solve.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_bcassembly.inc'
-!#
-!# 9.) function aux_danalyticFunction
-!#     -> Returns analytic values of the function and their derivatives.
-!#
+!# used during the matrix/vector assembly. Furthermore, the type t_problem is defined
+!# here which contains all necessary information for the problem to be computed. Finally,
+!# some constants needed for the computation are defined.
 !# </purpose>
 !##############################################################################
 
@@ -118,8 +54,9 @@ module elasticity_callback
   integer, parameter :: SMOOTHER_JACOBI     = 1
   integer, parameter :: SMOOTHER_ILU        = 2
 
-  type t_problem
 
+  ! type for storing all necessary information about the simulation
+  type t_problem
     !   grid file
     character(len=500) :: sgridFileTri
     character(len=500) :: sgridFilePrm
@@ -210,29 +147,32 @@ module elasticity_callback
     integer :: nrefSols = 0
 
     ! given points where to evaluate the FE solution (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer  :: DevalPoints
+    real(DP), dimension(:,:), pointer :: DevalPoints
 
     ! given reference solutions in the evaluation points (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer    :: DrefSols
+    real(DP), dimension(:,:), pointer :: DrefSols
 
     ! values and derivatives of the FE function in the evaluation points
     ! (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer    :: Dvalues, DderivX, DderivY
+    real(DP), dimension(:,:), pointer :: Dvalues, DderivX, DderivY
 
-  end type
+  end type t_problem
 
-  type(t_problem) :: rprob
+  ! the one and only instance of the t_problem type which is used in this and the main
+  ! module to store all necessary information about the simulation
+  type(t_problem), save :: rprob
 
 
 contains
 
-! ***************************************************************************
-  !<subroutine>
 
-  subroutine coeff_mat_Poisson_2D(rdiscretisationTrial,rdiscretisationTest,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTrial,IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_mat_Poisson_2D(rdiscretisationTrial, rdiscretisationTest, rform, &
+                                  nelements, npointsPerElement,Dpoints, IdofsTrial, &
+                                  IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
     
     use basicgeometry
     use triangulation
@@ -240,83 +180,86 @@ contains
     use scalarpde
     use domainintegration
     
-  !<description>
-    ! This subroutine is called during the matrix assembly. It has to compute
-    ! the coefficients in front of the terms of the bilinear form.
+!<description>
+    ! This subroutine is called during the matrix assembly. It computes the coefficients
+    ! in front of the terms of the bilinear form.
     !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the bilinear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the bilinear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
+    ! The routine accepts a set of elements and a set of points on these elements
+    ! (cubature points) in real coordinates.
+    ! According to the terms in the bilinear form, the routine simultaneously computes
+    ! for all these points and all the terms in the bilinear form the corresponding
+    ! coefficients.
+    ! The routine implements the interface defined in the file
+    ! 'intf_coefficientMatrixSc.inc'.
+!</description>
     
-  !<input>
+!<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; trial space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTrial
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
     
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.; test space.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisationTest
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
 
     ! The bilinear form which is currently being evaluated:
-    type(t_bilinearForm), intent(IN)                            :: rform
+    type(t_bilinearForm), intent(in) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in trial space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTrial
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(#local DOF in trial space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTrial
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
-  !</input>
+!</input>
   
-  !<output>
+!<output>
     ! A list of all coefficients in front of all terms in the bilinear form -
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the bilinear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
     
-  !</subroutine>
+!</subroutine>
 
     Dcoefficients = 1.0_DP
 
-  end subroutine coeff_mat_Poisson_2D
+  end subroutine elast_mat_Poisson_2D
 
-! ***************************************************************************
+
+! ****************************************************************************************
+
 
 !<subroutine>
-  subroutine coeff_RHS_Poisson_vol_2D(rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,&
-                  Dcoefficients,rcollection)
+  subroutine elast_RHS_Poisson_2D_vol(rdiscretisation, rform, nelements, &
+                                      npointsPerElement, Dpoints, IdofsTest, &
+                                      rdomainIntSubset, Dcoefficients, rcollection)
     
     use basicgeometry
     use triangulation
@@ -324,481 +267,88 @@ contains
     use scalarpde
     use domainintegration
     
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form corresponding
-    ! to the X-velocity.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function f
+    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the volumetric 
+    ! contributions.
+!</description>
     
-  !<input>
+!<input>
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    type(t_linearForm), intent(in) :: rform
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
-  !</input>
+!</input>
   
-  !<output>
+!<output>
     ! A list of all coefficients in front of all terms in the linear form -
     ! for all given points on all given elements.
     !   DIMENSION(itermCount,npointsPerElement,nelements)
     ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-  !</subroutine>
-
-    real(DP), dimension(:,:), pointer                      :: Der_u1xx,Der_u1yy,Der_u2xy
-    
-    allocate(Der_u1xx(npointsPerElement,nelements),Der_u1yy(npointsPerElement,nelements),&
-    Der_u2xy(npointsPerElement,nelements))
-    
-    call getReferenceFunction_u1_2D(DER_DERIV_XX,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u1xx,rcollection)
-    
-    call getReferenceFunction_u2_2D(DER_DERIV_XY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u2xy,rcollection)
-    
-    call getReferenceFunction_u1_2D(DER_DERIV_YY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u1yy,rcollection)
-    
-    
-    if (rprob%csimulation .eq. SIMUL_REAL) then
-      Dcoefficients(1,:,:) = rprob%dforceVolumeX
-    else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      Dcoefficients(1,:,:) = -(2 * rprob%dmu + rprob%dlambda) * Der_u1xx - &
-                 rprob%dmu * Der_u1yy - (rprob%dmu + rprob%dlambda) * Der_u2xy
-    end if
-    
-    deallocate(Der_u1xx,Der_u1yy,Der_u2xy)
-  
-  end subroutine coeff_RHS_Poisson_vol_2D
-
-! ***************************************************************************
-
-!<subroutine>
-
-  subroutine coeff_RHS_Poisson_bound_2D(rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  ibct, DpointPar, IdofsTest,rdomainIntSubset,&
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use boundary
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    use feevaluation
-    use fparser
-    use spatialdiscretisation
-
-!<description>
-   ! This subroutine is called during the vector assembly. It has to
-   ! compute the coefficients in front of the terms of the linear
-   ! form. This routine can be used universaly for arbitrary linear
-   ! forms for which the coefficients are evaluated analytically
-   ! using a function parser which is passed using the collection.
-   !
-   ! The routine accepts a set of elements and a set of points on these
-   ! elements (cubature points) in real coordinates.
-   ! According to the terms in the linear form, the routine has to compute
-   ! simultaneously for all these points and all the terms in the linear form
-   ! the corresponding coefficients in front of the terms.
-   !
-   ! This routine handles the constant velocities in the primal problem.
-!</description>
-
-!<input>
-   ! The discretisation structure that defines the basic shape of the
-   ! triangulation with references to the underlying triangulation,
-   ! analytic boundary boundary description etc.
-   type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
-   ! The linear form which is currently to be evaluated:
-   type(t_linearForm), intent(in) :: rform
-
-   ! Number of elements, where the coefficients must be computed.
-   integer, intent(in) :: nelements
-
-   ! Number of points per element, where the coefficients must be computed
-   integer, intent(in) :: npointsPerElement
-
-   ! This is an array of all points on all the elements where coefficients
-   ! are needed.
-   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-   ! DIMENSION(dimension,npointsPerElement,nelements)
-   real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-   ! This is the number of the boundary component that contains the
-   ! points in Dpoint. All points are on the same boundary component.
-   integer, intent(in) :: ibct
-
-   ! For every point under consideration, this specifies the parameter
-   ! value of the point on the boundary component. The parameter value
-   ! is calculated in LENGTH PARAMETRISATION!
-   ! DIMENSION(npointsPerElement,nelements)
-   real(DP), dimension(:,:), intent(in) :: DpointPar
-
-   ! An array accepting the DOF's on all elements trial in the trial space.
-   ! DIMENSION(#local DOF's in test space,nelements)
-   integer, dimension(:,:), intent(in) :: IdofsTest
-
-   ! This is a t_domainIntSubset structure specifying more detailed information
-   ! about the element set that is currently being integrated.
-   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-   type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-!</input>
-
-!<inputoutput>
-   ! Optional: A collection structure to provide additional
-   ! information to the coefficient routine.
-   type(t_collection), intent(inout), optional :: rcollection
-!</inputoutput>
-
-!<output>
-   ! A list of all coefficients in front of all terms in the linear form -
-   ! for all given points on all given elements.
-   !   DIMENSION(itermCount,npointsPerElement,nelements)
-   ! with itermCount the number of terms in the linear form.
-   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-
 !</subroutine>
 
-   ! local variables
-   real(DP), dimension(:,:,:,:), pointer                    :: DstressTensor
-   real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv
-   integer :: icomp,iel,ipoint,ndim
-   allocate(DstressTensor(2,2,npointsPerElement,nelements))
-
-
-   ! Get the minimum and maximum parameter value. The point with the minimal
-   ! parameter value is the start point of the interval, the point with the
-   ! maximum parameter value the endpoint.
-   dminPar = DpointPar(1,1)
-   dmaxPar = DpointPar(1,1)
-   do iel = 1, nelements
-     do ipoint = 1, npointsPerElement
-       dminPar = min(DpointPar(ipoint,iel), dminPar)
-       dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-     end do
-   end do
-   
-
-   ! Multiply the velocity vector with the normal in each point
-   ! to get the normal velocity.
-   do iel = 1, nelements
-     do ipoint = 1, npointsPerElement
-  
-       dt = DpointPar(ipoint,iel) 
-
-
-       if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-      
-         call getStressTensor(rdiscretisation, &
-                      nelements,npointsPerElement,Dpoints, &
-                      IdofsTest,rdomainIntSubset,&
-                      DstressTensor,rcollection)
-
-
-  
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-         if (DpointPar(ipoint,iel) .eq. dminPar) then
-           ! Start point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-  
-         else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-          ! End point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-         else
-           ! Inner point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-         end if
-
-         ! Compute the normal value
-!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
-!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-         Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
-                + dny * DstressTensor(1,2,ipoint,iel)
- 
-        else if (rprob%csimulation .eq. SIMUL_REAL) then
-           ! in rcollection%IquickAccess(1) the current segment number is stored
-           Dcoefficients(1,ipoint,iel) &
-             = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
-        end if
-      end do
-    end do
-
-    deallocate(DstressTensor)
-
- end subroutine coeff_RHS_Poisson_bound_2D
-
-! ***************************************************************************
-
-!<subroutine>
-  subroutine coeff_RHS_volX_2D(rdiscretisation, rform, nelements, npointsPerElement, &
-                               Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
-                               rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form corresponding
-    ! to the X-velocity.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-  !</subroutine>
-
-    real(DP), dimension(:,:), pointer                      :: Der_u1xx,Der_u1yy,Der_u2xy
+    real(DP), dimension(:,:), pointer :: Der_u1xx, Der_u1yy
     
     allocate(Der_u1xx(npointsPerElement,nelements), &
-             Der_u1yy(npointsPerElement,nelements), &
-             Der_u2xy(npointsPerElement,nelements))
+             Der_u1yy(npointsPerElement,nelements))
     
-    call getReferenceFunction_u1_2D(DER_DERIV_XX,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u1xx,rcollection)
+    call elast_analFunc_u1(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1xx, rcollection)
     
-    call getReferenceFunction_u2_2D(DER_DERIV_XY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u2xy,rcollection)
-    
-    call getReferenceFunction_u1_2D(DER_DERIV_YY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u1yy,rcollection)
-    
+    call elast_analFunc_u1(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yy, rcollection)
     
     if (rprob%csimulation .eq. SIMUL_REAL) then
       Dcoefficients(1,:,:) = rprob%dforceVolumeX
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      Dcoefficients(1,:,:) = -(2 * rprob%dmu + rprob%dlambda) * Der_u1xx - &
-                 rprob%dmu * Der_u1yy - (rprob%dmu + rprob%dlambda) * Der_u2xy
+      ! compute Laplace operator
+      Dcoefficients(1,:,:) = -Der_u1xx - Der_u1yy
     end if
     
-    deallocate(Der_u1xx, Der_u1yy, Der_u2xy)
+    deallocate(Der_u1xx, Der_u1yy)
   
-  end subroutine coeff_RHS_volX_2D
+  end subroutine elast_RHS_Poisson_2D_vol
 
-!BRAL: merge volX and volY by using the rcollection%IquickAccess(2) field
 
-! ***************************************************************************
+! ****************************************************************************************
+
 
 !<subroutine>
-
-   subroutine coeff_RHS_volY_2D(rdiscretisation, rform, nelements, npointsPerElement, &
-                                Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
-                                rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form corresponding
-    ! to the X-velocity.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-   real(DP), dimension(:,:), pointer                      :: Der_u2xx,Der_u2yy,Der_u1yx
-
-   allocate(Der_u2xx(npointsPerElement,nelements),Der_u2yy(npointsPerElement,nelements),&
-            Der_u1yx(npointsPerElement,nelements))
-
-   call getReferenceFunction_u2_2D(DER_DERIV_XX,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u2xx,rcollection)
-
-   call getReferenceFunction_u1_2D(DER_DERIV_XY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u1yx,rcollection)
-
-   call getReferenceFunction_u2_2D(DER_DERIV_YY,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Der_u2yy,rcollection)
-
- 
-   if (rprob%csimulation .eq. SIMUL_REAL) then
-	   Dcoefficients(1,:,:) = rprob%dforceVolumeY
-   else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-	   Dcoefficients(1,:,:) = -(rprob%dmu + rprob%dlambda) * Der_u1yx - rprob%dmu * Der_u2xx &
-                - (2 * rprob%dmu + rprob%dlambda) * Der_u2yy
-   end if
-
-   deallocate(Der_u2xx,Der_u2yy,Der_u1yx)
-
-  end subroutine coeff_RHS_volY_2D
-
-! ***************************************************************************
-
-!<subroutine>
-
-  subroutine coeff_RHS_surfX_2D(rdiscretisation, rform, nelements, npointsPerElement, &
-                                Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
-                                Dcoefficients, rcollection)
+  subroutine elast_RHS_Poisson_2D_bound(rdiscretisation, rform, nelements, &
+                                        npointsPerElement, Dpoints, ibct, DpointPar, &
+                                        IdofsTest, rdomainIntSubset, Dcoefficients, &
+                                        rcollection)
     
     use basicgeometry
     use boundary
@@ -811,189 +361,9 @@ contains
     use spatialdiscretisation
 
 !<description>
-   ! This subroutine is called during the vector assembly. It has to
-   ! compute the coefficients in front of the terms of the linear
-   ! form. This routine can be used universaly for arbitrary linear
-   ! forms for which the coefficients are evaluated analytically
-   ! using a function parser which is passed using the collection.
-   !
-   ! The routine accepts a set of elements and a set of points on these
-   ! elements (cubature points) in real coordinates.
-   ! According to the terms in the linear form, the routine has to compute
-   ! simultaneously for all these points and all the terms in the linear form
-   ! the corresponding coefficients in front of the terms.
-   !
-   ! This routine handles the constant velocities in the primal problem.
-!</description>
-
-!<input>
-   ! The discretisation structure that defines the basic shape of the
-   ! triangulation with references to the underlying triangulation,
-   ! analytic boundary boundary description etc.
-   type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-
-   ! The linear form which is currently to be evaluated:
-   type(t_linearForm), intent(in) :: rform
-
-   ! Number of elements, where the coefficients must be computed.
-   integer, intent(in) :: nelements
-
-   ! Number of points per element, where the coefficients must be computed
-   integer, intent(in) :: npointsPerElement
-
-   ! This is an array of all points on all the elements where coefficients
-   ! are needed.
-   ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-   ! DIMENSION(dimension,npointsPerElement,nelements)
-   real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-   ! This is the number of the boundary component that contains the
-   ! points in Dpoint. All points are on the same boundary component.
-   integer, intent(in) :: ibct
-
-   ! For every point under consideration, this specifies the parameter
-   ! value of the point on the boundary component. The parameter value
-   ! is calculated in LENGTH PARAMETRISATION!
-   ! DIMENSION(npointsPerElement,nelements)
-   real(DP), dimension(:,:), intent(in) :: DpointPar
-
-   ! An array accepting the DOF's on all elements trial in the trial space.
-   ! DIMENSION(#local DOF's in test space,nelements)
-   integer, dimension(:,:), intent(in) :: IdofsTest
-
-   ! This is a t_domainIntSubset structure specifying more detailed information
-   ! about the element set that is currently being integrated.
-   ! It's usually used in more complex situations (e.g. nonlinear matrices).
-   type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-!</input>
-
-!<inputoutput>
-   ! Optional: A collection structure to provide additional
-   ! information to the coefficient routine.
-   type(t_collection), intent(inout), optional :: rcollection
-!</inputoutput>
-
-!<output>
-   ! A list of all coefficients in front of all terms in the linear form -
-   ! for all given points on all given elements.
-   !   DIMENSION(itermCount,npointsPerElement,nelements)
-   ! with itermCount the number of terms in the linear form.
-   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
-
-!</subroutine>
-
-   ! local variables
-   real(DP), dimension(:,:,:,:), pointer                    :: DstressTensor
-   real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv
-   integer :: icomp,iel,ipoint,ndim
-   allocate(DstressTensor(2,2,npointsPerElement,nelements))
-
-
-   ! Get the minimum and maximum parameter value. The point with the minimal
-   ! parameter value is the start point of the interval, the point with the
-   ! maximum parameter value the endpoint.
-   dminPar = DpointPar(1,1)
-   dmaxPar = DpointPar(1,1)
-   do iel = 1, nelements
-     do ipoint = 1, npointsPerElement
-       dminPar = min(DpointPar(ipoint,iel), dminPar)
-       dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-     end do
-   end do
-   
-
-   ! Multiply the velocity vector with the normal in each point
-   ! to get the normal velocity.
-   do iel = 1, nelements
-     do ipoint = 1, npointsPerElement
-  
-       dt = DpointPar(ipoint,iel) 
-
-
-       if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-      
-         call getStressTensor(rdiscretisation, &
-                      nelements,npointsPerElement,Dpoints, &
-                      IdofsTest,rdomainIntSubset,&
-                      DstressTensor,rcollection)
-
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-         if (DpointPar(ipoint,iel) .eq. dminPar) then
-           ! Start point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-  
-         else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-          ! End point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-         else
-           ! Inner point
-           call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-              ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-         end if
-
-         ! Compute the normal value
-!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
-!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-         Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
-                + dny * DstressTensor(1,2,ipoint,iel)
- 
-        else if (rprob%csimulation .eq. SIMUL_REAL) then
-           ! in rcollection%IquickAccess(1) the current segment number is stored
-           Dcoefficients(1,ipoint,iel) &
-             = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
-        end if
-      end do
-    end do
-
-    deallocate(DstressTensor)
-
-  end subroutine coeff_RHS_surfX_2D
-
-!BRAL: merge surfX and surfY by using the rcollection%IquickAccess(2) field
-  
- ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine coeff_RHS_surfY_2D(rdiscretisation,rform, nelements, npointsPerElement, &
-                                 Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
-                                 Dcoefficients, rcollection)
-    
-    use basicgeometry
-    use boundary
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    use feevaluation
-    use fparser
-    use spatialdiscretisation
-
-!<description>
-    ! This subroutine is called during the vector assembly. It has to
-    ! compute the coefficients in front of the terms of the linear
-    ! form. This routine can be used universaly for arbitrary linear
-    ! forms for which the coefficients are evaluated analytically
-    ! using a function parser which is passed using the collection.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-    !
-    ! This routine handles the constant velocities in the primal problem.
+    ! This subroutine is called during the vector assembly. It computes the function g
+    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the contributions
+    ! stemming from nonzero Neumann boundary conditions.
 !</description>
 
 !<input>
@@ -1027,13 +397,13 @@ contains
     ! DIMENSION(npointsPerElement,nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
     
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(#local DOF in test space,nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 !</input>
 
@@ -1054,9 +424,503 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:,:,:), pointer                      :: DstressTensor
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny,dnv
-    integer :: icomp,iel,ipoint,ndim
+    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
+    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
+    integer :: iel,ipoint
+    allocate(DstressTensor(2,2,npointsPerElement,nelements))
+
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, nelements
+      do ipoint = 1, npointsPerElement
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+   
+
+    ! multiply the solution vector with the normal in each point to get the normal velocity
+    do iel = 1, nelements
+      do ipoint = 1, npointsPerElement
+      
+        dt = DpointPar(ipoint,iel) 
+        if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
+          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
+                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length parametrisation!
+          ! When we are at the left or right endpoint of the interval, we
+          ! calculate the normal vector based on the current edge.
+          ! Without that, the behaviour of the routine may lead to some
+          ! confusion if the endpoints of the interval coincide with
+          ! the endpoints of a boundary edge. In such a case, the routine
+          ! would normally compute the normal vector as a mean on the
+          ! normal vectors of the edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+               ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+  
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+           ! End point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+               ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+               ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal value
+!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
+!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
+                                      + dny * DstressTensor(1,2,ipoint,iel)
+ 
+        else if (rprob%csimulation .eq. SIMUL_REAL) then
+          ! in rcollection%IquickAccess(1) the current segment number is stored
+          Dcoefficients(1,ipoint,iel) &
+            = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
+        end if
+      end do
+    end do
+
+    deallocate(DstressTensor)
+
+  end subroutine elast_RHS_Poisson_2D_bound
+
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_RHS_2D_volX(rdiscretisation, rform, nelements, npointsPerElement, &
+                               Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
+                               rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function f_1
+    ! in the linear form (usually L(v) = (f_1,v_1)_0 + (f_2,v_2)_0 + (g,v)_N), i.e. the
+    ! volumetric forces in x-direction.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+    
+!</input>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    real(DP), dimension(:,:), pointer :: Der_u1xx,Der_u1yy,Der_u2xy
+    
+    allocate(Der_u1xx(npointsPerElement,nelements), &
+             Der_u1yy(npointsPerElement,nelements), &
+             Der_u2xy(npointsPerElement,nelements))
+    
+    call elast_analFunc_u1(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1xx, rcollection)
+    
+    call elast_analFunc_u2(DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2xy, rcollection)
+    
+    call elast_analFunc_u1(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yy, rcollection)
+    
+    if (rprob%csimulation .eq. SIMUL_REAL) then
+      Dcoefficients(1,:,:) = rprob%dforceVolumeX
+    else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+      Dcoefficients(1,:,:) = - (2 * rprob%dmu + rprob%dlambda) * Der_u1xx &
+                             -  rprob%dmu                      * Der_u1yy &
+                             - (rprob%dmu + rprob%dlambda)     * Der_u2xy
+    end if
+    
+    deallocate(Der_u1xx, Der_u1yy, Der_u2xy)
+  
+  end subroutine elast_RHS_2D_volX
+
+!BRAL: merge volX and volY by using the rcollection%IquickAccess(2) field
+
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_RHS_2D_volY(rdiscretisation, rform, nelements, npointsPerElement, &
+                                Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
+                                rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function f_2
+    ! in the linear form (usually L(v) = (f_1,v_1)_0 + (f_2,v_2)_0 + (g,v)_N), i.e. the
+    ! volumetric forces in y-direction.
+!</description>
+    
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+    
+!</input>
+  
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+    
+!</subroutine>
+    real(DP), dimension(:,:), pointer :: Der_u2xx,Der_u2yy,Der_u1yx
+
+    allocate(Der_u2xx(npointsPerElement,nelements), &
+             Der_u2yy(npointsPerElement,nelements), &
+             Der_u1yx(npointsPerElement,nelements))
+
+    call elast_analFunc_u2(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2xx, rcollection)
+    
+    call elast_analFunc_u1(DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yx,rcollection)
+    
+    call elast_analFunc_u2(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2yy, rcollection)
+    
+    if (rprob%csimulation .eq. SIMUL_REAL) then
+	    Dcoefficients(1,:,:) = rprob%dforceVolumeY
+    else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+	    Dcoefficients(1,:,:) = - (rprob%dmu + rprob%dlambda)     * Der_u1yx &
+	                          -  rprob%dmu                      * Der_u2xx &
+	                          - (2 * rprob%dmu + rprob%dlambda) * Der_u2yy
+    end if
+
+    deallocate(Der_u2xx, Der_u2yy, Der_u1yx)
+
+  end subroutine elast_RHS_2D_volY
+
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_RHS_2D_surfX(rdiscretisation, rform, nelements, npointsPerElement, &
+                                Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
+                                Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use boundary
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    use feevaluation
+    use fparser
+    use spatialdiscretisation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function g_1
+    ! in the linear form (usually L(v) = (f,v)_0 + (g_1,v_1)_N + (g_2,v_2)_N), i.e. the
+    ! surface forces in x-direction (nonzero Neumann boundary conditions of the first
+    ! block row in the block system).
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+    
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
+    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
+    integer :: iel,ipoint
+    allocate(DstressTensor(2,2,npointsPerElement,nelements))
+
+    ! Get the minimum and maximum parameter value. The point with the minimal
+    ! parameter value is the start point of the interval, the point with the
+    ! maximum parameter value the endpoint.
+    dminPar = DpointPar(1,1)
+    dmaxPar = DpointPar(1,1)
+    do iel = 1, nelements
+      do ipoint = 1, npointsPerElement
+        dminPar = min(DpointPar(ipoint,iel), dminPar)
+        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+      end do
+    end do
+   
+
+    ! Multiply the velocity vector with the normal in each point
+    ! to get the normal velocity.
+    do iel = 1, nelements
+      do ipoint = 1, npointsPerElement
+        dt = DpointPar(ipoint,iel) 
+        if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
+          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
+                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length parametrisation!
+          ! When we are at the left or right endpoint of the interval, we
+          ! calculate the normal vector based on the current edge.
+          ! Without that, the behaviour of the routine may lead to some
+          ! confusion if the endpoints of the interval coincide with
+          ! the endpoints of a boundary edge. In such a case, the routine
+          ! would normally compute the normal vector as a mean on the
+          ! normal vectors of the edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+          
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+            ! End point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal value
+!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
+!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
+                                      + dny * DstressTensor(1,2,ipoint,iel)
+ 
+        else if (rprob%csimulation .eq. SIMUL_REAL) then
+          ! in rcollection%IquickAccess(1) the current segment number is stored
+          Dcoefficients(1,ipoint,iel) &
+            = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
+        end if
+      end do
+    end do
+
+    deallocate(DstressTensor)
+
+  end subroutine elast_RHS_2D_surfX
+
+!BRAL: merge surfX and surfY by using the rcollection%IquickAccess(2) field
+  
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_RHS_2D_surfY(rdiscretisation,rform, nelements, npointsPerElement, &
+                                 Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
+                                 Dcoefficients, rcollection)
+    
+    use basicgeometry
+    use boundary
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    use feevaluation
+    use fparser
+    use spatialdiscretisation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It computes the function g_2
+    ! in the linear form (usually L(v) = (f,v)_0 + (g_1,v_1)_N + (g_2,v_2)_N), i.e. the
+    ! surface forces in y-direction (nonzero Neumann boundary conditions of the first
+    ! block row in the block system).
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+    
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+    
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+    
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(#local DOF in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+    
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
+    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
+    integer :: iel,ipoint
     allocate(DstressTensor(2,2,npointsPerElement,nelements))
   
     ! Get the minimum and maximum parameter value. The point with the minimal
@@ -1080,13 +944,8 @@ contains
   
 !BRAL: put this outside the do-loops
         if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-  
-          call getStressTensor(rdiscretisation, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,&
-                  DstressTensor,rcollection)
-    
-    
+          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
+                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
           ! Get the normal vector in the point from the boundary.
           ! Note that the parameter value is in length parametrisation!
           ! When we are at the left or right endpoint of the interval, we
@@ -1098,45 +957,207 @@ contains
           ! normal vectors of the edges adjacent to such a point!
           if (DpointPar(ipoint,iel) .eq. dminPar) then
             ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
     
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
             ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
           else
             ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
-                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
+                                         dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
   
          ! Compute the normal value
   !       print *,'2comp', ibct,rcollection%IquickAccess(1),dnx,dny
   !       print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-        Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel)&
-              + dny * DstressTensor(2,2,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel)&
+                                      + dny * DstressTensor(2,2,ipoint,iel)
      
         else if (rprob%csimulation .eq. SIMUL_REAL) then
            ! in rcollection%IquickAccess(1) the current segment number is stored
            Dcoefficients(1,ipoint,iel) = &
              rprob%DforceSurface(2,rcollection%IquickAccess(1),ibct)
-     
         end if
       end do
     end do
 
     deallocate(DstressTensor)
 
-  end subroutine coeff_RHS_surfY_2D
+  end subroutine elast_RHS_2D_surfY
 
 
- ! ***************************************************************************
+! ****************************************************************************************
+
+  
+!<subroutine>
+  subroutine elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints, &
+                                IdofsTest, rdomainIntSubset, Dvalues, rcollection)
+  
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+  
+!<description>
+!</description>
+  
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+  
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:,:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    real(DP), dimension(:,:), pointer :: Der_u1x,Der_u2x,Der_u1y,Der_u2y
+    allocate(Der_u1x(npointsPerElement,nelements), &
+             Der_u2x(npointsPerElement,nelements), &
+             Der_u1y(npointsPerElement,nelements), &
+             Der_u2y(npointsPerElement,nelements))
+    
+    
+    call elast_analFunc_u1(DER_DERIV_X,rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1x, rcollection)
+    
+    call elast_analFunc_u1(DER_DERIV_Y,rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest,rdomainIntSubset, Der_u1y, rcollection)
+    
+    call elast_analFunc_u2(DER_DERIV_X, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2x, rcollection)
+    
+    call elast_analFunc_u2(DER_DERIV_Y, rdiscretisation, nelements, npointsPerElement, &
+                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2y, rcollection)                       
+    
+    Dvalues(1,1,:,:) =   2 * rprob%dmu * Der_u1x(:,:) &
+                       + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
+    Dvalues(1,2,:,:) = rprob%dmu * (Der_u1y(:,:) + Der_u2x(:,:))
+    Dvalues(2,1,:,:) = rprob%dmu * (Der_u2x(:,:) + Der_u1y(:,:))
+    Dvalues(2,2,:,:) =   2 * rprob%dmu * Der_u2y(:,:) &
+                       + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
+    
+    deallocate(Der_u1x, Der_u2x, Der_u1y, Der_u2y)
+
+  end subroutine elast_stressTensor
+
+
+! ****************************************************************************************
+
 
 !<subroutine>
+  subroutine elast_analFunc_u1(cderivative, rdiscretisation, nelements, npointsPerElement,&
+                               Dpoints, IdofsTest, rdomainIntSubset, Dvalues, rcollection)
+  
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+!<description>
+    ! This subroutine computes the (analytical) values of a function in a couple of points
+    ! on a couple of elements.
+!</description>
+  
+!<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+  
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+  
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional :: rcollection
+!</input>
 
-  subroutine getStressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints, &
-                             IdofsTest, rdomainIntSubset, Dvalues, rcollection)
+!<output>
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+     Dvalues(:,:) = elast_danalyticFunction(Dpoints, nelements, npointsPerElement, &
+                                            cderivative, rprob%cfuncID_u1)
+
+  end subroutine elast_analFunc_u1
+
+
+!BRAL: merge refFunc_u1 and refFunc_u2 by using the rcollection%IquickAccess(2) field
+!      and using an array instead of rprob%cfuncID_u1
+
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_analFunc_u2(cderivative, rdiscretisation, nelements, npointsPerElement,&
+                               Dpoints, IdofsTest, rdomainIntSubset, Dvalues, rcollection)
   
     use basicgeometry
     use triangulation
@@ -1157,35 +1178,39 @@ contains
 !</description>
   
 !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in trial space,Number of elements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    ! An array accepting the DOF on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
   
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
   
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-  
+    type(t_collection), intent(inout), optional :: rcollection
 !</input>
 
 !<output>
@@ -1193,250 +1218,58 @@ contains
     ! in all the points specified in Dpoints, or the appropriate derivative
     ! of the function, respectively, according to cderivative.
     !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:,:,:), intent(OUT)                      :: Dvalues
-!</output>
-
-!<subroutine>
-
-    real(DP), dimension(:,:), pointer                      :: Der_u1x,Der_u2x,Der_u1y,Der_u2y
-    allocate(Der_u1x(npointsPerElement,nelements),Der_u2x(npointsPerElement,nelements),&
-                  Der_u1y(npointsPerElement,nelements),Der_u2y(npointsPerElement,nelements))
-    
-    
-    call getReferenceFunction_u1_2D(DER_DERIV_X,rdiscretisation, &
-                    nelements,npointsPerElement,Dpoints, &
-                    IdofsTest,rdomainIntSubset,&
-                    Der_u1x,rcollection)
-    
-    call getReferenceFunction_u1_2D(DER_DERIV_Y,rdiscretisation, &
-                    nelements,npointsPerElement,Dpoints, &
-                    IdofsTest,rdomainIntSubset,&
-                    Der_u1y,rcollection)
-    
-    call getReferenceFunction_u2_2D(DER_DERIV_X,rdiscretisation, &
-                    nelements,npointsPerElement,Dpoints, &
-                    IdofsTest,rdomainIntSubset,&
-                    Der_u2x,rcollection)
-    
-    call getReferenceFunction_u2_2D(DER_DERIV_Y,rdiscretisation, &
-                    nelements,npointsPerElement,Dpoints, &
-                    IdofsTest,rdomainIntSubset,&
-                    Der_u2y,rcollection)                       
-    
-    Dvalues(1,1,:,:) = 2 * rprob%dmu * Der_u1x(:,:) + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
-    Dvalues(1,2,:,:) = rprob%dmu * (Der_u1y(:,:) + Der_u2x(:,:))
-    Dvalues(2,1,:,:) = rprob%dmu * (Der_u2x(:,:) + Der_u1y(:,:))
-    Dvalues(2,2,:,:) = 2 * rprob%dmu * Der_u2y(:,:) + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
-    
-    Deallocate(Der_u1x,Der_u2x,Der_u1y,Der_u2y)
-
-  end subroutine getStressTensor
-
-
-! ***************************************************************************
-
-!<subroutine>
-
-  subroutine getReferenceFunction_u1_2D(cderivative,rdiscretisation, nelements, &
-                                        npointsPerElement, Dpoints, IdofsTest, &
-                                        rdomainIntSubset, Dvalues, rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
-  
-!<description>
-  ! This subroutine is called during the calculation of errors. It has to compute
-  ! the (analytical) values of a function in a couple of points on a couple
-  ! of elements. These values are compared to those of a computed FE function
-  ! and used to calculate an error.
-  !
-  ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
-  ! According to the terms in the linear form, the routine has to compute
-  ! simultaneously for all these points.
-!</description>
-  
-!<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-  ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
-  
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-  ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
-
-  
-!</input>
-
-!<output>
-  ! This array has to receive the values of the (analytical) function
-  ! in all the points specified in Dpoints, or the appropriate derivative
-  ! of the function, respectively, according to cderivative.
-  !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
-!</output>
-
-!</subroutine>
-
-   Dvalues(:,:) = aux_danalyticFunction(Dpoints, nelements, npointsPerElement, &
-                                        cderivative, rprob%cfuncID_u1)
-
-  end subroutine getReferenceFunction_u1_2D
-
-
-!BRAL: merge refFunc_u1 and refFunc_u2 by using the rcollection%IquickAccess(2) field
-!      and using an array instead of rprob%cfuncID_u1
-
-  ! ***************************************************************************
-!<subroutine>
-
-  subroutine getReferenceFunction_u2_2D(cderivative, rdiscretisation, nelements, &
-                                        npointsPerElement,Dpoints, IdofsTest, &
-                                        rdomainIntSubset, Dvalues, rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
-  
-!<description>
-  ! This subroutine is called during the calculation of errors. It has to compute
-  ! the (analytical) values of a function in a couple of points on a couple
-  ! of elements. These values are compared to those of a computed FE function
-  ! and used to calculate an error.
-  !
-  ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
-  ! According to the terms in the linear form, the routine has to compute
-  ! simultaneously for all these points.
-!</description>
-  
-!<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-  ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
-  
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-  ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
-
-  
-!</input>
-
-!<output>
-  ! This array has to receive the values of the (analytical) function
-  ! in all the points specified in Dpoints, or the appropriate derivative
-  ! of the function, respectively, according to cderivative.
-  !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(OUT)                      :: Dvalues
+    real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
   
 !</subroutine>
-! 
-    Dvalues(:,:) = aux_danalyticFunction(Dpoints, nelements, npointsPerElement, &
-                                         cderivative, rprob%cfuncID_u2)
 
-  end subroutine getReferenceFunction_u2_2D
+    Dvalues(:,:) = elast_danalyticFunction(Dpoints, nelements, npointsPerElement, &
+                                           cderivative, rprob%cfuncID_u2)
+
+  end subroutine elast_analFunc_u2
 
 
-! ***************************************************************************
+! ****************************************************************************************
+
 
 !<subroutine>
-
-  subroutine getBoundaryValues_2D(Icomponents, rdiscretisation, rboundaryRegion, &
-                                  ielement, cinfoNeeded, iwhere, dwhere, Dvalues, &
-                                  rcollection)
+  subroutine elast_boundValue_2D(Icomponents, rdiscretisation, rboundaryRegion, &
+                                 ielement, cinfoNeeded, iwhere, dwhere, Dvalues, &
+                                 rcollection)
   
     use collection
     use spatialdiscretisation
     use discretebc
     
 !<description>
-    ! This subroutine is called during the discretisation of boundary
-    ! conditions. It calculates a special quantity on the boundary, which is
-    ! then used by the discretisation routines to generate a discrete
-    ! 'snapshot' of the (actually analytic) boundary conditions.
+    ! This subroutine is called during the discretisation of boundary conditions. It
+    ! calculates a special quantity on the boundary, which is then used by the
+    ! discretisation routines to generate a discrete 'snapshot' of the (actually analytic)
+    ! boundary conditions.
 !</description>
   
 !<input>
-    ! Component specifier.
-    ! For Dirichlet boundary: 
+    ! Component specifierFor Dirichlet boundary: 
     !   Icomponents(1) defines the number of the boundary component, the value
-    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
-    !   2=2nd solution component, e.g. Y-velocity,...)
-    integer, dimension(:), intent(IN)                           :: Icomponents
+    !   is to be calculated for (e.g. 1=1st solution component, i.e. x-displacement, 
+    !   2=2nd solution component, i.e. y-displacement,...)
+    integer, dimension(:), intent(in) :: Icomponents
   
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! Boundary region that is currently being processed.
-    type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
+    type(t_boundaryRegion), intent(in) :: rboundaryRegion
     
     ! The element number on the boundary which is currently being processed
-    integer, intent(IN)                                         :: ielement
+    integer, intent(in) :: ielement
     
     ! The type of information, the routine should calculate. One of the
     ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
     ! to return one or multiple information value in the result array.
-    integer, intent(IN)                                         :: cinfoNeeded
+    integer, intent(in) :: cinfoNeeded
     
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -1450,7 +1283,7 @@ contains
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   iwhere = number of the edge where the value integral mean value
     !            should be computed
-    integer, intent(IN)                                          :: iwhere
+    integer, intent(in) :: iwhere
   
     ! A reference to a geometric object where information should be computed.
     ! cinfoNeeded=DISCBC_NEEDFUNC : 
@@ -1459,11 +1292,11 @@ contains
     !   dwhere = parameter value of the point where the value should be computed,
     ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
     !   dwhere = 0 (not used)
-    real(DP), intent(IN)                                        :: dwhere
+    real(DP), intent(in) :: dwhere
   
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional                 :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
   
 !</input>
 
@@ -1472,15 +1305,13 @@ contains
     ! only needs one value, the computed quantity is put into Dvalues(1). 
     ! If multiple values are needed, they are collected here (e.g. for 
     ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-    real(DP), dimension(:), intent(OUT)                         :: Dvalues
+    real(DP), dimension(:), intent(out) :: Dvalues
 !</output>
   
 !</subroutine>
 
-    real(DP), dimension(2,1,1)                     :: Dpoints
-    real(DP), dimension(1,1)                        :: Daux
-
-   
+    real(DP), dimension(2,1,1) :: Dpoints
+    real(DP), dimension(1,1) :: Daux
 
     ! To get the X/Y-coordinates of the boundary point, use:
     real(DP) :: dx,dy
@@ -1488,60 +1319,62 @@ contains
     call boundary_getCoords(rdiscretisation%p_rboundary, &
                             rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
-    ! Return zero Dirichlet boundary values for all situations by default.
-    Dvalues(1) = 0.0_DP
-  
-    ! Now, depending on the problem, calculate the actual velocity value.
+    ! set coordinates of the current point
     Dpoints(1,1,1) = dx
     Dpoints(2,1,1) = dy
+    ! calculate value
     if (rprob%csimulation .eq. SIMUL_REAL) then
+      ! currently, only zero Dirichlet boundary values are supported for real simulations
+! BRAL: das muss verbessert werden!
       Dvalues(1) = 0.0_DP
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       select case (Icomponents(1))
-      case(1) ! X-velocity
-        Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u1)
+      case(1) ! x-displacement
+        Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u1)
         Dvalues(1) = Daux(1,1)
-      case(2) ! Y-velocity
-        Daux = aux_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u2)
+      case(2) ! y-displacement
+        Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u2)
         Dvalues(1) = Daux(1,1)
       end select
     end if
-  end subroutine getBoundaryValues_2D
+  end subroutine elast_boundValue_2D
 
-! ***************************************************************************
 
- function aux_danalyticFunction(Dpoints,nelements,npointsPerElement, cderiv, cselect, &
-                                dparam) result(Dvalues)
+! ****************************************************************************************
 
-  !<description>
+
+!<function>
+  function elast_danalyticFunction(Dpts, nelements, npointsPerElement, cderiv, cselect, &
+                                   dparam) result(Dval)
+
+!<description>
     ! This function provides some analytic functions, which can be used for
     ! validating your FE code.
-  !</description>
+!</description>
 
-  !<input>
- ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)                      :: Dpoints
+!<input>
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    real(DP), dimension(:,:,:), intent(in) :: Dpts
 
- ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
   
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-
     ! derivative of the function to be calculated
     integer(I32), intent(in) :: cderiv
-
+  
     ! selector for the desired function
     integer(I32), intent(in) :: cselect
-
+  
     ! optional parameter to influence the solution
     real(DP), intent(in), optional :: dparam
-  !</input>
+!</input>
 
-  !<!--
+!<!--
     !
     ! cselect   u(x,y)
     !   0        0.0
@@ -1634,14 +1467,14 @@ contains
     !
 ! -->
 
-  !<result>
-    !   (The result of the function calculation)
-   real(DP), dimension(npointsPerElement,nelements)                        :: Dvalues
-  !</result>
+!<result>
+    ! (The result of the function calculation)
+    real(DP), dimension(npointsPerElement,nelements) :: Dval
+!</result>
 
-  !<errors>
+!<errors>
     ! none
-  !</errors>
+!</errors>
 !</function>
 
     real(DP) :: daux, daux1
@@ -1657,655 +1490,668 @@ contains
 #endif
 
     ! avoid misleading warnings about uninitialised variables
-    Dvalues(:,:) = 0.0_DP
+    Dval(:,:) = 0.0_DP
 
     select case (cselect)
 
     case (0) ! u(x,y) = 0.0
-      Dvalues(:,:) = 0.0_DP
+      Dval(:,:) = 0.0_DP
 
     case (1) ! u(x,y) = 0.1 * x
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.1_DP * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.1_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_FUNC);     Dval(:,:) = 0.1_DP * Dpts(1,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = 0.1_DP
+      case (DER_DERIV_Y);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
       end select
 
-    case (2) ! u(x,y) = 0.1 * x2
+    case (2) ! u(x,y) = 0.1 * x**2
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.1_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.2_DP * Dpoints(1,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.2_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_FUNC);     Dval(:,:) = 0.1_DP * Dpts(1,:,:) * Dpts(1,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = 0.2_DP * Dpts(1,:,:)
+      case (DER_DERIV_Y);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XX); Dval(:,:) = 0.2_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
       end select
 
     case (3) ! u(x,y) = 0.1 * y
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.1_DP * Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.1_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_FUNC);     Dval(:,:) = 0.1_DP * Dpts(2,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_Y);  Dval(:,:) = 0.1_DP
+      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
       end select
 
-    case (4) ! u(x,y) = 0.1 * y2
+    case (4) ! u(x,y) = 0.1 * y**2
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.1_DP * Dpoints(2,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.2_DP * Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.2_DP
+      case (DER_FUNC);     Dval(:,:) = 0.1_DP * Dpts(2,:,:) * Dpts(2,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_Y);  Dval(:,:) = 0.2_DP * Dpts(2,:,:)
+      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = 0.2_DP
       end select
 
     case (5) ! u(x,y) = 4 * x * (1 - x)
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 4.0_DP * Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = 4.0_DP * (1.0_DP - 2.0_DP * Dpoints(1,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = -8.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
+      case (DER_FUNC);     Dval(:,:) = 4.0_DP * Dpts(1,:,:) * (1.0_DP - Dpts(1,:,:))
+      case (DER_DERIV_X);  Dval(:,:) = 4.0_DP * (1.0_DP - 2.0_DP * Dpts(1,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XX); Dval(:,:) = -8.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
       end select
 
     case (6) ! u(x,y) = 4 * y * (1 - y)
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 4.0_DP * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 4.0_DP * (1.0_DP - 2.0_DP * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = -8.0_DP
+      case (DER_FUNC);     Dval(:,:) = 4.0_DP * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))
+      case (DER_DERIV_X);  Dval(:,:) = 0.0_DP
+      case (DER_DERIV_Y);  Dval(:,:) = 4.0_DP * (1.0_DP - 2.0_DP * Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_YY); Dval(:,:) = -8.0_DP
       end select
 
     case (7) ! u(x,y) = x * (1 - x) * y * (1 - y)
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:)) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = (-1.0_DP + 2.0_DP * Dpoints(1,:,:)) * Dpoints(2,:,:) * (-1.0_DP + Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = Dpoints(1,:,:) * (-1.0_DP + Dpoints(1,:,:)) * (-1.0_DP + 2.0_DP * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = (2.0_DP * Dpoints(2,:,:) * (-1.0_DP + Dpoints(2,:,:)))
-      case (DER_DERIV_XY); Dvalues(:,:) = (-1.0_DP + 2.0_DP * Dpoints(1,:,:)) * (-1.0_DP + 2.0_DP * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = 2.0_DP * Dpoints(1,:,:) * (-1.0_DP + Dpoints(1,:,:))
+      case (DER_FUNC);     Dval(:,:) = &
+        Dpts(1,:,:) * (1.0_DP - Dpts(1,:,:)) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))
+      case (DER_DERIV_X);  Dval(:,:) = &
+        (-1.0_DP + 2.0_DP * Dpts(1,:,:)) * Dpts(2,:,:) * (-1.0_DP + Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) = &
+        Dpts(1,:,:) * (-1.0_DP + Dpts(1,:,:)) * (-1.0_DP + 2.0_DP * Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) = (2.0_DP * Dpts(2,:,:) * (-1.0_DP + Dpts(2,:,:)))
+      case (DER_DERIV_XY); Dval(:,:) = &
+        (-1.0_DP + 2.0_DP * Dpts(1,:,:)) * (-1.0_DP + 2.0_DP * Dpts(2,:,:))
+      case (DER_DERIV_YY); Dval(:,:) = 2.0_DP * Dpts(1,:,:) * (-1.0_DP + Dpts(1,:,:))
       end select
 
     case (8) ! u(x,y) = -(x * x + y * y) * x
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = -(Dpoints(1,:,:) * Dpoints(1,:,:) + Dpoints(2,:,:) * Dpoints(2,:,:)) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = -(3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) + Dpoints(2,:,:) * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -2.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = -6.0_DP * Dpoints(1,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) = -2.0_DP * Dpoints(2,:,:)
-      case (DER_DERIV_YY); Dvalues(:,:) = -2.0_DP * Dpoints(1,:,:)
+      case (DER_FUNC);     Dval(:,:) = &
+        -(Dpts(1,:,:) * Dpts(1,:,:) + Dpts(2,:,:) * Dpts(2,:,:)) * Dpts(1,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = &
+        -(3.0_DP * Dpts(1,:,:) * Dpts(1,:,:) + Dpts(2,:,:) * Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) = -2.0_DP * Dpts(1,:,:) * Dpts(2,:,:)
+      case (DER_DERIV_XX); Dval(:,:) = -6.0_DP * Dpts(1,:,:)
+      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP * Dpts(2,:,:)
+      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP * Dpts(1,:,:)
       end select
 
     case (9) ! u(x,y) = y^2 * (1 - y)^2 * x
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2 * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = Dpoints(2,:,:) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2
-      case (DER_DERIV_Y);  Dvalues(:,:) = 2.0_DP * Dpoints(1,:,:) * (Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2 - Dpoints(2,:,:) &
-                                                               * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:)))
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 2.0_DP * (Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2 - Dpoints(2,:,:) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:)))
-      case (DER_DERIV_YY); Dvalues(:,:) =   2.0_DP * Dpoints(1,:,:) * ((1.0_DP - Dpoints(2,:,:))**2 &
-                              - 4.0_DP * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:)) + Dpoints(2,:,:) * Dpoints(2,:,:))
+      case (DER_FUNC);     Dval(:,:) = &
+        Dpts(2,:,:) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2 * Dpts(1,:,:)
+      case (DER_DERIV_X);  Dval(:,:) = &
+        Dpts(2,:,:) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2
+      case (DER_DERIV_Y);  Dval(:,:) = &
+          2.0_DP * Dpts(1,:,:) * (Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2 - Dpts(2,:,:) &
+        * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:)))
+      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+      case (DER_DERIV_XY); Dval(:,:) = &
+          2.0_DP * (Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2 &
+        - Dpts(2,:,:) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:)))
+      case (DER_DERIV_YY); Dval(:,:) = &
+        2.0_DP * Dpts(1,:,:) * ((1.0_DP - Dpts(2,:,:))**2 &
+        - 4.0_DP * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:)) + Dpts(2,:,:) * Dpts(2,:,:))
       end select
 
-    case (10) ! u(x,y) = y^2 * (1 - y)^2 * (x - 1)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(2,:,:) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2 * (Dpoints(1,:,:) - 1.0_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) = Dpoints(2,:,:) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))**2
-      case (DER_DERIV_Y);  Dvalues(:,:) =   2.0_DP * Dpoints(2,:,:) * (2.0_DP * Dpoints(2,:,:) - 1.0_DP) &
-                              * (Dpoints(2,:,:) - 1.0_DP) * (Dpoints(1,:,:) - 1.0_DP)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 2.0_DP * Dpoints(2,:,:) * (2.0_DP * Dpoints(2,:,:) - 1.0_DP) * (Dpoints(2,:,:) - 1.0_DP)
-      case (DER_DERIV_YY); Dvalues(:,:) =   2.0_DP * (1.0_DP - 6.0_DP * Dpoints(2,:,:) + 6.0_DP * Dpoints(2,:,:) * Dpoints(2,:,:)) &
-                              * (Dpoints(2,:,:) - 1.0_DP)
-      end select
-
-    case (11) ! u1(x,y) = 0.25 * (1/sqrt(2) + x - y) * (1/sqrt(2) - x + y)
-              !            * ((1-sqrt(2))/sqrt(2) + x + y) * ((1+sqrt(2))/sqrt(2) - x - y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =   0.25_DP * (1.0_DP / sqrt(2.0_DP) + Dpoints(1,:,:) - Dpoints(2,:,:)) &
-                              * (1.0_DP / sqrt(2.0_DP) - Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                              * ((1.0_DP - sqrt(2.0_DP)) / sqrt(2.0_DP) + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                              * ((1.0_DP + sqrt(2.0_DP)) / sqrt(2.0_DP) - Dpoints(1,:,:) - Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  -1.5_DP * Dpoints(1,:,:) * Dpoints(1,:,:) - 1.0_DP * Dpoints(2,:,:) * Dpoints(2,:,:) * Dpoints(1,:,:) &
-                              + 0.5_DP * Dpoints(2,:,:) * Dpoints(2,:,:) - 0.5_DP * Dpoints(2,:,:) + 0.25_DP &
-                              + 1.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:) + 1.0_DP * Dpoints(1,:,:)**3
-      case (DER_DERIV_Y);  Dvalues(:,:) =  -1.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:) + 0.5_DP*Dpoints(1,:,:) * Dpoints(1,:,:) &
-                              - 0.5_DP*Dpoints(1,:,:) - 1.5_DP * Dpoints(2,:,:) * Dpoints(2,:,:) + 0.25_DP &
-                              + 1.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:) + 1.0_DP * Dpoints(2,:,:)**3
-      case (DER_DERIV_XX); Dvalues(:,:) = -1.0_DP * Dpoints(2,:,:) * Dpoints(2,:,:) + 1.0_DP * Dpoints(2,:,:) + 3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)&
-                              - 3.0_DP * Dpoints(1,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) = -0.5_DP + 1.0_DP * Dpoints(1,:,:) + 1.0_DP * Dpoints(2,:,:) - 2.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_YY); Dvalues(:,:) =  3.0_DP * Dpoints(2,:,:) * Dpoints(2,:,:) - 3.0_DP * Dpoints(2,:,:) - 1.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) &
-                               + 1.0_DP * Dpoints(1,:,:)
-      end select
-
-    case (12) ! u(x,y) = sin(x) * sin(y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =  cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      end select
-
-    case (13) ! u(x,y) = 0.05 * sin(4*PI*x)*sin(4*PI*y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*sin(4.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =   0.2_DP * SYS_PI &
-                              * cos(4.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =   0.2_DP * SYS_PI &
-                              * sin(4.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  -0.8_DP * SYS_PI * SYS_PI &
-                              * sin(4.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =   0.8_DP * SYS_PI * SYS_PI &
-                              * cos(4.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  -0.8_DP * SYS_PI * SYS_PI &
-                              * sin(4.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(4.0_DP * SYS_PI * Dpoints(2,:,:))
-      end select
-
-    case (14) ! u(x,y) = cos(x) * cos(y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = -sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =  sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      end select
-
-    case (15) ! u(x,y) = cos(PI/2 * (x + y))
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                              cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_X);  Dvalues(:,:) =           -0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_Y);  Dvalues(:,:) =           -0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_XX); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_XY); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_YY); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      end select
-
-    case (16) ! u(x,y) = -cos(PI/2 * (x + y))
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                            -cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_X);  Dvalues(:,:) =           0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_Y);  Dvalues(:,:) =           0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) + Dpoints(2,:,:)))
-      end select
-
-    case (17) ! u(x,y) = 2 * cos(x) * sin(y) - 2 * (1 - cos(1)) * sin(1)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:)) &
-                              -2.0_DP * (1.0_DP - cos(1.0_DP)) * sin(1.0_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) = -2.0_DP * sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP * cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -2.0_DP * sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      end select
-
-    case (18) ! u(x,y) = 8 * (1 - x)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  8.0_DP*(1.0_DP - Dpoints(1,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = -8.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-    case (19) ! u(x,y) = sin(PI/2 * (x - y))
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                              sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      case (DER_DERIV_X);  Dvalues(:,:) =            0.5_DP * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      case (DER_DERIV_Y);  Dvalues(:,:) =           -0.5_DP * SYS_PI * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      case (DER_DERIV_XX); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      case (DER_DERIV_YY); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:) - Dpoints(2,:,:)))
-      end select
-
-    case (20) ! u(x,y) = -(x * x + y * y) * x * x
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = -(Dpoints(1,:,:) * Dpoints(1,:,:) + Dpoints(2,:,:) * Dpoints(2,:,:)) * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = -4.0_DP * Dpoints(1,:,:)**3 + 2.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) = -2.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = -12.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) - 2.0_DP * Dpoints(2,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) = -4.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_YY); Dvalues(:,:) = -2.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
-      end select
-
-    case (21) ! u(x,y) = cos(Pi/2)*x - sin(Pi/2)*y - x
-      if (present(dparam)) then
-        daux = 0.125_DP * dparam * SYS_PI
-      else
-        daux = 0.5_DP * SYS_PI
-      endif
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = cos(daux) * Dpoints(1,:,:) - sin(daux) * Dpoints(2,:,:) - Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = cos(daux) - 1.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = - sin(daux)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
-
-    case (22) ! u(x,y) = sin(Pi/2)*x + cos(Pi/2)*y - y
-      if (present(dparam)) then
-        daux = 0.125_DP * dparam * SYS_PI
-      else
-        daux = 0.5_DP * SYS_PI
-      endif
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = sin(daux) * Dpoints(1,:,:) + cos(daux) * Dpoints(2,:,:) - Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = sin(daux)
-      case (DER_DERIV_Y);  Dvalues(:,:) = cos(daux) - 1.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
-
-    case (23) ! u(x,y) = 1.0
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 1.0_DP
-      case (DER_DERIV_X);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
-
-    case (24) ! u(x,y) = -(2x - 1)(2y^3 - 3y^2) / 6
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = - (2.0_DP * Dpoints(1,:,:) - 1.0_DP) * (2.0_DP * Dpoints(2,:,:)**3 - 3.0_DP * Dpoints(2,:,:)**2) / 6.0_DP
-      case (DER_DERIV_X);  Dvalues(:,:) = - Dpoints(2,:,:)**2 * (2.0_DP * Dpoints(2,:,:) - 3.0_DP) / 3.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) = -Dpoints(2,:,:) * (Dpoints(2,:,:) - 1.0_DP) * (2.0_DP * Dpoints(1,:,:) - 1.0_DP)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = -2.0_DP * Dpoints(2,:,:) * (Dpoints(2,:,:) - 1.0_DP)
-      case (DER_DERIV_YY); Dvalues(:,:) = -(2.0_DP * Dpoints(1,:,:) - 1.0_DP) * (2.0_DP * Dpoints(2,:,:) - 1.0_DP)
-      end select
-
-    case (25) ! u(x,y) = sin(x) cos(y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      end select
-
-    case (26) ! u(x,y) = -cos(x) sin(y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = -cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =  sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      end select
-
-    case (27) ! u(x,y) = 4 - 8x
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  4.0_DP - 8.0_DP * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = -8.0_DP
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-    case (28) ! u(x,y) = 2 cos(x) sin(y) - 2 sin(1) + 2 sin(1) cos(1)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =   2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:)) &
-                                - 2.0_DP * sin(1.0_DP) &
-                                + 2.0_DP * sin(1.0_DP) * cos(1.0_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) = -2.0_DP * sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  2.0_DP * cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -2.0_DP * sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -2.0_DP * cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      end select
-
-    case (29) ! u(x,y) = xy - 1/4
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:) * Dpoints(2,:,:) - 0.25_DP
-      case (DER_DERIV_X);  Dvalues(:,:) = Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) = Dpoints(1,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = 0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) = 1.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) = 0.0_DP
-      end select
-
-    case (30) ! u(x,y) = sin(PI*x - 7/10) * sin(PI*y + 1/5)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) =  cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI
-      case (DER_DERIV_Y);  Dvalues(:,:) =  sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI
-      case (DER_DERIV_XX); Dvalues(:,:) = -sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_XY); Dvalues(:,:) =  cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_YY); Dvalues(:,:) = -sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      end select
-
-    case (31) ! u(x,y) = cos(PI*x - 7/10) cos(PI*y + 1/5)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) = -sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI
-      case (DER_DERIV_Y);  Dvalues(:,:) = -cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI
-      case (DER_DERIV_XX); Dvalues(:,:) = -cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_XY); Dvalues(:,:) =  sin(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_YY); Dvalues(:,:) = -cos(SYS_PI * Dpoints(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpoints(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
-      end select
-
-    case (32) ! u(x,y) = sin(x) cos(y) + (cos(1) - 1) sin(1)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:)) + (cos(1.0_DP) - 1.0_DP) * sin(1.0_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) =  cos(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -sin(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -cos(Dpoints(1,:,:)) * sin(Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = -sin(Dpoints(1,:,:)) * cos(Dpoints(2,:,:))
-      end select
-
-    case (33) ! u(x,y) = -sin(gamma x) * sin(gamma y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                   -sin(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = -dgamma *          cos(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = -dgamma *          sin(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  dgamma * dgamma * sin(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -dgamma * dgamma * cos(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  dgamma * dgamma * sin(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      end select
-
-    case (34) ! u(x,y) = -cos(gamma x) * cos(gamma y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                   -cos(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =  dgamma *          sin(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  dgamma *          cos(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  dgamma * dgamma * cos(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = -dgamma * dgamma * sin(dgamma * Dpoints(1,:,:)) * sin(dgamma * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  dgamma * dgamma * cos(dgamma * Dpoints(1,:,:)) * cos(dgamma * Dpoints(2,:,:))
-      end select
-
-    case (35) ! u(x,y) = x^2*(1-x)^2 * 2*PI*sin(PI*y)*cos(PI*y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))**2*2.0_DP*SYS_PI*sin(SYS_PI*Dpoints(2,:,:))*cos(SYS_PI*Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = 4.0_DP*(Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2 - Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))) &
-                                * SYS_PI*sin(SYS_PI*Dpoints(2,:,:))*cos(SYS_PI*Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = 2.0_DP*Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))**2 &
-                                * (SYS_PI**2*cos(SYS_PI*Dpoints(2,:,:))**2 - SYS_PI**2*sin(SYS_PI*Dpoints(2,:,:))**2)
-      case (DER_DERIV_XX); Dvalues(:,:) = (4.0_DP*(1.0_DP-Dpoints(1,:,:))**2 - 16.0_DP*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) + 4.0_DP*Dpoints(1,:,:)**2) &
-                                * SYS_PI*sin(SYS_PI*Dpoints(2,:,:))*cos(SYS_PI*Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) = 4.0_DP*SYS_PI**2 * ((Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2 &
-                                - Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))) * cos(SYS_PI*Dpoints(2,:,:))**2 &
-                                - (Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2 + Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))) * sin(SYS_PI*Dpoints(2,:,:))**2)
-      case (DER_DERIV_YY); Dvalues(:,:) =-8.0_DP*Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))**2 &
-                                * SYS_PI**3*cos(SYS_PI*Dpoints(2,:,:))*sin(SYS_PI*Dpoints(2,:,:))
-      end select
-
-    case (36) ! u(x,y) = -(2*x*(1-x)^2 - 2*x^2*(1-x))*sin^2(PI*y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = -(2.0_DP*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2 &
-                                - 2.0_DP*Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:)))*sin(SYS_PI*Dpoints(2,:,:))**2
-      case (DER_DERIV_X);  Dvalues(:,:) = -(2.0_DP*(1.0_DP-Dpoints(1,:,:))**2 - 8.0_DP*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) &
-                                + 2.0_DP*Dpoints(1,:,:)**2) * sin(SYS_PI*Dpoints(2,:,:))**2
-      case (DER_DERIV_Y);  Dvalues(:,:) = -2.0_DP*(2.0_DP*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2-2.0_DP*Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:))) &
-                                * sin(SYS_PI*Dpoints(2,:,:))*cos(SYS_PI*Dpoints(2,:,:))*SYS_PI
-      case (DER_DERIV_XX); Dvalues(:,:) = -(-12.0_DP + 24.0_DP*Dpoints(1,:,:))*sin(SYS_PI*Dpoints(2,:,:))**2
-      case (DER_DERIV_XY); Dvalues(:,:) = -2.0_DP*(2.0_DP*(1.0_DP-Dpoints(1,:,:))**2 -8.0_DP*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))&
-                                + 2.0_DP*Dpoints(1,:,:)**2) * sin(SYS_PI*Dpoints(2,:,:))*cos(SYS_PI*Dpoints(2,:,:))*SYS_PI
-      case (DER_DERIV_YY); Dvalues(:,:) =   4.0_DP*(Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))**2 - Dpoints(1,:,:)**2*(1.0_DP-Dpoints(1,:,:)))*SYS_PI**2 &
-                                * (-cos(SYS_PI*Dpoints(2,:,:))**2 + sin(SYS_PI*Dpoints(2,:,:))**2)
-      end select
-
-    case (37) ! u(x,y) = 16 * x * (1 - x) * y * (1 - y)
-      Dvalues(:,:) = 0_DP
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = Dpoints(1,:,:) * (1.0_DP - Dpoints(1,:,:)) * Dpoints(2,:,:) * (1.0_DP - Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) = (-1.0_DP + 2.0_DP * Dpoints(1,:,:)) * Dpoints(2,:,:) * (-1.0_DP + Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) = Dpoints(1,:,:) * (-1.0_DP + Dpoints(1,:,:)) * (-1.0_DP + 2.0_DP * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) = (2.0_DP * Dpoints(2,:,:) * (-1.0_DP + Dpoints(2,:,:)))
-      case (DER_DERIV_XY); Dvalues(:,:) = (-1.0_DP + 2.0_DP * Dpoints(1,:,:)) * (-1.0_DP + 2.0_DP * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) = 2.0_DP * Dpoints(1,:,:) * (-1.0_DP + Dpoints(1,:,:))
-      end select
-      Dvalues(:,:) = Dvalues(:,:)*16.0_DP
-
-    case (38) ! u(x,y) = 42*x^2*(2 - y) + 42*sin(2 - 5*y*x)*cos(x + y + 1)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 42.0_DP * Dpoints(1,:,:)** 2 * (2.0_DP - Dpoints(2,:,:)) &
-                                + 42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:)* Dpoints(1,:,:)) * cos(Dpoints(1,:,:) + Dpoints(2,:,:) + 1.0_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) =   84.0_DP * Dpoints(1,:,:)* (2.0_DP - Dpoints(2,:,:)) &
-                                - 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpoints(2,:,:)* Dpoints(1,:,:)) * Dpoints(2,:,:) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                - 42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * sin(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  -42.0_DP * Dpoints(1,:,:) ** 2 &
-                                - 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(1,:,:) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                - 42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * sin(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =   168.0_DP - 84.0_DP * Dpoints(2,:,:) &
-                                + 1050.0_DP * sin(-2.0_DP + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(2,:,:) ** 2 * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                + 420.0_DP * cos(-2.0_DP + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(2,:,:) * sin(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =   -84.0_DP * Dpoints(2,:,:) + 1050.0_DP * sin(-2.0_DP &
-                                + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(2,:,:) * Dpoints(1,:,:) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                - 210.0_DP * cos(-2.0_DP + 5.0_DP* Dpoints(2,:,:)* Dpoints(1,:,:)) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                + 210.0_DP * cos(-2.0_DP + 5.0_DP* Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(1,:,:) * sin(1.0_DP +Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                + 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(2,:,:) * sin(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  1050.0_DP * sin(-2.0_DP &
-                                + 5.0_DP * Dpoints(2,:,:)* Dpoints(1,:,:)) * Dpoints(1,:,:) ** 2 * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                + 420.0_DP * cos(-2.0_DP + 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * Dpoints(1,:,:)* sin(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:)) &
-                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpoints(2,:,:) * Dpoints(1,:,:)) * cos(1.0_DP + Dpoints(1,:,:) + Dpoints(2,:,:))
-      end select
-
-    case (39) ! u(x,y) = (x^2 - 1)^2 (y^2 - 1)y / 4
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.25_DP * (Dpoints(1,:,:)**2 - 1.0_DP)**2 * (Dpoints(2,:,:)**2 - 1.0_DP) * Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = (Dpoints(1,:,:)**2 - 1.0_DP) * (Dpoints(2,:,:)**2 - 1.0_DP) * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) = 0.25_DP * (Dpoints(1,:,:)**2 - 1.0_DP)**2 * (3.0_DP * Dpoints(2,:,:)**2 - 1.0_DP)
-      case (DER_DERIV_XX); Dvalues(:,:) = Dpoints(2,:,:) * (Dpoints(2,:,:)**2 - 1.0_DP) * (3.0_DP * Dpoints(1,:,:)**2 - 1.0_DP)
-      case (DER_DERIV_XY); Dvalues(:,:) = Dpoints(1,:,:) * (Dpoints(1,:,:)**2 - 1.0_DP) * (3.0_DP * Dpoints(2,:,:)**2 - 1.0_DP)
-      case (DER_DERIV_YY); Dvalues(:,:) = 1.50_DP * (Dpoints(1,:,:)**2 - 1)**2 * Dpoints(2,:,:)
-      end select
-
-    case (40) ! u(x,y) = (y^2 - 1)^2 (1 - x^2)x / 4
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 0.25_DP * (Dpoints(2,:,:)**2 - 1.0_DP)**2 * (1.0_DP - Dpoints(1,:,:)**2) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) = -0.25_DP * (Dpoints(2,:,:)**2 - 1.0_DP)**2 * (3.0_DP * Dpoints(1,:,:)**2 - 1.0_DP)
-      case (DER_DERIV_Y);  Dvalues(:,:) = (Dpoints(2,:,:)**2 - 1.0_DP) * (1.0_DP - Dpoints(1,:,:)**2) * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) = -1.50_DP * (Dpoints(2,:,:)**2 - 1)**2 * Dpoints(1,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) = Dpoints(2,:,:) * (Dpoints(2,:,:)**2 - 1.0_DP) * (1.0_DP - 3.0_DP * Dpoints(1,:,:)**2)
-      case (DER_DERIV_YY); Dvalues(:,:) = Dpoints(1,:,:) * (Dpoints(1,:,:)**2 - 1.0_DP) * (1.0_DP - 3.0_DP * Dpoints(2,:,:)**2)
-      end select
-
-    case (41) ! u(x,y) = 5 x^3 (y-1) + y^3
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) = 5.0_DP * Dpoints(1,:,:)**3 * (Dpoints(2,:,:) - 1.0_DP) + Dpoints(2,:,:)**3
-      case (DER_DERIV_X);  Dvalues(:,:) = 15.0_DP * Dpoints(1,:,:)**2 * (Dpoints(2,:,:) - 1.0_DP)
-      case (DER_DERIV_Y);  Dvalues(:,:) = 5.0_DP * Dpoints(1,:,:)**3 + 3.0_DP * Dpoints(2,:,:)**2
-      case (DER_DERIV_XX); Dvalues(:,:) = 30.0_DP * Dpoints(1,:,:) * (Dpoints(2,:,:) - 1.0_DP)
-      case (DER_DERIV_XY); Dvalues(:,:) = 15.0_DP * Dpoints(1,:,:)**2
-      case (DER_DERIV_YY); Dvalues(:,:) = 6.0 * Dpoints(2,:,:)
-      end select
-
-    case (42) ! u(x,y) = x*(y-0.01)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  Dpoints(1,:,:) * (Dpoints(2,:,:)-0.01_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) =      (Dpoints(2,:,:)-0.01_DP)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  Dpoints(1,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  1.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-    case (43) ! u(x,y) = -0.5*x^2
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  -0.5_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  -Dpoints(1,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  -1.0_DP
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-    case (44) ! u(x,y) = sin(c1*x + c2) * sin(c1*y + c2)
-      daux = 2.0_DP*SYS_PI
-      daux1 = 0.02_DP*daux
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                sin(daux * Dpoints(1,:,:) + daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_X);  Dvalues(:,:) =  daux *        cos(daux * Dpoints(1,:,:)+ daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  daux *        sin(daux *Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_XX); Dvalues(:,:) = -daux * daux * sin(daux * Dpoints(1,:,:)+ daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_XY); Dvalues(:,:) =  daux * daux * cos(daux * Dpoints(1,:,:)+ daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_YY); Dvalues(:,:) = -daux * daux * sin(daux * Dpoints(1,:,:) + daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      end select
-
-    case (45) ! u(x,y) = cos(c1*x + c2) * cos(c1*y + c2)
-      daux = 2.0_DP*SYS_PI
-      daux1 = 0.02_DP*daux
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =                cos(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_X);  Dvalues(:,:) = -daux *        sin(daux *Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_Y);  Dvalues(:,:) = -daux *        cos(daux * Dpoints(1,:,:) + daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_XX); Dvalues(:,:) = -daux * daux * cos(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:)+ daux1)
-      case (DER_DERIV_XY); Dvalues(:,:) =  daux * daux * sin(daux * Dpoints(1,:,:) + daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_YY); Dvalues(:,:) = -daux * daux * cos(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      end select
-
-    case (46) ! u(x,y) = -sin(c1*x + c2) * cos(c1*y + c2)
-      daux = (2.0_DP*SYS_PI)**2
-      daux1 = 0.02_DP*daux
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =               -sin(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_X);  Dvalues(:,:) = -daux *        cos(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  daux *        sin(daux * Dpoints(1,:,:) + daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_XX); Dvalues(:,:) =  daux * daux * sin(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_XY); Dvalues(:,:) =  daux * daux * cos(daux * Dpoints(1,:,:)+ daux1) * sin(daux * Dpoints(2,:,:) + daux1)
-      case (DER_DERIV_YY); Dvalues(:,:) =  daux * daux * sin(daux * Dpoints(1,:,:) + daux1) * cos(daux * Dpoints(2,:,:) + daux1)
-      end select
-
-    case (47) ! u(x,y) = sin(PI*x+0.4) cos(PI*y-0.3)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpoints(2,:,:) - 0.3_DP)
-      case (DER_DERIV_X);  Dvalues(:,:) =  cos(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpoints(2,:,:) - 0.3_DP) * SYS_PI
-      case (DER_DERIV_Y);  Dvalues(:,:) = -sin(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * sin(SYS_PI*Dpoints(2,:,:) - 0.3_DP) * SYS_PI
-      case (DER_DERIV_XX); Dvalues(:,:) = -sin(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpoints(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_XY); Dvalues(:,:) = -cos(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * sin(SYS_PI*Dpoints(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
-      case (DER_DERIV_YY); Dvalues(:,:) = -sin(SYS_PI*Dpoints(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpoints(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
-      end select
-
-
-    case (48) ! u(x,y) = c*x^2*y*sin(c*(x-0.5*y^2))
-      daux = 20.0_DP*SYS_PI
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =   daux*Dpoints(1,:,:)**2*Dpoints(2,:,:) * sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_X);  Dvalues(:,:) =   2*daux*Dpoints(1,:,:)*Dpoints(2,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  -daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)**2*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + daux*Dpoints(1,:,:)**2*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_XX); Dvalues(:,:) =   (2*daux*Dpoints(2,:,:) - daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:))*sin(daux*(Dpoints(1,:,:) &
-                                -0.5_DP*Dpoints(2,:,:)**2)) + 4*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_XY); Dvalues(:,:) =   (daux**2*Dpoints(1,:,:)**2 - 2*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)**2)*cos(daux*(Dpoints(1,:,:) &
-                                -0.5_DP*Dpoints(2,:,:)**2)) + (2*daux*Dpoints(1,:,:) + daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**2)*sin(daux*(Dpoints(1,:,:)&
-                                -0.5_DP*Dpoints(2,:,:)**2)) 
-      case (DER_DERIV_YY); Dvalues(:,:) =  -daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**3*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                - 3*daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      end select
-
-    case (49) ! u(x,y) = -2*x*cos(c*(x-0.5*y^2)) + c*x^2*sin(c*(x-0.5*y^2))
-      daux = 20.0_DP*SYS_PI
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =   -2*Dpoints(1,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + daux*Dpoints(1,:,:)**2*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_X);  Dvalues(:,:) =   (daux**2*Dpoints(1,:,:)**2 - 2)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + 4*daux*Dpoints(1,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) 
-      case (DER_DERIV_Y);  Dvalues(:,:) =  -2*daux*Dpoints(1,:,:)*Dpoints(2,:,:)*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                - daux**2*Dpoints(1,:,:)**2*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_XX); Dvalues(:,:) =   (6*daux - daux**3*Dpoints(1,:,:)**2) * sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2)) &
-                                + 6*daux**2*Dpoints(1,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_XY); Dvalues(:,:) =   (daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:) - 2*daux*Dpoints(2,:,:))*sin(daux*(Dpoints(1,:,:)& 
-                                -0.5_DP*Dpoints(2,:,:)**2)) - 4*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)*cos(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      case (DER_DERIV_YY); Dvalues(:,:) =   (2*daux**2*Dpoints(1,:,:)*Dpoints(2,:,:)**2  - daux**2*Dpoints(1,:,:)**2)*cos(daux*(Dpoints(1,:,:)&
-                                -0.5_DP*Dpoints(2,:,:)**2)) - (daux**3*Dpoints(1,:,:)**2*Dpoints(2,:,:)**2 &
-                                + 2*daux*Dpoints(1,:,:))*sin(daux*(Dpoints(1,:,:)-0.5_DP*Dpoints(2,:,:)**2))
-      end select
-      
-    case (50) ! u(x,y) = 0.05 * sin(2*PI*x)*sin(2*PI*y)
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =   0.1_DP * SYS_PI &
-                              * cos(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =   0.1_DP * SYS_PI &
-                              * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
-                              * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =   0.2_DP * SYS_PI * SYS_PI &
-                              * cos(2.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
-                              * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      end select
-      
-    case (51) ! u(x,y) = sin(PI/2 (x-1)) sin(PI/2 (y-1))
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  sin(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      case (DER_DERIV_X);  Dvalues(:,:) =  0.5_DP * SYS_PI &
-                               * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.5_DP * SYS_PI &
-                               * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * cos(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      case (DER_DERIV_XX); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI &
-                               * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.25_DP * SYS_PI * SYS_PI &
-                               * cos(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * cos(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      case (DER_DERIV_YY); Dvalues(:,:) = -0.25_DP * SYS_PI * SYS_PI &
-                               * sin(0.5_DP * SYS_PI * (Dpoints(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpoints(2,:,:)-1))
-      end select
-
+!    case (10) ! u(x,y) = y^2 * (1 - y)^2 * (x - 1)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = Dpts(2,:,:) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2 * (Dpts(1,:,:) - 1.0_DP)
+!      case (DER_DERIV_X);  Dval(:,:) = Dpts(2,:,:) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))**2
+!      case (DER_DERIV_Y);  Dval(:,:) =   2.0_DP * Dpts(2,:,:) * (2.0_DP * Dpts(2,:,:) - 1.0_DP) &
+!                              * (Dpts(2,:,:) - 1.0_DP) * (Dpts(1,:,:) - 1.0_DP)
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = 2.0_DP * Dpts(2,:,:) * (2.0_DP * Dpts(2,:,:) - 1.0_DP) * (Dpts(2,:,:) - 1.0_DP)
+!      case (DER_DERIV_YY); Dval(:,:) =   2.0_DP * (1.0_DP - 6.0_DP * Dpts(2,:,:) + 6.0_DP * Dpts(2,:,:) * Dpts(2,:,:)) &
+!                              * (Dpts(2,:,:) - 1.0_DP)
+!      end select
+!
+!    case (11) ! u1(x,y) = 0.25 * (1/sqrt(2) + x - y) * (1/sqrt(2) - x + y)
+!              !            * ((1-sqrt(2))/sqrt(2) + x + y) * ((1+sqrt(2))/sqrt(2) - x - y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =   0.25_DP * (1.0_DP / sqrt(2.0_DP) + Dpts(1,:,:) - Dpts(2,:,:)) &
+!                              * (1.0_DP / sqrt(2.0_DP) - Dpts(1,:,:) + Dpts(2,:,:)) &
+!                              * ((1.0_DP - sqrt(2.0_DP)) / sqrt(2.0_DP) + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                              * ((1.0_DP + sqrt(2.0_DP)) / sqrt(2.0_DP) - Dpts(1,:,:) - Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =  -1.5_DP * Dpts(1,:,:) * Dpts(1,:,:) - 1.0_DP * Dpts(2,:,:) * Dpts(2,:,:) * Dpts(1,:,:) &
+!                              + 0.5_DP * Dpts(2,:,:) * Dpts(2,:,:) - 0.5_DP * Dpts(2,:,:) + 0.25_DP &
+!                              + 1.0_DP * Dpts(1,:,:) * Dpts(2,:,:) + 1.0_DP * Dpts(1,:,:)**3
+!      case (DER_DERIV_Y);  Dval(:,:) =  -1.0_DP * Dpts(1,:,:) * Dpts(1,:,:) * Dpts(2,:,:) + 0.5_DP*Dpts(1,:,:) * Dpts(1,:,:) &
+!                              - 0.5_DP*Dpts(1,:,:) - 1.5_DP * Dpts(2,:,:) * Dpts(2,:,:) + 0.25_DP &
+!                              + 1.0_DP * Dpts(1,:,:) * Dpts(2,:,:) + 1.0_DP * Dpts(2,:,:)**3
+!      case (DER_DERIV_XX); Dval(:,:) = -1.0_DP * Dpts(2,:,:) * Dpts(2,:,:) + 1.0_DP * Dpts(2,:,:) + 3.0_DP * Dpts(1,:,:) * Dpts(1,:,:)&
+!                              - 3.0_DP * Dpts(1,:,:)
+!      case (DER_DERIV_XY); Dval(:,:) = -0.5_DP + 1.0_DP * Dpts(1,:,:) + 1.0_DP * Dpts(2,:,:) - 2.0_DP * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_YY); Dval(:,:) =  3.0_DP * Dpts(2,:,:) * Dpts(2,:,:) - 3.0_DP * Dpts(2,:,:) - 1.0_DP * Dpts(1,:,:) * Dpts(1,:,:) &
+!                               + 1.0_DP * Dpts(1,:,:)
+!      end select
+!
+!    case (12) ! u(x,y) = sin(x) * sin(y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =  cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      end select
+!
+!    case (13) ! u(x,y) = 0.05 * sin(4*PI*x)*sin(4*PI*y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  0.05_DP*sin(4.0_DP * SYS_PI * Dpts(1,:,:)) * sin(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =   0.2_DP * SYS_PI &
+!                              * cos(4.0_DP * SYS_PI * Dpts(1,:,:)) * sin(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =   0.2_DP * SYS_PI &
+!                              * sin(4.0_DP * SYS_PI * Dpts(1,:,:)) * cos(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =  -0.8_DP * SYS_PI * SYS_PI &
+!                              * sin(4.0_DP * SYS_PI * Dpts(1,:,:)) * sin(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =   0.8_DP * SYS_PI * SYS_PI &
+!                              * cos(4.0_DP * SYS_PI * Dpts(1,:,:)) * cos(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  -0.8_DP * SYS_PI * SYS_PI &
+!                              * sin(4.0_DP * SYS_PI * Dpts(1,:,:)) * sin(4.0_DP * SYS_PI * Dpts(2,:,:))
+!      end select
+!
+!    case (14) ! u(x,y) = cos(x) * cos(y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      end select
+!
+!    case (15) ! u(x,y) = cos(PI/2 * (x + y))
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                              cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_X);  Dval(:,:) =           -0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_Y);  Dval(:,:) =           -0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_XX); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_XY); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_YY); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      end select
+!
+!    case (16) ! u(x,y) = -cos(PI/2 * (x + y))
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                            -cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_X);  Dval(:,:) =           0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_Y);  Dval(:,:) =           0.5_DP * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_XX); Dval(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_XY); Dval(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      case (DER_DERIV_YY); Dval(:,:) = 0.25_DP * SYS_PI * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) + Dpts(2,:,:)))
+!      end select
+!
+!    case (17) ! u(x,y) = 2 * cos(x) * sin(y) - 2 * (1 - cos(1)) * sin(1)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:)) &
+!                              -2.0_DP * (1.0_DP - cos(1.0_DP)) * sin(1.0_DP)
+!      case (DER_DERIV_X);  Dval(:,:) = -2.0_DP * sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =  2.0_DP * cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP * sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      end select
+!
+!    case (18) ! u(x,y) = 8 * (1 - x)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  8.0_DP*(1.0_DP - Dpts(1,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) = -8.0_DP
+!      case (DER_DERIV_Y);  Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!
+!    case (19) ! u(x,y) = sin(PI/2 * (x - y))
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                              sin(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      case (DER_DERIV_X);  Dval(:,:) =            0.5_DP * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      case (DER_DERIV_Y);  Dval(:,:) =           -0.5_DP * SYS_PI * cos(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      case (DER_DERIV_XX); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      case (DER_DERIV_XY); Dval(:,:) =  0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      case (DER_DERIV_YY); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI * sin(0.5_DP * SYS_PI * (Dpts(1,:,:) - Dpts(2,:,:)))
+!      end select
+!
+!    case (20) ! u(x,y) = -(x * x + y * y) * x * x
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = -(Dpts(1,:,:) * Dpts(1,:,:) + Dpts(2,:,:) * Dpts(2,:,:)) * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = -4.0_DP * Dpts(1,:,:)**3 + 2.0_DP * Dpts(1,:,:) * Dpts(2,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) = -2.0_DP * Dpts(1,:,:) * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_XX); Dval(:,:) = -12.0_DP * Dpts(1,:,:) * Dpts(1,:,:) - 2.0_DP * Dpts(2,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_XY); Dval(:,:) = -4.0_DP * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP * Dpts(1,:,:) * Dpts(1,:,:)
+!      end select
+!
+!    case (21) ! u(x,y) = cos(Pi/2)*x - sin(Pi/2)*y - x
+!      if (present(dparam)) then
+!        daux = 0.125_DP * dparam * SYS_PI
+!      else
+!        daux = 0.5_DP * SYS_PI
+!      endif
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = cos(daux) * Dpts(1,:,:) - sin(daux) * Dpts(2,:,:) - Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = cos(daux) - 1.0_DP
+!      case (DER_DERIV_Y);  Dval(:,:) = - sin(daux)
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
+!      end select
+!
+!    case (22) ! u(x,y) = sin(Pi/2)*x + cos(Pi/2)*y - y
+!      if (present(dparam)) then
+!        daux = 0.125_DP * dparam * SYS_PI
+!      else
+!        daux = 0.5_DP * SYS_PI
+!      endif
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = sin(daux) * Dpts(1,:,:) + cos(daux) * Dpts(2,:,:) - Dpts(2,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = sin(daux)
+!      case (DER_DERIV_Y);  Dval(:,:) = cos(daux) - 1.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
+!      end select
+!
+!    case (23) ! u(x,y) = 1.0
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = 1.0_DP
+!      case (DER_DERIV_X);  Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_Y);  Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
+!      end select
+!
+!    case (24) ! u(x,y) = -(2x - 1)(2y^3 - 3y^2) / 6
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = - (2.0_DP * Dpts(1,:,:) - 1.0_DP) * (2.0_DP * Dpts(2,:,:)**3 - 3.0_DP * Dpts(2,:,:)**2) / 6.0_DP
+!      case (DER_DERIV_X);  Dval(:,:) = - Dpts(2,:,:)**2 * (2.0_DP * Dpts(2,:,:) - 3.0_DP) / 3.0_DP
+!      case (DER_DERIV_Y);  Dval(:,:) = -Dpts(2,:,:) * (Dpts(2,:,:) - 1.0_DP) * (2.0_DP * Dpts(1,:,:) - 1.0_DP)
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP * Dpts(2,:,:) * (Dpts(2,:,:) - 1.0_DP)
+!      case (DER_DERIV_YY); Dval(:,:) = -(2.0_DP * Dpts(1,:,:) - 1.0_DP) * (2.0_DP * Dpts(2,:,:) - 1.0_DP)
+!      end select
+!
+!    case (25) ! u(x,y) = sin(x) cos(y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      end select
+!
+!    case (26) ! u(x,y) = -cos(x) sin(y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =  cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      end select
+!
+!    case (27) ! u(x,y) = 4 - 8x
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  4.0_DP - 8.0_DP * Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = -8.0_DP
+!      case (DER_DERIV_Y);  Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!
+!    case (28) ! u(x,y) = 2 cos(x) sin(y) - 2 sin(1) + 2 sin(1) cos(1)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =   2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:)) &
+!                                - 2.0_DP * sin(1.0_DP) &
+!                                + 2.0_DP * sin(1.0_DP) * cos(1.0_DP)
+!      case (DER_DERIV_X);  Dval(:,:) = -2.0_DP * sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =  2.0_DP * cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP * sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP * cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      end select
+!
+!    case (29) ! u(x,y) = xy - 1/4
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = Dpts(1,:,:) * Dpts(2,:,:) - 0.25_DP
+!      case (DER_DERIV_X);  Dval(:,:) = Dpts(2,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) = Dpts(1,:,:)
+!      case (DER_DERIV_XX); Dval(:,:) = 0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) = 1.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) = 0.0_DP
+!      end select
+!
+!    case (30) ! u(x,y) = sin(PI*x - 7/10) * sin(PI*y + 1/5)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP)
+!      case (DER_DERIV_X);  Dval(:,:) =  cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI
+!      case (DER_DERIV_Y);  Dval(:,:) =  sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI
+!      case (DER_DERIV_XX); Dval(:,:) = -sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_XY); Dval(:,:) =  cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_YY); Dval(:,:) = -sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      end select
+!
+!    case (31) ! u(x,y) = cos(PI*x - 7/10) cos(PI*y + 1/5)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP)
+!      case (DER_DERIV_X);  Dval(:,:) = -sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI
+!      case (DER_DERIV_Y);  Dval(:,:) = -cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI
+!      case (DER_DERIV_XX); Dval(:,:) = -cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_XY); Dval(:,:) =  sin(SYS_PI * Dpts(1,:,:) - 0.7_DP) * sin(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_YY); Dval(:,:) = -cos(SYS_PI * Dpts(1,:,:) - 0.7_DP) * cos(SYS_PI * Dpts(2,:,:) + 0.2_DP) * SYS_PI * SYS_PI
+!      end select
+!
+!    case (32) ! u(x,y) = sin(x) cos(y) + (cos(1) - 1) sin(1)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:)) + (cos(1.0_DP) - 1.0_DP) * sin(1.0_DP)
+!      case (DER_DERIV_X);  Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+!      end select
+!
+!    case (33) ! u(x,y) = -sin(gamma x) * sin(gamma y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                   -sin(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) = -dgamma *          cos(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = -dgamma *          sin(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =  dgamma * dgamma * sin(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -dgamma * dgamma * cos(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  dgamma * dgamma * sin(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      end select
+!
+!    case (34) ! u(x,y) = -cos(gamma x) * cos(gamma y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                   -cos(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =  dgamma *          sin(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =  dgamma *          cos(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =  dgamma * dgamma * cos(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = -dgamma * dgamma * sin(dgamma * Dpts(1,:,:)) * sin(dgamma * Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  dgamma * dgamma * cos(dgamma * Dpts(1,:,:)) * cos(dgamma * Dpts(2,:,:))
+!      end select
+!
+!    case (35) ! u(x,y) = x^2*(1-x)^2 * 2*PI*sin(PI*y)*cos(PI*y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))**2*2.0_DP*SYS_PI*sin(SYS_PI*Dpts(2,:,:))*cos(SYS_PI*Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) = 4.0_DP*(Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2 - Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))) &
+!                                * SYS_PI*sin(SYS_PI*Dpts(2,:,:))*cos(SYS_PI*Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = 2.0_DP*Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))**2 &
+!                                * (SYS_PI**2*cos(SYS_PI*Dpts(2,:,:))**2 - SYS_PI**2*sin(SYS_PI*Dpts(2,:,:))**2)
+!      case (DER_DERIV_XX); Dval(:,:) = (4.0_DP*(1.0_DP-Dpts(1,:,:))**2 - 16.0_DP*Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:)) + 4.0_DP*Dpts(1,:,:)**2) &
+!                                * SYS_PI*sin(SYS_PI*Dpts(2,:,:))*cos(SYS_PI*Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) = 4.0_DP*SYS_PI**2 * ((Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2 &
+!                                - Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))) * cos(SYS_PI*Dpts(2,:,:))**2 &
+!                                - (Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2 + Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))) * sin(SYS_PI*Dpts(2,:,:))**2)
+!      case (DER_DERIV_YY); Dval(:,:) =-8.0_DP*Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))**2 &
+!                                * SYS_PI**3*cos(SYS_PI*Dpts(2,:,:))*sin(SYS_PI*Dpts(2,:,:))
+!      end select
+!
+!    case (36) ! u(x,y) = -(2*x*(1-x)^2 - 2*x^2*(1-x))*sin^2(PI*y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = -(2.0_DP*Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2 &
+!                                - 2.0_DP*Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:)))*sin(SYS_PI*Dpts(2,:,:))**2
+!      case (DER_DERIV_X);  Dval(:,:) = -(2.0_DP*(1.0_DP-Dpts(1,:,:))**2 - 8.0_DP*Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:)) &
+!                                + 2.0_DP*Dpts(1,:,:)**2) * sin(SYS_PI*Dpts(2,:,:))**2
+!      case (DER_DERIV_Y);  Dval(:,:) = -2.0_DP*(2.0_DP*Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2-2.0_DP*Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:))) &
+!                                * sin(SYS_PI*Dpts(2,:,:))*cos(SYS_PI*Dpts(2,:,:))*SYS_PI
+!      case (DER_DERIV_XX); Dval(:,:) = -(-12.0_DP + 24.0_DP*Dpts(1,:,:))*sin(SYS_PI*Dpts(2,:,:))**2
+!      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP*(2.0_DP*(1.0_DP-Dpts(1,:,:))**2 -8.0_DP*Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))&
+!                                + 2.0_DP*Dpts(1,:,:)**2) * sin(SYS_PI*Dpts(2,:,:))*cos(SYS_PI*Dpts(2,:,:))*SYS_PI
+!      case (DER_DERIV_YY); Dval(:,:) =   4.0_DP*(Dpts(1,:,:)*(1.0_DP-Dpts(1,:,:))**2 - Dpts(1,:,:)**2*(1.0_DP-Dpts(1,:,:)))*SYS_PI**2 &
+!                                * (-cos(SYS_PI*Dpts(2,:,:))**2 + sin(SYS_PI*Dpts(2,:,:))**2)
+!      end select
+!
+!    case (37) ! u(x,y) = 16 * x * (1 - x) * y * (1 - y)
+!      Dval(:,:) = 0_DP
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = Dpts(1,:,:) * (1.0_DP - Dpts(1,:,:)) * Dpts(2,:,:) * (1.0_DP - Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) = (-1.0_DP + 2.0_DP * Dpts(1,:,:)) * Dpts(2,:,:) * (-1.0_DP + Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) = Dpts(1,:,:) * (-1.0_DP + Dpts(1,:,:)) * (-1.0_DP + 2.0_DP * Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) = (2.0_DP * Dpts(2,:,:) * (-1.0_DP + Dpts(2,:,:)))
+!      case (DER_DERIV_XY); Dval(:,:) = (-1.0_DP + 2.0_DP * Dpts(1,:,:)) * (-1.0_DP + 2.0_DP * Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) = 2.0_DP * Dpts(1,:,:) * (-1.0_DP + Dpts(1,:,:))
+!      end select
+!      Dval(:,:) = Dval(:,:)*16.0_DP
+!
+!    case (38) ! u(x,y) = 42*x^2*(2 - y) + 42*sin(2 - 5*y*x)*cos(x + y + 1)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = 42.0_DP * Dpts(1,:,:)** 2 * (2.0_DP - Dpts(2,:,:)) &
+!                                + 42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:)* Dpts(1,:,:)) * cos(Dpts(1,:,:) + Dpts(2,:,:) + 1.0_DP)
+!      case (DER_DERIV_X);  Dval(:,:) =   84.0_DP * Dpts(1,:,:)* (2.0_DP - Dpts(2,:,:)) &
+!                                - 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpts(2,:,:)* Dpts(1,:,:)) * Dpts(2,:,:) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                - 42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * sin(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =  -42.0_DP * Dpts(1,:,:) ** 2 &
+!                                - 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(1,:,:) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                - 42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * sin(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =   168.0_DP - 84.0_DP * Dpts(2,:,:) &
+!                                + 1050.0_DP * sin(-2.0_DP + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(2,:,:) ** 2 * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                + 420.0_DP * cos(-2.0_DP + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(2,:,:) * sin(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =   -84.0_DP * Dpts(2,:,:) + 1050.0_DP * sin(-2.0_DP &
+!                                + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(2,:,:) * Dpts(1,:,:) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                - 210.0_DP * cos(-2.0_DP + 5.0_DP* Dpts(2,:,:)* Dpts(1,:,:)) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                + 210.0_DP * cos(-2.0_DP + 5.0_DP* Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(1,:,:) * sin(1.0_DP +Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                + 210.0_DP * cos(-2.0_DP + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(2,:,:) * sin(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  1050.0_DP * sin(-2.0_DP &
+!                                + 5.0_DP * Dpts(2,:,:)* Dpts(1,:,:)) * Dpts(1,:,:) ** 2 * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                + 420.0_DP * cos(-2.0_DP + 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * Dpts(1,:,:)* sin(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:)) &
+!                                -  42.0_DP * sin(2.0_DP - 5.0_DP * Dpts(2,:,:) * Dpts(1,:,:)) * cos(1.0_DP + Dpts(1,:,:) + Dpts(2,:,:))
+!      end select
+!
+!    case (39) ! u(x,y) = (x^2 - 1)^2 (y^2 - 1)y / 4
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = 0.25_DP * (Dpts(1,:,:)**2 - 1.0_DP)**2 * (Dpts(2,:,:)**2 - 1.0_DP) * Dpts(2,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = (Dpts(1,:,:)**2 - 1.0_DP) * (Dpts(2,:,:)**2 - 1.0_DP) * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) = 0.25_DP * (Dpts(1,:,:)**2 - 1.0_DP)**2 * (3.0_DP * Dpts(2,:,:)**2 - 1.0_DP)
+!      case (DER_DERIV_XX); Dval(:,:) = Dpts(2,:,:) * (Dpts(2,:,:)**2 - 1.0_DP) * (3.0_DP * Dpts(1,:,:)**2 - 1.0_DP)
+!      case (DER_DERIV_XY); Dval(:,:) = Dpts(1,:,:) * (Dpts(1,:,:)**2 - 1.0_DP) * (3.0_DP * Dpts(2,:,:)**2 - 1.0_DP)
+!      case (DER_DERIV_YY); Dval(:,:) = 1.50_DP * (Dpts(1,:,:)**2 - 1)**2 * Dpts(2,:,:)
+!      end select
+!
+!    case (40) ! u(x,y) = (y^2 - 1)^2 (1 - x^2)x / 4
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = 0.25_DP * (Dpts(2,:,:)**2 - 1.0_DP)**2 * (1.0_DP - Dpts(1,:,:)**2) * Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) = -0.25_DP * (Dpts(2,:,:)**2 - 1.0_DP)**2 * (3.0_DP * Dpts(1,:,:)**2 - 1.0_DP)
+!      case (DER_DERIV_Y);  Dval(:,:) = (Dpts(2,:,:)**2 - 1.0_DP) * (1.0_DP - Dpts(1,:,:)**2) * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_XX); Dval(:,:) = -1.50_DP * (Dpts(2,:,:)**2 - 1)**2 * Dpts(1,:,:)
+!      case (DER_DERIV_XY); Dval(:,:) = Dpts(2,:,:) * (Dpts(2,:,:)**2 - 1.0_DP) * (1.0_DP - 3.0_DP * Dpts(1,:,:)**2)
+!      case (DER_DERIV_YY); Dval(:,:) = Dpts(1,:,:) * (Dpts(1,:,:)**2 - 1.0_DP) * (1.0_DP - 3.0_DP * Dpts(2,:,:)**2)
+!      end select
+!
+!    case (41) ! u(x,y) = 5 x^3 (y-1) + y^3
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) = 5.0_DP * Dpts(1,:,:)**3 * (Dpts(2,:,:) - 1.0_DP) + Dpts(2,:,:)**3
+!      case (DER_DERIV_X);  Dval(:,:) = 15.0_DP * Dpts(1,:,:)**2 * (Dpts(2,:,:) - 1.0_DP)
+!      case (DER_DERIV_Y);  Dval(:,:) = 5.0_DP * Dpts(1,:,:)**3 + 3.0_DP * Dpts(2,:,:)**2
+!      case (DER_DERIV_XX); Dval(:,:) = 30.0_DP * Dpts(1,:,:) * (Dpts(2,:,:) - 1.0_DP)
+!      case (DER_DERIV_XY); Dval(:,:) = 15.0_DP * Dpts(1,:,:)**2
+!      case (DER_DERIV_YY); Dval(:,:) = 6.0 * Dpts(2,:,:)
+!      end select
+!
+!    case (42) ! u(x,y) = x*(y-0.01)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  Dpts(1,:,:) * (Dpts(2,:,:)-0.01_DP)
+!      case (DER_DERIV_X);  Dval(:,:) =      (Dpts(2,:,:)-0.01_DP)
+!      case (DER_DERIV_Y);  Dval(:,:) =  Dpts(1,:,:)
+!      case (DER_DERIV_XX); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) =  1.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!
+!    case (43) ! u(x,y) = -0.5*x^2
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  -0.5_DP * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) =  -Dpts(1,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) =  -1.0_DP
+!      case (DER_DERIV_XY); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!
+!    case (44) ! u(x,y) = sin(c1*x + c2) * sin(c1*y + c2)
+!      daux = 2.0_DP*SYS_PI
+!      daux1 = 0.02_DP*daux
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                sin(daux * Dpts(1,:,:) + daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_X);  Dval(:,:) =  daux *        cos(daux * Dpts(1,:,:)+ daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_Y);  Dval(:,:) =  daux *        sin(daux *Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_XX); Dval(:,:) = -daux * daux * sin(daux * Dpts(1,:,:)+ daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_XY); Dval(:,:) =  daux * daux * cos(daux * Dpts(1,:,:)+ daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_YY); Dval(:,:) = -daux * daux * sin(daux * Dpts(1,:,:) + daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      end select
+!
+!    case (45) ! u(x,y) = cos(c1*x + c2) * cos(c1*y + c2)
+!      daux = 2.0_DP*SYS_PI
+!      daux1 = 0.02_DP*daux
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =                cos(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_X);  Dval(:,:) = -daux *        sin(daux *Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_Y);  Dval(:,:) = -daux *        cos(daux * Dpts(1,:,:) + daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_XX); Dval(:,:) = -daux * daux * cos(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:)+ daux1)
+!      case (DER_DERIV_XY); Dval(:,:) =  daux * daux * sin(daux * Dpts(1,:,:) + daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_YY); Dval(:,:) = -daux * daux * cos(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      end select
+!
+!    case (46) ! u(x,y) = -sin(c1*x + c2) * cos(c1*y + c2)
+!      daux = (2.0_DP*SYS_PI)**2
+!      daux1 = 0.02_DP*daux
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =               -sin(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_X);  Dval(:,:) = -daux *        cos(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_Y);  Dval(:,:) =  daux *        sin(daux * Dpts(1,:,:) + daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_XX); Dval(:,:) =  daux * daux * sin(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_XY); Dval(:,:) =  daux * daux * cos(daux * Dpts(1,:,:)+ daux1) * sin(daux * Dpts(2,:,:) + daux1)
+!      case (DER_DERIV_YY); Dval(:,:) =  daux * daux * sin(daux * Dpts(1,:,:) + daux1) * cos(daux * Dpts(2,:,:) + daux1)
+!      end select
+!
+!    case (47) ! u(x,y) = sin(PI*x+0.4) cos(PI*y-0.3)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(SYS_PI*Dpts(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpts(2,:,:) - 0.3_DP)
+!      case (DER_DERIV_X);  Dval(:,:) =  cos(SYS_PI*Dpts(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpts(2,:,:) - 0.3_DP) * SYS_PI
+!      case (DER_DERIV_Y);  Dval(:,:) = -sin(SYS_PI*Dpts(1,:,:) + 0.4_DP) * sin(SYS_PI*Dpts(2,:,:) - 0.3_DP) * SYS_PI
+!      case (DER_DERIV_XX); Dval(:,:) = -sin(SYS_PI*Dpts(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpts(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_XY); Dval(:,:) = -cos(SYS_PI*Dpts(1,:,:) + 0.4_DP) * sin(SYS_PI*Dpts(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
+!      case (DER_DERIV_YY); Dval(:,:) = -sin(SYS_PI*Dpts(1,:,:) + 0.4_DP) * cos(SYS_PI*Dpts(2,:,:) - 0.3_DP) * SYS_PI * SYS_PI
+!      end select
+!
+!
+!    case (48) ! u(x,y) = c*x^2*y*sin(c*(x-0.5*y^2))
+!      daux = 20.0_DP*SYS_PI
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =   daux*Dpts(1,:,:)**2*Dpts(2,:,:) * sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_X);  Dval(:,:) =   2*daux*Dpts(1,:,:)*Dpts(2,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                + daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_Y);  Dval(:,:) =  -daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)**2*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                + daux*Dpts(1,:,:)**2*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_XX); Dval(:,:) =   (2*daux*Dpts(2,:,:) - daux**3*Dpts(1,:,:)**2*Dpts(2,:,:))*sin(daux*(Dpts(1,:,:) &
+!                                -0.5_DP*Dpts(2,:,:)**2)) + 4*daux**2*Dpts(1,:,:)*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_XY); Dval(:,:) =   (daux**2*Dpts(1,:,:)**2 - 2*daux**2*Dpts(1,:,:)*Dpts(2,:,:)**2)*cos(daux*(Dpts(1,:,:) &
+!                                -0.5_DP*Dpts(2,:,:)**2)) + (2*daux*Dpts(1,:,:) + daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**2)*sin(daux*(Dpts(1,:,:)&
+!                                -0.5_DP*Dpts(2,:,:)**2)) 
+!      case (DER_DERIV_YY); Dval(:,:) =  -daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**3*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                - 3*daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      end select
+!
+!    case (49) ! u(x,y) = -2*x*cos(c*(x-0.5*y^2)) + c*x^2*sin(c*(x-0.5*y^2))
+!      daux = 20.0_DP*SYS_PI
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =   -2*Dpts(1,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                + daux*Dpts(1,:,:)**2*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_X);  Dval(:,:) =   (daux**2*Dpts(1,:,:)**2 - 2)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                + 4*daux*Dpts(1,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) 
+!      case (DER_DERIV_Y);  Dval(:,:) =  -2*daux*Dpts(1,:,:)*Dpts(2,:,:)*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                - daux**2*Dpts(1,:,:)**2*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_XX); Dval(:,:) =   (6*daux - daux**3*Dpts(1,:,:)**2) * sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2)) &
+!                                + 6*daux**2*Dpts(1,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_XY); Dval(:,:) =   (daux**3*Dpts(1,:,:)**2*Dpts(2,:,:) - 2*daux*Dpts(2,:,:))*sin(daux*(Dpts(1,:,:)& 
+!                                -0.5_DP*Dpts(2,:,:)**2)) - 4*daux**2*Dpts(1,:,:)*Dpts(2,:,:)*cos(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      case (DER_DERIV_YY); Dval(:,:) =   (2*daux**2*Dpts(1,:,:)*Dpts(2,:,:)**2  - daux**2*Dpts(1,:,:)**2)*cos(daux*(Dpts(1,:,:)&
+!                                -0.5_DP*Dpts(2,:,:)**2)) - (daux**3*Dpts(1,:,:)**2*Dpts(2,:,:)**2 &
+!                                + 2*daux*Dpts(1,:,:))*sin(daux*(Dpts(1,:,:)-0.5_DP*Dpts(2,:,:)**2))
+!      end select
+!      
+!    case (50) ! u(x,y) = 0.05 * sin(2*PI*x)*sin(2*PI*y)
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  0.05_DP*sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_X);  Dval(:,:) =   0.1_DP * SYS_PI &
+!                              * cos(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_Y);  Dval(:,:) =   0.1_DP * SYS_PI &
+!                              * sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_XX); Dval(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
+!                              * sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_XY); Dval(:,:) =   0.2_DP * SYS_PI * SYS_PI &
+!                              * cos(2.0_DP * SYS_PI * Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      case (DER_DERIV_YY); Dval(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
+!                              * sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+!      end select
+!      
+!    case (51) ! u(x,y) = sin(PI/2 (x-1)) sin(PI/2 (y-1))
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  sin(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      case (DER_DERIV_X);  Dval(:,:) =  0.5_DP * SYS_PI &
+!                               * cos(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      case (DER_DERIV_Y);  Dval(:,:) =  0.5_DP * SYS_PI &
+!                               * sin(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * cos(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      case (DER_DERIV_XX); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI &
+!                               * sin(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      case (DER_DERIV_XY); Dval(:,:) =  0.25_DP * SYS_PI * SYS_PI &
+!                               * cos(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * cos(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      case (DER_DERIV_YY); Dval(:,:) = -0.25_DP * SYS_PI * SYS_PI &
+!                               * sin(0.5_DP * SYS_PI * (Dpts(1,:,:)-1)) * sin(0.5_DP * SYS_PI * (Dpts(2,:,:)-1))
+!      end select
+!
     case (52) ! u(x,y) = 0.05 * cos(2*PI*x)*cos(2*PI*y)
       select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  0.05_DP*cos(2.0_DP * SYS_PI *Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_X);  Dvalues(:,:) =   -0.1_DP * SYS_PI &
-                              * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_Y);  Dvalues(:,:) =   -0.1_DP * SYS_PI &
-                              * cos(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XX); Dvalues(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
-                              * cos(2.0_DP * SYS_PI * Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_XY); Dvalues(:,:) =   0.2_DP * SYS_PI * SYS_PI &
-                              * sin(2.0_DP * SYS_PI * Dpoints(1,:,:)) * sin(2.0_DP * SYS_PI * Dpoints(2,:,:))
-      case (DER_DERIV_YY); Dvalues(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
-                              * cos(2.0_DP * SYS_PI *Dpoints(1,:,:)) * cos(2.0_DP * SYS_PI * Dpoints(2,:,:))
+      case (DER_FUNC);     Dval(:,:) = &
+        0.05_DP*cos(2.0_DP * SYS_PI *Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
+      case (DER_DERIV_X);  Dval(:,:) = -0.1_DP * SYS_PI &
+        * sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) =   -0.1_DP * SYS_PI &
+        * cos(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
+        * cos(2.0_DP * SYS_PI * Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
+      case (DER_DERIV_XY); Dval(:,:) =   0.2_DP * SYS_PI * SYS_PI &
+        * sin(2.0_DP * SYS_PI * Dpts(1,:,:)) * sin(2.0_DP * SYS_PI * Dpts(2,:,:))
+      case (DER_DERIV_YY); Dval(:,:) =  -0.2_DP * SYS_PI * SYS_PI &
+        * cos(2.0_DP * SYS_PI *Dpts(1,:,:)) * cos(2.0_DP * SYS_PI * Dpts(2,:,:))
       end select
-
-    case (53) ! u(x,y) = -x^3*y
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:)*Dpoints(1,:,:)*Dpoints(2,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  -3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  -Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_XX); Dvalues(:,:) =  -6.0_DP * Dpoints(1,:,:) * Dpoints(2,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) =  -3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-
-    case (54) ! u(x,y) = 1/3*x^4
-      select case (cderiv)
-      case (DER_FUNC);     Dvalues(:,:) =  (1.0_DP/4.0_DP) * Dpoints(1,:,:) * Dpoints(1,:,:) * &
-                                            Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_X);  Dvalues(:,:) =  Dpoints(1,:,:) * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_Y);  Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_XX); Dvalues(:,:) =  3.0_DP * Dpoints(1,:,:) * Dpoints(1,:,:)
-      case (DER_DERIV_XY); Dvalues(:,:) =  0.0_DP
-      case (DER_DERIV_YY); Dvalues(:,:) =  0.0_DP
-      end select
-      
+!
+!    case (53) ! u(x,y) = -x^3*y
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  -Dpts(1,:,:) * Dpts(1,:,:)*Dpts(1,:,:)*Dpts(2,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) =  -3.0_DP * Dpts(1,:,:) * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) =  -Dpts(1,:,:) * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_XX); Dval(:,:) =  -6.0_DP * Dpts(1,:,:) * Dpts(2,:,:)
+!      case (DER_DERIV_XY); Dval(:,:) =  -3.0_DP * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!
+!    case (54) ! u(x,y) = 1/3*x^4
+!      select case (cderiv)
+!      case (DER_FUNC);     Dval(:,:) =  (1.0_DP/4.0_DP) * Dpts(1,:,:) * Dpts(1,:,:) * &
+!                                            Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_X);  Dval(:,:) =  Dpts(1,:,:) * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_Y);  Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_XX); Dval(:,:) =  3.0_DP * Dpts(1,:,:) * Dpts(1,:,:)
+!      case (DER_DERIV_XY); Dval(:,:) =  0.0_DP
+!      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
+!      end select
+!      
     end select
 
-  end function aux_danalyticFunction
+  end function elast_danalyticFunction
 
 end module elasticity_callback
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set grid base name
-grid="QUAD"
+grid="unitsquare"
 
 # choose shear modulus
 mus="0.5"
@@ -10,14 +10,12 @@ mus="0.5"
 nus="0.3"
 
 # choose MG levels
-mgs="04"
-#mgs="03 04 05 06 07 08 09 10"
-#mgs="02 03 04 05 06 07 08 09"
+mgs="02 03 04 05 06 07"
 
 #-----------------------------
 
 # set temporary base name of dat-file and result file
-datFile="elasticity_2d_disp_smallDeform_static"
+datFile="elast_2d_disp_smallDeform_static"
 resultFile="result"
 
 
@@ -30,106 +28,108 @@ for nu in ${nus}; do
 # loop over all MG levels
 for mg in ${mgs}; do
 
-#nlmin=2
-nlmin=$(expr ${mg} - 1)
-
 # create the temporary dat file
 cat > dat/${datFile}.dat <<END_OF_DATA
 # PRM-file of the domain
-sgridFilePRM = './pre/${grid}.prm'
+gridFilePRM = './pre/${grid}.prm'
 
 # TRI-file of the mesh
-sgridFileTRI = './pre/${grid}.tri'
-
-# Element type to use for the discretisation (Q1, Q2)
-selementType = Q1
-
-# type of equation (possible values: POISSON, ELASTICITY)
-ctypeOfEquation = ELASTICITY
-
-# boundaries
-nboundaries= 1
+gridFileTRI = './pre/${grid}.tri'
 
 # boundary segments
-NboundarySegments(1) =
+numBoundarySegments(1) =
 4
 
-# set boundary conditions (Neumann = N, Dirichlet = D)
-Sbc1(4) =
-D
-D
-D
-D
-
-# Minimum level of the discretisation
-NLMIN = ${nlmin}
-
-# Maximum level of the discretisation
-NLMAX = ${mg}
-
-# type of configuration (possible values: REAL, ANALYTICAL)
-ctypeOfSimulation = REAL
-
-# set function IDs (only needed in case of ctypeOfSimulation .eq. SIMUL_ANALYTICAL)
-cfuncID_u1 = 4
-cfuncID_u2 = 52
-
-# deformation(possible values: Y (YES), N (NO))
-Deformation = Y
-
-# calculate sol on a point(possible values: Y (YES), N (NO))
-inquirePoint = N
-
-# Points where sol will be calculated (only needed in case of inquirePoint .eq. Y)
-inquirePointX = 1.0
-inquirePointY = 1.0
-
-# Reference sol to calculate error (only needed in case of inquirePoint .eq. Y)
-refSolU1 = -20.648992
-refSolU2 = 27.642747
-
-# max number of iterations
-niterations = 50000
-
-# type of solver (possible values: DIRECT_SOLVER,BICGSTAB_SOLVER,MG_SOLVER, CG_SOLVER)
-ctypeOfSolver = DIRECT_SOLVER
-
-# type of smoother (possible values: JACOBI, ILU)
-ctypeOfSmoother = JACOBI
-
-# Cycle identifier (0=F-cycle, 1=V-cycle, 2=W-cycle)
-ccycle = 1
-
-# number of smoothing steps
-nsmoothingSteps = 128
-
-# damping parameter
-ddamp = 0.7
-
-# tolerance
-dtolerance = 1E-10
+# type of equatio to solve ('Poisson' or 'elasticity')
+equation = elasticity
 
 # material parameters (Poisson ratio nu and shear modulus mu)
-dnu = ${nu}
-dmu = ${mu}
+nu = ${nu}
+mu = ${mu}
 
+# boundary conditions
+# bc[i](#segments x #blocks)
+# 'D' or 'N', for each boundary i, each segment and each component
+bc1(8) =
+D
+D
 
-# set constant RHS values (only needed in case of ctypeOfSimulation .eq. SIMUL_REAL)
-drhsVol1   = 0
-drhsVol2   = 0
+D
+D
 
-DrhsBoundx1(4) =
-0.0
-0.0
+D
+D
+
+D
+D
+
+# type of simulation ('real' or 'analytic')
+simulation = analytic
+
+# surface forces in x- and y-direction
+# forceSurface[i](#segments x dim), in case of real simulation, for each boundary i
+# and each segment
+forceSurface1(8) =
 0.0
 0.0
 
-DrhsBoundy1(4) = 
-0.0
-0.0
 0.0
 0.0
 
+0.0
+0.0
+
+0.0
+0.0
+
+# given constant volume force in x- and y-direction in case of real simulation
+forceVolumeX   = 0.0
+forceVolumeY   = 0.0
+
+# ID of analytical function for u1 and u2 in case of analytical simulation
+funcID_u1 = 4
+funcID_u2 = 52
+
+# finite element discretisation ('Q1' or 'Q2')
+element = Q1
+
+# minimum and maximum grid level
+levelMin = 1
+levelMax = ${mg}
+
+# solver ('DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'MG_CG' or 'MG_BICGSTAB')
+solver = DIRECT
+
+# maximum number of iterations
+numIter = 1000
+
+# relative stopping criterion
+tolerance = 1.0e-8
+
+# elementary preconditioner/smoother 'Jacobi' or 'ILU' (only for MG solver)
+elementaryPrec = ILU
+
+# MG cycle ('V', 'F' or 'W') (only for MG solver)
+mgCycle = F
+
+# number of smoothing steps (only for MG solver)
+numSmoothingSteps = 2
+
+# damping parameter (only for MG solver)
+damping = 0.7
+
+# show deformation in visual output ('YES' or 'NO')
+showDeformation = YES
+
+## x- and y-coordinate of points where the FE solution is to be evaluated
+#evalPoints(2) =
+#0.5
+#0.5
+
+# reference solution values for u1 and u2 in evaluation points
+refSols(2) =
+-20.648992
+27.642747
 
 END_OF_DATA
 # dat file has been created now
@@ -138,22 +138,22 @@ END_OF_DATA
 # start the program, write screen output to result file
 echo "*** Start computation on level ${mg}..."
 
-./elasticity | tee ${resultFile}.txt
+./elasticity | tee ${resultFile}.log
 
 echo "*** ... computation finished!"
 
 # move/rename dat file and result file
-datFile2="temp/${grid}/${datFile}_mu${mu}_nu${nu}_mg${mg}"
-resultFile2="temp/${grid}/${resultFile}_mu${mu}_nu${nu}_mg${mg}"
+datFile2="log/${grid}_mu${mu}_nu${nu}_mg${mg}"
+resultFile2="log/${grid}_mu${mu}_nu${nu}_mg${mg}"
 
 \mv dat/${datFile}.dat ${datFile2}.dat
-\mv ${resultFile}.txt ${resultFile2}.txt
+\mv ${resultFile}.log ${resultFile2}.log
 
 echo "*** Moved dat file to ${datFile2}.dat."
-echo "*** Moved result file to ${resultFile2}.txt."
+echo "*** Moved result file to ${resultFile2}.log."
 
 echo ""
-echo "*** -----------------------------"
+echo "*** ----------------------------------------------------------"
 echo ""
 
 done # mgs

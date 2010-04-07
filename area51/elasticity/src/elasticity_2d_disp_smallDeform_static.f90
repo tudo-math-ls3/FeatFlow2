@@ -9,6 +9,7 @@
 !#     - pure displacement formulation
 !#     - small deformation (i.e., a linear problem)
 !#     - static
+!#   There is also the possibility to compute a 2D Poisson problem.
 !# </purpose>
 !##############################################################################
 
@@ -70,20 +71,19 @@ contains
   ! ***************************************************************************
 
 !<subroutine>
-
-  subroutine elasticity_2d_disp_smallDeform_static_run
+  subroutine elast_2d_disp_smallDeform_static
   
 !<description>
   ! This routine realises the basic elasticity solver. It performs the following tasks:
   !
-  ! 1.) Read in parametrisation
-  ! 2.) Read in triangulation
-  ! 3.) Set up RHS
-  ! 4.) Set up matrix
-  ! 5.) Create solver structure
-  ! 6.) Solve the problem
-  ! 7.) Write solution to GMV file
-  ! 8.) Release all variables, finish
+  ! 1.) read in parametrisation
+  ! 2.) read in triangulation
+  ! 3.) set up RHS
+  ! 4.) set up matrix
+  ! 5.) create solver structure
+  ! 6.) solve the problem
+  ! 7.) write solution to GMV file
+  ! 8.) release all variables, finish
 !</description>
 
 !</subroutine>
@@ -127,7 +127,7 @@ contains
     
     ! output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    character(len=SYS_STRLEN) :: sucddir, snameDatFile, sstring
+    character(len=SYS_STRLEN) :: sucddir
     real(DP), dimension(:), pointer :: p_Ddata, p_Ddata2
     real(DP), Dimension(:,:), pointer :: p_DvertexCoords
 
@@ -136,393 +136,12 @@ contains
     real(DP) ::  ddivu, deps11, deps22, deps12, daux1, daux2
     real(DP) ::  dsigma11, dsigma12, dsigma22, dsigma33, dtrace, dmises
     ! Structure for saving parameters from the DAT file
-    type (t_parlist) :: rparams
 
-    
     ! collection structure to provide additional information to the coefficient routine.
     type(t_collection) :: rcollection
     
-    ! +------------------------------------------------------------------------
-    ! | READ DAT FILE PARAMETERS
-    ! +------------------------------------------------------------------------
-    !
-    ! initialise the parameter structure and read the DAT file
-    call parlst_init(rparams)
- 
-    ! get the data file
-    call sys_getcommandLineArg(1, snameDatFile, &
-                               sdefault='./dat/elasticity_2d_disp_smallDeform_static.dat')
-    call parlst_readfromfile(rparams, snameDatFile)
-    call output_line('parsing dat-file '//trim(snameDatFile)//'...')
-    
-    ! get the following parameters from the parameter file:
-    !
-    !   - gridFilePRM
-    !   - gridFileTRI
-    !
-    !   - numBoundarySegments(#boundaries)
-    !
-    !   - equation
-    !       'Poisson' or 'elasticity'
-    !
-    !   - nu
-    !   - mu
-    !
-    !   - bc[i](#segments x #blocks)
-    !       'D' or 'N', for each boundary i, each segment and component
-    !
-    !   - simulation
-    !       'real' or 'analytic'
-    !
-    !   - forceSurface[i](#segments x dim)
-    !       in case of real simulation, for each boundary i and each segment the
-    !       surface force in x- and y-direction
-    !
-    !   - forceVolumeX
-    !       given vol. force in x-direction in case of real simulation
-    !
-    !   - forceVolumeY
-    !       given vol. force in y-direction in case of real simulation
-    !
-    !   - funcID_u1
-    !       ID of analytical function for u1 in case of analytical simulation
-    !
-    !   - funcID_u2
-    !       ID of analytical function for u2 in case of analytical simulation
-    !
-    !   - element
-    !       'Q1' or 'Q2'
-    !
-    !   - levelMin
-    !   - levelMax
-    !
-    !   - solver
-    !       'DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'MG_CG' or 'MG_BICGSTAB'
-    !
-    !   - numIter
-    !   - tolerance
-    !
-    !   - smoother
-    !       'Jacobi' or 'ILU'
-    !   - mgCycle
-    !       'V', 'F' or 'W'
-    !   - numSmoothingSteps
-    !   - damping
-    !
-    !   - showDeformation
-    !       'YES' or 'NO'
-    !
-    !   - evalPoints(2*numEvalPoints)
-    !       x- and y-coordinate of points to evaluate
-    !   - refSols(2*numEvalPoints)
-    !       ref. solution values for u1 and u2 in eval. points
-
-
-    ! PRM file
-    call parlst_getvalue_string(rparams, '', 'gridFilePRM', sstring)
-    read(sstring,*) rprob%sgridFilePRM
-    call output_line('PRM file: '//trim(rprob%sgridFilePRM))
-                                 
-    ! TRI file
-    call parlst_getvalue_string(rparams, '', 'gridFileTRI', sstring)
-    read(sstring,*) rprob%sgridFileTRI
-    call output_line('TRI file: '//trim(rprob%sgridFilePRM))
-       
-    ! get number of boundaries by inquiring the number of items of the
-    ! parameter 'numBoundarySegments' 
-    rprob%nboundaries = parlst_querysubstrings(rparams, '', 'numBoundarySegments')
-!    ! number of boundaries (has to be set manually by the user who has to know
-!    ! the number of boundaries in the current grid)
-!    call parlst_getvalue_int (rparams, '', 'numBoundaries', rprob%nboundaries)
-    call output_line('number of boundaries: '//trim(sys_siL(rprob%nboundaries,3)))
-                       
-    ! number of boundary segments per boundary (has to be set manually by the user)
-    allocate(rprob%NboundarySegments(rprob%nboundaries))
-    do i = 1,rprob%nboundaries
-      call parlst_getvalue_int(rparams, '', 'numBoundarySegments', &
-                               rprob%NboundarySegments(i), iarrayindex = i)
-      call output_line('number of segments in boundary '//trim(sys_siL(i,3))//': ' // &
-                       trim(sys_siL(rprob%NboundarySegments(i),4)))
-    end do
-
-    ! detect max. number of segments over all boundaries
-    rprob%nmaxNumBoundSegments = -1
-    do i = 1,rprob%nboundaries
-	    if (rprob%NboundarySegments(i) .gt. rprob%nmaxNumBoundSegments) then
-        rprob%nmaxNumBoundSegments = rprob%NboundarySegments(i)
-      end if
-    end do
-    call output_line('max. number of segments: ' // &
-                     trim(sys_siL(rprob%nmaxNumBoundSegments,3)))
-
-    ! kind of equation (possible values: POISSON, ELASTICITY)
-    call parlst_getvalue_string(rparams, '', 'equation', sstring)
-    if (trim(sstring) .eq. 'Poisson') then
-      rprob%cequation = EQ_POISSON
-      rprob%nblocks = 1
-    else if(trim(sstring) .eq. 'elasticity') then
-      rprob%cequation = EQ_ELASTICITY
-      rprob%nblocks = 2
-    else
-      call output_line('invalid equation:' // trim(sstring))
-      stop
-    end if
-    call output_line('equation: '//trim(sstring))
-    
-    ! material parameters (Poisson ratio nu and shear modulus mu)
-    if (rprob%cequation .eq. EQ_ELASTICITY) then
-      call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
-      if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .ge. 0.5) then
-        call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)))
-        stop
-      endif
-      call parlst_getvalue_double(rparams, '', 'mu', rprob%dmu)
-      if (rprob%dnu .le. 0.0_DP) then
-        call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)))
-        stop
-      endif
-      rprob%dlambda = 2.0_DP * rprob%dmu * rprob%dnu/(1 - 2.0_DP * rprob%dnu)
-      call output_line('nu: '//trim(sys_sdL(rprob%dnu,6)))
-      call output_line('mu: '//trim(sys_sdEL(rprob%dmu,6)))
-      call output_line('lambda: '//trim(sys_sdEL(rprob%dlambda,6)))
-    endif
-                     
-    ! boundary conditions ('D' Dirichlet, 'N' Neumann)
-    allocate(rprob%Cbc(rprob%nblocks, rprob%nmaxNumBoundSegments, rprob%nboundaries))
-    do i = 1, rprob%nboundaries
-      do j = 1,rprob%NboundarySegments(i)
-        do k = 1, rprob%nblocks
-          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
-                                      isubstring = 2*(j-1) + k)
-          if (trim(sstring) .eq. "D") then
-            rprob%Cbc(k,j,i) = BC_DIRICHLET 
-          else if (trim(sstring) .eq. "N") then
-            rprob%Cbc(k,j,i) = BC_NEUMANN 
-          else
-            call output_line('invalid boundary condition:' // trim(sstring))
-            call output_line('currently only D (Dirichlet) and N (Neumann) supported!')
-            stop
-          endif
-        enddo
-        call output_line('Bound. cond. in segment ' // trim(sys_siL(j,3)) // &
-                         ' of boundary ' // trim(sys_siL(i,3))//': '// trim(sstring))
-      end do
-    end do
-
-    ! type of simulation (possible values: REAL, ANALYTICAL)
-    call parlst_getvalue_string(rparams, '', 'simulation', sstring)
-    if(trim(sstring) .eq. 'analytical') then
-	    rprob%csimulation = SIMUL_ANALYTICAL
-    else if(trim(sstring) .eq. 'real') then
-	    rprob%csimulation = SIMUL_REAL
-    else
-      call output_line('invalid simulation:' // trim(sstring))
-      stop
-    end if
-    call output_line('simulation: '//trim(sstring))
-
-    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
-    ! (only needed in case of csimulation .eq. SIMUL_REAL)
-	  if (rprob%csimulation .eq. SIMUL_REAL) then
-      allocate(rprob%DforceSurface(rprob%nblocks, rprob%nmaxNumBoundSegments, &
-                                   rprob%nboundaries))
-      do i = 1, rprob%nboundaries
-        do j = 1,rprob%NboundarySegments(i)
-          do k = 1,rprob%nblocks
-            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
-                                        rprob%DforceSurface(k,j,i), &
-                                        iarrayindex = 2*(j-1)+k)
-          enddo
-          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
-                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
-                           trim(sys_sdL(rprob%DforceSurface(1,j,i),4)) // &
-                           ', '//trim(sys_sdL(rprob%DforceSurface(2,j,i),4))//')')
-        end do
-      end do
-    endif
-
-    ! constant volume forces (only needed in case of csimulation .eq. SIMUL_REAL)
-	  if (rprob%csimulation .eq. SIMUL_REAL) then
-      call parlst_getvalue_double(rparams, '', 'forceVolumeX', rprob%dforceVolumeX)
-      call parlst_getvalue_double(rparams, '', 'forceVolumeY', rprob%dforceVolumeY)
-      call output_line('volume force: ('//trim(sys_sdL(rprob%dforceVolumeX,4)) // &
-                       ', '//trim(sys_sdL(rprob%dforceVolumeY,4))//')')
-    endif
-         
-    ! function IDs (only needed in case of csimulation .eq. SIMUL_ANALYTICAL)
-	  if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      call parlst_getvalue_int(rparams, '', 'funcID_u1', rprob%cfuncID_u1)
-      call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%cfuncID_u2)
-      call output_line('function ID for u1: ' // trim(sys_siL(rprob%cfuncID_u1,3)))
-      call output_line('function ID for u2: ' // trim(sys_siL(rprob%cfuncID_u2,3)))
-    endif
-         
-    ! get element type and choose cubature formula accordingly
-    call parlst_getvalue_string(rparams, '', 'element', sstring)
-    if (trim(sstring) .eq. "Q1") then
-      rprob%celement = EL_Q1
-      rprob%ccubature1D = CUB_G2_1D      
-      rprob%ccubature2D = CUB_G2X2
-      call output_line('element Q1, cubature G2 / G2X2')
-    else if (trim(sstring) .eq. "Q2") then
-      rprob%celement = EL_Q2
-      rprob%ccubature1D = CUB_G3_1D      
-      rprob%ccubature2D = CUB_G3X3
-      call output_line('element Q2, cubature G3 / G3X3')
-    else
-      call output_line('invalid element:' // trim(sstring))
-      call output_line('currently only Q1 and Q2 supported!')
-      stop
-    endif
-                              
-    ! minimum and maximum level
-    call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
-    call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
-    if (rprob%ilevelMin .le. 0 .or. rprob%ilevelMax .le. 0 .or. &
-        rprob%ilevelMin .gt. rprob%ilevelMax) then
-      call output_line('invalid combination of min./max. grid level: ' // &
-                       trim(sys_siL(rprob%ilevelMin,3)) // &
-                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
-    endif
-        
-    ! type of solver (possible values: DIRECT, CG, BICGSTAB, MG, CG_MG, MG_CG, MG_BICGSTAB)
-    call parlst_getvalue_string(rparams, '', 'solver', sstring)
-
-    rprob%bmgInvolved = .FALSE.
-    if(trim(sstring) .eq. 'DIRECT') then
-      rprob%csolver = SOLVER_DIRECT
-    else if(trim(sstring) .eq. 'CG') then
-      rprob%csolver = SOLVER_CG
-    else if(trim(sstring) .eq. 'BICGSTAB') then
-      rprob%csolver = SOLVER_BICGSTAB
-    else if(trim(sstring) .eq. 'MG') then
-      rprob%csolver = SOLVER_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'CG_MG') then
-      rprob%csolver = SOLVER_CG_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_CG') then
-      rprob%csolver = SOLVER_MG_CG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_BICGSTAB') then
-      rprob%csolver = SOLVER_MG_BICGSTAB
-      rprob%bmgInvolved = .TRUE.
-    else
-      call output_line('invalid solver:' // trim(sstring))
-      stop
-    end if
-    call output_line('solver: '//trim(sstring))
-
-    ! when no multigrid solver is involved, then set min. level to max. level
-    if (.not. rprob%bmgInvolved) then
-      rprob%ilevelMin = rprob%ilevelMax
-    end if
-    call output_line('min./max. grid level: ' // trim(sys_siL(rprob%ilevelMin,3)) // &
-                     "/" // trim(sys_siL(rprob%ilevelMax,3)))
-
-    ! max number of iterations
-    call parlst_getvalue_int(rparams, '', 'numIter', rprob%niterations)
-    call output_line('max. number of iterations: '//trim(sys_siL(rprob%niterations,10)))
-
-    ! tolerance
-    call parlst_getvalue_double(rparams, '', 'tolerance', rprob%dtolerance)
-    call output_line('rel. stopping criterion: ' // trim(sys_sdEL(rprob%dtolerance,4)))
-
-    ! type of elementary preconditioner/smoother (possible values: JACOBI, ILU)
-    call parlst_getvalue_string(rparams, '', 'elementaryPrec', sstring)
-    if(trim(sstring) .eq. 'JACOBI') then
-      rprob%celementaryPrec = SMOOTHER_JACOBI
-    else if(trim(sstring) .eq. 'ILU') then
-      rprob%celementaryPrec = SMOOTHER_ILU
-    else
-      call output_line('invalid elementary preconditioner/smoother type:' // trim(sstring))
-      stop
-    end if
-    call output_line('elementary preconditioner/smoother: '//trim(sstring))
-
-    ! additional parameters for multigrid
-    if (rprob%bmgInvolved) then
-      ! MG cycle (0=F-cycle, 1=V-cycle, 2=W-cycle)
-      call parlst_getvalue_string(rparams, '', 'mgCycle', sstring)
-      if(trim(sstring) .eq. 'V') then
-        rprob%ccycle = 1
-      else if(trim(sstring) .eq. 'F') then
-        rprob%ccycle = 0
-      else if(trim(sstring) .eq. 'W') then
-        rprob%ccycle = 2
-      else
-        call output_line('invalid mgCycle:' // trim(sstring))
-        call output_line('Choosing F-cycle!')
-        rprob%ccycle = 0
-      end if
-      ! number of smoothing steps
-      call parlst_getvalue_int(rparams, '', 'numSmoothingSteps', rprob%nsmoothingSteps)
-      call output_line('MG cycle: '//trim(sstring) // ':' // &
-                       trim(sys_siL(rprob%nsmoothingSteps,3)) // ':' // &
-                       trim(sys_siL(rprob%nsmoothingSteps,3)))
-      ! damping parameter
-      call parlst_getvalue_double(rparams, '', 'damping', rprob%ddamp)
-      call output_line('damping parameter:' // trim(sys_sdL(rprob%ddamp,2)))
-    endif
-
-
-    ! show deformation in gmv (possible values: YES, NO)
-    call parlst_getvalue_string(rparams, '', 'showDeformation', sstring)
-    if(trim(sstring) .eq. 'YES') then
-	    rprob%cshowDeformation = YES
-    else if(trim(sstring) .eq. 'NO') then
-	    rprob%cshowDeformation = NO
-    else
-      call output_line('invalid value for showDeformation:' // trim(sstring))
-      stop
-    end if
-    call output_line('show deformation: '//trim(sstring))
-
-!    ! number of points where to evaluate the FE solution
-!    call parlst_getvalue_int(rparams, '', 'numEvalPoints', rprob%nevalPoints)   
-
-    ! get number of evaluation points by inquiring the number of items of the
-    ! parameter 'evalPoints'
-    rprob%nevalPoints = parlst_querysubstrings(rparams, '', 'evalPoints')/2
-    call output_line('number of evaluation points: '//trim(sys_siL(rprob%nevalPoints,3)))
-
-    if (rprob%nevalPoints .gt. 0) then
-      allocate(rprob%DevalPoints(2,rprob%nevalPoints))
-      allocate(rprob%Dvalues(2,rprob%nevalPoints))
-      allocate(rprob%DderivX(2,rprob%nevalPoints))
-      allocate(rprob%DderivY(2,rprob%nevalPoints))
-      rprob%DevalPoints = 0.0_DP
-      rprob%Dvalues = 0.0_DP
-      rprob%DderivX = 0.0_DP
-      rprob%DderivY = 0.0_DP
-      do i = 1, rprob%nevalPoints
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(1,i), iarrayindex = 2*i-1)
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(2,i), iarrayindex = 2*i)
-        call output_line('eval. point: ('// trim(sys_sdL(rprob%DevalPoints(1,i),4)) &
-                         // ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-      end do
-    end if
-
-    ! get number of reference solutions by inquiring the number of items of th
-    ! parameter 'refSols'
-    rprob%nrefSols = parlst_querysubstrings(rparams, '', 'refSols') / 2
-    call output_line('number of reference solutions: '//trim(sys_siL(rprob%nrefSols,3)))
-
-    if (rprob%nrefSols .gt. 0) then
-      allocate(rprob%DrefSols(2,rprob%nrefSols))
-      rprob%DrefSols = 0.0_DP
-      do i = 1, rprob%nrefSols
-        call parlst_getvalue_double(rparams, '', 'refSols', &
-                                    rprob%DrefSols(1,i), iarrayindex = 2*i-1)
-        call parlst_getvalue_double(rparams, '', 'refSols', &
-                                    rprob%DrefSols(2,i), iarrayindex = 2*i)
-        call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
-                         // ', ' // trim(sys_sdL(rprob%DrefSols(1,i),8)) // ')')
-      end do
-    end if
-
+    ! call subroutine that reads in the parameter file
+    call elast_readParameterFile(rprob)
 
     ! +------------------------------------------------------------------------
     ! | BOUNDARY AND TRIANGULATION
@@ -531,16 +150,20 @@ contains
     ! allocate memory for all levels
     allocate(Rlevels(rprob%ilevelMin:rprob%ilevelMax))
 
-    ! read in the parametrisation of the boundary and save it to rboundary.
+    call output_line('reading boundary parameterisation from file ' // &
+                     trim(rprob%sgridFilePRM) // '...')
+    ! read in the parameterisation of the boundary and save it to rboundary.
     call boundary_read_prm(rboundary, rprob%sgridFilePRM)
         
     ! read in the basic triangulation.
+    call output_line('reading triangulation from file ' // &
+                     trim(rprob%sgridFileTRI) // '...')
     call tria_readTriFile2D(Rlevels(rprob%ilevelMin)%rtriangulation, &
                             rprob%sgridFileTRI, rboundary)
      
     ! refine it once
     call tria_quickRefine2LevelOrdering(rprob%ilevelMin-1, &
-            Rlevels(rprob%ilevelMin)%rtriangulation, rboundary)
+           Rlevels(rprob%ilevelMin)%rtriangulation, rboundary)
     
     ! create information about adjacencies etc.
     call tria_initStandardMeshFromRaw(Rlevels(rprob%ilevelMin)%rtriangulation, rboundary)
@@ -607,11 +230,11 @@ contains
         rform%Dcoefficients(1)  = 1.0
         rform%Dcoefficients(2)  = 1.0
   
-        ! Build the matrix entries. The callback function coeff_mat_Poisson_2D for the
+        ! Build the matrix entries. The callback function elast_mat_Poisson_2D for the
         ! coefficients is only used if specifying ballCoeffConstant = .FALSE. and
         ! BconstantCoeff = .FALSE.
         call bilf_buildMatrixScalar(rform, .true., &
-               Rlevels(ilev)%rmatrix%RmatrixBlock(1,1), coeff_mat_Poisson_2D)
+               Rlevels(ilev)%rmatrix%RmatrixBlock(1,1), elast_mat_Poisson_2D)
       else if (rprob%cequation .eq. EQ_ELASTICITY) then
         
         ! common information for all blocks
@@ -670,7 +293,7 @@ contains
 ! As soon as I have to use the callback function, the following call has to be put
 ! inside the above if-else-block.
             call bilf_buildMatrixScalar(rform, .true., &
-                   Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol), coeff_mat_Poisson_2D)
+                   Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol), elast_mat_Poisson_2D)
           enddo
         enddo
 
@@ -678,8 +301,8 @@ contains
     end do
 
     ! set up structure for RHS and solution vector by using the block matrix as template
-    call lsysbl_createVecBlockIndMat(Rlevels(rprob%ilevelMax)%rmatrix,rrhs, .false.)
-    call lsysbl_createVecBlockIndMat(Rlevels(rprob%ilevelMax)%rmatrix,rsol, .false.)
+    call lsysbl_createVecBlockIndMat(Rlevels(rprob%ilevelMax)%rmatrix, rrhs, .false.)
+    call lsysbl_createVecBlockIndMat(Rlevels(rprob%ilevelMax)%rmatrix, rsol, .false.)
 
     ! clear RHS and solution vector on the finest level
     call lsysbl_clearVector(rrhs)
@@ -694,22 +317,22 @@ contains
     if (rprob%cequation .eq. EQ_POISSON) then 
       ! Poisson equation
       
-      ! use the callback function coeff_RHS_Poisson_vol_2D
+      ! use the callback function elast_RHS_Poisson_2D_vol
       call linf_buildVectorScalar(Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(1),&
-                    rlinform, .true., rrhs%RvectorBlock(1), coeff_RHS_Poisson_vol_2D)
+                    rlinform, .true., rrhs%RvectorBlock(1), elast_RHS_Poisson_2D_vol)
 
     else if (rprob%cequation .eq. EQ_ELASTICITY) then
       ! elasticity equation
       
-      ! volume forces in x-direction, use the callback function coeff_RHS_volX_2D
+      ! volume forces in x-direction, use the callback function elast_RHS_2D_volX
       call linf_buildVectorScalar(&
              Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(1), &
-             rlinform, .true., rrhs%RvectorBlock(1), coeff_RHS_volX_2D)
+             rlinform, .true., rrhs%RvectorBlock(1), elast_RHS_2D_volX)
   
-      ! volume forces in y-direction, use the callback function coeff_RHS_volY_2D
+      ! volume forces in y-direction, use the callback function elast_RHS_2D_volY
       call linf_buildVectorScalar(&
              Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(2), &
-             rlinform, .true., rrhs%RvectorBlock(2), coeff_RHS_volY_2D)
+             rlinform, .true., rrhs%RvectorBlock(2), elast_RHS_2D_volY)
   
     endif
 
@@ -717,11 +340,11 @@ contains
     call lsysbl_getbase_double(rsol,p_Ddata)
     call output_line('Number of DOF: ' // trim(sys_siL(size(p_Ddata),12)) )
   
-    ! For implementing boundary conditions, we use a 'filter technique with
-    ! discretised boundary conditions'. This means, we first have to calculate
-    ! a discrete version of the analytic BC, which we can implement into the
-    ! solution/RHS vectors using the corresponding filter.
-    !   
+    ! For implementing boundary conditions, we use a filter technique with discretised
+    ! boundary conditions. This means, we first have to calculate a discrete version of
+    ! the analytic BC, which we can implement into the solution/RHS vectors using the
+    ! corresponding filter.
+
     ! Create a t_discreteBC structure where we store all discretised boundary
     ! conditions.
     do ilev = rprob%ilevelMin, rprob%ilevelMax
@@ -746,12 +369,12 @@ contains
               ! boundary there. The following call does the following:
               ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
               !   We specify icomponent='k' to indicate that we set up the
-              !   Dirichlet BC's for the k-th component in the solution vector.
-              ! - Discretise the boundary condition so that the BC's can be applied
+              !   Dirichlet BCs for the k-th component in the solution vector.
+              ! - Discretise the boundary condition so that the BCs can be applied
               !   to matrices and vectors.
-              ! - Add the calculated discrete BC's to rdiscreteBC for later use.
+              ! - Add the calculated discrete BCs to rdiscreteBC for later use.
               call bcasm_newDirichletBConRealBD(Rlevels(ilev)%rdiscretisation, k, &
-                     rboundaryRegion, Rlevels(ilev)%rdiscreteBC, getBoundaryValues_2D)
+                     rboundaryRegion, Rlevels(ilev)%rdiscreteBC, elast_boundValue_2D)
             end do  
           else if (rprob%Cbc(k,j,i) .eq. BC_NEUMANN) then
 !            print *,'N',i,j,k
@@ -762,15 +385,15 @@ contains
             ! to the RHS vector which already contains the volumetric contributions.
             if (rprob%cequation .eq. EQ_POISSON) then 
               call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
-                     rrhs%RvectorBlock(1), coeff_RHS_Poisson_bound_2D, rboundaryRegion, &
+                     rrhs%RvectorBlock(1), elast_RHS_Poisson_2D_bound, rboundaryRegion, &
                      rcollection)
             else if (rprob%cequation .eq. EQ_ELASTICITY) then
               if (k .eq. 1) then
                 call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
-                  rrhs%RvectorBlock(1), coeff_RHS_surfX_2D, rboundaryRegion, rcollection)
+                  rrhs%RvectorBlock(1), elast_RHS_2D_surfX, rboundaryRegion, rcollection)
               else if (k .eq. 2) then
                 call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
-                  rrhs%RvectorBlock(2), coeff_RHS_surfY_2D, rboundaryRegion, rcollection)
+                  rrhs%RvectorBlock(2), elast_RHS_2D_surfY, rboundaryRegion, rcollection)
               endif
             endif
           else
@@ -1003,44 +626,48 @@ contains
     ! into Rmatrices(:)!
     allocate(Rmatrices(rprob%ilevelMin:rprob%ilevelMax))
     do ilev = rprob%ilevelMin, rprob%ilevelMax
-      call lsysbl_duplicateMatrix(Rlevels(ilev)%rmatrix,&
-          Rmatrices(ilev),LSYSSC_DUP_SHARE,LSYSSC_DUP_SHARE)
+      call lsysbl_duplicateMatrix(Rlevels(ilev)%rmatrix, Rmatrices(ilev), &
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
     end do
     
-    call linsol_setMatrices(p_rsolver,Rmatrices(rprob%ilevelMin:rprob%ilevelMax))
+    call linsol_setMatrices(p_rsolver, Rmatrices(rprob%ilevelMin:rprob%ilevelMax))
 
-    ! We can release Rmatrices immediately -- as long as we don't
-    ! release Rlevels(ilev)%rmatrix!
+    ! Rmatrices can be released immediately
     do ilev = rprob%ilevelMin,rprob%ilevelMax
       call lsysbl_releaseMatrix(Rmatrices(ilev))
     end do
     deallocate(Rmatrices)
     
-    ! Initialise structure/data of the solver. This allows the
-    ! solver to allocate memory / perform some precalculation
-    ! to the problem.
+    ! Initialise structure/data of the solver. This allows the solver to allocate memory
+    ! and perform some preparing calculations to the problem.
     call linsol_initStructure(p_rsolver, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      stop
+    endif
     call linsol_initData(p_rsolver, ierror)
-    if (ierror .ne. LINSOL_ERR_NOERROR) stop
+    if (ierror .ne. LINSOL_ERR_NOERROR) then
+      stop
+    endif
 
     ! Finally solve the system. As we want to solve Ax=b with
     ! b being the real RHS and x being the real solution vector,
     ! we use linsol_solveAdaptively. If b is a defect
     ! RHS and x a defect update to be added to a solution vector,
     ! we would have to use linsol_precondDefect instead.
-    call linsol_solveAdaptively(p_rsolver,rsol,rrhs,rtempBlock)
+    call linsol_solveAdaptively(p_rsolver, rsol, rrhs, rtempBlock)
 
-    call output_line('*********************************************************')
-    ! Number of iterations
-    call output_line('Number of iterations: ' // sys_siL(p_rsolver%iiterations,8) )
-    ! Rate of convergence
-    call output_line('Convergence rate: ' // sys_sdL(p_rsolver%dconvergenceRate,5) )
-    ! Rate of asymptotic convergence
-    call output_line('Asymptotic convergence rate: ' // &
-                      sys_sdL(p_rsolver%dasymptoticConvergenceRate,5) )
-    call output_line('*********************************************************')
-    call output_lbrk()
+    if (rprob%csolver .ne. SOLVER_DIRECT) then
+      call output_line('*********************************************************')
+      ! Number of iterations
+      call output_line('Number of iterations: ' // sys_siL(p_rsolver%iiterations,8) )
+      ! Rate of convergence
+      call output_line('Convergence rate: ' // sys_sdL(p_rsolver%dconvergenceRate,5) )
+      ! Rate of asymptotic convergence
+      call output_line('Asymptotic convergence rate: ' // &
+                        sys_sdL(p_rsolver%dasymptoticConvergenceRate,5) )
+      call output_line('*********************************************************')
+      call output_lbrk()
+    endif
 
     ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
     ! strains, stresses
@@ -1085,8 +712,8 @@ contains
 
       call output_line('Relative errors between FE and reference solutions:')
       do i = 1, min(rprob%nevalPoints, rprob%nrefSols) 
-        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // ', ' //&
-                         trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
+        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
+                         ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
         call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,i),10)))
         call output_line('     u1*: ' // trim(sys_sdEL(rprob%DrefSols(1,i),10)))
         call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,i),10)))
@@ -1115,36 +742,33 @@ contains
     end if
 
     ! Calculate the error to the reference function.
-
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-	    call pperr_scalar(rsol%RvectorBlock(1),PPERR_L2ERROR,derror1,&
-			  getReferenceFunction_u1_2D)
-! 	call output_line('L2-error for U1: ' // sys_sdEL(derror1,10) )
-	
-	    call pperr_scalar(rsol%RvectorBlock(2),PPERR_L2ERROR,derror2,&
-			  getReferenceFunction_u2_2D)
-! 	call output_line('L2-error for U2: ' // sys_sdEL(derror2,10) )
+      call pperr_scalar(rsol%RvectorBlock(1), PPERR_L2ERROR, derror1, elast_analFunc_u1)
+      call output_line('L2 error for u1: ' // sys_sdEL(derror1,10) )
+  
+      call pperr_scalar(rsol%RvectorBlock(2), PPERR_L2ERROR,derror2, elast_analFunc_u2)
+      call output_line('L2 error for u2: ' // sys_sdEL(derror2,10) )
 
-	    call output_line('L2-error for U: ' // sys_sdEL(sqrt(derror1*derror1 + derror2*derror2),10) )
-	
-	    call pperr_scalar(rsol%RvectorBlock(1),PPERR_H1ERROR,derror1,&
-			  getReferenceFunction_u1_2D)
-! 	call output_line('H1-error for U1: ' // sys_sdEL(derror1,10) )
-	
-	    call pperr_scalar(rsol%RvectorBlock(2),PPERR_H1ERROR,derror2,&
-			  getReferenceFunction_u2_2D)
-! 	call output_line('H1-error for U2: ' // sys_sdEL(derror2,10) )
+      call output_line('L2 error for  u: ' // sys_sdEL(sqrt(derror1**2 + derror2**2),10) )
+  
+      call pperr_scalar(rsol%RvectorBlock(1), PPERR_H1ERROR, derror1, elast_analFunc_u1)
+      call output_line('H1 error for u1: ' // sys_sdEL(derror1,10) )
+  
+      call pperr_scalar(rsol%RvectorBlock(2), PPERR_H1ERROR, derror2, elast_analFunc_u2)
+      call output_line('H1 error for u2: ' // sys_sdEL(derror2,10) )
 
-	    call output_line('H1-error for U: ' // sys_sdEL(sqrt(derror1*derror1 + derror2*derror2),10) )
+      call output_line('H1 error for  u: ' // sys_sdEL(sqrt(derror1**2 + derror2**2),10) )
     end if
 
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
+    if (.not. sys_getenv_string("UCDDIR", sucddir)) then
+      sucddir = './gmv'
+    endif
 
     ! For Bending in the gmv
-    call storage_getbase_double2D(Rlevels(rprob%ilevelMax)%rtriangulation%h_DvertexCoords, &
-                                  p_DvertexCoords)
+    call storage_getbase_double2D( &
+           Rlevels(rprob%ilevelMax)%rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
     ! Write velocity field
     call lsyssc_getbase_double(rsol%RvectorBlock(1),p_Ddata)
@@ -1154,12 +778,12 @@ contains
   
     ! we add sol. vector to coordinates to see the bending
     if (rprob%cshowDeformation .eq. YES) then
-	    do i = 1,Rlevels(rprob%ilevelMax)%rtriangulation%NVT
-		    p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
+      do i = 1,Rlevels(rprob%ilevelMax)%rtriangulation%NVT
+        p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
         if (rprob%cequation .eq. EQ_ELASTICITY) then
-  		    p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
+          p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
         end if
-	    end do
+      end do
     end if
 
     ! Now we have a Q1/Q1/Q0 solution in rprjVector.
@@ -1180,21 +804,20 @@ contains
     !CALL ucd_addVariableVertexBased(rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
     !CALL ucd_addVariableVertexBased(rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
         
-    ! Write the file to disc, that's it.
+    ! write the file to disc
     call ucd_write(rexport)
     call ucd_release(rexport)
 
-    ! We are finished - but not completely!
-    ! Now, clean up so that all the memory is available again.
-    !
-    ! Release solver data and structure
+    ! Simulation finished! Clean up so that all the memory is available again.
+
+    ! release solver data and structure
     call linsol_doneData(p_rsolver)
     call linsol_doneStructure(p_rsolver)
     
-    ! Release the solver node and all subnodes attached to it (if at all):
+    ! release solver node and all subnodes attached to it
     call linsol_releaseSolver(p_rsolver)
     
-    ! Release the block matrix/vectors
+    ! release block matrix/vectors
     call lsysbl_releaseVector(rsol)
     call lsysbl_releaseVector(rtempBlock)
     call lsysbl_releaseVector(rrhs)
@@ -1202,27 +825,442 @@ contains
       call lsysbl_releaseMatrix(Rlevels(ilev)%rmatrix)
     end do
 
-    ! Release our discrete version of the boundary conditions
+    ! release discrete version of the boundary conditions
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
       call bcasm_releaseDiscreteBC(Rlevels(ilev)%rdiscreteBC)
     end do
 
-    ! Release the discretisation structure and all spatial discretisation
-    ! structures in it.
+    ! release discretisation structure
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
       call spdiscr_releaseBlockDiscr(Rlevels(ilev)%rdiscretisation)
     end do
     
-    ! Release the triangulation. 
+    ! release triangulation
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
       call tria_done(Rlevels(ilev)%rtriangulation)
     end do
-    
     deallocate(Rlevels)
     
-    ! Finally release the domain, that's it.
+    ! release domain
     call boundary_release(rboundary)
 
-  end subroutine elasticity_2d_disp_smallDeform_static_run
+    ! release all manually allocated arrays
+    deallocate(rprob%NboundarySegments)
+    deallocate(rprob%Cbc)
+    if (rprob%csimulation .eq. SIMUL_REAL) then
+      deallocate(rprob%DforceSurface)
+    endif
+    if (rprob%nevalPoints .gt. 0) then
+      deallocate(rprob%DevalPoints, rprob%Dvalues, rprob%DderivX, rprob%DderivY)
+      if (rprob%nrefSols .gt. 0) then
+        deallocate(rprob%DrefSols)
+      endif
+    endif
+
+  end subroutine elast_2d_disp_smallDeform_static
+
+
+! ****************************************************************************************
+
+
+!<subroutine>
+  subroutine elast_readParameterFile(rprob)
+  
+!<description>
+    ! get the following parameters from the parameter file:
+    !
+    !   - gridFilePRM
+    !   - gridFileTRI
+    !
+    !   - numBoundarySegments(#boundaries)
+    !
+    !   - equation
+    !       'Poisson' or 'elasticity'
+    !
+    !   - nu
+    !   - mu
+    !
+    !   - bc[i](#segments x #blocks)
+    !       'D' or 'N', for each boundary i, each segment and component
+    !
+    !   - simulation
+    !       'real' or 'analytic'
+    !
+    !   - forceSurface[i](#segments x dim)
+    !       in case of real simulation, for each boundary i and each segment the
+    !       surface force in x- and y-direction
+    !
+    !   - forceVolumeX
+    !       given vol. force in x-direction in case of real simulation
+    !
+    !   - forceVolumeY
+    !       given vol. force in y-direction in case of real simulation
+    !
+    !   - funcID_u1
+    !       ID of analytical function for u1 in case of analytical simulation
+    !
+    !   - funcID_u2
+    !       ID of analytical function for u2 in case of analytical simulation
+    !
+    !   - element
+    !       'Q1' or 'Q2'
+    !
+    !   - levelMin
+    !   - levelMax
+    !
+    !   - solver
+    !       'DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'MG_CG' or 'MG_BICGSTAB'
+    !
+    !   - numIter
+    !   - tolerance
+    !
+    !   - smoother
+    !       'Jacobi' or 'ILU'
+    !   - mgCycle
+    !       'V', 'F' or 'W'
+    !   - numSmoothingSteps
+    !   - damping
+    !
+    !   - showDeformation
+    !       'YES' or 'NO'
+    !
+    !   - evalPoints(2*numEvalPoints)
+    !       x- and y-coordinate of points to evaluate
+    !   - refSols(2*numEvalPoints)
+    !       ref. solution values for u1 and u2 in eval. points
+!</description>
+    
+!<input>
+    ! general problem structure
+    type(t_problem) :: rprob
+!</input>
+  
+!<output>
+!</output>
+    
+!</subroutine>
+
+    type (t_parlist) :: rparams
+    character(len=SYS_STRLEN) :: snameDatFile
+    integer :: i, j, k
+    character(len=SYS_STRLEN) :: sstring
+
+    ! initialise the parameter structure and read the DAT file
+    call parlst_init(rparams)
+ 
+    ! get the data file
+    call sys_getcommandLineArg(1, snameDatFile, &
+                               sdefault='./dat/elast_2d_disp_smallDeform_static.dat')
+    call parlst_readfromfile(rparams, snameDatFile)
+    call output_line('parsing dat-file '//trim(snameDatFile)//'...')
+    
+    ! PRM file
+    call parlst_getvalue_string(rparams, '', 'gridFilePRM', sstring)
+    read(sstring,*) rprob%sgridFilePRM
+    call output_line('PRM file: '//trim(rprob%sgridFilePRM))
+                                 
+    ! TRI file
+    call parlst_getvalue_string(rparams, '', 'gridFileTRI', sstring)
+    read(sstring,*) rprob%sgridFileTRI
+    call output_line('TRI file: '//trim(rprob%sgridFilePRM))
+       
+    ! get number of boundaries by inquiring the number of items of the
+    ! parameter 'numBoundarySegments' 
+    rprob%nboundaries = parlst_querysubstrings(rparams, '', 'numBoundarySegments')
+    call output_line('number of boundaries: '//trim(sys_siL(rprob%nboundaries,3)))
+                       
+    ! number of boundary segments per boundary (has to be set manually by the user)
+    allocate(rprob%NboundarySegments(rprob%nboundaries))
+    do i = 1,rprob%nboundaries
+      call parlst_getvalue_int(rparams, '', 'numBoundarySegments', &
+                               rprob%NboundarySegments(i), iarrayindex = i)
+      call output_line('number of segments in boundary '//trim(sys_siL(i,3))//': ' // &
+                       trim(sys_siL(rprob%NboundarySegments(i),4)))
+    end do
+
+    ! detect max. number of segments over all boundaries
+    rprob%nmaxNumBoundSegments = -1
+    do i = 1,rprob%nboundaries
+      if (rprob%NboundarySegments(i) .gt. rprob%nmaxNumBoundSegments) then
+        rprob%nmaxNumBoundSegments = rprob%NboundarySegments(i)
+      end if
+    end do
+    call output_line('max. number of segments: ' // &
+                     trim(sys_siL(rprob%nmaxNumBoundSegments,3)))
+
+    ! kind of equation (possible values: POISSON, ELASTICITY)
+    call parlst_getvalue_string(rparams, '', 'equation', sstring)
+    if (trim(sstring) .eq. 'Poisson') then
+      rprob%cequation = EQ_POISSON
+      rprob%nblocks = 1
+    else if(trim(sstring) .eq. 'elasticity') then
+      rprob%cequation = EQ_ELASTICITY
+      rprob%nblocks = 2
+    else
+      call output_line('invalid equation:' // trim(sstring))
+      stop
+    end if
+    call output_line('equation: '//trim(sstring))
+    
+    ! material parameters (Poisson ratio nu and shear modulus mu)
+    if (rprob%cequation .eq. EQ_ELASTICITY) then
+      call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
+      if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .ge. 0.5) then
+        call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)))
+        stop
+      endif
+      call parlst_getvalue_double(rparams, '', 'mu', rprob%dmu)
+      if (rprob%dnu .le. 0.0_DP) then
+        call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)))
+        stop
+      endif
+      rprob%dlambda = 2.0_DP * rprob%dmu * rprob%dnu/(1 - 2.0_DP * rprob%dnu)
+      call output_line('nu: '//trim(sys_sdL(rprob%dnu,6)))
+      call output_line('mu: '//trim(sys_sdEL(rprob%dmu,6)))
+      call output_line('lambda: '//trim(sys_sdEL(rprob%dlambda,6)))
+    endif
+                     
+    ! boundary conditions ('D' Dirichlet, 'N' Neumann)
+    allocate(rprob%Cbc(rprob%nblocks, rprob%nmaxNumBoundSegments, rprob%nboundaries))
+    do i = 1, rprob%nboundaries
+      do j = 1,rprob%NboundarySegments(i)
+        do k = 1, rprob%nblocks
+          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
+                                      isubstring = 2*(j-1) + k)
+          if (trim(sstring) .eq. "D") then
+            rprob%Cbc(k,j,i) = BC_DIRICHLET 
+          else if (trim(sstring) .eq. "N") then
+            rprob%Cbc(k,j,i) = BC_NEUMANN 
+          else
+            call output_line('invalid boundary condition:' // trim(sstring))
+            call output_line('currently only D (Dirichlet) and N (Neumann) supported!')
+            stop
+          endif
+          call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
+                           trim(sys_siL(j,3)) // ' of boundary ' // &
+                           trim(sys_siL(i,3))//': '// trim(sstring))
+        enddo
+      end do
+    end do
+
+    ! type of simulation (possible values: REAL, ANALYTICAL)
+    call parlst_getvalue_string(rparams, '', 'simulation', sstring)
+    if(trim(sstring) .eq. 'analytic') then
+      rprob%csimulation = SIMUL_ANALYTICAL
+    else if(trim(sstring) .eq. 'real') then
+      rprob%csimulation = SIMUL_REAL
+    else
+      call output_line('invalid simulation:' // trim(sstring))
+      stop
+    end if
+    call output_line('simulation: '//trim(sstring))
+
+    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
+    ! (only needed in case of csimulation .eq. SIMUL_REAL)
+    if (rprob%csimulation .eq. SIMUL_REAL) then
+      allocate(rprob%DforceSurface(rprob%nblocks, rprob%nmaxNumBoundSegments, &
+                                   rprob%nboundaries))
+      do i = 1, rprob%nboundaries
+        do j = 1,rprob%NboundarySegments(i)
+          do k = 1,rprob%nblocks
+            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
+                                        rprob%DforceSurface(k,j,i), &
+                                        iarrayindex = 2*(j-1)+k)
+          enddo
+          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
+                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
+                           trim(sys_sdL(rprob%DforceSurface(1,j,i),4)) // &
+                           ', '//trim(sys_sdL(rprob%DforceSurface(2,j,i),4))//')')
+        end do
+      end do
+    endif
+
+    ! constant volume forces (only needed in case of csimulation .eq. SIMUL_REAL)
+    if (rprob%csimulation .eq. SIMUL_REAL) then
+      call parlst_getvalue_double(rparams, '', 'forceVolumeX', rprob%dforceVolumeX)
+      call parlst_getvalue_double(rparams, '', 'forceVolumeY', rprob%dforceVolumeY)
+      call output_line('volume force: ('//trim(sys_sdL(rprob%dforceVolumeX,4)) // &
+                       ', '//trim(sys_sdL(rprob%dforceVolumeY,4))//')')
+    endif
+         
+    ! function IDs (only needed in case of csimulation .eq. SIMUL_ANALYTICAL)
+    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+      call parlst_getvalue_int(rparams, '', 'funcID_u1', rprob%cfuncID_u1)
+      call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%cfuncID_u2)
+      call output_line('function ID for u1: ' // trim(sys_siL(rprob%cfuncID_u1,3)))
+      call output_line('function ID for u2: ' // trim(sys_siL(rprob%cfuncID_u2,3)))
+    endif
+         
+    ! get element type and choose cubature formula accordingly
+    call parlst_getvalue_string(rparams, '', 'element', sstring)
+    if (trim(sstring) .eq. "Q1") then
+      rprob%celement = EL_Q1
+      rprob%ccubature1D = CUB_G2_1D      
+      rprob%ccubature2D = CUB_G2X2
+      call output_line('element Q1, cubature G2 / G2X2')
+    else if (trim(sstring) .eq. "Q2") then
+      rprob%celement = EL_Q2
+      rprob%ccubature1D = CUB_G3_1D      
+      rprob%ccubature2D = CUB_G3X3
+      call output_line('element Q2, cubature G3 / G3X3')
+    else
+      call output_line('invalid element:' // trim(sstring))
+      call output_line('currently only Q1 and Q2 supported!')
+      stop
+    endif
+                              
+    ! minimum and maximum level
+    call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
+    call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
+    if (rprob%ilevelMin .le. 0 .or. rprob%ilevelMax .le. 0 .or. &
+        rprob%ilevelMin .gt. rprob%ilevelMax) then
+      call output_line('invalid combination of min./max. grid level: ' // &
+                       trim(sys_siL(rprob%ilevelMin,3)) // &
+                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
+    endif
+        
+    ! type of solver (possible values: DIRECT, CG, BICGSTAB, MG, CG_MG, MG_CG, MG_BICGSTAB)
+    call parlst_getvalue_string(rparams, '', 'solver', sstring)
+
+    rprob%bmgInvolved = .FALSE.
+    if(trim(sstring) .eq. 'DIRECT') then
+      rprob%csolver = SOLVER_DIRECT
+    else if(trim(sstring) .eq. 'CG') then
+      rprob%csolver = SOLVER_CG
+    else if(trim(sstring) .eq. 'BICGSTAB') then
+      rprob%csolver = SOLVER_BICGSTAB
+    else if(trim(sstring) .eq. 'MG') then
+      rprob%csolver = SOLVER_MG
+      rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'CG_MG') then
+      rprob%csolver = SOLVER_CG_MG
+      rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'MG_CG') then
+      rprob%csolver = SOLVER_MG_CG
+      rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'MG_BICGSTAB') then
+      rprob%csolver = SOLVER_MG_BICGSTAB
+      rprob%bmgInvolved = .TRUE.
+    else
+      call output_line('invalid solver:' // trim(sstring))
+      stop
+    end if
+    call output_line('solver: '//trim(sstring))
+
+    ! when no multigrid solver is involved, then set min. level to max. level
+    if (.not. rprob%bmgInvolved) then
+      rprob%ilevelMin = rprob%ilevelMax
+      call output_line('grid level: ' // trim(sys_siL(rprob%ilevelMax,3)))
+    else
+      call output_line('min./max. grid level: ' // trim(sys_siL(rprob%ilevelMin,3)) // &
+                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
+    end if
+
+    if (rprob%csolver .ne. SOLVER_DIRECT) then
+      ! max number of iterations
+      call parlst_getvalue_int(rparams, '', 'numIter', rprob%niterations)
+      call output_line('max. number of iterations: '//trim(sys_siL(rprob%niterations,10)))
+  
+      ! tolerance
+      call parlst_getvalue_double(rparams, '', 'tolerance', rprob%dtolerance)
+      call output_line('rel. stopping criterion: ' // trim(sys_sdEL(rprob%dtolerance,4)))
+
+      ! type of elementary preconditioner/smoother (possible values: JACOBI, ILU)
+      call parlst_getvalue_string(rparams, '', 'elementaryPrec', sstring)
+      if(trim(sstring) .eq. 'JACOBI') then
+        rprob%celementaryPrec = SMOOTHER_JACOBI
+      else if(trim(sstring) .eq. 'ILU') then
+        rprob%celementaryPrec = SMOOTHER_ILU
+      else
+        call output_line('invalid elementary preconditioner/smoother type:' // trim(sstring))
+        stop
+      end if
+      call output_line('elementary preconditioner/smoother: '//trim(sstring))
+
+      ! additional parameters for multigrid
+      if (rprob%bmgInvolved) then
+        ! MG cycle (0=F-cycle, 1=V-cycle, 2=W-cycle)
+        call parlst_getvalue_string(rparams, '', 'mgCycle', sstring)
+        if(trim(sstring) .eq. 'V') then
+          rprob%ccycle = 1
+        else if(trim(sstring) .eq. 'F') then
+          rprob%ccycle = 0
+        else if(trim(sstring) .eq. 'W') then
+          rprob%ccycle = 2
+        else
+          call output_line('invalid mgCycle:' // trim(sstring))
+          call output_line('Choosing F-cycle!')
+          rprob%ccycle = 0
+        end if
+        ! number of smoothing steps
+        call parlst_getvalue_int(rparams, '', 'numSmoothingSteps', rprob%nsmoothingSteps)
+        call output_line('MG cycle: '//trim(sstring) // ':' // &
+                         trim(sys_siL(rprob%nsmoothingSteps,3)) // ':' // &
+                         trim(sys_siL(rprob%nsmoothingSteps,3)))
+        ! damping parameter
+        call parlst_getvalue_double(rparams, '', 'damping', rprob%ddamp)
+        call output_line('damping parameter:' // trim(sys_sdL(rprob%ddamp,2)))
+      endif
+    endif
+
+    ! show deformation in gmv (possible values: YES, NO)
+    call parlst_getvalue_string(rparams, '', 'showDeformation', sstring)
+    if(trim(sstring) .eq. 'YES') then
+      rprob%cshowDeformation = YES
+    else if(trim(sstring) .eq. 'NO') then
+      rprob%cshowDeformation = NO
+    else
+      call output_line('invalid value for showDeformation:' // trim(sstring))
+      stop
+    end if
+    call output_line('show deformation: '//trim(sstring))
+
+    ! get number of evaluation points by inquiring the number of items of the
+    ! parameter 'evalPoints'
+    rprob%nevalPoints = parlst_querysubstrings(rparams, '', 'evalPoints')/2
+    call output_line('number of evaluation points: '//trim(sys_siL(rprob%nevalPoints,3)))
+
+    if (rprob%nevalPoints .gt. 0) then
+      allocate(rprob%DevalPoints(2,rprob%nevalPoints))
+      allocate(rprob%Dvalues(2,rprob%nevalPoints))
+      allocate(rprob%DderivX(2,rprob%nevalPoints))
+      allocate(rprob%DderivY(2,rprob%nevalPoints))
+      rprob%DevalPoints = 0.0_DP
+      rprob%Dvalues = 0.0_DP
+      rprob%DderivX = 0.0_DP
+      rprob%DderivY = 0.0_DP
+      do i = 1, rprob%nevalPoints
+        call parlst_getvalue_double(rparams, '', 'evalPoints', &
+                                    rprob%DevalPoints(1,i), iarrayindex = 2*i-1)
+        call parlst_getvalue_double(rparams, '', 'evalPoints', &
+                                    rprob%DevalPoints(2,i), iarrayindex = 2*i)
+        call output_line('eval. point: ('// trim(sys_sdL(rprob%DevalPoints(1,i),4)) &
+                         // ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
+      end do
+
+      ! get number of reference solutions in evaluation points by inquiring the number of
+      ! items of the parameter 'refSols'
+      rprob%nrefSols = parlst_querysubstrings(rparams, '', 'refSols') / 2
+      call output_line('number of reference solutions: '//trim(sys_siL(rprob%nrefSols,3)))
+  
+      if (rprob%nrefSols .gt. 0) then
+        allocate(rprob%DrefSols(2,rprob%nrefSols))
+        rprob%DrefSols = 0.0_DP
+        do i = 1, rprob%nrefSols
+          call parlst_getvalue_double(rparams, '', 'refSols', &
+                                      rprob%DrefSols(1,i), iarrayindex = 2*i-1)
+          call parlst_getvalue_double(rparams, '', 'refSols', &
+                                      rprob%DrefSols(2,i), iarrayindex = 2*i)
+          call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
+                           // ', ' // trim(sys_sdL(rprob%DrefSols(1,i),8)) // ')')
+        end do
+      end if
+    else
+      ! when there are no evaluation points, we also need no reference solutions
+      rprob%nrefSols = 0
+    end if
+
+  end subroutine elast_readParameterFile
 
 end module elasticity_2d_disp_smallDeform_static
+
