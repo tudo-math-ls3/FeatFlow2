@@ -159,6 +159,11 @@ contains
     
     type(t_additionalTriaData) :: raddTriaData
     
+    integer :: ilimiter
+    
+    ! Name of output file
+    character (LEN=SYS_STRLEN) :: sofile
+    
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -199,6 +204,9 @@ contains
     
     ! Get string describing the initial condition for the function parser
     call parlst_getvalue_string (rparlist, 'PROBLEM', 'inlet', sinlet)
+    
+    ! What type of limiter to use
+    call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0)
     
     select case (ielementType)
     case (0)
@@ -482,6 +490,9 @@ contains
                                   coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
     
+    ! Limit the solution vector
+    if (ilimiting.eq.1) call dg_linearLimiter (rsol)
+    if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
     
     
     rlinformconv%itermCount = 2
@@ -492,7 +503,9 @@ contains
     
     
     ttime = 0.0_DP
-
+    !ttfinal = 2.0_dp*SYS_PI
+    
+    if (ttfinal >0.0_dp) then
     timestepping: do
 
        ! Compute solution from time step t^n to time step t^{n+1}
@@ -541,10 +554,9 @@ contains
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
        
-              ! Limit the solution vector
+       ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
-
     
        
        ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
@@ -587,7 +599,6 @@ contains
        if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
 
-
        ! Step 3/3
        
        ! Create RHS-Vector
@@ -616,18 +627,18 @@ contains
        ! Solve for solution update
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
        
-       ! Get new temp solution
+       ! Get new solution
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
        call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
        ! Limit the solution vector
        if (ilimiting.eq.1) call dg_linearLimiter (rsol)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
-       
-       ! Test, if the solution has converged
-       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
-       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt!/lsyssc_vectorNorm (rsol,LINALG_NORML2)
-       write(*,*) dL2updnorm
+      
+!       ! Test, if the solution has converged
+!       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
+!       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt!/lsyssc_vectorNorm (rsol,LINALG_NORML2)
+!       write(*,*) dL2updnorm
        
     
        ! Go on to the next time step
@@ -642,7 +653,7 @@ contains
        !if ((dL2updnorm.le.1.0e-2).and.(ttime > 5.0)) exit timestepping
 
     end do timestepping
-    
+    end if
     
     
 !    
@@ -677,13 +688,20 @@ contains
     write(*,*) ''
     write(*,*) 'Writing solution to file'
     ! Output solution to gmv file
-!    call dg2gmv(rsol,iextraPoints,'u2d',-1)
-    
-    write(*,*) 'Writing steady solution to file'
-    ! And output the steady projection
-     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+    sofile = './gmv/u2d'
+    call dg2gmv(rsol,iextraPoints,sofile,-1)
+    call dg2vtk(rsol,iextraPoints,sofile,-1)
+
+
+
+
+
 
     
+!    write(*,*) 'Writing steady solution to file'
+!    ! And output the steady projection
+!     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+         
 !    
 !    ! Finally solve the system. As we want to solve Ax=b with
 !    ! b being the real RHS and x being the real solution vector,
@@ -718,6 +736,24 @@ contains
 !    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_H1ERROR,derror,&
 !                       getReferenceFunction_2D)
 !    call output_line ('H1-error: ' // sys_sdEL(derror,10) )
+
+
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsol,PPERR_L1ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsol,PPERR_L2ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
+
+
+
+
+
 !    
 !    ! We are finished - but not completely!
 !    ! Now, clean up so that all the memory is available again.

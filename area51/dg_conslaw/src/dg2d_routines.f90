@@ -2079,7 +2079,7 @@ end subroutine
   
   ! Now limit the x- and y- derivative and finally the linear part
   
-  do ilim = 1, 3
+  do ilim = 1,3
   
     
   
@@ -2125,6 +2125,11 @@ end subroutine
                           Ielements(1:1))
                           
     duc = Dvalues(1)
+    
+    if (ilim == 3) then
+      call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+      duc = p_Ddata(IdofGlob(1))
+    end if
     
     do ivt = 1, NVE
       nvt = p_IverticesAtElement(ivt,iel)
@@ -2181,9 +2186,37 @@ end subroutine
       
      ! Start calculating the limiting factor
      duc = Dvalues(1)
+     
+    if (ilim == 3) then
+      call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+      duc = p_Ddata(IdofGlob(1))
+    end if
+    
+!    do ivt = 1, NVE
+!      nvt = p_IverticesAtElement(ivt,iel)
+!      duimax(nvt) = max(duc,duimax(nvt))
+!      duimin(nvt) = min(duc,duimin(nvt))
+!    end do
       
     do ivert = 1, NVE  
       dui = Dvalues(1+ivert)
+      
+      if (ilim == 3) then
+        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+        dui = p_Ddata(IdofGlob(1))
+        
+        select case (ivert)
+        case(1)
+        dui = dui - p_Ddata(IdofGlob(2)) - p_Ddata(IdofGlob(3))
+        case(2)
+        dui = dui + p_Ddata(IdofGlob(2)) - p_Ddata(IdofGlob(3))
+        case(3)
+        dui = dui + p_Ddata(IdofGlob(2)) + p_Ddata(IdofGlob(3))
+        case(4)
+        dui = dui - p_Ddata(IdofGlob(2)) + p_Ddata(IdofGlob(3))
+        end select
+      end if
+      
       ddu = dui-duc
       nvert = p_IverticesAtElement(ivert, iel)
             

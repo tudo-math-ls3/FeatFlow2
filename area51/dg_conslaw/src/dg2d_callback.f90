@@ -337,7 +337,7 @@ contains
 
 integer :: iunit,i,j
 real(dp),dimension(4000000) :: Dreference
-real(dp) :: r,n
+real(dp) :: r,n,r1
 
 ! Circular dambreak
 !
@@ -387,50 +387,50 @@ real(dp) :: r,n
 
 
 
-! Smooth solution
-
-iunit = sys_getFreeUnit()
-
-open(iunit, file='h')
-
-
-do i = 1, 400000
-  read(iunit,*) Dreference(i)
-
-end do
-
-close(iunit)
-
-  select case (cderivative)
-  case (DER_FUNC)
-    
-                    
-    do i = 1, size(Dvalues,1)
-    do j = 1, size(Dvalues,2)
-      r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
-      n = 200000+1+100000*r
-      
-     
-      
-       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
-
-      !Dvalues(i,j) =Dreference(int(n))
-      !write(*,*)Dreference(int(n))
-      !Dvalues(i,j) =1.0_dp
-      
-    end do
-    end do
-                              
-  case (DER_DERIV_X)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case (DER_DERIV_Y)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
+!! Smooth solution
+!
+!iunit = sys_getFreeUnit()
+!
+!open(iunit, file='h')
+!
+!
+!do i = 1, 400000
+!  read(iunit,*) Dreference(i)
+!
+!end do
+!
+!close(iunit)
+!
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!      r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
+!      n = 200000+1+100000*r
+!      
+!     
+!      
+!       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+!
+!      !Dvalues(i,j) =Dreference(int(n))
+!      !write(*,*)Dreference(int(n))
+!      !Dvalues(i,j) =1.0_dp
+!      
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
 
 
 
@@ -481,6 +481,39 @@ close(iunit)
 !    ! Unknown. Set the result to 0.0.
 !    Dvalues = 0.0_DP
 !  end select
+
+!            ! Zalesak test
+!            Dvalues(:,:)= 0.0_dp
+!            do i = 1, npointsperelement
+!            do j = 1, nelements
+!            r1 = sqrt(((Dpoints(1,i,j)-0.5_dp)**2+(Dpoints(2,i,j)-0.75_dp)**2))
+!            if ((r1.le.0.15_dp).and.((abs(Dpoints(1,i,j)-0.5).ge.0.025_dp).or.(Dpoints(2,i,j).ge.0.85_dp))) Dvalues(i,j)=1.0_dp
+!            r1 = sqrt(((Dpoints(1,i,j)-0.5_dp)**2+(Dpoints(2,i,j)-0.25_dp)**2))
+!            if (r1.le.0.15_dp) Dvalues(i,j)=1.0_dp-r1/0.15_dp
+!            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+!            end do
+!            end do
+            
+!            ! Zalesak test steady
+!            Dvalues(:,:)= 0.0_dp
+!            do i = 1, npointsperelement
+!            do j = 1, nelements
+!            r1 = sqrt(((Dpoints(1,i,j)-0.5_dp)**2+(Dpoints(2,i,j)-0.25_dp)**2))
+!            if (r1.le.0.15_dp) Dvalues(i,j)=1.0_dp-r1/0.15_dp
+!            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+!            end do
+!            end do
+            
+            ! Zalesak test smooth
+            Dvalues(:,:)= 0.0_dp
+            do i = 1, npointsperelement
+            do j = 1, nelements
+            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+            end do
+            end do
   
 
   end subroutine
@@ -1353,12 +1386,12 @@ integer :: iel
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
       ! Zalesak
-      !Dvel(1)=0.5_DP-dy
-      !Dvel(2)=dx-0.5_DP
+      Dvel(1)=0.5_DP-dy
+      Dvel(2)=dx-0.5_DP
       
-      ! Steady circular convection
-      Dvel(1)=dy
-      Dvel(2)=1.0_DP-dx
+!      ! Steady circular convection
+!      Dvel(1)=dy
+!      Dvel(2)=1.0_DP-dx
     
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
       
@@ -1373,18 +1406,19 @@ integer :: iel
 !          DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
 !        end if
 
-      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
-        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
-        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
-          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
-        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
-          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
-        end if
-        
+!      ! BC for circular convection
+!      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
+!        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
+!        if ((0.2_dp.le.dr).and.(dr.le.0.4_dp)) then
+!          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
+!        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
+!          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
+!        end if
+!        
 !        dr = sqrt((dx-0.5_dp)**2.0_dp)
 !        if (dr<0.2)DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
-      
-      end if
+!      
+!      end if
     
       ! Upwind flux
       if (dvn.ge.0) then
@@ -1510,16 +1544,18 @@ integer :: iel
     call fparser_parseFunction(rfparser, 1, trim(adjustl(rcollection%SquickAccess(1))), cvariables)
     
 
-    iunit = sys_getFreeUnit()
+!    iunit = sys_getFreeUnit()
+!
+!    open(iunit, file='h')
+!
+!
+!    do i = 1, 400000
+!      read(iunit,*) Dreference(i)
+!    end do
+!
+!    close(iunit)
 
-    open(iunit, file='h')
-
-
-    do i = 1, 400000
-      read(iunit,*) Dreference(i)
-    end do
-
-    close(iunit)
+    Dcoefficients (1,:,:) = 0.0_dp
 
     
     select case (rcollection%IquickAccess(1))
@@ -1538,13 +1574,23 @@ integer :: iel
             ! Cone 2
             !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
             
-            ! Zalesak
-            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
-            !if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
-            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
-            !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
-            !r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-            !if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+!            ! Zalesak
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
+!            if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+!            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+
+!            ! Zalesak steady
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+!            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=1.0_dp-r1/0.15_dp
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+
+            ! Zalesak smooth
+            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
             
             ! Circular convection
             !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
@@ -1554,9 +1600,9 @@ integer :: iel
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
-            ! Water hill
-            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
-                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            ! Water hill
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
+!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
                      
 !            ! 'Analytical' solution to circular dambreak
 !            r = sqrt(Dpoints(1,ipoint,iel)*Dpoints(1,ipoint,iel)+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
@@ -2061,9 +2107,10 @@ integer :: iel
         dvx=0.5_DP-dy
         dvy=dx-0.5_DP
         
-        ! Circular convection
-        dvx = dy
-        dvy = 1.0_dp - dx
+!        ! Circular convection
+!        dvx = dy
+!        dvy = 1.0_dp - dx
+
         dsol = Dcoefficients (1,ipoint,iel)
         
         Dcoefficients (1,ipoint,iel) = dsol * dvx
