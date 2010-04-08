@@ -2,7 +2,7 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 8
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
@@ -54,7 +54,7 @@ ttfinal = 0.15
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 10
+limiter = 0
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order

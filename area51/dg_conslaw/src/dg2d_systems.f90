@@ -541,7 +541,7 @@ contains
     
     
     
-do iwithoutlimiting = 1,2
+do iwithoutlimiting = 1,1
 if (iwithoutlimiting==2) ilimiter = 0
     
     ! Now set the initial conditions via L2 projection
@@ -575,7 +575,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
     if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
     if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
-    
+    if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
         
     ! Write first video file (the initial conditions)
     ! If we want to make a video
@@ -686,7 +686,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
-
+       if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
     
        
 !       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
@@ -750,6 +750,7 @@ if (iwithoutlimiting==2) ilimiter = 0
         if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
         if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
         if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
 
 
        ! Step 3/3
@@ -809,6 +810,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+       if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
 
 !       
 !       ! Test, if the solution has converged
@@ -977,7 +979,8 @@ if (iwithoutlimiting==2) ilimiter = 0
       if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolBlock, raddTriaData)
       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
       if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
- 
+      if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+
 
 
      ! Go on to the next time step
@@ -1058,27 +1061,27 @@ if (iwithoutlimiting==2) ilimiter = 0
     
    
  
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
-
-
-    ! Calculate the difference of limited and non-limited solution
-    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+    ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getCompareFunction_2D,rcollection)
+                       getReferenceFunction_2D)
     call output_line ('L1-error: ' // sys_sdEL(derror,10) )
 
     ! Calculate the error to the reference function.
     call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getCompareFunction_2D,rcollection)
+                       getReferenceFunction_2D)
     call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+
+
+!    ! Calculate the difference of limited and non-limited solution
+!    rcollection%p_rvectorQuickAccess1 => rsolSaveBlock
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getCompareFunction_2D,rcollection)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getCompareFunction_2D,rcollection)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
 
     
 !

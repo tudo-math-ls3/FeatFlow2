@@ -336,7 +336,7 @@ contains
 !</subroutine>
 
 integer :: iunit,i,j
-real(dp),dimension(40000) :: Dreference
+real(dp),dimension(4000000) :: Dreference
 real(dp) :: r,n
 
 ! Circular dambreak
@@ -394,7 +394,7 @@ iunit = sys_getFreeUnit()
 open(iunit, file='h')
 
 
-do i = 1, 40000
+do i = 1, 400000
   read(iunit,*) Dreference(i)
 
 end do
@@ -408,7 +408,7 @@ close(iunit)
     do i = 1, size(Dvalues,1)
     do j = 1, size(Dvalues,2)
       r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
-      n = 20000+1+10000*r
+      n = 200000+1+100000*r
       
      
       
@@ -431,6 +431,56 @@ close(iunit)
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
   end select
+
+
+
+!! x^2+y^2
+!
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       Dvalues(i,j) = (Dpoints(1,i,j)-0.5_dp)**2.0_dp + (Dpoints(2,i,j)-0.5_dp)**2.0_dp
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
+  
+  
+  
+!  ! x^3+y^3
+!
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       Dvalues(i,j) = (Dpoints(1,i,j)-0.5_dp)**3.0_dp + (Dpoints(2,i,j)-0.5_dp)**3.0_dp
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
   
 
   end subroutine
@@ -1449,7 +1499,7 @@ integer :: iel
          cvariables = (/ (/'x'/), (/'y'/) /)
          
     integer :: iunit,i,j
-    real(dp),dimension(10000) :: Dreference
+    real(dp),dimension(400000) :: Dreference
     real(dp) :: r,n
 
     
@@ -1465,7 +1515,7 @@ integer :: iel
     open(iunit, file='h')
 
 
-    do i = 1, 4000
+    do i = 1, 400000
       read(iunit,*) Dreference(i)
     end do
 
@@ -1500,7 +1550,7 @@ integer :: iel
             !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
             !if ((0.2_dp.le.r1).and.(r1.le.0.4_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
             !if ((0.5_dp.le.r1).and.(r1.le.0.8_dp)) Dcoefficients(1,ipoint,iel) = 0.25_dp*(1.0_dp+cos(SYS_PI*(r1-0.65_dp)/0.15_dp))
-            
+!            
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
@@ -1515,14 +1565,18 @@ integer :: iel
 
 !            ! 'Analytical' smooth solution
 !            r = sqrt((Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp)
-!            n = 2000+1+1000*r
+!            n = 200000+1+100000*r
 !            Dcoefficients (1,ipoint,iel) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
               
 !            ! Water hill at corner
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.1_dp*&
-!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.25_dp)**2))
+!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.25_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.25_dp)**2.0_dp))
            
-            
+!           ! x^2+y^2 
+!           Dcoefficients (1,ipoint,iel) = (Dpoints(1,ipoint,iel)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**2.0_dp
+
+!           ! x^3+y^3
+!           Dcoefficients (1,ipoint,iel) = (Dpoints(1,ipoint,iel)-0.5_dp)**3.0_dp+(Dpoints(2,ipoint,iel)-0.5_dp)**3.0_dp
             
 !          ! Riemann problem
 !          if (Dpoints(1,ipoint,iel)<0.5_dp) then
