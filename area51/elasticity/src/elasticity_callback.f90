@@ -94,13 +94,12 @@ module elasticity_callback
     ! (dimension nblocks x max. number segments x nboundaries)
     real(DP), dimension(:,:,:), pointer :: DforceSurface
 
-    ! constant RHS values (only needed in case of csimulation .eq. SIMUL_REAL)
+    ! constant RHS values (only needed in case of SIMUL_REAL)
     real(DP) :: dforceVolumeX   = 0.0_DP
     real(DP) :: dforceVolumeY   = 0.0_DP
 
-    ! function IDs (only needed in case of csimulation .eq. SIMUL_ANALYTICAL)
-    integer :: cfuncID_u1 = 4
-    integer :: cfuncID_u2 = 52
+    ! function IDs per component (only needed in case of SIMUL_ANALYTICAL)
+    integer, dimension(2) :: CfuncID = (/4, 52/)
 
     ! kind of element used (possible values: EL_Q1, EL_Q2)
     integer :: celement
@@ -318,25 +317,22 @@ contains
 !</output>
 !</subroutine>
 
-    real(DP), dimension(:,:), pointer :: Der_u1xx, Der_u1yy
+    real(DP), dimension(:,:), pointer :: Duxx, Duyy
     
-    allocate(Der_u1xx(npointsPerElement,nelements), &
-             Der_u1yy(npointsPerElement,nelements))
-    
-    call elast_analFunc_u1(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1xx, rcollection)
-    
-    call elast_analFunc_u1(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yy, rcollection)
+    allocate(Duxx(npointsPerElement,nelements), Duyy(npointsPerElement,nelements))
+    call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Duxx, rcollection)
+    call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Duyy, rcollection)
     
     if (rprob%csimulation .eq. SIMUL_REAL) then
       Dcoefficients(1,:,:) = rprob%dforceVolumeX
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       ! compute Laplace operator
-      Dcoefficients(1,:,:) = -Der_u1xx - Der_u1yy
+      Dcoefficients(1,:,:) = -Duxx - Duyy
     end if
     
-    deallocate(Der_u1xx, Der_u1yy)
+    deallocate(Duxx, Duyy)
   
   end subroutine elast_RHS_Poisson_2D_vol
 
@@ -424,14 +420,12 @@ contains
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
-    integer :: iel,ipoint
-    allocate(DstressTensor(2,2,npointsPerElement,nelements))
+    real(DP) :: dminPar, dmaxPar, dt, dnx, dny
+    integer :: iel, ipoint, iseg
+    real(DP), dimension(:,:), pointer :: Dux, Duy
 
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
+    ! get the minimum and maximum parameter value, corresponding to start and end point
+    ! of the interval
     dminPar = DpointPar(1,1)
     dmaxPar = DpointPar(1,1)
     do iel = 1, nelements
@@ -440,55 +434,54 @@ contains
         dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
       end do
     end do
-   
 
-    ! multiply the solution vector with the normal in each point to get the normal velocity
-    do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-      
-        dt = DpointPar(ipoint,iel) 
-        if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
-                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
+    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
+      ! in case of an analytical test function, the Neumann contributions are given by
+      ! grad(u) * n, where n is the normal vector
+
+      ! compute grad(u)
+      allocate(Dux(npointsPerElement,nelements), Duy(npointsPerElement,nelements))
+      call elast_analFunc(1, DER_DERIV_X, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Dux, rcollection)
+      call elast_analFunc(1, DER_DERIV_Y, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Duy, rcollection)
+  
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          ! get the parameter value corresponding to the current boundary point
+          dt = DpointPar(ipoint,iel) 
+          ! Compute the normal vector in the current boundary point. At the endpoints of
+          ! the interval the normal vector is based on the current edge.
           if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
+            ! start point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
   
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-           ! End point
+            ! end point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
           else
-            ! Inner point
+            ! inner point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
-
-          ! Compute the normal value
-!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
-!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
-                                      + dny * DstressTensor(1,2,ipoint,iel)
- 
-        else if (rprob%csimulation .eq. SIMUL_REAL) then
-          ! in rcollection%IquickAccess(1) the current segment number is stored
-          Dcoefficients(1,ipoint,iel) &
-            = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
-        end if
+  
+          ! compute the normal value grad(u)*n
+          Dcoefficients(1,ipoint,iel) = dnx * Dux(ipoint,iel) + dny * Duy(ipoint,iel)
+   
+        end do
       end do
-    end do
+      deallocate(Dux, Duy)
+    else if (rprob%csimulation .eq. SIMUL_REAL) then
+      ! in case of a real simulation, constant nonzero Neumann contributions are provided
+      ! by the user for each boundary segment
 
-    deallocate(DstressTensor)
+      ! in rcollection%IquickAccess(2) the current segment number is stored
+      iseg = rcollection%IquickAccess(2)
+      Dcoefficients(1,ipoint,iel) = rprob%DforceSurface(1, iseg, ibct)
+    end if
+
 
   end subroutine elast_RHS_Poisson_2D_bound
 
@@ -497,9 +490,9 @@ contains
 
 
 !<subroutine>
-  subroutine elast_RHS_2D_volX(rdiscretisation, rform, nelements, npointsPerElement, &
-                               Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
-                               rcollection)
+  subroutine elast_RHS_2D_vol(rdiscretisation, rform, nelements, npointsPerElement, &
+                              Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
+                              rcollection)
     
     use basicgeometry
     use triangulation
@@ -508,9 +501,10 @@ contains
     use domainintegration
     
 !<description>
-    ! This subroutine is called during the vector assembly. It computes the function f_1
-    ! in the linear form (usually L(v) = (f_1,v_1)_0 + (f_2,v_2)_0 + (g,v)_N), i.e. the
-    ! volumetric forces in x-direction.
+    ! This subroutine is called during the vector assembly. It computes the function f
+    ! in the linear form (usually L(v) = (f,v)_0 + (g,v)_N), i.e. the volumetric forces
+    ! When rcollection%IquickAccess(1) .eq. 1, then forces in x-direction are computed,
+    ! when rcollection%IquickAccess(1) .eq. 2, then forces in y-direction.
 !</description>
     
 !<input>
@@ -558,136 +552,69 @@ contains
 !</output>
 !</subroutine>
 
-    real(DP), dimension(:,:), pointer :: Der_u1xx,Der_u1yy,Der_u2xy
+    real(DP), dimension(:,:), pointer :: Du1xx, Du1yy, Du2xy, Du2xx, Du2yy, Du1yx
     
-    allocate(Der_u1xx(npointsPerElement,nelements), &
-             Der_u1yy(npointsPerElement,nelements), &
-             Der_u2xy(npointsPerElement,nelements))
-    
-    call elast_analFunc_u1(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1xx, rcollection)
-    
-    call elast_analFunc_u2(DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2xy, rcollection)
-    
-    call elast_analFunc_u1(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yy, rcollection)
-    
-    if (rprob%csimulation .eq. SIMUL_REAL) then
-      Dcoefficients(1,:,:) = rprob%dforceVolumeX
-    else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      Dcoefficients(1,:,:) = - (2 * rprob%dmu + rprob%dlambda) * Der_u1xx &
-                             -  rprob%dmu                      * Der_u1yy &
-                             - (rprob%dmu + rprob%dlambda)     * Der_u2xy
-    end if
-    
-    deallocate(Der_u1xx, Der_u1yy, Der_u2xy)
-  
-  end subroutine elast_RHS_2D_volX
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      ! forces in x-direction
+      allocate(Du1xx(npointsPerElement,nelements), &
+               Du1yy(npointsPerElement,nelements), &
+               Du2xy(npointsPerElement,nelements))
+      
+      call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du1xx, rcollection)
+      
+      call elast_analFunc(2, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du2xy, rcollection)
+      
+      call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du1yy, rcollection)
+      if (rprob%csimulation .eq. SIMUL_REAL) then
+        Dcoefficients(1,:,:) = rprob%dforceVolumeX
+      else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+        Dcoefficients(1,:,:) = - (2 * rprob%dmu + rprob%dlambda) * Du1xx &
+                               -  rprob%dmu                      * Du1yy &
+                               - (rprob%dmu + rprob%dlambda)     * Du2xy
+      end if
 
-!BRAL: merge volX and volY by using the rcollection%IquickAccess(2) field
+      deallocate(Du1xx, Du1yy, Du2xy)
+  
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      ! forces in y-direction
+      allocate(Du2xx(npointsPerElement,nelements), &
+               Du2yy(npointsPerElement,nelements), &
+               Du1yx(npointsPerElement,nelements))
+  
+      call elast_analFunc(2, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du2xx, rcollection)
+      
+      call elast_analFunc(1, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du1yx,rcollection)
+      
+      call elast_analFunc(2, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Du2yy, rcollection)
+      
+      if (rprob%csimulation .eq. SIMUL_REAL) then
+        Dcoefficients(1,:,:) = rprob%dforceVolumeY
+      else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+        Dcoefficients(1,:,:) = - (rprob%dmu + rprob%dlambda)     * Du1yx &
+                               -  rprob%dmu                      * Du2xx &
+                               - (2 * rprob%dmu + rprob%dlambda) * Du2yy
+      end if
+  
+      deallocate(Du2xx, Du2yy, Du1yx)
+      
+    endif
+    
+  end subroutine elast_RHS_2D_vol
 
 
 ! ****************************************************************************************
 
 
 !<subroutine>
-  subroutine elast_RHS_2D_volY(rdiscretisation, rform, nelements, npointsPerElement, &
-                                Dpoints, IdofsTest, rdomainIntSubset, Dcoefficients, &
-                                rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-!<description>
-    ! This subroutine is called during the vector assembly. It computes the function f_2
-    ! in the linear form (usually L(v) = (f_1,v_1)_0 + (f_2,v_2)_0 + (g,v)_N), i.e. the
-    ! volumetric forces in y-direction.
-!</description>
-    
-!<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(in) :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in test space,nelements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-    
-!</input>
-  
-!<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
-    
-!</subroutine>
-    real(DP), dimension(:,:), pointer :: Der_u2xx,Der_u2yy,Der_u1yx
-
-    allocate(Der_u2xx(npointsPerElement,nelements), &
-             Der_u2yy(npointsPerElement,nelements), &
-             Der_u1yx(npointsPerElement,nelements))
-
-    call elast_analFunc_u2(DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2xx, rcollection)
-    
-    call elast_analFunc_u1(DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1yx,rcollection)
-    
-    call elast_analFunc_u2(DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2yy, rcollection)
-    
-    if (rprob%csimulation .eq. SIMUL_REAL) then
-	    Dcoefficients(1,:,:) = rprob%dforceVolumeY
-    else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-	    Dcoefficients(1,:,:) = - (rprob%dmu + rprob%dlambda)     * Der_u1yx &
-	                          -  rprob%dmu                      * Der_u2xx &
-	                          - (2 * rprob%dmu + rprob%dlambda) * Der_u2yy
-    end if
-
-    deallocate(Der_u2xx, Der_u2yy, Der_u1yx)
-
-  end subroutine elast_RHS_2D_volY
-
-
-! ****************************************************************************************
-
-
-!<subroutine>
-  subroutine elast_RHS_2D_surfX(rdiscretisation, rform, nelements, npointsPerElement, &
-                                Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
-                                Dcoefficients, rcollection)
+  subroutine elast_RHS_2D_surf(rdiscretisation, rform, nelements, npointsPerElement, &
+                               Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
+                               Dcoefficients, rcollection)
     
     use basicgeometry
     use boundary
@@ -765,13 +692,11 @@ contains
 
     ! local variables
     real(DP), dimension(:,:,:,:), pointer :: DstressTensor
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
-    integer :: iel,ipoint
-    allocate(DstressTensor(2,2,npointsPerElement,nelements))
+    real(DP) :: dminPar, dmaxPar, dt, dnx, dny
+    integer :: iel, ipoint, icomp, iseg
 
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
+    ! get the minimum and maximum parameter value, corresponding to start and end point
+    ! of the interval
     dminPar = DpointPar(1,1)
     dmaxPar = DpointPar(1,1)
     do iel = 1, nelements
@@ -780,213 +705,59 @@ contains
         dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
       end do
     end do
-   
 
-    ! Multiply the velocity vector with the normal in each point
-    ! to get the normal velocity.
-    do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-        dt = DpointPar(ipoint,iel) 
-        if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
-                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
+    ! in rcollection%IquickAccess(1) the current component is stored
+    icomp = rcollection%IquickAccess(1)
+
+    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+      ! in case of an analytical test function, the Neumann contributions are given by
+      ! sigma * n, where sigma is the Cauchy stress tensor and n the normal vector
+      
+      ! compute the stress tensor sigma
+      allocate(DstressTensor(2,2,npointsPerElement,nelements))
+      call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
+                              rdomainIntSubset, DstressTensor, rcollection)
+      do iel = 1, nelements
+        do ipoint = 1, npointsPerElement
+          ! get the parameter value corresponding to the current boundary point
+          dt = DpointPar(ipoint,iel) 
+          ! Compute the normal vector in the current boundary point. At the endpoints of
+          ! the interval the normal vector is based on the current edge.
           if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
+            ! start point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
                                          dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
           
           else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
+            ! end point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
                                          dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
           else
-            ! Inner point
+            ! inner point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
                                          dt, dnx, dny, cparType=BDR_PAR_LENGTH)
           end if
 
-          ! Compute the normal value
-!          print *,'1comp', ibct,rcollection%IquickAccess(1),dnx,dny
-!          print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,1,ipoint,iel) &
-                                      + dny * DstressTensor(1,2,ipoint,iel)
- 
-        else if (rprob%csimulation .eq. SIMUL_REAL) then
-          ! in rcollection%IquickAccess(1) the current segment number is stored
-          Dcoefficients(1,ipoint,iel) &
-            = rprob%DforceSurface(1,rcollection%IquickAccess(1),ibct)
-        end if
+          ! Now compute sigma * n
+!          print *,'bc, comp, nx, ny', ibct,icomp,dnx,dny
+!          print *,'px, py', Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(icomp,1,ipoint,iel) &
+                                      + dny * DstressTensor(icomp,2,ipoint,iel)
+        end do
       end do
-    end do
+      deallocate(DstressTensor)
 
-    deallocate(DstressTensor)
+    else if (rprob%csimulation .eq. SIMUL_REAL) then
+      ! in case of a real simulation, the Neumann contributions are given by constant
+      ! surface forces on the current segment, which are provided by the user
 
-  end subroutine elast_RHS_2D_surfX
-
-!BRAL: merge surfX and surfY by using the rcollection%IquickAccess(2) field
-  
-
-! ****************************************************************************************
+      ! in rcollection%IquickAccess(2) the current segment number is stored
+      iseg = rcollection%IquickAccess(2)
+      Dcoefficients(1,ipoint,iel) = rprob%DforceSurface(icomp, iseg, ibct)
+    end if
 
 
-!<subroutine>
-  subroutine elast_RHS_2D_surfY(rdiscretisation,rform, nelements, npointsPerElement, &
-                                 Dpoints, ibct, DpointPar, IdofsTest, rdomainIntSubset, &
-                                 Dcoefficients, rcollection)
-    
-    use basicgeometry
-    use boundary
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    use feevaluation
-    use fparser
-    use spatialdiscretisation
-
-!<description>
-    ! This subroutine is called during the vector assembly. It computes the function g_2
-    ! in the linear form (usually L(v) = (f,v)_0 + (g_1,v_1)_N + (g_2,v_2)_N), i.e. the
-    ! surface forces in y-direction (nonzero Neumann boundary conditions of the first
-    ! block row in the block system).
-!</description>
-
-!<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(in) :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-    
-    ! This is the number of the boundary component that contains the
-    ! points in Dpoint. All points are on the same boundary component.
-    integer, intent(in) :: ibct
-    
-    ! For every point under consideration, this specifies the parameter
-    ! value of the point on the boundary component. The parameter value
-    ! is calculated in LENGTH PARAMETRISATION!
-    ! DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(in) :: DpointPar
-    
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(#local DOF in test space,nelements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-    
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-!</input>
-
-!<inputoutput>
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
-    type(t_collection), intent(inout), optional :: rcollection
-!</inputoutput>
-
-!<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
-!</output>
-
-!</subroutine>
-
-    ! local variables
-    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
-    real(DP) :: dminPar,dmaxPar,dt,dnx,dny
-    integer :: iel,ipoint
-    allocate(DstressTensor(2,2,npointsPerElement,nelements))
-  
-    ! Get the minimum and maximum parameter value. The point with the minimal
-    ! parameter value is the start point of the interval, the point with the
-    ! maximum parameter value the endpoint.
-    dminPar = DpointPar(1,1)
-    dmaxPar = DpointPar(1,1)
-    do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-        dminPar = min(DpointPar(ipoint,iel), dminPar)
-        dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
-  
-     ! Multiply the velocity vector with the normal in each point
-     ! to get the normal velocity.
-    do iel = 1, nelements
-      do ipoint = 1, npointsPerElement
-    
-        dt = DpointPar(ipoint,iel)
-  
-!BRAL: put this outside the do-loops
-        if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
-          call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
-                                  IdofsTest, rdomainIntSubset, DstressTensor, rcollection)
-          ! Get the normal vector in the point from the boundary.
-          ! Note that the parameter value is in length parametrisation!
-          ! When we are at the left or right endpoint of the interval, we
-          ! calculate the normal vector based on the current edge.
-          ! Without that, the behaviour of the routine may lead to some
-          ! confusion if the endpoints of the interval coincide with
-          ! the endpoints of a boundary edge. In such a case, the routine
-          ! would normally compute the normal vector as a mean on the
-          ! normal vectors of the edges adjacent to such a point!
-          if (DpointPar(ipoint,iel) .eq. dminPar) then
-            ! Start point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
-                                         dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
-    
-          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
-            ! End point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
-                                         dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
-          else
-            ! Inner point
-            call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
-                                         dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
-  
-         ! Compute the normal value
-  !       print *,'2comp', ibct,rcollection%IquickAccess(1),dnx,dny
-  !       print *,Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
-          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(2,1,ipoint,iel)&
-                                      + dny * DstressTensor(2,2,ipoint,iel)
-     
-        else if (rprob%csimulation .eq. SIMUL_REAL) then
-           ! in rcollection%IquickAccess(1) the current segment number is stored
-           Dcoefficients(1,ipoint,iel) = &
-             rprob%DforceSurface(2,rcollection%IquickAccess(1),ibct)
-        end if
-      end do
-    end do
-
-    deallocate(DstressTensor)
-
-  end subroutine elast_RHS_2D_surfY
+  end subroutine elast_RHS_2D_surf
 
 
 ! ****************************************************************************************
@@ -994,8 +765,10 @@ contains
   
 !<subroutine>
   subroutine elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints, &
-                                IdofsTest, rdomainIntSubset, Dvalues, rcollection)
-  
+                                rdomainIntSubset, Dvalues, rcollection)
+
+!BRAL: nur eine Zeile des Spannungstensors berechnen (also icomp uebergeben)!!
+
     use basicgeometry
     use triangulation
     use collection
@@ -1021,10 +794,6 @@ contains
     ! are needed.
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
-  
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
   
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
@@ -1047,33 +816,29 @@ contains
 
 !</subroutine>
 
-    real(DP), dimension(:,:), pointer :: Der_u1x,Der_u2x,Der_u1y,Der_u2y
-    allocate(Der_u1x(npointsPerElement,nelements), &
-             Der_u2x(npointsPerElement,nelements), &
-             Der_u1y(npointsPerElement,nelements), &
-             Der_u2y(npointsPerElement,nelements))
+    real(DP), dimension(:,:), pointer :: Du1x, Du2x, Du1y, Du2y
+    allocate(Du1x(npointsPerElement,nelements), Du2x(npointsPerElement,nelements), &
+             Du1y(npointsPerElement,nelements), Du2y(npointsPerElement,nelements))
     
     
-    call elast_analFunc_u1(DER_DERIV_X,rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u1x, rcollection)
+    call elast_analFunc(1, DER_DERIV_X,rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Du1x, rcollection)
     
-    call elast_analFunc_u1(DER_DERIV_Y,rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest,rdomainIntSubset, Der_u1y, rcollection)
+    call elast_analFunc(1, DER_DERIV_Y,rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Du1y, rcollection)
     
-    call elast_analFunc_u2(DER_DERIV_X, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2x, rcollection)
+    call elast_analFunc(2, DER_DERIV_X, rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Du2x, rcollection)
     
-    call elast_analFunc_u2(DER_DERIV_Y, rdiscretisation, nelements, npointsPerElement, &
-                           Dpoints, IdofsTest, rdomainIntSubset, Der_u2y, rcollection)                       
+    call elast_analFunc(2, DER_DERIV_Y, rdiscretisation, nelements, npointsPerElement, &
+                        Dpoints, rdomainIntSubset, Du2y, rcollection)                       
     
-    Dvalues(1,1,:,:) =   2 * rprob%dmu * Der_u1x(:,:) &
-                       + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
-    Dvalues(1,2,:,:) = rprob%dmu * (Der_u1y(:,:) + Der_u2x(:,:))
-    Dvalues(2,1,:,:) = rprob%dmu * (Der_u2x(:,:) + Der_u1y(:,:))
-    Dvalues(2,2,:,:) =   2 * rprob%dmu * Der_u2y(:,:) &
-                       + rprob%dlambda * (Der_u1x(:,:) + Der_u2y(:,:))
+    Dvalues(1,1,:,:) =   2*rprob%dmu * Du1x(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
+    Dvalues(1,2,:,:) = rprob%dmu * (Du1y(:,:) + Du2x(:,:))
+    Dvalues(2,1,:,:) = rprob%dmu * (Du2x(:,:) + Du1y(:,:))
+    Dvalues(2,2,:,:) =   2*rprob%dmu * Du2y(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
     
-    deallocate(Der_u1x, Der_u2x, Der_u1y, Der_u2y)
+    deallocate(Du1x, Du2x, Du1y, Du2y)
 
   end subroutine elast_stressTensor
 
@@ -1082,8 +847,9 @@ contains
 
 
 !<subroutine>
-  subroutine elast_analFunc_u1(cderivative, rdiscretisation, nelements, npointsPerElement,&
-                               Dpoints, IdofsTest, rdomainIntSubset, Dvalues, rcollection)
+  subroutine elast_analFunc(icomp, cderivative, rdiscretisation, nelements, &
+                            npointsPerElement, Dpoints, rdomainIntSubset, &
+                            Dvalues, rcollection)
   
     use basicgeometry
     use triangulation
@@ -1094,9 +860,13 @@ contains
 !<description>
     ! This subroutine computes the (analytical) values of a function in a couple of points
     ! on a couple of elements.
+    ! Implements interface 'intf_refFunctionScVec.inc'
 !</description>
   
 !<input>
+    ! component for which the analytical function is to tbe computed
+    integer, intent(in) :: icomp
+  
     ! This is a DER_xxxx derivative identifier (from derivative.f90) that
     ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
     ! The result must be written to the Dvalue-array below.
@@ -1118,10 +888,6 @@ contains
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-  
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
     ! It is usually used in more complex situations (e.g. nonlinear matrices).
@@ -1141,92 +907,16 @@ contains
 !</output>
 
 !</subroutine>
+    ! this strange '1:nelements' is necessary here, since in some situations the
+    ! dimensions of Davlues do *not* coincide with the npointsPerElement x nelements!
 
-     Dvalues(:,:) = elast_danalyticFunction(Dpoints, nelements, npointsPerElement, &
-                                            cderivative, rprob%cfuncID_u1)
+!BRAL: ueberpruefen, ob das nicht zu teuer ist (interne Kopie?)
 
-  end subroutine elast_analFunc_u1
+    Dvalues(:,1:nelements) = &
+      elast_danalyticFunction(Dpoints(:,:,1:nelements), nelements, npointsPerElement, &
+                              cderivative, rprob%CfuncID(icomp))
 
-
-!BRAL: merge refFunc_u1 and refFunc_u2 by using the rcollection%IquickAccess(2) field
-!      and using an array instead of rprob%cfuncID_u1
-
-
-! ****************************************************************************************
-
-
-!<subroutine>
-  subroutine elast_analFunc_u2(cderivative, rdiscretisation, nelements, npointsPerElement,&
-                               Dpoints, IdofsTest, rdomainIntSubset, Dvalues, rcollection)
-  
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-  
-!<description>
-    ! This subroutine is called during the calculation of errors. It has to compute
-    ! the (analytical) values of a function in a couple of points on a couple
-    ! of elements. These values are compared to those of a computed FE function
-    ! and used to calculate an error.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points.
-!</description>
-  
-!<input>
-    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-    ! The result must be written to the Dvalue-array below.
-    integer, intent(in) :: cderivative
-  
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    real(DP), dimension(:,:,:), intent(in) :: Dpoints
-  
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in trial space,Number of elements)
-    integer, dimension(:,:), intent(in) :: IdofsTest
-  
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-  
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-!</input>
-
-!<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:), intent(out) :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    Dvalues(:,:) = elast_danalyticFunction(Dpoints, nelements, npointsPerElement, &
-                                           cderivative, rprob%cfuncID_u2)
-
-  end subroutine elast_analFunc_u2
+  end subroutine elast_analFunc
 
 
 ! ****************************************************************************************
@@ -1313,29 +1003,22 @@ contains
     real(DP), dimension(2,1,1) :: Dpoints
     real(DP), dimension(1,1) :: Daux
 
-    ! To get the X/Y-coordinates of the boundary point, use:
-    real(DP) :: dx,dy
+    ! coordinates of the boundary point
+    real(DP) :: dx, dy
     
-    call boundary_getCoords(rdiscretisation%p_rboundary, &
-                            rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-
-    ! set coordinates of the current point
-    Dpoints(1,1,1) = dx
-    Dpoints(2,1,1) = dy
     ! calculate value
     if (rprob%csimulation .eq. SIMUL_REAL) then
       ! currently, only zero Dirichlet boundary values are supported for real simulations
 ! BRAL: das muss verbessert werden!
       Dvalues(1) = 0.0_DP
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      select case (Icomponents(1))
-      case(1) ! x-displacement
-        Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u1)
-        Dvalues(1) = Daux(1,1)
-      case(2) ! y-displacement
-        Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%cfuncID_u2)
-        Dvalues(1) = Daux(1,1)
-      end select
+      ! set coordinates of the current point
+      call boundary_getCoords(rdiscretisation%p_rboundary, &
+                              rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+      Dpoints(1,1,1) = dx
+      Dpoints(2,1,1) = dy
+      Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%CfuncID(Icomponents(1)))
+      Dvalues(1) = Daux(1,1)
     end if
   end subroutine elast_boundValue_2D
 
@@ -1469,7 +1152,8 @@ contains
 
 !<result>
     ! (The result of the function calculation)
-    real(DP), dimension(npointsPerElement,nelements) :: Dval
+    real(DP), dimension(npointsPerElement, nelements) :: Dval
+
 !</result>
 
 !<errors>

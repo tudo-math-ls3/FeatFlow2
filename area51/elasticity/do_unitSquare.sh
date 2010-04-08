@@ -11,6 +11,7 @@ nus="0.3"
 
 # choose MG levels
 mgs="02 03 04 05 06 07"
+#mgs="02 06"
 
 #-----------------------------
 
@@ -57,11 +58,11 @@ D
 D
 D
 
-D
-D
+N
+N
 
-D
-D
+N
+N
 
 # type of simulation ('real' or 'analytic')
 simulation = analytic
@@ -127,9 +128,9 @@ showDeformation = YES
 #0.5
 
 # reference solution values for u1 and u2 in evaluation points
-refSols(2) =
--20.648992
-27.642747
+#refSols(2) =
+#-20.648992
+#27.642747
 
 END_OF_DATA
 # dat file has been created now

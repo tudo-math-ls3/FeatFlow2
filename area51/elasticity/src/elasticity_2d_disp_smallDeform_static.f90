@@ -122,8 +122,10 @@ contains
     ! error indicator during initialisation of the solver
     integer :: ierror
     
-    ! error of FE function to reference function
-    real(DP) :: derror1, derror2
+    ! error between FE function and reference function
+    type(t_errorScVec) :: rerror
+    real(DP), dimension(2), target :: DerrorL2
+    real(DP), dimension(2), target :: DerrorH1
     
     ! output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
@@ -324,16 +326,15 @@ contains
     else if (rprob%cequation .eq. EQ_ELASTICITY) then
       ! elasticity equation
       
-      ! volume forces in x-direction, use the callback function elast_RHS_2D_volX
-      call linf_buildVectorScalar(&
-             Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(1), &
-             rlinform, .true., rrhs%RvectorBlock(1), elast_RHS_2D_volX)
-  
-      ! volume forces in y-direction, use the callback function elast_RHS_2D_volY
-      call linf_buildVectorScalar(&
-             Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(2), &
-             rlinform, .true., rrhs%RvectorBlock(2), elast_RHS_2D_volY)
-  
+      ! compute volumen forces using the callback routine elast_RHS_2D_vol
+      ! (x-direction: rcollection%IquickAccess(1) = 1, 
+      !  y-direction: rcollection%IquickAccess(1) = 2)
+      do irow = 1, rprob%nblocks
+        rcollection%IquickAccess(1) = irow
+        call linf_buildVectorScalar(&
+               Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(irow), &
+               rlinform, .true., rrhs%RvectorBlock(irow), elast_RHS_2D_vol, rcollection)
+      enddo
     endif
 
     ! print number of DOF
@@ -363,7 +364,6 @@ contains
         rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
         do k = 1, rprob%nblocks
           if (rprob%Cbc(k,j,i) .eq. BC_DIRICHLET) then
-!            print *,'D',i,j,k
             do ilev = rprob%ilevelMin, rprob%ilevelMax
               ! We use this boundary region to specify that we want to have Dirichlet
               ! boundary there. The following call does the following:
@@ -378,23 +378,22 @@ contains
             end do  
           else if (rprob%Cbc(k,j,i) .eq. BC_NEUMANN) then
 !            print *,'N',i,j,k
-            ! store the current segment number in rcollection%IquickAccess(1) to make it
+            ! store the current segment number in rcollection%IquickAccess(2) to make it
             ! accessible in the callback routine
-            rcollection%IquickAccess(1) = j
-            ! The non-zero Neumann contributations on the current boundary region are added
-            ! to the RHS vector which already contains the volumetric contributions.
+            rcollection%IquickAccess(2) = j
+            ! The non-zero Neumann contributations on the current boundary region are
+            ! added to the RHS vector which already contains the volumetric contributions.
             if (rprob%cequation .eq. EQ_POISSON) then 
               call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
                      rrhs%RvectorBlock(1), elast_RHS_Poisson_2D_bound, rboundaryRegion, &
                      rcollection)
             else if (rprob%cequation .eq. EQ_ELASTICITY) then
-              if (k .eq. 1) then
-                call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
-                  rrhs%RvectorBlock(1), elast_RHS_2D_surfX, rboundaryRegion, rcollection)
-              else if (k .eq. 2) then
-                call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
-                  rrhs%RvectorBlock(2), elast_RHS_2D_surfY, rboundaryRegion, rcollection)
-              endif
+              ! store the current component in rcollection%IquickAccess(1), such that
+              ! the callback routine elast_RHS_2D_surf can decide whether to compute
+              ! surface forces in x- or y-direction
+              rcollection%IquickAccess(1) = k
+              call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
+                rrhs%RvectorBlock(k), elast_RHS_2D_surf, rboundaryRegion, rcollection)
             endif
           else
             call output_line('Invalid BC found!')
@@ -743,21 +742,26 @@ contains
 
     ! Calculate the error to the reference function.
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      call pperr_scalar(rsol%RvectorBlock(1), PPERR_L2ERROR, derror1, elast_analFunc_u1)
-      call output_line('L2 error for u1: ' // sys_sdEL(derror1,10) )
-  
-      call pperr_scalar(rsol%RvectorBlock(2), PPERR_L2ERROR,derror2, elast_analFunc_u2)
-      call output_line('L2 error for u2: ' // sys_sdEL(derror2,10) )
 
-      call output_line('L2 error for  u: ' // sys_sdEL(sqrt(derror1**2 + derror2**2),10) )
-  
-      call pperr_scalar(rsol%RvectorBlock(1), PPERR_H1ERROR, derror1, elast_analFunc_u1)
-      call output_line('H1 error for u1: ' // sys_sdEL(derror1,10) )
-  
-      call pperr_scalar(rsol%RvectorBlock(2), PPERR_H1ERROR, derror2, elast_analFunc_u2)
-      call output_line('H1 error for u2: ' // sys_sdEL(derror2,10) )
+      ! Calculate the errors to the reference function
+      rerror%p_RvecCoeff => rsol%RvectorBlock(1:2)
+      rerror%p_DerrorL2 => DerrorL2(1:2)
+      rerror%p_DerrorH1 => DerrorH1(1:2)
+      call pperr_scalarVec(rerror, elast_analFunc, rcollection)
+      ! Print the errors
+!      call output_line('Errors (L2/H1): ' // &
+!          trim(sys_sdEP(DerrorL2(1),20,12)) // &
+!          trim(sys_sdEP(DerrorL2(2),20,12)))
 
-      call output_line('H1 error for  u: ' // sys_sdEL(sqrt(derror1**2 + derror2**2),10) )
+      call output_line('L2 error for u1: ' // sys_sdEL(DerrorL2(1),10) )
+      call output_line('L2 error for u2: ' // sys_sdEL(DerrorL2(2),10) )
+      call output_line('L2 error for  u: ' // &
+                       sys_sdEL(sqrt(DerrorL2(1)**2 + DerrorL2(2)**2),10) )
+  
+      call output_line('H1 error for u1: ' // sys_sdEL(DerrorH1(1),10) )
+      call output_line('H1 error for u2: ' // sys_sdEL(DerrorH1(2),10) )
+      call output_line('H1 error for  u: ' // &
+                       sys_sdEL(sqrt(DerrorH1(1)**2 + DerrorH1(2)**2),10) )
     end if
 
     ! Get the path for writing postprocessing files from the environment variable
@@ -1085,10 +1089,10 @@ contains
          
     ! function IDs (only needed in case of csimulation .eq. SIMUL_ANALYTICAL)
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      call parlst_getvalue_int(rparams, '', 'funcID_u1', rprob%cfuncID_u1)
-      call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%cfuncID_u2)
-      call output_line('function ID for u1: ' // trim(sys_siL(rprob%cfuncID_u1,3)))
-      call output_line('function ID for u2: ' // trim(sys_siL(rprob%cfuncID_u2,3)))
+      call parlst_getvalue_int(rparams, '', 'funcID_u1', rprob%CfuncID(1))
+      call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%CfuncID(2))
+      call output_line('function ID for u1: ' // trim(sys_siL(rprob%CfuncID(1),3)))
+      call output_line('function ID for u2: ' // trim(sys_siL(rprob%CfuncID(2),3)))
     endif
          
     ! get element type and choose cubature formula accordingly
