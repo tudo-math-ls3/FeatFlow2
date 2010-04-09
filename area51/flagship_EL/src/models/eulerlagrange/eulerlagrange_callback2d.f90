@@ -5394,13 +5394,13 @@ contains
 	
 	        partxmin= minval(p_DvertexCoords(1,:))
             partxmax= minval(p_DvertexCoords(1,:))+&
-                    (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
+                     (maxval(p_DvertexCoords(1,:))-minval(p_DvertexCoords(1,:)))
             partymin= minval(p_DvertexCoords(2,:))
             partymax= maxval(p_DvertexCoords(2,:))
 	    
 		    ! Get point in the array
             rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-            rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
 
             ix = 1+(rpgm%width-1)*(rParticles%p_xpos(iPart)-xmin)/(xmax-xmin)
             if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
@@ -5514,6 +5514,10 @@ contains
         end select
  
         ! Set initial values for the particle
+        rParticles%p_xvelo(iPart)= velopartx
+        rParticles%p_yvelo(iPart)= veloparty
+        rParticles%p_xvelo_old(iPart)= velopartx
+        rParticles%p_yvelo_old(iPart)= veloparty
         rParticles%p_xvelo_gas(iPart)= 0.0_dp
         rParticles%p_yvelo_gas(iPart)= 0.0_dp
         rParticles%p_xvelo_gas_old(iPart)= 0.0_dp
@@ -5521,6 +5525,8 @@ contains
         rParticles%p_alpha_n(iPart)= 0.0_dp
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0.0_dp
+
+ 
  
          ! Set particle mass
         rParticles%p_mass(iPart)= &
