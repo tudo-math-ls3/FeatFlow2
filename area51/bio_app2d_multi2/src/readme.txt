@@ -20,4 +20,9 @@ They are just commented out.
 6) Zero-boundary conditions for $u$. Working code save.
 14:27	06.04.2010
 
+7) Zero (weak-penalty) boundary conditions for $u=x(1-x)y(1-y)$ and $c=-x(1-x)y(1-y)$. 
+Code is working and delivers good results. FCT (TVD) is under the test.
+10:52	09.04.2010
+
+
 
