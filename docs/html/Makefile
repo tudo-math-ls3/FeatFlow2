@@ -22,8 +22,8 @@ include ../../kernel/kernel.mk
 
 
 FEAT_KERNEL_MODULES = $(KERNELSRC)
-FEAT_KERNEL_WITH_PATH%=%
-$(FEAT_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
+FEAT_KERNEL_WITH_PATH = $(FEAT_KERNEL_MODULES:%=%.$(SUFFIX_MODULE_DOCUMENTATION))
+
 ##############################################################################
 # Programs and their Flags
 #
