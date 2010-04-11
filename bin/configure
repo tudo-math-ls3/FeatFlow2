@@ -1740,6 +1740,28 @@ sub create_feastAppMakefile {
 #	"endif\n" .
 #	"endif\n\n" .
 
+	# Ensure there are no modules (stored in different directories) with identical names.
+	"# Ensure there are no modules (stored in different directories) with identical names.\n" .
+	"ifneq (\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort -uc 2>&1 1>/dev/null),)\n" .
+	"MESSAGE := \$(MESSAGE) \\\n" .
+	"	   echo; \\\n" .
+	"	   echo '*** Error: There are at least two modules that share the same name.'; \\\n" .
+	"	   echo '***        This is not feasible given that all object files will be created in one common directory.'; \\\n" .
+	"	   echo '***        Look out for Makefile warnings \"<file> given more than once in the same rule.\" for a list'; \\\n" .
+	"	   echo '***        of a all identically named modules.'; \\\n" .
+	"	   echo '***        Cowardly refusing compilation.'; \\\n" .
+	"	   echo; \\\n" .
+	"	   exit 1;\n" .
+	"# The trailing 'echo' in the next command definition is necessary to catch\n" .
+	"# all the command line options a compile command usually gets.\n" .
+	"F77 = \$(MESSAGE) echo\n" .
+	"F90 = \$(F77)\n" .
+	"CC  = \$(F77)\n" .
+	"CXX = \$(F77)\n" .
+	"LD  = \$(F77)\n" .
+	"endif\n\n" .
+
+
 	"# Makefile variable OPT must have exactly one out of three possible values:\n" .
 	"# NO, YES or EXPENSIVE. If that requirement is not met, unset all compiler\n" .
 	"# definitions in order to always raise an error when make is invoked.\n" .
