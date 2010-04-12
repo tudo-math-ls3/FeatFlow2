@@ -401,7 +401,8 @@ fb_customise() {
 #		    modules="$modules intel/cce/9.1.051 intel/fce/9.1.051"
 #		    modules="$modules intel/cce/10.1.022 intel/fce/10.1.022"
 #		    modules="$modules intel/cce/11.0.083 intel/fce/11.0.083 intel/mkl"
-		    modules="$modules intel/cce/11.1.064 intel/fce/11.1.064 intel/mkl"
+#		    modules="$modules intel/cce/11.1.064 intel/fce/11.1.064 intel/mkl"
+		    modules="$modules intel/cce/11.1.069 intel/fce/11.1.069 intel/mkl"
 		    LIDOJOBNAMEPREFIX=fb-intel
 #		    COMPILERNAME="Intel 10.1"
 #		    COMPILERNAME="Intel 11.0"
