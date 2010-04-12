@@ -1742,7 +1742,7 @@ sub create_feastAppMakefile {
 
 	# Ensure there are no modules (stored in different directories) with identical names.
 	"# Ensure there are no modules (stored in different directories) with identical names.\n" .
-	"ifneq (\$(shell echo \$(notdir \$(SRCF90)) | tr ' ' '\\n' | sort -uc 2>&1 1>/dev/null),)\n" .
+	"ifneq (\$(shell echo \$(notdir \$(SRCF90)) | sort -u),\$(shell echo \$(notdir \$(SRCF90)) | sort))\n" .
 	"MESSAGE := \$(MESSAGE) \\\n" .
 	"	   echo; \\\n" .
 	"	   echo '*** Error: There are at least two modules that share the same name.'; \\\n" .
