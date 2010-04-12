@@ -978,7 +978,7 @@ contains
         XV(II)=p_Dcorvg(1,iv)
         YV(II)=p_Dcorvg(2,iv)
 
-        ! Sum up the coordinates if the element - will later result
+        ! Sum up the coordinates of the element - will later result
         ! in the element midpoint:
 
         dcenterX=dcenterX+XV(II)
@@ -5816,34 +5816,43 @@ contains
 
   end subroutine
 
+
   ! ----------------------------------------------------------------------
+
 
   pure subroutine getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
                       XBETA2, JEL,Kvert,Dcorvg)
+  !<description>
+    ! This routine determines the length of the maximum path a particle can travel in
+    ! element JEL of a triangulation in the direction given by vector beta.
+    ! This length is one possible definition of a local mesh width.
+  !</description>
 
-  ! Determine the local mesh width for an element JEL of a
-  ! triangulation.
+  !<input>
+    ! Element where the local h should be calculated
+    integer, intent(in)               :: JEL
 
-  ! Element where the local h should be calculated
-  integer, intent(in)               :: JEL
+    integer, dimension(TRIA_MAXNVE2D,*), intent(in) :: Kvert
+    real(DP), dimension(NDIM2D,*), intent(in)       :: Dcorvg
 
-  integer, dimension(TRIA_MAXNVE2D,*), intent(in) :: Kvert
-  real(DP), dimension(NDIM2D,*), intent(in)          :: Dcorvg
+    ! norm ||u||_T = mean velocity through element T=JEL
+    real(DP), intent(in)  :: dunorm
 
-  ! norm ||u||_T = mean velocity through element T=JEL
-  real(DP), intent(in)  :: dunorm
+    ! mean velocity u_T = (xbeta1,xbeta2) through element T=JEL
+    real(DP), intent(in)  :: XBETA1, XBETA2
+  !</input>
 
-  ! mean velocity u_T = (xbeta1,xbeta2) through element T=JEL
-  real(DP), intent(in)  :: XBETA1, XBETA2
+  !<output>
+    ! local mesh width
+    real(DP), intent(out) :: dlocalH
+  !</output>
+!</subroutine>
 
-  ! local mesh width
-  real(DP), intent(out) :: dlocalH
-
-  ! local variables
-  real(DP) :: dlambda
-  integer :: NECK1,NECK2,NECK3,NECK4
-  real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
-  real(DP) :: dalphaMax, dalpha
+    ! local variables
+    real(DP) :: dlambda
+    integer :: NECK1,NECK2,NECK3,NECK4
+    real(DP) :: X1,Y1,X2,Y2,X3,Y3,X4,Y4
+    real(DP) :: dalphaMax, dalpha
 
     ! Fetch the numbers of the four corners of element JEL
 
@@ -5872,7 +5881,7 @@ contains
 
     dalphaMax=0.0_DP
 
-    ! In the next step, we calculate the `maximum possible mesh with
+    ! In the next step, we calculate the `maximum possible mesh width
     ! in direction of the flow`; this is the maximum possible length
     ! that a particle can cross in the current element.
     ! The picture in mind is the following:
@@ -5895,158 +5904,183 @@ contains
     !   O---------------------+
     !            G1
     !
-    ! The vector (beta1,beta2) gives the direction of the flow.
-    ! A particle starting in point O and moves at most up to point X.
-    ! The length of the line (O,X) is the local mesh with h.
+    ! The vector (beta1,beta2) indicates the direction of the flow.
+    ! A particle starting in point O moves at most up to point X.
+    ! The length of the line (O,X) is defined to be the local mesh width h.
     !
-    ! Loop through the four corners of element JEL and check
-    ! of a line with slope BETA=(xbeta1,xbeta2) starting in this
-    ! corner really intersects with one of the edges of the element.
-    ! Remark that we only have to check the two opposite edges
-    ! to the current corner!
+    ! Loop through the four corners of element JEL and check for a line
+    ! with slope BETA=(xbeta1,xbeta2) starting in this corner whether it
+    ! really intersects with one of the edges of the element. Remark
+    ! that we only have to check the two opposite edges to the current
+    ! corner!
 
     ! -----------------------------------------------------------------
     ! Check the first corner:
 
     call intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
-                X3,Y3,dlambda,X2,Y2)
-    dalphaMax=max(dalpha,dalphaMax)
+         X3,Y3,dlambda,X2,Y2)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     call intersectLines2D(X1,Y1,dalpha,XBETA1,XBETA2, &
-                X3,Y3,dlambda,X4,Y4)
-    dalphaMax=max(dalpha,dalphaMax)
+         X3,Y3,dlambda,X4,Y4)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     ! -----------------------------------------------------------------
     ! The second one...
 
     call intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
-                X4,Y4,dlambda,X1,Y1)
-    dalphaMax=max(dalpha,dalphaMax)
+         X4,Y4,dlambda,X1,Y1)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     call intersectLines2D(X2,Y2,dalpha,XBETA1,XBETA2, &
-                X4,Y4,dlambda,X3,Y3)
-    dalphaMax=max(dalpha,dalphaMax)
+         X4,Y4,dlambda,X3,Y3)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     ! -----------------------------------------------------------------
     ! The third one...
 
     call intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
-                X1,Y1,dlambda,X2,Y2)
-    dalphaMax=max(dalpha,dalphaMax)
+         X1,Y1,dlambda,X2,Y2)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     call intersectLines2D(X3,Y3,dalpha,XBETA1,XBETA2, &
-                X1,Y1,dlambda,X4,Y4)
-    dalphaMax=max(dalpha,dalphaMax)
+         X1,Y1,dlambda,X4,Y4)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     ! -----------------------------------------------------------------
     ! And the fourth=last one...
 
     call intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
-                X2,Y2,dlambda,X1,Y1)
-    dalphaMax=max(dalpha,dalphaMax)
+         X2,Y2,dlambda,X1,Y1)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     call intersectLines2D(X4,Y4,dalpha,XBETA1,XBETA2, &
-                X2,Y2,dlambda,X3,Y3)
-    dalphaMax=max(dalpha,dalphaMax)
+         X2,Y2,dlambda,X3,Y3)
+    dalphaMax=max(abs(dalpha),dalphaMax)
 
     ! -----------------------------------------------------------------
     ! finally determine the local h=h_T
     !
-    ! dalphaMax is the maximum alpha, normalised as 'parameter value',
-    ! i.e. dalphaMax=1.0 corresponds to a vector 1.0*(dbeta1,dbeta2).
+    ! dalphaMax is the stretching/shrink factor for the vector
+    ! (dbeta1,dbeta2) to cover the longest distance in the current quad.
     ! We multiply with dunorm=|(dbeta1,dbeta2)| to get the actual length
     ! of the vector which can be placed inside of the element.
-    !
-    ! Furthermore, we multiply with an additional weight 4. (why ?!?)
+    dlocalH = dalphaMax * dunorm
 
-    dlocalH=dalphaMax*4.0_DP*dunorm
+  end subroutine getLocalMeshWidthQuad
 
-  end subroutine
 
   ! ----------------------------------------------------------------------
 
-  pure subroutine intersectLines2D (XO,YO,dalpha,BETA1,BETA2, &
-                      XA,YA,dlambda,XB,YB)
 
-  ! Intersect two lines in R^2
+!<subroutine>
+  pure subroutine intersectLines2D (xo, yo, dalpha, beta1, beta2, &
+       xa, ya, dlambda, xb, yb)
+  !<description>
+    ! This routine determines whether two lines intersect in <tex>$R^2$</tex>.
+    ! If they do, the parameters along the two lines for the intersection point
+    ! are returned. Zero is returned, if the two lines are parallel or coincide.
+  !</description>
 
-  ! Origin of line 1
-  real(DP), intent(in) :: XO,YO
+  !<input>
+    ! Origin of line 1
+    real(DP), intent(in) :: xo, yo
 
-  ! Direction of line 1
-  real(DP), intent(in) :: BETA1,BETA2
+    ! Direction of line 1
+    real(DP), intent(in) :: beta1, beta2
 
-  ! One point on the second line
-  real(DP), intent(in) :: XA,YA
+    ! Start point of segment defining the second line
+    real(DP), intent(in) :: xa,ya
 
-  ! Another point on the second line
-  real(DP), intent(in) :: XB,YB
+    ! End point of segment defining the second line
+    real(DP), intent(in) :: xb,yb
+  !</input>
 
-  ! Parameter value of the intersection point on line 1.
-  ! =0.0, if there is no intersection point
-  real(DP), intent(out) :: dalpha
+  !<output>
+    ! Parameter value of the intersection point on line 1.
+    ! = 0.0, if there is no intersection point
+    real(DP), intent(out) :: dalpha
 
-  real(DP), intent(out) :: dlambda
+    ! Parameter value of the intersection point on line 2.
+    ! Has to be between 0 and 1, otherwise there is no intersection point within the given
+    ! segment
+    real(DP), intent(out) :: dlambda
+  !</output>
+!<subroutine>
 
-  ! local variables
-  double precision :: dsp
 
-    ! Scalar product of the line (xa,ya)->(xb,yb) with the
-    ! counterclockwise normal n1 of (beta1,beta2)
-    dsp=BETA2*(XB-XA)-BETA1*(YB-YA)
+    ! local variables
+    ! Determinant of equation system, denominator when applying Cramer`s rule to
+    ! solve equation system to determine intersection point between two lines
+    real(DP) :: denominator
 
-    if (dsp.eq.0.0_DP) then
+    ! tolerance to apply when checking whether 0 <= lambda <= 1
+    real(DP), parameter :: TOL = 0.1_DP
 
-      ! beta and the vector are parallel
-      dalpha=0.0_DP
+
+    ! Be n1 the clockwise normal of (beta1,beta2). Then holds: n1 = (beta2, -beta1).
+    ! Calculate the scalar product of the line (xa,ya)->(xb,yb) with n1:
+    denominator = beta2 * (xb-xa) - beta1 * (yb-ya)
+
+    if (denominator .eq. 0.0_DP) then
+
+      ! beta and the line (xa,ya)->(xb,yb) are either parallel disjoint or do coincide
+      dalpha = 0.0_DP
 
     else
 
-      ! Scalar product of (beta1,beta2) with the (inner) normal vector n2
-      ! of the line (xo,yo)->(xa,ya).
-      dlambda=(BETA1*(YA-YO)-BETA2*(XA-XO))/dsp
-
-      !                    (xb,yb)
-      !   +-----------------+
-      !   |                 |
-      !   |                 |
-      !   ^ n2              |
-      !   !                 |
-      !   !  (beta1,beta2)  |    (beta1,beta2)
-      !   !    ^            |    ^
-      !   !   /  ^__ n1     |   /
-      !   !  /      \__     |  /
-      !   ! /          \__  | /
-      !   !/              \_|/
-      !   +-----------------+
-      ! (xo,yo)            (xa,ya)
+      ! Now, solve the following 2D equation system to determine the intersection point of
+      ! the two given lines:
+      !                  o + \alpha \beta      = a + \lambda (b - a)
+      ! <=>   \alpha \beta + \lambda (a - b  ) = a - 0
+      ! <=> \alpha \beta_1 + \lambda (xa - xb) = (xa - xo)   (*)
+      !     \alpha \beta_2 + \lambda (ya - yb) = (ya - yo)   (**)
+      ! Apply Cramer`s rule to determine \alpha and \lambda:
+      !              / xa - xo     xa - xb \
+      !           det\ ya - yo     ya - yb /
+      !  \alpha = --------------------------
+      !              / \beta_1     xa - xb \
+      !           det\ \beta_2     ya - yb /
       !
-      ! (What is this? Documentation incomplete. Has someone a good
-      ! reference?)
+      !               / \beta_1     xa - xo \
+      !            det\ \beta_2     ya - yo /
+      !  \lambda = --------------------------
+      !               / \beta_1     xa - xb \
+      !            det\ \beta_2     ya - yb /
+      dlambda = (beta1 * (ya - yo) + beta2 * (xo - xa)) / denominator
 
-      ! is the intersection point inside of the element?
-      if ((dlambda.ge.-1E-1_DP).and.(dlambda.le.1.11E0_DP)) then
-        if (BETA1 .ne. 0.0_DP) then
-          dalpha=((XA-XO)+dlambda*(XB-XA))/BETA1
-        else
-          if (BETA2 .ne. 0.0_DP) then
-            dalpha=((YA-YO)+dlambda*(YB-YA))/BETA2
-          else
-            dalpha=0.0_DP
-          end if
-        end if
+      ! Is the intersection point inside along teh segment given by start- and endpoint?
+      if ((dlambda .ge. 0.0_DP - TOL) .and. (dlambda .le. 1.0_DP + TOL)) then
+        ! variant 1: determine \alpha also by applying Cramer`s rule
+        dalpha = ((xa - xo) * (ya - yb) + (xb - xa) * (ya - yo)) / denominator
+
+        ! variant 2: use \lambda to solve the equation system (*)-(**)
+        ! (probably slower because it involves if conditions)
+!        if (beta1 .ne. 0.0_DP) then
+!          dalpha=((xa-xo)+dlambda*(xb-xa))/beta1
+!        else
+!          if (beta2 .ne. 0.0_DP) then
+!            dalpha=((ya-yo)+dlambda*(yb-ya))/beta2
+!          else
+!            ! This case cannot happen. It would mean
+!            ! BETA1 = BETA2 = 0 and that would have meant denominator = 0,
+!            ! a case already catched before.
+!            dalpha=0.0_DP
+!          end if
+!        end if
       else
-        dalpha=0.0_DP
+        dalpha = 0.0_DP
       end if
 
     end if
 
-  end subroutine
+  end subroutine intersectLines2D
 
-  ! ***************************************************************************
+
+  ! ----------------------------------------------------------------------
+
 
 !<subroutine>
-
   subroutine conv_streamlineDiffusion3d ( &
                            rvecPrimary, rvecSecondary, dprimWeight, dsecWeight,&
                            rconfig, cdef, &
@@ -8022,15 +8056,15 @@ contains
     ! Open-MP-Extension: Open threads here.
     ! Each thread will allocate its own local memory...
 
-    !別MP PARALLEL private(csysTrial, p_DcubPtsReal, &
-    !別MP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
-    !別MP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
-    !別MP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
-    !別MP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
-    !別MP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
-    !別MP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
-    !別MP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
-    !別MP AH22,IELmax,revalElementSet,dny,p_DcubPts)
+    !禮OMP PARALLEL private(csysTrial, p_DcubPtsReal, &
+    !禮OMP p_Ddetj, j,i,k,Dbas,Idofs,DbasALE, &
+    !禮OMP IdofsALE,DlocalDelta,bnonpar,Kentry,Kentry12,Dentry, &
+    !禮OMP DentryA11,DentryA12,DentryA21,DentryA22,Dvelocity, &
+    !禮OMP DvelocityUderiv,DvelocityVderiv,dre,IEL,db,icubp,&
+    !禮OMP IDOFE,JCOL0,JDOFE,JDFG,jcol,du1loc,du2loc,dbx,dby, &
+    !禮OMP du1locx,du1locy,du2locx,du2locy,OM,AH,HBASI1,HBASI2,&
+    !禮OMP HBASI3,HBASJ1,HBASJ2,HBASJ3,HSUMI,HSUMJ,AH11,AH12,AH21, &
+    !禮OMP AH22,IELmax,revalElementSet,dny,p_DcubPts)
 
     ! Allocate arrays for the values of the test- and trial functions.
     ! This is done here in the size we need it. Allocating it in-advance
@@ -8124,7 +8158,7 @@ contains
     ! Calculate the maximum norm of the actual velocity field
     ! U = A1*U1 + A2*U2 into DUMAX.
     ! Round up the norm to 1D-8 if it is too small...
-    !別MP SINGLE
+    !禮OMP SINGLE
     dumax=0.0_DP
     if (dweight2 .eq. 0.0_DP) then
 
@@ -8152,7 +8186,7 @@ contains
     !print *,"dumax: ",dumax
     if (dumax.lt.1E-8_DP) dumax=1E-8_DP
     dumaxr = 1.0_DP/dumax
-    !別MP end SINGLE
+    !禮OMP end SINGLE
 
     ! p_IelementList must point to our set of elements in the discretisation
     ! with that combination of trial/test functions
@@ -8166,7 +8200,7 @@ contains
     ! so BILF_NELEMSIM local matrices are simultaneously calculated in the
     ! inner loop(s).
     ! The blocks have all the same size, so we can use static scheduling.
-    !別MP do SCHEDULE(dynamic,1)
+    !禮OMP do SCHEDULE(dynamic,1)
     do IELset = 1, size(p_IelementList), BILF_NELEMSIM
 
       ! We always handle BILF_NELEMSIM elements simultaneously.
@@ -9121,7 +9155,7 @@ contains
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and (if different from A11) also into A22 and A33.
-          !別MP CRITICAL
+          !禮OMP CRITICAL
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -9151,14 +9185,14 @@ contains
               end do
             end do
           end if
-          !別MP end CRITICAL
+          !禮OMP end CRITICAL
 
         else
 
           ! Include the local matrices into the global system matrix,
           ! subblock A11 and A22 (both must exist and be independent from
           ! each other).
-          !別MP CRITICAL
+          !禮OMP CRITICAL
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
               do JDOFE=1,indof
@@ -9200,7 +9234,7 @@ contains
               end do
             end do
           end do
-          !別MP end CRITICAL
+          !禮OMP end CRITICAL
 
         end if
 
@@ -9218,7 +9252,7 @@ contains
 
         ! With or without Newton?
         if (dnewton .eq. 0.0_DP) then
-          !別MP CRITICAL
+          !禮OMP CRITICAL
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -9236,9 +9270,9 @@ contains
               end do
             end do
           end do
-          !別MP end CRITICAL
+          !禮OMP end CRITICAL
         else
-          !別MP CRITICAL
+          !禮OMP CRITICAL
           do IEL=1,IELmax-IELset+1
             do IDOFE=1,indof
 
@@ -9270,14 +9304,14 @@ contains
               end do
             end do
           end do
-          !別MP end CRITICAL
+          !禮OMP end CRITICAL
         end if
 
       end if
 
 
     end do ! IELset
-    !別MP end do
+    !禮OMP end do
 
     ! Release memory
     call elprep_releaseElementSet(revalElementSet)
@@ -9304,7 +9338,7 @@ contains
     deallocate(Idofs)
     deallocate(DbasALE)
     deallocate(Dbas)
-    !別MP end PARALLEL
+    !禮OMP end PARALLEL
     deallocate(Domega)
     deallocate(p_DcubPtsRef)
 
