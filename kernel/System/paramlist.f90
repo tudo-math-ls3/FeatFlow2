@@ -86,7 +86,7 @@
 !#  %{NAME}               - A variable from the unnamed section
 !#  %{NAME:idx}           - Value number idx of variable NAME 
 !#                          from the unnamed section
-!#  %{NAME:idx}           - Variable NAME from section SECTION
+!#  %{SECTION.NAME}       - Variable NAME from section SECTION
 !#  %{SECTION.NAME:idx}   - Value number idx of variable NAME 
 !#                          from section SECTION
 !# </verb>
@@ -114,7 +114,7 @@
 !# -------------------------snip------------------------------
 !# # this is a data file which imports a couple of subfiles
 !#
-!# simportdatafiles(4) = 
+!# simportdatafiles(4) =
 !#   "subfilename1.ini"
 !#   "subfilename2.ini"
 !#   "subfilename3.ini"
