@@ -416,10 +416,10 @@ fb_customise() {
 	    modules="$modules torque maui binutils/64/2.19.1 subversion"
 
     	    # Make 'module' command and modulefiles available
-	    # But Modules Environment is dreadfully implemented, especially 
-	    # the versions 3.2.x randomly crash (typically with a 
+	    # But Modules Environment is dreadfully implemented, especially
+	    # the versions 3.2.x randomly crash (typically with a
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
-	    # when trying to load/unload several modules at once. 
+	    # when trying to load/unload several modules at once.
 	    # Workaround: Load them one by one.
 	    . /sysdata/shared/sfw/Modules/default/init/sh > $AUXILIARYLOG 2>&1;
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
@@ -522,10 +522,10 @@ fb_customise() {
 	    # way.
 	    MODULEPATH=`echo $MODULEPATH | sed -e 's^/cvos/local/apps/environment-modules/3.2.5//Modules/$MODULE_VERSION/modulefiles:^^;'` > $AUXILIARYLOG 2>&1
 	    export MODULEPATH
-	    # Modules Environment is dreadfully implemented, especially 
-	    # the versions 3.2.x randomly crash (typically with a 
+	    # Modules Environment is dreadfully implemented, especially
+	    # the versions 3.2.x randomly crash (typically with a
             #   *** glibc detected *** free(): invalid pointer: 0x00[...] ***
-	    # when trying to load/unload several modules at once. 
+	    # when trying to load/unload several modules at once.
 	    # Workaround: Load them one by one.
 	    eval `echo $modules | xargs -n 1 echo module load | sed -s 's/$/;/'` > $AUXILIARYLOG 2>&1
 
@@ -1109,7 +1109,8 @@ fb_createTestSuiteScript() {
 
 #   Function: Run benchmark tests on LiDO
 fb_runBenchmarkOnLiDO() {
-    mpi="$1"  # IN
+    mpi="$1"                  # IN
+    log_base_directory="$2"   # IN
 
     # Only parallel tests of LiDO!
 #    if [ "$mode""x" != "parallelx" ]; then
@@ -1182,7 +1183,7 @@ fb_runBenchmarkOnLiDO() {
     # Create statistics at the end of the logfile about number of successful and
     # failed tests. Implementation in perl - a lot faster than the previous one
     # in shell.
-    perl include/gather_logfiles_to_mail.pl "logs/output" >> $GLOBALLOG
+    perl include/gather_logfiles_to_mail.pl "${log_base_directory}/output" >> $GLOBALLOG
 
     (echo; echo "Test ended at "`date`) >> $GLOBALLOG
 }
@@ -1216,10 +1217,11 @@ fb_runBenchmark() {
 	(echo; echo "Test ended at "`date`) >> $GLOBALLOG
     else
 	# Ensure that no files that are later on analysed for the statistics mail
-	# remain from a previous run (That earlier run might have used a different 
+	# remain from a previous run (That earlier run might have used a different
 	# test suite, so we can not sure that all existing files will be overwritten.)
-	rm -f logs/error.* logs/output.* > /dev/null
-	fb_runBenchmarkOnLiDO "$mpi"
+	log_base_directory=`make --no-print-directory print-base-log-dir`
+	rm -f ${log_base_directory}/error.* ${log_base_directory}/output.* > /dev/null
+	fb_runBenchmarkOnLiDO "$mpi" "${log_base_directory}"
     fi
 }
 

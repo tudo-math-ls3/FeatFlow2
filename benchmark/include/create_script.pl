@@ -155,6 +155,7 @@ my $unknownoption=0;
 my %cl = ();
 GetOptions (
             "append-to-files=s"             => \$cl{'append-to-files'},
+            "log-base-directory=s"          => \$cl{'log-base-directory'},
             "overwrite-log-directory"       => \$cl{'overwrite-log-directory'},
             "help"                          => \$cl{'help'},
             "version"                       => \$cl{'version'},
@@ -177,10 +178,16 @@ if ($#ARGV < 0) {
 # Set default execution mode
 $ENV{"MPI"} = "NO" unless ($ENV{"MPI"});
 
+# --log-base-directory can also be given via env variable LOG_BASE_DIRECTORY=<string>
+if ($ENV{"LOG_BASE_DIRECTORY"} && ! defined($cl{'log-base-directory'})) {
+    $cl{'log-base-directory'} = $ENV{"LOG_BASE_DIRECTORY"};
+}
+$cl{'log-base-directory'} ||= "logs";
 # --overwrite-log-directory can also be given via env variable OVERWRITE_LOG_DIRECTORY=1
 if ($ENV{"OVERWRITE_LOG_DIRECTORY"} && ! $cl{'overwrite-log-directory'}) {
     $cl{'overwrite-log-directory'} = $ENV{"OVERWRITE_LOG_DIRECTORY"};
 }
+
 
 # Set build ID
 my $buildID = $ENV{"ID"} || "";
@@ -696,7 +703,7 @@ ID: foreach my $testid (@idsToCode) {
     print STDOUT "echo\n";
 
     # Set log directory if not already set
-    $test{$testid}{LOGDIR} ||= "logs/" . $testid;
+    $test{$testid}{LOGDIR} ||= $cl{'log-base-directory'} . "/" . $testid;
 
     # Create the log directory FEAT2 will use for this test ID -
     # if the directory does not already exist
@@ -1220,6 +1227,9 @@ sub show_help {
 	"                    file, one per test ID. File names are constructed\n" .
 	"                    according to\n" .
 	"                        <string>.<test ID>\n" .
+        "--log-base-directory <directory>\n" .
+        "                    Name of base directory for all log files.\n" .
+	"                    Default: LOG_BASE_DIR variable from Makefile\n" .
         "--overwrite-log-directory\n" .
         "                    Every test ID writes its logs to separate directory.\n" .
 	"                    By default, if such a directory does already exist,\n" .

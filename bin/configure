@@ -3328,6 +3328,7 @@ sub create_feastBenchmarkMakefile {
         "########################################################################\n" .
         "#                                                                      #\n" .
         "# Makefile for FEAT2 regression benchmark                              #\n" .
+        "# (auto-created by ./configure                                         #\n" .
         "#                                                                      #\n" .
         "########################################################################\n" .
         "\n" .
@@ -3341,10 +3342,24 @@ sub create_feastBenchmarkMakefile {
 	    "ID                 := $cl{'ID'}\n\n";
     }
 
-    $entry = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
     print MAKEFILE_HDL
-        "# Create test suite to execute binaries with MPI support?\n" .
-        "MPI = $entry\n\n";
+        "# Basename of all FEAT2 benchmark applications\n" .
+        "APPBASE  = feat2benchmark\n" .
+        "\n" .
+        "# List of all applications to compile\n" .
+        "APPS     = \$(patsubst kernel_%, \$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
+        "\t   \$(patsubst apps_%,   \$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
+        "\t   \$(patsubst area51_%, \$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
+        "\n" .
+        "# List of all *.fbconf files (containing benchmark test IDs)\n" .
+        "FBCONF   = \$(wildcard *.fbconf)\n" .
+        "\n" .
+        "# List of all *.fbdef files (containing benchmark test definitions)\n" .
+        "FBDEF    = \$(wildcard tests/*.fbdef)\n" .
+        "\n" .
+        "# Path to this FEAT2 installation\n" .
+        "FEAT2BASEDIR = ..\n" .
+        "\n";
 
     $entry = (defined($cl{'INTSIZE'})) ? $cl{'INTSIZE'} : $defaults{'INTSIZE'};
     print MAKEFILE_HDL
@@ -3352,19 +3367,28 @@ sub create_feastBenchmarkMakefile {
         "INTSIZE = $entry\n\n";
 
     print MAKEFILE_HDL
-        "# Path to this FEAT2 installation\n" .
-        "FEAT2BASEDIR = ..\n" .
-        "\n" .
+	"# Name of log base directory\n" .
+	"LOG_BASE_DIR = logs\n" .
+	"\n" .
         "# Location of Makefile.buildID.inc\n" .
-        "MAKEFILE_BUILDID_INC  = \$(FEAT2BASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n\n" .
+        "MAKEFILE_BUILDID_INC  = \$(FEAT2BASEDIR)/" . $MAKEFILE_BUILDID_INC . "\n" .
+	"\n" .
         "# Location of Makefile.cpu.inc\n" .
-        "MAKEFILE_CPU_INC      = \$(FEAT2BASEDIR)/" . $MAKEFILE_CPU_INC . "\n\n" .
-        "\n" .
+        "MAKEFILE_CPU_INC      = \$(FEAT2BASEDIR)/" . $MAKEFILE_CPU_INC . "\n" .
+        "\n";
+
+
+    $entry = (defined($cl{'MPI'})) ? $cl{'MPI'} : $defaults{'MPI'};
+    print MAKEFILE_HDL
+        "# Create test suite to execute binaries with MPI support?\n" .
+        "MPI = $entry\n\n";
+
+    print MAKEFILE_HDL
         "# Name of FEAT2 benchmark control script\n" .
         "SCRIPT   = runtests\n" .
         "\n" .
-        "# Basename of all FEAT2 benchmark applications\n" .
-        "APPBASE  = feat2benchmark\n" .
+        "# Fail-safe source directory (for 'compile-libs', 'idonly')\n" .
+        "SRCDIR   = \$(firstword \$(SRCDIRS))\n" .
         "\n" .
         "# List of all application's source directories\n" .
         "SRCDIRS  = \$(patsubst %/, %, \$(dir \$(wildcard \\\n" .
@@ -3372,25 +3396,11 @@ sub create_feastBenchmarkMakefile {
         "\t\t\t\t\tapps_*/$MAKEFILE \\\n" .
         "\t\t\t\t\tarea51_*/$MAKEFILE)))\n" .
         "\n" .
-        "# List of all applications to compile\n" .
-        "APPS     = \$(patsubst kernel_%, \$(APPBASE)-%, \$(filter kernel_%, \$(SRCDIRS))) \\\n" .
-        "\t   \$(patsubst apps_%,   \$(APPBASE)-%, \$(filter apps_%,   \$(SRCDIRS))) \\\n" .
-        "\t   \$(patsubst area51_%, \$(APPBASE)-%, \$(filter area51_%, \$(SRCDIRS)))\n" .
-        "\n" .
-        "# Fail-safe source directory (for 'compile-libs', 'idonly')\n" .
-        "SRCDIR   = \$(firstword \$(SRCDIRS))\n" .
-        "\n" .
-        "# List of all *.fbdef files (containing benchmark test definitions)\n" .
-        "FBDEF    = \$(wildcard tests/*.fbdef)\n" .
-        "\n" .
-        "# List of all *.fbconf files (containing benchmark test IDs)\n" .
-        "FBCONF   = \$(wildcard *.fbconf)\n" .
+        "# All possible test IDs\n" .
+        "TESTIDS  = \$(shell grep -i \"^testid\" \$(FBDEF) | cut -d= -f 2 | sed -e 's/ //g')\n" .
         "\n" .
         "# All possible test sets\n" .
         "TESTSETS = \$(FBCONF:%.fbconf=%)\n" .
-        "\n" .
-        "# All possible test IDs\n" .
-        "TESTIDS  = \$(shell grep -i \"^testid\" \$(FBDEF) | cut -d= -f 2 | sed -e 's/ //g')\n" .
         "\n" .
         "# Some targets only safely work if not called directly, but recursively\n" .
         "# from this Makefile\n" .
@@ -3556,7 +3566,7 @@ sub create_feastBenchmarkMakefile {
 	".PHONY: create-script-body\n" .
 	"create-script-body:\n" .
 	"        # Create detailed instructions for each test in \$(TESTCASES)\n" .
-        "\t\@ID=\$(LIBID) MPI=\$(MPI) OVERWRITE_LOG_DIRECTORY=\$(OVERWRITE_LOG_DIRECTORY) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
+        "\t\@ID=\$(LIBID) LOG_BASE_DIRECTORY=\$(LOG_BASE_DIR) MPI=\$(MPI) OVERWRITE_LOG_DIRECTORY=\$(OVERWRITE_LOG_DIRECTORY) include/create_script.pl \$(TESTCASES) >> \$(SCRIPT)\n" .
 	"\n" .
 	"        # Call footer function\n" .
         "\t\@( echo; echo fb_footer; echo; ) >> \$(SCRIPT)\n" .
@@ -3729,6 +3739,17 @@ sub create_feastBenchmarkMakefile {
         "\t\@perl -ne 'if (m/^ifeq \\(\\\$\$\\(call match,\\\$\$\\(ID\\),(.*)\\),yes\\)\\s*\$\$/) {   my \$\$string = \$\$1; if (\$\$string =~ m/^\$(ID)/) { print \"* \$\$string (default)\\n\"; } else { print \"* \$\$string\\n\"; }   }' \\\n" .
         "\t    \$(MAKEFILE_CPU_INC) | sort;\n\n" .
         "\t\@echo \"Default build ID for current host: \$(ID)\";\n\n" .
+
+
+    # Support a query for the log directory setting to have exactly one
+    # position in the benchmark system where the log directory is stored.
+        "# Support a query for the log directory setting to have exactly one\n" .
+        "# position in the benchmark system where the log directory is stored.\n" .
+        ".PHONY:	printbaselogdir print.base.log.dir print-base-log-dir\n" .
+        "printbaselogdir:	print-base-log-dir\n" .
+        "print.base.log.dir:	print-base-log-dir\n" .
+        "print-base-log-dir:\n" .
+        "\t\@echo \$(LOG_BASE_DIR)\n\n" .
 
 
     # print help message
