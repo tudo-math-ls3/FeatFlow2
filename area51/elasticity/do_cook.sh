@@ -10,7 +10,7 @@ mus="80.194"
 nus="0.3"
 
 # choose MG levels
-mgs="05"
+mgs="06"
 #mgs="02 03 04 05 06 07 08"
 
 #-----------------------------
@@ -134,7 +134,6 @@ evalPoints(4) =
 refSols(2) =
 -20.648992
 27.642747
-
 END_OF_DATA
 # dat file has been created now
 

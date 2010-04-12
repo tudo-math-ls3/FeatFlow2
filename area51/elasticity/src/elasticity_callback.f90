@@ -152,8 +152,8 @@ module elasticity_callback
     real(DP), dimension(:,:), pointer :: DrefSols
 
     ! values and derivatives of the FE function in the evaluation points
-    ! (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer :: Dvalues, DderivX, DderivY
+    ! dimension nblocks x 3 x nevalPoints (3 since we need FUNC, DERX and DERY)
+    real(DP), dimension(:,:,:), pointer :: Dvalues
 
   end type t_problem
 
@@ -330,7 +330,7 @@ contains
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       ! compute Laplace operator
       Dcoefficients(1,:,:) = -Duxx - Duyy
-    end if
+    endif
     
     deallocate(Duxx, Duyy)
   
@@ -432,8 +432,8 @@ contains
       do ipoint = 1, npointsPerElement
         dminPar = min(DpointPar(ipoint,iel), dminPar)
         dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
+      enddo
+    enddo
 
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then 
       ! in case of an analytical test function, the Neumann contributions are given by
@@ -465,13 +465,13 @@ contains
             ! inner point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          endif
   
           ! compute the normal value grad(u)*n
           Dcoefficients(1,ipoint,iel) = dnx * Dux(ipoint,iel) + dny * Duy(ipoint,iel)
    
-        end do
-      end do
+        enddo
+      enddo
       deallocate(Dux, Duy)
     else if (rprob%csimulation .eq. SIMUL_REAL) then
       ! in case of a real simulation, constant nonzero Neumann contributions are provided
@@ -480,7 +480,7 @@ contains
       ! in rcollection%IquickAccess(2) the current segment number is stored
       iseg = rcollection%IquickAccess(2)
       Dcoefficients(1,ipoint,iel) = rprob%DforceSurface(1, iseg, ibct)
-    end if
+    endif
 
 
   end subroutine elast_RHS_Poisson_2D_bound
@@ -574,7 +574,7 @@ contains
         Dcoefficients(1,:,:) = - (2 * rprob%dmu + rprob%dlambda) * Du1xx &
                                -  rprob%dmu                      * Du1yy &
                                - (rprob%dmu + rprob%dlambda)     * Du2xy
-      end if
+      endif
 
       deallocate(Du1xx, Du1yy, Du2xy)
   
@@ -599,7 +599,7 @@ contains
         Dcoefficients(1,:,:) = - (rprob%dmu + rprob%dlambda)     * Du1yx &
                                -  rprob%dmu                      * Du2xx &
                                - (2 * rprob%dmu + rprob%dlambda) * Du2yy
-      end if
+      endif
   
       deallocate(Du2xx, Du2yy, Du1yx)
       
@@ -703,8 +703,8 @@ contains
       do ipoint = 1, npointsPerElement
         dminPar = min(DpointPar(ipoint,iel), dminPar)
         dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
-      end do
-    end do
+      enddo
+    enddo
 
     ! in rcollection%IquickAccess(1) the current component is stored
     icomp = rcollection%IquickAccess(1)
@@ -736,15 +736,13 @@ contains
             ! inner point
             call boundary_getNormalVec2D(rdiscretisation%p_rboundary, ibct, &
                                          dt, dnx, dny, cparType=BDR_PAR_LENGTH)
-          end if
+          endif
 
           ! Now compute sigma * n
-!          print *,'bc, comp, nx, ny', ibct,icomp,dnx,dny
-!          print *,'px, py', Dpoints(1,ipoint,iel), Dpoints(2,ipoint,iel)
           Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(icomp,1,ipoint,iel) &
                                       + dny * DstressTensor(icomp,2,ipoint,iel)
-        end do
-      end do
+        enddo
+      enddo
       deallocate(DstressTensor)
 
     else if (rprob%csimulation .eq. SIMUL_REAL) then
@@ -753,8 +751,8 @@ contains
 
       ! in rcollection%IquickAccess(2) the current segment number is stored
       iseg = rcollection%IquickAccess(2)
-      Dcoefficients(1,ipoint,iel) = rprob%DforceSurface(icomp, iseg, ibct)
-    end if
+      Dcoefficients(1,:,:) = rprob%DforceSurface(icomp, iseg, ibct)
+    endif
 
 
   end subroutine elast_RHS_2D_surf
@@ -1019,7 +1017,7 @@ contains
       Dpoints(2,1,1) = dy
       Daux = elast_danalyticFunction(Dpoints,1,1, DER_FUNC, rprob%CfuncID(Icomponents(1)))
       Dvalues(1) = Daux(1,1)
-    end if
+    endif
   end subroutine elast_boundValue_2D
 
 

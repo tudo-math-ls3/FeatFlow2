@@ -126,7 +126,11 @@ contains
     type(t_errorScVec) :: rerror
     real(DP), dimension(2), target :: DerrorL2
     real(DP), dimension(2), target :: DerrorH1
-    
+
+    ! which function value types to calculate in evaluation points (required by the
+    ! subroutine fevl_evaluate2(...))
+    integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
+
     ! output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
@@ -338,7 +342,7 @@ contains
     endif
 
     ! print number of DOF
-    call lsysbl_getbase_double(rsol,p_Ddata)
+    call lsysbl_getbase_double(rsol, p_Ddata)
     call output_line('Number of DOF: ' // trim(sys_siL(size(p_Ddata),12)) )
   
     ! For implementing boundary conditions, we use a filter technique with discretised
@@ -353,7 +357,6 @@ contains
     end do
 
     ! set up the boundary conditions per boundary and segment
-    !    
     do i = 1, rprob%nboundaries
       do j = 1,rprob%NboundarySegments(i)
         ! Create 'boundary region',  which is simply a part of the boundary corresponding
@@ -368,8 +371,8 @@ contains
               ! We use this boundary region to specify that we want to have Dirichlet
               ! boundary there. The following call does the following:
               ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-              !   We specify icomponent='k' to indicate that we set up the
-              !   Dirichlet BCs for the k-th component in the solution vector.
+              !   We specify icomponent='k' to indicate that we set up the Dirichlet BCs
+              !   for the k-th component in the solution vector.
               ! - Discretise the boundary condition so that the BCs can be applied
               !   to matrices and vectors.
               ! - Add the calculated discrete BCs to rdiscreteBC for later use.
@@ -377,7 +380,6 @@ contains
                      rboundaryRegion, Rlevels(ilev)%rdiscreteBC, elast_boundValue_2D)
             end do  
           else if (rprob%Cbc(k,j,i) .eq. BC_NEUMANN) then
-!            print *,'N',i,j,k
             ! store the current segment number in rcollection%IquickAccess(2) to make it
             ! accessible in the callback routine
             rcollection%IquickAccess(2) = j
@@ -389,15 +391,16 @@ contains
                      rcollection)
             else if (rprob%cequation .eq. EQ_ELASTICITY) then
               ! store the current component in rcollection%IquickAccess(1), such that
-              ! the callback routine elast_RHS_2D_surf can decide whether to compute
-              ! surface forces in x- or y-direction
+              ! the callback routine elast_RHS_2D_surf knows whether to compute surface
+              ! forces in x- or y-direction
               rcollection%IquickAccess(1) = k
               call linf_buildVectorScalarBdr2d(rlinform, rprob%ccubature1D, .false., &
                 rrhs%RvectorBlock(k), elast_RHS_2D_surf, rboundaryRegion, rcollection)
             endif
           else
-            call output_line('Invalid BC found!')
-            stop
+            call output_line('Invalid BC found!', OU_CLASS_ERROR, OU_MODE_STD, &
+                             'elast_2d_disp_smallDeform_static')
+            call sys_halt()
           end if
         enddo
       end do ! end segments
@@ -421,13 +424,16 @@ contains
       call matfil_discreteBC(Rlevels(ilev)%rmatrix)
     end do
 
-    ! During the linear solver, the boundary conditions must frequently be imposed to
-    ! the vectors. This is done using a 'filter chain'. (As the linear solver does not
-    ! work with the actual solution vectors but with defect vectors instead, a filter for
+    ! +------------------------------------------------------------------------
+    ! | SOLVER
+    ! +------------------------------------------------------------------------
+      
+    ! During the linear solve, the boundary conditions must frequently be imposed to
+    ! vectors. This is done using a 'filter chain'. (As the linear solver does not work
+    ! with the actual solution vectors but with defect vectors instead, a filter for
     ! implementing the real boundary conditions would be wrong.)
     RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
 
-    ! Create desired solver structure.
     ! The above filter chain is attached to the solver, so that it automatically filters
     ! the vector during the solution process. Set the following pointer for this.
     p_RfilterChain => RfilterChain
@@ -597,10 +603,10 @@ contains
       p_rsolver%p_rsubnodeMultigrid2%icycle = rprob%ccycle
 
     else
-      print *, ' Invalid Input for Solver type'
-      stop
+      call output_line('Invalid solver type!', OU_CLASS_ERROR, OU_MODE_STD, &
+                       'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     end if
-   
 
     ! adjust output verbosity of the outer solver
     p_rsolver%ioutputLevel = 1
@@ -617,12 +623,10 @@ contains
 !    p_rsolver%depsAbs = 1E-10_DP
 
     ! Attach the system matrices to the solver.
-    !
-    ! We copy our matrices to a big matrix array and transfer that
-    ! to the setMatrices routines. This intitialises then the matrices
-    ! on all levels according to that array. Note that this does not
-    ! allocate new memory, we create only 'links' to existing matrices
-    ! into Rmatrices(:)!
+
+    ! Copy all matrices to a big matrix array and transfer it to the setMatrices routines,
+    ! which intitialise the matrices on all levels. Note that no new memory is allocated,
+    ! Rmatrices(:) only contains 'links' to existing matrices.
     allocate(Rmatrices(rprob%ilevelMin:rprob%ilevelMax))
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       call lsysbl_duplicateMatrix(Rlevels(ilev)%rmatrix, Rmatrices(ilev), &
@@ -637,31 +641,35 @@ contains
     end do
     deallocate(Rmatrices)
     
-    ! Initialise structure/data of the solver. This allows the solver to allocate memory
-    ! and perform some preparing calculations to the problem.
+    ! initialise solver structure/data
     call linsol_initStructure(p_rsolver, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) then
-      stop
+      call output_line('Error in initialisation of the solver structure: ' // &
+                       sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
+                       'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     endif
     call linsol_initData(p_rsolver, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) then
-      stop
+      call output_line('Error in initialisation of the solver data: ' // &
+                       sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
+                       'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     endif
 
-    ! Finally solve the system. As we want to solve Ax=b with
-    ! b being the real RHS and x being the real solution vector,
-    ! we use linsol_solveAdaptively. If b is a defect
-    ! RHS and x a defect update to be added to a solution vector,
-    ! we would have to use linsol_precondDefect instead.
+    ! Solve the system. We want to solve Ax=b with b being the 'real' RHS and x being
+    ! the 'real' solution vector, so linsol_solveAdaptively is the appropriate routine.
+    ! If b is a defect and x a defect correction to be added to a solution vector, we
+    ! would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively(p_rsolver, rsol, rrhs, rtempBlock)
 
     if (rprob%csolver .ne. SOLVER_DIRECT) then
       call output_line('*********************************************************')
-      ! Number of iterations
+      ! number of iterations
       call output_line('Number of iterations: ' // sys_siL(p_rsolver%iiterations,8) )
-      ! Rate of convergence
+      ! rate of convergence
       call output_line('Convergence rate: ' // sys_sdL(p_rsolver%dconvergenceRate,5) )
-      ! Rate of asymptotic convergence
+      ! rate of asymptotic convergence
       call output_line('Asymptotic convergence rate: ' // &
                         sys_sdL(p_rsolver%dasymptoticConvergenceRate,5) )
       call output_line('*********************************************************')
@@ -671,34 +679,34 @@ contains
     ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
     ! strains, stresses
     if (rprob%nevalPoints .gt. 0) then
-      call fevl_evaluate(DER_FUNC, rprob%Dvalues(1,:), rsol%RvectorBlock(1), rprob%DevalPoints)
-      call fevl_evaluate(DER_FUNC, rprob%Dvalues(2,:), rsol%RvectorBlock(2), rprob%DevalPoints) 
-      call fevl_evaluate(DER_DERIV_X, rprob%DderivX(1,:), rsol%RvectorBlock(1), rprob%DevalPoints) 
-      call fevl_evaluate(DER_DERIV_X, rprob%DderivX(2,:), rsol%RvectorBlock(2), rprob%DevalPoints) 
-      call fevl_evaluate(DER_DERIV_Y, rprob%DderivY(1,:), rsol%RvectorBlock(1), rprob%DevalPoints) 
-      call fevl_evaluate(DER_DERIV_Y, rprob%DderivY(2,:), rsol%RvectorBlock(2), rprob%DevalPoints) 
+      ! call the appropriate evaluation routine, that calculates all required function
+      ! value types for all FE components in all evaluation points in one sweep. The
+      ! FE solution values are stored in rprob%Dvalues(:,:,:) with dimension
+      ! nblocks x 3 x nevalPoints (3 since we need FUNC, DERX and DERY)
+      call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints)
 
       call output_line('Values in evaluation points:')
       do i = 1, rprob%nevalPoints
-        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // ', ' //&
-                         trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,i),10)))
-        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,i),10)))
-        deps11 = rprob%DderivX(1,i)
-        deps22 = rprob%DderivY(2,i)
-        deps12 = 0.5_DP*(rprob%DderivX(2,i) + rprob%DderivY(1,i))
+        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
+                         ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
+        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
+        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
+        deps11 = rprob%Dvalues(1,2,i)
+        deps22 = rprob%Dvalues(2,3,i)
+        deps12 = 0.5_DP*(rprob%Dvalues(2,2,i) + rprob%Dvalues(1,3,i))
         call output_line('   eps11: ' // trim(sys_sdEL(deps11,10)))
         call output_line('   eps22: ' // trim(sys_sdEL(deps22,10)))
         call output_line('   eps12: ' // trim(sys_sdEL(deps12,10)))
         ! divergence of u
-        ddivu = (rprob%DderivX(1,i) + rprob%DderivY(2,i))
+        ddivu = (rprob%Dvalues(1,2,i) + rprob%Dvalues(2,3,i))
+        call output_line('  div(u): ' // trim(sys_sdEL(ddivu,10)))
+        ! von Mises stresses
         dsigma11 = 2.0_DP*rprob%dmu*deps11 + rprob%dlambda*ddivu
         dsigma22 = 2.0_DP*rprob%dmu*deps22 + rprob%dlambda*ddivu
         dsigma12 = rprob%dmu*deps12
         dsigma33 = rprob%dlambda*ddivu
         ! trace of the stress tensor divided by 3
         dtrace = (dsigma11 + dsigma22 + dsigma33)/3.0_DP
-        ! von Mises stresses
         dmises = sqrt(  (dsigma11 - dtrace)**2 + (dsigma22 - dtrace)**2 &
                       + (dsigma33 - dtrace)**2 + 2.0_DP*dsigma12**2)
         call output_line('   sig11: ' // sys_sdEL(dsigma11,10) )
@@ -713,25 +721,27 @@ contains
       do i = 1, min(rprob%nevalPoints, rprob%nrefSols) 
         call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
                          ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,i),10)))
+        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
         call output_line('     u1*: ' // trim(sys_sdEL(rprob%DrefSols(1,i),10)))
-        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,i),10)))
+        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
         call output_line('     u2*: ' // trim(sys_sdEL(rprob%DrefSols(2,i),10)))
         daux1 = rprob%DrefSols(1,i)
-        daux2 = rprob%DrefSols(1,i) - rprob%Dvalues(1,i)
+        daux2 = rprob%DrefSols(1,i) - rprob%Dvalues(1,1,i)
         if (daux1 .ne. 0.0_DP) then
           daux2 = daux2/daux1
         endif
         call output_line('error u1: ' // trim(sys_sdEL(daux2, 10)))
+
         daux1 = rprob%DrefSols(2,i)
-        daux2 = rprob%DrefSols(2,i) - rprob%Dvalues(2,i)
+        daux2 = rprob%DrefSols(2,i) - rprob%Dvalues(2,1,i)
         if (daux1 .ne. 0.0_DP) then
           daux2 = daux2/daux1
         endif
         call output_line('error u2: ' // trim(sys_sdEL(daux2, 10)))
+
         daux1 = sqrt(rprob%DrefSols(1,i)**2 + rprob%DrefSols(2,i)**2)
-        daux2 = sqrt(  (rprob%DrefSols(1,i)-rprob%Dvalues(1,i))**2 &
-                     + (rprob%DrefSols(2,i)-rprob%Dvalues(2,i))**2 )
+        daux2 = sqrt(  (rprob%DrefSols(1,i)-rprob%Dvalues(1,1,i))**2 &
+                     + (rprob%DrefSols(2,i)-rprob%Dvalues(2,1,i))**2 )
         if (daux1 .ne. 0.0_DP) then
           daux2 = daux2/daux1
         endif
@@ -855,7 +865,7 @@ contains
       deallocate(rprob%DforceSurface)
     endif
     if (rprob%nevalPoints .gt. 0) then
-      deallocate(rprob%DevalPoints, rprob%Dvalues, rprob%DderivX, rprob%DderivY)
+      deallocate(rprob%DevalPoints, rprob%Dvalues)
       if (rprob%nrefSols .gt. 0) then
         deallocate(rprob%DrefSols)
       endif
@@ -1001,8 +1011,9 @@ contains
       rprob%cequation = EQ_ELASTICITY
       rprob%nblocks = 2
     else
-      call output_line('invalid equation:' // trim(sstring))
-      stop
+      call output_line('invalid equation:' // trim(sstring), OU_CLASS_ERROR, &
+                       OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     end if
     call output_line('equation: '//trim(sstring))
     
@@ -1010,13 +1021,15 @@ contains
     if (rprob%cequation .eq. EQ_ELASTICITY) then
       call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
       if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .ge. 0.5) then
-        call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)))
-        stop
+        call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)), &
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+        call sys_halt()
       endif
       call parlst_getvalue_double(rparams, '', 'mu', rprob%dmu)
-      if (rprob%dnu .le. 0.0_DP) then
-        call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)))
-        stop
+      if (rprob%dmu .le. 0.0_DP) then
+        call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)), &
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+        call sys_halt()
       endif
       rprob%dlambda = 2.0_DP * rprob%dmu * rprob%dnu/(1 - 2.0_DP * rprob%dnu)
       call output_line('nu: '//trim(sys_sdL(rprob%dnu,6)))
@@ -1036,9 +1049,11 @@ contains
           else if (trim(sstring) .eq. "N") then
             rprob%Cbc(k,j,i) = BC_NEUMANN 
           else
-            call output_line('invalid boundary condition:' // trim(sstring))
-            call output_line('currently only D (Dirichlet) and N (Neumann) supported!')
-            stop
+            call output_line('invalid boundary condition:' // trim(sstring) // &
+                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
+                             OU_CLASS_ERROR, OU_MODE_STD, &
+                             'elast_2d_disp_smallDeform_static')
+            call sys_halt()
           endif
           call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
                            trim(sys_siL(j,3)) // ' of boundary ' // &
@@ -1054,8 +1069,9 @@ contains
     else if(trim(sstring) .eq. 'real') then
       rprob%csimulation = SIMUL_REAL
     else
-      call output_line('invalid simulation:' // trim(sstring))
-      stop
+      call output_line('invalid simulation:' // trim(sstring), &
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     end if
     call output_line('simulation: '//trim(sstring))
 
@@ -1108,9 +1124,10 @@ contains
       rprob%ccubature2D = CUB_G3X3
       call output_line('element Q2, cubature G3 / G3X3')
     else
-      call output_line('invalid element:' // trim(sstring))
-      call output_line('currently only Q1 and Q2 supported!')
-      stop
+      call output_line('invalid element:' // trim(sstring) // &
+                       ', currently only Q1 and Q2 supported!', &
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     endif
                               
     ! minimum and maximum level
@@ -1146,8 +1163,9 @@ contains
       rprob%csolver = SOLVER_MG_BICGSTAB
       rprob%bmgInvolved = .TRUE.
     else
-      call output_line('invalid solver:' // trim(sstring))
-      stop
+      call output_line('invalid solver:' // trim(sstring), &
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     end if
     call output_line('solver: '//trim(sstring))
 
@@ -1176,8 +1194,9 @@ contains
       else if(trim(sstring) .eq. 'ILU') then
         rprob%celementaryPrec = SMOOTHER_ILU
       else
-        call output_line('invalid elementary preconditioner/smoother type:' // trim(sstring))
-        stop
+        call output_line('invalid elementary precond./smoother type:' // trim(sstring), &
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+        call sys_halt()
       end if
       call output_line('elementary preconditioner/smoother: '//trim(sstring))
 
@@ -1214,8 +1233,9 @@ contains
     else if(trim(sstring) .eq. 'NO') then
       rprob%cshowDeformation = NO
     else
-      call output_line('invalid value for showDeformation:' // trim(sstring))
-      stop
+      call output_line('invalid value for showDeformation:' // trim(sstring), &
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+      call sys_halt()
     end if
     call output_line('show deformation: '//trim(sstring))
 
@@ -1226,13 +1246,12 @@ contains
 
     if (rprob%nevalPoints .gt. 0) then
       allocate(rprob%DevalPoints(2,rprob%nevalPoints))
-      allocate(rprob%Dvalues(2,rprob%nevalPoints))
-      allocate(rprob%DderivX(2,rprob%nevalPoints))
-      allocate(rprob%DderivY(2,rprob%nevalPoints))
+      ! we need to store values for 2 blocks x 3 function value types (FUNC, DERX, DERY)
+      ! in each eval point
+      allocate(rprob%Dvalues(2, 3, rprob%nevalPoints))
+
       rprob%DevalPoints = 0.0_DP
       rprob%Dvalues = 0.0_DP
-      rprob%DderivX = 0.0_DP
-      rprob%DderivY = 0.0_DP
       do i = 1, rprob%nevalPoints
         call parlst_getvalue_double(rparams, '', 'evalPoints', &
                                     rprob%DevalPoints(1,i), iarrayindex = 2*i-1)
