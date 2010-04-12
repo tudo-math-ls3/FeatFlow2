@@ -69,6 +69,13 @@ module feevaluation
 
 !</constants>
 
+  ! There are two functions fevl_evaluate, one for scalar functions, one for
+  ! multivariate ones.
+  interface fevl_evaluate
+    module procedure fevl_evaluate1
+    module procedure fevl_evaluate2
+  end interface
+  
   ! There are two functions fevl_evaluate_mult which do the same -- with
   ! different calling conventions and different complexities.
   interface fevl_evaluate_mult
@@ -103,14 +110,15 @@ contains
 
 !<subroutine>
 
-  subroutine fevl_evaluate (iderType, Dvalues, rvectorScalar, Dpoints, &
+  subroutine fevl_evaluate1 (iderType, Dvalues, rvectorScalar, Dpoints, &
       Ielements, IelementsHint, cnonmeshPoints)
                                       
 !<description>
   ! This is the most general (and completely slowest) finite element evaluation
   ! routine. It allows to evaluate a general (scalar) FE function specified
   ! by rvectorScalar in a set of points Dpoints. The values of the
-  ! FE function are written into Dvalues.
+  ! FE function are written into Dvalues. The routine is called via
+  ! the interface fevl_evaluate(...).
 !</description>
 
 !<input>
@@ -213,15 +221,15 @@ contains
     case (ST_SINGLE)
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
-      call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+      call output_line ('Unsupported vector precision!', OU_CLASS_ERROR, OU_MODE_STD, &
+                        'fevl_evaluate1')
       call sys_halt()
     end select
     
     ! What to evaluate?
     Bder = .false.
     Bder(iderType) = .true.
-    
+
     cnonmesh = FEVL_NONMESHPTS_NONE
     if (present(cnonmeshPoints)) cnonmesh = cnonmeshPoints
     
@@ -281,7 +289,7 @@ contains
 
       if (iel .eq. 0) then
         call output_line ('Point '//trim(sys_siL(ipoint,10))//' not found!', &
-                          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+                          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate1')
         cycle
       end if
     
@@ -353,6 +361,277 @@ contains
       ! Save the value in the point
       Dvalues(ipoint) = dval
       
+    end do ! ipoint
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+  subroutine fevl_evaluate2 (CderType, Dvalues, rvectorBlock, Dpoints, Ielements, &
+                             IelementsHint, cnonmeshPoints)
+                                      
+!<description>
+  ! This subroutine is an extension of fevl_evaluate1(). It simultaneously evaluates
+  ! several types of function values (given by CderType) for all components of a
+  ! multivariate FE function (given by rvectorBlock). Thus, the evaluation of all the
+  ! element basis functions etc. has to be performed only once. The routine is called via
+  ! the interface fevl_evaluate(...).
+  ! E.g., instead of,
+  !
+  !   real(DP), dimension(nblocks,npoints) :: Dvalues
+  !   call fevl_evaluate(DER_FUNC, Dvalues(1,:), rsol%RvectorBlock(1), Dpoints)
+  !   call fevl_evaluate(DER_FUNC, Dvalues(2,:), rsol%RvectorBlock(2), Dpoints) 
+  !   call fevl_evaluate(DER_DERIV_X, DderivX(1,:), rsol%RvectorBlock(1), Dpoints) 
+  !   call fevl_evaluate(DER_DERIV_X, DderivX(2,:), rsol%RvectorBlock(2), Dpoints) 
+  !   call fevl_evaluate(DER_DERIV_Y, DderivY(1,:), rsol%RvectorBlock(1), Dpoints) 
+  !   call fevl_evaluate(DER_DERIV_Y, DderivY(2,:), rsol%RvectorBlock(2), Dpoints) 
+  !
+  ! one can use
+  !
+  !   integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
+  !   real(DP), dimension(nblocks,3,npoints) :: Dvalues
+  !   call fevl_evaluate(CderType, Dvalues, rsol, Dpoints)
+  !
+!</description>
+
+!<input>
+  ! array of type of function values to evaluate (DER_FUNC, DER_DERIV_X etc.)
+  integer, dimension(:), intent(in) :: CderType
+
+  ! block solution vector representing the FE function that is to be evaluated
+  ! It is assumed that all components correspond to the same spatial discretisation and
+  ! use the same element type (i.e., only that of the first component is inquired)
+  type(t_vectorBlock), intent(in) :: rvectorBlock
+  
+  ! list of points where to evaluate. DIMENSION(ndim,npoints)
+  real(DP), dimension(:,:), intent(in) :: Dpoints
+  
+  ! OPTIONAL: A list of elements containing the points Dpoints.
+  ! If this is not specified, the element numbers containing the points are determined
+  ! automatically.
+  integer, dimension(:), intent(in), optional :: Ielements
+
+  ! OPTIONAL: A list of elements that are near the points in Dpoints.
+  ! This gives only a hint where to start searching for the actual elements containing
+  ! the points. This is ignored if Ielements is specified!
+  integer, dimension(:), intent(in), optional :: IelementsHint
+  
+  ! OPTIONAL: A FEVL_NONMESHPTS_xxxx constant that defines what happens if a point is
+  ! located outside of the domain. May happen e.g. in nonconvex domains.
+  ! FEVL_NONMESHPTS_NONE is the default parameter if cnonmeshPoints is not specified. 
+  integer, intent(in), optional :: cnonmeshPoints
+  
+!</input>
+
+!<output>
+  ! values of the FE function at the points specified by Dpoints.
+  ! DIMENSION(rvectorBlock%nblocks, size(CderType), npoints)
+  real(DP), dimension(:,:,:), intent(out) :: Dvalues
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: cnonmesh
+    integer :: ipoint, indof, nve, ibas, ider, iblock
+    integer(I32) :: celement
+    integer :: iel
+    integer, dimension(:), pointer :: p_IelementDistr
+    logical, dimension(EL_MAXNDER) :: Bder
+    real(DP) :: dval
+    ! number of equations in one scalar component of the block vector
+    integer :: neqsc
+
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(SP), dimension(:), pointer :: p_Fdata
+    
+    ! transformation
+    integer(I32) :: ctrafoType
+    real(DP), dimension(TRAFO_MAXDIMREFCOORD) :: DparPoint
+    
+    ! values of basis functions and DOF`s
+    real(DP), dimension(EL_MAXNBAS,EL_MAXNDER) :: Dbas
+    integer, dimension(EL_MAXNBAS) :: Idofs
+    
+    ! pointer to the list of element distributions in the discretisation structure
+    type(t_elementDistribution), dimension(:), pointer :: p_RelementDistribution
+    ! pointer to the spatial discretisation structure
+    type(t_spatialDiscretisation), pointer :: p_rspatDiscr
+
+    ! evaluation structure and tag
+    type(t_evalElement) :: revalElement
+    integer(I32) :: cevaluationTag
+
+    ! set shortcuts
+    p_rspatDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(1)
+    p_RelementDistribution => p_rspatDiscr%RelementDistr
+    
+    if (p_rspatDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
+      ! for uniform discretisations, get the element type in advance
+      
+      ! element type
+      celement = p_RelementDistribution(1)%celement
+
+      ! number of local DOF`s for trial and test functions
+      indof = elem_igetNDofLoc(celement)
+      
+      ! number of vertices on the element
+      nve = elem_igetNVE(celement)
+      
+      ! type of transformation from/to the reference element
+      ctrafoType = elem_igetTrafoType(celement)
+      
+      ! element evaluation tag; necessary for the preparation of the element
+      cevaluationTag = elem_getEvaluationTag(celement)
+      
+      nullify(p_IelementDistr)
+    else
+      ! non-uniform discretisations
+      call storage_getbase_int (p_rspatDiscr%h_IelementDistr, p_IelementDistr)
+    end if
+    
+    ! set pointer to the data vector
+    select case (rvectorBlock%cdataType)
+    case (ST_DOUBLE) 
+      call lsysbl_getbase_double(rvectorBlock, p_Ddata)
+    case (ST_SINGLE)
+      call lsysbl_getbase_single(rvectorBlock, p_Fdata)
+    case DEFAULT
+      call output_line ('Unsupported vector precision!', OU_CLASS_ERROR, OU_MODE_STD, &
+                        'fevl_evaluate2')
+      call sys_halt()
+    end select
+    
+    ! inquire which types of function values are to be evaluated
+    Bder = .false.
+    do ider = 1, size(CderType)
+      Bder(CderType(ider)) = .true.
+    enddo
+
+    cnonmesh = FEVL_NONMESHPTS_NONE
+    if (present(cnonmeshPoints)) then
+      cnonmesh = cnonmeshPoints
+    endif
+    
+    iel = 1
+
+    ! loop over all points
+    do ipoint = 1,ubound(Dpoints,2)
+    
+      ! get the element number that contains the point
+      if (present(Ielements)) then
+        ! either it is provided...
+        iel = Ielements (ipoint)
+      else
+        ! ...or the element has to be searched
+
+        if (present(IelementsHint)) then
+          ! if available, use the hint provided by the user
+          iel = IelementsHint (ipoint)
+        end if
+        ! otherwise, we use iel from the previous iteration as inital guess
+        
+        ! use raytracing search to find the element containing the point
+        call tsrch_getElem_raytrace2D(Dpoints(:,ipoint), p_rspatDiscr%p_rtriangulation, &
+                                      iel)
+
+        if (iel .eq. 0) then
+          ! if not found, use brute force search
+          call tsrch_getElem_BruteForce(Dpoints(:,ipoint), &
+                                        p_rspatDiscr%p_rtriangulation, iel)
+        end if
+        
+        if (iel .eq. 0) then
+          ! if element is still not found, inquire if nonmesh-points are allowed
+          if (cnonmesh .eq. FEVL_NONMESHPTS_NEARBY) then
+            ! if yes then find the closest element
+            call tsrch_getNearestElem_BruteForce(Dpoints(:,ipoint), &
+                   p_rspatDiscr%p_rtriangulation, iel)
+            ! The evaluation routine then computes the FE function outside of the element.
+            
+          else if (cnonmesh .eq. FEVL_NONMESHPTS_ZERO) then
+            ! if no then set the value to zero
+            Dvalues(:,:,ipoint) = 0.0_DP
+            ! go to next iteration
+            cycle
+          end if
+        end if
+      end if
+
+      if (iel .eq. 0) then
+        ! report when element has not been found and go to next iteration
+        call output_line ('Point ' // trim(sys_siL(ipoint,10)) // ' not found!', &
+                          OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluate2')
+        Dvalues(:,:,ipoint) = 0.0_DP
+        cycle
+      end if
+    
+      ! get the type of the element iel
+      if (associated(p_IelementDistr)) then
+        celement = p_RelementDistribution(p_IelementDistr(iel))%celement
+
+        ! get the number of local DOFs for trial and test functions
+        indof = elem_igetNDofLoc(celement)
+        
+        ! number of vertices on the element
+        nve = elem_igetNVE(celement)
+        
+        ! type of transformation from/to the reference element
+        ctrafoType = elem_igetTrafoType(celement)
+        
+        ! get the element evaluation tag; necessary for the preparation of the element
+        cevaluationTag = elem_getEvaluationTag(celement)
+      end if
+        
+      ! calculate the global DOFs on that element into IdofsTest.
+      call dof_locGlobMapping (p_rspatDiscr, iel, Idofs)
+     
+      ! get the element shape information
+      call elprep_prepareForEvaluation (revalElement, EL_EVLTAG_COORDS, &
+             p_rspatDiscr%p_rtriangulation, iel, ctrafoType)
+          
+      ! calculate the transformation of the point to the reference element
+      call trafo_calcRefCoords (ctrafoType, revalElement%Dcoords, &
+                                Dpoints(:,ipoint), DparPoint)
+
+      ! calculate everything else what is necessary for the element    
+      call elprep_prepareForEvaluation (revalElement, &
+             iand(cevaluationTag,not(EL_EVLTAG_COORDS)), p_rspatDiscr%p_rtriangulation, &
+             iel, ctrafoType, DparPoint, Dpoints(:,ipoint))
+
+      ! call the element to calculate the values of the basis functions in the point.
+      call elem_generic2 (celement, revalElement, Bder, Dbas)
+
+      ! number of equations in one scalar component
+      neqsc = rvectorBlock%RvectorBlock(1)%neq
+      
+      ! calculate function values by multiplying the FE-coefficients with the values of
+      ! the basis functions and summing up
+      Dvalues(:,:,ipoint) = 0.0_DP
+      if (rvectorBlock%cdataType .eq. ST_DOUBLE) then
+        do ider = 1,size(CderType)
+          do iblock = 1,rvectorBlock%nblocks
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval +   p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
+                            * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(iblock, ider, ipoint) = dval
+          enddo
+        enddo
+      else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
+        do ider = 1,size(CderType)
+          do iblock = 1,rvectorBlock%nblocks
+            dval = 0.0_DP
+            do ibas = 1,indof
+              dval = dval +   p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
+                            * Dbas(ibas,CderType(ider))
+            end do
+            Dvalues(iblock, ider, ipoint) = dval
+          enddo
+        enddo
+      end if
     end do ! ipoint
 
   end subroutine
