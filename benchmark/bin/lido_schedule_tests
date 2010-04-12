@@ -9,26 +9,32 @@ ALLTESTS=
 BENCHMARKRUNSCRIPT=runtests
 DOSENDMAIL=
 EMAILADDRESS=
+FORCE_COMPLETE_NODES=1    # If FORCE_COMPLETE_NODES=0, then the term
+                          # 'nodes' in variable names actually refers
+                          # to cores (e.g. in CORESPERNODE,
+                          # CORESPERQUADNODE, eth_maxavailnodes[]).
+FORCE_USE_QUAD_QUEUES=0
 GNUMAKE=
 JOBFILEPREFIX="feat2job"
 MODULESLOADED=
-OVERWRITE_LOG_DIRECTORY=
-NTASKS=
-WALLCLOCKLIMIT="00:40:00"
 NOSCHEDULE=0
+NTASKS=
+OVERWRITE_LOG_DIRECTORY=
+WALLCLOCKLIMIT="00:40:00"
+
 case "`hostname -f`" in
-    *.lidocluster.hp) 
+    *.lidocluster.hp)
 	# Torque on LiDO-2 is configured to believe every node has
 	# only four cores. Despite it having 8. But using 8 cores
 	# would give a serious performance penalty (memory wall) given
 	# that there is only one memory bus per node.
 	CORESPERNODE=4;
-	PPN=":ppn=4";
+	CORESPERQUADNODE=8;
 	ultralong_queue="ultralong_eth"
 	;;
     *.cvos.cluster)
 	CORESPERNODE=2;
-	PPN=":ppn=2";
+	CORESPERQUADNODE=4;
 	ultralong_queue="neternal_eth"
 	;;
 esac
@@ -38,12 +44,11 @@ AFTERJOB=""
 # ==================================================================
 # IMPORTANT
 # ==================================================================
-# It is assumed this script is called from a FEAT2 benchmark
-# directory.  This assumption is not only made here, but also later
-# as the Makefile in a fbenchmark2 directory (whatever its actual
-# name is) is needed to create a 'runtests' script. The library
-# function fb_ensureCorrectWorkingDir even checks whether that's the
-# case.
+# It is assumed this script is called from a FEAT2 directory.
+# This assumption is not only made here, but also later as the
+# Makefile in a fbenchmark2 directory (whatever its actual name is)
+# is needed to create a 'runtests' script. The library function
+# fb_ensureCorrectWorkingDir even checks whether that's the case.
 
 
 # ==================================================
@@ -57,11 +62,11 @@ AFTERJOB=""
 # Indices must always be the same:
 # 0 = short_*  ,  1 = med_*  ,  2 = long_*
 #
-# Names of queues, maximum wallclock times (in seconds) and 
+# Names of queues, maximum wallclock times (in seconds) and
 # maximum number of nodes currently available (= online nodes)
-declare -a eth[3], ib[2]
-declare -a eth_wallclockseconds[3], ib_wallclockseconds[2]
-declare -a eth_maxnodes[3], ib_maxnodes[2]
+declare -a eth[3], ib[2], quad[2]
+declare -a eth_wallclockseconds[3], ib_wallclockseconds[2], quad_wallclockseconds[2]
+declare -a eth_maxnodes[3], ib_maxnodes[2], quad_maxnodes[2]
 
 
 #  Function: Query PBS to find out about available nodes and maximum walltime per queue
@@ -73,10 +78,13 @@ fb_queryPBSLiDO() {
     ib[0]="short_ib"
     ib[1]="med_ib"
     ib[2]="long_ib"
+    quad[0]="short_quad"
+    quad[1]="med_quad"
+    quad[2]="long_quad"
 
     # Create temporary file (with unique file name)
     qmgr=`mktemp`
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error: Creating temporary file failed. Script cancelled.
 EOF
@@ -85,7 +93,7 @@ EOF
 
     # Query PBS queue manager and store result in temporary file
     qmgr -c 'list queue @master' > ${qmgr}
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error: Could not query PBS manager for available resources. Script cancelled.
 EOF
@@ -94,7 +102,7 @@ EOF
 
     # Create temporary file (with unique file name)
     sedFileSuppressOfflineNodes="`mktemp`"".sed"
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error: Creating temporary file failed. Script cancelled.
 EOF
@@ -105,7 +113,7 @@ EOF
     # (that remove any occurrence of offline nodes from input strings) and
     # store it to a temporary file
     pbsnodes -l | grep offline | sed 's/^\([^ ]*\).*$/s\/\1+*\/\/;/' > ${sedFileSuppressOfflineNodes}
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error: Could not query PBS for offline nodes. Script cancelled.
 EOF
@@ -115,12 +123,12 @@ EOF
     # Define a smaller helper routine for code repeatedly needed
     fb_getSettingsForQueue() {
 	queue="$1"  # IN
-        egrep "^(Queue |[[:space:]]+acl_hosts|[[:space:]]+[^=]+\.lidocluster\.hp|[[:space:]]+resources_max.walltime)" ${qmgr} | \
- 		# (Sed:) Unwrap acl_hosts list.
+	egrep "^(Queue |[[:space:]]+acl_hosts|[[:space:]]+[^=]+\.lidocluster\.hp|[[:space:]]+resources_max.walltime)" ${qmgr} | \
+		# (Sed:) Unwrap acl_hosts list.
 		sed ':x; /,$/ { N; s/\n[ ]*//; tx}' | \
- 		# Turn output into one line per queue
- 		grep -v "^Queue default" | \
- 		sed 'N; N; s/\n//g;' | \
+		# Turn output into one line per queue
+		grep -v "^Queue default" | \
+		sed 'N; N; s/\n//g;' | \
 		# Suppress offline nodes
 		sed -f ${sedFileSuppressOfflineNodes} | \
 		# Extract current queue
@@ -134,6 +142,9 @@ EOF
 	eth_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
 	# Determine maximum number of nodes available
 	eth_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
+	    eth_maxavailnodes[$i]=`expr ${eth_maxavailnodes[$i]} \* ${CORESPERNODE}`
+	fi
     done
 
     # ib queue
@@ -143,6 +154,21 @@ EOF
 	ib_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
 	# Determine maximum number of nodes available
 	ib_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
+	    ib_maxavailnodes[$i]=`expr ${ib_maxavailnodes[$i]} \* ${CORESPERNODE}`
+	fi
+    done
+
+    # quad queue
+    for i in 0 1 2; do
+	queue=${quad[$i]};
+	# Determine maximum wall clock time
+	quad_wallclockseconds[$i]=`fb_getSettingsForQueue $queue | awk '{print $NF}' | awk -F: '{print $1*3600+$2*60+$3}'`
+	# Determine maximum number of nodes available
+	quad_maxavailnodes[$i]=`fb_getSettingsForQueue $queue | sed -e 's/^.*acl_hosts = \([^ \t]*\).*/\1/; s/[+,]/ /g;' | wc -w`
+	if test "$FORCE_COMPLETE_NODES" -eq "0"; then
+	    quad_maxavailnodes[$i]=`expr ${quad_maxavailnodes[$i]} \* ${CORESPERQUADNODE}`
+	fi
     done
 
     rm -f ${qmgr} ${sedFileSuppressOfflineNodes}
@@ -152,13 +178,14 @@ EOF
 #  Function: Determine most suitable queue depending on node, walltime and interconnect requirements
 fb_determineQueue() {
     nodes="$1"      # IN (format: integer)
-    queuetype="$3"  # IN (valid: "_eth" or "_ib")
+    queuetype="$3"  # IN (valid: "_eth", "_ib" or "_quad")
 
     walltimeseconds="`echo $2 | awk -F: '{print $1*3600+$2*60+$3}'`"   # IN (format: hh:mm:ss)
 
 
     # Check ethernet queues
-    if test "${queuetype}" = "_eth"; then 
+    # (Force use of ethernet queue for serial jobs)
+    if test "${queuetype}" = "_eth" -o "${nodes}" = 1; then
 	for i in 0 1 2 3; do
 	    queue=${eth[$i]};
 	    # Check whether enough nodes in queue available
@@ -174,7 +201,8 @@ fb_determineQueue() {
 
 
     # Check infiniband queues
-    if test "${queuetype}" = "_ib"; then 
+    # (Prohibit use of infiniband queue for serial jobs)
+    if test "${queuetype}" = "_ib" -a "${nodes}" != 1; then
 	for i in 0 1 2; do
 	    queue=${ib[$i]};
 	    # Check whether enough nodes in queue available
@@ -187,6 +215,70 @@ fb_determineQueue() {
 	    fi
 	done
     fi
+
+
+    # Check quadcore queues
+    if test "${queuetype}" = "_quad"; then
+	for i in 0 1 2; do
+	    queue=${quad[$i]};
+	    # Check whether enough nodes in queue available
+	    if test ${nodes} -le ${quad_maxavailnodes[$i]}; then
+		# Check whether wall time limits are not exceeded
+		if test ${walltimeseconds} -le ${quad_wallclockseconds[$i]}; then
+		    echo ${queue};
+		    return;
+		fi
+	    fi
+	done
+    fi
+}
+
+
+#  Function: Determine number of nodes required, following a complete-nodes-only policy
+fb_determineNodes() {
+    tasks="$1"      # IN (format: integer)
+    queuetype="$2"  # IN (valid: "_eth", "_ib" or "_quad")
+
+    nodes=0
+    if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+	# Only allocate complete nodes to prevent that some other
+	# cluster user influences this job. Other processes possibly
+	# use much more ressources than available (e.g. more memory than
+	# available => swapping, cpu threading => less cpu for us,
+	# network card flooding, whatever else)
+
+	# Check ethernet queues
+	if test "${queuetype}" = "_eth" -o "${queuetype}" = "_ib"; then
+	    nodes=`expr $tasks / $CORESPERNODE`;
+	    # If number of CPUs per node ($CORESPERNODE) is not divisor of the
+	    # number of processes requested, then there has been an arithmetic
+	    # remainder of the devision and we need one more (incompletely used)
+	    # node.
+	    if test `expr $tasks % $CORESPERNODE` -ne 0; then
+		nodes=`expr $nodes + 1`
+	    fi
+
+	# Check quadcore queues
+	elif test "${queuetype}" = "_quad"; then
+	    nodes=`expr $tasks / $CORESPERQUADNODE`;
+	    # If number of CPUs per node ($CORESPERNODE) is not divisor of the
+	    # number of processes requested, then there has been an arithmetic
+	    # remainder of the devision and we need one more (incompletely used)
+	    # node.
+	    if test `expr $tasks % $CORESPERQUADNODE` -ne 0; then
+		nodes=`expr $nodes + 1`
+	    fi
+	fi
+
+    else
+	# Take any core we can get. => Faster scheduling, but possibly we run into
+	# issues like out of memory, cpu overload etc. This setting is only useful
+	# when debugging small problems.
+	nodes=$tasks;
+    fi
+
+    echo $nodes
+    return
 }
 
 
@@ -196,41 +288,15 @@ fb_createJobfileLiDO() {
     file="$2"           # IN
 
     fb_createRuntestsScript "$benchmarktest"
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	return 1
     fi
 
     fb_getNTASKS
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	return 2
     fi
 
-    # Only allocate complete nodes to prevent that some other
-    # cluster user influences this job. Other processes possibly
-    # use much more ressources than available (e.g. more memory than 
-    # available => swapping, cpu threading => less cpu for us,
-    # network card flooding, whatever else)
-    nodes=`expr $NTASKS / $CORESPERNODE`;
-    # If number of CPUs per node ($CORESPERNODE) is not divisor of the 
-    # number of processes requested, then there has been an arithmetic 
-    # remainder of the devision and we need one more (incompletely used) 
-    # node.
-    if [ `expr $NTASKS % $CORESPERNODE` -ne 0 ]; then
-	nodes=`expr $nodes + 1`
-    fi
-    pbsOptionNodes="#PBS -l nodes=$nodes$PPN"
-
-    # Send mail on job begin, abort and end?
-    pbsOptionMail=""
-    if [ "$DOSENDMAIL" -eq "1" ]; then
-      pbsOptionMail="#PBS -m bae"
-    fi
-    
-    # Let the job depend on another job?
-    pbsOptionAfter=""
-    if [ "$AFTERJOB" != "" ]; then
-      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
-    fi
 
     # Support for OpenMPI + Infiniband, OpenMPI + GigabitEthernet
     # and LAM/MPI + GigabitEthernet.
@@ -243,7 +309,8 @@ fb_createJobfileLiDO() {
     sedQueueingSystem=LIDO
 #    sedExecMode=PBSQUEUED
     envSetting=""
-    if [ -n "$LOADEDMODULES" ]; then
+
+    if test -n "$LOADEDMODULES"; then
 	# Here enters hard-coded knowledge about maximum walltimes
 	# of queues of LiDO (the server could be queries dynamically
 	# for maximum walltimes, but this way it is easier.)
@@ -251,12 +318,14 @@ fb_createJobfileLiDO() {
 	    *:mpich/ge/*)
 		echo "$0: Using MPICH."
 		sedMPIEnv=MPICH
+		nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		interconnect=ethernet
 		;;
 	    *:open-mpi/ib/*|*:openmpi/ib/*)
 		echo "$0: Using OpenMPI."
 		sedMPIEnv=OpenMPI
+		nodes=`fb_determineNodes "${NTASKS}" "_ib"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_ib"`
 		envSetting="OMPI_MCA_btl=openib,self,sm; export OMPI_MCA_btl"
 		interconnect=infiniband
@@ -264,6 +333,7 @@ fb_createJobfileLiDO() {
 	    *:open-mpi/ge/*|*:openmpi/ge/*)
 		echo "$0: Using OpenMPI."
 		sedMPIEnv=OpenMPI
+		nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		envSetting="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
 		interconnect=ethernet
@@ -271,6 +341,7 @@ fb_createJobfileLiDO() {
 	    *:lam/*)
 		echo "$0: Using LAM/MPI."
 		sedMPIEnv=LAMMPI
+		nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		envSetting="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
 		interconnect=ethernet
@@ -278,17 +349,29 @@ fb_createJobfileLiDO() {
 	    *:mvapich/*)
 		echo "$0: Using MVAPICH."
 		sedMPIEnv=MVAPICH
+		nodes=`fb_determineNodes "${NTASKS}" "_ib"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_ib"`
 		interconnect=infiniband
 		;;
+	    # No way found yet to identify from the list of loaded modules whether 
+	    # the quad nodes should be used. So, this switch is missing here.
+
+	    # Catch-all-else case
 	    *)
 		# No MPI module loaded
 		echo "$0: No MPI required."
 		sedMPIEnv=not-needed-as-feat2-is-serial-only
+		nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		interconnect=ethernet
 		;;
 	esac
+
+	# Overwrite some settings in case use of quad queues is enforced.
+	if test "$FORCE_USE_QUAD_QUEUES" -eq "1"; then
+	    nodes=`fb_determineNodes "${NTASKS}" "_quad"`
+	    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_quad"`
+	fi
 
 	# Check whether we got a valid queue
 	if test -z "${pbsOptionQueue}"; then
@@ -296,7 +379,7 @@ fb_createJobfileLiDO() {
 		interconnect=">>!!>> (none set) <<!!<<"
 	    fi
 	    cat <<EOF 1>&2
-$0: Error: No queue available that satisfied the node, wallclock and 
+$0: Error: No queue available that satisfied the node, wallclock and
 $0: interconnect requirements:
 $0:   nodes          >= ${nodes}
 $0:   wallclock time >= ${WALLCLOCKLIMIT}
@@ -310,13 +393,30 @@ EOF
 	# Now, it is known which is the target queue.
 	# Check whether queue is enabled/disabled.
 	queueState="`qstat -Q $pbsOptionQueue | tail -1 | awk '{print \$4}'`"
-	if [ "$queueState""x" = "nox" ]; then
+	if test "$queueState""x" = "nox"; then
 	    cat <<EOF 1>&2
 $0: Error: Queue $pbsOptionQueue is currently closed, job scheduling
 $0: is not possible. Script cancelled.
 EOF
 	    exit 6
 	fi
+
+	if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+	    # We prefer to allocate complete nodes. The thing is just that syntax
+	    # differs for quad nodes on the one hand and nodes with ethernet/infiniband nodes
+	    # on the other. Determine syntax from queue choosen.
+	    # Idea of detection: Try cutting of substring "_quad" at the end of queue variable.
+	    # If this succeeds, we actually use one of the quad queues.
+	    if test "${pbsOptionQueue%_quad}" != "$pbsOptionQueue"; then
+		pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERQUADNODE}";
+	    else
+		pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERNODE}";
+	    fi
+	else
+	    # No complete nodes, just take the cores whereever we can get them.
+	    pbsOptionNodes="#PBS -l nodes=$nodes";
+	fi
+
 
     # $LOADEDMODULES not set
     else
@@ -326,28 +426,29 @@ EOF
 	exit 7
     fi
 
-		# Evaluate command line parameter options
-		#
+    # Evaluate command line parameter options
+    #
     # Send mail on job begin, abort and end?
     pbsOptionMail=""
-    if [ "$DOSENDMAIL" -eq "1" ]; then
+    if test "$DOSENDMAIL" -eq "1"; then
       pbsOptionMail="#PBS -m bae"
     fi
     
     # Let the job depend on another job?
     pbsOptionAfter=""
-    if [ "$AFTERJOB" != "" ]; then
+    if test "$AFTERJOB" != ""; then
       pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
     fi
 		
     # Now, create the jobfile.
+    LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
     cat <<EOF > $file
 #!/bin/sh
 
 #PBS -l walltime=$WALLCLOCKLIMIT
 $pbsOptionNodes
 #PBS -q $pbsOptionQueue
-#PBS -o $PWD/logs/output.$benchmarktest
+#PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
 # join standard output and error streams
 #PBS -j oe
 #PBS -M $EMAILADDRESS
@@ -357,7 +458,7 @@ $pbsOptionAfter
 cd $PWD
 
 EOF
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error while creating jobfile.
 EOF
@@ -380,8 +481,8 @@ EOF
 #         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
     sed -e \
 	"1,2d; \
-         s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$sedQueueingSystem|i; \
-         s|^MPIENV=[ ]*$|MPIENV=$sedMPIEnv|i;" $BENCHMARKRUNSCRIPT \
+	 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$sedQueueingSystem|i; \
+	 s|^MPIENV=[ ]*$|MPIENV=$sedMPIEnv|i;" $BENCHMARKRUNSCRIPT \
 	>> $file
 
 
@@ -401,7 +502,7 @@ fb_fastCreateAndSubmitJobfilesLiDO() {
     jobfileprefix="$1"   # IN
 
     # Check whether GNUmakefile is available (i.e. whether configure has been run)
-    if [ ! -s GNUmakefile ]; then
+    if test ! -s GNUmakefile; then
 	cat <<EOF 1>&2
 $0: Error: No GNUmakefile found. Please run './configure' first.
 EOF
@@ -410,9 +511,9 @@ EOF
 
     echo $0": Creating all jobfiles at once."
 
-    # Support for 
-    # * OpenMPI, 
-    # * LAM/MPI, 
+    # Support for
+    # * OpenMPI,
+    # * LAM/MPI,
     # * MPICH,
     # * MVAPICH,
     # * plain serial
@@ -424,7 +525,7 @@ EOF
     # compilers at the same time as all would share the same rc file.
     sedQueueingSystem=LIDO
     envSetting=""
-    if [ -n "$LOADEDMODULES" ]; then
+    if test -n "$LOADEDMODULES"; then
 	# Here enters hard-coded knowledge about maximum walltimes
 	# of queues of LiDO (the server could be queries dynamically
 	# for maximum walltimes, but this way it is easier.)
@@ -467,7 +568,7 @@ EOF
     # (Unfortunately 'mktemp' does not support suffixes.
     #  So, get a temporary name, append the suffix ".fbconf", check whether
     #  such a file already exists. If so, remove the temporary file created
-    #  by mktemp (the one without the suffix), create a new one and repeat 
+    #  by mktemp (the one without the suffix), create a new one and repeat
     #  the test.)
     tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
     trap "rm -f ${tmpfile}; exit 11" 2 3 9
@@ -481,8 +582,8 @@ EOF
 
     # Create part of job scripts that is identical for all tests (for a given
     # choice of MPI/no MPI and build ID)
-    $GNUMAKE create-script-header
-    if [ $? -ne 0 ]; then
+    $GNUMAKE --no-print-directory create-script-header
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error while creating template for job files.
 EOF
@@ -494,7 +595,7 @@ EOF
     # * omit the first lines (i.e. the shebang, leading comments)
     # * set queueing system and MPI env based on loaded modules.
     sed -i -e \
-	        "1,2d; \
+		"1,2d; \
 		 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$sedQueueingSystem|i; \
 		 s|^MPIENV=[ ]*$|MPIENV=$sedMPIEnv|i;" $BENCHMARKRUNSCRIPT
     echo $0": Creating template for all job files... Done."
@@ -506,7 +607,7 @@ EOF
     do
 	cp -fp $BENCHMARKRUNSCRIPT _tmp_.$BENCHMARKRUNSCRIPT.$testid
     done
-    if [ $? -ne 0 ]; then
+    if test $? -ne 0; then
 	cat <<EOF 1>&2
 $0: Error while cloning template job file.
 EOF
@@ -517,17 +618,20 @@ EOF
 
     # Now, replicate the actions of the make target 'create-script-body'
     #
-    # Determine whether or not to use MPI
-    MPI=`$GNUMAKE .mpi`
-    #
     # Determine build ID (without MPI token)
-    ID=`$GNUMAKE .idonly`
+    ID=`$GNUMAKE --no-print-directory .idonly`
+    #
+    # Determine whether or not to use MPI
+    MPI=`$GNUMAKE --no-print-directory .mpi`
+    #
+    # Determine base dir for all log files
+    LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
     #
     # Call the script that includes the appropriate environment variables for
     # a given test, but unlike in the GNUmakefile call it with additional command
     # line parameters instructing it to not write to screen, but to append
     # directly to the temporary files just created.
-    export ID MPI OVERWRITE_LOG_DIRECTORY;
+    export ID LOG_BASE_DIRECTORY MPI OVERWRITE_LOG_DIRECTORY;
     include/create_script.pl --append-to-files "_tmp_.$BENCHMARKRUNSCRIPT." $tmpfile
     rm $tmpfile
     trap "rm -f _tmp_.$BENCHMARKRUNSCRIPT.*; exit 15" 2 3 9
@@ -537,15 +641,15 @@ EOF
     do
 	# Ignore commented out test IDs - create_script.pl has, too.
 	# So, there is no point in listing them among tests that had errors.
-	if test "`echo $testid | cut -c1`" = "#"; then 
+	if test "`echo $testid | cut -c1`" = "#"; then
 	    rm -f $tmpjobfile;
 	    continue;
 	fi
 	jobfile="$jobfileprefix.$testid.sh"
 	tmpjobfile="_tmp_.$BENCHMARKRUNSCRIPT.$testid"
 	if diff -q $BENCHMARKRUNSCRIPT $tmpjobfile 1>/dev/null; then
-	    # Files differ, so include/create_script.pl has really 
-	    # appended something, i.e. test ID has no errors.
+	    # Files do not differ, so include/create_script.pl did not append anything
+	    # which is an indicator for the test ID having had errors.
 	    testIDsWithErrors="$testIDsWithErrors $testid"
 	    rm -f $tmpjobfile;
 
@@ -557,29 +661,14 @@ EOF
 	    (echo; echo fb_footer; echo; ) >> $tmpjobfile
 
 	    fb_getNTASKS $tmpjobfile
-	    if [ $? -ne 0 ]; then
+	    if test $? -ne 0; then
 		echo $0": An error occurred creating the jobfile <$jobfile>."
 		testIDsWithErrors="$testIDsWithErrors $testid"
 		rm -f $tmpjobfile
 		continue
 	    fi
 
-	    # Only allocate complete nodes to prevent that some other
-	    # cluster user influences this job. Other processes possibly
-	    # use much more ressources than available (e.g. more memory than 
-	    # available => swapping, cpu threading => less cpu for us,
-	    # network card flooding, whatever else)
-	    nodes=`expr $NTASKS / $CORESPERNODE`;
-	    # If number of CPUs per node ($CORESPERNODE) is not divisor of the 
-	    # number of processes requested, then there has been an arithmetic 
-	    # remainder of the devision and we need one more (incompletely used) 
-	    # node.
-	    if [ `expr $NTASKS % $CORESPERNODE` -ne 0 ]; then
-		nodes=`expr $nodes + 1`
-	    fi
-	    pbsOptionNodes="#PBS -l nodes=$nodes$PPN"
-	
-	    # Support for 
+	    # Support for
 	    # * OpenMPI + {Infiniband, GigabitEthernet},
 	    # * LAM/MPI + GigabitEthernet,
 	    # * MPICH + GigabitEthernet,
@@ -592,59 +681,61 @@ EOF
 	    # compilers at the same time as all would share the same rc file.
 	    envSetting=""
 	    # Here enters hard-coded knowledge about maximum walltimes
-            # of queues of LiDO (the server could be queries dynamically
+	    # of queues of LiDO (the server could be queries dynamically
 	    # for maximum walltimes, but this way it is easier.)
 	    case ":$LOADEDMODULES" in
 		*:mpich/ge/*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		    interconnect=ethernet
 		    ;;
 		*:open-mpi/ib/*|*:openmpi/ib/*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_ib"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_ib"`
 		    envSetting="OMPI_MCA_btl=openib,self,sm; export OMPI_MCA_btl"
 		    interconnect=infiniband
 		    ;;
 		*:open-mpi/ge/*|*:openmpi/ge/*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		    envSetting="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
 		    interconnect=ethernet
 		    ;;
 		*:lam/*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		    envSetting="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
 		    interconnect=ethernet
 		    ;;
 		*:mvapich/*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_ib"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_ib"`
 		    interconnect=infiniband
 		    ;;
+		# No way found yet to identify from the list of loaded modules whether 
+		# the quad nodes should be used. So, this switch is missing here.
+
+		# Catch-all-else case
 		*)
+		    nodes=`fb_determineNodes "${NTASKS}" "_eth"`
 		    pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
 		    interconnect=ethernet
 		    ;;
 	    esac
 
-    # Send mail on job begin, abort and end?
-    pbsOptionMail=""
-    if [ "$DOSENDMAIL" -eq "1" ]; then
-      pbsOptionMail="#PBS -m bae"
-    fi
-    
-    # Let the job depend on another job?
-    pbsOptionAfter=""
-    if [ "$AFTERJOB" != "" ]; then
-      pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
-    fi
+	    # Overwrite some settings in case use of quad queues is enforced.
+	    if test "$FORCE_USE_QUAD_QUEUES" -eq "1"; then
+		nodes=`fb_determineNodes "${NTASKS}" "_quad"`
+		pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_quad"`
+	    fi
 
 	    # Check whether we got a valid queue
 	    if test -z "${pbsOptionQueue}"; then
-		
 		if test -z "${interconnect}"; then
 		    interconnect=">>!!>> (none set) <<!!<<"
 		fi
-		
 		cat <<EOF 1>&2
-$0: Error: No queue available that satisfied the node, wallclock and 
+$0: Error: No queue available that satisfied the node, wallclock and
 $0: interconnect requirements:
 $0:   nodes          >= ${nodes}
 $0:   wallclock time >= ${WALLCLOCKLIMIT}
@@ -660,12 +751,40 @@ EOF
 	    # Now, it is known which is the target queue.
 	    # Check whether queue is enabled/disabled.
 	    queueState="`qstat -Q $pbsOptionQueue | tail -1 | awk '{print \$4}'`"
-	    if [ "$queueState""x" = "nox" ]; then
+	    if test "$queueState""x" = "nox"; then
 		cat <<EOF 1>&2
 $0: Error: Queue $pbsOptionQueue is currently closed, job scheduling
 $0: is not possible. Script cancelled.
 EOF
 		exit 16
+	    fi
+
+	    if test "$FORCE_COMPLETE_NODES" -eq "1"; then
+		# We prefer to allocate complete nodes. The thing is just that syntax
+		# differs for quad nodes on the one hand and nodes with ethernet/infiniband nodes
+		# on the other. Determine syntax from queue choosen.
+		# Idea of detection: Try cutting of substring "_quad" at the end of queue variable.
+		# If this succeeds, we actually use one of the quad queues.
+		if test "${pbsOptionQueue%_quad}" != "$pbsOptionQueue"; then
+		    pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERQUADNODE}";
+		else
+		    pbsOptionNodes="#PBS -l nodes=$nodes:ppn=${CORESPERNODE}";
+		fi
+	    else
+	    # No complete nodes, just take the cores whereever we can get them.
+		pbsOptionNodes="#PBS -l nodes=$nodes";
+	    fi
+
+	    # Send mail on job begin, abort and end?
+	    pbsOptionMail=""
+	    if test "$DOSENDMAIL" -eq "1"; then
+	      pbsOptionMail="#PBS -m bae"
+	    fi
+
+	    # Let the job depend on another job?
+	    pbsOptionAfter=""
+	    if test "$AFTERJOB" != ""; then
+		pbsOptionAfter="#PBS -W depend=afterok:$AFTERJOB"
 	    fi
 
 
@@ -676,7 +795,7 @@ EOF
 #PBS -l walltime=$WALLCLOCKLIMIT
 $pbsOptionNodes
 #PBS -q $pbsOptionQueue
-#PBS -o $PWD/logs/output.$testid
+#PBS -o $PWD/$LOG_BASE_DIRECTORY/output.$testid
 # join standard output and error streams
 #PBS -j oe
 #PBS -M $EMAILADDRESS
@@ -686,7 +805,7 @@ $pbsOptionAfter
 cd $PWD
 
 EOF
-	    if [ $? -ne 0 ]; then
+	    if test $? -ne 0; then
 		cat <<EOF 1>&2
 $0: Error while creating jobfile.
 EOF
@@ -710,16 +829,16 @@ EOF
 	    chmod 750 $jobfile
 
 	    echo $0": Jobfile <$jobfile> created."
- 	    successfulTests=`expr $successfulTests + 1`
+	    successfulTests=`expr $successfulTests + 1`
 
-      if [ $NOSCHEDULE -ne "1" ]; then
-	      echo $0": Submitting <$jobfile>."
-	      # Submit the jobfile. Keep trying to submit it in
-	      # case the maximum number of jobs per user is already
-	      # reached.
-	      fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+	    if [ $NOSCHEDULE -ne "1" ]; then
+		echo $0": Submitting <$jobfile>."
+		# Submit the jobfile. Keep trying to submit it in
+		# case the maximum number of jobs per user is already
+		# reached.
+		fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
 	    else
-	      echo $0": Submitting <$jobfile> skipped."
+		echo $0": Submitting <$jobfile> skipped."
 	    fi
 	fi
     done
@@ -764,16 +883,16 @@ fb_postprocess "$successfulTests" "$testIDsWithErrors"
 #     jobfile="$JOBFILEPREFIX.$testid.sh"
 #     echo $0": Creating jobfile for <$testid>."
 #     fb_createJobfileLiDO "$testid" "$jobfile"
-#     if [ $? -eq 0 ]; then
-# 	successfulTests=`expr $successfulTests + 1`
-# 	echo $0": Submitting <$jobfile>."
-# 	# Submit the jobfile. Keep trying to submit it in
-# 	# case the maximum number of jobs per user is already
-# 	# reached.
-# 	fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
+#     if test $? -eq 0; then
+#	successfulTests=`expr $successfulTests + 1`
+#	echo $0": Submitting <$jobfile>."
+#	# Submit the jobfile. Keep trying to submit it in
+#	# case the maximum number of jobs per user is already
+#	# reached.
+#	fb_submitJobfile "$jobfile" "Maximum number of jobs already in queue"
 #     else
-# 	echo $0": An error occurred creating the jobfile. Submit cancelled."
-# 	testIDsWithErrors="$testIDsWithErrors $testid"
+#	echo $0": An error occurred creating the jobfile. Submit cancelled."
+#	testIDsWithErrors="$testIDsWithErrors $testid"
 #     fi
 #     echo
 # done
