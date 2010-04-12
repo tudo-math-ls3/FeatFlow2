@@ -64,12 +64,13 @@ submits the job file to the scheduler.
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
   --corespernode <cores>, -c <cores>
-      Allows to define how many cores should be allocated on the cluster
-      per processor. If not being set, the standard behaviour is to allocate
-      all cores of a processor to prevent a processor from being shared
-      by multiple tasks. This is necessary e.g. for correct timings.
-      Manually specifying e.g. a 1 here allows to share one processor for
-      multiple tasks if e.g. the execution time is not important.
+      Allows to define how many cores should be allocated on the cluster per
+      compute node. If not being set, the standard behaviour is to allocate all
+      cores of a node to prevent a node from being shared by multiple
+      tasks. This is necessary e.g. for correct timings, to avoid getting memory
+      eaten away by others or malicious threaded concurrent jobs.  Manually
+      specifying e.g. a 1 here allows to share one compute node for multiple
+      tasks if e.g. the execution time is not important.
       Default: $CORESPERNODE
   --noschedule, --no-schedule
       Creates a job script but does not schedule the job. Used for
@@ -143,7 +144,7 @@ fb_readargs() {
 
 	  --corespernode|-c*)  # Number of cores per node to use
 	      CORESPERNODE="$2"
-	      PPN=":ppn=$CORESPERNODE";
+	      CORESPERQUADNODE="$2"
 	      echo "$0: Using $CORESPERNODE nodes"
 	      shift
 	      shift
