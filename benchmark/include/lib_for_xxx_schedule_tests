@@ -71,7 +71,7 @@ submits the job file to the scheduler.
       Manually specifying e.g. a 1 here allows to share one processor for
       multiple tasks if e.g. the execution time is not important.
       Default: $CORESPERNODE
-  --noschedule
+  --noschedule, --no-schedule
       Creates a job script but does not schedule the job. Used for
       debugging purposes.
   TEST ID
@@ -118,12 +118,12 @@ fb_readargs() {
 	      exit
 	      ;;
 
-	  --noschedule)    # help screen
+	  --noschedule|--no-schedule) # only create jobfile, don't submit to queue
 	      NOSCHEDULE=1
 	      shift
 	      ;;
 
-	  --overwrite-log-director*|-o)    # help screen
+	  --overwrite-log-director*|-o) # don't rename existing log directories
 	      OVERWRITE_LOG_DIRECTORY=1
 	      shift
 	      ;;
@@ -168,6 +168,13 @@ fb_readargs() {
 	      ;;
       esac
     done
+
+    # empty list of test IDs
+    if [ -z "$ALLTESTS" ]; then
+	echo "$0: No benchmark test IDs specified. Nothing done."
+	echo "For help invoke '$0 --help'."
+	exit
+    fi
 }
 
 
@@ -194,7 +201,8 @@ EOF
 #  Function: Delete files from previous invocations of this script
 fb_cleanUpPreviousRun() {
     echo $0": Clearing batch files, log and output files ..."
-    \rm -rf logs job.*
+    LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
+    \rm -rf ${LOG_BASE_DIRECTORY} ${JOBFILEPREFIX}.*.sh
 }
 
 
@@ -389,6 +397,19 @@ fb_getNTASKS() {
     # the number of parallel blocks required. Neither do we need to respect
     # a hardcoded number of processes, given by an environment variable.
     NTASKS=1
+}
+
+
+#  Function: Create log directory if necessary
+fb_createLogDir() {
+    directory="$1"  # IN
+
+    if [ -r $directory ]; then
+	echo $0": Log directory exists."
+    else
+	echo $0": Creating log directory."
+	mkdir $directory
+    fi
 }
 
 
