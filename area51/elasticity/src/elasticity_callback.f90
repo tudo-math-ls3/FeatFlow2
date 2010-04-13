@@ -47,8 +47,11 @@ module elasticity_callback
   integer, parameter :: SOLVER_BICGSTAB     = 3
   integer, parameter :: SOLVER_MG           = 4
   integer, parameter :: SOLVER_CG_MG        = 5
-  integer, parameter :: SOLVER_MG_CG        = 6
-  integer, parameter :: SOLVER_MG_BICGSTAB  = 7
+  integer, parameter :: SOLVER_BICGSTAB_MG  = 6
+  integer, parameter :: SOLVER_MG_CG        = 7
+  integer, parameter :: SOLVER_MG_BICGSTAB  = 8
+  integer, parameter :: SOLVER_BICGSTAB_MG_CG       =  9
+  integer, parameter :: SOLVER_BICGSTAB_MG_BICGSTAB = 10
 
   integer, parameter :: SMOOTHER_NO         = 0
   integer, parameter :: SMOOTHER_JACOBI     = 1

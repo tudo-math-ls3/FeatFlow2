@@ -98,8 +98,9 @@ element = Q1
 levelMin = 1
 levelMax = ${mg}
 
-# solver ('DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'MG_CG' or 'MG_BICGSTAB')
-solver = MG
+# solver ('DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'BICGSTAB_MG',
+#         'MG_CG', 'MG_BICGSTAB', 'BICGSTAB_MG_CG', 'BICGSTAB_MG_BICGSTAB')
+solver = BICGSTAB_MG_BICGSTAB
 
 # maximum number of iterations
 numIter = 1000
@@ -117,18 +118,15 @@ mgCycle = F
 numSmoothingSteps = 2
 
 # damping parameter (only for MG solver)
-damping = 0.7
+damping = 1.0
 
 # show deformation in visual output ('YES' or 'NO')
 showDeformation = YES
 
 # x- and y-coordinate of points where the FE solution is to be evaluated
-evalPoints(4) =
+evalPoints(2) =
 48.0
 60.0
-
-48.0
-44.0
 
 # reference solution values for u1 and u2 in evaluation points
 refSols(2) =

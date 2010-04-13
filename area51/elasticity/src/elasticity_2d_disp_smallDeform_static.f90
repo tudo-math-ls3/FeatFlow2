@@ -105,8 +105,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! solver nodes for main solver, preconditioner, smoother and coarse grid solver
-    type(t_linsolNode), pointer :: p_rsolver, p_rpreconditioner, p_rsmoother, &
-                                   p_relementaryPrec 
+    type(t_linsolNode), pointer :: p_rsolver, p_rmgSolver, p_rsmoother, p_relementaryPrec 
 
     ! array for the block structured system matrix
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
@@ -463,21 +462,25 @@ contains
         call linsol_initBiCGStab(p_rsolver, p_relementaryPrec, p_RfilterChain)
       endif
 
-    else if (rprob%csolver .eq. SOLVER_MG) then
-      ! MG solver
+    else
+      ! in every other case a multigrid solver is involved, so prepare this first
 
       ! init multigrid solver
-      call linsol_initMultigrid2(p_rsolver, rprob%ilevelMax-rprob%ilevelMin+1, &
+      call linsol_initMultigrid2(p_rmgSolver, rprob%ilevelMax - rprob%ilevelMin + 1, &
                                  p_RfilterChain)
 
       ! set up a coarse grid solver (always gridlevel 1)
-      call linsol_getMultigrid2Level(p_rsolver, 1, p_rlevelInfo)
+      call linsol_getMultigrid2Level(p_rmgSolver, 1, p_rlevelInfo)
       call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
-      
-      ! set up remaining levels
+
       do ilev = rprob%ilevelMin+1, rprob%ilevelMax
       
-        ! create elemantary smoother/preconditioner
+        ! add this multigrid level
+        call linsol_getMultigrid2Level(p_rmgSolver, ilev - rprob%ilevelMin+1, p_rlevelInfo)
+
+        ! set up elemantary smoother/preconditioner
+        ! This preconditioner is either used directly as smoother for the MG solver, or
+        ! as preconditioner for CG/BICG within a MG_CG/MG_BICG solver.
         if (rprob%celementaryPrec .eq. SMOOTHER_JACOBI) then
           call linsol_initJacobi(p_relementaryPrec)
         else if (rprob%celementaryPrec .eq. SMOOTHER_ILU) then
@@ -486,127 +489,75 @@ contains
           nullify(p_relementaryPrec)
         end if
 
-!BRAL: muss das im inneren der Schleife passieren?!? 
 
-        ! turn p_relementaryPrec into a smoother and specify number of smoothing steps
+        if (rprob%csolver .eq. SOLVER_MG_CG .or. &
+            rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG) then
+          ! set up CG solver and use the just created elementary prec. as preconditioner
+          call linsol_initCG(p_rsmoother, p_relementaryPrec, p_RfilterChain)
+
+        else if (rprob%csolver .eq. SOLVER_MG_BICGSTAB .or. &
+                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
+          ! set up BiCGstab solver and use the just created elem. prec. as preconditioner
+          call linsol_initBiCGStab(p_rsmoother, p_relementaryPrec, p_RfilterChain)
+
+        else if (rprob%csolver .eq. SOLVER_MG .or. &
+                 rprob%csolver .eq. SOLVER_CG_MG .or. &
+                 rprob%csolver .eq. SOLVER_BICGSTAB_MG) then
+          ! for the other MG solvers, set the elementary preconditioner as smoother
+          p_rsmoother => p_relementaryPrec
+        endif
+
+        ! turn p_rsmoother into a smoother and specify number of smoothing steps
         ! and damping parameter
-        call linsol_convertToSmoother(p_relementaryPrec, rprob%nsmoothingSteps, &
-                                      rprob%ddamp)
-        
-        ! add this multigrid level
-        call linsol_getMultigrid2Level(p_rsolver, ilev - rprob%ilevelMin+1, p_rlevelInfo)
-        ! use the same smoother for pre- and postsmoothing
-        p_rlevelInfo%p_rpresmoother => p_relementaryPrec
-        p_rlevelInfo%p_rpostsmoother => p_relementaryPrec
-        
-      end do
-
-      ! set cycle type
-      p_rsolver%p_rsubnodeMultigrid2%icycle = rprob%ccycle
-      
-    else if (rprob%csolver .eq. SOLVER_CG_MG) then
-      ! CG-MG solver
-
-      ! init multigrid solver
-      call linsol_initMultigrid2(p_rpreconditioner, rprob%ilevelMax - rprob%ilevelMin+1, &
-                                 p_RfilterChain)
-
-      ! set up a coarse grid solver (always gridlevel 1)
-      call linsol_getMultigrid2Level(p_rpreconditioner,1,p_rlevelInfo)
-      call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
-      
-      ! set up remaining levels
-      do ilev = rprob%ilevelMin+1, rprob%ilevelMax
-      
-        ! create elemantary smoother/preconditioner
-        if (rprob%celementaryPrec .eq. SMOOTHER_JACOBI) then
-          call linsol_initJacobi(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_ILU) then
-          call linsol_initILU0(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_NO) then
-          nullify(p_relementaryPrec)
-        end if
-
-        ! specify number of smoothing steps and damping parameter
-        call linsol_convertToSmoother(p_relementaryPrec, rprob%nsmoothingSteps, rprob%ddamp)
-        
-        ! add this multigrid level
-        call linsol_getMultigrid2Level(p_rpreconditioner, ilev-rprob%ilevelMin+1, p_rlevelInfo)
+        call linsol_convertToSmoother(p_rsmoother, rprob%nsmoothingSteps, rprob%ddamp)
+ 
         ! use the same smoother for pre- and postsmoothing
         p_rlevelInfo%p_rpresmoother => p_rsmoother
         p_rlevelInfo%p_rpostsmoother => p_rsmoother
-        
-      end do
 
-      ! set cycle type
-      p_rpreconditioner%p_rsubnodeMultigrid2%icycle = rprob%ccycle
-
-      ! adjust output verbosity
-      p_rpreconditioner%ioutputLevel = 0
-  
-      ! the MG preconditioner performs exactly one iteration
-      p_rpreconditioner%nmaxIterations = 1
-      p_rpreconditioner%depsRel = 1.0E-99_DP
-
-      ! create a CG solver which uses the MG solver created above as preconditioner
-      call linsol_initCG(p_rsolver,p_rpreconditioner,p_RfilterChain)
-
-    else if (rprob%csolver .eq. SOLVER_MG_CG .or. &
-             rprob%csolver .eq. SOLVER_MG_BICGSTAB ) then
-      
-      call linsol_initMultigrid2(p_rsolver, rprob%ilevelMax-rprob%ilevelMin+1, &
-                                 p_RfilterChain)
-
-      ! set up a coarse grid solver (always gridlevel 1)
-      call linsol_getMultigrid2Level(p_rsolver,1,p_rlevelInfo)
-      call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
-      
-      ! set up remaining levels
-      do ilev = rprob%ilevelMin+1, rprob%ilevelMax
-      
-        ! create elemantary smoother/preconditioner
-        if (rprob%celementaryPrec .eq. SMOOTHER_JACOBI) then
-          call linsol_initJacobi(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_ILU) then
-          call linsol_initILU0(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_NO) then
-          nullify(p_relementaryPrec)
-        end if
-
-        if (rprob%csolver .eq. SOLVER_MG_CG) then
-          ! create CG solver
-          call linsol_initCG(p_rsmoother, p_relementaryPrec, p_RfilterChain)
-        else if (rprob%csolver .eq. SOLVER_MG_BICGSTAB) then
-          ! create BiCGstab solver
-          call linsol_initBiCGStab(p_rsmoother, p_relementaryPrec, p_RfilterChain)
-        end if
-
-        ! specify number of smoothing steps and damping parameter
-        call linsol_convertToSmoother(p_rsmoother, rprob%nsmoothingSteps, rprob%ddamp)
- 
         ! adjust output verbosity
         if (ilev .eq. rprob%ilevelMax) then
           p_rsmoother%ioutputLevel = 1
         else
           p_rsmoother%ioutputLevel = 0
         end if
-        
-        ! add this multigrid level
-        call linsol_getMultigrid2Level(p_rsolver, ilev-rprob%ilevelMin+1, p_rlevelInfo)
-        ! use the same smoother for pre- and postsmoothing
-        p_rlevelInfo%p_rpresmoother => p_rsmoother
-        p_rlevelInfo%p_rpostsmoother => p_rsmoother
 
-      end do 
+      enddo
 
       ! set cycle type
-      p_rsolver%p_rsubnodeMultigrid2%icycle = rprob%ccycle
+      p_rmgSolver%p_rsubnodeMultigrid2%icycle = rprob%ccycle
 
-    else
-      call output_line('Invalid solver type!', OU_CLASS_ERROR, OU_MODE_STD, &
-                       'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
+      ! inquire if the MG solver is the outermost solver or if it works as preconditioner
+      ! of an outer Krylov solver
+      if (rprob%csolver .eq. SOLVER_CG_MG .or. &
+          rprob%csolver .eq. SOLVER_BICGSTAB_MG .or. &
+          rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG .or. &
+          rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
+        ! create a CG/BiCGstab solver which uses the MG solver created above as
+        ! preconditioner
+
+        ! adjust output verbosity of the multigrid solver
+        p_rmgSolver%ioutputLevel = 0
+    
+        ! the MG preconditioner performs exactly one iteration
+        p_rmgSolver%nmaxIterations = 1
+        p_rmgSolver%depsRel = 1.0E-99_DP
+
+        ! set up the outer Krylov solver
+        if (rprob%csolver .eq. SOLVER_CG_MG) then
+          call linsol_initCG(p_rsolver, p_rmgSolver, p_RfilterChain)
+        else if (rprob%csolver .eq. SOLVER_BICGSTAB_MG .or. &
+                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG .or. &
+                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
+          call linsol_initBICGSTAB(p_rsolver, p_rmgSolver, p_RfilterChain)
+        endif
+      else
+        ! otherwise define the MG solver as outer solver
+        p_rsolver => p_rmgSolver
+      endif
+    endif
+    ! in every case, p_rsolver denotes the outermost solver now
+
 
     ! adjust output verbosity of the outer solver
     p_rsolver%ioutputLevel = 1
@@ -824,13 +775,11 @@ contains
 
     ! Simulation finished! Clean up so that all the memory is available again.
 
-    ! release solver data and structure
+    ! release solver data and structure and the solver node itself
     call linsol_doneData(p_rsolver)
     call linsol_doneStructure(p_rsolver)
-    
-    ! release solver node and all subnodes attached to it
     call linsol_releaseSolver(p_rsolver)
-    
+
     ! release block matrix/vectors
     call lsysbl_releaseVector(rsol)
     call lsysbl_releaseVector(rtempBlock)
@@ -1002,6 +951,10 @@ contains
     call output_line('max. number of segments: ' // &
                      trim(sys_siL(rprob%nmaxNumBoundSegments,3)))
 
+
+!BRAL: Nutze die funktionalitaet der parlst_getvalue routinen, einen Default-Wert zu
+!setzen, falls Parameter nicht vorhanden.
+
     ! kind of equation (possible values: POISSON, ELASTICITY)
     call parlst_getvalue_string(rparams, '', 'equation', sstring)
     if (trim(sstring) .eq. 'Poisson') then
@@ -1156,11 +1109,20 @@ contains
     else if(trim(sstring) .eq. 'CG_MG') then
       rprob%csolver = SOLVER_CG_MG
       rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'BICGSTAB_MG') then
+      rprob%csolver = SOLVER_BICGSTAB_MG
+      rprob%bmgInvolved = .TRUE.
     else if(trim(sstring) .eq. 'MG_CG') then
       rprob%csolver = SOLVER_MG_CG
       rprob%bmgInvolved = .TRUE.
     else if(trim(sstring) .eq. 'MG_BICGSTAB') then
       rprob%csolver = SOLVER_MG_BICGSTAB
+      rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'BICGSTAB_MG_CG') then
+      rprob%csolver = SOLVER_BICGSTAB_MG_CG
+      rprob%bmgInvolved = .TRUE.
+    else if(trim(sstring) .eq. 'BICGSTAB_MG_BICGSTAB') then
+      rprob%csolver = SOLVER_BICGSTAB_MG_BICGSTAB
       rprob%bmgInvolved = .TRUE.
     else
       call output_line('invalid solver:' // trim(sstring), &
@@ -1187,9 +1149,11 @@ contains
       call parlst_getvalue_double(rparams, '', 'tolerance', rprob%dtolerance)
       call output_line('rel. stopping criterion: ' // trim(sys_sdEL(rprob%dtolerance,4)))
 
-      ! type of elementary preconditioner/smoother (possible values: JACOBI, ILU)
+      ! type of elementary preconditioner/smoother (possible values: NO, JACOBI, ILU)
       call parlst_getvalue_string(rparams, '', 'elementaryPrec', sstring)
-      if(trim(sstring) .eq. 'JACOBI') then
+      if(trim(sstring) .eq. 'NO') then
+        rprob%celementaryPrec = SMOOTHER_NO
+      else if(trim(sstring) .eq. 'JACOBI') then
         rprob%celementaryPrec = SMOOTHER_JACOBI
       else if(trim(sstring) .eq. 'ILU') then
         rprob%celementaryPrec = SMOOTHER_ILU
