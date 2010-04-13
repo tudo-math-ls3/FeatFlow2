@@ -5820,6 +5820,7 @@ contains
   ! ----------------------------------------------------------------------
 
 
+!<subroutine>
   pure subroutine getLocalMeshWidthQuad (dlocalH, dunorm,  XBETA1, &
                       XBETA2, JEL,Kvert,Dcorvg)
   !<description>
@@ -6006,7 +6007,7 @@ contains
     ! segment
     real(DP), intent(out) :: dlambda
   !</output>
-!<subroutine>
+!</subroutine>
 
 
     ! local variables
@@ -9637,6 +9638,7 @@ contains
   ! The local mesh width for the hexahedron
   real(DP), intent(out) :: dlocalH
 !</output>
+!</subroutine>
 
   ! local variables
   integer :: i,isrc
@@ -9846,6 +9848,7 @@ contains
   ! The local mesh width for the hexahedron
   real(DP), intent(out) :: dlocalH
 !</output>
+!</subroutine>
 
   ! local variables
   real(DP), dimension(3,8) :: Dv
