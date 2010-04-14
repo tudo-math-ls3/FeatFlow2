@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 5000
+nPart = 1000000
 
 
 #-------------------------------------------------------------------------------
@@ -105,10 +105,10 @@ particledensitymax = 0.39
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
 # 2 random diameter of the particles (particlediammin to particlediammax)
-idiampart = 2
+idiampart = 0
 
 # particle-diameter
-particlediam = 1e-9
+particlediam = 2e-6
 
 # particle diameter minimum in meter
 particlediammin = 1e-11

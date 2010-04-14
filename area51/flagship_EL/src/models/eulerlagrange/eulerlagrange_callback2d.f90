@@ -4303,6 +4303,26 @@ contains
 	integer, parameter :: itemax = 100000
 	real(DP) :: distToMid
 
+    ! Variables for raytrace2D
+	integer :: iresult
+	    ! =1 : The element was found successfully.
+        ! =0 : The raytracing search broke down inside of the domain. 
+        ! =-1: The search broke down because the domain was left.
+
+    integer :: ilastElement
+        !Last analysed element.
+        ! If iresult= 1: ilastElement = iel
+        ! If iresult= 0: Number of the last analysed element before the search
+        !                was stopped.
+        ! If iresult=-1: Number of the element through which the
+        !                domain was left. 
+    integer :: ilastEdge
+        ! Number of the last analysed edge. Range 1..NMT.
+        ! If iresult= 1: ilastEdge=0
+        ! If iresult= 0: Number of the last analysed edge before the search
+        !                was stopped.
+        ! If iresult=-1: Number of the edge through which the domain was left. 
+
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
    
@@ -4329,8 +4349,8 @@ contains
     case('bruteforce')
         call tsrch_getElem_BruteForce(particlepos,p_DvertexCoords,p_IverticesAtElement,iel)
     case('raytrace2D')
- !       call tsrch_getElem_raytrace2D(&
- !               Dpoint,rtriangulation,iel, iresult,ilastElement,ilastEdge,imaxIterations)
+        call tsrch_getElem_raytrace2D(&
+                particlepos,p_rtriangulation,rParticles%p_element(iPart),iresult,ilastElement,ilastEdge,itemax)
     case('midpoint')
 
 	    distToMid = 10000.0_dp
@@ -5015,7 +5035,7 @@ contains
             call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
         end if
 
-	end if	! If particles fly out of the domain (at outlet)
+	end if	! If particles fly out of the domain (at the outlet boundary)
 	
 	end do ! Loop over all particles
 	
@@ -5807,12 +5827,15 @@ contains
 	        elseif (iintersect == 0) then
             
             end if
-            
+       
        end if
 
 	end do Boundary_Search
 
-
+    if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
+    if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = maxval(p_DvertexCoords(1,:))
+    if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
+    if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
 
   end subroutine eulerlagrange_checkboundary
 
