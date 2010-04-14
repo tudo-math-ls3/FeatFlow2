@@ -188,6 +188,10 @@ contains
     integer :: imakeVideo, ifilenumber, ioutputtype
     
     real(dp) :: dvideotimestep, dvideotime
+    
+    integer, dimension(6) :: IdofGlob
+    
+    integer :: iel
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -321,7 +325,7 @@ contains
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
+                                   ielementType,CUB_G6_2D,rtriangulation, rboundary)
                                    
     ! Now copy this initialised block into the other ones
     ! But only create a derived copy, which shares the handles of the original one
@@ -550,7 +554,6 @@ if (iwithoutlimiting==2) ilimiter = 0
     !rcollection%SquickAccess(2) = cvariables
     rcollection%SquickAccess(1) = sic
 
-
     
     
     do ivar = 1, nvar2d
@@ -563,6 +566,17 @@ if (iwithoutlimiting==2) ilimiter = 0
     end do
     
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)    
+    
+    
+!    ! Kill all quadratic parts (needed, if unsteady initial condition is applied with dg_t2)
+!    call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
+!    do iel = 1, size(p_Ddata,1)/6
+!    ! Get global DOFs of the element
+!    call dof_locGlobMapping(rdiscretisation%RspatialDiscr(1), iel, IdofGlob(:))
+!        p_Ddata(IdofGlob(4:6)) = 0.0_dp
+!    end do
+    
+    
     
     rlinformconv%itermCount = 2
     rlinformconv%Idescriptors(1) = DER_DERIV_X
@@ -1044,7 +1058,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     write(*,*) 'Writing solution to file'
       
     ifilenumber = -1
-      
+     
     !select case (ioutputtype)
     !  case (1)
         ! Output solution to gmv file
@@ -1057,8 +1071,14 @@ if (iwithoutlimiting==2) ilimiter = 0
     write(*,*) 'Writing steady solution to file'
     ! And output the steady projection
      call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+     
+    ! Saving the solution DOFs to file
+    write(*,*) 'Writing DOFs to file'
+    call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
 
     
+!    sofile = 'l8'
+!    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
     ! Calculate the error to the reference function.

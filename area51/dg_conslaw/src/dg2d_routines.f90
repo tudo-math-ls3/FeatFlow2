@@ -1553,8 +1553,6 @@ end subroutine
   
   integer, dimension(3) :: IdofGlob
   
-  integer, dimension(5) :: Isep
-  
   integer :: NVBD
 
   ! Get pointer to the solution data
@@ -1615,25 +1613,6 @@ end subroutine
       duimax(nvt) = max(duc,duimax(nvt))
       duimin(nvt) = min(duc,duimin(nvt))
     end do
-    
-    
-!    NVE = 4
-!    
-!    do ivt = 1, NVE
-!      nvt = p_IverticesAtElement(ivt,iel)
-!      Dpoints(1,ivt) = p_DvertexCoords(1,nvt)
-!      Dpoints(2,ivt) = p_DvertexCoords(2,nvt)
-!      Ielements(ivt) = iel
-!    end do
-!    
-!    call fevl_evaluate (DER_FUNC, Dvalues(1:4), rvector, Dpoints(1:2,1:4), &
-!                          Ielements(1:4))
-!   do ivt = 1, NVE
-!      nvt = p_IverticesAtElement(ivt,iel)
-!      duimax(nvt) = max(duimax(nvt),Dvalues(ivt))
-!      duimin(nvt) = min(duimin(nvt),Dvalues(ivt))
-!    end do
-    
     
   end do
   
@@ -5361,8 +5340,8 @@ end subroutine
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DVec,da,db)
-          DR = buildMixedR(DVec,da,db)
+          DL = buildMixedL2(DVec,da,db)
+          DR = buildMixedR2(DVec,da,db)
         end if
         
         else if (idim==4) then
@@ -5375,8 +5354,8 @@ end subroutine
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DVec,-db,da)
-          DR = buildMixedR(DVec,-db,da)
+          DL = buildMixedL2(DVec,-db,da)
+          DR = buildMixedR2(DVec,-db,da)
         end if
         end if
         
@@ -5834,8 +5813,8 @@ real(dp), dimension(:) :: Dvalues
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DQchar,da,db)
-          DR = buildMixedR(DQchar,da,db)
+          DL = buildMixedL2(DQchar,da,db)
+          DR = buildMixedR2(DQchar,da,db)
         end if
         
         else if (idim==4) then
@@ -5848,8 +5827,8 @@ real(dp), dimension(:) :: Dvalues
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DQchar,-db,da)
-          DR = buildMixedR(DQchar,-db,da)
+          DL = buildMixedL2(DQchar,-db,da)
+          DR = buildMixedR2(DQchar,-db,da)
         end if
         end if
         
@@ -6235,8 +6214,8 @@ real(dp), dimension(:) :: Dvalues
 !        else
 !          da = da/dquo
 !          db = db/dquo
-!          DL = buildMixedL(DQchar,da,db)
-!          DR = buildMixedR(DQchar,da,db)
+!          DL = buildMixedL2(DQchar,da,db)
+!          DR = buildMixedR2(DQchar,da,db)
 !        end if
 !        
 !        else if (idim==4) then
@@ -6249,8 +6228,8 @@ real(dp), dimension(:) :: Dvalues
 !        else
 !          da = da/dquo
 !          db = db/dquo
-!          DL = buildMixedL(DQchar,-db,da)
-!          DR = buildMixedR(DQchar,-db,da)
+!          DL = buildMixedL2(DQchar,-db,da)
+!          DR = buildMixedR2(DQchar,-db,da)
 !        end if
 !        end if
 !        
@@ -6279,16 +6258,6 @@ real(dp), dimension(:) :: Dvalues
 !  Dalpha = 1.0_DP
   
   do ilim = ilimstart, 3
-  
-  select case (ilim)
-    case (1)
-      ideriv = DER_DERIV_X
-    case (2)
-      ideriv = DER_DERIV_Y
-    case (3)
-      ideriv = DER_FUNC
-  end select
-  
   
   do iel = 1, NEL
    
@@ -6350,7 +6319,7 @@ real(dp), dimension(:) :: Dvalues
       
       if (iidx.ne.0) then
       ! Dimensional splitting
-      do idim = 3, 4
+      do idim = 1, 2
         ! Now we need the trafo matrices
         if(idim<3) then
         DL = buildInvTrafo(DQchar,idim)
@@ -6365,8 +6334,8 @@ real(dp), dimension(:) :: Dvalues
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DQchar,da,db)
-          DR = buildMixedR(DQchar,da,db)
+          DL = buildMixedL2(DQchar,da,db)
+          DR = buildMixedR2(DQchar,da,db)
         end if
         
         else if (idim==4) then
@@ -6379,8 +6348,8 @@ real(dp), dimension(:) :: Dvalues
         else
           da = da/dquo
           db = db/dquo
-          DL = buildMixedL(DQchar,-db,da)
-          DR = buildMixedR(DQchar,-db,da)
+          DL = buildMixedL2(DQchar,-db,da)
+          DR = buildMixedR2(DQchar,-db,da)
         end if
         end if
         
@@ -6693,6 +6662,130 @@ real(dp), dimension(:,:,:,:) :: Dvalues
   deallocate(Dpoints,DpointsRef)
   
   end subroutine
+  
+  
+  
+  
+  !****************************************************************************
+  
+!<subroutine>  
+  
+   subroutine saveSolutionData(rvector,sofile,ifilenumber)
+
+!<description>
+
+  ! Output a DG vector to gmv format
+
+!</description>
+
+!<input>
+ 
+  ! The solution vector to output
+  type(t_vectorScalar), intent(in) :: rvector
+  
+  ! Name of output file
+  character (LEN=SYS_STRLEN), intent(in) :: sofile
+  
+  ! Filenumber
+  integer, intent(in) :: ifilenumber
+  
+    
+!</input>
+
+!<output>
+!</output>
+  
+!</subroutine>
+  ! local variables
+  
+  integer :: i, iunit, ilength
+  character (LEN=10) :: sfilenumber
+  real(dp), dimension(:), pointer :: p_Ddata
+  
+  ! Get pointers to the data form the truangulation
+  call lsyssc_getbase_double(rvector,p_Ddata)
+
+  ! Get the length of the data array
+  ilength = size(p_Ddata,1)  
+  
+  
+  ! ************ WRITE TO FILE PHASE *******************
+  
+  iunit = sys_getFreeUnit()
+  open(iunit, file=trim(sofile) // '.data')
+ 
+  
+  write(iunit,'(I10)') ilength
+
+  do i=1, ilength
+    write(iunit,'(E25.16E3)') p_Ddata(i)
+  end do
+  
+  close(iunit)
+
+
+
+end subroutine
+
+
+
+
+!****************************************************************************
+  
+!<subroutine>  
+  
+   subroutine loadSolutionData(rvector,sofile)
+
+!<description>
+
+  ! Loads the DOFs of a scalar vector
+
+!</description>
+
+!<input>
+ 
+  ! The solution vector to output
+  type(t_vectorScalar), intent(inout) :: rvector
+  
+  ! Name of output file
+  character (LEN=SYS_STRLEN), intent(in) :: sofile
+      
+!</input>
+
+!<output>
+!</output>
+  
+!</subroutine>
+  ! local variables
+  
+  integer :: i, iunit, ilength
+  character (LEN=10) :: sfilenumber
+  real(dp), dimension(:), pointer :: p_Ddata
+  
+  ! Get pointers to the data form the truangulation
+  call lsyssc_getbase_double(rvector,p_Ddata)
+
+  ! Get the length of the data array
+  ilength = size(p_Ddata,1)  
+  
+  
+  ! ************ WRITE TO FILE PHASE *******************
+  
+  iunit = sys_getFreeUnit()
+  open(iunit, file=trim(sofile) // '.data')
+ 
+  
+  read(iunit,'(I10)') ilength
+
+  do i=1, ilength
+    read(iunit,'(E25.16E3)') p_Ddata(i)
+  end do
+  
+  close(iunit)
+
+
+
+end subroutine
   
   
 end module

@@ -332,16 +332,42 @@ contains
        aLambda(3,3) = abs(u+c)
     else
        ! build aLambda in y direction
-       aLambda(1,1) = abs(v-c)
+       aLambda(1,1) = min(0.1_dp,abs(v-c))
        aLambda(2,1) = 0.0_DP
        aLambda(3,1) = 0.0_DP
        aLambda(1,2) = 0.0_DP
-       aLambda(2,2) = abs(v)
+       aLambda(2,2) = min(0.1_dp,abs(v))
        aLambda(3,2) = 0.0_DP
        aLambda(1,3) = 0.0_DP
        aLambda(2,3) = 0.0_DP
-       aLambda(3,3) = abs(v+c)
+       aLambda(3,3) = min(0.1_dp,abs(v+c))
     end if
+    
+    
+!    ! With entropy fix
+!    if (d==1) then
+!       ! build aLambda in x direction
+!       aLambda(1,1) = min(0.1_dp,abs(u-c))
+!       aLambda(2,1) = 0.0_DP
+!       aLambda(3,1) = 0.0_DP
+!       aLambda(1,2) = 0.0_DP
+!       aLambda(2,2) = min(0.1_dp,abs(u))
+!       aLambda(3,2) = 0.0_DP
+!       aLambda(1,3) = 0.0_DP
+!       aLambda(2,3) = 0.0_DP
+!       aLambda(3,3) = min(0.1_dp,abs(u+c))
+!    else
+!       ! build aLambda in y direction
+!       aLambda(1,1) = min(0.1_dp,abs(v-c))
+!       aLambda(2,1) = 0.0_DP
+!       aLambda(3,1) = 0.0_DP
+!       aLambda(1,2) = 0.0_DP
+!       aLambda(2,2) = min(0.1_dp,abs(v))
+!       aLambda(3,2) = 0.0_DP
+!       aLambda(1,3) = 0.0_DP
+!       aLambda(2,3) = 0.0_DP
+!       aLambda(3,3) = min(0.1_dp,abs(v+c))
+!    end if
 
   end function buildaLambda
 
@@ -566,5 +592,179 @@ contains
   end function 
 
 
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    ! This routine builds the right eigenvectors for the mixed jacobian
+  function buildMixedR2(Q,a,b) result(R)
+
+    ! Right eigenvectors
+    real(DP), dimension(3,3)	:: R
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, h, u, v, c
+    
+    ! Temp array
+    real(dp), dimension(3) :: T
+    
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = sqrt(h*g)
+    
+        
+      ! Build matrix of right eigenvectors
+      R(1,1) = 1.0_DP
+      R(2,1) = u-c*a
+      R(3,1) = v-c*b
+      R(1,2) = 0.0_dp
+      R(2,2) = b
+      R(3,2) = -a
+      R(1,3) = 1.0_DP
+      R(2,3) = u+c*a
+      R(3,3) = v+c*b
+
+    
+  end function 
+  
+  
+  
+  ! This routine builds the diagonalmatrix of the absolut value of the eigenvalues
+  function buildMixedaLambda2(Q,a,b) result(aLambda)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: aLambda
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, lambda1, lambda2, lambda3, u, v, h, c
+    
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = sqrt(h*g)
+    
+    ! Calculate eigenvalues
+    lambda2 = u*a+v*b
+    lambda1 = lambda2-c
+    lambda3 = lambda2+c
+    
+    aLambda = 0.0_dp
+    
+    ! Build matrix of left eigenvectors
+    aLambda(1,1) = abs(lambda1)
+    aLambda(2,2) = abs(lambda2)
+    aLambda(3,3) = abs(lambda3)
+    
+  end function 
+
+
+  ! This routine builds the left eigenvectors for the mixed jacobian
+  function buildMixedL2(Q,a,b) result(L)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: L
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, h, u, v, c
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = sqrt(h*g)
+
+    c1=0.5_dp/c
+    
+    
+       ! Build matrix of left eigenvectors
+       L(1,1) = c1*(u*a+v*b)+0.5_dp
+       L(2,1) = v*a-u*b
+       L(3,1) = -c1*(u*a+v*b)+0.5_dp
+       L(1,2) = -c1*a
+       L(2,2) = -b
+       L(3,2) = c1*a
+       L(1,3) = -c1*b
+       L(2,3) = -a
+       L(3,3) = c1*b
+    
+  end function 
+  
+  
+  
+  
+  ! This routine returns the eigenvalues of the jacobi matrix in direction d
+  ! d=1: x-direction, d=2: y-direction
+  function buildEigenvalues2(Q,a,b) result(Eigenvalues)
+
+    ! The jacobi matrix in direction d
+    real(DP), dimension(3)	:: Eigenvalues
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Q
+
+    ! the direction: d=1: x-direction, d=2: y-direction
+    real(dp), intent(IN)                     :: a,b
+
+    ! speed of gravitational waves
+    real(DP)                                :: c
+
+    ! temporary variable
+    real(DP)                                :: coeff, h, u, v, lambda1, lambda2, lambda3
+
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = sqrt(h*g)
+    
+    ! Calculate eigenvalues
+    lambda2 = u*a+v*b
+    lambda1 = lambda2-c
+    lambda3 = lambda2+c
+    
+    
+    ! build eigenvalues in y direction
+    Eigenvalues(1) = lambda1
+    Eigenvalues(2) = lambda2
+    Eigenvalues(3) = lambda3
+    
+
+  end function buildEigenvalues2
+    
+    
+    
+    
+    
+    
+    
+    
+    
     
 end module

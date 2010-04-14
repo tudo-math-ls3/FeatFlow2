@@ -7,8 +7,8 @@ nlmax = 6
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
-#prmname = ./pre/zehnm.prm
+#prmname = ./pre/QUAD.prm
+prmname = ./pre/zehnm.prm
 #prmname = ./pre/zylinderuse.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
@@ -20,8 +20,8 @@ prmname = ./pre/QUAD.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
-#triname = ./pre/zehnm.tri
+#triname = ./pre/QUAD.tri
+triname = ./pre/zehnm.tri
 #triname = ./pre/zylinderuse.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
@@ -44,7 +44,7 @@ FEkind = 2
 dt = 0.001
 
 # Final time
-ttfinal = 0.00
+ttfinal = 1.0
 
 
 [SOLVER]

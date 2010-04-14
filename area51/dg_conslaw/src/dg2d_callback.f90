@@ -92,6 +92,8 @@ module dg2d_callback
   use domainintegration
   use fparser
   use dg2d_problem
+  use triasearch
+  use linearsystemscalar
   
   implicit none
 
@@ -339,6 +341,147 @@ integer :: iunit,i,j
 real(dp),dimension(4000000) :: Dreference
 real(dp) :: r,n,r1
 
+
+
+
+
+
+
+
+
+
+!    ! Compare to less refined solution
+!
+!      ! An object for saving the domain:
+!    type(t_boundary) :: rboundary
+!    
+!    ! An object for saving the triangulation on the domain
+!    type(t_triangulation) :: rtriangulation
+!    
+!    type(t_vectorScalar) :: rsolLoaded
+!    
+!    ! An object specifying the discretisation.
+!    ! This contains also information about trial/test functions,...
+!    type(t_blockDiscretisation) :: rdiscretisation2
+!    
+!    integer :: NLMAX
+!    
+!    real(DP), dimension(:), pointer :: p_Ddata
+!    
+!    integer :: ielementtype, iel, ielement,i1,i2,i3
+!    
+!    character (LEN=SYS_STRLEN) :: sofile
+!    
+!    integer :: ilength
+!  
+!  
+!  
+!    
+!    
+!    ielementtype = EL_DG_T2_2D
+!    
+!    NLMAX = 7
+!    
+!    sofile = 'l7.data'
+!    
+!    call boundary_read_prm(rboundary, './pre/QUAD.PRM')
+!    
+!    ! Now read in the basic triangulation.
+!    call tria_readTriFile2D (rtriangulation, './pre/QUAD.TRI', rboundary, .true.)  
+!    
+!    
+!      
+!    
+!    ! Refine it.
+!    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+!    
+!    ! And create information about adjacencies and everything one needs from
+!    ! a triangulation.
+!    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!  
+!    ! Now we can start to initialise the discretisation. At first, set up
+!    ! a block discretisation structure that specifies the blocks in the
+!    ! solution vector. In this simple problem, we only have one block.
+!    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
+!                                 rtriangulation, rboundary)
+!    
+!    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+!    ! structures for every component of the solution vector.
+!    ! Initialise the first element of the list to specify the element
+!    ! and cubature rule for this solution component:
+!    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
+!                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
+!                 
+!    
+!    
+!    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
+!    
+!    
+!    
+!  ! Get pointers to the data form the truangulation
+!  call lsyssc_getbase_double(rsolloaded,p_Ddata)
+!
+!  ! Get the length of the data array
+!  ilength = size(p_Ddata,1)  
+!  
+!  
+!  ! ************ WRITE TO FILE PHASE *******************
+!  
+!  iunit = sys_getFreeUnit()
+!  open(iunit, file=trim(sofile))
+! 
+!  
+!  read(iunit,'(I10)') ilength
+!
+!  do i=1, ilength
+!    read(iunit,'(E25.16E3)') p_Ddata(i)
+!  end do
+!  
+!  close(iunit)
+!    
+!    
+!    
+!    do iel = 1, nelements
+!      ielement=0
+!      call tsrch_getElem_raytrace2D (&
+!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,10000)
+!      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
+!                                Dpoints=Dpoints(:,:,iel))
+!    end do
+!
+!            
+!    
+!    call lsyssc_releaseVector (rsolloaded)
+!        
+!    call spdiscr_releaseBlockDiscr(rdiscretisation2)
+!
+!    ! Release the triangulation. 
+!    call tria_done (rtriangulation)
+!        
+!    ! Finally release the domain, that is it.
+!    call boundary_release (rboundary)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ! Circular dambreak
 !
 !iunit = sys_getFreeUnit()
@@ -482,6 +625,17 @@ real(dp) :: r,n,r1
 !    Dvalues = 0.0_DP
 !  end select
 
+
+
+!            ! Rotating hill
+!            Dvalues(:,:)= 0.0_dp
+!            do i = 1, npointsperelement
+!            do j = 1, nelements
+!            r1 = sqrt(((Dpoints(1,i,j)-0.5_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+!            Dvalues(i,j)=0.5_dp*exp(-10.0_dp*r1)
+!            end do
+!            end do
+
 !            ! Zalesak test
 !            Dvalues(:,:)= 0.0_dp
 !            do i = 1, npointsperelement
@@ -506,14 +660,14 @@ real(dp) :: r,n,r1
 !            end do
 !            end do
             
-            ! Zalesak test smooth
-            Dvalues(:,:)= 0.0_dp
-            do i = 1, npointsperelement
-            do j = 1, nelements
-            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
-            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
-            end do
-            end do
+!            ! Zalesak test smooth
+!            Dvalues(:,:)= 0.0_dp
+!            do i = 1, npointsperelement
+!            do j = 1, nelements
+!            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+!            end do
+!            end do
   
 
   end subroutine
@@ -1574,6 +1728,12 @@ integer :: iel
             ! Cone 2
             !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
             
+            
+!            ! Rotating hill
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            Dcoefficients(1,ipoint,iel)=0.5_dp*exp(-10.0_dp*r1)
+            
+            
 !            ! Zalesak
 !            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
 !            if ((r1.le.0.15_dp).and.((abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).or.(Dpoints(2,ipoint,iel).ge.0.85_dp))) Dcoefficients(1,ipoint,iel)=1.0_dp
@@ -1588,9 +1748,9 @@ integer :: iel
 !            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
 !            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
 
-            ! Zalesak smooth
-            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
-            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+!            ! Zalesak smooth
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
             
             ! Circular convection
             !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
@@ -1673,6 +1833,14 @@ integer :: iel
 !            else
 !              Dcoefficients (1,ipoint,iel)=0.5_dp
 !            end if
+
+            ! Circular Dambreak small
+            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+              Dcoefficients (1,ipoint,iel)=1.5_dp
+            else
+              Dcoefficients (1,ipoint,iel)=1.0_dp
+            end if
+
             
           end do
         end do
@@ -2195,6 +2363,8 @@ integer :: iel
   real(dp), dimension(3,3) :: DL, DR, DaLambda
   real(dp) :: dmaxEV
   
+  real(dp),dimension(3,3) :: C
+  
   
   
   
@@ -2278,41 +2448,41 @@ integer :: iel
       end if
       
     
-      ! *** Upwind flux ***
-      
-      ! Get solution values on the in and outside
-      DQi = Dsolutionvalues(1,ipoint,iel,:)
-      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-      
-      ! Get fluxes on the in and outside in x- and y-direction
-      DF1i = buildFlux(DQi,1)
-      DF1a = buildFlux(DQa,1)
-      DF2i = buildFlux(DQi,2)
-      DF2a = buildFlux(DQa,2)
-            
-      ! Calculate Roevalues
-      DQroe = calculateQroe(DQi,DQa)
-      
-      ! First calculate flux in x-direction
-      DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
-                   normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
-                   !sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
-
-                   
-      !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
-      
-      ! First calculate flux in y-direction
-      DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
-                   normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
-                   !sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
-      
-      !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
-                   
-      ! Add the fluxes of the two dimensional directions to get Flux * normal
-      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-      
-      ! Save the calculated flux
-      DfluxValues(:,1,ipoint,iel) = DFlux
+!      ! *** Upwind flux ***
+!      
+!      ! Get solution values on the in and outside
+!      DQi = Dsolutionvalues(1,ipoint,iel,:)
+!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+!      
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DF1i = buildFlux(DQi,1)
+!      DF1a = buildFlux(DQa,1)
+!      DF2i = buildFlux(DQi,2)
+!      DF2a = buildFlux(DQa,2)
+!            
+!      ! Calculate Roevalues
+!      DQroe = calculateQroe(DQi,DQa)
+!      
+!      ! First calculate flux in x-direction
+!      DFx= 0.5_dp*(DF1i+DF1a -& ! centered part
+!                   normal(1,iel)*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1),matmul(buildinvTrafo(DQroe,1),(dQa-dQi))))) ! artificial diffusion
+!                   !sign(1.0_dp,normal(1,iel))*matmul(buildTrafo(DQroe,1),matmul(buildaLambda(DQroe,1), matmul(buildinvTrafo(DQroe,1),(dQa-dQi)))))! artificial diffusion
+!
+!                   
+!      !DFx= 0.5_dp*(DF1i+DF1a - sign(1.0_dp,normal(1,iel))* maxval(abs(buildEigenvalues(DQroe,1)))*(dQa-dQi))
+!      
+!      ! First calculate flux in y-direction
+!      DFy= 0.5_dp*(DF2i+DF2a -& ! centered part
+!                   normal(2,iel)*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
+!                   !sign(1.0_dp,normal(2,iel))*matmul(buildTrafo(DQroe,2),matmul(buildaLambda(DQroe,2),matmul(buildinvTrafo(DQroe,2),(dQa-dQi))))) ! artificial diffusion
+!      
+!      !DFy= 0.5_dp*(DF2i+DF2a - sign(1.0_dp,normal(2,iel))* maxval(abs(buildEigenvalues(DQroe,2)))*(dQa-dQi))
+!                   
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+!      
+!      ! Save the calculated flux
+!      DfluxValues(:,1,ipoint,iel) = DFlux
       
 !      ! *** centered flux ***
 !      ! Get solution values on the in and outside
@@ -2340,7 +2510,7 @@ integer :: iel
 !      end do
 !      end if
 
-!      ! *** Local Lax-Friedrichs flux *** (NOT WORKING)
+!      ! *** Local Lax-Friedrichs flux ***
 !      DQi = Dsolutionvalues(1,ipoint,iel,:)
 !      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
 !      
@@ -2363,45 +2533,45 @@ integer :: iel
 !      DFlux = 0.5_dp*(DFx*normal(1,iel) + DFy*normal(2,iel))
 !      
 !      ! Get estimate for biggest eigenvalue
-!      dmaxEV = abs(normal(1,iel)*maxval(abs(buildEigenvalues(DQroe,1)))) + abs(normal(2,iel)*maxval(abs(buildEigenvalues(DQroe,2))))
+!      dmaxEV = maxval(buildEigenvalues2(DQRoe,normal(1,iel),normal(2,iel)))
 !      DFlux = DFlux - dmaxEV*(DQa - DQi)
 !      
 !      ! Save the calculated flux
 !      DfluxValues(:,1,ipoint,iel) = DFlux
 
-!      ! *** Upwind flux without dimensional splitting ***
-!      
-!      ! Get solution values on the in and outside
-!      DQi = Dsolutionvalues(1,ipoint,iel,:)
-!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
-!      
-!      ! Get fluxes on the in and outside in x- and y-direction
-!      DF1i = buildFlux(DQi,1)
-!      DF1a = buildFlux(DQa,1)
-!      DF2i = buildFlux(DQi,2)
-!      DF2a = buildFlux(DQa,2)
-!            
-!      ! Calculate Roevalues
-!      DQroe = calculateQroe(DQi,DQa)
-!      
-!      ! First calculate flux in x-direction
-!      DFx= 0.5_dp*(DF1i+DF1a)
-!      
-!      ! First calculate flux in y-direction
-!      DFy= 0.5_dp*(DF2i+DF2a)
-!      
-!      ! Add the fluxes of the two dimensional directions to get Flux * normal
-!      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
-!      
-!      ! Add artificial diffusion
-!      DL       = buildMixedL       (DQRoe,normal(1,iel),normal(2,iel))
-!      DaLambda = buildMixedaLambda (DQRoe,normal(1,iel),normal(2,iel))
-!      DR       = buildMixedR       (DQRoe,normal(1,iel),normal(2,iel))
-!      
-!      ! Save the calculated flux
-!      DfluxValues(:,1,ipoint,iel) = DFlux - 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQa - DQi)))!sign(1.0_dp,normal(1,iel))*(DQa - DQi))))
+      ! *** Upwind flux without dimensional splitting (Roe-Flux) ***
       
+      ! Get solution values on the in and outside
+      DQi = Dsolutionvalues(1,ipoint,iel,:)
+      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
       
+      ! Get fluxes on the in and outside in x- and y-direction
+      DF1i = buildFlux(DQi,1)
+      DF1a = buildFlux(DQa,1)
+      DF2i = buildFlux(DQi,2)
+      DF2a = buildFlux(DQa,2)
+            
+      ! Calculate Roevalues
+      DQroe = calculateQroe(DQi,DQa)
+      
+      ! First calculate flux in x-direction
+      DFx= 0.5_dp*(DF1i+DF1a)
+      DFx = buildFlux(DQRoe,1)
+      
+      ! First calculate flux in y-direction
+      DFy= 0.5_dp*(DF2i+DF2a)
+      DFy = buildFlux(DQRoe,2)
+      
+      ! Add the fluxes of the two dimensional directions to get Flux * normal
+      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+      
+      ! Add artificial diffusion
+      DL       = buildMixedL2       (DQRoe,normal(1,iel),normal(2,iel))
+      DaLambda = buildMixedaLambda2 (DQRoe,normal(1,iel),normal(2,iel))
+      DR       = buildMixedR2       (DQRoe,normal(1,iel),normal(2,iel))
+            
+      ! Save the calculated flux
+      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
       
     end do ! ipoint
   end do ! iel
