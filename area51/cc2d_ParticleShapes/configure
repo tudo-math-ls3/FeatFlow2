@@ -1,0 +1,9 @@
+../../bin/configure \
+	--appname=ParticleShapesMovingFrame \
+	--programfile=src/cc2d_pf.f90 \
+	--srclist_app="`ls src/*.f90`" \
+	--apponlyflags="-DFEAT2_NURBS" \
+	--id=pc64-opteronx2-linux-gcc-blas \
+	--buildlib="umfpack,amd,splib,lapack,blas,inshape2d" \
+	--libs="-lumfpack,-lamd,-lsplib,-llapack,-lblas,-linshape2d,-lstdc++"
+        
