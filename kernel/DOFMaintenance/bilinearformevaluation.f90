@@ -201,6 +201,45 @@
 !#  other parts of the domain may be assembled with the standard cubature 
 !#  formula.
 !#
+!# 3.) How to specify the cubature formula if I want to assemble the matrix.
+!#
+!#  If no cubature formula is specified, a default cubature formula is used.
+!#  However, if you want to prescribe a special cubature formula for the
+!#  assembly, this is possible in the extended version of the matrix assembly
+!#  using the so called "extended scalar assembly info block" structure.
+!#
+!#  The following code demonstrates how to do that:
+!#
+!#  <code>
+!#    ! We assume for this example: 2D QUAD mesh
+!# 
+!#    type(t_extScalarAssemblyInfoBlock) :: rassemblyInfo
+!# 
+!#    ! Get a structure and modify the cubature formulas.
+!#    call easminfo_createDefInfoStructure (rdiscretisation,rassemblyInfo)
+!#    rassemblyInfo%p_RinfoBlocks(:)%ccubature = CUB_G4_2D
+!# 
+!#    ! Assemble a matrix based on this.
+!#    call bilf_buildMatrixScalar2 (rform,.true.,rmatrix,&
+!#        rscalarAssemblyInfo=rassemblyInfo)
+!# 
+!#    ! Release the info structure.
+!#    call easminfo_releaseInfoStructure (rassemblyInfo)
+!#  </code>
+!#
+!#  Using the easminfo_createDefInfoStructure routine, you first have
+!#  to create a default assembly info structure. This is configured to use
+!#  the default cubature formula.
+!#  Then, modify all subblocks in the rassemblyInfo%p_RinfoBlocks array
+!#  to use your cubature formula of choice (every block corresponds to one
+!#  element distribution, so to say to one element in the mesh; example:
+!#  if you use a mixed tri/quad mesh, you have at least two blocks, one for
+!#  triangles and one for quads; note that each block needs a different 
+!#  cubature formula!!!).
+!#  Afterwards, call bilf_buildMatrixScalar2 to create the matrix and 
+!#  release the info structure with easminfo_releaseInfoStructure at the
+!#  end. That's it.
+!#
 !# </purpose>
 !##############################################################################
 
@@ -226,6 +265,7 @@ module bilinearformevaluation
   use storage
   use transformation
   use triangulation
+  use extstdassemblyinfo
   
   implicit none
   
@@ -517,7 +557,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrixScalar (rform,bclear,rmatrixScalar,&
-                                     fcoeff_buildMatrixSc_sim,rcollection)
+      fcoeff_buildMatrixSc_sim,rcollection)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -579,7 +619,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
   end if
-
+  
   ! Do we have a uniform triangulation? Would simplify a lot...
   select case (rmatrixScalar%p_rspatialDiscrTest%ccomplexity)
   case (SPDISC_UNIFORM) 
@@ -591,7 +631,7 @@ contains
       case (LSYSSC_MATRIX9)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&  
-                                         fcoeff_buildMatrixSc_sim,rcollection)
+              fcoeff_buildMatrixSc_sim,rcollection)
         !ELSE
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
         !END IF
@@ -606,7 +646,7 @@ contains
         
         ! Create the matrix in structure 9
         call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixBackup,&  
-                                       fcoeff_buildMatrixSc_sim,rcollection)
+            fcoeff_buildMatrixSc_sim,rcollection)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -638,7 +678,7 @@ contains
       case (LSYSSC_MATRIX9)
         !IF (PRESENT(fcoeff_buildMatrixSc_sim)) THEN
           call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&  
-                                         fcoeff_buildMatrixSc_sim,rcollection)
+              fcoeff_buildMatrixSc_sim,rcollection)
         !ELSE
         !  CALL bilf_buildMatrix9d_conf2 (rform,bclear,rmatrixScalar)
         !END IF
@@ -654,7 +694,7 @@ contains
         
         ! Create the matrix in structure 9
         call bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixBackup,&  
-                                       fcoeff_buildMatrixSc_sim,rcollection)
+            fcoeff_buildMatrixSc_sim,rcollection)
                                        
         ! Convert back to structure 7
         call lsyssc_convertMatrix (rmatrixBackup,LSYSSC_MATRIX7)
@@ -680,7 +720,7 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
   end select
-
+  
   end subroutine
   
   !****************************************************************************
@@ -3959,7 +3999,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrix9d_conf3 (rform,bclear,rmatrixScalar,&
-                                       fcoeff_buildMatrixSc_sim,rcollection)
+      fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -3994,6 +4034,11 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
+
+  ! A scalar assembly structure that gives additional information
+  ! about how to set up the matrix (e.g. cubature formula). If not specified,
+  ! default settings are used.
+  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
 !</input>
 
 !<inputoutput>
@@ -6258,7 +6303,7 @@ contains
 !<subroutine>
 
   subroutine bilf_buildMatrixScalar2 (rform, bclear, rmatrix,&
-                                      fcoeff_buildMatrixSc_sim, rcollection)
+      fcoeff_buildMatrixSc_sim,rcollection,rscalarAssemblyInfo)
   
 !<description>
   ! This routine calculates the entries of a finite element matrix.
@@ -6302,6 +6347,11 @@ contains
   ! Must be present if the matrix has nonconstant coefficients!
   include 'intf_coefficientMatrixSc.inc'
   optional :: fcoeff_buildMatrixSc_sim
+
+  ! OPTIONAL: A scalar assembly structure that gives additional information
+  ! about how to set up the matrix (e.g. cubature formula). If not specified,
+  ! default settings are used.
+  type(t_extScalarAssemblyInfo), intent(in), optional, target :: rscalarAssemblyInfo
 !</input>
 
 !<inputoutput>
@@ -6313,8 +6363,10 @@ contains
 
   ! local variables
   type(t_bilfMatrixAssembly) :: rmatrixAssembly
-  integer :: ielementDistr
+  integer :: ielementDistr,iinfoBlock
   integer, dimension(:), pointer :: p_IelementList
+  type(t_extScalarAssemblyInfo), target :: rlocalScalarAssemblyInfo
+  type(t_extScalarAssemblyInfo), pointer :: p_rscalarAssemblyInfo
   
   ! The matrix must be unsorted, otherwise we can not set up the matrix.
   ! Note that we cannot switch off the sorting as easy as in the case
@@ -6331,6 +6383,16 @@ contains
     call output_line ('No discretisation associated!', &
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
+  end if
+  
+  ! If we do not have it, create a scalar assembly info structure that
+  ! defines how to do the assembly.
+  if (.not. present(rscalarAssemblyInfo)) then
+    call easminfo_createDefInfoStructure(rmatrix%p_rspatialDiscrTrial,&
+        rlocalScalarAssemblyInfo,0)
+    p_rscalarAssemblyInfo => rlocalScalarAssemblyInfo
+  else
+    p_rscalarAssemblyInfo => rscalarAssemblyInfo
   end if
 
   ! Do we have a uniform triangulation? Would simplify a lot...
@@ -6350,23 +6412,34 @@ contains
           if (bclear) call lsyssc_clearMatrix (rmatrix)
         end if
       
-        ! Loop over the element distributions.
-        do ielementDistr = 1,rmatrix%p_rspatialDiscrTrial%inumFESpaces
+        ! Loop over the element blocks to discretise
+        do iinfoBlock = 1,p_rscalarAssemblyInfo%ninfoBlockCount
+        
+          ! Get the elemetn distribution of that block.
+          ielementDistr = p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ielementDistr
 
           ! Check if element distribution is empty
-          if (rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%NEL .le. 0 ) cycle
+          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL .le. 0 ) cycle
 
-          ! Get list of elements present in the element distribution
-          call storage_getbase_int(&
-              rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
-              p_IelementList)
+          ! Get list of elements present in the element distribution.
+          ! If the handle of the info block structure is not associated,
+          ! take all elements of the corresponding element distribution.
+          if (p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList .ne. ST_NOHANDLE) then
+            call storage_getbase_int(&
+                p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%h_IelementList,&
+                p_IelementList)
+          else
+            call storage_getbase_int(&
+                rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%h_IelementList,&
+                p_IelementList)
+          end if
 
           ! Initialise a matrix assembly structure for that element distribution
           call bilf_initAssembly(rmatrixAssembly,rform,&
               rmatrix%p_rspatialDiscrTest%RelementDistr(ielementDistr)%celement,&
               rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%celement,&
-              rmatrix%p_rspatialDiscrTrial%RelementDistr(ielementDistr)%ccubTypeBilForm,&
-              min(BILF_NELEMSIM,size(p_IelementList)))
+              p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%ccubature,&
+              min(BILF_NELEMSIM,p_rscalarAssemblyInfo%p_RinfoBlocks(iinfoBlock)%NEL))
               
           ! Assemble the data for all elements in this element distribution
           call bilf_assembleSubmeshMatrix9 (rmatrixAssembly,rmatrix,&
@@ -6393,6 +6466,11 @@ contains
         OU_CLASS_ERROR,OU_MODE_STD,'bilf_buildMatrixScalar')
     call sys_halt()
   end select
+  
+  ! Release the assembly structure if necessary.
+  if (.not. present(rscalarAssemblyInfo)) then
+    call easminfo_releaseInfoStructure(rlocalScalarAssemblyInfo)
+  end if
 
   end subroutine
 

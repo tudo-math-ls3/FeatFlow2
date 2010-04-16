@@ -171,6 +171,7 @@ use constant SRCLIST_KERNEL =>
     "DataStructures/numbersets.f90  " .
 
     "DOFMaintenance/bcassembly.f90 DOFMaintenance/bilinearformevaluation.f90 " .
+    "DOFMaintenance/extstdassemblyinfo.f90 " .
     "DOFMaintenance/discretebc.f90 DOFMaintenance/discretefbc.f90 DOFMaintenance/dofmapping.f90 " .
     "DOFMaintenance/domainintegration.f90 DOFMaintenance/feevaluation.f90 " .
     "DOFMaintenance/linearformevaluation.f90 DOFMaintenance/matrixfilters.f90 " .
