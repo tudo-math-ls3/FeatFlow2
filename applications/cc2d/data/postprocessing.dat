@@ -28,6 +28,7 @@ ipostprocTimeInterpSolution = 1
 # 2=AVS
 # 3=Paraview (VTK)
 # 4=Matlab
+# 5=binary GMV
 
 ioutputUCD = 1
 

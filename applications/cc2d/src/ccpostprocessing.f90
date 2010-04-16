@@ -1419,7 +1419,7 @@ contains
     
     ! Start UCD export to GMV file:
     call output_lbrk ()
-    call output_line ('Writing GMV file: '//sfile)
+    call output_line ('Writing visualisation file: '//sfile)
     
     select case (ioutputUCD)
     case (1)
@@ -1430,10 +1430,13 @@ contains
           
     case (3)
       call ucd_startVTK (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
+
+    case (5)
+      call ucd_startBGMV (rexport,UCD_FLAG_STANDARD,p_rtriangulation,sfile)
           
-    case DEFAULT
-      call output_line ('Invalid UCD ooutput type.', &
-                        OU_CLASS_ERROR,OU_MODE_STD,'mysubroutine')
+    case default
+      call output_line ('Invalid visualisation output type.', &
+                        OU_CLASS_ERROR,OU_MODE_STD,'cc_writeUCD')
       stop
     end select
         
