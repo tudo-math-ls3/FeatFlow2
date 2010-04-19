@@ -42,6 +42,7 @@
 	<Files>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath="..\src\elasticity.f90"/>
+		<File RelativePath="..\src\elasticity_basic.f90"/>
 		<File RelativePath="..\src\elasticity_callback.f90"/>
 		<File RelativePath="..\src\elasticity_2d_disp_smallDeform_static.f90"/></Filter>
 		<Filter Name="Header Files" Filter="fi;fd"/>
