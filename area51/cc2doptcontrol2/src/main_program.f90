@@ -1205,6 +1205,9 @@ contains
         p_rfeSpaces(p_rsettingsSolver%rfeHierPrimalDual%nlevels)%p_rdiscretisation)
     call sptivec_clearVector (rrhsdiscrete)
     call init_discretiseRHS (p_rsettingsSolver,rrhs,rrhsDiscrete)
+!    call sptivec_saveToFileSequence(rrhsdiscrete,"(""rhs"// &
+!        trim(sys_siL(p_rsettingsSolver%rtimeHierarchy%nlevels,10))// &
+!        ".txt."",I5.5)",.true.)
     
     ! Create a start vector for the solver.
     call output_lbrk()
@@ -1260,7 +1263,7 @@ contains
     call output_line ("Postprocessing of the final solution...")
     call stat_clearTimer (rtimePostProc)
     call stat_startTimer (rtimePostProc)
-    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,&
+    call optcpp_postprocessSpaceTimeVec (rpostproc,rsolution,rrhsDiscrete,&
         p_rsettingsSolver%rsettingsOptControl,p_rsettingsSolver)    
     call stat_stopTimer (rtimePostProc)
     

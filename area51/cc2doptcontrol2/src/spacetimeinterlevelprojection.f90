@@ -329,7 +329,7 @@ contains
       call lsysbl_releaseVector (rx3)
       call lsysbl_releaseVector (rx1)
 
-    case (1)
+    case (1,2)
       ! Linear prolongation:
       !
       ! We need two more temp vectors:
@@ -434,7 +434,7 @@ contains
       !call cc_postprocSpaceTimeGMV (rproblem,rdiscrFine,rfineVector,'gmv/fine.gmv')
       !call cc_postprocSpaceTimeGMV (rproblem,rdiscrCoarse,rcoarseVector,'gmv/coarse.gmv')
 
-    case (2)
+    case (3)
       ! Quadratic prolongation.
       !
       ! We need vectors from three timesteps.
@@ -853,7 +853,7 @@ contains
       call lsysbl_releaseVector (rx3)
       call lsysbl_releaseVector (rx1)
 
-    case (1)
+    case (1,2)
       ! Linear restriction:
       !
       ! Prolongation 'distributes' information from the coarse grid nodes
@@ -1023,7 +1023,7 @@ contains
       call lsysbl_releaseVector (rx3)
       call lsysbl_releaseVector (rx1)
 
-    case (2)
+    case (3)
       ! Quadratic restriction:
       !
       ! Prolongation 'distributes' information from the coarse grid nodes
@@ -1107,7 +1107,13 @@ contains
           
           ! Do the restriction in the temp vector. The vector is already
           ! prepared from the last loop.
-          call lsysbl_vectorLinearComb  (rx1,rtempVecFine,1.0_DP/2.0_DP,1.0_DP/2.0_DP)
+          if (istep .eq. 0) then
+            ! In the very first step, put the (weighted) initial condition into
+            ! the first coarse timestep vector. In later timesteps, rtempVecFine contains
+            ! already the contribution from the last (left) interval and we only have
+            ! to update it with the remaining contributions (from the right).
+            call lsysbl_vectorLinearComb  (rx1,rtempVecFine,1.0_DP/2.0_DP,0.0_DP)
+          end if
           call lsysbl_vectorLinearComb  (rx2,rtempVecFine,0.375_DP/2.0_DP,1.0_DP)
           call lsysbl_vectorLinearComb  (rx4,rtempVecFine,-0.125_DP/2.0_DP,1.0_DP)
           
@@ -1220,6 +1226,8 @@ contains
       call lsysbl_releaseVector (rx1)
 
     end select
+    
+!    call sptivec_saveToFileSequence(rcoarseVector,"(""rrhscoarse.txt."",I5.5)",.true.)
 
   end subroutine
 

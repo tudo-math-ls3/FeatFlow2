@@ -54,8 +54,8 @@ dtimeStepTheta = 1.0
 # multilevel-based algorithms
 # =-1: automatic, depending on the time step scheme.
 # =0: constant prolongation/restriction
-# =1: 1st order (bilinear)
-# =2: 2nd order
+# =1: 2nd order (linear, for Implicit Euler and Crank Nicolson)
+# =2: 3rd order (warning: does not work correctly!!!)
 
 iorderTimeProlRest = -1
 

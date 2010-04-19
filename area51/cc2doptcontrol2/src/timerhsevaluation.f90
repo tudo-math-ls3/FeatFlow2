@@ -197,12 +197,12 @@ contains
     call lsysbl_getbase_double (rtempVector3,p_Dd)
 
     ! NOTE:
-    ! For setting up the RHS, the time in the dual equation matches the time+
+    ! For setting up the RHS, the time in the dual equation matches the time
     ! of the primal equation. For explicit Euler, this is the case anyway.
     ! For Crank-Nicolson / Theta scheme, the RHS must be evaluated in the
     ! time midpoint between two subsequent timesteps; but as the evaluation
     ! points of the dual equation are shifted by dt/2, the time midpoint
-    ! in the dual equation coincides with the evaluation pont in time of the
+    ! in the dual equation coincides with the evaluation point in time of the
     ! primal equation!
 
     ! Assemble 1st RHS vector in X temp vector.

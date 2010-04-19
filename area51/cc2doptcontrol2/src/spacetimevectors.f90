@@ -1696,7 +1696,7 @@ contains
     do i=rx%istartidx,rx%iendidx
     
       ! Get the data from the space-time vector.
-      call sptivec_getTimestepData (rx, 1+i, p_rx)
+      call sptivec_getTimestepData (rx, i, p_rx)
       
       ! Form the filename
       write(sfile,sfilename) i-1

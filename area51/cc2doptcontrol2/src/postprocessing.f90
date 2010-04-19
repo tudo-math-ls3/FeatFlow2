@@ -229,7 +229,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocessSingleSol (rpostproc,ifileid,dtimePrimal,dtimeDual,rvector,&
-      roptcontrol,rsettings,bfirstFile)
+      rrhs,roptcontrol,rsettings,bfirstFile)
   
 !<description>
   ! Postprocessing of a single solution at a definite time.
@@ -247,6 +247,9 @@ contains
 
   ! The solution vector which is to be evaluated by the postprocessing routines.
   type(t_vectorBlock), intent(inout) :: rvector
+
+  ! The RHS of the system.
+  type(t_vectorBlock), intent(inout) :: rrhs
   
   ! Id of the file on the hard disc; added to the filename.
   integer, intent(in) :: ifileid
@@ -628,6 +631,13 @@ contains
           end if
           
         end if
+
+        ! Include the RHS.        
+        call spdp_projectSolution (rrhs,rprjVector)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
+        call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
+        call ucd_addVarVertBasedVec (rexport,'rhs',&
+            p_Ddata(1:p_rtriangulation%NVT),p_Ddata2(1:p_rtriangulation%NVT))
         
         ! Write the file to disc, that's it.
         call ucd_write (rexport)
@@ -646,7 +656,7 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_postprocessSpaceTimeVec (rpostproc,rvector,roptcontrol,rsettings)
+  subroutine optcpp_postprocessSpaceTimeVec (rpostproc,rvector,rrhs,roptcontrol,rsettings)
   
 !<description>
   ! Postprocessing of a space-time vector.
@@ -664,6 +674,9 @@ contains
 
   ! The solution vector which is to be evaluated by the postprocessing routines.
   type(t_spaceTimeVector), intent(IN) :: rvector
+
+  ! The RHS vector of the system.
+  type(t_spaceTimeVector), intent(IN) :: rrhs
   
   ! Parameters about the optimal control
   type(t_settings_optcontrol), intent(inout) :: roptControl
@@ -672,7 +685,7 @@ contains
 !</subroutine>
 
   ! local variables
-  type(t_vectorBlock) :: rvecTemp
+  type(t_vectorBlock) :: rvecTemp,rrhsTemp
   integer :: istep
   real(dp) :: dtimePrimal,dtimeDual,dtstep
   real(DP), dimension(4) :: DerrorU,DerrorP,DerrorLambda,DerrorXi,Derror
@@ -683,17 +696,20 @@ contains
 
     ! Create a temp vector in space for postprocessing
     call lsysbl_createVectorBlock (rvector%p_rspaceDiscr,rvecTemp)
+    call lsysbl_createVectorBlock (rvector%p_rspaceDiscr,rrhsTemp)
 
     ! Write a file for every timestep
     do istep = 1,rvector%NEQtime
       call tdiscr_getTimestep(rpostproc%p_rtimediscr,istep-1,dtimePrimal,dtstep)
       dtimeDual = dtimePrimal - (1.0_DP-rpostproc%p_rtimeDiscr%dtheta)*dtstep
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
+      call sptivec_getTimestepData(rrhs,istep,rrhsTemp)
       call optcpp_postprocessSingleSol (rpostproc,istep-1,dtimePrimal,dtimeDual,rvecTemp,&
-          roptControl,rsettings,istep .eq. 1)
+          rrhsTemp,roptControl,rsettings,istep .eq. 1)
     end do
     
     call lsysbl_releaseVector (rvecTemp)
+    call lsysbl_releaseVector (rrhsTemp)
     
     ! -------------------------------------------------------------------------
     ! Error analysis
@@ -747,7 +763,7 @@ contains
 !<subroutine>
 
   subroutine optcpp_postprocSpaceVisOutput (rsettings,rspaceDiscr,rspaceDiscrPrimal,&
-      rtimeDiscr,rvector,ioutputUCD,sfilename)
+      rtimeDiscr,rvector,rrhs,ioutputUCD,sfilename)
   
 !<description>
   ! For every sub-solution in the global space-time vector rvector,
@@ -774,6 +790,9 @@ contains
 
   ! A space-time vector. For every timestep, a GMV is written.
   type(t_spaceTimeVector), intent(in) :: rvector
+
+  ! A space-time vector representing the RHS.
+  type(t_spaceTimeVector), intent(in) :: rrhs
   
   ! Type of output file to generate from solutions.
   ! 0=disabled
@@ -792,7 +811,7 @@ contains
 
     ! local variables
     type(t_optcPostprocessing) :: rpostproc
-    type(t_vectorBlock) :: rvecTemp
+    type(t_vectorBlock) :: rvecTemp,rrhsTemp
     integer :: istep
     real(dp) :: dtimePrimal,dtimeDual,dtstep
     
@@ -806,17 +825,20 @@ contains
     
     ! Create a temp vector for the output
     call lsysbl_createVectorBlock(rspaceDiscr,rvecTemp)
+    call lsysbl_createVectorBlock(rspaceDiscr,rrhsTemp)
     
     ! Write a file for every timestep
     do istep = 1,rvector%NEQtime
       call tdiscr_getTimestep(rtimediscr,istep-1,dtimePrimal,dtstep)
       dtimeDual = dtimePrimal - (1.0_DP-rtimediscr%dtheta)*dtstep
       call sptivec_getTimestepData(rvector,istep,rvecTemp)
+      call sptivec_getTimestepData(rrhs,istep,rrhsTemp)
       call optcpp_postprocessSingleSol (rpostproc,istep,dtimePrimal,dtimeDual,rvecTemp,&
-          rsettings%rsettingsOptControl,rsettings,istep .eq. 1)
+          rrhsTemp,rsettings%rsettingsOptControl,rsettings,istep .eq. 1)
     end do
     
     ! Release all created stuff
+    call lsysbl_releaseVector (rrhsTemp)
     call lsysbl_releaseVector (rvecTemp)
     call optcpp_donepostprocessing (rpostproc)
     
