@@ -411,10 +411,20 @@ contains
       call glmatasm_Da99dble (rlocalMatrix,rdestMatrix%RmatrixBlock(1,1),&
                               Icolumns, Irows)      
       
-      ! Allocate a Kdiagonal in the destination matrix      
-      call storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
+      ! Allocate a Kdiagonal in the destination matrix if necessary
+      if (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .ne. ST_NOHANDLE) then
+        call storage_getsize(rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,isize)
+        if (isize .ne. rlocalMatrix%NEQ) then
+          ! Release and reallocate
+          call storage_free (rdestMatrix%RmatrixBlock(1,1)%h_Da)
+        end if
+      end if
+      
+      if (rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal .eq. ST_NOHANDLE) then
+        call storage_new ('glsys_assembleGlobal', 'Kdiagonal', rlocalMatrix%NEQ, &
                         ST_INT, rdestMatrix%RmatrixBlock(1,1)%h_Kdiagonal,&
                         ST_NEWBLOCK_NOINIT)
+      end if
 
       ! Rebuild Kdiagonal
       call lsyssc_getbase_Kdiagonal(rdestMatrix%RmatrixBlock(1,1),p_Kdiagonal)
