@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 1000000
+nPart = 10000
 
 
 #-------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ search = midpoint
 startpos = 3
 
 # PGM-file for startingpositions
-filestartpoints = data/eulerlagrange/2d/tux.pgm
+filestartpoints = data/eulerlagrange/2d/drop.pgm
 
 # minimum particle-position in x-direction 
 xmin = 1.5e-4
@@ -105,27 +105,39 @@ particledensitymax = 0.39
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
 # 2 random diameter of the particles (particlediammin to particlediammax)
-idiampart = 0
+idiampart = 2
 
 # particle-diameter
 particlediam = 2e-6
 
 # particle diameter minimum in meter
-particlediammin = 1e-11
+particlediammin = 1e-8
 # particle diameter maximum in meter
-particlediammax = 1e-10
+particlediammax = 1e-6
 
 
 #-------------------------------------------------------------------------------
-# velocity of the particles
+# velocity of the particles (particles have the same velocity)
 #-------------------------------------------------------------------------------
 
-# velocity in x-direction
-velopartx = 0e0
+# velocity in x-direction in m/s
+velopartx = 0e0        #205.709277e0
 
-# velocity in y-direction
+# velocity in y-direction in m/s
 veloparty = 0e0
+               
 
+#-------------------------------------------------------------------------------
+# scalars for the velocity of the gas phase (from .indat file)
+#-------------------------------------------------------------------------------
+
+# velocity in x-direction in m/s
+velogasx = 205.709277e0
+
+# velocity in y-direction in m/s
+velogasy = 1e0
+
+                                     
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
 #-------------------------------------------------------------------------------
@@ -200,7 +212,7 @@ ipartoutput = 2
 
 # 1 one-way coupling (particles have no influence on the gas phase)
 # 2 two-way coupling
-icouplingpart = 2
+icouplingpart = 1
 
 
 
@@ -406,7 +418,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.000
+dfinalTime = 1.00
 
 # initial time step size
 dinitialStep = 1e-3

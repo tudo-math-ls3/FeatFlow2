@@ -4657,6 +4657,9 @@ contains
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2, random3
 
+    ! Scalars for the velocity of the gas phase
+    real(DP) :: velogasx, velogasy
+
     ! Variables for particle-diameter, -mass and -temperature
     real(DP) :: particledensity, particledensitymin, particledensitymax
     real(DP) :: particlediam, particlediammin, particlediammax
@@ -4694,6 +4697,10 @@ contains
     
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
+
+    ! Get scalars for gasvelocity
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
 
     ! Get data from solution
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
@@ -4738,6 +4745,10 @@ contains
 	rParticles%p_yvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*uy1_part + &
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
+
+    ! Scaling the velocity of the gasphase
+    rParticles%p_xvelo_gas(iPart)=rParticles%p_xvelo_gas(iPart)*velogasx
+    rParticles%p_yvelo_gas(iPart)=rParticles%p_yvelo_gas(iPart)*velogasy
 
 	! Calculate the density of the gas in the position of the particle
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
@@ -4891,11 +4902,11 @@ contains
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
          
-        case(3)
-          ! Get random number for barycentric coordinates
+        case(3)      
+          ! Get random numbers
           call random_number(random1)
           call random_number(random2)
-          
+
           partymin= minval(p_DvertexCoords(2,:))
           partymax= maxval(p_DvertexCoords(2,:))
           partxmin= minval(p_DvertexCoords(1,:))
@@ -4906,7 +4917,7 @@ contains
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
           
-         case default
+        case default
             call output_line('Invalid starting position!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_startpos')
             call sys_halt()
@@ -5036,7 +5047,12 @@ contains
         end if
 
 	end if	! If particles fly out of the domain (at the outlet boundary)
-	
+
+    if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
+    if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = maxval(p_DvertexCoords(1,:))
+    if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
+    if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
+
 	end do ! Loop over all particles
 	
     ! Release temporal data
@@ -5145,6 +5161,9 @@ contains
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2, random3
 
+    ! Scalars for the velocity of the gas phase
+    real(DP) :: velogasx, velogasy
+
     ! Volume fraction of the particles in the current position of the particle
     real(DP) :: dVolFrac
     
@@ -5198,6 +5217,10 @@ contains
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
+!    ! Get scalars for gasvelocity
+!    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
+!    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
+
     ! Get data from solution
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_y', rvector2)
@@ -5241,6 +5264,10 @@ contains
 	rParticles%p_yvelo_gas(iPart)= 	rParticles%p_lambda1(iPart)*uy1_part + &
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
+
+!    ! Scaling the velocity of the gasphase
+!    rParticles%p_xvelo_gas(iPart)=rParticles%p_xvelo_gas(iPart)*velogasx
+!    rParticles%p_yvelo_gas(iPart)=rParticles%p_yvelo_gas(iPart)*velogasy
 
 	! Calculate the density of the gas in the position of the particle
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
@@ -5437,10 +5464,6 @@ contains
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
          
         case(3)
-          ! Get random number for barycentric coordinates
-          call random_number(random1)
-          call random_number(random2)
-          
           partymin= minval(p_DvertexCoords(2,:))
           partymax= maxval(p_DvertexCoords(2,:))
           partxmin= minval(p_DvertexCoords(1,:))
@@ -5571,7 +5594,12 @@ contains
         end if
 
 	end if	
-	
+
+    if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
+    if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = maxval(p_DvertexCoords(1,:))
+    if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
+    if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
+
 	end do
 	
     ! Release temporal data
@@ -5975,6 +6003,8 @@ contains
     ! Local variables
 	integer :: i, current
 	real(DP) :: c_pi
+
+    rParticles%p_PartVelox=0.0_dp
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
