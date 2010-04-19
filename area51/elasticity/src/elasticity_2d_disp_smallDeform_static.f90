@@ -1,6 +1,6 @@
 !##############################################################################
 !# ****************************************************************************
-!# <name> elast2d_disp_smallDeform_static </name>
+!# <name> elasticity_2d_disp_smallDeform_static </name>
 !# ****************************************************************************
 !#
 !# <purpose>
@@ -15,60 +15,30 @@
 
 module elasticity_2d_disp_smallDeform_static
 
-  use fsystem
-  use genoutput
   use storage
   use linearsolver
   use boundary
   use bilinearformevaluation
   use linearformevaluation
-  use cubature
   use filtersupport
   use linearsystemscalar
-  use linearsystemblock
   use matrixfilters
   use vectorfilters
-  use discretebc
   use bcassembly
-  use triangulation
-  use spatialdiscretisation
-  use spdiscprojection
   use scalarpde
   use ucd
-  use paramlist
   use pprocerror
   use collection
   use feevaluation
-    
+
+  use elasticity_basic
   use elasticity_callback
   
   implicit none
 
-!<types>
-!<typeblock description="Type block defining all information about one level">
-
-  type t_level
-  
-    ! object for saving the triangulation
-    type(t_triangulation) :: rtriangulation
-
-    ! object specifying the discretisation
-    type(t_blockDiscretisation) :: rdiscretisation
-    
-    ! system matrix for the specific level
-    type(t_matrixBlock) :: rmatrix
-
-    ! variable describing the discrete boundary conditions
-    type(t_discreteBC) :: rdiscreteBC
-  
-  end type
-  
-!</typeblock>
-!</types>
-
 contains
 
-  ! ***************************************************************************
+! ****************************************************************************************
 
 !<subroutine>
   subroutine elast_2d_disp_smallDeform_static
@@ -105,7 +75,7 @@ contains
     type(t_boundaryRegion) :: rboundaryRegion
 
     ! solver nodes for main solver, preconditioner, smoother and coarse grid solver
-    type(t_linsolNode), pointer :: p_rsolver, p_rmgSolver, p_rsmoother, p_relementaryPrec 
+    type(t_linsolNode), pointer :: p_rsolver, p_rmgSolver, p_rsmoother, p_relementaryPrec
 
     ! array for the block structured system matrix
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
@@ -117,6 +87,9 @@ contains
 
     ! multigrid data for current level
     type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+
+    ! An interlevel projection structure for changing levels
+!    type(t_interlevelProjectionBlock) :: rprojection
 
     ! error indicator during initialisation of the solver
     integer :: ierror
@@ -144,9 +117,17 @@ contains
 
     ! collection structure to provide additional information to the coefficient routine.
     type(t_collection) :: rcollection
+
+    ! parameter list read from the parameter file
+    type (t_parlist) :: rparams
+
     
+    ! +------------------------------------------------------------------------
+    ! | READ PARAMETER FILE
+    ! +------------------------------------------------------------------------
+    !
     ! call subroutine that reads in the parameter file
-    call elast_readParameterFile(rprob)
+    call elast_readParameterFile(rprob, rparams)
 
     ! +------------------------------------------------------------------------
     ! | BOUNDARY AND TRIANGULATION
@@ -200,9 +181,16 @@ contains
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation structures
     ! for every component of the solution vector.
     do ilev = rprob%ilevelMin, rprob%ilevelMax
-      do j = 1, rprob%nblocks
-        call spdiscr_initDiscr_simple(Rlevels(ilev)%rdiscretisation%RspatialDiscr(j),&
-            rprob%celement, rprob%ccubature2D, Rlevels(ilev)%rtriangulation, rboundary)
+      ! create a discretisation for the first component
+      call spdiscr_initDiscr_simple(Rlevels(ilev)%rdiscretisation%RspatialDiscr(1),&
+          rprob%celement, rprob%ccubature2D, Rlevels(ilev)%rtriangulation, rboundary)
+
+      ! ...and copy this structure to the discretisation structure of the 2nd component
+      ! (y-displacement) (no additional memory needed)
+      do j = 2, rprob%nblocks
+        call spdiscr_duplicateDiscrSc (&
+            Rlevels(ilev)%rdiscretisation%RspatialDiscr(1),&
+            Rlevels(ilev)%rdiscretisation%RspatialDiscr(j))
       enddo
     end do
 
@@ -409,7 +397,8 @@ contains
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       Rlevels(ilev)%rmatrix%p_rdiscreteBC => Rlevels(ilev)%rdiscreteBC
     end do
-
+!BRAL: testen, ob x- und y-Dirichlet-BC wirklich unabhaengig sind!!! (Block)
+  
     ! attach the boundary conditions to the solution and the RHS vector
     rrhs%p_rdiscreteBC => Rlevels(rprob%ilevelMax)%rdiscreteBC
     rsol%p_rdiscreteBC => Rlevels(rprob%ilevelMax)%rdiscreteBC
@@ -436,6 +425,47 @@ contains
     ! The above filter chain is attached to the solver, so that it automatically filters
     ! the vector during the solution process. Set the following pointer for this.
     p_RfilterChain => RfilterChain
+
+
+
+
+
+
+
+
+
+!BRAL possibility to create rprojection object
+!    ! Now we have to build up the level information for multigrid.
+!    !
+!    ! At first, initialise a standard interlevel projection structure. We
+!    ! can use the same structure for all levels.
+!    call mlprj_initProjectionDiscr(rprojection, Rlevels(rprob%ilevelMax)%rdiscretisation)
+
+!BRAL NEW!
+!  call mlprj_initProjectionVec(rprojection, rrhs)
+!
+!  call linsolinit_initFromFile (p_rsolver, rparams, "SOLVER",&
+!                                rprob%ilevelMax - rprob%ilevelMin + 1,&
+!                                p_RfilterChain, rprojection)
+
+!BRAL possibility to get the current rprojection object
+!  call linsol_getMultigrid2Level(p_rmgSolver, rprob%ilevelMax, p_rlevelInfo)
+!  p_rlevelInfo%p_rprojection
+! is this the same as
+!   rmgSolver%p_rsubnodeMultigrid2%p_RlevelInfo(rprob%ilevelMax)%p_rprojection
+! ???
+!      if (.not. associated( &
+!          rmgSolver%p_rsubnodeMultigrid2%p_RlevelInfo(rprob%ilevelMax)%p_rprojection)) then
+
+
+
+
+
+
+
+
+
+
 
     if (rprob%csolver .eq. SOLVER_DIRECT) then
       ! direct UMFPACK solver
@@ -825,429 +855,6 @@ contains
 
 ! ****************************************************************************************
 
-
-!<subroutine>
-  subroutine elast_readParameterFile(rprob)
-  
-!<description>
-    ! get the following parameters from the parameter file:
-    !
-    !   - gridFilePRM
-    !   - gridFileTRI
-    !
-    !   - numBoundarySegments(#boundaries)
-    !
-    !   - equation
-    !       'Poisson' or 'elasticity'
-    !
-    !   - nu
-    !   - mu
-    !
-    !   - bc[i](#segments x #blocks)
-    !       'D' or 'N', for each boundary i, each segment and component
-    !
-    !   - simulation
-    !       'real' or 'analytic'
-    !
-    !   - forceSurface[i](#segments x dim)
-    !       in case of real simulation, for each boundary i and each segment the
-    !       surface force in x- and y-direction
-    !
-    !   - forceVolumeX
-    !       given vol. force in x-direction in case of real simulation
-    !
-    !   - forceVolumeY
-    !       given vol. force in y-direction in case of real simulation
-    !
-    !   - funcID_u1
-    !       ID of analytical function for u1 in case of analytical simulation
-    !
-    !   - funcID_u2
-    !       ID of analytical function for u2 in case of analytical simulation
-    !
-    !   - element
-    !       'Q1' or 'Q2'
-    !
-    !   - levelMin
-    !   - levelMax
-    !
-    !   - solver
-    !       'DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'MG_CG' or 'MG_BICGSTAB'
-    !
-    !   - numIter
-    !   - tolerance
-    !
-    !   - smoother
-    !       'Jacobi' or 'ILU'
-    !   - mgCycle
-    !       'V', 'F' or 'W'
-    !   - numSmoothingSteps
-    !   - damping
-    !
-    !   - showDeformation
-    !       'YES' or 'NO'
-    !
-    !   - evalPoints(2*numEvalPoints)
-    !       x- and y-coordinate of points to evaluate
-    !   - refSols(2*numEvalPoints)
-    !       ref. solution values for u1 and u2 in eval. points
-!</description>
-    
-!<input>
-    ! general problem structure
-    type(t_problem) :: rprob
-!</input>
-  
-!<output>
-!</output>
-    
-!</subroutine>
-
-    type (t_parlist) :: rparams
-    character(len=SYS_STRLEN) :: snameDatFile
-    integer :: i, j, k
-    character(len=SYS_STRLEN) :: sstring
-
-    ! initialise the parameter structure and read the DAT file
-    call parlst_init(rparams)
- 
-    ! get the data file
-    call sys_getcommandLineArg(1, snameDatFile, &
-                               sdefault='./dat/elast_2d_disp_smallDeform_static.dat')
-    call parlst_readfromfile(rparams, snameDatFile)
-    call output_line('parsing dat-file '//trim(snameDatFile)//'...')
-    
-    ! PRM file
-    call parlst_getvalue_string(rparams, '', 'gridFilePRM', sstring)
-    read(sstring,*) rprob%sgridFilePRM
-    call output_line('PRM file: '//trim(rprob%sgridFilePRM))
-                                 
-    ! TRI file
-    call parlst_getvalue_string(rparams, '', 'gridFileTRI', sstring)
-    read(sstring,*) rprob%sgridFileTRI
-    call output_line('TRI file: '//trim(rprob%sgridFilePRM))
-       
-    ! get number of boundaries by inquiring the number of items of the
-    ! parameter 'numBoundarySegments' 
-    rprob%nboundaries = parlst_querysubstrings(rparams, '', 'numBoundarySegments')
-    call output_line('number of boundaries: '//trim(sys_siL(rprob%nboundaries,3)))
-                       
-    ! number of boundary segments per boundary (has to be set manually by the user)
-    allocate(rprob%NboundarySegments(rprob%nboundaries))
-    do i = 1,rprob%nboundaries
-      call parlst_getvalue_int(rparams, '', 'numBoundarySegments', &
-                               rprob%NboundarySegments(i), iarrayindex = i)
-      call output_line('number of segments in boundary '//trim(sys_siL(i,3))//': ' // &
-                       trim(sys_siL(rprob%NboundarySegments(i),4)))
-    end do
-
-    ! detect max. number of segments over all boundaries
-    rprob%nmaxNumBoundSegments = -1
-    do i = 1,rprob%nboundaries
-      if (rprob%NboundarySegments(i) .gt. rprob%nmaxNumBoundSegments) then
-        rprob%nmaxNumBoundSegments = rprob%NboundarySegments(i)
-      end if
-    end do
-    call output_line('max. number of segments: ' // &
-                     trim(sys_siL(rprob%nmaxNumBoundSegments,3)))
-
-
-!BRAL: Nutze die funktionalitaet der parlst_getvalue routinen, einen Default-Wert zu
-!setzen, falls Parameter nicht vorhanden.
-
-    ! kind of equation (possible values: POISSON, ELASTICITY)
-    call parlst_getvalue_string(rparams, '', 'equation', sstring)
-    if (trim(sstring) .eq. 'Poisson') then
-      rprob%cequation = EQ_POISSON
-      rprob%nblocks = 1
-    else if(trim(sstring) .eq. 'elasticity') then
-      rprob%cequation = EQ_ELASTICITY
-      rprob%nblocks = 2
-    else
-      call output_line('invalid equation:' // trim(sstring), OU_CLASS_ERROR, &
-                       OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
-    call output_line('equation: '//trim(sstring))
-    
-    ! material parameters (Poisson ratio nu and shear modulus mu)
-    if (rprob%cequation .eq. EQ_ELASTICITY) then
-      call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
-      if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .ge. 0.5) then
-        call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-        call sys_halt()
-      endif
-      call parlst_getvalue_double(rparams, '', 'mu', rprob%dmu)
-      if (rprob%dmu .le. 0.0_DP) then
-        call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-        call sys_halt()
-      endif
-      rprob%dlambda = 2.0_DP * rprob%dmu * rprob%dnu/(1 - 2.0_DP * rprob%dnu)
-      call output_line('nu: '//trim(sys_sdL(rprob%dnu,6)))
-      call output_line('mu: '//trim(sys_sdEL(rprob%dmu,6)))
-      call output_line('lambda: '//trim(sys_sdEL(rprob%dlambda,6)))
-    endif
-                     
-    ! boundary conditions ('D' Dirichlet, 'N' Neumann)
-    allocate(rprob%Cbc(rprob%nblocks, rprob%nmaxNumBoundSegments, rprob%nboundaries))
-    do i = 1, rprob%nboundaries
-      do j = 1,rprob%NboundarySegments(i)
-        do k = 1, rprob%nblocks
-          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
-                                      isubstring = 2*(j-1) + k)
-          if (trim(sstring) .eq. "D") then
-            rprob%Cbc(k,j,i) = BC_DIRICHLET 
-          else if (trim(sstring) .eq. "N") then
-            rprob%Cbc(k,j,i) = BC_NEUMANN 
-          else
-            call output_line('invalid boundary condition:' // trim(sstring) // &
-                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
-                             OU_CLASS_ERROR, OU_MODE_STD, &
-                             'elast_2d_disp_smallDeform_static')
-            call sys_halt()
-          endif
-          call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
-                           trim(sys_siL(j,3)) // ' of boundary ' // &
-                           trim(sys_siL(i,3))//': '// trim(sstring))
-        enddo
-      end do
-    end do
-
-    ! type of simulation (possible values: REAL, ANALYTICAL)
-    call parlst_getvalue_string(rparams, '', 'simulation', sstring)
-    if(trim(sstring) .eq. 'analytic') then
-      rprob%csimulation = SIMUL_ANALYTICAL
-    else if(trim(sstring) .eq. 'real') then
-      rprob%csimulation = SIMUL_REAL
-    else
-      call output_line('invalid simulation:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
-    call output_line('simulation: '//trim(sstring))
-
-    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
-    ! (only needed in case of csimulation .eq. SIMUL_REAL)
-    if (rprob%csimulation .eq. SIMUL_REAL) then
-      allocate(rprob%DforceSurface(rprob%nblocks, rprob%nmaxNumBoundSegments, &
-                                   rprob%nboundaries))
-      do i = 1, rprob%nboundaries
-        do j = 1,rprob%NboundarySegments(i)
-          do k = 1,rprob%nblocks
-            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
-                                        rprob%DforceSurface(k,j,i), &
-                                        iarrayindex = 2*(j-1)+k)
-          enddo
-          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
-                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
-                           trim(sys_sdL(rprob%DforceSurface(1,j,i),4)) // &
-                           ', '//trim(sys_sdL(rprob%DforceSurface(2,j,i),4))//')')
-        end do
-      end do
-    endif
-
-    ! constant volume forces (only needed in case of csimulation .eq. SIMUL_REAL)
-    if (rprob%csimulation .eq. SIMUL_REAL) then
-      call parlst_getvalue_double(rparams, '', 'forceVolumeX', rprob%dforceVolumeX)
-      call parlst_getvalue_double(rparams, '', 'forceVolumeY', rprob%dforceVolumeY)
-      call output_line('volume force: ('//trim(sys_sdL(rprob%dforceVolumeX,4)) // &
-                       ', '//trim(sys_sdL(rprob%dforceVolumeY,4))//')')
-    endif
-         
-    ! function IDs (only needed in case of csimulation .eq. SIMUL_ANALYTICAL)
-    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-      call parlst_getvalue_int(rparams, '', 'funcID_u1', rprob%CfuncID(1))
-      call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%CfuncID(2))
-      call output_line('function ID for u1: ' // trim(sys_siL(rprob%CfuncID(1),3)))
-      call output_line('function ID for u2: ' // trim(sys_siL(rprob%CfuncID(2),3)))
-    endif
-         
-    ! get element type and choose cubature formula accordingly
-    call parlst_getvalue_string(rparams, '', 'element', sstring)
-    if (trim(sstring) .eq. "Q1") then
-      rprob%celement = EL_Q1
-      rprob%ccubature1D = CUB_G2_1D      
-      rprob%ccubature2D = CUB_G2X2
-      call output_line('element Q1, cubature G2 / G2X2')
-    else if (trim(sstring) .eq. "Q2") then
-      rprob%celement = EL_Q2
-      rprob%ccubature1D = CUB_G3_1D      
-      rprob%ccubature2D = CUB_G3X3
-      call output_line('element Q2, cubature G3 / G3X3')
-    else
-      call output_line('invalid element:' // trim(sstring) // &
-                       ', currently only Q1 and Q2 supported!', &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    endif
-                              
-    ! minimum and maximum level
-    call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
-    call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
-    if (rprob%ilevelMin .le. 0 .or. rprob%ilevelMax .le. 0 .or. &
-        rprob%ilevelMin .gt. rprob%ilevelMax) then
-      call output_line('invalid combination of min./max. grid level: ' // &
-                       trim(sys_siL(rprob%ilevelMin,3)) // &
-                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
-    endif
-        
-    ! type of solver (possible values: DIRECT, CG, BICGSTAB, MG, CG_MG, MG_CG, MG_BICGSTAB)
-    call parlst_getvalue_string(rparams, '', 'solver', sstring)
-
-    rprob%bmgInvolved = .FALSE.
-    if(trim(sstring) .eq. 'DIRECT') then
-      rprob%csolver = SOLVER_DIRECT
-    else if(trim(sstring) .eq. 'CG') then
-      rprob%csolver = SOLVER_CG
-    else if(trim(sstring) .eq. 'BICGSTAB') then
-      rprob%csolver = SOLVER_BICGSTAB
-    else if(trim(sstring) .eq. 'MG') then
-      rprob%csolver = SOLVER_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'CG_MG') then
-      rprob%csolver = SOLVER_CG_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG') then
-      rprob%csolver = SOLVER_BICGSTAB_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_CG') then
-      rprob%csolver = SOLVER_MG_CG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_BICGSTAB') then
-      rprob%csolver = SOLVER_MG_BICGSTAB
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG_CG') then
-      rprob%csolver = SOLVER_BICGSTAB_MG_CG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG_BICGSTAB') then
-      rprob%csolver = SOLVER_BICGSTAB_MG_BICGSTAB
-      rprob%bmgInvolved = .TRUE.
-    else
-      call output_line('invalid solver:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
-    call output_line('solver: '//trim(sstring))
-
-    ! when no multigrid solver is involved, then set min. level to max. level
-    if (.not. rprob%bmgInvolved) then
-      rprob%ilevelMin = rprob%ilevelMax
-      call output_line('grid level: ' // trim(sys_siL(rprob%ilevelMax,3)))
-    else
-      call output_line('min./max. grid level: ' // trim(sys_siL(rprob%ilevelMin,3)) // &
-                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
-    end if
-
-    if (rprob%csolver .ne. SOLVER_DIRECT) then
-      ! max number of iterations
-      call parlst_getvalue_int(rparams, '', 'numIter', rprob%niterations)
-      call output_line('max. number of iterations: '//trim(sys_siL(rprob%niterations,10)))
-  
-      ! tolerance
-      call parlst_getvalue_double(rparams, '', 'tolerance', rprob%dtolerance)
-      call output_line('rel. stopping criterion: ' // trim(sys_sdEL(rprob%dtolerance,4)))
-
-      ! type of elementary preconditioner/smoother (possible values: NO, JACOBI, ILU)
-      call parlst_getvalue_string(rparams, '', 'elementaryPrec', sstring)
-      if(trim(sstring) .eq. 'NO') then
-        rprob%celementaryPrec = SMOOTHER_NO
-      else if(trim(sstring) .eq. 'JACOBI') then
-        rprob%celementaryPrec = SMOOTHER_JACOBI
-      else if(trim(sstring) .eq. 'ILU') then
-        rprob%celementaryPrec = SMOOTHER_ILU
-      else
-        call output_line('invalid elementary precond./smoother type:' // trim(sstring), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-        call sys_halt()
-      end if
-      call output_line('elementary preconditioner/smoother: '//trim(sstring))
-
-      ! additional parameters for multigrid
-      if (rprob%bmgInvolved) then
-        ! MG cycle (0=F-cycle, 1=V-cycle, 2=W-cycle)
-        call parlst_getvalue_string(rparams, '', 'mgCycle', sstring)
-        if(trim(sstring) .eq. 'V') then
-          rprob%ccycle = 1
-        else if(trim(sstring) .eq. 'F') then
-          rprob%ccycle = 0
-        else if(trim(sstring) .eq. 'W') then
-          rprob%ccycle = 2
-        else
-          call output_line('invalid mgCycle:' // trim(sstring))
-          call output_line('Choosing F-cycle!')
-          rprob%ccycle = 0
-        end if
-        ! number of smoothing steps
-        call parlst_getvalue_int(rparams, '', 'numSmoothingSteps', rprob%nsmoothingSteps)
-        call output_line('MG cycle: '//trim(sstring) // ':' // &
-                         trim(sys_siL(rprob%nsmoothingSteps,3)) // ':' // &
-                         trim(sys_siL(rprob%nsmoothingSteps,3)))
-        ! damping parameter
-        call parlst_getvalue_double(rparams, '', 'damping', rprob%ddamp)
-        call output_line('damping parameter:' // trim(sys_sdL(rprob%ddamp,2)))
-      endif
-    endif
-
-    ! show deformation in gmv (possible values: YES, NO)
-    call parlst_getvalue_string(rparams, '', 'showDeformation', sstring)
-    if(trim(sstring) .eq. 'YES') then
-      rprob%cshowDeformation = YES
-    else if(trim(sstring) .eq. 'NO') then
-      rprob%cshowDeformation = NO
-    else
-      call output_line('invalid value for showDeformation:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
-    call output_line('show deformation: '//trim(sstring))
-
-    ! get number of evaluation points by inquiring the number of items of the
-    ! parameter 'evalPoints'
-    rprob%nevalPoints = parlst_querysubstrings(rparams, '', 'evalPoints')/2
-    call output_line('number of evaluation points: '//trim(sys_siL(rprob%nevalPoints,3)))
-
-    if (rprob%nevalPoints .gt. 0) then
-      allocate(rprob%DevalPoints(2,rprob%nevalPoints))
-      ! we need to store values for 2 blocks x 3 function value types (FUNC, DERX, DERY)
-      ! in each eval point
-      allocate(rprob%Dvalues(2, 3, rprob%nevalPoints))
-
-      rprob%DevalPoints = 0.0_DP
-      rprob%Dvalues = 0.0_DP
-      do i = 1, rprob%nevalPoints
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(1,i), iarrayindex = 2*i-1)
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(2,i), iarrayindex = 2*i)
-        call output_line('eval. point: ('// trim(sys_sdL(rprob%DevalPoints(1,i),4)) &
-                         // ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-      end do
-
-      ! get number of reference solutions in evaluation points by inquiring the number of
-      ! items of the parameter 'refSols'
-      rprob%nrefSols = parlst_querysubstrings(rparams, '', 'refSols') / 2
-      call output_line('number of reference solutions: '//trim(sys_siL(rprob%nrefSols,3)))
-  
-      if (rprob%nrefSols .gt. 0) then
-        allocate(rprob%DrefSols(2,rprob%nrefSols))
-        rprob%DrefSols = 0.0_DP
-        do i = 1, rprob%nrefSols
-          call parlst_getvalue_double(rparams, '', 'refSols', &
-                                      rprob%DrefSols(1,i), iarrayindex = 2*i-1)
-          call parlst_getvalue_double(rparams, '', 'refSols', &
-                                      rprob%DrefSols(2,i), iarrayindex = 2*i)
-          call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
-                           // ', ' // trim(sys_sdL(rprob%DrefSols(1,i),8)) // ')')
-        end do
-      end if
-    else
-      ! when there are no evaluation points, we also need no reference solutions
-      rprob%nrefSols = 0
-    end if
-
-  end subroutine elast_readParameterFile
 
 end module elasticity_2d_disp_smallDeform_static
 

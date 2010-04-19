@@ -98,12 +98,14 @@ element = Q1
 levelMin = 1
 levelMax = ${mg}
 
+#solverFile = ./dat/BICGSTAB.dat
+
 # solver ('DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'BICGSTAB_MG',
 #         'MG_CG', 'MG_BICGSTAB', 'BICGSTAB_MG_CG', 'BICGSTAB_MG_BICGSTAB')
-solver = BICGSTAB_MG_BICGSTAB
+solver = BICGSTAB
 
 # maximum number of iterations
-numIter = 1000
+numIter = 1024
 
 # relative stopping criterion
 tolerance = 1.0e-8
@@ -132,6 +134,7 @@ evalPoints(2) =
 refSols(2) =
 -20.648992
 27.642747
+
 END_OF_DATA
 # dat file has been created now
 

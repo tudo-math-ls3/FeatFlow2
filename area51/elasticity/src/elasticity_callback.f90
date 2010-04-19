@@ -5,165 +5,19 @@
 !#
 !# <purpose>
 !# This module contains callback functions for the elasticity problem that are
-!# used during the matrix/vector assembly. Furthermore, the type t_problem is defined
-!# here which contains all necessary information for the problem to be computed. Finally,
-!# some constants needed for the computation are defined.
+!# used during the matrix/vector assembly.
 !# </purpose>
 !##############################################################################
 
 module elasticity_callback
 
   use fsystem
-  use storage
-  use genoutput
-  use linearsolver
   use boundary
-  use triangulation
-  use bilinearformevaluation
-  use linearformevaluation
-  use cubature
   use derivatives
   use spatialdiscretisation
-  use linearsystemscalar
-  use linearsystemblock
-  use matrixfilters
-  use vectorfilters
-  use bcassembly
-  use element
+  use elasticity_basic
   
   implicit none
-
-  integer, parameter :: EQ_POISSON          = 1
-  integer, parameter :: EQ_ELASTICITY       = 2
-
-  integer, parameter :: SIMUL_REAL          = 1
-  integer, parameter :: SIMUL_ANALYTICAL    = 2
-
-  integer, parameter :: BC_NEUMANN          = 1
-  integer, parameter :: BC_DIRICHLET        = 2
-
-  integer, parameter :: SOLVER_DIRECT       = 1
-  integer, parameter :: SOLVER_CG           = 2
-  integer, parameter :: SOLVER_BICGSTAB     = 3
-  integer, parameter :: SOLVER_MG           = 4
-  integer, parameter :: SOLVER_CG_MG        = 5
-  integer, parameter :: SOLVER_BICGSTAB_MG  = 6
-  integer, parameter :: SOLVER_MG_CG        = 7
-  integer, parameter :: SOLVER_MG_BICGSTAB  = 8
-  integer, parameter :: SOLVER_BICGSTAB_MG_CG       =  9
-  integer, parameter :: SOLVER_BICGSTAB_MG_BICGSTAB = 10
-
-  integer, parameter :: SMOOTHER_NO         = 0
-  integer, parameter :: SMOOTHER_JACOBI     = 1
-  integer, parameter :: SMOOTHER_ILU        = 2
-
-
-  ! type for storing all necessary information about the simulation
-  type t_problem
-    !   grid file
-    character(len=500) :: sgridFileTri
-    character(len=500) :: sgridFilePrm
-
-    ! number of boundaries (has to be set manually by the user who has to know
-    ! the number of boundaries in the current grid)
-    integer :: nboundaries = 1
-
-    ! number of boundary segments (has to be set manually by the user who has to know
-    ! the number segments in the current grid)
-    integer, dimension(:), pointer :: NboundarySegments
-
-    ! max. number boundary segments over all boundaries
-    integer :: nmaxNumBoundSegments
-  
-    ! kind of equation (possible values: EQ_POISSON, EQ_ELASTICITY)
-    integer :: cequation = EQ_ELASTICITY
-
-    ! number of blocks (1 for Poisson equation, 2 for 2D elasticity equation)
-    integer :: nblocks
-  
-    ! material parameters (Poisson ratio nu and shear modulus mu)
-    real(DP) :: dnu     = 0.3_DP
-    real(DP) :: dmu     = 0.5_DP
-    real(DP) :: dlambda = 0.75_DP
-
-    ! definition of boundary conditions (BC_NEUMANN or BC_DIRICHLET)
-    ! (dimension  nblocks x max. number segments x nboundaries)
-    integer, dimension(:,:,:), pointer :: Cbc
-
-    ! type of simulation (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
-    integer :: csimulation = SIMUL_REAL
-
-    ! given surface forces on Neumann boundary condition segments
-    ! (dimension nblocks x max. number segments x nboundaries)
-    real(DP), dimension(:,:,:), pointer :: DforceSurface
-
-    ! constant RHS values (only needed in case of SIMUL_REAL)
-    real(DP) :: dforceVolumeX   = 0.0_DP
-    real(DP) :: dforceVolumeY   = 0.0_DP
-
-    ! function IDs per component (only needed in case of SIMUL_ANALYTICAL)
-    integer, dimension(2) :: CfuncID = (/4, 52/)
-
-    ! kind of element used (possible values: EL_Q1, EL_Q2)
-    integer :: celement
-
-    ! 1D and 2D cubature formulas (they are automatically chosen according to the
-    ! selected finite element)
-    integer :: ccubature1D, ccubature2D
-  
-    ! MAX & MIN level where we want to solve.
-    integer :: ilevelMax, ilevelMin
-
-    ! kind of solver (possible values: SOLVER_DIRECT,BICGSTAB_SOLVER,SOLVER_MG,SOLVER_CG)
-    integer :: csolver = SOLVER_DIRECT
-
-    ! flag whether MG is involved
-    logical :: bmgInvolved = .FALSE.
-    
-    ! max. number of iterations
-    integer :: niterations = 5000
-
-    ! tolerance
-    real(DP) :: dtolerance = 1e-8_DP
-
-    ! kind of elementary smoother (possible values: SMOOTHER_JACOBI, SMOOTHER_ILU)
-    integer :: celementaryPrec = SMOOTHER_JACOBI
-
-    ! MG cycle (0=F-cycle, 1=V-cycle, 2=W-cycle)
-    integer :: ccycle = 0
-
-    ! number of smoothing steps
-    integer :: nsmoothingSteps = 2
-
-    ! damping parameter
-    real(DP) :: ddamp = 0.7_DP
-
-    ! show deformation in gmv(possible values: YES, NO
-    integer :: cshowDeformation = NO
-
-    ! number of points where to evaluate the finite element solution
-    integer :: nevalPoints = 0
-  
-    ! number of provided reference solutions in the first
-    ! min(nevalPoints, nrefSols) evaluation points
-    integer :: nrefSols = 0
-
-    ! given points where to evaluate the FE solution (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer :: DevalPoints
-
-    ! given reference solutions in the evaluation points (dimension ndim x nevalPoints)
-    real(DP), dimension(:,:), pointer :: DrefSols
-
-    ! values and derivatives of the FE function in the evaluation points
-    ! dimension nblocks x 3 x nevalPoints (3 since we need FUNC, DERX and DERY)
-    real(DP), dimension(:,:,:), pointer :: Dvalues
-
-  end type t_problem
-
-  ! the one and only instance of the t_problem type which is used in this and the main
-  ! module to store all necessary information about the simulation
-  type(t_problem), save :: rprob
-
 
 contains
 
