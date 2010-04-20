@@ -11,7 +11,7 @@
 
 program elasticity
    
-  use elasticity_2d_disp_smallDeform_static
+  use elasticity_2d_disp_smallDef_stat
   
   implicit none
   
@@ -48,7 +48,7 @@ program elasticity
   call output_line(' * small deformation')
   call output_line(' * static')
   call output_line('-----------------------------------------------------')
-  call elast_2d_disp_smallDeform_static
+  call elast_2d_disp_smallDef_stat
 
   ! further applications to follow...
   ! (transient, finite deformation, mixed formulation, ...)

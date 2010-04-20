@@ -13,10 +13,11 @@
 !# </purpose>
 !##############################################################################
 
-module elasticity_2d_disp_smallDeform_static
+module elasticity_2d_disp_smallDef_stat
 
   use storage
   use linearsolver
+  use linearsolverautoinitialise
   use boundary
   use bilinearformevaluation
   use linearformevaluation
@@ -41,7 +42,7 @@ contains
 ! ****************************************************************************************
 
 !<subroutine>
-  subroutine elast_2d_disp_smallDeform_static
+  subroutine elast_2d_disp_smallDef_stat
   
 !<description>
   ! This routine realises the basic elasticity solver. It performs the following tasks:
@@ -74,8 +75,8 @@ contains
     ! variable for selecting a specifig boundary region
     type(t_boundaryRegion) :: rboundaryRegion
 
-    ! solver nodes for main solver, preconditioner, smoother and coarse grid solver
-    type(t_linsolNode), pointer :: p_rsolver, p_rmgSolver, p_rsmoother, p_relementaryPrec
+    ! solver node
+    type(t_linsolNode), pointer :: p_rsolver
 
     ! array for the block structured system matrix
     type(t_matrixBlock), dimension(:), pointer :: Rmatrices
@@ -84,12 +85,6 @@ contains
     ! solution process (used for implementing Dirichlet boundary conditions)
     type(t_filterChain), dimension(1), target :: RfilterChain
     type(t_filterChain), dimension(:), pointer :: p_RfilterChain
-
-    ! multigrid data for current level
-    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
-
-    ! An interlevel projection structure for changing levels
-!    type(t_interlevelProjectionBlock) :: rprojection
 
     ! error indicator during initialisation of the solver
     integer :: ierror
@@ -109,8 +104,8 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata, p_Ddata2
     real(DP), Dimension(:,:), pointer :: p_DvertexCoords
 
-    ! some temporary variables
-    integer :: i, j, k, ilev, irow, jcol
+    ! some auxiliary variables
+    integer :: i, j, k, ilev, irow, jcol, nlevels
     real(DP) ::  ddivu, deps11, deps22, deps12, daux1, daux2
     real(DP) ::  dsigma11, dsigma12, dsigma22, dsigma33, dtrace, dmises
     ! Structure for saving parameters from the DAT file
@@ -125,14 +120,17 @@ contains
     ! +------------------------------------------------------------------------
     ! | READ PARAMETER FILE
     ! +------------------------------------------------------------------------
-    !
+
     ! call subroutine that reads in the parameter file
     call elast_readParameterFile(rprob, rparams)
 
     ! +------------------------------------------------------------------------
     ! | BOUNDARY AND TRIANGULATION
     ! +------------------------------------------------------------------------
-    !
+  
+    ! set number of levels
+    nlevels = rprob%ilevelMax - rprob%ilevelMin + 1
+  
     ! allocate memory for all levels
     allocate(Rlevels(rprob%ilevelMin:rprob%ilevelMax))
 
@@ -386,7 +384,7 @@ contains
             endif
           else
             call output_line('Invalid BC found!', OU_CLASS_ERROR, OU_MODE_STD, &
-                             'elast_2d_disp_smallDeform_static')
+                             'elast_2d_disp_smallDef_stat')
             call sys_halt()
           end if
         enddo
@@ -426,182 +424,7 @@ contains
     ! the vector during the solution process. Set the following pointer for this.
     p_RfilterChain => RfilterChain
 
-
-
-
-
-
-
-
-
-!BRAL possibility to create rprojection object
-!    ! Now we have to build up the level information for multigrid.
-!    !
-!    ! At first, initialise a standard interlevel projection structure. We
-!    ! can use the same structure for all levels.
-!    call mlprj_initProjectionDiscr(rprojection, Rlevels(rprob%ilevelMax)%rdiscretisation)
-
-!BRAL NEW!
-!  call mlprj_initProjectionVec(rprojection, rrhs)
-!
-!  call linsolinit_initFromFile (p_rsolver, rparams, "SOLVER",&
-!                                rprob%ilevelMax - rprob%ilevelMin + 1,&
-!                                p_RfilterChain, rprojection)
-
-!BRAL possibility to get the current rprojection object
-!  call linsol_getMultigrid2Level(p_rmgSolver, rprob%ilevelMax, p_rlevelInfo)
-!  p_rlevelInfo%p_rprojection
-! is this the same as
-!   rmgSolver%p_rsubnodeMultigrid2%p_RlevelInfo(rprob%ilevelMax)%p_rprojection
-! ???
-!      if (.not. associated( &
-!          rmgSolver%p_rsubnodeMultigrid2%p_RlevelInfo(rprob%ilevelMax)%p_rprojection)) then
-
-
-
-
-
-
-
-
-
-
-
-    if (rprob%csolver .eq. SOLVER_DIRECT) then
-      ! direct UMFPACK solver
-      call linsol_initUMFPACK4(p_rsolver)
-      p_rsolver%p_rsubnodeUMFPACK4%imatrixDebugOutput = 0
-
-    else if (rprob%csolver .eq. SOLVER_CG .or. rprob%csolver .eq. SOLVER_BICGSTAB) then
-      ! CG or BICGSTAB solver
-
-      ! create elemantary smoother/preconditioner
-      if (rprob%celementaryPrec .eq. SMOOTHER_JACOBI) then
-        call linsol_initJacobi(p_relementaryPrec)
-      else if (rprob%celementaryPrec .eq. SMOOTHER_ILU) then
-        call linsol_initILU0(p_relementaryPrec)
-      else if (rprob%celementaryPrec .eq. SMOOTHER_NO) then
-        nullify(p_relementaryPrec)
-      end if
-
-      if (rprob%csolver .eq. SOLVER_CG) then
-        ! create CG solver
-        call linsol_initCG(p_rsolver, p_relementaryPrec, p_RfilterChain)
-      else
-        ! create BiCGstab solver
-        call linsol_initBiCGStab(p_rsolver, p_relementaryPrec, p_RfilterChain)
-      endif
-
-    else
-      ! in every other case a multigrid solver is involved, so prepare this first
-
-      ! init multigrid solver
-      call linsol_initMultigrid2(p_rmgSolver, rprob%ilevelMax - rprob%ilevelMin + 1, &
-                                 p_RfilterChain)
-
-      ! set up a coarse grid solver (always gridlevel 1)
-      call linsol_getMultigrid2Level(p_rmgSolver, 1, p_rlevelInfo)
-      call linsol_initUMFPACK4(p_rlevelInfo%p_rcoarseGridSolver)
-
-      do ilev = rprob%ilevelMin+1, rprob%ilevelMax
-      
-        ! add this multigrid level
-        call linsol_getMultigrid2Level(p_rmgSolver, ilev - rprob%ilevelMin+1, p_rlevelInfo)
-
-        ! set up elemantary smoother/preconditioner
-        ! This preconditioner is either used directly as smoother for the MG solver, or
-        ! as preconditioner for CG/BICG within a MG_CG/MG_BICG solver.
-        if (rprob%celementaryPrec .eq. SMOOTHER_JACOBI) then
-          call linsol_initJacobi(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_ILU) then
-          call linsol_initILU0(p_relementaryPrec)
-        else if (rprob%celementaryPrec .eq. SMOOTHER_NO) then
-          nullify(p_relementaryPrec)
-        end if
-
-
-        if (rprob%csolver .eq. SOLVER_MG_CG .or. &
-            rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG) then
-          ! set up CG solver and use the just created elementary prec. as preconditioner
-          call linsol_initCG(p_rsmoother, p_relementaryPrec, p_RfilterChain)
-
-        else if (rprob%csolver .eq. SOLVER_MG_BICGSTAB .or. &
-                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
-          ! set up BiCGstab solver and use the just created elem. prec. as preconditioner
-          call linsol_initBiCGStab(p_rsmoother, p_relementaryPrec, p_RfilterChain)
-
-        else if (rprob%csolver .eq. SOLVER_MG .or. &
-                 rprob%csolver .eq. SOLVER_CG_MG .or. &
-                 rprob%csolver .eq. SOLVER_BICGSTAB_MG) then
-          ! for the other MG solvers, set the elementary preconditioner as smoother
-          p_rsmoother => p_relementaryPrec
-        endif
-
-        ! turn p_rsmoother into a smoother and specify number of smoothing steps
-        ! and damping parameter
-        call linsol_convertToSmoother(p_rsmoother, rprob%nsmoothingSteps, rprob%ddamp)
- 
-        ! use the same smoother for pre- and postsmoothing
-        p_rlevelInfo%p_rpresmoother => p_rsmoother
-        p_rlevelInfo%p_rpostsmoother => p_rsmoother
-
-        ! adjust output verbosity
-        if (ilev .eq. rprob%ilevelMax) then
-          p_rsmoother%ioutputLevel = 1
-        else
-          p_rsmoother%ioutputLevel = 0
-        end if
-
-      enddo
-
-      ! set cycle type
-      p_rmgSolver%p_rsubnodeMultigrid2%icycle = rprob%ccycle
-
-      ! inquire if the MG solver is the outermost solver or if it works as preconditioner
-      ! of an outer Krylov solver
-      if (rprob%csolver .eq. SOLVER_CG_MG .or. &
-          rprob%csolver .eq. SOLVER_BICGSTAB_MG .or. &
-          rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG .or. &
-          rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
-        ! create a CG/BiCGstab solver which uses the MG solver created above as
-        ! preconditioner
-
-        ! adjust output verbosity of the multigrid solver
-        p_rmgSolver%ioutputLevel = 0
-    
-        ! the MG preconditioner performs exactly one iteration
-        p_rmgSolver%nmaxIterations = 1
-        p_rmgSolver%depsRel = 1.0E-99_DP
-
-        ! set up the outer Krylov solver
-        if (rprob%csolver .eq. SOLVER_CG_MG) then
-          call linsol_initCG(p_rsolver, p_rmgSolver, p_RfilterChain)
-        else if (rprob%csolver .eq. SOLVER_BICGSTAB_MG .or. &
-                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_CG .or. &
-                 rprob%csolver .eq. SOLVER_BICGSTAB_MG_BICGSTAB) then
-          call linsol_initBICGSTAB(p_rsolver, p_rmgSolver, p_RfilterChain)
-        endif
-      else
-        ! otherwise define the MG solver as outer solver
-        p_rsolver => p_rmgSolver
-      endif
-    endif
-    ! in every case, p_rsolver denotes the outermost solver now
-
-
-    ! adjust output verbosity of the outer solver
-    p_rsolver%ioutputLevel = 1
-
-    ! set last 3 residuals for asymptotic rate of convergence
-    p_rsolver%niteAsymptoticCVR = 3
-
-    ! set max. number of iterations
-    p_rsolver%nmaxIterations = rprob%niterations
-
-    ! set tolerance
-    p_rsolver%depsRel = rprob%dtolerance
-! BRAL: was ist mit abs eps?!?
-!    p_rsolver%depsAbs = 1E-10_DP
+    call linsolinit_initFromFile(p_rsolver, rparams, "SOLVER", nlevels, p_RfilterChain)
 
     ! Attach the system matrices to the solver.
 
@@ -627,14 +450,14 @@ contains
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line('Error in initialisation of the solver structure: ' // &
                        sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
-                       'elast_2d_disp_smallDeform_static')
+                       'elast_2d_disp_smallDef_stat')
       call sys_halt()
     endif
     call linsol_initData(p_rsolver, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line('Error in initialisation of the solver data: ' // &
                        sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
-                       'elast_2d_disp_smallDeform_static')
+                       'elast_2d_disp_smallDef_stat')
       call sys_halt()
     endif
 
@@ -644,18 +467,16 @@ contains
     ! would have to use linsol_precondDefect instead.
     call linsol_solveAdaptively(p_rsolver, rsol, rrhs, rtempBlock)
 
-    if (rprob%csolver .ne. SOLVER_DIRECT) then
-      call output_line('*********************************************************')
-      ! number of iterations
-      call output_line('Number of iterations: ' // sys_siL(p_rsolver%iiterations,8) )
-      ! rate of convergence
-      call output_line('Convergence rate: ' // sys_sdL(p_rsolver%dconvergenceRate,5) )
-      ! rate of asymptotic convergence
-      call output_line('Asymptotic convergence rate: ' // &
-                        sys_sdL(p_rsolver%dasymptoticConvergenceRate,5) )
-      call output_line('*********************************************************')
-      call output_lbrk()
-    endif
+    call output_line('*********************************************************')
+    ! number of iterations
+    call output_line('Number of iterations: ' // sys_siL(p_rsolver%iiterations,8) )
+    ! rate of convergence
+    call output_line('Convergence rate: ' // sys_sdL(p_rsolver%dconvergenceRate,5) )
+    ! rate of asymptotic convergence
+    call output_line('Asymptotic convergence rate: ' // &
+                      sys_sdL(p_rsolver%dasymptoticConvergenceRate,5) )
+    call output_line('*********************************************************')
+    call output_lbrk()
 
     ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
     ! strains, stresses
@@ -731,7 +552,7 @@ contains
       enddo
     end if
 
-    ! Calculate the error to the reference function.
+    ! calculate the error between FE and reference solution
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
 
       ! Calculate the errors to the reference function
@@ -740,10 +561,6 @@ contains
       rerror%p_DerrorH1 => DerrorH1(1:2)
       call pperr_scalarVec(rerror, elast_analFunc, rcollection)
       ! Print the errors
-!      call output_line('Errors (L2/H1): ' // &
-!          trim(sys_sdEP(DerrorL2(1),20,12)) // &
-!          trim(sys_sdEP(DerrorL2(2),20,12)))
-
       call output_line('L2 error for u1: ' // sys_sdEL(DerrorL2(1),10) )
       call output_line('L2 error for u2: ' // sys_sdEL(DerrorL2(2),10) )
       call output_line('L2 error for  u: ' // &
@@ -850,11 +667,10 @@ contains
       endif
     endif
 
-  end subroutine elast_2d_disp_smallDeform_static
+  end subroutine elast_2d_disp_smallDef_stat
 
 
 ! ****************************************************************************************
 
 
-end module elasticity_2d_disp_smallDeform_static
-
+end module elasticity_2d_disp_smallDef_stat

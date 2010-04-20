@@ -451,112 +451,15 @@ contains
                        trim(sys_siL(rprob%ilevelMin,3)) // &
                        "/" // trim(sys_siL(rprob%ilevelMax,3)))
     endif
-        
 
-! BRAL: NEW!
-!    ! name of the solver file
-!    call parlst_getvalue_string(rparams, '', 'solverFile', sstring)
-!    call output_line('solver file: '//trim(sstring))
-!    call parlst_readfromfile(rparams, sstring)
-!    call output_line('parsing solver file '//trim(sstring)//'...')
+    ! name of the solver file
+    call parlst_getvalue_string(rparams, '', 'solverFile', sstring)
+    call output_line('solver file: '//trim(sstring))
+    call parlst_readfromfile(rparams, sstring)
+    call output_line('parsing solver file '//trim(sstring)//'...')
 
-
-    ! type of solver (possible values: DIRECT, CG, BICGSTAB, MG, CG_MG, MG_CG, MG_BICGSTAB)
-    call parlst_getvalue_string(rparams, '', 'solver', sstring)
-
-    rprob%bmgInvolved = .FALSE.
-    if(trim(sstring) .eq. 'DIRECT') then
-      rprob%csolver = SOLVER_DIRECT
-    else if(trim(sstring) .eq. 'CG') then
-      rprob%csolver = SOLVER_CG
-    else if(trim(sstring) .eq. 'BICGSTAB') then
-      rprob%csolver = SOLVER_BICGSTAB
-    else if(trim(sstring) .eq. 'MG') then
-      rprob%csolver = SOLVER_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'CG_MG') then
-      rprob%csolver = SOLVER_CG_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG') then
-      rprob%csolver = SOLVER_BICGSTAB_MG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_CG') then
-      rprob%csolver = SOLVER_MG_CG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'MG_BICGSTAB') then
-      rprob%csolver = SOLVER_MG_BICGSTAB
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG_CG') then
-      rprob%csolver = SOLVER_BICGSTAB_MG_CG
-      rprob%bmgInvolved = .TRUE.
-    else if(trim(sstring) .eq. 'BICGSTAB_MG_BICGSTAB') then
-      rprob%csolver = SOLVER_BICGSTAB_MG_BICGSTAB
-      rprob%bmgInvolved = .TRUE.
-    else
-      call output_line('invalid solver:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-      call sys_halt()
-    end if
-    call output_line('solver: '//trim(sstring))
-
-    ! when no multigrid solver is involved, then set min. level to max. level
-    if (.not. rprob%bmgInvolved) then
-      rprob%ilevelMin = rprob%ilevelMax
-      call output_line('grid level: ' // trim(sys_siL(rprob%ilevelMax,3)))
-    else
-      call output_line('min./max. grid level: ' // trim(sys_siL(rprob%ilevelMin,3)) // &
-                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
-    end if
-
-    if (rprob%csolver .ne. SOLVER_DIRECT) then
-      ! max number of iterations
-      call parlst_getvalue_int(rparams, '', 'numIter', rprob%niterations)
-      call output_line('max. number of iterations: '//trim(sys_siL(rprob%niterations,10)))
-  
-      ! tolerance
-      call parlst_getvalue_double(rparams, '', 'tolerance', rprob%dtolerance)
-      call output_line('rel. stopping criterion: ' // trim(sys_sdEL(rprob%dtolerance,4)))
-
-      ! type of elementary preconditioner/smoother (possible values: NO, JACOBI, ILU)
-      call parlst_getvalue_string(rparams, '', 'elementaryPrec', sstring)
-      if(trim(sstring) .eq. 'NO') then
-        rprob%celementaryPrec = SMOOTHER_NO
-      else if(trim(sstring) .eq. 'JACOBI') then
-        rprob%celementaryPrec = SMOOTHER_JACOBI
-      else if(trim(sstring) .eq. 'ILU') then
-        rprob%celementaryPrec = SMOOTHER_ILU
-      else
-        call output_line('invalid elementary precond./smoother type:' // trim(sstring), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
-        call sys_halt()
-      end if
-      call output_line('elementary preconditioner/smoother: '//trim(sstring))
-
-      ! additional parameters for multigrid
-      if (rprob%bmgInvolved) then
-        ! MG cycle (0=F-cycle, 1=V-cycle, 2=W-cycle)
-        call parlst_getvalue_string(rparams, '', 'mgCycle', sstring)
-        if(trim(sstring) .eq. 'V') then
-          rprob%ccycle = 1
-        else if(trim(sstring) .eq. 'F') then
-          rprob%ccycle = 0
-        else if(trim(sstring) .eq. 'W') then
-          rprob%ccycle = 2
-        else
-          call output_line('invalid mgCycle:' // trim(sstring))
-          call output_line('Choosing F-cycle!')
-          rprob%ccycle = 0
-        end if
-        ! number of smoothing steps
-        call parlst_getvalue_int(rparams, '', 'numSmoothingSteps', rprob%nsmoothingSteps)
-        call output_line('MG cycle: '//trim(sstring) // ':' // &
-                         trim(sys_siL(rprob%nsmoothingSteps,3)) // ':' // &
-                         trim(sys_siL(rprob%nsmoothingSteps,3)))
-        ! damping parameter
-        call parlst_getvalue_double(rparams, '', 'damping', rprob%ddamp)
-        call output_line('damping parameter:' // trim(sys_sdL(rprob%ddamp,2)))
-      endif
-    endif
+    call output_line('min./max. grid level: ' // trim(sys_siL(rprob%ilevelMin,3)) // &
+                     "/" // trim(sys_siL(rprob%ilevelMax,3)))
 
     ! show deformation in gmv (possible values: YES, NO)
     call parlst_getvalue_string(rparams, '', 'showDeformation', sstring)
@@ -607,7 +510,7 @@ contains
           call parlst_getvalue_double(rparams, '', 'refSols', &
                                       rprob%DrefSols(2,i), iarrayindex = 2*i)
           call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
-                           // ', ' // trim(sys_sdL(rprob%DrefSols(1,i),8)) // ')')
+                           // ', ' // trim(sys_sdL(rprob%DrefSols(2,i),8)) // ')')
         end do
       end if
     else

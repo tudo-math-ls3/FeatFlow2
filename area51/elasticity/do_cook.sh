@@ -1,17 +1,25 @@
 #!/bin/bash
 
-# set grid base name
+# set grid base name (expected: ./pre/<basename>.tri, ./pre/<basename>.prm)
 grid="cook"
 
 # choose shear modulus
 mus="80.194"
 
+# set solver file base name (expected: ./dat/<basename>.dat)
+solver="BICGSTAB"
+#solver="MG"
+#solver="BICGSTAB_MG"
+#solver="MG_BICGSTAB"
+#solver="BICGSTAB_MG_BICGSTAB"
+
 # choose Poisson ratio
 nus="0.3"
 
 # choose MG levels
-mgs="06"
-#mgs="02 03 04 05 06 07 08"
+levelMaxs="04"
+#levelMaxs="02 03 04 05 06 07 08"
+levelMin="01"
 
 #-----------------------------
 
@@ -27,7 +35,7 @@ for mu in ${mus}; do
 for nu in ${nus}; do
 
 # loop over all MG levels
-for mg in ${mgs}; do
+for levelMax in ${levelMaxs}; do
 
 # create the temporary dat file
 cat > dat/${datFile}.dat <<END_OF_DATA
@@ -95,32 +103,11 @@ funcID_u2 = 0
 element = Q1
 
 # minimum and maximum grid level
-levelMin = 1
-levelMax = ${mg}
+levelMin = ${levelMin}
+levelMax = ${levelMax}
 
-#solverFile = ./dat/BICGSTAB.dat
-
-# solver ('DIRECT', 'CG', 'BICGSTAB', 'MG', 'CG_MG', 'BICGSTAB_MG',
-#         'MG_CG', 'MG_BICGSTAB', 'BICGSTAB_MG_CG', 'BICGSTAB_MG_BICGSTAB')
-solver = BICGSTAB
-
-# maximum number of iterations
-numIter = 1024
-
-# relative stopping criterion
-tolerance = 1.0e-8
-
-# elementary preconditioner/smoother 'Jacobi' or 'ILU' (only for MG solver)
-elementaryPrec = ILU
-
-# MG cycle ('V', 'F' or 'W') (only for MG solver)
-mgCycle = F
-
-# number of smoothing steps (only for MG solver)
-numSmoothingSteps = 2
-
-# damping parameter (only for MG solver)
-damping = 1.0
+# solver
+solverFile = ./dat/${solver}.dat
 
 # show deformation in visual output ('YES' or 'NO')
 showDeformation = YES
@@ -140,15 +127,19 @@ END_OF_DATA
 
 
 # start the program, write screen output to result file
-echo "*** Start computation on level ${mg}..."
+echo "*** ************************************"
+echo "*** Start computation on level ${levelMax}..."
+echo "*** ************************************"
 
 ./elasticity | tee ${resultFile}.log
 
+echo "*** ************************************"
 echo "*** ... computation finished!"
+echo "*** ************************************"
 
 # move/rename dat file and result file
-datFile2="log/${grid}_mu${mu}_nu${nu}_mg${mg}"
-resultFile2="log/${grid}_mu${mu}_nu${nu}_mg${mg}"
+datFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
+resultFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
 
 \mv dat/${datFile}.dat ${datFile2}.dat
 \mv ${resultFile}.log ${resultFile2}.log
@@ -160,7 +151,7 @@ echo ""
 echo "*** ----------------------------------------------------------"
 echo ""
 
-done # mgs
+done # levelMaxs
 done # nus
 done # mus
 

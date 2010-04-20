@@ -1,0 +1,40 @@
+# ------------------------------------------------------------------------
+# Linear solver
+#
+# This file defines a BiCGstab_MG solver.
+# ------------------------------------------------------------------------
+
+[SOLVER]
+isolverType        = 7      # solver type (7=BiCGstab, 12=MG2, 11=UMFPACK)
+nmaxIterations     = 1024   # maximum number of iterations
+depsRel            = 1e-8   # relative stopping criterion
+depsAbs            = 0.1    # absolute stopping criterion
+ioutputLevel       = 1      # output level of the solver
+niteAsymptoticCVR  = 3      # number of residuals for asymptotic conv. rate
+spreconditioner    = 'PRECONDITIONER'  # name of the preconditioner section
+  #
+  [PRECONDITIONER]
+  # general parameters
+  isolverType        = 12     # solver type (7=BiCGstab, 12=MG2, 11=UMFPACK) 
+  nminIterations     = 1      # fixed number of iterations
+  depsRel            = 0.0    # relative stopping criterion
+  depsAbs            = 0.0    # absolute stopping criterion
+  iresCheck          = "NO"   # flag whether to check the residuum norm
+  ioutputLevel       = 0      # output level of the solver
+  # MG parameters
+  icycle             = 0      # cycle identifier (0=F, 1=V, 2=W)
+  ccorrectionTypeAlpha = 0    # ACGC (0=standard, 1=min. energy, 2=min. defect norm
+  dalphaMin          = -10.0  # lower limit for ACGC value (default=-10.0)
+  dalphaMax          =  10.0  # upper limit for ACGC value (default=-10.0)
+  spreSmootherName   = 'SMOOTHER'   # name of presmoother section
+  spostSmootherName  = 'SMOOTHER'   # name of postsmoother section
+  scoarseGridSolver  = 'COARSEGRID' # name of coarse grid solver section
+    #
+    [SMOOTHER]
+    isolverType        = 50     # smoother type (2=Jacobi, 50=ILU0)
+    nsmoothingSteps    = 2      # number of smoothing steps
+    domega             = 0.7    # damping parameter
+    #
+    [COARSEGRID]
+    isolverType        = 11  # type identifier of the coarse grid solver (11=UMFPACK)
+
