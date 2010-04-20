@@ -4298,7 +4298,7 @@ contains
     character(LEN=15) :: searchmode
 
     ! Variables for midpoints_el
-	real(DP), dimension(1:5) :: distances
+	real(DP), dimension(1:4) :: distances
 	integer :: i, adj, minl, ite
 	integer, parameter :: itemax = 100000
 	real(DP) :: distToMid
@@ -4358,6 +4358,8 @@ contains
 	    gotoNextElm: do ite = 1, itemax
 	    
 		    distances = 10000.0_dp
+   
+            if (rParticles%p_element(iPart)==0) rParticles%p_element(iPart)=1
    
 		    ! Calculate the distances to the midpoints
 		    do i = 1, 3 

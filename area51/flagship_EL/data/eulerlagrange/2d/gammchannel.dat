@@ -105,10 +105,10 @@ particledensitymax = 0.39
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
 # 2 random diameter of the particles (particlediammin to particlediammax)
-idiampart = 2
+idiampart = 0
 
 # particle-diameter
-particlediam = 2e-6
+particlediam = 1e-9
 
 # particle diameter minimum in meter
 particlediammin = 1e-8
