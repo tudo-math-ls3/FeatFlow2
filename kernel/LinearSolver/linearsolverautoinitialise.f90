@@ -202,10 +202,9 @@ contains
 
 !<subroutine>
 
-  recursive subroutine linsolinit_initFromFile (p_rsolverNode,&
-                                                rparamList,ssolverName,&
-                                                nlevels, &
-                                                RfilterChain,rinterlevelProjection)
+  recursive subroutine linsolinit_initFromFile (p_rsolverNode, rparamList, &
+                                                ssolverName, nlevels, RfilterChain, &
+                                                rinterlevelProjection)
   
 !<description>
   ! This routine creates a new linear solver node p_rsolverNode of the
@@ -270,6 +269,7 @@ contains
     real(DP) :: d1
     type(t_filterChain), dimension(:), pointer :: p_Rfilter
     type(t_linsolMGLevelInfo), pointer     :: p_rlevelInfo
+    type(t_linsolMG2LevelInfo), pointer     :: p_rlevelInfo2
 
     nullify(p_Rfilter)
     if (present(RfilterChain)) then
@@ -391,6 +391,12 @@ contains
       ! Init the solver node
       call linsol_initUMFPACK4 (p_rsolverNode)
       
+    case (LINSOL_ALG_ILU0)
+      ! ILU0 solver
+      !
+      ! Init the solver node
+      call linsol_initILU0 (p_rsolverNode)
+
     case (LINSOL_ALG_MILUS1x1)
       ! (M)ILU solver
       !
@@ -527,6 +533,102 @@ contains
         
       end do
     
+    case (LINSOL_ALG_MULTIGRID2)
+      ! Multigrid solver
+      !
+      ! Parameters:
+      !  icycle         = 0               -> F-cycle
+      !                 = 1               -> V-cycle
+      !                 = 2               -> W-cycle
+      !  dalphaMin      >= 0.0            -> minimum damping parameter; standard = 1.0
+      !  dalphaMin      >= 0.0            -> maximum damping parameter; standard = 1.0
+      !  spreSmootherName                 -> Name of the presmoother section
+      !  spostSmootherName                -> Name of the postsmoother section
+      !  scoarseGridSolver                -> Name of the coarse grid solver section
+
+      ! At first, initialise the solver:
+      call linsol_initMultigrid2(p_rsolverNode, nlevels, p_Rfilter)
+
+      ! Then, get solver specific data.
+      call parlst_getvalue_int (p_rsection, 'icycle', &
+                                p_rsolverNode%p_rsubnodeMultigrid2%icycle,&
+                                p_rsolverNode%p_rsubnodeMultigrid2%icycle)
+
+      ! Coarse grid correction parameters
+      call parlst_getvalue_int (p_rsection, 'ccorrectionTypeAlpha', &
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType,&
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%ccorrectionType)
+
+      call parlst_getvalue_double (p_rsection, 'dalphaMin', &
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin,&
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMin)
+      
+      call parlst_getvalue_double (p_rsection, 'dalphaMax', &
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax,&
+           p_rsolverNode%p_rsubnodeMultigrid2%rcoarseGridCorrection%dalphaMax)
+    
+      ! Do we have a presmoother?
+      call parlst_getvalue_string (p_rsection, 'spreSmootherName', sString,'')
+      spresmoother = ''
+      if (sString .ne. '') read (sString,*) spresmoother
+      
+      ! A postsmoother?
+      call parlst_getvalue_string (p_rsection, 'spostSmootherName', sString,'')
+      spostsmoother = ''
+      if (sString .ne. '') read (sString,*) spostsmoother
+      
+      ! A coarse grid solver?
+      call parlst_getvalue_string (p_rsection, 'scoarseGridSolver', sString,'')
+      scoarsegridsolver = ''
+      if (sString .ne. '') read (sString,*) scoarsegridsolver
+      
+      ! Initialise the coarse grid solver - if there is one. There must be one!
+      if (scoarsegridsolver .eq. '') then
+        call output_line ('Cannot create linear solver; ' // &
+            'no coarse grid solver for MG!', OU_CLASS_ERROR, OU_MODE_STD, &
+            'linsolinit_initFromFile')
+        call sys_halt()
+      end if
+
+      ! set up a coarse grid solver (always gridlevel 1)
+      call linsol_getMultigrid2Level(p_rsolverNode, 1, p_rlevelInfo2)
+
+      call linsolinit_initFromFile(p_rlevelInfo2%p_rcoarseGridSolver, rparamList,&
+                                   scoarsegridsolver, nlevels, RfilterChain)
+      
+      ! Build all the  other levels
+      do ilev = 2,nlevels
+
+        ! add this multigrid level
+        call linsol_getMultigrid2Level(p_rsolverNode, ilev, p_rlevelInfo2)
+
+        ! Is there a presmoother?
+        if (spresmoother .ne. '') then
+          call linsolinit_initFromFile(p_rlevelInfo2%p_rpresmoother, rparamList, &
+                                       spresmoother, nlevels, RfilterChain)
+        else
+          nullify(p_rlevelInfo2%p_rpresmoother)
+        end if
+          
+        ! Is there a postsmoother?
+        if (spostsmoother .ne. '') then
+          ! Check if pre- and postsmoother are identical.
+          call sys_toupper (spresmoother) 
+          call sys_toupper (spostsmoother) 
+          if (spresmoother .ne. spostsmoother) then
+            ! they are not identical, so read in the post smoother
+            call linsolinit_initFromFile(p_rlevelInfo2%p_rpostsmoother, rparamList, &
+                                         spostsmoother, nlevels, RfilterChain)
+          else 
+            ! otherwise, let the pointer point to the presmoother
+            p_rlevelInfo2%p_rpostsmoother => p_rlevelInfo2%p_rpresmoother
+          end if
+        else
+          nullify(p_rlevelInfo2%p_rpostsmoother)
+        end if
+        
+      end do
+    
     case default
       call output_line ('Cannot create linear solver; ' // &
             'unsupported solver type isolverType = ' // &
@@ -538,7 +640,7 @@ contains
 
     ! Ok, we should have a solver node p_rsolverNode now, initialised with
     ! standard parameters. The next task is to change all parameters
-    ! in the solver node to those which appeat in the given configuration.
+    ! in the solver node to those which appear in the given configuration.
     ! If a parameter does not exist in the given configuration, the default
     ! value (that which is already stored in the solver configuration)
     ! must be used.
@@ -620,7 +722,8 @@ contains
     integer :: csolver
     type(t_parlstSection), pointer :: p_rsection
     integer :: i1,ikrylowDim
-    
+    character(LEN=SYS_STRLEN) :: sstring
+
     csolver = LINSOL_ALG_UNDEFINED
     if (present(csolverType)) csolver = csolverType
 
@@ -754,6 +857,16 @@ contains
       call parlst_getvalue_int (p_rsection, 'nmaxIterations', &
                                 rsolverNode%nmaxIterations, rsolverNode%nmaxIterations)
 
+      call parlst_getvalue_string (p_rsection, 'iresCheck', sstring, 'YES')
+      call sys_toUpper(sstring) 
+      if (sstring .eq. 'NO') then
+        ! if the string is exactly 'NO' then disable checking of residual norm
+        rsolverNode%iresCheck = NO
+      else
+        ! in all other cases enable checking of residual norm
+        rsolverNode%iresCheck = YES
+      endif
+  
       call parlst_getvalue_double (p_rsection, 'depsRel', &
                                   rsolverNode%depsRel, rsolverNode%depsRel)
 
@@ -765,6 +878,10 @@ contains
 
       call parlst_getvalue_int (p_rsection, 'iresNorm', &
                                 rsolverNode%iresNorm, rsolverNode%iresNorm)
+
+      call parlst_getvalue_int (p_rsection, 'niteAsymptoticCVR', &
+                                rsolverNode%niteAsymptoticCVR, &
+                                rsolverNode%niteAsymptoticCVR)
 
       call parlst_getvalue_int (p_rsection, 'istoppingCriterion', &
                                 rsolverNode%istoppingCriterion, &
