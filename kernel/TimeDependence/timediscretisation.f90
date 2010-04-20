@@ -574,13 +574,13 @@ contains
     case (TDISCR_ONESTEPTHETA)
       ! Increase the number of iterations. Every intervall gets a new timestep
       ! in the midpoint.
-      rtimediscr%nintervals = 2*rtimediscr%nintervals
+      rtimediscr%nintervals = rtimediscr%nintervals * 2**nreflevels
       rtimediscr%dtstep = (rtimediscr%dtimeMax-rtimediscr%dtimeInit)/real(rtimediscr%nintervals,DP)
 
     case (TDISCR_FSTHETA)
       ! Fractional step. Get the number of macro-timesteps, refine and insert
       ! the substeps again.
-      rtimediscr%nintervals = 2*(rtimediscr%nintervals/3)*3
+      rtimediscr%nintervals = ((rtimediscr%nintervals/3) * 2**nreflevels) * 3
       
     end select
   
