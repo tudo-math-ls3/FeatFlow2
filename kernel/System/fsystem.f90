@@ -1332,8 +1332,8 @@ contains
       write(saux, '(i2)') idigits
     endif
 
-    if (idigits .gt. 32) then
-      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdP! ***"
+    if (ipositions .gt. 32) then
+      write(6, *) "*** WARNING! Too long string requested in sys_sdP! ***"
       write(saux2, '(i2)') 32
     else
       write(saux2, '(i2)') ipositions
@@ -1438,8 +1438,8 @@ contains
       write(saux, '(i2)') idigits
     endif
 
-    if (idigits .gt. 24) then
-      write(6, *) "*** WARNING! Too many decimal places requested in sys_sdEP! ***"
+    if (ipositions .gt. 24) then
+      write(6, *) "*** WARNING! Too long string requested in sys_sdEP! ***"
       write(saux2, '(i2)') 24
     else
       write(saux2, '(i2)') ipositions
