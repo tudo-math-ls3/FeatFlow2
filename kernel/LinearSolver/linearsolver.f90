@@ -1147,7 +1147,7 @@ module linearsolver
 
     ! INPUT PARAMETER FOR ITERATIVE SOLVERS: 
     ! Absolute stopping criterion. Stop iteration if
-    ! !!defect!! < EPSREL.
+    ! !!defect!! < EPSABS.
     ! =0: ignore, use relative stopping criterion; standard = 1E-5
     ! Remark: do not set depsAbs=depsRel=0!
     real(DP)                        :: depsAbs = 1E-5_DP
@@ -3802,7 +3802,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: ireslength,ite,i,j,niteAsymptoticCVR
+  integer :: ite,i,j,niteAsymptoticCVR
   real(DP) :: dres,dfr
   type(t_vectorBlock), pointer :: p_rx,p_rdef
   type(t_linsolNode), pointer :: p_rprecSubnode
@@ -5977,8 +5977,8 @@ contains
   
 !</subroutine>
 
-  integer :: iblock,jblock
-  type(t_matrixBlock), pointer :: p_rmat
+!  integer :: iblock,jblock
+!  type(t_matrixBlock), pointer :: p_rmat
 
     ! Normally, we can handle the matrix.
     ccompatible = LINSOL_COMP_OK
@@ -7164,8 +7164,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: isubgroup,i
-  type(t_linsolSubnodeCG), pointer :: p_rsubnode
+  integer :: isubgroup
     
     ! A-priori we have no error...
     ierror = LINSOL_ERR_NOERROR
@@ -8415,7 +8414,7 @@ contains
 
   ! local variables
   real(DP) :: dalpha,dbeta,dgamma,dgammaOld,dres,dfr
-  integer :: ireslength,ite,i,j,niteAsymptoticCVR
+  integer :: ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
@@ -9312,7 +9311,7 @@ contains
   ! local variables
   real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dres
   real(DP) :: drho1,drho0,dfr
-  integer :: ireslength,ite,i,j,niteAsymptoticCVR
+  integer :: ite,i,j,niteAsymptoticCVR
 
   ! The queue saves the current residual and the two previous residuals.
   real(DP), dimension(LINSOL_NRESQUEUELENGTH) :: Dresqueue
@@ -10304,7 +10303,7 @@ contains
 
   ! local variables
   real(DP) :: dalpha,dbeta,dres,dfr,dtmp,dpseudores,dprnsf
-  integer :: ireslength,ite,i,j,k,niteAsymptoticCVR
+  integer :: ite,i,j,k,niteAsymptoticCVR
   
   ! Here come our 1D/2D arrays
   real(DP), dimension(:), pointer :: p_Dc, p_Ds, p_Dq
@@ -13257,7 +13256,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: nminIterations,nmaxIterations,ireslength,niteResOutput,niteAsymptoticCVR
+  integer :: nminIterations,nmaxIterations,niteResOutput,niteAsymptoticCVR
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
   logical :: bfilter,bsort
@@ -15356,7 +15355,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: nminIterations,nmaxIterations,ireslength,niteResOutput,niteAsymptoticCVR
+  integer :: nminIterations,nmaxIterations,niteResOutput,niteAsymptoticCVR
   integer :: ite,ilev,nlmax,i,j,nblocks
   real(DP) :: dres,dstep
   logical :: bfilter,bsort
