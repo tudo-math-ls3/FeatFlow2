@@ -27,5 +27,5 @@ scoarseGridSolver  = 'COARSEGRID' # name of coarse grid solver section
   domega             = 0.7    # damping parameter
   #
   [COARSEGRID]
-  isolverType        = 11  # type identifier of the coarse grid solver (11=UMFPACK)
+  isolverType        = 11     # type identifier of the coarse grid solver (11=UMFPACK)
 
