@@ -1,0 +1,101 @@
+################################################################################
+#
+# This is an example dat-file for the application
+#   elasticity_2d_disp_smallDef_stat.
+# It computes the well-known "Cook's plane" example, discretised by Q1 elements
+# and solved by a standard multigrid solver using an ILU smoother.
+#
+#         3    
+#       _____ ---|
+#   |---         | 2
+#   |           _|
+#   |         _/
+# 4 |      _/
+#   |  _ /   1
+#   |/
+#
+################################################################################
+
+# PRM-file of the domain
+gridFilePRM = './pre/cook.prm'
+
+# TRI-file of the mesh
+gridFileTRI = './pre/cook.tri'
+
+# boundary segments
+numBoundarySegments(1) =
+4
+
+# type of equatio to solve ('Poisson' or 'elasticity')
+equation = elasticity
+
+# material parameters (Poisson ratio nu and shear modulus mu)
+nu = 0.3
+mu = 80.194
+
+# boundary conditions
+# bc[i](#segments x #blocks)
+# 'D' or 'N', for each boundary i, each segment and each component
+bc1(8) =
+N
+N
+
+N
+N
+
+N
+N
+
+D
+D
+
+# type of simulation ('real' or 'analytic')
+simulation = real
+
+# surface forces in x- and y-direction
+# forceSurface[i](#segments x dim), in case of real simulation, for each boundary i
+# and each segment
+forceSurface1(8) =
+0.0
+0.0
+
+0.0
+15.625
+
+0.0
+0.0
+
+0.0
+0.0
+
+# given constant volume force in x- and y-direction in case of real simulation
+forceVolumeX   = 0.0
+forceVolumeY   = 0.0
+
+# ID of analytical function for u1 and u2 in case of analytical simulation
+funcID_u1 = 0
+funcID_u2 = 0
+
+# finite element discretisation ('Q1' or 'Q2')
+element = Q1
+
+# minimum and maximum grid level
+levelMin = 1
+levelMax = 6
+
+# solver
+solverFile = ./dat/MG.dat
+
+# show deformation in visual output ('YES' or 'NO')
+showDeformation = YES
+
+# x- and y-coordinate of points where the FE solution is to be evaluated
+evalPoints(2) =
+48.0
+60.0
+
+# reference solution values for u1 and u2 in evaluation points
+refSols(2) =
+-20.648992
+27.642747
+
