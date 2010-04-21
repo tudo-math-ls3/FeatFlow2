@@ -272,7 +272,7 @@ contains
  
     ! get the data file
     call sys_getcommandLineArg(1, snameDatFile, &
-                               sdefault='./dat/elast_2d_disp_smallDeform_static.dat')
+                               sdefault = './dat/elasticity_2d_disp_smallDef_stat.dat')
     call parlst_readfromfile(rparams, snameDatFile)
     call output_line('parsing dat-file '//trim(snameDatFile)//'...')
     
