@@ -6,15 +6,15 @@ grid="cook"
 # choose shear modulus
 mus="80.194"
 
+# choose Poisson ratio
+nus="0.3"
+
 # set solver file base name (expected: ./dat/<basename>.dat)
 solver="BICGSTAB"
 #solver="MG"
 #solver="BICGSTAB_MG"
 #solver="MG_BICGSTAB"
 #solver="BICGSTAB_MG_BICGSTAB"
-
-# choose Poisson ratio
-nus="0.3"
 
 # choose MG levels
 levelMaxs="04"
@@ -24,7 +24,7 @@ levelMin="01"
 #-----------------------------
 
 # set temporary base name of dat-file and result file
-datFile="elast_2d_disp_smallDeform_static"
+datFile="elasticity_2d_cook"
 resultFile="result"
 
 
@@ -39,6 +39,15 @@ for levelMax in ${levelMaxs}; do
 
 # create the temporary dat file
 cat > dat/${datFile}.dat <<END_OF_DATA
+#         3    
+#       _____ ---|
+#   |---         | 2
+#   |           _|
+#   |         _/
+# 4 |      _/
+#   |  _ /   1
+#   |/
+#
 # PRM-file of the domain
 gridFilePRM = './pre/${grid}.prm'
 
@@ -131,7 +140,7 @@ echo "*** ************************************"
 echo "*** Start computation on level ${levelMax}..."
 echo "*** ************************************"
 
-./elasticity | tee ${resultFile}.log
+./elasticity dat/${datFile}.dat | tee ${resultFile}.log
 
 echo "*** ************************************"
 echo "*** ... computation finished!"
