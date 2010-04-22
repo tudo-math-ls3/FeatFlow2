@@ -1,7 +1,7 @@
-!##############################################################################
-!# ****************************************************************************
+!#########################################################################################
+!# ***************************************************************************************
 !# <name> elasticity_2d_disp_smallDeform_static </name>
-!# ****************************************************************************
+!# ***************************************************************************************
 !#
 !# <purpose>
 !#   This module solves the basic elasticity problem:
@@ -11,30 +11,10 @@
 !#     - static
 !#   There is also the possibility to compute a 2D Poisson problem.
 !# </purpose>
-!##############################################################################
+!#########################################################################################
 
 module elasticity_2d_disp_smallDef_stat
 
-  use storage
-  use linearsolver
-  use linearsolverautoinitialise
-  use boundary
-  use bilinearformevaluation
-  use linearformevaluation
-  use filtersupport
-  use linearsystemscalar
-  use matrixfilters
-  use vectorfilters
-  use bcassembly
-  use scalarpde
-  use ucd
-  use pprocerror
-  use collection
-  use feevaluation
-
-  use elasticity_basic
-  use elasticity_callback
-  
   implicit none
 
 contains
@@ -43,6 +23,26 @@ contains
 
 !<subroutine>
   subroutine elast_2d_disp_smallDef_stat
+
+    use storage
+    use genoutput
+    use paramlist
+    use derivatives
+    use boundary
+    use bilinearformevaluation
+    use linearformevaluation
+    use bcassembly
+    use linearsolver
+    use linearsolverautoinitialise
+    use filtersupport
+    use linearsystemscalar
+    use matrixfilters
+    use vectorfilters
+    use scalarpde
+    use ucd
+    use collection
+    use elasticity_basic
+    use elasticity_callback
   
 !<description>
   ! This routine realises the basic elasticity solver. It performs the following tasks:
@@ -89,15 +89,6 @@ contains
     ! error indicator during initialisation of the solver
     integer :: ierror
     
-    ! error between FE function and reference function
-    type(t_errorScVec) :: rerror
-    real(DP), dimension(2), target :: DerrorL2
-    real(DP), dimension(2), target :: DerrorH1
-
-    ! which function value types to calculate in evaluation points (required by the
-    ! subroutine fevl_evaluate2(...))
-    integer, dimension(3) :: CderType = (/DER_FUNC, DER_DERIV_X, DER_DERIV_Y/)
-
     ! output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
     character(len=SYS_STRLEN) :: sucddir
@@ -106,9 +97,6 @@ contains
 
     ! some auxiliary variables
     integer :: i, j, k, ilev, irow, jcol, nlevels
-    real(DP) ::  ddivu, deps11, deps22, deps12, daux1, daux2
-    real(DP) ::  dsigma11, dsigma12, dsigma22, dsigma33, dtrace, dmises
-    ! Structure for saving parameters from the DAT file
 
     ! collection structure to provide additional information to the coefficient routine.
     type(t_collection) :: rcollection
@@ -478,99 +466,8 @@ contains
     call output_line('*********************************************************')
     call output_lbrk()
 
-    ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
-    ! strains, stresses
-    if (rprob%nevalPoints .gt. 0) then
-      ! call the appropriate evaluation routine, that calculates all required function
-      ! value types for all FE components in all evaluation points in one sweep. The
-      ! FE solution values are stored in rprob%Dvalues(:,:,:) with dimension
-      ! nblocks x 3 x nevalPoints (3 since we need FUNC, DERX and DERY)
-      call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints)
-
-      call output_line('Values in evaluation points:')
-      do i = 1, rprob%nevalPoints
-        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
-                         ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
-        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
-        deps11 = rprob%Dvalues(1,2,i)
-        deps22 = rprob%Dvalues(2,3,i)
-        deps12 = 0.5_DP*(rprob%Dvalues(2,2,i) + rprob%Dvalues(1,3,i))
-        call output_line('   eps11: ' // trim(sys_sdEL(deps11,10)))
-        call output_line('   eps22: ' // trim(sys_sdEL(deps22,10)))
-        call output_line('   eps12: ' // trim(sys_sdEL(deps12,10)))
-        ! divergence of u
-        ddivu = (rprob%Dvalues(1,2,i) + rprob%Dvalues(2,3,i))
-        call output_line('  div(u): ' // trim(sys_sdEL(ddivu,10)))
-        ! von Mises stresses
-        dsigma11 = 2.0_DP*rprob%dmu*deps11 + rprob%dlambda*ddivu
-        dsigma22 = 2.0_DP*rprob%dmu*deps22 + rprob%dlambda*ddivu
-        dsigma12 = rprob%dmu*deps12
-        dsigma33 = rprob%dlambda*ddivu
-        ! trace of the stress tensor divided by 3
-        dtrace = (dsigma11 + dsigma22 + dsigma33)/3.0_DP
-        dmises = sqrt(  (dsigma11 - dtrace)**2 + (dsigma22 - dtrace)**2 &
-                      + (dsigma33 - dtrace)**2 + 2.0_DP*dsigma12**2)
-        call output_line('   sig11: ' // sys_sdEL(dsigma11,10) )
-        call output_line('   sig22: ' // sys_sdEL(dsigma22,10) )
-        call output_line('   sig12: ' // sys_sdEL(dsigma12,10) )
-        call output_line('   sig33: ' // sys_sdEL(dsigma33,10) )
-        call output_line('   mises: ' // sys_sdEL(dmises, 10) )
-        call output_lbrk()
-      enddo
-
-      call output_line('Relative errors between FE and reference solutions:')
-      do i = 1, min(rprob%nevalPoints, rprob%nrefSols) 
-        call output_line('   point: (' // trim(sys_sdL(rprob%DevalPoints(1,i),4)) // &
-                         ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
-        call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
-        call output_line('     u1*: ' // trim(sys_sdEL(rprob%DrefSols(1,i),10)))
-        call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
-        call output_line('     u2*: ' // trim(sys_sdEL(rprob%DrefSols(2,i),10)))
-        daux1 = rprob%DrefSols(1,i)
-        daux2 = rprob%DrefSols(1,i) - rprob%Dvalues(1,1,i)
-        if (daux1 .ne. 0.0_DP) then
-          daux2 = daux2/daux1
-        endif
-        call output_line('error u1: ' // trim(sys_sdEL(daux2, 10)))
-
-        daux1 = rprob%DrefSols(2,i)
-        daux2 = rprob%DrefSols(2,i) - rprob%Dvalues(2,1,i)
-        if (daux1 .ne. 0.0_DP) then
-          daux2 = daux2/daux1
-        endif
-        call output_line('error u2: ' // trim(sys_sdEL(daux2, 10)))
-
-        daux1 = sqrt(rprob%DrefSols(1,i)**2 + rprob%DrefSols(2,i)**2)
-        daux2 = sqrt(  (rprob%DrefSols(1,i)-rprob%Dvalues(1,1,i))**2 &
-                     + (rprob%DrefSols(2,i)-rprob%Dvalues(2,1,i))**2 )
-        if (daux1 .ne. 0.0_DP) then
-          daux2 = daux2/daux1
-        endif
-        call output_line(' error u: ' // trim(sys_sdEL(daux2, 10)))
-        call output_lbrk()
-      enddo
-    end if
-
-    ! calculate the error between FE and reference solution
-    if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
-
-      ! Calculate the errors to the reference function
-      rerror%p_RvecCoeff => rsol%RvectorBlock(1:2)
-      rerror%p_DerrorL2 => DerrorL2(1:2)
-      rerror%p_DerrorH1 => DerrorH1(1:2)
-      call pperr_scalarVec(rerror, elast_analFunc, rcollection)
-      ! Print the errors
-      call output_line('L2 error for u1: ' // sys_sdEL(DerrorL2(1),10) )
-      call output_line('L2 error for u2: ' // sys_sdEL(DerrorL2(2),10) )
-      call output_line('L2 error for  u: ' // &
-                       sys_sdEL(sqrt(DerrorL2(1)**2 + DerrorL2(2)**2),10) )
-  
-      call output_line('H1 error for u1: ' // sys_sdEL(DerrorH1(1),10) )
-      call output_line('H1 error for u2: ' // sys_sdEL(DerrorH1(2),10) )
-      call output_line('H1 error for  u: ' // &
-                       sys_sdEL(sqrt(DerrorH1(1)**2 + DerrorH1(2)**2),10) )
-    end if
+    ! calculate and display errors
+    call elast_calcErrors(rprob, rsol)
 
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".

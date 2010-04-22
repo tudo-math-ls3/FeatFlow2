@@ -11,6 +11,9 @@
 
 program elasticity
    
+  use fsystem
+  use storage
+  use genoutput
   use elasticity_2d_disp_smallDef_stat
   
   implicit none
