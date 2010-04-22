@@ -1158,7 +1158,7 @@ contains
 !<subroutine>
 
   subroutine mlprj_performProlongation (rprojection,rcoarseVector, &
-                                        rfineVector,rtempVector)
+                                        rfineVector,rtempVector,icomponent)
   
 !<description>
   ! Performs a prolongation for a given block vector (i.e. a projection
@@ -1176,6 +1176,10 @@ contains
 
   ! Coarse grid vector
   type(t_vectorBlock), intent(inout) :: rcoarseVector
+  
+  ! OPTIONAL: Component of the vector, the prolongation should be applied to.
+  ! If not present, the prolongation is applied to all components.
+  integer, intent(in), optional :: icomponent
 !</input>
   
 !<inputoutput>
@@ -1197,7 +1201,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i
+  integer :: i,istart,iend
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
   type(t_interlevelProjectionScalar) :: ractProjection
@@ -1237,9 +1241,17 @@ contains
       call sys_halt()
     end if
 
-    ! Calls the correct prolongation routine for each block in the 
+    ! Calls the correct projection routine for each block in the 
     ! discretisation...
-    do i=1,rcoarseVector%nblocks
+    
+    istart = 1
+    iend = rcoarseVector%nblocks
+    if (present(icomponent)) then
+      istart = icomponent
+      iend = icomponent
+    end if
+    
+    do i=istart,iend
     
       ! Skip this block if it is empty
       if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
@@ -1663,7 +1675,7 @@ contains
 !<subroutine>
 
   subroutine mlprj_performRestriction (rprojection,rcoarseVector, &
-                                       rfineVector,rtempVector)
+                                       rfineVector,rtempVector,icomponent)
   
 !<description>
   ! Performs a restriction for a given block vector (i.e. a projection
@@ -1681,6 +1693,10 @@ contains
   
   ! Fine grid vector
   type(t_vectorBlock), intent(inout) :: rfineVector
+
+  ! OPTIONAL: Component of the vector, the restriction should be applied to.
+  ! If not present, the restriction is applied to all components.
+  integer, intent(in), optional :: icomponent
 !</input>
   
 !<inputoutput>
@@ -1700,7 +1716,7 @@ contains
 !</subroutine>
 
   ! local variables
-  integer :: i
+  integer :: i,istart,iend
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_interlevelProjectionScalar) :: ractProjection
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
@@ -1740,9 +1756,17 @@ contains
       call sys_halt()
     end if
     
-    ! Calls the correct prolongation routine for each block in the 
+    ! Calls the correct projection routine for each block in the 
     ! discretisation...
-    do i=1,rcoarseVector%nblocks
+    
+    istart = 1
+    iend = rcoarseVector%nblocks
+    if (present(icomponent)) then
+      istart = icomponent
+      iend = icomponent
+    end if
+    
+    do i=istart,iend
     
       ! Skip this block if it is empty
       if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle
@@ -2176,7 +2200,7 @@ contains
 !<subroutine>
 
   subroutine mlprj_performInterpolation (rprojection,rcoarseVector, &
-                                         rfineVector,rtempVector)
+                                         rfineVector,rtempVector,icomponent)
   
 !<description>
   ! Performs an interpolation for a given block vector (i.e. a projection
@@ -2195,6 +2219,10 @@ contains
   
   ! Fine grid vector
   type(t_vectorBlock), intent(in) :: rfineVector
+
+  ! OPTIONAL: Component of the vector, the interpolation should be applied to.
+  ! If not present, the interpolation is applied to all components.
+  integer, intent(in), optional :: icomponent
 !</input>
   
 !<inputoutput>
@@ -2214,7 +2242,7 @@ contains
 !</subroutine>
   
   ! local variables
-  integer :: i
+  integer :: i,istart,iend
   type(t_spatialDiscretisation), pointer :: p_rdiscrCoarse,p_rdiscrFine
   type(t_interlevelProjectionScalar) :: ractProjection
   type(t_triangulation), pointer :: p_rtriaCoarse,p_rtriaFine
@@ -2252,9 +2280,17 @@ contains
       call sys_halt()
     end if
 
-    ! Calls the correct prolongation routine for each block in the 
+    ! Calls the correct projection routine for each block in the 
     ! discretisation...
-    do i=1,rcoarseVector%nblocks
+    
+    istart = 1
+    iend = rcoarseVector%nblocks
+    if (present(icomponent)) then
+      istart = icomponent
+      iend = icomponent
+    end if
+    
+    do i=istart,iend
     
       ! Skip this block if it is empty
       if (rcoarseVector%RvectorBlock(i)%NEQ .le. 0) cycle

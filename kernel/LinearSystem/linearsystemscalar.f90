@@ -270,6 +270,10 @@
 !# 7.) lsyssc_auxcopy_Kdiagonal
 !#     -> Copies the data vector Kdiagonal of a matrix to another without checks
 !#        If the destination array does not exist, it is created.
+!#
+!# 8.) lsyssc_createEmptyMatrixStub
+!#     -> Creates an empty matrix without allocating data. Basic tags are
+!#        initialised.
 !# </purpose>
 !##############################################################################
 
@@ -847,6 +851,7 @@ module linearsystemscalar
   public :: lsyssc_auxcopy_Kcol
   public :: lsyssc_auxcopy_Kld
   public :: lsyssc_auxcopy_Kdiagonal
+  public :: lsyssc_createEmptyMatrixStub
 
 contains
 
@@ -20254,6 +20259,45 @@ contains
     ! Now, the destination matrix is the owner and the source matrix
     ! the copy...  
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine lsyssc_createEmptyMatrixStub (rmatrix,cmatrixFormat,neq,ncol)
+  
+!<description>
+  ! Creates an empty matrix in format cmatrixFormat without allocating memory.
+  ! The caller is responsible for filling in missing information.
+!</description>
+
+!<input>
+  ! Matrix format
+  integer, intent(in) :: cmatrixFormat
+  
+  ! Number of rows
+  integer, intent(in) :: neq
+
+  ! OPTIONAL: Number of columns. If not present, defaults to neq.
+  integer, intent(in), optional :: ncol
+!</input>
+
+!<output>
+  ! Empty matrix. No data has been allocated.
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    rmatrix%cmatrixFormat = cmatrixFormat
+    rmatrix%neq = neq
+    if (present(ncol)) then
+      rmatrix%NCOLS = ncol
+    else
+      rmatrix%NCOLS = neq
+    end if
+            
   end subroutine
 
 end module
