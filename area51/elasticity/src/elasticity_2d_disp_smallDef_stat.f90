@@ -475,49 +475,48 @@ contains
       sucddir = './gmv'
     endif
 
-    ! For Bending in the gmv
-    call storage_getbase_double2D( &
-           Rlevels(rprob%ilevelMax)%rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-    ! Write velocity field
-    call lsyssc_getbase_double(rsol%RvectorBlock(1),p_Ddata)
+    ! get pointers to the arrays containing the displacement solutions
+    call lsyssc_getbase_double(rsol%RvectorBlock(1), p_Ddata)
     if (rprob%cequation .eq. EQ_ELASTICITY) then
       call lsyssc_getbase_double(rsol%RvectorBlock(2),p_Ddata2)
     end if
   
-    ! we add sol. vector to coordinates to see the bending
-    if (rprob%cshowDeformation .eq. YES) then
+    ! add displacements to the vertex coordinates when deformation is to be displayed
+    ! in the gmv file
+    if (rprob%cshowDeformation .eq. YES .and. rprob%cequation .eq. EQ_ELASTICITY) then
+      ! get pointer to the arrays containing the vertex coordinates
+      call storage_getbase_double2D( &
+             Rlevels(rprob%ilevelMax)%rtriangulation%h_DvertexCoords, p_DvertexCoords)
+
+      ! add displacements
       do i = 1,Rlevels(rprob%ilevelMax)%rtriangulation%NVT
         p_Dvertexcoords(1,i) = p_Dvertexcoords(1,i) + p_Ddata(i)
-        if (rprob%cequation .eq. EQ_ELASTICITY) then
-          p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
-        end if
+        p_Dvertexcoords(2,i) = p_dvertexCoords(2,i) + p_Ddata2(i)
       end do
     end if
 
-    ! Now we have a Q1/Q1/Q0 solution in rprjVector.
-    ! We can now start the postprocessing. 
-    ! Start UCD export to GMV file:
-    call ucd_startGMV(rexport,UCD_FLAG_STANDARD,Rlevels(rprob%ilevelMax)%rtriangulation,&
-        trim(sucddir)//'/u2d_0_simple.gmv')
+    ! initialise UCD export to GMV file
+    call ucd_startGMV(rexport, UCD_FLAG_STANDARD, &
+                      Rlevels(rprob%ilevelMax)%rtriangulation, &
+                      trim(sucddir) // '/elasticity_2d.gmv')
 
-    ! In case we use the VTK exporter, which supports vector output, we will
-    ! pass the X- and Y-velocity at once to the ucd module.
+    ! add the displacement solution to the file
     if (rprob%cequation .eq. EQ_ELASTICITY) then
-      call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata,p_Ddata2)
+      call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata, p_Ddata2)
     else if (rprob%cequation .eq. EQ_POISSON) then
-      call ucd_addVarVertBasedVec(rexport,'velocity',p_Ddata)
+      call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata)
     end if
-    ! If we use the GMV exporter, we might replace the line above by the
-    ! following two lines:
-    !CALL ucd_addVariableVertexBased(rexport,'X-vel',UCD_VAR_XVELOCITY, p_Ddata)
-    !CALL ucd_addVariableVertexBased(rexport,'Y-vel',UCD_VAR_YVELOCITY, p_Ddata2)
-        
-    ! write the file to disc
+!BRAL: output of derivatives, strains and stresses is missing...
+  
+    ! write the file
     call ucd_write(rexport)
     call ucd_release(rexport)
 
-    ! Simulation finished! Clean up so that all the memory is available again.
+    ! -----------------------
+    ! simulation finished
+    ! -----------------------
+    
+    ! clean up so that all the memory is available again.
 
     ! release solver data and structure and the solver node itself
     call linsol_doneData(p_rsolver)
@@ -566,8 +565,5 @@ contains
 
   end subroutine elast_2d_disp_smallDef_stat
 
-
-! ****************************************************************************************
-
-
 end module elasticity_2d_disp_smallDef_stat
+
