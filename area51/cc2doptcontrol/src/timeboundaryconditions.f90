@@ -133,9 +133,6 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     type(t_discreteFBC) :: rdiscreteFBC
     
-    ! Initialise the collection for the assembly.
-    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
-    
     ! Initialise the boundary conditions
     call bcasm_initDiscreteBC(rdiscreteBC)
     call bcasm_initDiscreteFBC(rdiscreteFBC)
@@ -166,6 +163,9 @@ contains
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+      
         ! -----
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -185,6 +185,9 @@ contains
         
         call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
         
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
       end do
       
     case (TDISCR_DG0)
@@ -195,6 +198,9 @@ contains
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP)*dtstep
 
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
         ! -----
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -213,6 +219,9 @@ contains
         call vecfil_discreteFBCsol (rtempVector)
         
         call sptivec_setTimestepData(rx, 1+isubstep, rtempVector)
+        
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
         
       end do
 
@@ -231,9 +240,6 @@ contains
     call bcasm_releaseDiscreteFBC(rdiscreteFBC)
     call bcasm_releaseDiscreteBC(rdiscreteBC)
 
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
-        
   end subroutine
 
   ! ***************************************************************************
@@ -275,9 +281,6 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     type(t_discreteFBC) :: rdiscreteFBC
     
-    ! Initialise the collection for the assembly.
-    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
-
     ! Initialise the boundary conditions
     call bcasm_initDiscreteBC(rdiscreteBC)
     call bcasm_initDiscreteFBC(rdiscreteFBC)
@@ -308,6 +311,9 @@ contains
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
         ! -----
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -326,6 +332,9 @@ contains
         call vecfil_discreteFBCrhs (rtempVector)
         
         call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
+
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
         
       end do
       
@@ -337,6 +346,9 @@ contains
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP) * dtstep
 
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
         ! -----
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -356,6 +368,9 @@ contains
         
         call sptivec_setTimestepData(rb, 1+isubstep, rtempVector)
         
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
       end do
 
     case default
@@ -372,9 +387,6 @@ contains
     ! Release the BC's again.
     call bcasm_releaseDiscreteFBC(rdiscreteFBC)
     call bcasm_releaseDiscreteBC(rdiscreteBC)
-
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
 
@@ -414,9 +426,6 @@ contains
     type(t_discreteBC) :: rdiscreteBC
     type(t_discreteFBC) :: rdiscreteFBC
     
-    ! Initialise the collection for the assembly.
-    call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
-
     ! Initialise the boundary conditions
     call bcasm_initDiscreteBC(rdiscreteBC)
     call bcasm_initDiscreteFBC(rdiscreteFBC)
@@ -446,6 +455,9 @@ contains
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
+
         ! -----
         ! Discretise the boundary conditions at the new point in time.
         call bcasm_clearDiscreteBC(rdiscreteBC)
@@ -473,6 +485,9 @@ contains
         
         call sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+        
       end do
     
     case (TDISCR_DG0)
@@ -483,6 +498,9 @@ contains
       
         ! Current point in time
         dtime = rproblem%rtimedependence%dtimeInit + (real(isubstep,DP)+0.5_DP) * dtstep
+
+        ! Initialise the collection for the assembly.
+        call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
 
         ! -----
         ! Discretise the boundary conditions at the new point in time -- 
@@ -512,6 +530,9 @@ contains
         
         call sptivec_setTimestepData(rd, 1+isubstep, rtempVector)
         
+        ! Clean up the collection (as we are done with the assembly, that's it.
+        call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
+
       end do
 
     case DEFAULT
@@ -527,9 +548,6 @@ contains
     ! Release the BC's again.
     call bcasm_releaseDiscreteFBC(rdiscreteFBC)
     call bcasm_releaseDiscreteBC(rdiscreteBC)
-
-    ! Clean up the collection (as we are done with the assembly, that's it.
-    call cc_doneCollectForAssembly (rproblem,rproblem%rcollection)
 
   end subroutine
 
@@ -567,7 +585,7 @@ contains
     type(t_vectorBlock) :: rtempVector
     type(t_discreteBC) :: rdiscreteBC
     logical :: bhasNeumann
-    real(dp) :: dtime
+    real(dp) :: dtime,dtstep
 
     ! Initialise the boundary conditions
     call bcasm_initDiscreteBC(rdiscreteBC)
@@ -581,8 +599,13 @@ contains
           rx%p_rblockDiscretisation,rtempVector,.true.)
     end if
 
+    dtstep = rx%p_rtimeDiscretisation%dtstep
+
     ! Normalise the primal and dual pressure to zero.
     do isubstep = 0,rx%NEQtime-1
+
+      ! Current point in time
+      dtime = rproblem%rtimedependence%dtimeInit + isubstep*dtstep
 
       ! Initialise the collection for the assembly.
       call cc_initCollectForAssembly (rproblem,dtime,rproblem%rcollection)
