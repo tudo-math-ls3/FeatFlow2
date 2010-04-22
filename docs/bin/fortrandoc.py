@@ -313,7 +313,7 @@ h2, h3 {
         f.writelines(['<h4>Error codes</h4>\n'])
         if fn.errors:
             f.writelines(['<table class="errortable">\n'])
-            for (error, desc) in sub.errors:
+            for (error, desc) in fn.errors:
                 f.writelines(['<tr> <td class="error_id">%s</td> <td class="error_description">%s</td> </tr>\n' % (error, desc)])
             f.writelines(['</table>\n'])
         else:
@@ -970,7 +970,7 @@ class Module:
                 self.extract_variables(node.get_text(), self.global_variables)
             elif name == 'privatevars':
                 self.extract_variables(node.get_text(), self.private_variables)
-            elif name == 'constants':
+            elif name == 'constants' or name == 'constantblock':
                 self.extract_variables(node.get_text(), self.constants)
             elif name == 'publics':
                 self.extract_variables(node.get_text(), self.publics)
@@ -1015,7 +1015,6 @@ class Module:
                     fn.description = text.strip()
                 elif t == 'errors':
                     text = self.clean_description(n.get_text())
-
                     # filter out error tags with 'none'
                     if text.strip().find('none') >= 0:
                         fn.errors.append(('', 'none'))
@@ -1033,7 +1032,7 @@ class Module:
         else:
             error(12, 'Subroutine: Pattern did not match: %.120s...' % text)
                         
-    FUNCTION = re.compile(r"\A\s*?(?P<retval>.+?)\s*?function\s+?(?P<name>.+)\s*?\((?P<params>.*)\)\s*?\n")
+    FUNCTION = re.compile(r"\A\s*?(?P<retval>.+?)\s*?function\s+(?P<name>\w+)\s*\((?P<params>[^\)]*)\)\s*?")
 
     # regular expressions for code cleanup
     RE_XMLCOMMENT = re.compile(r'<!--.*?-->', re.DOTALL)
@@ -1122,7 +1121,7 @@ class Module:
 
         DESCRIPTION = re.compile(r'description\s*=\s*"(.*?)"', re.DOTALL)
         self.active_group = None
-        self.current_comment = None
+        self.current_comment = ''
 
         # some sub functions for use with sre.scanner
         def begin_group(scanner, token):
@@ -1138,16 +1137,17 @@ class Module:
             if not self.active_group.variables:
                 error(15, 'No variable found in group: %s' % self.active_group.description)
             self.active_group = None
-            self.current_comment = None
+            self.current_comment = ''
 
         def commentblock(scanner, token):
-            self.current_comment = token.strip()
+            self.current_comment += token.strip()
 
         def blank_lines(scanner, token):
-            self.current_comment = None
+            self.current_comment = ''
 
         def variable_definition(scanner, token):
             match = re.search(self.VARIABLE, token)
+
             if match:
                 m = match.groups()
                 vartype = m[1].split(",")[0].strip()
@@ -1167,16 +1167,21 @@ class Module:
                     self.active_group.variables.append(v)
                 else:
                     l.append(v)
-                self.current_comment = None
+                self.current_comment = ''
+
+        def dump(scanner, token):
+            print "[%s]\n" % token,
 
         VARSCANNER = Scanner([
             (r'(?m)^[ \t]*?\n', blank_lines),
             (r'(?m)^[ \t]*![^\n]*?\<[ \t]*\/group[^\>]*\>[^\n$]*', end_group),
             (r'(?m)^[ \t]*![^\<]*\<[ \t]*group[ \t]+[^\>]*\>[^\n]*\n', begin_group),
             (r'(?m)([ \t]*![^\n]*\n)+', commentblock),
-            (r'(?m)^[^!\n]*?::.*?$', variable_definition),
+            (r'(?m)[^\n!]*::[^\n]*\n', variable_definition),
+            #(r'(?m)^[^!\n]*?::.*?$', variable_definition),
             (r'(?m)\n', None),
             (r'.', None)
+            #(r'(?m)\n', None),
         ])
         #], re.MULTILINE)
         VARSCANNER.scan(text)
