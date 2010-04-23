@@ -819,7 +819,7 @@ contains
       case (1)
         ! Old implementation:
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G1_1D,&
-            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+            dbdForcesCoeff1,dbdForcesCoeff2)
         
       case (2)      
         ! Extended calculation method.
@@ -858,7 +858,7 @@ contains
       case (3)
         ! Old implementation:
         call ppns2D_bdforces_uniform (rsolution,rregion,Dforces,CUB_G4_2D,&
-            dbdForcesCoeff1,dbdForcesCoeff2,cformulation)
+            dbdForcesCoeff1,dbdForcesCoeff2)
 
       case (4)
     
