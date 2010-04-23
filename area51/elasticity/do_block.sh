@@ -58,10 +58,6 @@ gridFilePRM = './pre/${grid}.prm'
 # TRI-file of the mesh
 gridFileTRI = './pre/${grid}.tri'
 
-# boundary segments
-numBoundarySegments(1) =
-6
-
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
@@ -69,61 +65,19 @@ equation = elasticity
 nu = ${nu}
 mu = ${mu}
 
-# boundary conditions
-# bc[i](#segments x #blocks)
-# 'D' or 'N', for each boundary i, each segment and each component
-bc1(12) =
-# bottom boundary (segment 1) fixed in y-, free in x-direction
-N
-D
-
-# right boundary (segment 2) free
-N
-N
-
-# top boundary (segments 3 - 5) fixed in x-, free in y-direction
-D
-N
-
-D
-N
-
-D
-N
-
-# left boundary (segment 6) free
-N
-N
-
 # type of simulation ('real' or 'analytic')
 simulation = real
 
-# surface forces in x- and y-direction
-# forceSurface[i](#segments x dim), in case of real simulation, for each boundary i
-# and each segment
-forceSurface1(12) =
-# bottom boundary (segment 1)
-0.0
-0.0
-
-# right boundary (segment 2)
-0.0
-0.0
-
-# top boundary (segments 3 - 5) line load on the center segment
-0.0
-0.0
-
-0.0
--100.0
-
-0.0
-0.0
-
-# left boundary (segment 6)
-0.0
-0.0
-
+# boundary conditions
+# bc[i](#segments)
+# type of BC for the two components, then values (displacement ('D') or force ('N')) 
+bc1(6) =
+'N' 'D' 0.0 0.0      # bottom boundary (segment 1) fixed in y-, free in x-direction
+'N' 'N' 0.0 0.0      # right boundary (segment 2) free
+'D' 'N' 0.0 0.0      # top boundary (segments 3 - 5) fixed in x-, free in y-direction,
+'D' 'N' 0.0 -100.0   #   vertical line force of -100.0 applied to the centre segment
+'D' 'N' 0.0 0.0      # 
+'N' 'N' 0.0 0.0      # left boundary (segment 6) free
 
 # given constant volume force in x- and y-direction in case of real simulation
 forceVolumeX   = 0.0

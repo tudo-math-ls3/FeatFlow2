@@ -28,7 +28,6 @@ contains
     use genoutput
     use paramlist
     use derivatives
-    use boundary
     use bilinearformevaluation
     use linearformevaluation
     use bcassembly
@@ -62,9 +61,6 @@ contains
     ! array of problem levels for the multigrid solver
     type(t_level), dimension(:), pointer :: Rlevels
 
-    ! object for saving the domain:
-    type(t_boundary) :: rboundary
-    
     ! bilinear form (matrix) and linear form (RHS) describing the problem to solve
     type(t_bilinearForm) :: rform
     type(t_linearForm) :: rlinform
@@ -122,33 +118,30 @@ contains
     ! allocate memory for all levels
     allocate(Rlevels(rprob%ilevelMin:rprob%ilevelMax))
 
-    call output_line('reading boundary parameterisation from file ' // &
-                     trim(rprob%sgridFilePRM) // '...')
-    ! read in the parameterisation of the boundary and save it to rboundary.
-    call boundary_read_prm(rboundary, rprob%sgridFilePRM)
-        
-    ! read in the basic triangulation.
+    ! read in the basic triangulation (the boundary components have already been read
+    ! within the routine elast_readParameterFile)
     call output_line('reading triangulation from file ' // &
                      trim(rprob%sgridFileTRI) // '...')
     call tria_readTriFile2D(Rlevels(rprob%ilevelMin)%rtriangulation, &
-                            rprob%sgridFileTRI, rboundary)
+                            rprob%sgridFileTRI, rprob%rboundary)
      
     ! refine it once
     call tria_quickRefine2LevelOrdering(rprob%ilevelMin-1, &
-           Rlevels(rprob%ilevelMin)%rtriangulation, rboundary)
+           Rlevels(rprob%ilevelMin)%rtriangulation, rprob%rboundary)
     
     ! create information about adjacencies etc.
-    call tria_initStandardMeshFromRaw(Rlevels(rprob%ilevelMin)%rtriangulation, rboundary)
+    call tria_initStandardMeshFromRaw(Rlevels(rprob%ilevelMin)%rtriangulation, &
+                                      rprob%rboundary)
 
     ! create all refinement levels
     do ilev = rprob%ilevelMin+1, rprob%ilevelMax
 
       ! refine the grid using the 2-Level-Ordering algorithm
       call tria_refine2LevelOrdering(Rlevels(ilev-1)%rtriangulation, &
-             Rlevels(ilev)%rtriangulation,rboundary)
+                                     Rlevels(ilev)%rtriangulation, rprob%rboundary)
       
       ! Create a standard mesh
-      call tria_initStandardMeshFromRaw(Rlevels(ilev)%rtriangulation, rboundary)
+      call tria_initStandardMeshFromRaw(Rlevels(ilev)%rtriangulation, rprob%rboundary)
     
     end do
 
@@ -161,7 +154,7 @@ contains
     ! one block. Do this for all levels
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       call spdiscr_initBlockDiscr(Rlevels(ilev)%rdiscretisation, rprob%nblocks, &
-                                  Rlevels(ilev)%rtriangulation, rboundary)
+                                  Rlevels(ilev)%rtriangulation, rprob%rboundary)
     end do
 
     ! rdiscretisation%Rdiscretisations is a list of scalar discretisation structures
@@ -169,7 +162,8 @@ contains
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       ! create a discretisation for the first component
       call spdiscr_initDiscr_simple(Rlevels(ilev)%rdiscretisation%RspatialDiscr(1),&
-          rprob%celement, rprob%ccubature2D, Rlevels(ilev)%rtriangulation, rboundary)
+                                    rprob%celement, rprob%ccubature2D, &
+                                    Rlevels(ilev)%rtriangulation, rprob%rboundary)
 
       ! ...and copy this structure to the discretisation structure of the 2nd component
       ! (y-displacement) (no additional memory needed)
@@ -330,12 +324,12 @@ contains
     end do
 
     ! set up the boundary conditions per boundary and segment
-    do i = 1, rprob%nboundaries
-      do j = 1,rprob%NboundarySegments(i)
+    do i = 1, boundary_igetNBoundComp(rprob%rboundary)
+      do j = 1,boundary_igetNsegments(rprob%rboundary,i)
         ! Create 'boundary region',  which is simply a part of the boundary corresponding
         ! to a boundary segment. A boundary region roughly contains the type, the min/max
         ! parameter value and whether the endpoints are inside the region or not.
-        call boundary_createRegion(rboundary,i,j,rboundaryRegion)
+        call boundary_createRegion(rprob%rboundary, i, j, rboundaryRegion)
         ! mark start and end point as belonging to the region
         rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
         do k = 1, rprob%nblocks
@@ -383,7 +377,6 @@ contains
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       Rlevels(ilev)%rmatrix%p_rdiscreteBC => Rlevels(ilev)%rdiscreteBC
     end do
-!BRAL: testen, ob x- und y-Dirichlet-BC wirklich unabhaengig sind!!! (Block)
   
     ! attach the boundary conditions to the solution and the RHS vector
     rrhs%p_rdiscreteBC => Rlevels(rprob%ilevelMax)%rdiscreteBC
@@ -548,13 +541,12 @@ contains
     deallocate(Rlevels)
     
     ! release domain
-    call boundary_release(rboundary)
+    call boundary_release(rprob%rboundary)
 
     ! release all manually allocated arrays
-    deallocate(rprob%NboundarySegments)
     deallocate(rprob%Cbc)
     if (rprob%csimulation .eq. SIMUL_REAL) then
-      deallocate(rprob%DforceSurface)
+      deallocate(rprob%DbcValue)
     endif
     if (rprob%nevalPoints .gt. 0) then
       deallocate(rprob%DevalPoints, rprob%Dvalues)

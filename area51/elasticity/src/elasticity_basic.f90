@@ -12,6 +12,7 @@
 module elasticity_basic
 
   use fsystem
+  use boundary
   use linearsystemblock
   use discretebc
   use triangulation
@@ -52,17 +53,9 @@ module elasticity_basic
     character(len=500) :: sgridFileTri
     character(len=500) :: sgridFilePrm
 
-    ! number of boundaries (has to be set manually by the user who has to know
-    ! the number of boundaries in the current grid)
-    integer :: nboundaries = 1
+    ! object for saving the domain
+    type(t_boundary) :: rboundary
 
-    ! number of boundary segments (has to be set manually by the user who has to know
-    ! the number segments in the current grid)
-    integer, dimension(:), pointer :: NboundarySegments
-
-    ! max. number boundary segments over all boundaries
-    integer :: nmaxNumBoundSegments
-  
     ! kind of equation (possible values: EQ_POISSON, EQ_ELASTICITY)
     integer :: cequation = EQ_ELASTICITY
 
@@ -81,9 +74,10 @@ module elasticity_basic
     ! type of simulation (possible values: SIMUL_REAL, SIMUL_ANALYTICAL)
     integer :: csimulation = SIMUL_REAL
 
-    ! given surface forces on Neumann boundary condition segments
+    ! given boundray condition values (surface forces for Neumann BC segments, prescribed
+    ! displacements for Dirichlet BCs)
     ! (dimension nblocks x max. number segments x nboundaries)
-    real(DP), dimension(:,:,:), pointer :: DforceSurface
+    real(DP), dimension(:,:,:), pointer :: DbcValue
 
     ! constant RHS values (only needed in case of SIMUL_REAL)
     real(DP) :: dforceVolumeX   = 0.0_DP
@@ -250,6 +244,10 @@ contains
     !       x- and y-coordinate of points to evaluate
     !   - refSols(2*numEvalPoints)
     !       ref. solution values for u1 and u2 in eval. points
+    !
+    ! The routine also reads in the boundary. In doing so, the number of boundary
+    ! components can be inquired automatically and the parameter file can be parsed
+    ! accordingly.
 !</description>
     
 !<input>
@@ -264,10 +262,15 @@ contains
     
 !</subroutine>
 
+    ! local variables
     character(len=SYS_STRLEN) :: snameDatFile
-    integer :: i, j, k
+    integer :: i, j, k, iaux
     character(len=SYS_STRLEN) :: sstring
-
+    character(len=1), dimension(2) :: Sbc
+    real(DP), dimension(2) :: Dval
+    ! max. number boundary segments over all boundaries
+    integer :: nmaxNumBoundSegments
+  
     ! initialise the parameter structure and read the DAT file
     call parlst_init(rparams)
  
@@ -282,35 +285,34 @@ contains
     read(sstring,*) rprob%sgridFilePRM
     call output_line('PRM file: '//trim(rprob%sgridFilePRM))
                                  
+    ! read in the parameterisation of the boundary and save it to rboundary
+    ! this is done already here so that the number of boundary components can be
+    ! inquired automatically
+    call output_line('reading boundary parameterisation from file ' // &
+                     trim(rprob%sgridFilePRM) // '...')
+    call boundary_read_prm(rprob%rboundary, rprob%sgridFilePRM)
+
     ! TRI file
     call parlst_getvalue_string(rparams, '', 'gridFileTRI', sstring)
     read(sstring,*) rprob%sgridFileTRI
     call output_line('TRI file: '//trim(rprob%sgridFilePRM))
        
-    ! get number of boundaries by inquiring the number of items of the
-    ! parameter 'numBoundarySegments' 
-    rprob%nboundaries = parlst_querysubstrings(rparams, '', 'numBoundarySegments')
-    call output_line('number of boundaries: '//trim(sys_siL(rprob%nboundaries,3)))
-                       
-    ! number of boundary segments per boundary (has to be set manually by the user)
-    allocate(rprob%NboundarySegments(rprob%nboundaries))
-    do i = 1,rprob%nboundaries
-      call parlst_getvalue_int(rparams, '', 'numBoundarySegments', &
-                               rprob%NboundarySegments(i), iarrayindex = i)
+    ! get number of boundaries 
+    call output_line('number of boundaries: ' // &
+                     trim(sys_siL(boundary_igetNBoundComp(rprob%rboundary),3)))
+
+    ! inquire number of boundary segments per boundary and calculate max. number of
+    ! segments over all boundaries
+    nmaxNumBoundSegments = -1
+    do i = 1,boundary_igetNBoundComp(rprob%rboundary)
+      iaux = boundary_igetNsegments(rprob%rboundary, i)
       call output_line('number of segments in boundary '//trim(sys_siL(i,3))//': ' // &
-                       trim(sys_siL(rprob%NboundarySegments(i),4)))
-    end do
-
-    ! detect max. number of segments over all boundaries
-    rprob%nmaxNumBoundSegments = -1
-    do i = 1,rprob%nboundaries
-      if (rprob%NboundarySegments(i) .gt. rprob%nmaxNumBoundSegments) then
-        rprob%nmaxNumBoundSegments = rprob%NboundarySegments(i)
+                       trim(sys_siL(iaux,4)))
+      if (iaux .gt. nmaxNumBoundSegments) then
+        nmaxNumBoundSegments = iaux
       end if
-    end do
-    call output_line('max. number of segments: ' // &
-                     trim(sys_siL(rprob%nmaxNumBoundSegments,3)))
-
+    enddo
+    call output_line('max. number of segments: ' // trim(sys_siL(nmaxNumBoundSegments,3)))
 
 !BRAL: Nutze die funktionalitaet der parlst_getvalue routinen, einen Default-Wert zu
 !setzen, falls Parameter nicht vorhanden.
@@ -350,31 +352,6 @@ contains
       call output_line('lambda: '//trim(sys_sdEL(rprob%dlambda,6)))
     endif
                      
-    ! boundary conditions ('D' Dirichlet, 'N' Neumann)
-    allocate(rprob%Cbc(rprob%nblocks, rprob%nmaxNumBoundSegments, rprob%nboundaries))
-    do i = 1, rprob%nboundaries
-      do j = 1,rprob%NboundarySegments(i)
-        do k = 1, rprob%nblocks
-          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
-                                      isubstring = 2*(j-1) + k)
-          if (trim(sstring) .eq. "D") then
-            rprob%Cbc(k,j,i) = BC_DIRICHLET 
-          else if (trim(sstring) .eq. "N") then
-            rprob%Cbc(k,j,i) = BC_NEUMANN 
-          else
-            call output_line('invalid boundary condition:' // trim(sstring) // &
-                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
-                             OU_CLASS_ERROR, OU_MODE_STD, &
-                             'elast_2d_disp_smallDeform_static')
-            call sys_halt()
-          endif
-          call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
-                           trim(sys_siL(j,3)) // ' of boundary ' // &
-                           trim(sys_siL(i,3))//': '// trim(sstring))
-        enddo
-      end do
-    end do
-
     ! type of simulation (possible values: REAL, ANALYTICAL)
     call parlst_getvalue_string(rparams, '', 'simulation', sstring)
     if(trim(sstring) .eq. 'analytic') then
@@ -388,25 +365,115 @@ contains
     end if
     call output_line('simulation: '//trim(sstring))
 
-    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
-    ! (only needed in case of csimulation .eq. SIMUL_REAL)
+
+    ! process boundary conditions 
+    ! Currently, the BCs can only be defined per boundary segment. For each boundary,
+    ! the dat file must provide a number of lines corresponding to the segments.
+    ! The first two entries determine the type of the boundary condition (('D' Dirichlet,
+    ! 'N' Neumann), the last two entries the BC values for the two components. A nonzero
+    ! Neumann value means a line force in the corresponding direction, while a zero
+    ! Dirichlet value fixes the body in this direction. Zero Neumann means 'do nothing'.
+    ! Nonzero Dirichlet (prescribed displacements) are not supported yet!
+    ! Example for a boundary with three segments:
+    !   'N' 'N' 0.0 0.0             # free in x- and y-direction
+    !   'D' 'N' 0.0 -100.0          # fixed in x-direction, negative force in y-direction
+    !   'D' 'D' 0.0 0.0             # fixed in x- and y-direction
+    allocate(rprob%Cbc(rprob%nblocks, nmaxNumBoundSegments, &
+                       boundary_igetNBoundComp(rprob%rboundary)))
     if (rprob%csimulation .eq. SIMUL_REAL) then
-      allocate(rprob%DforceSurface(rprob%nblocks, rprob%nmaxNumBoundSegments, &
-                                   rprob%nboundaries))
-      do i = 1, rprob%nboundaries
-        do j = 1,rprob%NboundarySegments(i)
-          do k = 1,rprob%nblocks
-            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
-                                        rprob%DforceSurface(k,j,i), &
-                                        iarrayindex = 2*(j-1)+k)
-          enddo
-          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
-                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
-                           trim(sys_sdL(rprob%DforceSurface(1,j,i),4)) // &
-                           ', '//trim(sys_sdL(rprob%DforceSurface(2,j,i),4))//')')
-        end do
-      end do
+      allocate(rprob%DbcValue(rprob%nblocks, nmaxNumBoundSegments, &
+                                   boundary_igetNBoundComp(rprob%rboundary)))
     endif
+    do i = 1, boundary_igetNBoundComp(rprob%rboundary)
+      call output_line("Boundary conditions on boundary " // trim(sys_siL(i,3))//":")
+      do j = 1,boundary_igetNsegments(rprob%rboundary, i)
+        Dval = 0.0_DP
+        call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
+                                    isubstring = j)
+        if (rprob%csimulation .eq. SIMUL_REAL) then
+          ! in case of a real simulation read BC types and values
+          read(sstring,*) Sbc(1), Sbc(2), Dval(1), Dval(2)
+        else
+          ! in case of an analytical simulation read only BC types
+          read(sstring,*) Sbc(1), Sbc(2)
+        endif
+        do k = 1, rprob%nblocks
+          ! set type of boundary condition
+          if (trim(Sbc(k)) .eq. "D") then
+            rprob%Cbc(k,j,i) = BC_DIRICHLET 
+          else if (trim(Sbc(k)) .eq. "N") then
+            rprob%Cbc(k,j,i) = BC_NEUMANN 
+          else
+            call output_line('invalid boundary condition:' // trim(sstring) // &
+                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
+                             OU_CLASS_ERROR, OU_MODE_STD, &
+                             'elast_2d_disp_smallDeform_static')
+            call sys_halt()
+          endif
+          sstring = "  segment " // trim(sys_siL(j,1)) // ", comp " // &
+                    trim(sys_siL(k,3)) // ": "// trim(Sbc(k))
+
+          ! set BC values (only needed in case of csimulation .eq. SIMUL_REAL)
+          if (rprob%csimulation .eq. SIMUL_REAL) then
+            rprob%DbcValue(k,j,i) = Dval(k)
+            if (rprob%Cbc(k,j,i) .eq. BC_DIRICHLET) then
+              sstring = trim(sstring) // "  (displacement: " // &
+                        trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")" 
+              if (Dval(k) .ne. 0.0_DP) then
+                call output_line('invalid boundary condition value:' // &
+                                 trim(sys_sdEL(Dval(k),2)) // &
+                                 ', currently only zero Dirichlet values supported!',&
+                                 OU_CLASS_ERROR, OU_MODE_STD, &
+                                 'elast_2d_disp_smallDeform_static')
+              endif
+            else
+              sstring = trim(sstring) // "  (line force:   " // &
+                        trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")" 
+            endif
+          endif
+          call output_line(trim(sstring))
+        enddo
+
+!        do k = 1, rprob%nblocks
+!          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
+!                                      isubstring = 2*(j-1) + k)
+!          if (trim(sstring) .eq. "D") then
+!            rprob%Cbc(k,j,i) = BC_DIRICHLET 
+!          else if (trim(sstring) .eq. "N") then
+!            rprob%Cbc(k,j,i) = BC_NEUMANN 
+!          else
+!            call output_line('invalid boundary condition:' // trim(sstring) // &
+!                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
+!                             OU_CLASS_ERROR, OU_MODE_STD, &
+!                             'elast_2d_disp_smallDeform_static')
+!            call sys_halt()
+!          endif
+!          call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
+!                           trim(sys_siL(j,3)) // ' of boundary ' // &
+!                           trim(sys_siL(i,3))//': '// trim(sstring))
+!        enddo
+      end do
+    end do
+
+!    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
+!    ! (only needed in case of csimulation .eq. SIMUL_REAL)
+!    if (rprob%csimulation .eq. SIMUL_REAL) then
+!      allocate(rprob%DbcValue(rprob%nblocks, nmaxNumBoundSegments, &
+!                                   boundary_igetNBoundComp(rprob%rboundary)))
+!      do i = 1, boundary_igetNBoundComp(rprob%rboundary)
+!        do j = 1,boundary_igetNsegments(rprob%rboundary, i)
+!          do k = 1,rprob%nblocks
+!            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
+!                                        rprob%DbcValue(k,j,i), &
+!                                        iarrayindex = 2*(j-1)+k)
+!          enddo
+!          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
+!                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
+!                           trim(sys_sdL(rprob%DbcValue(1,j,i),4)) // &
+!                           ', '//trim(sys_sdL(rprob%DbcValue(2,j,i),4))//')')
+!        end do
+!      end do
+!    endif
 
     ! constant volume forces (only needed in case of csimulation .eq. SIMUL_REAL)
     if (rprob%csimulation .eq. SIMUL_REAL) then
@@ -883,7 +950,7 @@ contains
 !</errors>
 !</function>
 
-    real(DP) :: daux, daux1
+!    real(DP) :: daux, daux1
 
     real(DP) :: dgamma
 #ifdef SOLUTION_CAUSING_SERIOUS_PROBLEMS_FOR_STABILISED_Q1_Q1_STOKES

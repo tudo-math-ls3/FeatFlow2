@@ -45,10 +45,6 @@ gridFilePRM = './pre/${grid}.prm'
 # TRI-file of the mesh
 gridFileTRI = './pre/${grid}.tri'
 
-# boundary segments
-numBoundarySegments(1) =
-4
-
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
@@ -56,40 +52,17 @@ equation = elasticity
 nu = ${nu}
 mu = ${mu}
 
-# boundary conditions
-# bc[i](#segments x #blocks)
-# 'D' or 'N', for each boundary i, each segment and each component
-bc1(8) =
-D
-D
-
-D
-D
-
-N
-N
-
-N
-N
-
 # type of simulation ('real' or 'analytic')
 simulation = analytic
 
-# surface forces in x- and y-direction
-# forceSurface[i](#segments x dim), in case of real simulation, for each boundary i
-# and each segment
-forceSurface1(8) =
-0.0
-0.0
-
-0.0
-0.0
-
-0.0
-0.0
-
-0.0
-0.0
+# boundary conditions
+# bc[i](#segments x #blocks)
+# type of BC for the two components (values can be omitted when simulation = analytical) 
+bc1(4) =
+'D' 'D'
+'D' 'D'
+'N' 'N'
+'N' 'N'
 
 # given constant volume force in x- and y-direction in case of real simulation
 forceVolumeX   = 0.0

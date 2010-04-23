@@ -331,7 +331,7 @@ contains
 
       ! in rcollection%IquickAccess(2) the current segment number is stored
       iseg = rcollection%IquickAccess(2)
-      Dcoefficients(1,ipoint,iel) = rprob%DforceSurface(1, iseg, ibct)
+      Dcoefficients(1,ipoint,iel) = rprob%DbcValue(1, iseg, ibct)
     endif
 
 
@@ -602,7 +602,7 @@ contains
 
       ! in rcollection%IquickAccess(2) the current segment number is stored
       iseg = rcollection%IquickAccess(2)
-      Dcoefficients(1,:,:) = rprob%DforceSurface(icomp, iseg, ibct)
+      Dcoefficients(1,:,:) = rprob%DbcValue(icomp, iseg, ibct)
     endif
 
 
