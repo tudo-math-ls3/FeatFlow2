@@ -4323,6 +4323,10 @@ contains
         !                was stopped.
         ! If iresult=-1: Number of the edge through which the domain was left. 
 
+
+    real(DP), dimension(2,4) :: DcornerCoords
+
+
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
    
@@ -4553,15 +4557,25 @@ contains
 
 	end do SearchVertex
 
-    ! Get barycentric coordinates
-    call gaux_getBarycentricCoords_tri2D (DcornerCoords,dx,dy,dxi1,dxi2,dxi3)
+    ! Store coordinates of cornervertices
+    DcornerCoords(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,rParticles%p_element(iPart)))
+    DcornerCoords(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,rParticles%p_element(iPart)))
+    DcornerCoords(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,rParticles%p_element(iPart)))
+    DcornerCoords(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,rParticles%p_element(iPart)))
+    DcornerCoords(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))
+    DcornerCoords(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))
+
+    ! Check if the particle is in the element
+    call gaux_isInElement_tri2D(dx,dy,DcornerCoords,binside)
 
     ! If the particle is still outside the element
-    if ((abs(dxi1)+abs(dxi2)+abs(dxi3)) .ge. 1.00001) then
+    if (binside == .FALSE.) then
       ! Take the old elementnumber
 	  rParticles%p_element(iPart) = currentelm
+
 	  ! Check if the is/was a particle-wall-collision
-	  call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
+	  !call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
+	  call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
   end subroutine eulerlagrange_wrongelement
@@ -5868,6 +5882,310 @@ contains
     if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
 
   end subroutine eulerlagrange_checkboundary
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
+
+!<description>
+    ! This subroutine checks if there is/was a collision beetween the particle and the wall
+
+!<input>
+    ! parameterlist
+    type(t_parlist), intent(inout) :: rparlist
+
+    ! particles
+    type(t_Particles), intent(inout) :: rParticles
+
+    ! Pointer to the multigrid level
+    type(t_problemLevel), pointer :: p_rproblemLevel
+    
+    ! current number of particle
+    integer, intent(inout) :: iPart
+
+    ! Pointer to nodal property array. 
+    ! Handle to 
+    !       p_InodalProperty=array [1..NVT+NMT+NAT] of integer.
+    ! p_InodalProperty(i) defines for each vertex i=(1..NVT),
+    ! each edge i=(NVT+1..NVT+NMT) and face i=NVT+NMT+1..NVT+NMT+NAT
+    ! its function inside of the geometry.
+    ! Generally said, the range of the p_InodalProperty-array 
+    ! characterizes the type of the node (=vertex/edge):
+    ! = 0    : The vertex/edge is an inner vertex/edge
+    ! > 0    : The vertex/edge is a boundary vertex/edge on the real
+    !           boundary. KNPR(.) defines the number of the boundary
+    !           component.
+    ! This is the old KNPR-array, slightly modified for edges and
+    ! hanging nodes.
+    !
+    ! In case there are hanging nodes in the mesh, this array
+    ! has a special meaning for all hanging vertices and all edges
+    ! containing hanging vertices.  Values < 0 indicate hanging
+    ! vertices at an edge. 
+    ! Let iedgeC (NVT+1..NVT+NMT) be the number of
+    ! a a 'full' edge containing the hanging vertex jvertex. 
+    ! Let iedge be one of the sub-edges inside of edge iedgeC.
+    ! Then there is:
+    !   p_InodalProperty(jvertex) = -iedgeC
+    !   p_InodalProperty(iedge)   = -iedgeC
+    !   p_InodalProperty(iedgeC)  = -jvertex
+    ! Let kfaceC (NVT+NMT+1..NVT+NMT+NAT) be the number of a 'full' face
+    ! containing the hanging vertex jvertex. 
+    ! Let kface be the number of a one of the subfaces inside
+    ! the face kfaceC. Let iedge be the number of one of the sub-edges
+    ! inside face kfaceC.
+    ! Then there is:
+    !   p_InodalProperty(jvertex) = -kfaceC
+    !   p_InodalProperty(kface)   = -kfaceC
+    !   p_InodalProperty(iedge)   = -kfaceC
+    !   p_InodalProperty(kfaceC)  = -jvertex
+    ! A hanging vertex is either the midpoint of a face or of an edge,
+    ! therefore this assignment is unique due to the range of the number.
+    ! 'Hanging edges' (only appear in 3D) without a hanging vertex
+    ! in the center of an edge/face are not supported.
+    integer, dimension(:), pointer :: p_InodalProperty
+ 
+    ! Pointer to edges Adjacent to an Element.
+    ! Handle to 
+    !       p_IedgesAtElement = array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the edges following the
+    ! corner vertices in mathematically positive sense.
+    ! This is the old KMID array.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IedgesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! To be able to distinguish a number of an edge from a vertex number, 
+    ! edges are numbered in the range NVT+1..NVT+NMT. 
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+
+    ! Pointer to vertices Adjacent to an Edge. 
+    ! Handle to 
+    !       p_IverticesAtEdge = array [1..2,1..NMT]
+    ! The numbers of the two vertices adjacent to an edge IMT. 
+    integer, dimension(:,:), pointer :: p_IverticesAtEdge
+   
+    ! pointer to vertices on boundary. 
+    !
+    ! Handle to 
+    !       p_IverticesAtBoundary = array [1..NVBD] of integer.
+    ! This array contains a list of all vertices on the (real) boundary
+    ! in mathematically positive sense.
+    ! The boundary vertices of boundary component i are saved at
+    !        p_IboundaryCpIdx(i)..p_IboundaryCpIdx(i+1)-1.
+    ! This is the old KVBD array.
+    integer, dimension(:), pointer :: p_IverticesAtBoundary
+
+    ! pointer to edges adjacent to the boundary. 
+    !
+    ! Handle to 
+    !       p_IedgesAtBoundary = array [1..NMBD] of integer.
+    ! This array contains a list of all edges on the (real) boundary.
+    ! 2D: in mathematically positive sense. 
+    ! 3D: with increasing number.
+    ! The boundary edges of boundary component i are saved at
+    !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1.
+    ! This is the old KMBD array.
+    ! (Note: In 2D, the above index pointer coincides with
+    !        p_IboundaryCpEdgesIdx(i)..p_IboundaryCpEdgesIdx(i+1)-1 ).
+    integer, dimension(:), pointer :: p_IedgesAtBoundary
+
+    ! pointer to elements adjacent to the boundary. 
+    !
+    ! Handle to 
+    !       p_IelementsAtBoundary = array [1..NVBD] of integer.
+    ! This array contains a list of all elements on the (real) boundary
+    ! in mathematically positive sense.
+    ! p_IelementsAtBoundary(i) is the element adjacent to edge
+    ! h_IedgesAtBoundary - therefore one element number might appear
+    ! more than once in this array!
+    ! The boundary elements of boundary component i are saved at
+    !        p_IboundaryCpIdx(i)..p_IboundaryCpIdx(i+1)-1.
+    ! This is the old KEBD array.
+    integer, dimension(:), pointer :: p_IelementsAtBoundary
+
+    ! pointer to the coordinates of the vertices
+    !
+    ! A list of all corner(!)-vertices of the elements in the triangulation.
+    ! Handle to 
+    !       p_RcornerCoordinates = array [1..ndim,1..NVT] of double
+    ! with
+    !   p_DvertexCoords(1,.) = X-coordinate.
+    ! for 1D meshes,
+    !   p_DvertexCoords(1,.) = X-coordinate.
+    !   p_DvertexCoords(2,.) = Y-coordinate.
+    ! for 2D meshes and
+    !   p_DvertexCoords(1,.) = X-coordinate.
+    !   p_DvertexCoords(2,.) = Y-coordinate.
+    !   p_DvertexCoords(3,.) = Z-coordinate.
+    ! for 3D meshes.
+    ! This is a handle to the old DCORVG-array.
+    !
+    ! Note that the array may be longer than NVT in general!
+    ! (May happen in case of a mesh hierarchy generated by a 2-level
+    ! refinement, where the coordinates of the points on the
+    ! coarser levels are contained in te coordinates of the
+    ! finer levels.)
+    ! In such a case, only the first NVT n-tuples in this array are valid!
+    real(DP), dimension(:,:), pointer :: p_DvertexCoords
+
+    ! pointer to the vertices adjacent to an element
+    !
+    ! Handle to h_IverticesAtElement=array [1..NVE,1..NEL] of integer
+    ! For each element the node numbers of the corner-vertices
+    ! in mathematically positive sense.
+    ! On pure triangular meshes, there is NVE=3. On mixed or pure quad
+    ! meshes, there is NVE=4. In this case, there is 
+    ! IverticesAtElement(4,.)=0 for a triangle in a quad mesh.
+    ! This is a handle to the old KVERT array.
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+
+    ! pointer to the triangulation
+    type(t_triangulation), pointer :: p_rtriangulation
+
+    ! local variables	
+	real(DP), dimension(2) :: velo_rest
+	real(DP) :: proj_tang, proj_norm
+	real(DP), dimension(2) :: bdy_move
+
+    integer :: i, iedge
+
+    ! Local varibales for the calculation of the intersection point
+    ! Coordinates of the two rays
+    ! (x1,y1)->(x2,y2) and (x3,y3)->(x4,y4).
+    real(DP) :: dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3
+    ! Coordinates of the intersection point
+    real(DP) :: dx,dy
+    ! Check if the two rays intersect
+    ! =-1: The rays are the same
+    ! = 0: The rays do not intersect.
+    ! = 1: The rays intersect in exactly one point.
+    integer :: iintersect
+   ! Parameter value of the intersection.
+   ! The intersection point (dx,dy) can be found at position
+   ! (dx,dy) = (dx0,dy0) + da*(dx1-dx0,dy1-dy0).
+    real(DP) :: da
+
+    ! Tangent and normal for collision with the boundary
+    real(DP), dimension(2) :: tang, norm
+    
+    ! Timestep
+    real(DP) :: dt
+
+    ! Set pointer to triangulation
+    p_rtriangulation => p_rproblemLevel%rtriangulation
+
+    call storage_getbase_int(&
+         p_rtriangulation%h_IelementsAtBoundary, p_IelementsAtBoundary)
+    call storage_getbase_double2D(&
+         p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtElement, p_IverticesAtElement)
+    call storage_getbase_int(&
+         p_rtriangulation%h_IverticesAtBoundary, p_IverticesAtBoundary)
+    call storage_getbase_int(&
+         p_rtriangulation%h_Inodalproperty, p_InodalProperty)
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IedgesAtElement, p_IedgesAtElement)
+    call storage_getbase_int2D(&
+         p_rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
+
+
+    ! Find the edge on the boundary
+    edgesearch: do i=1, 3
+        iedge= p_IedgesAtElement(i,rParticles%p_element(iPart))
+        if (p_InodalProperty(p_rtriangulation%NVT+iedge)>0) exit edgesearch
+    end do edgesearch
+
+    ! Set ray for the vertices of the edge
+    dx2= p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+    dy2= p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+    dx3= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
+    dy3= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge))
+
+    ! Set ray for the particle movement from the old and the new particle position
+    dx0= rParticles%p_xpos_old(iPart)
+    dy0= rParticles%p_ypos_old(iPart)
+    dx1= rParticles%p_xpos(iPart)
+    dy1= rParticles%p_ypos(iPart)
+
+    ! Calculate the intersection point of the rays (collision point with the boundary)
+    call gaux_getIntersection_ray2D(&
+          dx0,dy0,dx1,dy1,dx2,dy2,dx3,dy3, dx,dy, iintersect, da)
+
+    if (iintersect == 1) then
+
+        ! Get values for the startingpositions of the particles
+        call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
+
+        ! Set the new particle position on the boundary
+        rParticles%p_xpos(iPart) = rParticles%p_xpos(iPart)   !dx
+        rParticles%p_ypos(iPart) = rParticles%p_ypos(iPart)   !dy
+!
+!        ! Movementvector to the boundary
+!        velo_rest(1)= rParticles%p_xpos_old(iPart) - dx
+!        velo_rest(2)= rParticles%p_ypos_old(iPart) - dy
+!        ! Norming the vector
+!		velo_rest(1)= velo_rest(1)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
+!		velo_rest(2)= velo_rest(2)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
+!
+!		! Tangent in x-direction
+!		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+!		! Tangent in y-direction
+!		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+!        ! Norming of the tangent
+!		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
+!		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
+!        ! Normal in x-direction
+!        norm(1)= tang(2)
+!        ! Normal in y-direction
+!        norm(2)= -tang(1)
+!
+!        ! Projection to the boundary
+!        proj_tang = velo_rest(1)*tang(1)+velo_rest(2)*tang(2)
+!        proj_norm = velo_rest(1)*norm(1)+velo_rest(2)*norm(2)
+!
+!	    ! Calculate the rest-vector of the movement
+!	    bdy_move(1)= rParticles%tang_val*proj_tang*tang(1)+&
+!					 rParticles%norm_val*proj_norm*norm(1)
+!	    bdy_move(2)= rParticles%tang_val*proj_tang*tang(2)+&
+!					 rParticles%norm_val*proj_norm*norm(2)
+!
+!		! Compute the new coordinates after the collision
+		rParticles%p_xvelo(iPart) = 0 !bdy_move(1)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+		rParticles%p_yvelo(iPart) = 0 !bdy_move(2)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+!
+!        ! Set new "old position" and "old velocity" of the particle
+!        rParticles%p_xpos_old(iPart)= dx
+!        rParticles%p_ypos_old(iPart)= dy
+!
+!        ! Set new position of the particle
+!        rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt*(1-da) * rParticles%p_xvelo(iPart)
+!        rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
+
+    else
+        write(*,*) 'Particle-wall-collision failed!'
+        ! Set new "old position" and "old velocity" of the particle
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart)  !dx
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart)  !dy
+        rParticles%p_xvelo(iPart)= 0.0_dp
+        rParticles%p_yvelo(iPart)= 0.0_dp
+    end if
+	
+    if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
+    if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = maxval(p_DvertexCoords(1,:))
+    if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
+    if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
+
+    ! Find the new element for the particle
+    call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
+
+    ! Calculate barycentric coordinates
+    call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+
+
+  end subroutine eulerlagrange_partwallcollision
 
   !*****************************************************************************
 

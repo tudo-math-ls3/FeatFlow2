@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 10000
+nPart = 1000
 
 
 #-------------------------------------------------------------------------------
@@ -55,7 +55,7 @@ nPart = 10000
 # bruteforce	Brute force method
 # raytrace2D	Raytracing method in 2D
 # midpoint		Find element with the nearest midpoint
-search = midpoint
+search = bruteforce
 
 #-------------------------------------------------------------------------------
 # startingposition of the particles
@@ -418,7 +418,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.00
+dfinalTime = 5.00
 
 # initial time step size
 dinitialStep = 1e-3

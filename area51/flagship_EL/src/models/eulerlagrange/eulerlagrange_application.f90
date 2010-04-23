@@ -3477,7 +3477,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     select case(boundbehav)
     case (0)
         rParticles%tang_val= 1.0_dp
-        rParticles%norm_val= 1.0_dp
+        rParticles%norm_val= -1.0_dp
     case (1)
         rParticles%tang_val= 1.0_dp
         rParticles%norm_val= 0.0_dp
@@ -3824,15 +3824,19 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     ! This is a handle to the old KVERT array.
     integer, dimension(:,:), pointer :: p_IverticesAtElement
  
+    ! Coordinates of the cornervertices
+    real(DP), dimension(2,4) :: DcornerCoords
     
     ! Current particlenumber
     integer :: iPart
+
+    ! Inside the element
+    logical :: binside
     
     ! One-way or to-way coppling
     integer :: icouplingpart
 
     real(DP) :: dx,dy
-    real(DP), dimension(2,4) :: DcornerCoords
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -3872,11 +3876,20 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
  
 	  ! Calculate barycentric coordinates
 	  call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+ 
+      ! Store coordinates of cornervertices
+      DcornerCoords(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,rParticles%p_element(iPart)))
+      DcornerCoords(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,rParticles%p_element(iPart)))
+      DcornerCoords(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,rParticles%p_element(iPart)))
+      DcornerCoords(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,rParticles%p_element(iPart)))
+      DcornerCoords(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,rParticles%p_element(iPart)))
+      DcornerCoords(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,rParticles%p_element(iPart)))
+
+      ! Check if the particle is in the element
+      call gaux_isInElement_tri2D(rParticles%p_xpos(iPart),rParticles%p_ypos(iPart),DcornerCoords,binside)
                    
       ! Check if particle is in the wrong element
-      IF ((abs(rParticles%p_lambda1(iPart))+&
-           abs(rParticles%p_lambda2(iPart))+&
-           abs(rParticles%p_lambda3(iPart))) .GE. 1.00001) then
+      IF (binside == .FALSE.) then
         call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
       end if
 
