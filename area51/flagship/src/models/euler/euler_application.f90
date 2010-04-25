@@ -1226,7 +1226,7 @@ contains
     ! local variables
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
-    type(t_vectorBlock) :: rvectorBlock, rvectorLoad, rvectorHigh, rvectorAux
+    type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -1234,10 +1234,13 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP), dimension(:), pointer :: Dnorm0
+    real(DP) :: depsAbsSolution, depsRelSolution, dnorm
     character(LEN=SYS_STRLEN) :: ssolutionName
     integer :: isolutiontype, nexpression
-    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
+    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, iter
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
+    integer :: nmaxIterationsSolution
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1464,30 +1467,35 @@ contains
 
       end do
       
+      ! Store norm of load vector (if required)
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
+        allocate(Dnorm0(rvector%nblocks))
+        do iblock = 1, rvector%nblocks
+          Dnorm0(iblock) = lsyssc_vectorNorm(&
+              rvector%RvectorBlock(iblock), LINALG_NORML2)
+        end do
+      end if
+
+      ! Compute the lumped L2-projection
+      do iblock = 1, rvector%nblocks
+        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+      end do
+
       !-------------------------------------------------------------------------
       ! Restore contribution of the consistent mass matrix of the L2-projection
       !-------------------------------------------------------------------------
-      if (isolutionType .ne. SOLUTION_ANALYTIC_L2_CONSISTENT) then
-
-        ! Compute the lumped L2-projection
-        do iblock = 1, rvector%nblocks
-          call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
-              rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
-        end do
-
-        ! That is it.
-
-      else
-
-        ! Create load vector
-        call lsysbl_duplicateVector(rvector, rvectorLoad,&
-            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
         
-        ! Compute the lumped L2-projection
-        do iblock = 1, rvector%nblocks
-          call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
-              rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
-        end do
+        ! Get configuration from parameter list
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsAbsSolution', depsAbsSolution, 1e-6_DP)
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsRelSolution', depsRelSolution, 1e-4_DP)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'nmaxIterationsSolution', nmaxIterationsSolution, 100)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'systemMatrix', systemMatrix)
 
         ! Compute auxiliary vectors for high-order solution and increment
         call lsysbl_duplicateVector(rvector, rvectorHigh,&
@@ -1497,22 +1505,28 @@ contains
         
         ! Compute the consistent L2-projection by Richardson iteration
         do iblock = 1, rvector%nblocks
-          do i = 1, 5
-            call lsyssc_copyVector(rvectorLoad%RvectorBlock(iblock),&
-                rvectorAux%RvectorBlock(iblock))
+          richardson: do iter = 1, nmaxIterationsSolution
+            ! Compute the increment for each scalar subvector
             call lsyssc_scalarMatVec(p_rconsistentMassMatrix,&
                 rvectorHigh%RvectorBlock(iblock),&
-                rvectorAux%RvectorBlock(iblock), -1.0_DP, 1.0_DP)
+                rvectorAux%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
             call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
-                rvectorAux%RvectorBlock(iblock), 1.0_DP, rvectorAux%RvectorBlock(iblock))
+                rvectorAux%RvectorBlock(iblock), 1.0_DP,&
+                rvectorAux%RvectorBlock(iblock))
+            call lsyssc_vectorLinearComb(rvector%RvectorBlock(iblock),&
+                rvectorAux%RvectorBlock(iblock), 1.0_DP, -1.0_DP)
+
+            ! Update the scalar subvector of thesolution
             call lsyssc_vectorLinearComb(rvectorAux%RvectorBlock(iblock),&
                 rvectorHigh%RvectorBlock(iblock), 1.0_DP, 1.0_DP)
-          end do
+            
+            ! Check for convergence
+            dnorm = lsyssc_vectorNorm(&
+                rvectorAux%RvectorBlock(iblock), LINALG_NORML2)
+            if ((dnorm .le. depsAbsSolution) .or.&
+                (dnorm .le. depsRelSolution*Dnorm0(iblock))) exit richardson
+          end do richardson
         end do
-        
-        ! Get parameters from parameter list
-        call parlst_getvalue_int(rparlist,&
-            ssectionName, 'systemMatrix', systemMatrix)
         
         ! Initialise stabilisation structure by hand
         rafcstab%iSpec= AFCSTAB_UNDEFINED
@@ -1540,9 +1554,11 @@ contains
         call afcstab_releaseStabilisation(rafcstab)
 
         ! Release auxiliary vectors
-        call lsysbl_releaseVector(rvectorLoad)
         call lsysbl_releaseVector(rvectorHigh)
         call lsysbl_releaseVector(rvectorAux)
+
+        ! Release temporal memory
+        deallocate(Dnorm0)
       end if
 
       ! Release temporal matrices (if any)
@@ -2408,19 +2424,19 @@ contains
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
 
-    select case(ndimension)
-    case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
-
-    case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
-
-    case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
-    end select
+!!$    select case(ndimension)
+!!$    case (NDIM1D)
+!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
+!!$
+!!$    case (NDIM2D)
+!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
+!!$
+!!$    case (NDIM3D)
+!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
+!!$    end select
 
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
@@ -2577,7 +2593,7 @@ contains
     !---------------------------------------------------------------------------
 
     timeloop: do
-
+exit timeloop
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call euler_outputSolution(rparlist, ssectionName,&
