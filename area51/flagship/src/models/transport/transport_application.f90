@@ -1551,6 +1551,7 @@ contains
     type(t_pgm) :: rpgm
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
+    type(t_vectorBlock) :: rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -1558,12 +1559,13 @@ contains
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: depsAbsSolution, depsRelSolution, dnorm0, dnorm
     character(LEN=SYS_STRLEN) :: ssolutionname
     integer :: isolutiontype
-    integer :: ieq, neq, ndim, icomp
+    integer :: ieq, neq, ndim, icomp, iter
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-
-
+    integer :: nmaxIterationsSolution
+    
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
@@ -1702,6 +1704,10 @@ contains
       call linf_buildVectorScalar2(rform, .true.,&
           rvector%RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
 
+      ! Store norm of load vector (if required)
+      dnorm0 = lsyssc_vectorNorm(&
+          rvector%RvectorBlock(1), LINALG_NORML2)
+
       ! Compute the lumped L2-projection
       call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
           rvector%RvectorBlock(1), 1.0_DP, rvector%RvectorBlock(1))
@@ -1711,9 +1717,44 @@ contains
       !-------------------------------------------------------------------------
       if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
 
-        ! Get parameters from parameter list
+        ! Get configuration from parameter list
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsAbsSolution', depsAbsSolution, 1e-6_DP)
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsRelSolution', depsRelSolution, 1e-4_DP)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'nmaxIterationsSolution', nmaxIterationsSolution, 100)
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
+
+        ! Compute auxiliary vectors for high-order solution and increment
+        call lsysbl_duplicateVector(rvector, rvectorHigh,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+        call lsysbl_duplicateVector(rvector, rvectorAux,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+        
+        ! Compute the consistent L2-projection by Richardson iteration
+        richardson: do iter = 1, nmaxIterationsSolution
+          ! Compute the increment for each scalar subvector
+          call lsyssc_scalarMatVec(p_rconsistentMassMatrix,&
+              rvectorHigh%RvectorBlock(1),&
+              rvectorAux%RvectorBlock(1), 1.0_DP, 0.0_DP)
+          call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+              rvectorAux%RvectorBlock(1), 1.0_DP,&
+              rvectorAux%RvectorBlock(1))
+          call lsyssc_vectorLinearComb(rvector%RvectorBlock(1),&
+              rvectorAux%RvectorBlock(1), 1.0_DP, -1.0_DP)
+          
+          ! Update the scalar subvector of thesolution
+          call lsyssc_vectorLinearComb(rvectorAux%RvectorBlock(1),&
+              rvectorHigh%RvectorBlock(1), 1.0_DP, 1.0_DP)
+          
+          ! Check for convergence
+          dnorm = lsyssc_vectorNorm(&
+              rvectorAux%RvectorBlock(1), LINALG_NORML2)
+          if ((dnorm .le. depsAbsSolution) .or.&
+              (dnorm .le. depsRelSolution*dnorm0)) exit richardson
+        end do richardson
         
         ! Initialise stabilisation structure by hand
         rafcstab%iSpec= AFCSTAB_UNDEFINED
@@ -1723,16 +1764,23 @@ contains
         call afcstab_generateVerticesAtEdge(rproblemLevel%Rmatrix(systemMatrix), rafcstab)
 
         ! Compute the raw antidiffusive mass fluxes
-        call gfsc_buildFluxFCT(rafcstab, rvector, rvector, 0.0_DP, 0.0_DP,&
-            1.0_DP, .true., rproblemLevel%Rmatrix(consistentMassMatrix))
+        call gfsc_buildFluxFCT(rafcstab, rvectorHigh, rvectorHigh,&
+            0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
 
+        ! Attach section name to collection structure
+        rcollection%SquickAccess(1) = ssectionName
+        
         ! Apply flux correction to solution profile
-        call gfsc_buildConvVectorFCT(&
-            rproblemLevel%Rmatrix(lumpedMassMatrix), rafcstab, rvector, 1._DP,&
-            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
+        call gfsc_buildConvVectorFCT(p_rlumpedMassMatrix,&
+            rafcstab, rvector, 1._DP, .false.,&
+            AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
+
+        ! Release auxiliary vectors
+        call lsysbl_releaseVector(rvectorHigh)
+        call lsysbl_releaseVector(rvectorAux)
       end if
 
       ! Release temporal matrices (if any)
