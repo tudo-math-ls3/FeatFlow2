@@ -2593,7 +2593,7 @@ contains
     !---------------------------------------------------------------------------
 
     timeloop: do
-exit timeloop
+
       ! Check for user interaction
       if (signal_SIGINT(-1) > 0 )&
           call euler_outputSolution(rparlist, ssectionName,&
