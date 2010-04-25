@@ -1615,10 +1615,10 @@ contains
 !</subroutine>
 
     ! Is matrix in correct format?
-    if ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .and. &
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .and.&
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .and. &
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) then
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7INTL) .and.&
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9INTL)) then
       print *,'lsyssc_getbase_Kcol: matrix format does not provide KCOL!'
       call sys_halt()
     end if
@@ -1659,10 +1659,10 @@ contains
 !</subroutine>
 
     ! Is matrix in correct format?
-    if ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX7) .and. &
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX7INTL) .and.&
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .and. &
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) then
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX7INTL) .and.&
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and. &
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9INTL)) then
       print *,'lsyssc_getbase_Kld: matrix format does not provide KLD!'
       call sys_halt()
     end if
@@ -1709,8 +1709,8 @@ contains
 !</subroutine>
 
     ! Is matrix in correct format?
-    if ((rmatrix%cmatrixFormat /= LSYSSC_MATRIX9) .and.&
-        (rmatrix%cmatrixFormat /= LSYSSC_MATRIX9INTL)) then
+    if ((rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9) .and.&
+        (rmatrix%cmatrixFormat .ne. LSYSSC_MATRIX9INTL)) then
       print *,'lsyssc_getbase_Kdiagonal: matrix format does not provide KDIAGONAL!'
       call sys_halt()
     end if
@@ -2165,7 +2165,7 @@ contains
     end if
     
     ! Check, if vector has been initialized before.
-    if (rvector%NEQ == 0 .or. rvector%h_Ddata == ST_NOHANDLE) then
+    if (rvector%NEQ .eq. 0 .or. rvector%h_Ddata .eq. ST_NOHANDLE) then
       print *, "lsyssc_resizeVectorDirect: A vector can only be resized " // &
                "if it has been created correctly!"
       call sys_halt()
@@ -2219,7 +2219,7 @@ contains
         ! Compute new size, i.e. MAX(0,NEQ,NEQMAX)
         isize = rvector%NVAR*iNEQ
 
-        if (isize == 0) then
+        if (isize .eq. 0) then
           ! If nothing is left, then the vector can also be released.
           call lsyssc_releaseVector(rvector)
           return
@@ -2295,8 +2295,8 @@ contains
     ! Check, if vector has been initialized before. If this is not
     ! the case, then create a new vector by duplicating the template vector.
     ! Moreover, no data is copied and the vector is cleared if bclear=.TRUE.
-    if ((rvector%NEQ == 0) .or.&
-        (rvector%h_Ddata == ST_NOHANDLE)) then
+    if ((rvector%NEQ .eq. 0) .or.&
+        (rvector%h_Ddata .eq. ST_NOHANDLE)) then
       
       ! At first, copy all 'local' data.
       rvector = rvectorTemplate
@@ -2316,8 +2316,8 @@ contains
     else
       
       ! Check if vectors are compatible
-      if ((rvector%cdataType /= rvectorTemplate%cdataType) .or.&
-          (rvector%NVAR /= rvectorTemplate%NVAR)) then
+      if ((rvector%cdataType .ne. rvectorTemplate%cdataType) .or.&
+          (rvector%NVAR .ne. rvectorTemplate%NVAR)) then
         print *, "lsyssc_resizeVectorIndirect: Vectors are incompatible!"
         call sys_halt()
       end if
@@ -2376,8 +2376,8 @@ contains
     end if
     
     ! Does the vector exist?
-    if (rvector%NEQ == 0 .or.&
-        rvector%h_Ddata == ST_NOHANDLE) then
+    if (rvector%NEQ .eq. 0 .or.&
+        rvector%h_Ddata .eq. ST_NOHANDLE) then
 
       ! Create new vector
       call lsyssc_createVecIndMat(rmatrix, rvector, bclear)
@@ -2385,7 +2385,7 @@ contains
     else
       
       ! Check if vector/matrix are compatible
-      if (rvector%NVAR /= rmatrix%NVAR) then
+      if (rvector%NVAR .ne. rmatrix%NVAR) then
         print *, "lsyssc_resizeVectorIndMat: Vector/Matrix incompatible!"
         call sys_halt()
       end if
@@ -2490,8 +2490,8 @@ contains
     if (present(bforce)) bdoresize=bforce
 
     ! Check, if matrix is not a copy of another matrix or if resize is to be enforced
-    if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .or.&
-         iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) .and.&
+    if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
+         iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
       print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if " // &
                "this is forced explicitely!"
@@ -2499,7 +2499,7 @@ contains
     end if
 
     ! Check, if matrix has been initialized before.
-    if (rmatrix%NEQ == 0 .or. rmatrix%NCOLS == 0 .or. rmatrix%NA == 0) then
+    if (rmatrix%NEQ .eq. 0 .or. rmatrix%NCOLS .eq. 0 .or. rmatrix%NA .eq. 0) then
       print *, "lsyssc_resizeMatrixDirect: A matrix can only be resized " // &
                "if it has been created correctly!"
       call sys_halt()
@@ -2518,7 +2518,7 @@ contains
     if (present(bcopy)) bdocopy = (bdocopy .and. bcopy)
 
     ! Set transposed indicator
-    btransposed = (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0)
+    btransposed = (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0)
 
     ! If the matrix should be cleared, then the sorting strategy (if any)
     ! can be ignored and reset. Otherwise, the matrix needs to be unsorted
@@ -2569,7 +2569,7 @@ contains
       else
       
         ! Do we really have to reallocate the matrix data physically?
-        if (rmatrix%h_DA /= ST_NOHANDLE) then
+        if (rmatrix%h_DA .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_DA,isize)
           if (rmatrix%NA > isize) then
             
@@ -2591,7 +2591,7 @@ contains
               ! Set new size
               isize = iNA
               
-              if (isize == 0) then
+              if (isize .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
                 return
@@ -2630,8 +2630,8 @@ contains
           call sys_halt()
         end if
         
-        if ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .or.&
-            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) then
+        if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
+            (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
           call storage_getsize(rmatrix%h_Kdiagonal,isize)
           if ((rmatrix%NEQ > isize) .or. btransposed .and. (rmatrix%NCOLS > isize)) then
             print *, "lsyssc_resizeMatrixDirect: Dimensions of copied matrix mismatch!"
@@ -2642,7 +2642,7 @@ contains
       else   ! The structure of the matrix is not a copy of another matrix
       
         ! Do we really have to reallocate the array KLD?
-        if (rmatrix%h_Kld /= ST_NOHANDLE) then
+        if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kld,isize)
           if ((rmatrix%NEQ+1 > isize) .or. btransposed .and. (rmatrix%NCOLS+1 > isize)) then
             
@@ -2662,7 +2662,7 @@ contains
             ! allocated memory.
             if (isize > isizeNew) then
               
-              if (isizeNew == 0) then
+              if (isizeNew .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
                 return
@@ -2678,7 +2678,7 @@ contains
         end if
         
         ! Do we really have to reallocate the array KCOL?
-        if (rmatrix%h_Kcol /= ST_NOHANDLE) then
+        if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kcol,isize)
           if (rmatrix%NA > isize) then
             
@@ -2699,7 +2699,7 @@ contains
               ! Set new size
               isize = iNA
               
-              if (isize == 0) then
+              if (isize .eq. 0) then
                 ! If nothing is left, then the matrix can also be released.
                 call lsyssc_releaseMatrix(rmatrix)
                 return
@@ -2715,11 +2715,11 @@ contains
         end if
         
         ! If the matrix is stored in format 9, then the diagonal array must be resized.
-        if ((rmatrix%cmatrixFormat == LSYSSC_MATRIX9) .or.&
-            (rmatrix%cmatrixFormat == LSYSSC_MATRIX9INTL)) then
+        if ((rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9) .or.&
+            (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX9INTL)) then
           
           ! Do we really have to reallocate the array KCOL?
-          if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
+          if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_Kdiagonal,isize)
             if ((rmatrix%NEQ > isize) .or. btransposed .and. (rmatrix%NCOLS > isize)) then
               
@@ -2739,7 +2739,7 @@ contains
               ! allocated memory.
               if (isize > isizeNew) then
                 
-                if (isizeNew == 0) then
+                if (isizeNew .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
                   return
@@ -2798,7 +2798,7 @@ contains
         case (LSYSSC_MATRIXUNDEFINED)
           
           ! Do we really have to reallocate the matrix physically?
-          if (rmatrix%h_DA /= ST_NOHANDLE) then
+          if (rmatrix%h_DA .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_DA,isize)
             if (rmatrix%NA > isize) then
               
@@ -2820,7 +2820,7 @@ contains
                 ! Set new size
                 isize = iNA
                 
-                if (isize == 0) then
+                if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
                   return
@@ -2838,7 +2838,7 @@ contains
         case (LSYSSC_MATRIX1)
           
           ! Do we really have to reallocate the matrix physically?
-          if (rmatrix%h_DA /= ST_NOHANDLE) then
+          if (rmatrix%h_DA .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_DA,isize)
             if (rmatrix%NA*rmatrix%NVAR*rmatrix%NVAR > isize) then
               
@@ -2860,7 +2860,7 @@ contains
                 ! Set new size
                 isize = iNA*rmatrix%NVAR*rmatrix%NVAR
                 
-                if (isize == 0) then
+                if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
                   return
@@ -2878,7 +2878,7 @@ contains
         case (LSYSSC_MATRIXD)
           
           ! Do we really have to reallocate the matrix physically?
-          if (rmatrix%h_DA /= ST_NOHANDLE) then
+          if (rmatrix%h_DA .ne. ST_NOHANDLE) then
             call storage_getsize(rmatrix%h_DA,isize)
             if (rmatrix%NA*rmatrix%NVAR > isize) then
               
@@ -2900,7 +2900,7 @@ contains
                 ! Set new size
                 isize = iNA*rmatrix%NVAR
                 
-                if (isize == 0) then
+                if (isize .eq. 0) then
                   ! If nothing is left, then the matrix can also be released.
                   call lsyssc_releaseMatrix(rmatrix)
                   return
@@ -2999,8 +2999,8 @@ contains
     if (present(bforce)) bdoresize=bforce
 
     ! Check, if matrix is not a copy of another matrix
-    if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) /= 0 .or.&
-         iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   /= 0) .and.&
+    if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0 .or.&
+         iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_CONTENTISCOPY)   .ne. 0) .and.&
          .not.bdoresize) then
       print *, "lsyssc_resizeMatrixDirect: A copied matrix can only be resized if" // &
                "this is forced explicitely!"
@@ -3008,29 +3008,29 @@ contains
     end if
 
     ! Check, if matrix has been initialized before.
-    if (rmatrix%cmatrixFormat == LSYSSC_MATRIXUNDEFINED) then
+    if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIXUNDEFINED) then
 
       ! At first, copy all 'local' data.
       rmatrix = rmatrixTemplate
 
       ! Then allocate memory for the matrix structure and matrix data.
       if (bclear) then
-        if (rmatrixTemplate%h_Kld /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kld, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kld', isize,&
               ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ZERO)
         end if
-        if (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kcol, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kcol', isize,&
               ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ZERO)
         end if
-        if (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kdiagonal .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kdiagonal', isize,&
               ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ZERO)
         end if
-        if (rmatrixTemplate%h_DA /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_DA .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_DA, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_DA', isize,&
               rmatrixTemplate%cdataType, rmatrix%h_DA, ST_NEWBLOCK_ZERO)
@@ -3038,22 +3038,22 @@ contains
 
       else   ! Matrix should not be cleared
 
-        if (rmatrixTemplate%h_Kld /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kld, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kld', isize,&
               ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_NOINIT)
         end if
-        if (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kcol, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kcol', isize,&
               ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_NOINIT)
         end if
-        if (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_Kdiagonal .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_Kdiagonal, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_Kdiagonal', isize,&
               ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_NOINIT)
         end if
-        if (rmatrixTemplate%h_DA /= ST_NOHANDLE) then
+        if (rmatrixTemplate%h_DA .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrixTemplate%h_DA, isize)
           call storage_new ('lsyssc_resizeMatrixIndirect', 'h_DA', isize,&
               rmatrixTemplate%cdataType, rmatrix%h_DA, ST_NEWBLOCK_NOINIT)
@@ -3065,11 +3065,11 @@ contains
       ! The matrix has been initialized before.
 
       ! Check if matrices are compatible except for the dimensions
-      if ((rmatrix%cmatrixFormat           /= rmatrixTemplate%cmatrixFormat) .or.&
-          (rmatrix%cinterleavematrixFormat /= rmatrixTemplate%cinterleavematrixFormat) .or.&
-          (rmatrix%NVAR                    /= rmatrixTemplate%NVAR) .or.&
-          (rmatrix%cdataType               /= rmatrixTemplate%cdataType) .or.&
-          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) /=&
+      if ((rmatrix%cmatrixFormat           .ne. rmatrixTemplate%cmatrixFormat) .or.&
+          (rmatrix%cinterleavematrixFormat .ne. rmatrixTemplate%cinterleavematrixFormat) .or.&
+          (rmatrix%NVAR                    .ne. rmatrixTemplate%NVAR) .or.&
+          (rmatrix%cdataType               .ne. rmatrixTemplate%cdataType) .or.&
+          iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne.&
           iand(rmatrixTemplate%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED)) then
         print *, "lsyssc_resizeMatrixDirect: Matrices are incompatible!"
         call sys_halt()
@@ -3107,7 +3107,7 @@ contains
       else
         
         ! Do we have to reallocate the handle?
-        if (rmatrix%h_DA /= ST_NOHANDLE) then
+        if (rmatrix%h_DA .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_DA, isize)
           if (rmatrix%NA > isize) then
             
@@ -3115,7 +3115,7 @@ contains
             isize = rmatrix%NA
 
             ! Also consider the size of the template matrix.
-            if (rmatrixTemplate%h_DA /= ST_NOHANDLE) then
+            if (rmatrixTemplate%h_DA .ne. ST_NOHANDLE) then
               call storage_getsize(rmatrixTemplate%h_DA, isizeTmp)
               isize = max(0,isize,isizeTmp)
             end if
@@ -3135,7 +3135,7 @@ contains
       if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_STRUCTUREISCOPY) .ne. 0) then
         
         ! Check if handle coincides with matrix simensions
-        if (rmatrix%h_Kld /= ST_NOHANDLE) then
+        if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kld,isize)
           if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .and.&
               rmatrix%NCOLS+1 > isize .or. rmatrix%NEQ+1 > isize) then
@@ -3145,7 +3145,7 @@ contains
         end if
 
         ! Check if handle coincides with matrix simensions
-        if (rmatrix%h_Kcol /= ST_NOHANDLE) then
+        if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kcol, isize)
           if (rmatrix%NA > isize) then
             print *, "lsyssc_resizeMatrixIndirect: Dimensions of copied matrix mismatch!"
@@ -3154,7 +3154,7 @@ contains
         end if
 
         ! Check if handle coincides with matrix simensions
-        if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
+        if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kdiagonal, isize)
           if ((iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) .and.&
               rmatrix%NCOLS > isize .or. rmatrix%NEQ > isize) then
@@ -3166,7 +3166,7 @@ contains
       else  ! Matrix is no copy
         
         ! Do we have to reallocate the handle?
-        if (rmatrix%h_Kld /= ST_NOHANDLE) then
+        if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
           
           ! Do we process a virtually transposed matrix?
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
@@ -3177,7 +3177,7 @@ contains
               isize = rmatrix%NCOLS+1
 
               ! Also consider the size of the template matrix.
-              if (rmatrixTemplate%h_Kld /= ST_NOHANDLE) then
+              if (rmatrixTemplate%h_Kld .ne. ST_NOHANDLE) then
                 call storage_getsize(rmatrixTemplate%h_Kld, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
@@ -3194,7 +3194,7 @@ contains
               isize = rmatrix%NEQ+1
 
               ! Also consider the size of the template matrix.
-              if (rmatrixTemplate%h_Kld /= ST_NOHANDLE) then
+              if (rmatrixTemplate%h_Kld .ne. ST_NOHANDLE) then
                 call storage_getsize(rmatrixTemplate%h_Kld, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
@@ -3207,7 +3207,7 @@ contains
         end if
 
         ! Do we have to reallocate the handle?
-        if (rmatrix%h_Kcol /= ST_NOHANDLE) then
+        if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
           call storage_getsize(rmatrix%h_Kcol, isize)
           if (rmatrix%NA > isize) then
             
@@ -3215,7 +3215,7 @@ contains
             isize = rmatrix%NA
 
             ! Also consider the size of the template matrix.
-            if (rmatrixTemplate%h_Kcol /= ST_NOHANDLE) then
+            if (rmatrixTemplate%h_Kcol .ne. ST_NOHANDLE) then
               call storage_getsize(rmatrixTemplate%h_Kcol, isizeTmp)
               isize = max(0,isize,isizeTmp)
             end if
@@ -3227,7 +3227,7 @@ contains
         end if
 
         ! Do we have to reallocate the handle?
-        if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
+        if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
 
           ! Do we process a virtually transposed matrix?
           if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .ne. 0) then
@@ -3238,7 +3238,7 @@ contains
               isize = rmatrix%NCOLS
 
               ! Also consider the size of the template matrix.
-              if (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) then
+              if (rmatrixTemplate%h_Kdiagonal .ne. ST_NOHANDLE) then
                 call storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
@@ -3255,7 +3255,7 @@ contains
               isize = rmatrix%NEQ
 
               ! Also consider the size of the template matrix.
-              if (rmatrixTemplate%h_Kdiagonal /= ST_NOHANDLE) then
+              if (rmatrixTemplate%h_Kdiagonal .ne. ST_NOHANDLE) then
                 call storage_getsize(rmatrixTemplate%h_Kdiagonal, isizeTmp)
                 isize = max(0,isize,isizeTmp)
               end if
@@ -3739,7 +3739,17 @@ contains
     integer, dimension(:), pointer :: p_Kcol
     integer :: ia
     integer :: irow,icol
-    real(DP) :: dt
+    integer :: ivar,NVAR
+    real(DP), dimension(:), pointer :: Ddtmp
+    real(DP) :: dtmp
+
+      ! Get NVAR - from the vector not from the matrix!
+      NVAR = rx%NVAR
+
+      if (NVAR .ne. ry%NVAR) then
+        print *, "Internal structure of vectors is not compatible!"
+        call sys_halt()
+      end if
 
       ! Get the matrix
       call lsyssc_getbase_double (rmatrix,p_DA)
@@ -3750,87 +3760,206 @@ contains
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
       
-      ! Perform the multiplication
-      if(cx .ne. 1.0_DP) then
-      
-        if(cy .eq. 0.0_DP) then
+      if (NVAR .eq. 1) then
 
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+        ! Perform the multiplication
+        if(cx .ne. 1.0_DP) then
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = cx*dtmp
             end do
-            p_Dy(irow) = cx*dt
-          end do
-          !$omp end parallel do
-        
-        else if(cy .eq. 1.0_DP) then
-
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = p_Dy(irow) + cx*dtmp
             end do
-            p_Dy(irow) = p_Dy(irow) + cx*dt
-          end do
-          !$omp end parallel do
+            !$omp end parallel do
         
+          else
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = cy*p_Dy(irow) + cx*dtmp
+            end do
+            !$omp end parallel do
+            
+          end if
+          
         else
-
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = dtmp
             end do
-            p_Dy(irow) = cy*p_Dy(irow) + cx*dt
-          end do
-          !$omp end parallel do
-        
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = p_Dy(irow) + dtmp
+            end do
+            !$omp end parallel do
+            
+          else
+            
+            !$omp parallel do private(ia,dtmp) default(shared)
+            do irow = 1, NEQ
+              dtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                dtmp = dtmp + p_DA(ia)*p_Dx(p_Kcol(ia))
+              end do
+              p_Dy(irow) = cy*p_Dy(irow) + dtmp
+            end do
+            !$omp end parallel do
+            
+          end if
+          
         end if
-      
-      else
-      
-        if(cy .eq. 0.0_DP) then
 
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
-            end do
-            p_Dy(irow) = dt
-          end do
-          !$omp end parallel do
-        
-        else if(cy .eq. 1.0_DP) then
+      else   ! NVAR .ne. 1
 
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+        ! Allocate temporal array
+        allocate(Ddtmp(NVAR))
+
+        ! Perform the multiplication
+        if(cx .ne. 1.0_DP) then
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cx*Ddtmp(ivar)
+              end do
             end do
-            p_Dy(irow) = p_Dy(irow) + dt
-          end do
-          !$omp end parallel do
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = p_Dy(NVAR*(irow-1)+ivar) + cx*Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
         
+          else
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) + cx*Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          end if
+          
         else
-
-          !$omp parallel do private(ia,dt) default(shared)
-          do irow = 1, NEQ
-            dt = 0.0_DP
-            do ia = p_Kld(irow), p_Kld(irow+1)-1
-              dt = dt + p_DA(ia)*p_Dx(p_Kcol(ia))
+          
+          if(cy .eq. 0.0_DP) then
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = Ddtmp(ivar)
+              end do
             end do
-            p_Dy(irow) = cy*p_Dy(irow) + dt
-          end do
-          !$omp end parallel do
-        
+            !$omp end parallel do
+            
+          else if(cy .eq. 1.0_DP) then
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = p_Dy(NVAR*(irow-1)+ivar) + Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          else
+            
+            !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
+            do irow = 1, NEQ
+              Ddtmp = 0.0_DP
+              do ia = p_Kld(irow), p_Kld(irow+1)-1
+                do ivar = 1, NVAR
+                  Ddtmp(ivar) = Ddtmp(ivar) + p_DA(ia)*p_Dx(NVAR*(p_Kcol(ia)-1)+ivar)
+                end do
+              end do
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) + Ddtmp(ivar)
+              end do
+            end do
+            !$omp end parallel do
+            
+          end if
+          
         end if
-      
+
+        ! Deallocate temporal array
+        deallocate(Ddtmp)
+
       end if
    
     end subroutine
@@ -3840,8 +3969,11 @@ contains
     ! double precision matrix,
     ! double precision vectors
     ! 'Quick' method avoiding some checks, thus being faster.
+    !
+    ! REMARK: The calling subroutine must check that both vectors 
+    !         Dx and Dy have the same number of variables NVAR !!!
     
-    subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ)
+    subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ,NVAR)
 
     ! The matrix
     integer, dimension(*), intent(in) :: KCOL
@@ -3849,11 +3981,11 @@ contains
     real(DP), dimension(*), intent(in) :: DA
     
     ! Size of the vectors
-    integer :: NEQ
+    integer :: NEQ,NVAR
 
     ! The vectors
-    real(DP), dimension(*), intent(in) :: Dx
-    real(DP), dimension(*), intent(inout) :: Dy
+    real(DP), dimension(NVAR,*), intent(in) :: Dx
+    real(DP), dimension(NVAR,*), intent(inout) :: Dy
     
     ! Multiplication factors for the vectors.
     real(DP) :: cx,cy
@@ -3875,13 +4007,13 @@ contains
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
        
-!%OMP parallel do default(shared) private(irow,icol,ia)
-          do irow=1,NEQ
+          !%OMP parallel do default(shared) private(irow,icol,ia)
+          do irow = 1, NEQ
             ia   = Kld(irow)
             icol = Kcol(ia)
-            Dy(irow) = Dx(icol) * DA(ia)
+            Dy(:,irow) = Dx(:,icol) * DA(ia)
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -3897,42 +4029,42 @@ contains
         
           dtmp = cy/cx
           if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(Dy(1:NEQ),dtmp)
+            call lalg_scaleVector(Dy(:,1:NEQ),dtmp)
           end if
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
           
-!%OMP parallel do default(shared) private(irow,icol,ia)
-          do irow=1,NEQ
+          !%OMP parallel do default(shared) private(irow,icol,ia)
+          do irow = 1, NEQ
             ia   = Kld(irow)
             icol = Kcol(ia)
-            Dy(irow) = Dx(icol)*DA(ia) + Dy(irow) 
+            Dy(:,irow) = Dx(:,icol)*DA(ia) + Dy(:,irow) 
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
         
-!%OMP parallel do default(shared) private(irow,icol,ia)
-        do irow=1,NEQ
+        !%OMP parallel do default(shared) private(irow,icol,ia)
+        do irow = 1, NEQ
           do ia = Kld(irow)+1,Kld(irow+1)-1
             icol = Kcol(ia)
-            Dy(irow) = Dy(irow) + DA(ia)*Dx(icol)
+            Dy(:,irow) = Dy(:,irow) + DA(ia)*Dx(:,icol)
           end do
         end do
-!%OMP end parallel do
+        !%OMP end parallel do
         
         ! Scale by cx, finish.
         
         if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (Dy(1:NEQ),cx)
+          call lalg_scaleVector(Dy(:,1:NEQ),cx)
         end if
         
       else 
         ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(Dy(1:NEQ),cy)
+        call lalg_scaleVector(Dy(:,1:NEQ),cy)
       endif
    
     end subroutine
@@ -3970,7 +4102,7 @@ contains
       NVAR = rmatrix%NVAR
 
       ! Check if vectors are compatible
-      if (rx%NVAR /= NVAR .or. ry%NVAR /= NVAR) then
+      if (rx%NVAR .ne. NVAR .or. ry%NVAR .ne. NVAR) then
         print *, "lsyssc_LAX79INTL1doubledouble: Matrix/Vector is incompatible!"
         call sys_halt()
       end if
@@ -3991,14 +4123,14 @@ contains
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+          !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
             
             ! Here, we compute
             !   y(ivar,irow) = SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               dtmp = 0
               do jvar=1,NVAR
                 dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
@@ -4007,7 +4139,7 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -4023,19 +4155,19 @@ contains
         
           dtmp = cy/cx
           if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(p_Dy,dtmp)
+            call lalg_scaleVector(p_Dy,dtmp)
           end if
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+          !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
 
             ! Here, we compute
             !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               dtmp = 0
               do jvar=1,NVAR
                 dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
@@ -4044,19 +4176,19 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+        !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
               
               ! Here, we compute
               !   y(ivar,irow) = y(ivar,irow) + SUM_jvar ( A(ivar,jvar,ia)*x(jvar,icol) )
-              do ivar=1,NVAR
+              do ivar = 1, NVAR
                 dtmp = 0
                 do jvar=1,NVAR
                   dtmp = dtmp + p_Dx(NVAR*(icol-1)+jvar)&
@@ -4066,17 +4198,17 @@ contains
               end do
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
         
         ! Scale by cx, finish.
         
         if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (p_Dy,cx)
+          call lalg_scaleVector(p_Dy,cx)
         end if
         
       else 
         ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(p_Dy,cy)
+        call lalg_scaleVector(p_Dy,cy)
       endif
     end subroutine
 
@@ -4113,7 +4245,7 @@ contains
       NVAR = rmatrix%NVAR
 
       ! Check if vectors are compatible
-      if (rx%NVAR /= NVAR .or. ry%NVAR /= NVAR) then
+      if (rx%NVAR .ne. NVAR .or. ry%NVAR .ne. NVAR) then
         print *, "lsyssc_LAX79INTLDdoubledouble: Matrix/Vector is incompatible!"
         call sys_halt()
       end if
@@ -4134,17 +4266,17 @@ contains
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+          !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
 
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
                   * p_DA(NVAR*(ia-1)+ivar)
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
@@ -4160,50 +4292,50 @@ contains
         
           dtmp = cy/cx
           if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVectorDble(p_Dy,dtmp)
+            call lalg_scaleVector(p_Dy,dtmp)
           end if
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+          !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
             
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
                   * p_DA(NVAR*(ia-1)+ivar)&
                   + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
-!%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+        !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
               
-              do ivar=1,NVAR
+              do ivar = 1, NVAR
                 p_Dy(NVAR*(irow-1)+ivar) = p_Dx(NVAR*(icol-1)+ivar)&
                     * p_DA(NVAR*(ia-1)+ivar)&
                     + p_Dy(NVAR*(irow-1)+ivar)
               end do
             end do
           end do
-!%OMP end parallel do
+          !%OMP end parallel do
            
         ! Scale by cx, finish.
         
         if (cx .ne. 1.0_DP) then
-          call lalg_scaleVectorDble (p_Dy,cx)
+          call lalg_scaleVector(p_Dy,cx)
         end if
         
       else 
         ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVectorDble(p_Dy,cy)
+        call lalg_scaleVector(p_Dy,cy)
       endif
     end subroutine
    
@@ -4229,23 +4361,23 @@ contains
     real(DP) :: dtmp
     integer :: irow
     integer :: ivar,NVAR
-
-      ! Get the matrix - it is an 1D array
-      call lsyssc_getbase_double (rmatrix,p_DA)
       
       ! Get NVAR - from the vector not from the matrix!
       NVAR = rx%NVAR
 
-      if (NVAR /= ry%NVAR) then
+      if (NVAR .ne. ry%NVAR) then
         print *, "Internal structure of vectors is not compatible!"
         call sys_halt()
       end if
+
+      ! Get the matrix - it is an 1D array
+      call lsyssc_getbase_double (rmatrix,p_DA)
 
       ! Get the vectors
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
 
-      if (NVAR == 1) then
+      if (NVAR .eq. 1) then
       
         ! Perform the multiplication
         if (cx .ne. 0.0_DP) then
@@ -4253,35 +4385,31 @@ contains
           if (cy .eq. 0.0_DP) then
             
             ! cy = 0. Multiply cx*A with X and write to Y.
-!%OMP parallel do&
-!%OMP&default(shared) &
-!%OMP&private(irow)
+            !%OMP parallel do default(shared) private(irow)
             do irow = 1,NEQ
               p_Dy(irow) = cx*p_Da(irow)*p_Dx(irow)
             end do
-!%OMP end parallel do
+            !%OMP end parallel do
           
           else
         
             ! Full multiplication: cx*A*X + cy*Y
-!%OMP parallel do&
-!%OMP&default(shared) &
-!%OMP&private(irow)
+            !%OMP parallel do default(shared) private(irow)
             do irow = 1,NEQ
               p_Dy(irow) = cy*p_Dy(irow) + cx*p_Da(irow)*p_Dx(irow) 
             end do
-!%OMP end parallel do
+            !%OMP end parallel do
         
           end if
         
         else 
           
           ! cx = 0. The formula is just a scaling of the vector ry!
-          call lalg_scaleVectorDble(p_Dy,cy)
+          call lalg_scaleVector(p_Dy,cy)
           
         endif
       
-      else
+      else   ! NVAR .ne. 1
 
         ! Perform the multiplication
         if (cx .ne. 0.0_DP) then
@@ -4289,35 +4417,32 @@ contains
           if (cy .eq. 0.0_DP) then
             
             ! cy = 0. Multiply cx*A with X and write to Y.
-!%OMP parallel do&
-!%OMP&default(shared) &
-!%OMP&private(irow)
+            !%OMP parallel do default(shared) private(irow)
             do irow = 1,NEQ
-              do ivar=1,NVAR
+              do ivar = 1, NVAR
                 p_Dy(NVAR*(irow-1)+ivar) = cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar)
               end do
             end do
-!%OMP end parallel do
+            !%OMP end parallel do
           
           else
         
             ! Full multiplication: cx*A*X + cy*Y
-!%OMP parallel do&
-!%OMP&default(shared) &
-!%OMP&private(irow)
+            !%OMP parallel do default(shared) private(irow)
             do irow = 1,NEQ
-              do ivar=1,NVAR
-                p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) + cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar) 
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(irow-1)+ivar) = cy*p_Dy(NVAR*(irow-1)+ivar) +&
+                    cx*p_Da(irow)*p_Dx(NVAR*(irow-1)+ivar) 
               end do
             end do
-!%OMP end parallel do
+            !%OMP end parallel do
         
           end if
         
         else 
           
           ! cx = 0. The formula is just a scaling of the vector ry!
-          call lalg_scaleVectorDble(p_Dy,cy)
+          call lalg_scaleVector(p_Dy,cy)
           
         endif
 
@@ -4346,7 +4471,17 @@ contains
     integer, dimension(:), pointer :: p_Kcol
     integer :: ia
     integer :: irow,icol
+    integer :: ivar,NVAR
+    real(DP), dimension(:), pointer :: Ddtmp
     real(DP) :: dtmp
+
+      ! Get NVAR - from the vector not from the matrix!
+      NVAR = rx%NVAR
+
+      if (NVAR .ne. ry%NVAR) then
+        print *, "Internal structure of vectors is not compatible!"
+        call sys_halt()
+      end if
 
       ! Get the matrix
       call lsyssc_getbase_double (rmatrix,p_DA)
@@ -4356,7 +4491,7 @@ contains
       ! Get the vectors
       call lsyssc_getbase_double (rx,p_Dx)
       call lsyssc_getbase_double (ry,p_Dy)
-      
+
       ! We have to perform matrix*vector + vector.
       ! What we actually calculate here is:
       !    y  =  cx * A^t * x  +  ( cy * y )
@@ -4366,38 +4501,85 @@ contains
       if(cy .eq. 0.0_DP) then
         ! Clear y
         call lalg_clearVectorDble (p_Dy)
-      
+        
       else if(cy .ne. 1.0_DP) then
         ! Scale y
-        call lalg_scaleVectorDble (p_Dy, cy)
-      
+        call lalg_scaleVector(p_Dy, cy)
+        
       end if
       
-      ! Perform the multiplication.
-      if (cx .ne. 1.0_DP) then
+      if (NVAR .eq. 1) then
         
-        do irow = 1, NEQ
-        
-          dtmp = cx*p_Dx(irow)
+        ! Perform the multiplication.
+        if (cx .ne. 1.0_DP) then
           
-          do ia = p_Kld(irow), p_Kld(irow+1)-1
-            icol = p_Kcol(ia)
-            p_Dy(icol) = p_Dy(icol) + p_DA(ia)*dtmp
+          do irow = 1, NEQ
+        
+            dtmp = cx*p_Dx(irow)
+            
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              p_Dy(icol) = p_Dy(icol) + p_DA(ia)*dtmp
+            end do
+            
           end do
           
-        end do
-      
-      else
+        else
+          
+          do irow = 1, NEQ
+            
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              p_Dy(icol) = p_Dy(icol) + p_DA(ia)*p_Dx(irow)
+            end do
+            
+          end do
+          
+        end if
 
-        do irow = 1, NEQ
+      else   ! NVAR .ne. 1
         
-          do ia = p_Kld(irow), p_Kld(irow+1)-1
-            icol = p_Kcol(ia)
-            p_Dy(icol) = p_Dy(icol) + p_DA(ia)*p_Dx(irow)
+        ! Perform the multiplication.
+        if (cx .ne. 1.0_DP) then
+          
+          ! Allocate temporal array
+          allocate(Ddtmp(NVAR))
+
+          do irow = 1, NEQ
+            
+            DO ivar = 1, NVAR
+              Ddtmp(ivar) = cx*p_Dx(NVAR*(irow-1)+ivar)
+            end DO
+            
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(icol-1)+ivar) = p_Dy(NVAR*(icol-1)+ivar) +&
+                                           p_DA(ia)*Ddtmp(ivar)
+              end do
+            end do
+            
+          end do
+
+          ! Deallocate temporal array
+          deallocate(Ddtmp)
+          
+        else
+          
+          do irow = 1, NEQ
+            
+            do ia = p_Kld(irow), p_Kld(irow+1)-1
+              icol = p_Kcol(ia)
+              do ivar = 1, NVAR
+                p_Dy(NVAR*(icol-1)+ivar) = p_Dy(NVAR*(icol-1)+ivar) +&
+                                           p_DA(ia)*p_Dx(NVAR*(irow-1)+ivar)
+              end do
+            end do
+            
           end do
           
-        end do
-        
+        end if
+
       end if
       
     end subroutine
@@ -9905,7 +10087,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(p_Kdiag(i))
             end do
@@ -9931,7 +10113,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(p_Kdiag(i))
             end do
@@ -9969,7 +10151,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)*&
                   fmyscale/p_Fa(p_Kdiag(i))
             end do
@@ -9995,7 +10177,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)*&
                   fmyscale/p_Fa(p_Kdiag(i))
             end do
@@ -10052,7 +10234,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
@@ -10064,7 +10246,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
@@ -10087,7 +10269,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
@@ -10099,7 +10281,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
@@ -10134,7 +10316,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
@@ -10146,7 +10328,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
@@ -10169,7 +10351,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*NVAR*(p_Kdiag(i)-1)+NVAR*ivar)
             end do
@@ -10181,7 +10363,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(NVAR*(p_Kdiag(i)-1)+ivar)
             end do
@@ -10234,7 +10416,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(i)
             end do
@@ -10260,7 +10442,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *dmyscale/p_Da(i)
             end do
@@ -10298,7 +10480,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i),ivar
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Dvec2(NVAR*(i-1)+ivar) = p_Dvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(i)
             end do
@@ -10324,7 +10506,7 @@ contains
 !%OMP&default(shared) &
 !%OMP&private(i,ivar)
           do i=1,rvectorSrc%NEQ
-            do ivar=1,NVAR
+            do ivar = 1, NVAR
               p_Fvec2(NVAR*(i-1)+ivar) = p_Fvec(NVAR*(i-1)+ivar)&
                   *fmyscale/p_Fa(i)
             end do
@@ -10414,12 +10596,12 @@ contains
   case (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_double(rx,p_Ddata)
-    call lalg_scaleVectorDble (p_Ddata,c)  
+    call lalg_scaleVector(p_Ddata,c)  
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_single(rx,p_Fdata)
-    call lalg_scaleVectorSngl (p_Fdata,real(c,SP))  
+    call lalg_scaleVector(p_Fdata,real(c,SP))  
 
   case DEFAULT
     print *,'lsyssc_scaleVector: Unsupported data type!'
@@ -13020,12 +13202,12 @@ contains
   case (ST_DOUBLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_double(rmatrix,p_Ddata)
-    call lalg_scaleVectorDble (p_Ddata,c)  
+    call lalg_scaleVector(p_Ddata,c)  
 
   case (ST_SINGLE)
     ! Get the pointer and scale the whole data array.
     call lsyssc_getbase_single(rmatrix,p_Fdata)
-    call lalg_scaleVectorSngl (p_Fdata,real(c,SP))  
+    call lalg_scaleVector(p_Fdata,real(c,SP))  
 
   case DEFAULT
     print *,'lsyssc_scaleMatrix: Unsupported data type!'
@@ -13113,14 +13295,14 @@ contains
     bfast = bfast .or. (bmemory .and. bsymb)
 
     ! Check if both matrices are compatible
-    if (rmatrixA%NCOLS /= rmatrixB%NEQ) then
+    if (rmatrixA%NCOLS .ne. rmatrixB%NEQ) then
       print *, 'lsyssc_multMatMat: number of columns of matrix A is not ' // &
                'compatible with number of rows of matrix B'
       call sys_halt()
     end if
 
     ! Check if both matrices have the same sorting
-    if (rmatrixA%isortStrategy /= rmatrixB%isortStrategy) then
+    if (rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) then
       print *, 'lsyssc_multMatMat: incompatible sorting strategies'
       call sys_halt()
     end if
@@ -13128,8 +13310,8 @@ contains
     ! Release matrix if required and set common variables
     if (bmemory) then
       call lsyssc_releaseMatrix(rmatrixC)
-      if (rmatrixA%cdataType == ST_DOUBLE .or. rmatrixB&
-          &%cdataType == ST_DOUBLE) then
+      if (rmatrixA%cdataType .eq. ST_DOUBLE .or. rmatrixB&
+          &%cdataType .eq. ST_DOUBLE) then
         rmatrixC%cdataType = ST_DOUBLE
       else
         rmatrixC%cdataType = ST_SINGLE
@@ -13158,7 +13340,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13242,7 +13424,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13337,7 +13519,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIXD) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13417,7 +13599,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13501,7 +13683,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13637,7 +13819,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
           call sys_halt()
@@ -13763,7 +13945,7 @@ contains
         if (bmemory) then
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
-          if (rmatrixA%cmatrixFormat >= rmatrixB%cmatrixFormat) then
+          if (rmatrixA%cmatrixFormat .ge. rmatrixB%cmatrixFormat) then
             call lsyssc_duplicateMatrix(rmatrixA,rmatrixC&
                 &,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           else
@@ -13786,7 +13968,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= max(rmatrixA%cmatrixFormat,&
+        if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,&
             &rmatrixB%cmatrixFormat)) then
           print *, 'lsyssc_multMatMat: destination matrix has incompati' // &
                    'ble format'
@@ -13799,7 +13981,7 @@ contains
           ! Set pointers
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-          if (h_Kaux == ST_NOHANDLE) then
+          if (h_Kaux .eq. ST_NOHANDLE) then
             call storage_new('lsyssc_multMatMat','Kaux',max(rmatrixA&
                 &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_INT&
                 &,h_Kaux,ST_NEWBLOCK_NOINIT)
@@ -13810,7 +13992,7 @@ contains
           end if
           call storage_getbase_int(h_Kaux,Kaux)
 
-          if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+          if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
             call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             call do_mat79mat79mul_symb(rmatrixA%NEQ,rmatrixA%NCOLS&
                 &,rmatrixB%NCOLS,KldA,KcolA,KldB,KcolB,KldC,KcolC&
@@ -13828,7 +14010,7 @@ contains
           ! Set pointers
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-          if (h_Daux == ST_NOHANDLE) then
+          if (h_Daux .eq. ST_NOHANDLE) then
             call storage_new('lsyssc_multMatMat','Daux',max(rmatrixA&
                 &%NEQ,max(rmatrixA%NCOLS,rmatrixB%NCOLS)),ST_DOUBLE&
                 &,h_Daux,ST_NEWBLOCK_NOINIT)
@@ -13920,9 +14102,9 @@ contains
     end select
 
     ! Clear auxiliary vectors
-    if (h_Kaux /= ST_NOHANDLE) call storage_free(h_Kaux)
-    if (h_Daux /= ST_NOHANDLE) call storage_free(h_Daux)
-    if (h_Faux /= ST_NOHANDLE) call storage_free(h_Faux)
+    if (h_Kaux .ne. ST_NOHANDLE) call storage_free(h_Kaux)
+    if (h_Daux .ne. ST_NOHANDLE) call storage_free(h_Daux)
+    if (h_Faux .ne. ST_NOHANDLE) call storage_free(h_Faux)
 
   contains
 
@@ -14236,7 +14418,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol2(ild2)) exit
+              if (Kcol3(ild3) .eq. Kcol2(ild2)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Da1(ieq)*Da2(ild2); ild3=ild3+1
@@ -14281,7 +14463,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol2(ild2)) exit
+              if (Kcol3(ild3) .eq. Kcol2(ild2)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Fa1(ieq)*Da2(ild2); ild3=ild3+1
@@ -14326,7 +14508,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol2(ild2)) exit
+              if (Kcol3(ild3) .eq. Kcol2(ild2)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Da1(ieq)*Fa2(ild2); ild3=ild3+1
@@ -14371,7 +14553,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild2=Kld2(ieq),Kld2(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol2(ild2)) exit
+              if (Kcol3(ild3) .eq. Kcol2(ild2)) exit
               Fa3(ild3)=0
             end do
             Fa3(ild3)=Fa1(ieq)*Fa2(ild2); ild3=ild3+1
@@ -14416,7 +14598,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol1(ild1)) exit
+              if (Kcol3(ild3) .eq. Kcol1(ild1)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Da1(ild1)*Da2(Kcol1(ild1)); ild3=ild3+1
@@ -14461,7 +14643,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol1(ild1)) exit
+              if (Kcol3(ild3) .eq. Kcol1(ild1)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Fa1(ild1)*Da2(Kcol1(ild1)); ild3=ild3+1
@@ -14506,7 +14688,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol1(ild1)) exit
+              if (Kcol3(ild3) .eq. Kcol1(ild1)) exit
               Da3(ild3)=0
             end do
             Da3(ild3)=Da1(ild1)*Fa2(Kcol1(ild1)); ild3=ild3+1
@@ -14551,7 +14733,7 @@ contains
           ild3=Kld3(ieq); ildend3=Kld3(ieq+1)-1
           do ild1=Kld1(ieq),Kld1(ieq+1)-1
             do ild3=ild3,ildend3
-              if (Kcol3(ild3) == Kcol1(ild1)) exit
+              if (Kcol3(ild3) .eq. Kcol1(ild1)) exit
               Fa3(ild3)=0
             end do
             Fa3(ild3)=Fa1(ild1)*Fa2(Kcol1(ild1)); ild3=ild3+1
@@ -14612,7 +14794,7 @@ contains
             icol=KcolB(jeq)
 
             ! Add one element to the linked list
-            if (Kaux(icol) == 0) then
+            if (Kaux(icol) .eq. 0) then
               ndg = ndg+1
               Kaux(icol) = last
               last = icol
@@ -14680,7 +14862,7 @@ contains
           ! A with the nonzeros in column J of matrix B
           do k=KldB(j),KldB(j+1)-1
             jk=KcolB(k)
-            if (Kindex(jk) == 0) then
+            if (Kindex(jk) .eq. 0) then
               Kindex(jk) = istart
               istart = jk
               ilength = ilength+1
@@ -14707,13 +14889,13 @@ contains
             ! position of the provisional entry KCOLC(J)
             kaux = KcolC(j)
             do jj=j-1,KldC(i),-1
-              if (KcolC(jj) <= kaux) goto 10
+              if (KcolC(jj) .le. kaux) goto 10
               KcolC(jj+1) = KcolC(jj)
-              if (KcolC(jj+1) == i) KdiagonalC(i) = jj+1
+              if (KcolC(jj+1) .eq. i) KdiagonalC(i) = jj+1
             end do
             jj=KldC(i)-1
 10          KcolC(jj+1) = kaux
-            if (KcolC(jj+1) == i) KdiagonalC(i) = jj+1
+            if (KcolC(jj+1) .eq. i) KdiagonalC(i) = jj+1
           end do
 
         else
@@ -14731,7 +14913,7 @@ contains
             istart = Kindex(istart)
             Kindex(KcolC(j)) = 0
             
-            if (KcolC(j) == i) then
+            if (KcolC(j) .eq. i) then
               ! The current entry is the diagonal entry, hence, shift
               ! all entries to the right by one and move the current
               ! entry to the first position
@@ -14745,7 +14927,7 @@ contains
               ! position of the provisional entry KCOLC(J)
               kaux = KcolC(j); jj=j
               do jj=j-1,KldC(i),-1
-                if (KcolC(jj) <= kaux) goto 20
+                if (KcolC(jj) .le. kaux) goto 20
                 KcolC(jj+1) = KcolC(jj)
               end do
               jj=KldC(i)-1
@@ -15057,15 +15239,15 @@ contains
     bfast = bfast .or. (bmemory .and. bsymb)
 
     ! Check if both matrices are compatible
-    if (rmatrixA%NEQ /= rmatrixB%NEQ .or. &
-        & rmatrixA%NCOLS /= rmatrixB%NCOLS) then
+    if (rmatrixA%NEQ .ne. rmatrixB%NEQ .or. &
+        & rmatrixA%NCOLS .ne. rmatrixB%NCOLS) then
       print *, 'lsyssc_matrixLinearComb: number of rows/columns of ' // &
                'matrix A is not compatible with number of rows/columns of matrix B'
       call sys_halt()
     end if
 
     ! Check if both matrices have the same sorting
-    if (rmatrixA%isortStrategy /= rmatrixB%isortStrategy) then
+    if (rmatrixA%isortStrategy .ne. rmatrixB%isortStrategy) then
       print *, 'lsyssc_matrixLinearComb: incompatible sorting strategies'
       call sys_halt()
     end if
@@ -15073,7 +15255,7 @@ contains
     ! Release matrix if required and set common variables
     if (bmemory) then
       call lsyssc_releaseMatrix(rmatrixC)
-      if (rmatrixA%cdataType == ST_DOUBLE .or. rmatrixB%cdataType == ST_DOUBLE) then
+      if (rmatrixA%cdataType .eq. ST_DOUBLE .or. rmatrixB%cdataType .eq. ST_DOUBLE) then
         rmatrixC%cdataType = ST_DOUBLE
       else
         rmatrixC%cdataType = ST_SINGLE
@@ -15101,7 +15283,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15184,7 +15366,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15263,7 +15445,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15365,7 +15547,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIXD) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIXD) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15444,7 +15626,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15523,7 +15705,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15553,7 +15735,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -15574,7 +15756,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -15604,7 +15786,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -15625,7 +15807,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -15654,7 +15836,7 @@ contains
         
         ! Set size of interleave block
         isizeIntl=rmatrixB%NVAR
-        if (rmatrixB%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+        if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
         
         ! memory allocation?
         if (bmemory) then
@@ -15667,8 +15849,8 @@ contains
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixB%cmatrixFormat .or. &
-            rmatrixC%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixB%cmatrixFormat .or. &
+            rmatrixC%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15698,12 +15880,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -15714,7 +15896,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doubledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,DaA,cA,DaC,KldC,KcolC)
                 else
@@ -15730,12 +15912,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -15746,7 +15928,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singledouble(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,DaA,cA,DaC,KldC,KcolC)
                 else
@@ -15771,12 +15953,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -15787,7 +15969,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doublesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,DaB,cB,FaA,cA,DaC,KldC,KcolC)
                 else
@@ -15803,12 +15985,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixB,KldB)
               call lsyssc_getbase_Kcol(rmatrixB,KcolB)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -15819,7 +16001,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singlesingle(KldB,KcolB,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixB%NEQ,FaB,cB,FaA,cA,FaC,KldC,KcolC)
                 else
@@ -15861,7 +16043,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= LSYSSC_MATRIX1) then
+        if (rmatrixC%cmatrixFormat .ne. LSYSSC_MATRIX1) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15952,7 +16134,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -15982,7 +16164,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -16003,7 +16185,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -16033,7 +16215,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -16054,7 +16236,7 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
@@ -16091,7 +16273,7 @@ contains
         if (bmemory) then
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
-          if (rmatrixA%cmatrixFormat >= rmatrixB%cmatrixFormat) then
+          if (rmatrixA%cmatrixFormat .ge. rmatrixB%cmatrixFormat) then
             call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           else
             call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
@@ -16111,7 +16293,7 @@ contains
         end if
         
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
+        if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat)) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -16123,7 +16305,7 @@ contains
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
                     
-          if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+          if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
             call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
                 rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
@@ -16155,8 +16337,8 @@ contains
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
               
-              if ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .and. (bfast)) then
+              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
                 
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
@@ -16171,7 +16353,7 @@ contains
                 
                 call lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
                 
-              else if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_dbledble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16189,7 +16371,7 @@ contains
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
               
-              if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_dblesngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16216,7 +16398,7 @@ contains
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
 
-              if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_sngldble(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16234,8 +16416,8 @@ contains
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
               
-              if ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .and. (bfast)) then
+              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
                   
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
@@ -16250,7 +16432,7 @@ contains
                 
                 call lalg_vectorLinearCombSngl (FaA,FaC,real(cA,SP),real(cB,SP))                
 
-              else if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9) then
+              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_snglsngl(1,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16285,7 +16467,7 @@ contains
       
       ! Set size of interleave block
       isizeIntl=rmatrixB%NVAR
-      if (rmatrixB%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+      if (rmatrixB%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
 
       select case(rmatrixB%cmatrixFormat)
 
@@ -16302,8 +16484,8 @@ contains
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= rmatrixA%cmatrixFormat .or. &
-            rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat) then
+        if (rmatrixC%cmatrixFormat .ne. rmatrixA%cmatrixFormat .or. &
+            rmatrixC%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -16333,12 +16515,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kcol(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -16349,7 +16531,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doubledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,DaB,cB,DaC,KldC,KcolC)
                 else
@@ -16365,12 +16547,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -16381,7 +16563,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_doublesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,DaA,cA,FaB,cB,DaC,KldC,KcolC)
                 else
@@ -16406,12 +16588,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -16422,7 +16604,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singledouble(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,DaB,cB,DaC,KldC,KcolC)
                 else
@@ -16438,12 +16620,12 @@ contains
               call lsyssc_getbase_Kld(rmatrixA,KldA)
               call lsyssc_getbase_Kcol(rmatrixA,KcolA)
               if (bfast) then
-                if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX7INTL) then
+                if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
                   call lsyssc_getbase_Kld(rmatrixC,KdiagonalC)
                 else
                   call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 end if
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,Kdiag3=KdiagonalC,na=rmatrixC%NA)
                 else
@@ -16454,7 +16636,7 @@ contains
               else
                 call lsyssc_getbase_Kld(rmatrixC,KldC)
                 call lsyssc_getbase_Kcol(rmatrixC,KcolC)
-                if (rmatrixC%cinterleavematrixFormat == LSYSSC_MATRIX1) then
+                if (rmatrixC%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) then
                   call do_mat79matDadd_singlesingle(KldA,KcolA,rmatrixC%NVAR,rmatrixC%NVAR,&
                       rmatrixA%NEQ,FaA,cA,FaB,cB,FaC,KldC,KcolC)
                 else
@@ -16477,15 +16659,15 @@ contains
       case (LSYSSC_MATRIX7INTL,LSYSSC_MATRIX9INTL) ! B is interleave CSR matrix-
 
         ! Check if interleave matrices are compatible
-        if (rmatrixA%NVAR /= rmatrixB% NVAR .or. &
-            rmatrixA%cinterleavematrixFormat /= rmatrixB%cinterleavematrixFormat) then
+        if (rmatrixA%NVAR .ne. rmatrixB% NVAR .or. &
+            rmatrixA%cinterleavematrixFormat .ne. rmatrixB%cinterleavematrixFormat) then
           print *, 'lsyssc_matrixLinearComb: incompatible interleave matrices!'
           call sys_halt()
         end if
         
         ! Set size of interleave block
         isizeIntl=rmatrixA%NVAR
-        if (rmatrixA%cinterleavematrixFormat == LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
+        if (rmatrixA%cinterleavematrixFormat .eq. LSYSSC_MATRIX1) isizeIntl=isizeIntl*isizeIntl
         
         ! Set pointers
         call lsyssc_getbase_Kld(rmatrixA,KldA)
@@ -16497,7 +16679,7 @@ contains
         if (bmemory) then
           ! Duplicate structure of matrix A or B depending on which
           ! matrix is given in the encompassing matrix format
-          if (rmatrixA%cmatrixFormat >= rmatrixB%cmatrixFormat) then
+          if (rmatrixA%cmatrixFormat .ge. rmatrixB%cmatrixFormat) then
             call lsyssc_duplicateMatrix(rmatrixA,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
           else
             call lsyssc_duplicateMatrix(rmatrixB,rmatrixC,LSYSSC_DUP_EMPTY,LSYSSC_DUP_REMOVE)
@@ -16516,9 +16698,9 @@ contains
         end if
 
         ! Check if matrix is given in the correct format
-        if (rmatrixC%cmatrixFormat /= max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat) .or. &
-          rmatrixC%cinterleavematrixFormat /= rmatrixA%cinterleavematrixFormat .or. &
-          rmatrixC%NA /= rmatrixA%NVAR) then
+        if (rmatrixC%cmatrixFormat .ne. max(rmatrixA%cmatrixFormat,rmatrixB%cmatrixFormat) .or. &
+          rmatrixC%cinterleavematrixFormat .ne. rmatrixA%cinterleavematrixFormat .or. &
+          rmatrixC%NA .ne. rmatrixA%NVAR) then
           print *, 'lsyssc_matrixLinearComb: destination matrix has incompatible format'
           call sys_halt()
         end if
@@ -16530,7 +16712,7 @@ contains
           call lsyssc_getbase_Kld(rmatrixC,KldC)
           call lsyssc_getbase_Kcol(rmatrixC,KcolC)
           
-          if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) then
+          if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
             call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
             call do_mat79mat79add_symb(rmatrixC%NEQ,rmatrixC%NCOLS,KldA,KcolA,&
                 rmatrixA%cmatrixFormat,KldB,KcolB,rmatrixB%cmatrixFormat,KldC,KcolC,KdiagonalC)
@@ -16562,8 +16744,8 @@ contains
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
 
-              if ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .and. (bfast)) then
+              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
                 
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
@@ -16578,7 +16760,7 @@ contains
                 
                 call lalg_vectorLinearCombDble (DaA,DaC,cA,cB)                
                 
-              else if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) then
+              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_dbledble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16596,7 +16778,7 @@ contains
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
               
-              if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) then
+              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_dblesngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16623,7 +16805,7 @@ contains
               call lsyssc_getbase_double(rmatrixB,DaB)
               call lsyssc_getbase_double(rmatrixC,DaC)
               
-              if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) then
+              if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_sngldble(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16641,8 +16823,8 @@ contains
               call lsyssc_getbase_single(rmatrixB,FaB)
               call lsyssc_getbase_single(rmatrixC,FaC)
 
-              if ((rmatrixA%cmatrixFormat == rmatrixB%cmatrixFormat) .and. &
-                  (rmatrixA%cmatrixFormat == rmatrixC%cmatrixFormat) .and. (bfast)) then
+              if ((rmatrixA%cmatrixFormat .eq. rmatrixB%cmatrixFormat) .and. &
+                  (rmatrixA%cmatrixFormat .eq. rmatrixC%cmatrixFormat) .and. (bfast)) then
                 
                 ! We rely on the user who tells us that we should assume the
                 ! same structure for the matrices. In this case, we can
@@ -16657,7 +16839,7 @@ contains
                 
                 call lalg_vectorLinearCombSngl (FaA,FaC,real(cA,SP),real(cB,SP))                
                 
-              else if (rmatrixC%cmatrixFormat == LSYSSC_MATRIX9INTL) then
+              else if (rmatrixC%cmatrixFormat .eq. LSYSSC_MATRIX9INTL) then
                 
                 call lsyssc_getbase_Kdiagonal(rmatrixC,KdiagonalC)
                 call do_mat79mat79add_numb_snglsngl(isizeIntl,rmatrixC%NEQ,rmatrixC%NCOLS,&
@@ -16694,7 +16876,7 @@ contains
     end select
 
     ! Clear auxiliary vectors
-    if (h_Kaux /= ST_NOHANDLE) call storage_free(h_Kaux)
+    if (h_Kaux .ne. ST_NOHANDLE) call storage_free(h_Kaux)
 
   contains
 
@@ -16728,7 +16910,7 @@ contains
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      CALL lalg_scaleVector(Da3,c1)
 !!$      DO i=0,n-1
 !!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
 !!$      END DO
@@ -16769,7 +16951,7 @@ contains
 
 !!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
-!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      CALL lalg_scaleVector(Da3,c1)
 !!$      DO i=0,n-1
 !!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Da2(i+1)
 !!$      END DO
@@ -16803,7 +16985,7 @@ contains
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      CALL lalg_scaleVector(Da3,c1)
 !!$      DO i=0,n-1
 !!$        Da3(i*m+i+1)=Da3(i*m+i+1)+c2*Fa2(i+1)
 !!$      END DO
@@ -16837,7 +17019,7 @@ contains
 !!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
 !!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
 !!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
-!!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+!!$      CALL lalg_scaleVector(Fa3,REAL(c1,SP))
 !!$      DO i=0,n-1
 !!$        Fa3(i*m+i+1)=Fa3(i*m+i+1)+c2*Fa2(i+1)
 !!$      END DO
@@ -16878,7 +17060,7 @@ contains
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      CALL lalg_scaleVector(Da3,c1)
 !!$      
 !!$      DO i=1,n
 !!$        DO ild=Kld2(i),Kld2(i+1)-1
@@ -16963,7 +17145,7 @@ contains
 !!$      REAL(DP), DIMENSION(m*n), INTENT(in)    :: Da1
 !!$      REAL(DP), DIMENSION(m*n), INTENT(inout) :: Da3
 !!$      CALL lalg_copyVectorDble(Da1,Da3)
-!!$      CALL lalg_scaleVectorDble(Da3,c1)
+!!$      CALL lalg_scaleVector(Da3,c1)
 !!$
 !!$      DO i=1,n
 !!$        DO ild=Kld2(i),Kld2(i+1)-1
@@ -17008,7 +17190,7 @@ contains
 !!$      REAL(SP), DIMENSION(m*n), INTENT(in)    :: Fa1
 !!$      REAL(SP), DIMENSION(m*n), INTENT(inout) :: Fa3
 !!$      CALL lalg_copyVectorSngl(Fa1,Fa3)
-!!$      CALL lalg_scaleVectorSngl(Fa3,REAL(c1,SP))
+!!$      CALL lalg_scaleVector(Fa3,REAL(c1,SP))
 !!$      
 !!$      DO i=1,n
 !!$        DO ild=Kld2(i),Kld2(i+1)-1
@@ -17049,7 +17231,7 @@ contains
         ! The structure of matrix A may be only a subset of C, so that
         ! each entry must be visited separately
         
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 
           ! Loop over all rows
           do ieq=1,neq
@@ -17062,13 +17244,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,1,ild3)=0._DP
               end do
               
               Da3(:,1,ild3)=c1*Da1(:,1,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
               ild3=ild3+1
             end do
             Da3(:,1,ild3:ildend3)=0._DP
@@ -17087,13 +17269,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,:,ild3)=0._DP
               end do
               
               Da3(:,:,ild3)=c1*Da1(:,:,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) then
+              if (icol3 .eq. ieq) then
                 do ivar=1,nvar
                   Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
                 end do
@@ -17112,7 +17294,7 @@ contains
         call DCOPY(int(nvar*mvar*na),Da1,1,Da3,1)
         call DSCAL(int(nvar*mvar*na),c1,Da3,1)
 
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(ieq,ild3)        
@@ -17171,7 +17353,7 @@ contains
         ! The structure of matrix A may be only a subset of C, so that
         ! each entry must be visited separately
         
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
           
           ! Loop over all rows
           do ieq=1,neq
@@ -17184,13 +17366,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,1,ild3)=0._DP
               end do
               
               Da3(:,1,ild3)=c1*Fa1(:,1,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
+              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Da2(ieq)
               ild3=ild3+1
             end do
             Da3(:,1,ild3:ildend3)=0._DP
@@ -17209,13 +17391,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,:,ild3)=0._DP
               end do
               
               Da3(:,:,ild3)=c1*Fa1(:,:,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) then
+              if (icol3 .eq. ieq) then
                 do ivar=1,nvar
                   Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Da2(ieq)
                 end do
@@ -17239,7 +17421,7 @@ contains
         end do
 !%OMP  end parallel do
         
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(ieq,ild3)
@@ -17298,7 +17480,7 @@ contains
         ! The structure of matrix A may be only a subset of C, so that
         ! each entry must be visited separately
         
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
           
           ! Loop over all rows
           do ieq=1,neq
@@ -17311,13 +17493,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,1,ild3)=0._DP
               end do
               
               Da3(:,1,ild3)=c1*Da1(:,1,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Fa2(ieq)
+              if (icol3 .eq. ieq) Da3(:,1,ild3)=Da3(:,1,ild3)+c2*Fa2(ieq)
               ild3=ild3+1
             end do
             Da3(:,1,ild3:ildend3)=0._DP
@@ -17336,13 +17518,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Da3(:,:,ild3)=0._DP
               end do
               
               Da3(:,:,ild3)=c1*Da1(:,:,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) then
+              if (icol3 .eq. ieq) then
                 do ivar=1,nvar
                   Da3(ivar,ivar,ild3)=Da3(ivar,ivar,ild3)+c2*Fa2(ieq)
                 end do
@@ -17361,7 +17543,7 @@ contains
         call DCOPY(int(nvar*mvar*na),Da1,1,Da3,1)
         call DSCAL(int(nvar*mvar*na),c1,Da3,1)
 
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(ivar,ieq,ild3)
@@ -17422,7 +17604,7 @@ contains
         ! The structure of matrix A may be only a subset of C, so that
         ! each entry must be visited separately
         
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 
           ! Loop over all rows
           do ieq=1,neq
@@ -17435,13 +17617,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Fa3(:,1,ild3)=0._SP
               end do
               
               Fa3(:,1,ild3)=c1*Fa1(:,1,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
+              if (icol3 .eq. ieq) Fa3(:,1,ild3)=Fa3(:,1,ild3)+c2*Fa2(ieq)
               ild3=ild3+1
             end do
             Fa3(:,1,ild3:ildend3)=0._SP
@@ -17460,13 +17642,13 @@ contains
               ! Skip positions in resulting matrix if required
               do ild3=ild3,ildend3
                 icol3=Kcol3(ild3)
-                if (icol3 == icol1) exit
+                if (icol3 .eq. icol1) exit
                 Fa3(:,:,ild3)=0._SP
               end do
               
               Fa3(:,:,ild3)=c1*Fa1(:,:,ild1)
               ! Diagonal entry?
-              if (icol3 == ieq) then
+              if (icol3 .eq. ieq) then
                 do ivar=1,nvar
                   Fa3(ivar,ivar,ild3)=Fa3(ivar,ivar,ild3)+c2*Fa2(ieq)
                 end do
@@ -17485,7 +17667,7 @@ contains
         call SCOPY(int(nvar*mvar*na),Fa1,1,Fa3,1)
         call SSCAL(int(nvar*mvar*na),real(c1,SP),Fa3,1)
 
-        if (nvar /= mvar) then
+        if (nvar .ne. mvar) then
 !%OMP  parallel do &
 !%OMP& default(shared) &
 !%OMP& private(ieq,ild3)      
@@ -17562,7 +17744,7 @@ contains
           icol=KcolB(ild)
 
           ! Add element to the linked list
-          if (Kaux(icol) == 0) then
+          if (Kaux(icol) .eq. 0) then
             ndg = ndg+1
             Kaux(icol) = last
             last = icol
@@ -17624,21 +17806,21 @@ contains
 
         ! In any case, skip diagonal entry for matrix A and/or B if
         ! they are storage format 7
-        if (cmatrixFormatA == LSYSSC_MATRIX7) ildA = ildA+1
-        if (cmatrixFormatB == LSYSSC_MATRIX7) ildB = ildB+1
+        if (cmatrixFormatA .eq. LSYSSC_MATRIX7) ildA = ildA+1
+        if (cmatrixFormatB .eq. LSYSSC_MATRIX7) ildB = ildB+1
 
         ! For each row IEQ loop over the columns of matrix A and B
         ! simultaneously and collect the corresponding matrix entries
         do
         
           ! Find next column number for matrices A and B
-          if (ildA <= ildendA) then
+          if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
           
-          if (ildB <= ildendB) then
+          if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
             icolB = ncols+1
@@ -17648,7 +17830,7 @@ contains
           ! diagonal element needs to be treated separately, the
           ! auxiliary variable ICOLC is used to store the provisional
           ! position of the next matrix entry
-          if (icolA == icolB) then
+          if (icolA .eq. icolB) then
             ! Processing same column in matrix A and B 
             icolC = icolA
             ildA = ildA+1
@@ -17669,7 +17851,7 @@ contains
           ! Now, we have the provisional position ICOLC of the next
           ! matrix entry. If it corresponds to the diagonal entry,
           ! then special care must be taken.
-          if (icolC == ieq) then
+          if (icolC .eq. ieq) then
             
             ! If KDIAGONAL is present, then all entries in row IEQ
             ! are stored continuously but the diagonal entry is
@@ -17751,13 +17933,13 @@ contains
         do
           
           ! Find next column number for matrices A and B
-          if (ildA <= ildendA) then
+          if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
           
-          if (ildB <= ildendB) then
+          if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
             icolB = ncols+1
@@ -17768,8 +17950,8 @@ contains
           ! treatment has been reached. In this case, update (!!!)
           ! the diagonal entry of the resulting matrix C immediately
           ! and proceed to the next iteration
-          if (icolA == ieq) then
-            if (icolB == ieq) then
+          if (icolA .eq. ieq) then
+            if (icolB .eq. ieq) then
               
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
@@ -17783,7 +17965,7 @@ contains
               DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
               ildA = ildA+1
             end if
-          elseif (icolB == ieq) then
+          elseif (icolB .eq. ieq) then
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
@@ -17804,15 +17986,15 @@ contains
             ! is not the diagonal entry whose position is known a
             ! priori
             
-            if (icolA == icolB) then
+            if (icolA .eq. icolB) then
               
               ! 1. Case: Processing same column in matrix A and B
 
               ! Update column number for matrix C
               do ildC=ildc,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*DaA(:,ildA)+cB*DaB(:,ildB)
@@ -17827,8 +18009,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*DaA(:,ildA)
@@ -17842,8 +18024,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolB) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolB) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cB*DaB(:,ildB)
@@ -17860,8 +18042,8 @@ contains
         ! Since matrix C is allowed to have additional column entries
         ! which are not present in the "sum" of A and B, the
         ! remainder of C needs to be nullified by hand
-        if (ildC <= ildendC) then
-          if (KcolC(ildC) == ieq) then
+        if (ildC .le. ildendC) then
+          if (KcolC(ildC) .eq. ieq) then
             DaC(:,ildC+1:1:ildendC) = 0._DP
           else
             DaC(:,ildC:1:ildendC)   = 0._DP
@@ -17925,13 +18107,13 @@ contains
         do
           
           ! Find next column number for matrices A and B
-          if (ildA <= ildendA) then
+          if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
           
-          if (ildB <= ildendB) then
+          if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
             icolB = ncols+1
@@ -17942,8 +18124,8 @@ contains
           ! treatment has been reached. In this case, update (!!!)
           ! the diagonal entry of the resulting matrix C immediately
           ! and proceed to the next iteration
-          if (icolA == ieq) then
-            if (icolB == ieq) then
+          if (icolA .eq. ieq) then
+            if (icolB .eq. ieq) then
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
@@ -17957,7 +18139,7 @@ contains
               DaC(:,idiagC)=DaC(:,idiagC)+cA*DaA(:,ildA)
               ildA = ildA+1
             end if
-          elseif (icolB == ieq) then
+          elseif (icolB .eq. ieq) then
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
@@ -17978,15 +18160,15 @@ contains
             ! is not the diagonal entry whose position is known a
             ! priori
             
-            if (icolA == icolB) then
+            if (icolA .eq. icolB) then
               
               ! 1. Case: Processing same column in matrix A and B
 
               ! Update column number for matrix C
               do ildC=ildc,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*DaA(:,ildA)+cB*FaB(:,ildB)
@@ -18001,8 +18183,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*DaA(:,ildA)
@@ -18016,8 +18198,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolB) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolB) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cB*FaB(:,ildB)
@@ -18034,8 +18216,8 @@ contains
         ! Since matrix C is allowed to have additional column entries
         ! which are not present in the "sum" of A and B, the
         ! remainder of C needs to be nullified by hand
-        if (ildC <= ildendC) then
-          if (KcolC(ildC) == ieq) then
+        if (ildC .le. ildendC) then
+          if (KcolC(ildC) .eq. ieq) then
             DaC(:,ildC+1:1:ildendC) = 0._DP
           else
             DaC(:,ildC:1:ildendC)   = 0._DP
@@ -18099,13 +18281,13 @@ contains
         do
           
           ! Find next column number for matrices A and B
-          if (ildA <= ildendA) then
+          if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
           
-          if (ildB <= ildendB) then
+          if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
             icolB = ncols+1
@@ -18116,8 +18298,8 @@ contains
           ! treatment has been reached. In this case, update (!!!)
           ! the diagonal entry of the resulting matrix C immediately
           ! and proceed to the next iteration
-          if (icolA == ieq) then
-            if (icolB == ieq) then
+          if (icolA .eq. ieq) then
+            if (icolB .eq. ieq) then
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
@@ -18131,7 +18313,7 @@ contains
               DaC(:,idiagC)=DaC(:,idiagC)+cA*FaA(:,ildA)
               ildA = ildA+1
             end if
-          elseif (icolB == ieq) then
+          elseif (icolB .eq. ieq) then
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
@@ -18152,15 +18334,15 @@ contains
             ! is not the diagonal entry whose position is known a
             ! priori
             
-            if (icolA == icolB) then
+            if (icolA .eq. icolB) then
               
               ! 1. Case: Processing same column in matrix A and B
 
               ! Update column number for matrix C
               do ildC=ildc,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*FaA(:,ildA)+cB*DaB(:,ildB)
@@ -18175,8 +18357,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cA*FaA(:,ildA)
@@ -18190,8 +18372,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolB) exit
-                if (icolC /= ieq) DaC(:,ildC) = 0._DP
+                if (icolC .eq. icolB) exit
+                if (icolC .ne. ieq) DaC(:,ildC) = 0._DP
               end do
 
               DaC(:,ildC)=cB*DaB(:,ildB)
@@ -18208,8 +18390,8 @@ contains
         ! Since matrix C is allowed to have additional column entries
         ! which are not present in the "sum" of A and B, the
         ! remainder of C needs to be nullified by hand
-        if (ildC <= ildendC) then
-          if (KcolC(ildC) == ieq) then
+        if (ildC .le. ildendC) then
+          if (KcolC(ildC) .eq. ieq) then
             DaC(:,ildC+1:1:ildendC) = 0._DP
           else
             DaC(:,ildC:1:ildendC)   = 0._DP
@@ -18273,13 +18455,13 @@ contains
         do
           
           ! Find next column number for matrices A and B
-          if (ildA <= ildendA) then
+          if (ildA .le. ildendA) then
             icolA = KcolA(ildA)
           else
             icolA = ncols+1
           end if
           
-          if (ildB <= ildendB) then
+          if (ildB .le. ildendB) then
             icolB = KcolB(ildB)
           else
             icolB = ncols+1
@@ -18290,8 +18472,8 @@ contains
           ! treatment has been reached. In this case, update (!!!)
           ! the diagonal entry of the resulting matrix C immediately
           ! and proceed to the next iteration
-          if (icolA == ieq) then
-            if (icolB == ieq) then
+          if (icolA .eq. ieq) then
+            if (icolB .eq. ieq) then
           
               ! 1. Case: For both matrices A and B the diagonal entry
               ! has been reached
@@ -18305,7 +18487,7 @@ contains
               FaC(:,idiagC)=FaC(:,idiagC)+cA*FaA(:,ildA)
               ildA = ildA+1
             end if
-          elseif (icolB == ieq) then
+          elseif (icolB .eq. ieq) then
 
             !   3. Case: For matrix B the diagonal entry has been
             !      reached. Hence, skip matrix A.
@@ -18326,15 +18508,15 @@ contains
             ! is not the diagonal entry whose position is known a
             ! priori
             
-            if (icolA == icolB) then
+            if (icolA .eq. icolB) then
               
               ! 1. Case: Processing same column in matrix A and B
 
               ! Update column number for matrix C
               do ildC=ildc,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) FaC(:,ildC) = 0._SP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
               end do
 
               FaC(:,ildC)=cA*FaA(:,ildA)+cB*FaB(:,ildB)
@@ -18349,8 +18531,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolA) exit
-                if (icolC /= ieq) FaC(:,ildC) = 0._SP
+                if (icolC .eq. icolA) exit
+                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
               end do
 
               FaC(:,ildC)=cA*FaA(:,ildA)
@@ -18364,8 +18546,8 @@ contains
               ! Update column number for matrix C
               do ildC=ildC,ildendC
                 icolC=KcolC(ildC)
-                if (icolC == icolB) exit
-                if (icolC /= ieq) FaC(:,ildC) = 0._SP
+                if (icolC .eq. icolB) exit
+                if (icolC .ne. ieq) FaC(:,ildC) = 0._SP
               end do
 
               FaC(:,ildC)=cB*FaB(:,ildB)
@@ -18382,8 +18564,8 @@ contains
         ! Since matrix C is allowed to have additional column entries
         ! which are not present in the "sum" of A and B, the
         ! remainder of C needs to be nullified by hand
-        if (ildC <= ildendC) then
-          if (KcolC(ildC) == ieq) then
+        if (ildC .le. ildendC) then
+          if (KcolC(ildC) .eq. ieq) then
             FaC(:,ildC+1:1:ildendC) = 0._SP
           else
             FaC(:,ildC:1:ildendC)   = 0._SP
@@ -18556,7 +18738,7 @@ contains
     call output_line ('isortStrategy:           '//trim(sys_siL(rmatrix%isortStrategy,15)))
     call output_line ('h_IsortPermutation:      '//trim(sys_siL(rmatrix%h_IsortPermutation,15)))
     call output_line ('h_DA:                    '//trim(sys_siL(rmatrix%h_DA,15)))
-    if (rmatrix%h_DA /= ST_NOHANDLE) then
+    if (rmatrix%h_DA .ne. ST_NOHANDLE) then
       call storage_getsize(rmatrix%h_DA,isize)
       select case(rmatrix%cinterleaveMatrixFormat)
         case (LSYSSC_MATRIX1)
@@ -18570,23 +18752,23 @@ contains
         end select
     end if
     call output_line ('h_Kcol:                  '//trim(sys_siL(rmatrix%h_Kcol,15)))
-    if (rmatrix%h_Kcol /= ST_NOHANDLE) then
+    if (rmatrix%h_Kcol .ne. ST_NOHANDLE) then
       call storage_getsize(rmatrix%h_Kcol,isize)
       call output_line ('Kcol memory usage:       '//trim(sys_sdL(100/real(isize,DP)*rmatrix%NA,2))//'%')
     end if
     call output_line ('h_Kld:                   '//trim(sys_siL(rmatrix%h_Kld,15)))
-    if (rmatrix%h_Kld /= ST_NOHANDLE) then
+    if (rmatrix%h_Kld .ne. ST_NOHANDLE) then
       call storage_getsize(rmatrix%h_Kld,isize)
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
         call output_line ('Kld memory usage:        '//trim(sys_sdL(100/real(isize,DP)*(rmatrix%NEQ+1),2))//'%')
       else
         call output_line ('Kld memory usage:        '//trim(sys_sdL(100/real(isize,DP)*(rmatrix%NCOLS+1),2))//'%')
       end if
     end if
     call output_line ('h_Kdiagonal:             '//trim(sys_siL(rmatrix%h_Kdiagonal,15)))
-    if (rmatrix%h_Kdiagonal /= ST_NOHANDLE) then
+    if (rmatrix%h_Kdiagonal .ne. ST_NOHANDLE) then
       call storage_getsize(rmatrix%h_Kdiagonal,isize)
-      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) == 0) then
+      if (iand(rmatrix%imatrixSpec,LSYSSC_MSPEC_TRANSPOSED) .eq. 0) then
         call output_line ('Kdiagonal memory usage:  '//trim(sys_sdL(100/real(isize,DP)*(rmatrix%NEQ),2))//'%')
       else
         call output_line ('Kdiagonl memory usage:   '//trim(sys_sdL(100/real(isize,DP)*(rmatrix%NCOLS),2))//'%')
@@ -18622,7 +18804,7 @@ contains
     call output_line ('isortStrategy:          '//trim(sys_siL(rvector%isortStrategy,15)))
     call output_line ('h_IsortPermutation:     '//trim(sys_siL(rvector%h_IsortPermutation,15)))
     call output_line ('h_Ddata:                '//trim(sys_siL(rvector%h_Ddata,15)))
-    if (rvector%h_Ddata /= ST_NOHANDLE) then
+    if (rvector%h_Ddata .ne. ST_NOHANDLE) then
       call storage_getsize(rvector%h_Ddata,isize)
       call output_line ('Ddata memory usage:     '//trim(sys_sdL(100/real(isize,DP)*rvector%NEQ*rvector%NVAR,2))//'%')
     end if
