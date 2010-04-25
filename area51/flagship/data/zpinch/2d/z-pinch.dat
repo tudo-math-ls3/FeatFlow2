@@ -27,8 +27,23 @@ subapplication(2) =
 # file which contains the application specific data
 indatfile = data/zpinch/2d/z-pinch.indat
 
+# section name of boundary condition for primal problem
+sprimalbdrcondname(2) =
+  bdrcond_euler_primal
+  bdrcond_transport_primal
+
+# section name of boundary condition for dual problem
+sdualbdrcondname(2) =
+  bdrcond_euler_dual
+  bdrcond_transport_dual
+
 # number of spatial dimensions
 ndimension = 2
+
+# solution algorithm
+algorithm = transient_primal
+
+#-------------------------------------------------------------------------------
 
 # type of coordinate system
 # 1 = Cartesian coordinates (x-y)
@@ -43,21 +58,6 @@ ilorentzforcetype = 1
 # section name of Lorentz force term
 slorentzforcename = @forceterm
 
-# solution algorithm
-algorithm = transient_primal
-
-# section name of the time-stepping algorithm
-timestep = Timestepping
-
-# section name of the top-level solver
-solver = CoupledSolver
-
-# section name of the adaptation configuration
-adaptivity = Adaptivity
-
-# section name of the error estimation configuration
-errorestimator = ErrorEstimator
-
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
@@ -66,27 +66,61 @@ prmfile = grids/2d/z-pinch_paper.prm
 # file which contains the triangulation
 trifile = grids/2d/z-pinch_paper.tri
 
+# type of finite element space
+#  1 = P1 finite elements
+#  2 = P2 finite elements
+# 11 = Q1 finite elements
+# 12 = Q2 finite elements
+# -1 = mixed P1/Q1 finite elements
+# -2 = mixed P2/Q2 finite elements
+celement = -1
+
 # convert mesh to triangular mesh?
 iconvToTria = 0
 
+# type of matrix format
+# 7 = matrix format 7
+# 9 = matrix format 9
+imatrixformat = 9
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
+
+#-------------------------------------------------------------------------------
+
+# section name of the time-stepping algorithm
+timestep = Timestepping
+
+# section name of the top-level solver
+solver = CoupledSolver
+
 # section name of the output configuration
 output = Output
+
+# section name of the adaptation configuration
+adaptivity = Adaptivity
+
+# section name of the error estimation configuration
+errorestimator = ErrorEstimator
+
 
 ################################################################################
 [Euler]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
+indatfile = %{Zpinch.indatfile}
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_euler_primal
+sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_euler_dual
+sdualbdrcondname = %{Zpinch.sdualbdrcondname:1}
 
 # number of spatial dimensions
-ndimension = 2
+ndimension = %{Zpinch.ndimension}
 
 #-------------------------------------------------------------------------------
 
@@ -178,12 +212,12 @@ sexactsolutionname =
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = %{Zpinch.celement}
 
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
-imatrixformat = 9
+imatrixformat = %{Zpinch.imatrixformat}
 
 # type of system format
 # 0 = interleave scalar format
@@ -221,16 +255,16 @@ iprelimiting = 1
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/zpinch/2d/z-pinch.indat
+indatfile = %{Zpinch.indatfile}
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = bdrcond_transport_primal
+sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = bdrcond_transport_dual
+sdualbdrcondname = %{Zpinch.sdualbdrcondname:1}
 
 # number of spatial dimensions
-ndimension = 2
+ndimension = %{Zpinch.ndimension}
 
 #-------------------------------------------------------------------------------
 
@@ -329,12 +363,12 @@ sexacttargetfuncname =
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = %{Zpinch.celement}
 
 # type of matrix format
 # 7 = matrix format 7
 # 9 = matrix format 9
-imatrixformat = 9
+imatrixformat = %{Zpinch.imatrixformat}
 
 # type of Jacobian matrix
 # 0 = standard sparsity pattern

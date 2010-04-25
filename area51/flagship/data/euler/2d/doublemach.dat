@@ -85,15 +85,15 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(2) = 
-  density
-  pressure
+slimitingvariable(1) = 
+  none
 
 # number of failsafe steps
-nfailsafe = 0
+nfailsafe = 3
 
 # variables for failsafe flux correction
-sfailsafevariable(3) =
+sfailsafevariable(4) =
+  density
   pressure
   velocity_x
   velocity_y
@@ -285,7 +285,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.2
+dfinalTime = 10e-4
 
 # initial time step size
 dinitialStep = 1e-4
