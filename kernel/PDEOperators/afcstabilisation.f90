@@ -47,6 +47,12 @@
 !# 11.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
+!# The following auxiliary routines are available:
+!#
+!# 1.) afcstab_limit = afcstab_limit_unbounded/
+!#                     afcstab_limit_bounded
+!#     -> Compute the nodal correction factors, i.e., the ratio of
+!#        admissible solution increments and raw antidiffusion
 !# </purpose>
 !##############################################################################
 module afcstabilisation
