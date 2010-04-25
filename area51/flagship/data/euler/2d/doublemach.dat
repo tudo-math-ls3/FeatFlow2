@@ -70,6 +70,8 @@ isystemcoupling = 0
 # 3 = low-order schemes of Rusanov type
 isystemPrecond = 1
 
+#-------------------------------------------------------------------------------
+
 # variables for flux correction
 # (i)  for synchronized flux correction list 
 #      all variables in alphabetical(!) order, e.g.
@@ -96,6 +98,8 @@ sfailsafevariable(3) =
   velocity_x
   velocity_y
 
+#-------------------------------------------------------------------------------
+
 # type of initial solution profile
 # 0 = zero initial solution
 # 1 = analytical initial solution: pointwise values
@@ -103,6 +107,15 @@ sfailsafevariable(3) =
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 3
+
+# absolute tolerance for Richardson iteration
+depsAbsSolution = 1e-4
+
+# relative tolerance for Richardson iteration
+depsRelSolution = 1e-3
+
+# maximum number of Richardson iterations
+nmaxIterationsSolution = 100
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -118,6 +131,20 @@ iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 0
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
 
 #-------------------------------------------------------------------------------
 
@@ -308,10 +335,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce

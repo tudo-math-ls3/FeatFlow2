@@ -100,8 +100,6 @@ sfailsafevariable(3) =
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 4
 
-nsumcubRefLinForm = 4
-
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
@@ -146,6 +144,11 @@ imatrixformat = 9
 # 0 = interleave scalar format
 # 1 = block system
 isystemformat = 1
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
