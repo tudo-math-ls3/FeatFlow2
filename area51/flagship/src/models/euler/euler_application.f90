@@ -1548,7 +1548,7 @@ contains
         ! Apply flux correction to solution profile
         call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
             .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
-            rvector, rcollection, rafcstab)
+            rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
         
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)

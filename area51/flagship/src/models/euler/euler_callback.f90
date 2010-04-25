@@ -2898,7 +2898,8 @@ contains
 !<subroutine>
 
   subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
-      dscale, bclear, ioperationSpec, rresidual, rcollection, rafcstab)
+      dscale, bclear, ioperationSpec, rresidual, rcollection,&
+      rafcstab, slimitingvariableName)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2924,6 +2925,10 @@ contains
     ! combination of different AFCSTAB_FCT_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Parameter name of limiting variables in parameter list
+    ! If not present, then the default string 'slimitingvariable' is used
+    character(len=*), intent(in), optional :: slimitingvariableName
 !</input>
 
 !<inputoutput>
@@ -2964,12 +2969,16 @@ contains
           'inviscidAFC', inviscidAFC)
       p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
     end if
-
+    
     ! Get number of limiting variables
-    nvariable = max(1,&
-        parlst_querysubstrings(p_rparlist,&
-        rcollection%SquickAccess(1), 'slimitingvariable'))
-
+    if (present(slimitingvariableName)) then
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), slimitingvariableName))
+    else
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'slimitingvariable'))
+    end if
+    
     ! Copy operation specifier and disable the correction step
     ! if sequential/multiplicative flux correction is performed
     if (nvariable .gt. 1) then
@@ -2981,11 +2990,17 @@ contains
     ! Loop over items in the list of variables that should
     ! be limited sequentially, i.e., in multiplicative way
     do ivariable = 1, nvariable
-
+      
       ! Get variable declaration string
-      call parlst_getvalue_string(p_rparlist,&
-          rcollection%SquickAccess(1), 'slimitingvariable',&
-          slimitingvariable, isubstring=ivariable)
+      if (present(slimitingvariableName)) then
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), slimitingvariableName,&
+            slimitingvariable, isubstring=ivariable)
+      else
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'slimitingvariable',&
+            slimitingvariable, isubstring=ivariable)
+      end if
 
       ! Get number of variables to be limited simultaneously
       nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
