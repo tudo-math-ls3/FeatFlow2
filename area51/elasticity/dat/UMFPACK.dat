@@ -1,0 +1,10 @@
+# ------------------------------------------------------------------------
+# Linear solver
+#
+# This file defines a direct UMFPACK solver.
+# ------------------------------------------------------------------------
+
+[SOLVER]
+isolverType        = 11     # solver type (7=BiCGstab, 12=MG2, 11=UMFPACK)
+ioutputLevel       = 1      # output level of the solver
+
