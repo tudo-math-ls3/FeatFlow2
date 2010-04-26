@@ -49,6 +49,20 @@ contains
       case (1) ! Artihmetic mean
 
         Qroe = 0.5_dp*(Ql+Qr)
+        
+      case (2) ! Roe-meanvalues
+
+        ! Set the height variables
+        hl=Ql(1)
+        hr=Qr(1)
+
+        denom = sqrt(hl)+sqrt(hr)
+        whl = 1.0_DP/sqrt(hl)
+        whr = 1.0_DP/sqrt(hr)
+
+        Qroe(1) = 0.5_dp*(hl+hr)
+        Qroe(2) = Qroe(1)*(whl*Ql(2)+whr*Qr(2))/denom
+        Qroe(3) = Qroe(1)*(whl*Ql(3)+whr*Qr(3))/denom
 
       end select
 
@@ -709,12 +723,12 @@ contains
        L(2,1) = v*a-u*b
        L(3,1) = -c1*(u*a+v*b)+0.5_dp
        L(1,2) = -c1*a
-       L(2,2) = -b
+       L(2,2) = b
        L(3,2) = c1*a
        L(1,3) = -c1*b
        L(2,3) = -a
        L(3,3) = c1*b
-    
+           
   end function 
   
   
@@ -757,6 +771,203 @@ contains
     
 
   end function buildEigenvalues2
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  ! This function returns the Roe mean values
+  function calculateQroec(Ql, Qr) result(Qroe)
+
+    ! The left and right Q values
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(3), intent(IN)		:: Ql, Qr
+
+    ! The computed Roe values
+    real(DP), dimension(4)					:: Qroe
+
+    ! temp variables
+    real(DP)		:: whl, whr, denom, hl, hr
+
+
+        ! Set the height variables
+        hl=Ql(1)
+        hr=Qr(1)
+
+        denom = sqrt(hl)+sqrt(hr)
+        whl = 1.0_DP/sqrt(hl)
+        whr = 1.0_DP/sqrt(hr)
+
+        Qroe(1) = sqrt(hl*hr)
+        Qroe(2) = Qroe(1)*(whl*Ql(2)+whr*Qr(2))/denom
+        Qroe(3) = Qroe(1)*(whl*Ql(3)+whr*Qr(3))/denom
+        
+        Qroe(4) = sqrt(0.5_dp*g*(hl+hr))
+
+
+  end function calculateQroec
+  
+      ! This routine builds the right eigenvectors for the mixed jacobian
+  function buildMixedR2c(Q,a,b) result(R)
+
+    ! Right eigenvectors
+    real(DP), dimension(3,3)	:: R
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, h, u, v, c
+    
+    ! Temp array
+    real(dp), dimension(3) :: T
+    
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = Q(4)
+    
+        
+      ! Build matrix of right eigenvectors
+      R(1,1) = 1.0_DP
+      R(2,1) = u-c*a
+      R(3,1) = v-c*b
+      R(1,2) = 0.0_dp
+      R(2,2) = b
+      R(3,2) = -a
+      R(1,3) = 1.0_DP
+      R(2,3) = u+c*a
+      R(3,3) = v+c*b
+
+    
+  end function 
+  
+  
+  
+  ! This routine builds the diagonalmatrix of the absolut value of the eigenvalues
+  function buildMixedaLambda2c(Q,a,b) result(aLambda)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: aLambda
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, lambda1, lambda2, lambda3, u, v, h, c
+    
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = Q(4)
+    
+    ! Calculate eigenvalues
+    lambda2 = u*a+v*b
+    lambda1 = lambda2-c
+    lambda3 = lambda2+c
+    
+    aLambda = 0.0_dp
+    
+    ! Build matrix of left eigenvectors
+    aLambda(1,1) = abs(lambda1)
+    aLambda(2,2) = abs(lambda2)
+    aLambda(3,3) = abs(lambda3)
+    
+  end function 
+
+
+  ! This routine builds the left eigenvectors for the mixed jacobian
+  function buildMixedL2c(Q,a,b) result(L)
+
+    ! Left eigenvectors
+    real(DP), dimension(3,3)	:: L
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    real(dp), intent(IN)                     :: a,b
+    
+    ! Local variables
+    real(dp) :: c1, c2, c3, h, u, v, c
+    
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = Q(4)
+
+    c1=0.5_dp/c
+    
+    
+       ! Build matrix of left eigenvectors
+       L(1,1) = c1*(u*a+v*b)+0.5_dp
+       L(2,1) = v*a-u*b
+       L(3,1) = -c1*(u*a+v*b)+0.5_dp
+       L(1,2) = -c1*a
+       L(2,2) = b
+       L(3,2) = c1*a
+       L(1,3) = -c1*b
+       L(2,3) = -a
+       L(3,3) = c1*b
+           
+  end function 
+  
+  
+  
+  
+  ! This routine returns the eigenvalues of the jacobi matrix in direction d
+  ! d=1: x-direction, d=2: y-direction
+  function buildEigenvalues2c(Q,a,b) result(Eigenvalues)
+
+    ! The jacobi matrix in direction d
+    real(DP), dimension(3)	:: Eigenvalues
+
+    ! The solution components q1 = h, q2 = uh, q3 = vh
+    real(DP), dimension(4), intent(IN)		:: Q
+
+    ! the direction: d=1: x-direction, d=2: y-direction
+    real(dp), intent(IN)                     :: a,b
+
+    ! speed of gravitational waves
+    real(DP)                                :: c
+
+    ! temporary variable
+    real(DP)                                :: coeff, h, u, v, lambda1, lambda2, lambda3
+
+    h = Q(1)
+    u = Q(2)/h
+    v = Q(3)/h
+    c = Q(4)
+    
+    ! Calculate eigenvalues
+    lambda2 = u*a+v*b
+    lambda1 = lambda2-c
+    lambda3 = lambda2+c
+    
+    
+    ! build eigenvalues in y direction
+    Eigenvalues(1) = lambda1
+    Eigenvalues(2) = lambda2
+    Eigenvalues(3) = lambda3
+    
+
+  end function buildEigenvalues2c
     
     
     

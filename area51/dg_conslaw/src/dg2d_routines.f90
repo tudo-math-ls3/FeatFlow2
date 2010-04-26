@@ -34,6 +34,7 @@ module dg2d_routines
   use pprocerror
   use genoutput
   
+  
   use ucd
   
     
@@ -1554,6 +1555,8 @@ end subroutine
   integer, dimension(3) :: IdofGlob
   
   integer :: NVBD
+  
+  integer, dimension(:), pointer :: p_InodalProperty
 
   ! Get pointer to the solution data
   call lsyssc_getbase_double (rvector,p_Ddata)
@@ -1581,7 +1584,8 @@ end subroutine
                                p_IelementsAtVertexIdx)
   call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
                                p_IverticesAtBoundary)                               
-                               
+  call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
+                               p_InodalProperty)
                                
    ! Set pointer to coordinate vector
    call storage_getbase_double2D(&
@@ -1610,8 +1614,14 @@ end subroutine
     
     do ivt = 1, NVE
       nvt = p_IverticesAtElement(ivt,iel)
+      
       duimax(nvt) = max(duc,duimax(nvt))
       duimin(nvt) = min(duc,duimin(nvt))
+      
+      if(p_InodalProperty(nvt)>0) then
+        duimax(nvt) =  1000000.0_dp
+        duimin(nvt) = -1000000.0_dp
+      end if
     end do
     
   end do
@@ -2011,6 +2021,7 @@ end subroutine
   
   integer :: NVBD, ilim, ideriv
   
+  integer, dimension(:), pointer :: p_InodalProperty 
   
   real(DP), dimension(:,:), allocatable :: Dalpha
 
@@ -2039,7 +2050,10 @@ end subroutine
   call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
                                p_IelementsAtVertexIdx)
   call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-                               p_IverticesAtBoundary)                               
+                               p_IverticesAtBoundary)     
+  call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
+                               p_InodalProperty)
+                                         
                                
                                
    ! Set pointer to coordinate vector
@@ -2123,6 +2137,11 @@ end subroutine
 
                                
   do iel = 1, NEL
+    
+    
+    ! No limiting of elements at boundary
+    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+  
   
     ! Get number of corner vertices
     ! elem_igetNVE(celement)
@@ -6321,16 +6340,30 @@ real(dp), dimension(:) :: Dvalues
       ! Dimensional splitting
       do idim = 1, 2
         ! Now we need the trafo matrices
-        if(idim<3) then
-        DL = buildInvTrafo(DQchar,idim)
-        DR = buildTrafo(DQchar,idim)
-        else if (idim==3) then
+        
+        
+        if (idim==1) then
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+        elseif (idim==2) then
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+          
+          elseif (idim==3) then
+          DL = buildMixedL2(DQchar,-1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,-1.0_dp,0.0_dp)
+          
+          elseif (idim==4) then
+          DL = buildMixedL2(DQchar,0.0_dp,-1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,-1.0_dp)
+          
+        else if (idim==5) then
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
         if (dquo<SYS_EPSREAL) then
-          DL = buildInvTrafo(DQchar,idim-2)
-          DR = buildTrafo(DQchar,idim-2)
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
         else
           da = da/dquo
           db = db/dquo
@@ -6338,20 +6371,24 @@ real(dp), dimension(:) :: Dvalues
           DR = buildMixedR2(DQchar,da,db)
         end if
         
-        else if (idim==4) then
+        else if (idim==6) then
         da = DQchar(2)/DQchar(1)
         db = DQchar(3)/DQchar(1)
         dquo = da*da+db*db
         if (dquo<SYS_EPSREAL) then
-          DL = buildInvTrafo(DQchar,idim-2)
-          DR = buildTrafo(DQchar,idim-2)
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
         else
           da = da/dquo
           db = db/dquo
           DL = buildMixedL2(DQchar,-db,da)
           DR = buildMixedR2(DQchar,-db,da)
         end if
+          
+          
         end if
+        
+
         
         ! Transform the solution differences
         DtIi = matmul(DL,DIi)
@@ -6384,8 +6421,8 @@ real(dp), dimension(:) :: Dvalues
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
             ! That's the same as: Do nothing
           else
-            ! This is the one following the principles
-            !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
+!            !This is the one following the principles
+!            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
             
             ! This one is less limiting
             !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), min(abs(DlIi(ivar)/DIi(ivar)),1.0_dp ))
@@ -6784,6 +6821,246 @@ end subroutine
   close(iunit)
 
 
+
+end subroutine
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+subroutine calc_error(rvector, derror, raddtriadata)
+
+use transformation
+
+  type(t_vectorScalar), intent(in) :: rvector
+  real(dp), intent(out) :: derror
+  type(t_additionalTriaData), intent(in):: raddTriaData
+
+  
+  integer :: iel, ipoint
+  
+  
+  
+  
+
+
+  ! local variables, used by all processors
+  real(DP), dimension(:), pointer :: p_Ddata
+  integer :: indof, NEL, NVE, ivt, NVT
+    
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  
+  ! The list of elements, in which these points can be found
+  integer, dimension(17) :: Ielements
+  
+  
+  ! Pointers to some data from the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  integer, dimension(:), pointer :: p_IverticesAtBoundary
+  
+  real(dp) :: xc,yc
+  integer :: iidx, nvert, ivert, ineighbour, ineighElm
+    
+  real(dp) :: dui, ddu, duc
+  
+  integer, dimension(:,:), allocatable :: IdofGlob
+
+  
+  integer :: nvar, ivar, idim
+  
+  
+  integer :: nDOFloc
+
+  
+  integer(I32) :: celement
+  
+  integer :: npoints
+  
+  integer, dimension(:), pointer :: p_IelIdx
+  
+  ! Values of the linear part of the solution, Dimension (nvar,# points per element (midpoint+corners),NEL)
+  real(dp), dimension(:,:,:), allocatable :: DLinPartValues
+  
+  ! Dimension (nvar,# points per element (midpoint+corners),# derivatives (2, x- and y-),NEL)
+  real(dp), dimension(:,:,:,:), allocatable :: DDerivativeQuadraticValues
+  
+  integer :: ccubtype, ctrafotype, ncubp,i ,iunit,icubp
+  
+  real(dp), dimension(:), allocatable :: Domega
+  
+  real(dp), dimension(:,:), allocatable :: Dcoords
+  
+  real(dp), dimension(:,:), pointer :: p_DcubPtsRef
+  
+  real(dp), dimension(8) :: DjacPrep
+  
+  real(dp) :: r,n,ddetj,dxreal,dyreal,drefsol
+  
+  real(dp), dimension(1)::Dvalues
+  real(dp), dimension(2,1)::Dpoints
+  
+  real(dp), dimension(10001) :: Dreference
+  
+
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvector%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+  
+  ! Allocate the space for the pointer to the Data of the different blocks of the output vector
+!  allocate(p_DoutputData(nvar))
+!    
+!  do ivar = 1, nvar
+!    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
+!  end do
+
+  ! Get pointer to the data of the (solution) vector
+!  call lsysbl_getbase_double (rvectorBlock, p_Ddata)
+    
+  ! Get number of elements
+  NEL = p_rtriangulation%NEL
+  
+  ! What is the current element type?
+  celement = p_rspatialDiscr%RelementDistr(1)%celement
+  
+  ! Number of vertices per element
+  NVE = elem_igetNVE(celement)
+  !NVE = 4
+  
+  ! Get number of local DOF
+  nDOFloc = elem_igetNDofLoc(celement)
+  
+  ! Number of vertices
+  NVT = p_rtriangulation%NVT
+  
+  ! Get pointers to the data form the triangulation
+  call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+  call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
+                               p_DvertexCoords)
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
+                               p_IelementsAtVertex) 
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
+                               p_IelementsAtVertexIdx)
+  call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
+                               p_IverticesAtBoundary)                               
+                              
+  
+  ! Get from the trial element space the type of coordinate system
+  ! that is used there:
+   ctrafoType = elem_igetTrafoType(celement)
+   
+   ccubtype = CUB_G5x5
+
+  ! Get the number of cubature points for the cubature formula
+  ncubp = cub_igetNumPts(ccubtype)
+      
+      ! Allocate two arrays for the points and the weights
+      allocate(Domega(ncubp))
+      allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType), ncubp))
+      allocate(Dcoords(trafo_igetReferenceDimension(ctrafoType),nve))
+      
+      ! Get the cubature formula
+      call cub_getCubature(ccubtype, p_DcubPtsRef, Domega)
+      
+! Get global DOFs for these (all) elements
+  call dof_locGlobMapping_mult(p_rspatialDiscr, p_IelIdx, IdofGlob)
+  
+  ! Test, if we have quadratic elements
+  !if (celement == EL_DG_T2_2D) then
+  
+  
+  
+  
+  
+  ! Circular dambreak
+
+iunit = sys_getFreeUnit()
+
+open(iunit, file='h')
+
+do i = 1, 10000
+  read(iunit,*) Dreference(i)
+end do
+
+close(iunit)
+
+
+
+  
+  
+  
+  derror = 0.0_dp
+  
+  
+  
+  
+  do iel = 1, nel
+  write(*,*)real(real(iel)/real(nel))
+  
+    call trafo_getCoords (ctrafoType,p_rtriangulation,iel,Dcoords)
+    
+    call trafo_prepJac_quad2D(Dcoords, DjacPrep)
+    
+    ddetj = raddTriaData%p_Ddxdy(1,iel)*raddTriaData%p_Ddxdy(2,iel)
+    
+    do icubp = 1, ncubp
+    
+      call trafo_calcRealCoords (DjacPrep,p_DcubPtsRef(1,icubp),p_DcubPtsRef(2,icubp),dxreal,dyreal)
+      
+      
+       r = sqrt(dxreal*dxreal+dyreal*dyreal)
+       n = 1+1000*r
+            
+       drefsol =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+       
+       Dpoints(1,1) =dxreal
+       Dpoints(2,1) =dyreal
+       
+       call fevl_evaluate (DER_FUNC, Dvalues,&
+                 rvector, Dpoints)
+
+      
+      
+      
+      derror = derror + ddetj*Domega(icubp)*abs(drefsol-Dvalues(1))
+    
+    end do !icubp
+              
+    
+  
+  end do ! iel
+  
+  
+
+  deallocate(Dcoords)
+  deallocate(p_DcubPtsRef)
+  deallocate(Domega)
+  
+  
+  
+  
 
 end subroutine
   

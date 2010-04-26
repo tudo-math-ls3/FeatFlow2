@@ -338,13 +338,36 @@ contains
 !</subroutine>
 
 integer :: iunit,i,j
-real(dp),dimension(4000000) :: Dreference
+real(dp),dimension(4000001) :: Dreference
 real(dp) :: r,n,r1
 
+integer :: ielement, ipoint
 
 
 
 
+! sin
+
+  select case (cderivative)
+  case (DER_FUNC)
+    
+                    
+    do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+       Dvalues(i,j) = sin(SYS_PI*(Dpoints(1,i,j) - Dpoints(2,i,j)))
+    end do
+    end do
+                              
+  case (DER_DERIV_X)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case (DER_DERIV_Y)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select
 
 
 
@@ -368,7 +391,7 @@ real(dp) :: r,n,r1
 !    
 !    real(DP), dimension(:), pointer :: p_Ddata
 !    
-!    integer :: ielementtype, iel, ielement,i1,i2,i3
+!    integer :: ielementtype, iel,i1,i2,i3
 !    
 !    character (LEN=SYS_STRLEN) :: sofile
 !    
@@ -380,14 +403,14 @@ real(dp) :: r,n,r1
 !    
 !    ielementtype = EL_DG_T2_2D
 !    
-!    NLMAX = 7
+!    NLMAX = 6
 !    
-!    sofile = 'l7.data'
+!    sofile = 'l6.data'
 !    
-!    call boundary_read_prm(rboundary, './pre/QUAD.PRM')
+!    call boundary_read_prm(rboundary, './pre/zehnm.PRM')
 !    
 !    ! Now read in the basic triangulation.
-!    call tria_readTriFile2D (rtriangulation, './pre/QUAD.TRI', rboundary, .true.)  
+!    call tria_readTriFile2D (rtriangulation, './pre/zehnm.TRI', rboundary, .true.)  
 !    
 !    
 !      
@@ -444,7 +467,7 @@ real(dp) :: r,n,r1
 !    do iel = 1, nelements
 !      ielement=0
 !      call tsrch_getElem_raytrace2D (&
-!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,10000)
+!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
 !      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
 !                                Dpoints=Dpoints(:,:,iel))
 !    end do
@@ -482,32 +505,29 @@ real(dp) :: r,n,r1
 
 
 
-! Circular dambreak
+!! Circular dambreak
 !
 !iunit = sys_getFreeUnit()
 !
 !open(iunit, file='h')
 !
-!
 !do i = 1, 10000
 !  read(iunit,*) Dreference(i)
-!
 !end do
 !
 !close(iunit)
+!
 !
 !  select case (cderivative)
 !  case (DER_FUNC)
 !    
 !                    
-!    do i = 1, size(Dvalues,1)
-!    do j = 1, size(Dvalues,2)
-!      r = sqrt(Dpoints(1,i,j)*Dpoints(1,i,j)+Dpoints(2,i,j)*Dpoints(2,i,j))
+!    do ielement = 1, nelements
+!    do ipoint = 1, npointsPerElement
+!      r = sqrt(Dpoints(1,ipoint,ielement)*Dpoints(1,ipoint,ielement)+Dpoints(2,ipoint,ielement)*Dpoints(2,ipoint,ielement))
 !      n = 1+1000*r
-!      
-!     
-!      
-!       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+!            
+!       Dvalues(ipoint,ielement) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
 !
 !      !Dvalues(i,j) =Dreference(int(n))
 !      !write(*,*)Dreference(int(n))
@@ -547,15 +567,17 @@ real(dp) :: r,n,r1
 !  select case (cderivative)
 !  case (DER_FUNC)
 !    
+!                   
+!    do ielement = 1, nelements
+!    do ipoint = 1, npointsPerElement
+!      r = sqrt((Dpoints(1,ipoint,ielement)-0.5_dp)**2.0_dp+(Dpoints(2,ipoint,ielement)-0.5_dp)**2.0_dp)
+!      n = 200000+1+100000*r             
 !                    
-!    do i = 1, size(Dvalues,1)
-!    do j = 1, size(Dvalues,2)
-!      r = sqrt((Dpoints(1,i,j)-0.5_dp)**2.0_dp+(Dpoints(2,i,j)-0.5_dp)**2.0_dp)
-!      n = 200000+1+100000*r
+!    
 !      
 !     
 !      
-!       Dvalues(i,j) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
+!       Dvalues(ipoint,ielement) =(1.0_dp-(n-real(int(n))))* Dreference(int(n)) +(n-real(int(n)))* Dreference(int(n)+1)
 !
 !      !Dvalues(i,j) =Dreference(int(n))
 !      !write(*,*)Dreference(int(n))
@@ -1539,9 +1561,13 @@ integer :: iel
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
-      ! Zalesak
-      Dvel(1)=0.5_DP-dy
-      Dvel(2)=dx-0.5_DP
+!      ! Zalesak
+!      Dvel(1)=0.5_DP-dy
+!      Dvel(2)=dx-0.5_DP
+      
+      ! Constant velocity
+      Dvel(1)=1.0_dp
+      Dvel(2)=1.0_dp
       
 !      ! Steady circular convection
 !      Dvel(1)=dy
@@ -1551,6 +1577,11 @@ integer :: iel
       
       ! Set initial condition on the inflow boundary
       !call fparser_evalFunction(rfparser, 1, rintSubset(1)%p_DcubPtsReal(:,ipoint,iel), DsolVals(ubound(Dcoefficients,2)-ipoint+1,2,iel))
+      
+      ! BC for sinus
+      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(-SYS_Pi*dy)
+      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin( SYS_Pi*dx)
+      
       
 !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
 !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
@@ -1764,6 +1795,18 @@ integer :: iel
 !            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
 !                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
                      
+!            ! Water hill Poly
+!            r = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            Dcoefficients (1,ipoint,iel) = 38.40_dp*r*r*r-14.40_dp*r*r+1.3_dp
+!            if (r>0.25_dp) Dcoefficients (1,ipoint,iel) = 1.0_dp
+
+!            ! Water hill Poly 2
+!            r = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp-0.2*r*r
+                     
+!            ! Water hill big
+!            Dcoefficients (1,ipoint,iel) = 0.5_dp + 2.0_dp*exp(-0.75_dp*((Dpoints(1,ipoint,iel))**2+(Dpoints(2,ipoint,iel))**2) )
+                     
 !            ! 'Analytical' solution to circular dambreak
 !            r = sqrt(Dpoints(1,ipoint,iel)*Dpoints(1,ipoint,iel)+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
 !            n = 1+1000*r
@@ -1834,12 +1877,26 @@ integer :: iel
 !              Dcoefficients (1,ipoint,iel)=0.5_dp
 !            end if
 
-            ! Circular Dambreak small
-            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
-              Dcoefficients (1,ipoint,iel)=1.5_dp
-            else
-              Dcoefficients (1,ipoint,iel)=1.0_dp
-            end if
+!            ! Test on Quad
+!            if ( ( (Dpoints(1,ipoint,iel)-0.5_dp) * (Dpoints(2,ipoint,iel)-0.5_dp) ) >=0.0_dp ) then
+!              Dcoefficients (1,ipoint,iel)=2.0_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!            end if
+
+!            ! Circular Dambreak small
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+!              Dcoefficients (1,ipoint,iel)=1.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!            end if
+
+!            ! Test for symmetry
+!            if (( abs(Dpoints(1,ipoint,iel)-0.5_dp)<0.25_dp).and.(abs(Dpoints(2,ipoint,iel)-0.5_dp)<0.25_dp )) then  
+!              Dcoefficients (1,ipoint,iel)=1.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=1.0_dp
+!            end if
 
             
           end do
@@ -2271,9 +2328,13 @@ integer :: iel
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
         
-        ! Zalesak
-        dvx=0.5_DP-dy
-        dvy=dx-0.5_DP
+!        ! Zalesak
+!        dvx=0.5_DP-dy
+!        dvy=dx-0.5_DP
+
+        ! Constant velocity
+        dvx=1.0_dp
+        dvy=1.0_dp
         
 !        ! Circular convection
 !        dvx = dy
@@ -2354,6 +2415,7 @@ integer :: iel
   
   
   real(dp), dimension(3) :: DQi, DQa, DQroe, DFi, DFa, DFlux
+  real(dp), dimension(4) :: DQroec
   integer :: ivar, iel, ipoint
   ! Dsolutionvalues(2 sides, ncubp, NEL, nvar)
   real(dp), dimension(:,:,:,:), allocatable :: Dsolutionvalues
@@ -2539,7 +2601,41 @@ integer :: iel
 !      ! Save the calculated flux
 !      DfluxValues(:,1,ipoint,iel) = DFlux
 
-      ! *** Upwind flux without dimensional splitting (Roe-Flux) ***
+!      ! *** Upwind flux without dimensional splitting (Roe-Flux) ***
+!      
+!      ! Get solution values on the in and outside
+!      DQi = Dsolutionvalues(1,ipoint,iel,:)
+!      DQa = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:)
+!      
+!      ! Get fluxes on the in and outside in x- and y-direction
+!      DF1i = buildFlux(DQi,1)
+!      DF1a = buildFlux(DQa,1)
+!      DF2i = buildFlux(DQi,2)
+!      DF2a = buildFlux(DQa,2)
+!            
+!      ! Calculate Roevalues
+!      DQroe = calculateQroe(DQi,DQa)
+!      
+!      ! First calculate flux in x-direction
+!      DFx= 0.5_dp*(DF1i+DF1a)
+!!      DFx = buildFlux(DQRoe,1)
+!      
+!      ! First calculate flux in y-direction
+!      DFy= 0.5_dp*(DF2i+DF2a)
+!!      DFy = buildFlux(DQRoe,2)
+!      
+!      ! Add the fluxes of the two dimensional directions to get Flux * normal
+!      DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
+!      
+!      ! Add artificial diffusion
+!      DL       = buildMixedL2       (DQRoe,normal(1,iel),normal(2,iel))
+!      DaLambda = buildMixedaLambda2 (DQRoe,normal(1,iel),normal(2,iel))
+!      DR       = buildMixedR2       (DQRoe,normal(1,iel),normal(2,iel))
+!      
+!      ! Save the calculated flux
+!      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
+
+      ! *** Upwind flux without dimensional splitting (Roe-Flux) and new c ***
       
       ! Get solution values on the in and outside
       DQi = Dsolutionvalues(1,ipoint,iel,:)
@@ -2552,24 +2648,24 @@ integer :: iel
       DF2a = buildFlux(DQa,2)
             
       ! Calculate Roevalues
-      DQroe = calculateQroe(DQi,DQa)
+      DQroec = calculateQroec(DQi,DQa)
       
       ! First calculate flux in x-direction
       DFx= 0.5_dp*(DF1i+DF1a)
-      DFx = buildFlux(DQRoe,1)
+!      DFx = buildFlux(DQRoe,1)
       
       ! First calculate flux in y-direction
       DFy= 0.5_dp*(DF2i+DF2a)
-      DFy = buildFlux(DQRoe,2)
+!      DFy = buildFlux(DQRoe,2)
       
       ! Add the fluxes of the two dimensional directions to get Flux * normal
       DFlux = DFx*normal(1,iel) + DFy*normal(2,iel)
       
       ! Add artificial diffusion
-      DL       = buildMixedL2       (DQRoe,normal(1,iel),normal(2,iel))
-      DaLambda = buildMixedaLambda2 (DQRoe,normal(1,iel),normal(2,iel))
-      DR       = buildMixedR2       (DQRoe,normal(1,iel),normal(2,iel))
-            
+      DL       = buildMixedL2c       (DQRoec,normal(1,iel),normal(2,iel))
+      DaLambda = buildMixedaLambda2c (DQRoec,normal(1,iel),normal(2,iel))
+      DR       = buildMixedR2c       (DQRoec,normal(1,iel),normal(2,iel))
+      
       ! Save the calculated flux
       DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
       
@@ -2817,7 +2913,7 @@ integer :: iel
     
     ! rform%itermCount gives the number of additional terms, here 2
     nterms = rform%itermCount
-    
+        
     ! Allocate space for the solution values ! (# of derivatives, ncubp, NEL, nvar2d)
     allocate(DsolutionValues(1,size(Dpoints,2),size(Dpoints,3),nvar2d))
     

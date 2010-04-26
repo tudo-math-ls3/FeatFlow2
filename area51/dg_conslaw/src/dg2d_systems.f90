@@ -192,6 +192,8 @@ contains
     integer, dimension(6) :: IdofGlob
     
     integer :: iel
+    
+    integer :: irhstype
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -242,6 +244,9 @@ contains
     
     ! What type of limiter to use
     call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0)
+    
+    ! What type of building the rhs
+    call parlst_getvalue_int(rparlist, 'METHOD', 'rhstype', irhstype)
     
     ! The output file
     call parlst_getvalue_string (rparlist, 'OUTPUT', 'ofile', sofile, 'gmv/u2d')
@@ -325,7 +330,8 @@ contains
     ! Initialise the first element of the list to specify the element
     ! and cubature rule for this solution component:
     call spdiscr_initDiscr_simple (rdiscretisation%RspatialDiscr(1), &
-                                   ielementType,CUB_G6_2D,rtriangulation, rboundary)
+                                   ielementType,CUB_G3x3,rtriangulation, rboundary)
+                                                !CUB_G6_2D
                                    
     ! Now copy this initialised block into the other ones
     ! But only create a derived copy, which shares the handles of the original one
@@ -381,10 +387,8 @@ contains
            LSYSSC_DUP_SHARE, &
            !LSYSSC_DUP_EMPTY) !!!!!!!!!!
            LSYSSC_DUP_SHARE)
-    end do
+    end do  
     
-    
-
     ! The same has to be done for the right hand side of the problem.
     ! At first set up the corresponding linear form (f,Phi_j):
     rlinformedge%itermCount = 1
@@ -520,6 +524,11 @@ contains
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 0
     
+        ! The linear solver stops, when this relative or absolut norm of
+    ! the residual is reached.
+    p_rsolverNode%depsRel = 1.0e-12
+    p_rsolverNode%depsAbs = 1.0e-12
+    
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
     ! only have one level here), then call the initialisation 
@@ -559,9 +568,11 @@ if (iwithoutlimiting==2) ilimiter = 0
     do ivar = 1, nvar2d
           
       rcollection%IquickAccess(1) = ivar
-         
+      
+      rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G6_2D
       call linf_buildVectorScalar2 (rlinformIC, .true., rrhsBlock%RvectorBlock(ivar),&
                                   coeff_RHS_IC, rcollection)
+      rrhsBlock%p_rblockDiscr%RspatialDiscr(ivar)%RelementDistr(1)%ccubTypeLinForm=CUB_G3x3
 
     end do
     
@@ -625,7 +636,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     timestepping: do
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
-       dt= 0.5_dp*dt
+       dt= 0.2_dp*dt
        
        
        if (dt>ttfinal-ttime) dt = ttfinal-ttime
@@ -663,22 +674,23 @@ if (iwithoutlimiting==2) ilimiter = 0
        ! Then add the convection terms
        call profiler_measure(rprofiler,3)
        if(ielementType .ne. EL_DG_T0_2D) then
-       
+         select case (irhstype)
+         case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
                                        flux_sys_block,rcollection)
-                                              
-!         do ivar = 1, nvar2d
-!         
-!           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!           rcollection%IquickAccess(1) = ivar
-!         
-!
-!           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-!                                         flux_sys,rcollection)
-!           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-!         end do
-                                            
+         case(2)                             
+         do ivar = 1, nvar2d
+         
+           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+           rcollection%IquickAccess(1) = ivar
+         
+
+           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
+                                         flux_sys,rcollection)
+           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         end do
+         end select                           
        end if
        
        call profiler_measure(rprofiler,4)
@@ -727,20 +739,23 @@ if (iwithoutlimiting==2) ilimiter = 0
        ! Then add the convection terms
        call profiler_measure(rprofiler,3)
       if(ielementType .ne. EL_DG_T0_2D) then
-       
+         select case (irhstype)
+         case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
                                        flux_sys_block,rcollection)
-!         do ivar = 1, nvar2d
-!         
-!           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!           rcollection%IquickAccess(1) = ivar
-!         
-!
-!           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-!                                         flux_sys,rcollection)
-!           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-!         end do
+         case(2)
+         do ivar = 1, nvar2d
+         
+           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+           rcollection%IquickAccess(1) = ivar
+         
+
+           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
+                                         flux_sys,rcollection)
+           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         end do
+         end select
                                             
        end if
               
@@ -786,21 +801,24 @@ if (iwithoutlimiting==2) ilimiter = 0
        ! Then add the convection terms
        call profiler_measure(rprofiler,3)
       if(ielementType .ne. EL_DG_T0_2D) then
-         
+         select case (irhstype)
+         case (1)
          rcollection%p_rvectorQuickAccess1 => rsolTempBlock
          call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
                                        flux_sys_block,rcollection)
+         case(2)
          
-!         do ivar = 1, nvar2d
-!         
-!           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
-!           rcollection%IquickAccess(1) = ivar
-!         
-!
-!           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
-!                                         flux_sys,rcollection)
-!           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
-!         end do
+         do ivar = 1, nvar2d
+         
+           rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+           rcollection%IquickAccess(1) = ivar
+         
+
+           call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
+                                         flux_sys,rcollection)
+           !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
+         end do
+         end select
                                             
        end if
               
@@ -1058,7 +1076,11 @@ if (iwithoutlimiting==2) ilimiter = 0
     write(*,*) 'Writing solution to file'
       
     ifilenumber = -1
-     
+    
+!    sofile = 'l5'
+!    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
+!    sofile = './gmv/u2d' 
+    
     !select case (ioutputtype)
     !  case (1)
         ! Output solution to gmv file
@@ -1068,28 +1090,34 @@ if (iwithoutlimiting==2) ilimiter = 0
         call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
     !end select
       
-    write(*,*) 'Writing steady solution to file'
-    ! And output the steady projection
-     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+!    write(*,*) 'Writing steady solution to file'
+!    ! And output the steady projection
+!     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
      
     ! Saving the solution DOFs to file
     write(*,*) 'Writing DOFs to file'
     call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
 
     
-!    sofile = 'l8'
+!    sofile = 'l7'
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+!    ! Calculate the error to the reference function.
+!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    
+    
+    
+!    call calc_error(rsolBlock%Rvectorblock(1), derror, raddtriadata)
+!    write(*,*) derror
 
 
 !    ! Calculate the difference of limited and non-limited solution
