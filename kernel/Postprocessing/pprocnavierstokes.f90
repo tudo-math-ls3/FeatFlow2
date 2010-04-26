@@ -344,12 +344,12 @@ contains
 
     ! We support only uniform discretisation structures.
     if (.not. associated(rvector%p_rblockDiscr)) then
-      print *,'ppns2D_bdforces: No discretisation structure!'
+      print *,'ppns2D_bdforces_uni_line: No discretisation structure!'
       call sys_halt()
     end if
 
     if (rvector%p_rblockDiscr%ccomplexity .ne. SPDISC_UNIFORM) then
-      print *,'ppns2D_bdforces_uniform: Discretisation too complex!'
+      print *,'ppns2D_bdforces_uni_line: Discretisation too complex!'
       call sys_halt()
     end if
 
@@ -361,7 +361,7 @@ contains
     if ((rvector%RvectorBlock(1)%isortStrategy > 0) .or. &
         (rvector%RvectorBlock(2)%isortStrategy > 0) .or. &
         (rvector%RvectorBlock(3)%isortStrategy > 0)) then
-      print *,'ppns2D_bdforces_uniform: Resorted vectors not supported!'
+      print *,'ppns2D_bdforces_uni_line: Resorted vectors not supported!'
       call sys_halt()
     end if
 
@@ -528,7 +528,7 @@ contains
         end do
 
         if (ilocaledge .gt. nlocaledges) then
-          print *,'ppns2D_bdforces: Edge not found. KMID destroyed?'
+          print *,'ppns2D_bdforces_uni_line: Edge not found. KMID destroyed?'
           call sys_halt()
         end if
 
