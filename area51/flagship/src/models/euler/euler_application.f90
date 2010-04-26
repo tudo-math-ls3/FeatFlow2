@@ -1236,11 +1236,12 @@ contains
     real(DP), dimension(NDIM3D+1) :: Dvalue
     real(DP), dimension(:), pointer :: Dnorm0
     real(DP) :: depsAbsSolution, depsRelSolution, dnorm
+    character(len=SYS_STRLEN), dimension(:), pointer :: SsolutionFailsafeVariables
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression
+    integer :: isolutiontype, nexpression, nsolutionfailsafe
     integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, iter
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-    integer :: nmaxIterationsSolution
+    integer :: nmaxIterationsSolution, ivariable, nvariable
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
@@ -1496,6 +1497,8 @@ contains
             ssectionName, 'nmaxIterationsSolution', nmaxIterationsSolution, 100)
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'nsolutionfailsafe', nsolutionfailsafe, 0)
 
         ! Compute auxiliary vectors for high-order solution and increment
         call lsysbl_duplicateVector(rvector, rvectorHigh,&
@@ -1545,10 +1548,43 @@ contains
         ! Attach section name to collection structure
         rcollection%SquickAccess(1) = ssectionName
 
-        ! Apply flux correction to solution profile
-        call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
-            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
-            rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+        if (nsolutionfailsafe .gt. 0) then
+
+          ! Get number of failsafe variables
+          nvariable = max(1,&
+              parlst_querysubstrings(rparlist,&
+              ssectionName, 'ssolutionfailsafevariable'))
+          
+          ! Allocate character array that stores all failsafe variable names
+          allocate(SsolutionFailsafeVariables(nvariable))
+          
+          ! Initialize character array with failsafe variable names
+          do ivariable = 1, nvariable
+            call parlst_getvalue_string(rparlist,&
+                ssectionName, 'ssolutionfailsafevariable',&
+                SsolutionFailsafevariables(ivariable), isubstring=ivariable)
+          end do
+
+          ! Compute and apply FEM-FCT correction
+          call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+              .false., AFCSTAB_FCTALGO_STANDARD-AFCSTAB_FCTALGO_CORRECT,&
+              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+          
+          ! Apply failsafe flux correction
+          call afcstab_failsafeLimiting(rafcstab, p_rlumpedMassMatrix,&
+              SsolutionFailsafeVariables, 1.0_DP,&
+              nsolutionfailsafe, euler_getVariable, rvector)
+          
+          ! Deallocate temporal memory
+          deallocate(SsolutionFailsafeVariables)
+
+        else
+          
+          ! Compute and apply FEM-FCT correction
+          call euler_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+              .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
+              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+        end if
         
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
@@ -1719,6 +1755,34 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
 
+          elseif (trim(cvariable) .eq. 'momentum') then
+            
+            ! Special treatment of momentum vector
+            select case(ndim)
+            case (NDIM1D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
+
+            case (NDIM2D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
+
+            case (NDIM3D)
+              call euler_getVarInterleaveFormat(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call euler_getVarInterleaveFormat(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call euler_getVarInterleaveFormat(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+
           else
 
             ! Standard treatment for scalar quantity
@@ -1767,6 +1831,34 @@ contains
                   p_Ddata1, p_Ddata2, p_Ddata3)
             end select
             
+          elseif (trim(cvariable) .eq. 'momentum') then
+
+            ! Special treatment of momentum vector
+            select case(ndim)
+            case (NDIM1D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR1D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call ucd_addVarVertBasedVec(rexport, 'momentum', p_Ddata1)
+
+            case (NDIM2D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR2D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call euler_getVarBlockFormat(rvector2%NEQ, NVAR2D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2)
+
+            case (NDIM3D)
+              call euler_getVarBlockFormat(rvector1%NEQ, NVAR3D,&
+                  'momentum_x', p_Dsolution, p_Ddata1)
+              call euler_getVarBlockFormat(rvector2%NEQ, NVAR3D,&
+                  'momentum_y', p_Dsolution, p_Ddata2)
+              call euler_getVarBlockFormat(rvector3%NEQ, NVAR3D,&
+                  'momentum_z', p_Dsolution, p_Ddata3)
+              call ucd_addVarVertBasedVec(rexport, 'momentum',&
+                  p_Ddata1, p_Ddata2, p_Ddata3)
+            end select
+
           else
             
             ! Standard treatment for scalar quantity
@@ -2424,19 +2516,19 @@ contains
     call euler_initSolution(rparlist, ssectionName, p_rproblemLevel,&
         rtimestep%dinitialTime, rsolution, rcollection)
 
-!!$    select case(ndimension)
-!!$    case (NDIM1D)
-!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
-!!$
-!!$    case (NDIM2D)
-!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
-!!$
-!!$    case (NDIM3D)
-!!$      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
-!!$          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
-!!$    end select
+    select case(ndimension)
+    case (NDIM1D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
+
+    case (NDIM2D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
+
+    case (NDIM3D)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
+    end select
 
     ! Initialize timer for intermediate UCD exporter
     dtimeUCD = rtimestep%dinitialTime
