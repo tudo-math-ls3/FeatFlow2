@@ -502,11 +502,21 @@ contains
         dvt2 = p_DvertexCoordinates(:,ivt2)
 
         ! Furthermore, get the tangential and the normal vector of the edge
-        dtangential = dvt2(:)-dvt1(:)
+        !
+        ! The question of the sign of the tangential can be answered pretty easily.
+        ! Consider for comparison the circle with radius r around the origin which is
+        ! traversed in mathematical positive direction. It can be parameterised by means
+        ! of w(t) = r(cos t, sin t)^T, t \in [0, 2 \pi]. Then holds for tangential:
+        !    grad w(t) = r(-sin t, cos t)^T.
+        ! The FEAT2 convention to number the nodes of a quad counterclockwise. But from
+        ! the point of view of the inner circle that point orientation is
+        ! clockwise. (Consider for instance the point (-1,0) on a circle with radius 1
+        ! around the origin.) Reverse it and we get the formula for the tangential:
+        dtangential = dvt1(:) - dvt2(:)
 
         dedgelen = sqrt(dtangential(1)**2 + dtangential(2)**2)
 
-        dtangential = dtangential/ dedgelen
+        dtangential = dtangential / dedgelen
 
         dnormal(1) = -dtangential(2)
         dnormal(2) = dtangential(1)
