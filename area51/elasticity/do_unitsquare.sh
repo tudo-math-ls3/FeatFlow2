@@ -10,6 +10,7 @@ mus="0.5"
 nus="0.3"
 
 # set solver file base name (expected: ./dat/<basename>.dat)
+#solver="UMFPACK"
 solver="BICGSTAB"
 #solver="MG"
 #solver="BICGSTAB_MG"
@@ -47,6 +48,9 @@ gridFileTRI = './pre/${grid}.tri'
 
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
+
+# FE formulation ('displ' (= pure displacement) or 'mixed' (=mixed u/p formulation))
+formulation = displ
 
 # material parameters (Poisson ratio nu and shear modulus mu)
 nu = ${nu}
@@ -86,14 +90,12 @@ solverFile = ./dat/${solver}.dat
 showDeformation = YES
 
 ## x- and y-coordinate of points where the FE solution is to be evaluated
-#evalPoints(2) =
-#0.5
-#0.5
+evalPoints(1) =
+0.5  0.5
 
 # reference solution values for u1 and u2 in evaluation points
-#refSols(2) =
-#-20.648992
-#27.642747
+#refSols(1) =
+#-20.648992  27.642747
 
 END_OF_DATA
 # dat file has been created now

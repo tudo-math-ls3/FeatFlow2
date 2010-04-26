@@ -617,6 +617,7 @@ contains
                                 rdomainIntSubset, Dvalues, rcollection)
 
 !BRAL: nur eine Zeile des Spannungstensors berechnen (also icomp uebergeben)!!
+!BRAL: an mixed formulation anpassen
 
     use fsystem
     use collection

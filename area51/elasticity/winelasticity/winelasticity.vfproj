@@ -5,7 +5,7 @@
 	<Configurations>
 		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR);$(ProjectDir)/../../../kernel/System;$(ProjectDir)/../../../kernel/Triangulation;$(ProjectDir)/../src/hgc;C:\Programme\MPICH2\include" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" FloatingPointExceptionHandling="fpe0" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winpoisson.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winpoisson.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winelasticity.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winelasticity.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -14,7 +14,7 @@
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR);$(ProjectDir)/../../../kernel/System;$(ProjectDir)/../../../kernel/Triangulation" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winpoisson.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winelasticity.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -23,7 +23,7 @@
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Debug Parallel|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR);$(ProjectDir)/../../../kernel/System;$(ProjectDir)/../../../kernel/Triangulation" OpenMP="OpenMPParallelCode" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" FloatingPointExceptionHandling="fpe0" FloatingPointStackCheck="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtMultiThreadedDebug"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winpoisson.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winpoisson.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winelasticity.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winelasticity.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -32,7 +32,7 @@
 				<Tool Name="VFPostBuildEventTool"/></Configuration>
 		<Configuration Name="Release ohne IPO|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)">
 				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" Parallelization="true" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR);$(ProjectDir)/../../../kernel/System;$(ProjectDir)/../../../kernel/Triangulation" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/"/>
-				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winpoisson.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winpoisson.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winelasticity.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winelasticity.pdb" SubSystem="subSystemConsole" StackReserveSize="1048576" StackCommitSize="1048576"/>
 				<Tool Name="VFResourceCompilerTool"/>
 				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
 				<Tool Name="VFCustomBuildTool"/>
@@ -44,7 +44,7 @@
 		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<File RelativePath="..\src\elasticity.f90"/>
-		<File RelativePath="..\src\elasticity_2d_disp_smallDef_stat.f90"/>
+		<File RelativePath="..\src\elasticity_2d_smallDef_stat.f90"/>
 		<File RelativePath="..\src\elasticity_basic.f90"/>
 		<File RelativePath="..\src\elasticity_callback.f90"/></Filter></Files>
 	<Globals/></VisualStudioProject>

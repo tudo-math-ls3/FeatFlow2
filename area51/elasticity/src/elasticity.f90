@@ -14,7 +14,7 @@ program elasticity
   use fsystem
   use storage
   use genoutput
-  use elasticity_2d_disp_smallDef_stat
+  use elasticity_2d_smallDef_stat
   
   implicit none
   
@@ -47,11 +47,10 @@ program elasticity
   call output_line('-----------------------------------------------------')
   call output_line('Calculating elasticity problem:')
   call output_line(' * 2D')
-  call output_line(' * pure displacements')
   call output_line(' * small deformation')
   call output_line(' * static')
   call output_line('-----------------------------------------------------')
-  call elast_2d_disp_smallDef_stat
+  call elast_2d_smallDef_stat
 
   ! further applications to follow...
   ! (transient, finite deformation, mixed formulation, ...)

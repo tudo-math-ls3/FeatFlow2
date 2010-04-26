@@ -6,14 +6,14 @@
 !# <purpose>
 !#   This module solves the basic elasticity problem:
 !#     - 2D
-!#     - pure displacement formulation
+!#     - pure displacement or mixed formulation
 !#     - small deformation (i.e., a linear problem)
 !#     - static
 !#   There is also the possibility to compute a 2D Poisson problem.
 !# </purpose>
 !#########################################################################################
 
-module elasticity_2d_disp_smallDef_stat
+module elasticity_2d_smallDef_stat
 
   implicit none
 
@@ -22,7 +22,7 @@ contains
 ! ****************************************************************************************
 
 !<subroutine>
-  subroutine elast_2d_disp_smallDef_stat
+  subroutine elast_2d_smallDef_stat
 
     use storage
     use genoutput
@@ -149,9 +149,11 @@ contains
     ! | DISCRETISATION
     ! +------------------------------------------------------------------------
 
+    call output_line('performing discretisation...')
     ! set up a block discretisation structure that specifies the blocks in the
     ! solution vector for all levels. For the scalar Poisson problem, we only have
-    ! one block. Do this for all levels
+    ! one block, for the elasticity problem either two (pure displacement) or three
+    ! (mixed formulation) blocks. Do this for all levels.
     do ilev = rprob%ilevelMin, rprob%ilevelMax
       call spdiscr_initBlockDiscr(Rlevels(ilev)%rdiscretisation, rprob%nblocks, &
                                   Rlevels(ilev)%rtriangulation, rprob%rboundary)
@@ -167,15 +169,23 @@ contains
 
       ! ...and copy this structure to the discretisation structure of the 2nd component
       ! (y-displacement) (no additional memory needed)
-      do j = 2, rprob%nblocks
+      do j = 2, rprob%ndim
         call spdiscr_duplicateDiscrSc (&
             Rlevels(ilev)%rdiscretisation%RspatialDiscr(1),&
             Rlevels(ilev)%rdiscretisation%RspatialDiscr(j))
       enddo
+
+      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        ! In case of the mixed formulation, a separate discretisation is set up for the
+        ! 3rd component (=pressure). It is 'derived' from the displacement discretisation.
+        call spdiscr_deriveSimpleDiscrSc(Rlevels(ilev)%rdiscretisation%RspatialDiscr(1), &
+                                         rprob%celementPress, rprob%ccubaturePress2D, &
+                                         Rlevels(ilev)%rdiscretisation%RspatialDiscr(3))
+      endif
     end do
 
-    ! Now as the discretisation is set up, we can start to generate
-    ! the structure of the system matrix which is to solve.
+    ! Now as the discretisation is set up, we can start to generate the structure of the
+    ! system matrix which is to solve.
     do ilev = rprob%ilevelMin, rprob%ilevelMax
 
       ! Initialise the block matrix with default values based on
@@ -183,14 +193,14 @@ contains
       call lsysbl_createMatBlockByDiscr(Rlevels(ilev)%rdiscretisation, &
                                         Rlevels(ilev)%rmatrix)
       
-      ! in case of the Poisson equation only one block has to be set up
       if (rprob%cequation .eq. EQ_POISSON) then 
+        ! in case of the Poisson equation only one block has to be set up
   
         ! generate the structure of the system matrix
         call bilf_createMatrixStructure(Rlevels(ilev)%rdiscretisation%RspatialDiscr(1), &
                LSYSSC_MATRIX9, Rlevels(ilev)%rmatrix%RmatrixBlock(1,1))
         
-        ! bilinear form (grad Psi_j, grad Phi_i)
+        ! bilinear form (grad u_j, grad v_i) with u trial and v test function
         rform%itermCount = 2
         rform%Idescriptors(1,1) = DER_DERIV_X
         rform%Idescriptors(2,1) = DER_DERIV_X
@@ -210,66 +220,157 @@ contains
                Rlevels(ilev)%rmatrix%RmatrixBlock(1,1), elast_mat_Poisson_2D)
       else if (rprob%cequation .eq. EQ_ELASTICITY) then
         
+        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+          ! store the information that this matrix is of saddle-point type. Some solvers
+          ! make use of this special structure.
+          Rlevels(ilev)%rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
+        endif
+
         ! common information for all blocks
-        rform%itermCount = 2
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff = .true.
 
+        ! In the following, u is the trial/ansatz function and v the test function,
+        ! u1_x means the x-derivative u1 etc.
+        ! rform%Idescriptors(1,i) corresponds to the trial/ansatz function of the i-th
+        ! term, rform%Idescriptors(2,i) to the test function.
+        ! rform%Dcoefficients(i) is the coefficient of the i-th term.
         do irow = 1, rprob%nblocks
           do jcol = 1, rprob%nblocks
             call bilf_createMatrixStructure(&
-                   Rlevels(ilev)%rdiscretisation%RspatialDiscr(irow), &
-                   LSYSSC_MATRIX9, Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol))
+                   ! discretisation of the trial function space
+                   Rlevels(ilev)%rdiscretisation%RspatialDiscr(jcol), & 
+                   LSYSSC_MATRIX9, Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol), &
+                   ! discretisation of the test function space
+                   Rlevels(ilev)%rdiscretisation%RspatialDiscr(irow))
+
             if (irow .eq. 1 .and. jcol .eq. 1) then
               ! block (1,1)
+              rform%itermCount = 2
               rform%Idescriptors(1,1) = DER_DERIV_X
               rform%Idescriptors(2,1) = DER_DERIV_X
               rform%Idescriptors(1,2) = DER_DERIV_Y
               rform%Idescriptors(2,2) = DER_DERIV_Y
-          
-              rform%Dcoefficients(1)  = 2*rprob%dmu + rprob%dlambda
-              rform%Dcoefficients(2)  = rprob%dmu
-
+              if (rprob%cformulation .eq. FORMULATION_DISPL) then
+                ! (2*mu + lambda) * u1_x * v1_x + mu * u1_y * v1_y
+                rform%Dcoefficients(1)  = 2*rprob%dmu + rprob%dlambda
+                rform%Dcoefficients(2)  = rprob%dmu
+              else
+                ! 2*mu * u1_x * v1_x + mu * u1_y * v1_y
+                rform%Dcoefficients(1)  = 2*rprob%dmu
+                rform%Dcoefficients(2)  = rprob%dmu
+              endif
+            
             else if (irow .eq. 1 .and. jcol .eq. 2) then
               ! block (1,2)
-              rform%Idescriptors(1,1) = DER_DERIV_Y
-              rform%Idescriptors(2,1) = DER_DERIV_X
-              rform%Idescriptors(1,2) = DER_DERIV_X
-              rform%Idescriptors(2,2) = DER_DERIV_Y
-
-              rform%Dcoefficients(1)  = rprob%dlambda
-              rform%Dcoefficients(2)  = rprob%dmu
+              if (rprob%cformulation .eq. FORMULATION_DISPL) then
+                ! mu * u2_x * v1_y + lambda * u2_y * v1_x
+                rform%itermCount = 2
+                rform%Idescriptors(1,1) = DER_DERIV_X
+                rform%Idescriptors(2,1) = DER_DERIV_Y
+                rform%Idescriptors(1,2) = DER_DERIV_Y
+                rform%Idescriptors(2,2) = DER_DERIV_X
+                rform%Dcoefficients(1)  = rprob%dmu
+                rform%Dcoefficients(2)  = rprob%dlambda
+              else
+                ! mu * u2_x * v1_y
+                rform%itermCount = 1
+                rform%Idescriptors(1,1) = DER_DERIV_X
+                rform%Idescriptors(2,1) = DER_DERIV_Y
+                rform%Dcoefficients(1)  = rprob%dmu
+              endif
 
             else if (irow .eq. 2 .and. jcol .eq. 1) then
               ! block (2,1)
-              rform%Idescriptors(1,1) = DER_DERIV_X
-              rform%Idescriptors(2,1) = DER_DERIV_Y
-              rform%Idescriptors(1,2) = DER_DERIV_Y
-              rform%Idescriptors(2,2) = DER_DERIV_X
-          
-! BRAL: sicher?
-              rform%Dcoefficients(1)  = rprob%dlambda
-              rform%Dcoefficients(2)  = rprob%dmu
+              if (rprob%cformulation .eq. FORMULATION_DISPL) then
+                ! mu * u1_y * v2_x + lambda * u1_x * v2_y
+                rform%itermCount = 2
+                rform%Idescriptors(1,1) = DER_DERIV_Y
+                rform%Idescriptors(2,1) = DER_DERIV_X
+                rform%Idescriptors(1,2) = DER_DERIV_X
+                rform%Idescriptors(2,2) = DER_DERIV_Y
+                rform%Dcoefficients(1)  = rprob%dmu
+                rform%Dcoefficients(2)  = rprob%dlambda
+              else
+                ! mu * u1_y * v2_x
+                rform%itermCount = 1
+                rform%Idescriptors(1,1) = DER_DERIV_Y
+                rform%Idescriptors(2,1) = DER_DERIV_X
+                rform%Dcoefficients(1)  = rprob%dmu
+              endif
 
             else if (irow .eq. 2 .and. jcol .eq. 2) then
               ! block (2,2)
+              rform%itermCount = 2
               rform%Idescriptors(1,1) = DER_DERIV_X
               rform%Idescriptors(2,1) = DER_DERIV_X
               rform%Idescriptors(1,2) = DER_DERIV_Y
               rform%Idescriptors(2,2) = DER_DERIV_Y
+              if (rprob%cformulation .eq. FORMULATION_DISPL) then
+                ! mu * u2_x * v2_x + (2*mu + lambda) * u2_y * v2_y
+                rform%Dcoefficients(1)  = rprob%dmu
+                rform%Dcoefficients(2)  = 2*rprob%dmu + rprob%dlambda
+              else
+                ! mu * u2_x * v2_x + 2*mu * u2_y * v2_y
+                rform%Dcoefficients(1)  = rprob%dmu
+                rform%Dcoefficients(2)  = 2*rprob%dmu
+              endif
 
-              rform%Dcoefficients(1)  = rprob%dmu
-              rform%Dcoefficients(2)  = 2*rprob%dmu + rprob%dlambda
+            else if (irow .eq. 1 .and. jcol .eq. 3) then
+              ! block (1,3) (only for FORMULATION_MIXED)
+              ! -p * v1_x
+              rform%itermCount = 1
+              rform%Idescriptors(1,1) = DER_FUNC
+              rform%Idescriptors(2,1) = DER_DERIV_X
+              rform%Dcoefficients(1)  = -1.0_DP
+
+            else if (irow .eq. 2 .and. jcol .eq. 3) then
+              ! block (2,3) (only for FORMULATION_MIXED)
+              ! -p * v2_y
+              rform%itermCount = 1
+              rform%Idescriptors(1,1) = DER_FUNC
+              rform%Idescriptors(2,1) = DER_DERIV_Y
+              rform%Dcoefficients(1)  = -1.0_DP
+
+            else if (irow .eq. 3 .and. jcol .eq. 1) then
+              ! block (3,1) (only for FORMULATION_MIXED)
+              ! -u1_x * q
+              rform%itermCount = 1
+              rform%Idescriptors(1,1) = DER_DERIV_X
+              rform%Idescriptors(2,1) = DER_FUNC
+              rform%Dcoefficients(1)  = -1.0_DP
+
+            else if (irow .eq. 3 .and. jcol .eq. 2) then
+              ! block (3,2) (only for FORMULATION_MIXED)
+              ! -u2_y * q
+              rform%itermCount = 1
+              rform%Idescriptors(1,1) = DER_DERIV_Y
+              rform%Idescriptors(2,1) = DER_FUNC
+              rform%Dcoefficients(1)  = -1.0_DP
+
+            else if (irow .eq. 3 .and. jcol .eq. 3) then
+              ! block (3,3) (only for FORMULATION_MIXED)
+              ! -1/lambda * q * q in the compressible or nearly incompressible case,
+              ! 0 * q * p in the purely incompressible case (since lambda = infinity)
+              rform%itermCount = 1
+              rform%Idescriptors(1,1) = DER_FUNC
+              rform%Idescriptors(2,1) = DER_FUNC
+              if (rprob%dnu .eq. 0.5) then
+                ! purely incompressible case
+                rform%Dcoefficients(1)  = 0.0_DP
+              else
+                ! compressible / nearly incompressible case
+                rform%Dcoefficients(1)  = -1.0_DP/rprob%dlambda
+              endif
             endif
 
 ! BRAL:
-! As soon as I have to use the callback function, the following call has to be put
-! inside the above if-else-block.
+! As soon as I have to use the callback function (i.e. when *not* all coefficients are
+! zero), the following call has to be modified and put inside the above if-else-block.
             call bilf_buildMatrixScalar(rform, .true., &
                    Rlevels(ilev)%rmatrix%RmatrixBlock(irow,jcol), elast_mat_Poisson_2D)
           enddo
         enddo
-
       endif
     end do
 
@@ -297,10 +398,10 @@ contains
     else if (rprob%cequation .eq. EQ_ELASTICITY) then
       ! elasticity equation
       
-      ! compute volumen forces using the callback routine elast_RHS_2D_vol
+      ! compute volume forces using the callback routine elast_RHS_2D_vol
       ! (x-direction: rcollection%IquickAccess(1) = 1, 
       !  y-direction: rcollection%IquickAccess(1) = 2)
-      do irow = 1, rprob%nblocks
+      do irow = 1, rprob%ndim
         rcollection%IquickAccess(1) = irow
         call linf_buildVectorScalar(&
                Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(irow), &
@@ -366,7 +467,7 @@ contains
             endif
           else
             call output_line('Invalid BC found!', OU_CLASS_ERROR, OU_MODE_STD, &
-                             'elast_2d_disp_smallDef_stat')
+                             'elast_2d_smallDef_stat')
             call sys_halt()
           end if
         enddo
@@ -431,14 +532,14 @@ contains
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line('Error in initialisation of the solver structure: ' // &
                        sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
-                       'elast_2d_disp_smallDef_stat')
+                       'elast_2d_smallDef_stat')
       call sys_halt()
     endif
     call linsol_initData(p_rsolver, ierror)
     if (ierror .ne. LINSOL_ERR_NOERROR) then
       call output_line('Error in initialisation of the solver data: ' // &
                        sys_siL(ierror,8), OU_CLASS_ERROR, OU_MODE_STD, &
-                       'elast_2d_disp_smallDef_stat')
+                       'elast_2d_smallDef_stat')
       call sys_halt()
     endif
 
@@ -496,6 +597,10 @@ contains
     ! add the displacement solution to the file
     if (rprob%cequation .eq. EQ_ELASTICITY) then
       call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata, p_Ddata2)
+      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        call lsyssc_getbase_double(rsol%RvectorBlock(3), p_Ddata)
+        call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+      endif
     else if (rprob%cequation .eq. EQ_POISSON) then
       call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata)
     end if
@@ -555,7 +660,7 @@ contains
       endif
     endif
 
-  end subroutine elast_2d_disp_smallDef_stat
+  end subroutine elast_2d_smallDef_stat
 
-end module elasticity_2d_disp_smallDef_stat
+end module elasticity_2d_smallDef_stat
 

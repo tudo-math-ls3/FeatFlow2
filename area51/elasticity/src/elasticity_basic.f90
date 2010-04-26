@@ -13,6 +13,8 @@ module elasticity_basic
 
   use fsystem
   use boundary
+  use element
+  use cubature
   use linearsystemblock
   use discretebc
   use triangulation
@@ -22,6 +24,9 @@ module elasticity_basic
 
   integer, parameter :: EQ_POISSON          = 1
   integer, parameter :: EQ_ELASTICITY       = 2
+
+  integer, parameter :: FORMULATION_DISPL   = 1
+  integer, parameter :: FORMULATION_MIXED   = 2
 
   integer, parameter :: SIMUL_REAL          = 1
   integer, parameter :: SIMUL_ANALYTICAL    = 2
@@ -49,7 +54,10 @@ module elasticity_basic
 !<typeblock description="type for storing all necessary information about the simulation">
   type t_problem
 
-    !   grid file
+    ! spatial dimension of the problem (2 for 2D, 3 for 3D)
+    integer :: ndim = 2
+
+    ! grid file
     character(len=500) :: sgridFileTri
     character(len=500) :: sgridFilePrm
 
@@ -59,7 +67,11 @@ module elasticity_basic
     ! kind of equation (possible values: EQ_POISSON, EQ_ELASTICITY)
     integer :: cequation = EQ_ELASTICITY
 
-    ! number of blocks (1 for Poisson equation, 2 for 2D elasticity equation)
+    ! finite element formulation (possible values: FORMULATION_DISPL, FORMULATION_MIXED)
+    integer :: cformulation = FORMULATION_DISPL
+
+    ! number of blocks (1 for Poisson equation, 2 for 2D elasticity equation in pure
+    ! displacement formulation, 3 for mixed u/p formulation)
     integer :: nblocks
   
     ! material parameters (Poisson ratio nu and shear modulus mu)
@@ -84,17 +96,26 @@ module elasticity_basic
     real(DP) :: dforceVolumeY   = 0.0_DP
 
     ! function IDs per component (only needed in case of SIMUL_ANALYTICAL)
-    integer, dimension(2) :: CfuncID = (/4, 52/)
+    integer, dimension(3) :: CfuncID = (/0, 0, 0/)
 
-    ! kind of element used (possible values: EL_Q1, EL_Q2)
-    integer :: celement
+    ! finite element (possible values: EL_Q1, EL_Q2)
+    integer :: celement = EL_Q1
+
+    ! finite element for the pressure space (possible values: EL_Q1, EL_Q2)
+    ! (only necessary in case of the mixed formulation)
+    integer :: celementPress = EL_Q1
 
     ! 1D and 2D cubature formulas (they are automatically chosen according to the
     ! selected finite element)
-    integer :: ccubature1D, ccubature2D
+    integer :: ccubature1D = CUB_G2_1D, ccubature2D = CUB_G2X2
+
+    ! 1D and 2D cubature formulas for the pressure discretisation (they are automatically
+    ! chosen according to the selected finite element)
+    ! (only necessary in case of the mixed formulation)
+    integer :: ccubaturePress1D = CUB_G2_1D, ccubaturePress2D = CUB_G2X2
   
     ! MAX & MIN level where we want to solve.
-    integer :: ilevelMax, ilevelMin
+    integer :: ilevelMax = 3, ilevelMin = 3
 
     ! kind of solver (possible values: SOLVER_DIRECT,BICGSTAB_SOLVER,SOLVER_MG,SOLVER_CG)
     integer :: csolver = SOLVER_DIRECT
@@ -179,8 +200,6 @@ contains
     use fsystem
     use paramlist
     use genoutput
-    use element
-    use cubature
 
 !<description>
     ! get the following parameters from the parameter file:
@@ -266,8 +285,8 @@ contains
     character(len=SYS_STRLEN) :: snameDatFile
     integer :: i, j, k, iaux
     character(len=SYS_STRLEN) :: sstring
-    character(len=1), dimension(2) :: Sbc
-    real(DP), dimension(2) :: Dval
+    character(len=1), dimension(3) :: Sbc
+    real(DP), dimension(3) :: Dval
     ! max. number boundary segments over all boundaries
     integer :: nmaxNumBoundSegments
   
@@ -276,7 +295,7 @@ contains
  
     ! get the data file
     call sys_getcommandLineArg(1, snameDatFile, &
-                               sdefault = './dat/elasticity_2d_disp_smallDef_stat.dat')
+                               sdefault = './dat/elasticity_2d_smallDef_stat.dat')
     call parlst_readfromfile(rparams, snameDatFile)
     call output_line('parsing dat-file '//trim(snameDatFile)//'...')
     
@@ -332,10 +351,26 @@ contains
     end if
     call output_line('equation: '//trim(sstring))
     
+    ! type of finite element formulation (pure displacement or mixed)
+    if (rprob%cequation .eq. EQ_ELASTICITY) then
+      call parlst_getvalue_string(rparams, '', 'formulation', sstring)
+      if (trim(sstring) .eq. 'displ') then
+        rprob%cformulation = FORMULATION_DISPL
+        rprob%nblocks = 2
+      else if(trim(sstring) .eq. 'mixed') then
+        rprob%cformulation = FORMULATION_MIXED
+        rprob%nblocks = 3
+      else
+        call output_line('invalid FE formulation:' // trim(sstring), OU_CLASS_ERROR, &
+                         OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+        call sys_halt()
+      end if
+    endif
+
     ! material parameters (Poisson ratio nu and shear modulus mu)
     if (rprob%cequation .eq. EQ_ELASTICITY) then
       call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
-      if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .ge. 0.5) then
+      if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .gt. 0.5) then
         call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)), &
                          OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
         call sys_halt()
@@ -346,10 +381,21 @@ contains
                          OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
         call sys_halt()
       endif
-      rprob%dlambda = 2.0_DP*rprob%dmu * rprob%dnu/(1 - 2.0_DP*rprob%dnu)
-      call output_line('nu: '//trim(sys_sdL(rprob%dnu,6)))
-      call output_line('mu: '//trim(sys_sdEL(rprob%dmu,6)))
-      call output_line('lambda: '//trim(sys_sdEL(rprob%dlambda,6)))
+      call output_line('nu: ' // trim(sys_sdL(rprob%dnu,6)))
+      call output_line('mu: ' // trim(sys_sdEL(rprob%dmu,6)))
+      ! compute second Lame constant lambda
+      if (rprob%dnu .eq. 0.5) then
+        if (rprob%cformulation .eq. FORMULATION_DISPL) then
+          call output_line('nu = 0.5 not feasible in pure displacement formulation', &
+                           OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+          call sys_halt()
+        endif
+        rprob%dlambda = SYS_INFINITY
+        call output_line('lambda: infinity')
+      else
+        rprob%dlambda = 2.0_DP*rprob%dmu * rprob%dnu/(1.0_DP - 2.0_DP*rprob%dnu)
+        call output_line('lambda: ' // trim(sys_sdEL(rprob%dlambda,6)))
+      endif
     endif
                      
     ! type of simulation (possible values: REAL, ANALYTICAL)
@@ -392,13 +438,22 @@ contains
                                     isubstring = j)
         if (rprob%csimulation .eq. SIMUL_REAL) then
           ! in case of a real simulation read BC types and values
-          read(sstring,*) Sbc(1), Sbc(2), Dval(1), Dval(2)
+          if (rprob%cformulation .eq. FORMULATION_DISPL) then
+            read(sstring,*) Sbc(1), Sbc(2), Dval(1), Dval(2)
+          else
+            read(sstring,*) Sbc(1), Sbc(2), Sbc(3), Dval(1), Dval(2), Dval(3)
+          endif
         else
           ! in case of an analytical simulation read only BC types
-          read(sstring,*) Sbc(1), Sbc(2)
+          if (rprob%cformulation .eq. FORMULATION_DISPL) then
+            read(sstring,*) Sbc(1), Sbc(2)
+          else
+            read(sstring,*) Sbc(1), Sbc(2), Sbc(3)
+          endif
         endif
+
+        ! set type of boundary condition
         do k = 1, rprob%nblocks
-          ! set type of boundary condition
           if (trim(Sbc(k)) .eq. "D") then
             rprob%Cbc(k,j,i) = BC_DIRICHLET 
           else if (trim(Sbc(k)) .eq. "N") then
@@ -417,8 +472,13 @@ contains
           if (rprob%csimulation .eq. SIMUL_REAL) then
             rprob%DbcValue(k,j,i) = Dval(k)
             if (rprob%Cbc(k,j,i) .eq. BC_DIRICHLET) then
-              sstring = trim(sstring) // "  (displacement: " // &
-                        trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")" 
+              if (k .le. rprob%ndim) then
+                sstring = trim(sstring) // "  (displacement: " // &
+                          trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")"
+              else
+                sstring = trim(sstring) // "  (    pressure: " // &
+                          trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")"
+              endif
               if (Dval(k) .ne. 0.0_DP) then
                 call output_line('invalid boundary condition value:' // &
                                  trim(sys_sdEL(Dval(k),2)) // &
@@ -427,53 +487,16 @@ contains
                                  'elast_2d_disp_smallDeform_static')
               endif
             else
-              sstring = trim(sstring) // "  (line force:   " // &
-                        trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")" 
+              if (k .le. rprob%ndim) then
+                sstring = trim(sstring) // "  (  line force: " // &
+                          trim(sys_sdL(rprob%DbcValue(k,j,i),4)) // ")"
+              endif
             endif
           endif
           call output_line(trim(sstring))
         enddo
-
-!        do k = 1, rprob%nblocks
-!          call parlst_getvalue_string(rparams, '', 'bc'//trim(sys_siL(i,3)), sstring, &
-!                                      isubstring = 2*(j-1) + k)
-!          if (trim(sstring) .eq. "D") then
-!            rprob%Cbc(k,j,i) = BC_DIRICHLET 
-!          else if (trim(sstring) .eq. "N") then
-!            rprob%Cbc(k,j,i) = BC_NEUMANN 
-!          else
-!            call output_line('invalid boundary condition:' // trim(sstring) // &
-!                             ', currently only D (Dirichlet) and N (Neumann) supported!',&
-!                             OU_CLASS_ERROR, OU_MODE_STD, &
-!                             'elast_2d_disp_smallDeform_static')
-!            call sys_halt()
-!          endif
-!          call output_line('BC of comp. ' // trim(sys_siL(k,3)) // ' in segment ' // &
-!                           trim(sys_siL(j,3)) // ' of boundary ' // &
-!                           trim(sys_siL(i,3))//': '// trim(sstring))
-!        enddo
       end do
     end do
-
-!    ! surface forces (i.e. Neumann BCs) for all segments on all boundaries
-!    ! (only needed in case of csimulation .eq. SIMUL_REAL)
-!    if (rprob%csimulation .eq. SIMUL_REAL) then
-!      allocate(rprob%DbcValue(rprob%nblocks, nmaxNumBoundSegments, &
-!                                   boundary_igetNBoundComp(rprob%rboundary)))
-!      do i = 1, boundary_igetNBoundComp(rprob%rboundary)
-!        do j = 1,boundary_igetNsegments(rprob%rboundary, i)
-!          do k = 1,rprob%nblocks
-!            call parlst_getvalue_double(rparams, '', 'forceSurface'//trim(sys_siL(i,3)), &
-!                                        rprob%DbcValue(k,j,i), &
-!                                        iarrayindex = 2*(j-1)+k)
-!          enddo
-!          call output_line('(x,y)-surface force in segment ' // trim(sys_siL(j,3)) // &
-!                           ' of boundary ' // trim(sys_siL(i,3))//': (' // &
-!                           trim(sys_sdL(rprob%DbcValue(1,j,i),4)) // &
-!                           ', '//trim(sys_sdL(rprob%DbcValue(2,j,i),4))//')')
-!        end do
-!      end do
-!    endif
 
     ! constant volume forces (only needed in case of csimulation .eq. SIMUL_REAL)
     if (rprob%csimulation .eq. SIMUL_REAL) then
@@ -489,18 +512,22 @@ contains
       call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%CfuncID(2))
       call output_line('function ID for u1: ' // trim(sys_siL(rprob%CfuncID(1),3)))
       call output_line('function ID for u2: ' // trim(sys_siL(rprob%CfuncID(2),3)))
+      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        call parlst_getvalue_int(rparams, '', 'funcID_p', rprob%CfuncID(3))
+        call output_line('function ID for p: ' // trim(sys_siL(rprob%CfuncID(3),3)))
+      endif
     endif
          
     ! get element type and choose cubature formula accordingly
     call parlst_getvalue_string(rparams, '', 'element', sstring)
     if (trim(sstring) .eq. "Q1") then
       rprob%celement = EL_Q1
-      rprob%ccubature1D = CUB_G2_1D      
+      rprob%ccubature1D = CUB_G2_1D
       rprob%ccubature2D = CUB_G2X2
       call output_line('element Q1, cubature G2 / G2X2')
     else if (trim(sstring) .eq. "Q2") then
       rprob%celement = EL_Q2
-      rprob%ccubature1D = CUB_G3_1D      
+      rprob%ccubature1D = CUB_G3_1D
       rprob%ccubature2D = CUB_G3X3
       call output_line('element Q2, cubature G3 / G3X3')
     else
@@ -509,7 +536,26 @@ contains
                        OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
       call sys_halt()
     endif
-                              
+    if (rprob%cformulation .eq. FORMULATION_MIXED) then
+      call parlst_getvalue_string(rparams, '', 'elementPress', sstring)
+      if (trim(sstring) .eq. "Q1") then
+        rprob%celementPress = EL_Q1
+        rprob%ccubaturePress1D = CUB_G2_1D
+        rprob%ccubaturePress2D = CUB_G2X2
+        call output_line('pressure element Q1, cubature G2 / G2X2')
+      else if (trim(sstring) .eq. "Q2") then
+        rprob%celementPress = EL_Q2
+        rprob%ccubaturePress1D = CUB_G3_1D
+        rprob%ccubaturePress2D = CUB_G3X3
+        call output_line('pressure element Q2, cubature G3 / G3X3')
+      else
+        call output_line('invalid pressure element:' // trim(sstring) // &
+                         ', currently only Q1 and Q2 supported!', &
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+        call sys_halt()
+      endif
+    endif
+    
     ! minimum and maximum level
     call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
     call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
@@ -544,41 +590,44 @@ contains
 
     ! get number of evaluation points by inquiring the number of items of the
     ! parameter 'evalPoints'
-    rprob%nevalPoints = parlst_querysubstrings(rparams, '', 'evalPoints')/2
+    rprob%nevalPoints = parlst_querysubstrings(rparams, '', 'evalPoints')
     call output_line('number of evaluation points: '//trim(sys_siL(rprob%nevalPoints,3)))
 
     if (rprob%nevalPoints .gt. 0) then
       allocate(rprob%DevalPoints(2,rprob%nevalPoints))
-      ! we need to store values for 2 blocks x 3 function value types (FUNC, DERX, DERY)
-      ! in each eval point
-      allocate(rprob%Dvalues(2, 3, rprob%nevalPoints))
+      ! we need to store values for nblocks blocks x 3 function value types
+      ! (FUNC, DERX, DERY) in each eval point
+      allocate(rprob%Dvalues(rprob%nblocks, 3, rprob%nevalPoints))
 
       rprob%DevalPoints = 0.0_DP
       rprob%Dvalues = 0.0_DP
       do i = 1, rprob%nevalPoints
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(1,i), iarrayindex = 2*i-1)
-        call parlst_getvalue_double(rparams, '', 'evalPoints', &
-                                    rprob%DevalPoints(2,i), iarrayindex = 2*i)
+        call parlst_getvalue_string(rparams, '', 'evalPoints', sstring, isubstring = i)
+        read(sstring,*) rprob%DevalPoints(1,i), rprob%DevalPoints(2,i)
         call output_line('eval. point: ('// trim(sys_sdL(rprob%DevalPoints(1,i),4)) &
                          // ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
       end do
 
       ! get number of reference solutions in evaluation points by inquiring the number of
       ! items of the parameter 'refSols'
-      rprob%nrefSols = parlst_querysubstrings(rparams, '', 'refSols') / 2
+      rprob%nrefSols = parlst_querysubstrings(rparams, '', 'refSols')
       call output_line('number of reference solutions: '//trim(sys_siL(rprob%nrefSols,3)))
   
       if (rprob%nrefSols .gt. 0) then
-        allocate(rprob%DrefSols(2,rprob%nrefSols))
+        allocate(rprob%DrefSols(rprob%nblocks,rprob%nrefSols))
         rprob%DrefSols = 0.0_DP
         do i = 1, rprob%nrefSols
-          call parlst_getvalue_double(rparams, '', 'refSols', &
-                                      rprob%DrefSols(1,i), iarrayindex = 2*i-1)
-          call parlst_getvalue_double(rparams, '', 'refSols', &
-                                      rprob%DrefSols(2,i), iarrayindex = 2*i)
-          call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
-                           // ', ' // trim(sys_sdL(rprob%DrefSols(2,i),8)) // ')')
+          call parlst_getvalue_string(rparams, '', 'refSols', sstring, isubstring = i)
+          if (rprob%cformulation .eq. FORMULATION_DISPL) then
+            read(sstring,*) rprob%DrefSols(1,i), rprob%DrefSols(2,i)
+            call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) &
+                             // ', ' // trim(sys_sdL(rprob%DrefSols(2,i),8)) // ')')
+          else
+            read(sstring,*) rprob%DrefSols(1,i), rprob%DrefSols(2,i), rprob%DrefSols(3,i)
+            call output_line('ref. sol.: ('// trim(sys_sdL(rprob%DrefSols(1,i),8)) // &
+                             ', ' // trim(sys_sdL(rprob%DrefSols(2,i),8)) // &
+                             ', ' // trim(sys_sdL(rprob%DrefSols(3,i),8)) // ')')
+          endif
         end do
       end if
     else
@@ -649,6 +698,9 @@ contains
                          ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
         call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
         call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
+        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+          call output_line('      ph: ' // trim(sys_sdEL(rprob%Dvalues(3,1,i),10)))
+        endif
         deps11 = rprob%Dvalues(1,2,i)
         deps22 = rprob%Dvalues(2,3,i)
         deps12 = 0.5_DP*(rprob%Dvalues(2,2,i) + rprob%Dvalues(1,3,i))
@@ -683,6 +735,11 @@ contains
         call output_line('     u1*: ' // trim(sys_sdEL(rprob%DrefSols(1,i),10)))
         call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
         call output_line('     u2*: ' // trim(sys_sdEL(rprob%DrefSols(2,i),10)))
+        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+          call output_line('      ph: ' // trim(sys_sdEL(rprob%Dvalues(3,1,i),10)))
+          call output_line('      p*: ' // trim(sys_sdEL(rprob%DrefSols(3,i),10)))
+        endif
+
         daux1 = rprob%DrefSols(1,i)
         daux2 = rprob%DrefSols(1,i) - rprob%Dvalues(1,1,i)
         if (daux1 .ne. 0.0_DP) then
@@ -705,6 +762,15 @@ contains
         endif
         call output_line(' error u: ' // trim(sys_sdEL(daux2, 10)))
         call output_lbrk()
+
+        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+          daux1 = rprob%DrefSols(3,i)
+          daux2 = rprob%DrefSols(3,i) - rprob%Dvalues(3,1,i)
+          if (daux1 .ne. 0.0_DP) then
+            daux2 = daux2/daux1
+          endif
+          call output_line(' error p: ' // trim(sys_sdEL(daux2, 10)))
+        endif
       enddo
     end if
 
