@@ -2292,7 +2292,6 @@ contains
     type(t_vectorBlock), pointer :: p_rpredictor
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    character(len=SYS_STRLEN) :: sfailsafevariable
     integer :: inviscidAFC, lumpedMassMatrix
     integer :: nfailsafe, ivariable, nvariable
 
@@ -2341,7 +2340,7 @@ contains
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
     
     !---------------------------------------------------------------------------
-    ! Perform failsafe flux correction
+    ! Perform failsafe flux correction (if required)
     !---------------------------------------------------------------------------
 
     if (nfailsafe .gt. 0) then
@@ -2380,7 +2379,7 @@ contains
 
     else
       
-      ! Apply FEM-FCT correction
+      ! Compute and apply FEM-FCT correction
       call euler_calcCorrectionFCT(rproblemLevel,&
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD+&
