@@ -1264,7 +1264,7 @@ contains
 !<subroutine>
 
   subroutine afcstab_failsafeLimiting(rafcstab, rlumpedMassMatrix,&
-      Cvariables, dscale, nsteps, fcb_extractVariable, rvector, rvectorTmp)
+      Cvariables, dscale, nsteps, fcb_extractVariableBlock, rvector, rvectorTmp)
 
 !<description>
     ! This subroutine performs failsafe flux limiting as described in
@@ -1345,7 +1345,7 @@ contains
     
     ! Initialise the nodal vectors by the given solution
     do ivariable = 1, nvariable
-      call fcb_extractVariable(rvector, trim(Cvariables(ivariable)),&
+      call fcb_extractVariableBlock(rvector, trim(Cvariables(ivariable)),&
           rvectorControl%RvectorBlock(ivariable))
     end do
     
@@ -1378,7 +1378,7 @@ contains
 
       ! Convert solution to control variables
       do ivariable = 1, nvariable
-        call fcb_extractVariable(rvector, trim(Cvariables(ivariable)),&
+        call fcb_extractVariableBlock(rvector, trim(Cvariables(ivariable)),&
             rvectorControl%RvectorBlock(ivariable))
       end do
 
