@@ -495,6 +495,8 @@ contains
     p_rsolver%ioutputLevel       = rsolversettings%ioutputLevel
     p_rsolver%istoppingCriterion = rsolversettings%istoppingCriterion
     p_rsolver%p_rsubnodeMultigrid%icycle = rsolversettings%icycle
+    p_rsolver%p_rsubnodeMultigrid%dalphamin = rsolversettings%dalphamin
+    p_rsolver%p_rsubnodeMultigrid%dalphamax = rsolversettings%dalphamax
     
     ! Initialise all levels.
     do ilev = ispaceTimeLevelCoarse,ispaceTimeLevel
