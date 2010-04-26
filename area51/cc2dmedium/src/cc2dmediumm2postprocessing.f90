@@ -1267,7 +1267,7 @@ contains
 !  CALL lsyssc_getbase_double (rvector%RvectorBlock(3),p_DdataP)
 !  
 !  ! Get pointers to the spatial discretisation structures of the
-!  ! veloctiy and pressure
+!  ! velocity and pressure
 !  p_rdiscrU => rvector%RvectorBlock(1)%p_spatialDiscretisation
 !  p_rdiscrP => rvector%RvectorBlock(3)%p_spatialDiscretisation
 !

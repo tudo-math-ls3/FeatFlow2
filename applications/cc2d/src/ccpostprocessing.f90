@@ -813,7 +813,7 @@ contains
       ! This is for the benchmark channel!
       call boundary_createRegion (rproblem%rboundary, &
           ibodyForcesBdComponent, 0, rregion)
-      rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+      rregion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
       
       select case (icalcBodyForces)
       case (1)

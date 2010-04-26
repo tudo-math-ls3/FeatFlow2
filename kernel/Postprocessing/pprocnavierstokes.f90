@@ -370,7 +370,7 @@ contains
     if (present(cformulation)) cform = cformulation
 
     ! Get pointers to the spatial discretisation structures of the
-    ! veloctiy and pressure
+    ! velocity and pressure
     p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
     p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscr
 
@@ -387,7 +387,7 @@ contains
     call cub_getCubPoints (ccub,ncubp,Dxi1D,Domega)
 
     ! In Dxi1D we have the 1D coordinates of the cubature points.
-    ! These have to be mapped to the 2D element which is under condideration
+    ! These have to be mapped to the 2D element which is under consideration
     ! during the integration -- later.
     !
     ! Before, we need some additional information about the triangulation
@@ -490,7 +490,7 @@ contains
       end if
 
       ! Is the edge in the specified boundary region, so we are allowed
-      ! to integrate about it? We check both endpoints...
+      ! to integrate along it? We check both endpoints...
 
       if (boundary_isInRegion (rregion,icp,dvtp1) .and. &
           boundary_isInRegion (rregion,icp,dvtp2)) then
@@ -599,7 +599,7 @@ contains
             dweight = Domega(icubp)*0.5_DP*dedgelen
 
             ! Loop through the DOF`s on our element and calculate
-            ! the tangential U as well as P.
+            ! the tangential velocity as well as pressure P.
             dut = 0.0_DP
             do idfl=1,idoflocU
               dut = dut &
@@ -911,7 +911,7 @@ contains
     end if
 
     ! Get pointers to the spatial discretisation structures of the
-    ! veloctiy and pressure
+    ! velocity and pressure
     p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
     p_rdiscrP => rvector%RvectorBlock(3)%p_rspatialDiscr
 
@@ -934,7 +934,7 @@ contains
     !DpointsRef (1:NDIM2D,1:ncubp) = transpose(Dxi2D(1:ncubp,1:NDIM2D))
 
     ! In Dxi1D we have the 1D coordinates of the cubature points.
-    ! These have to be mapped to the 2D element which is under condideration
+    ! These have to be mapped to the 2D element which is under consideration
     ! during the integration -- later.
     !
     ! Before, we need some additional information about the triangulation
@@ -1040,7 +1040,7 @@ contains
       end if
 
       ! Is the edge in the specified boundary region, so we are allowed
-      ! to integrate about it? We check both endpoints...
+      ! to integrate along it? We check both endpoints...
 
       if (boundary_isInRegion (rregion,icp,dvtp1) .and. &
           boundary_isInRegion (rregion,icp,dvtp2)) then
@@ -2037,7 +2037,7 @@ contains
     end if
 
     ! Get pointers to the spatial discretisation structures of the
-    ! veloctiy and pressure
+    ! velocity and pressure
     p_rdiscrU => rvector%RvectorBlock(1)%p_rspatialDiscr
     p_rdiscrP => rvector%RvectorBlock(4)%p_rspatialDiscr
 
@@ -2053,7 +2053,7 @@ contains
     call cub_getCubPoints (ccub,ncubp,Dxi2D,Domega)
 
     ! In Dxi2D we have the 2D coordinates of the cubature points.
-    ! These have to be mapped to the 3D element which is under condideration
+    ! These have to be mapped to the 3D element which is under consideration
     ! during the integration -- later.
     !
     ! Before, we need some additional information about the triangulation
