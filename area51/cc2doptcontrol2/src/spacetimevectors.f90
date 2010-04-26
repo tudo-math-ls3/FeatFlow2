@@ -75,6 +75,9 @@
 !#
 !# 19.) sptivec_printVector
 !#      -> Prints a space-time vector to the terminal
+!#
+!# 20.) sptivec_setSubvectorConstant
+!#      -> Sets a subvector to a constant value
 !# </purpose>
 !##############################################################################
 
@@ -122,6 +125,13 @@ module spacetimevectors
   public :: sptivec_setConstant
   public :: sptivec_scaleVector
   public :: sptivec_printVector
+  public :: sptivec_setSubvectorConstant
+  
+  public :: t_spaceTimeVectorAccess
+  public :: sptivec_createAccessPool
+  public :: sptivec_releaseAccessPool
+  public :: sptivec_getVectorFromPool
+  public :: sptivec_getFreeBufferFromPool
 
 !<types>
 
@@ -179,12 +189,47 @@ module spacetimevectors
 
 !</typeblock>
 
+!<typeblock>
+
+  ! This type realises a space vector pool associated to a space-time vector.
+  ! The pool automatically loads vectors from the space time vector on demand
+  ! and buffers read data to gain quicker access to frequently used components
+  ! of the vector.
+  ! The structure can also be used 'unbounded', i.e. detached from a space-time
+  ! vector. In this case, the owner of the structure can store timesteps
+  ! to the structure which are automatically deleted if the buffer is full.
+  type t_spaceTimeVectorAccess
+  
+    ! Reference an the associated space-time vector.
+    type(t_spaceTimeVector), pointer :: p_rspaceTimeVector
+    
+    ! A pool of space vectors buffered from the space-time vector.
+    type(t_vectorBlock), dimension(:), pointer :: p_RvectorPool
+    
+    ! A list of indices that saves for every space-vector from the pool the
+    ! associated index in the space-time vector.
+    integer, dimension(:), pointer :: p_IvectorIndex
+    
+    ! Id of the next free vector which is overwritten if the read-method
+    ! is called.
+    integer :: inextFreeVector
+    
+  end type
+
+!</typeblock>
+
+
 !</types>
 
   interface sptivec_initVector
     module procedure sptivec_initVectorPlain
     module procedure sptivec_initVectorDirect 
     module procedure sptivec_initVectorDiscr
+  end interface
+    
+  interface sptivec_createAccessPool
+    module procedure sptivec_createAccessPoolByVec
+    module procedure sptivec_createAccessPoolByDisc
   end interface
     
 contains
@@ -1771,6 +1816,49 @@ contains
 
 !<subroutine>
 
+  subroutine sptivec_setSubvectorConstant (rx,iindex,dvalue)
+
+!<description>
+  ! Sets a subvector to a constant value.
+!</description>
+
+!<input>
+  ! Index of the subvector.
+  integer, intent(in) :: iindex
+
+  ! Value which should be written to the whole space-time vector.
+  real(DP), intent(in) :: dvalue
+!</input>
+
+!<inputoutput>
+  ! Space-time vector to modify
+  type(t_spaceTimeVector), intent(INOUT) :: rx
+!</inputoutput>
+
+!</subroutine>
+
+    ! Local variables
+    real(DP), dimension(:), allocatable :: p_Ddata
+    
+    ! Allocate memory for intermediate values
+    allocate(p_Ddata(rx%NEQ))
+
+    ! Get the data and set to a defined value.
+    call exstor_getdata_double (rx%p_IdataHandleList(iindex),p_Ddata)
+    p_Ddata(:) = dvalue
+    call exstor_setdata_double (rx%p_IdataHandleList(iindex),p_Ddata)
+
+    ! Reset the scale factor.
+    rx%p_Dscale(iindex) = 1.0_DP
+
+    deallocate(p_Ddata)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sptivec_printVector (rx)
 
 !<description>
@@ -1816,6 +1904,234 @@ contains
     ! Release temp memory    
     call lsysbl_releaseVector (rxBlock)
       
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_createAccessPoolByVec (rx,raccessPool,isize)
+
+!<description>
+  ! Creates an access pool for a space-time vector that buffers isize
+  ! spatial vectors.
+!</desctiprion>
+
+!<input>
+  ! Vector to be buffered.
+  type(t_spacetimeVector), intent(in), target :: rx
+  
+  ! Size of the pool.
+  integer, intent(in) :: isize
+!</input>
+
+!<output>
+  ! Access-pool structure to be created.
+  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+!</output>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Remember the associated space-time vector.
+    raccessPool%p_rspaceTimeVector => rx
+    
+    ! Allocate the buffer.
+    allocate(raccessPool%p_RvectorPool(isize))
+    do i=1,size(raccessPool%p_RvectorPool)
+      call lsysbl_createVectorBlock (rx%p_rspaceDiscr,raccessPool%p_RvectorPool(i))
+    end do
+    
+    ! Create the index arrays.
+    allocate(raccessPool%p_IvectorIndex(isize))
+    
+    ! In the beginning, no vectors are read in.
+    raccessPool%p_IvectorIndex(:) = 0
+    
+    raccessPool%inextFreeVector = 1
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_createAccessPoolByDisc (rspaceDiscr,raccessPool,isize)
+
+!<description>
+  ! Creates an 'unbounded' access pool based on a space-time discretisation.
+  ! The pool serves as a buffer for intermediate data and returns NULL
+  ! in sptivec_getVectorFromPool if the owner tries to fetch a timestep
+  ! which is not in the buffer.
+!</desctiprion>
+
+!<input>
+  ! Block discretisation that defines the spatial discretisation.
+  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+  
+  ! Size of the pool.
+  integer, intent(in) :: isize
+!</input>
+
+!<output>
+  ! Access-pool structure to be created.
+  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+!</output>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Remember the associated space-time vector.
+    nullify(raccessPool%p_rspaceTimeVector)
+    
+    ! Allocate the buffer.
+    allocate(raccessPool%p_RvectorPool(isize))
+    do i=1,size(raccessPool%p_RvectorPool)
+      call lsysbl_createVectorBlock (rspaceDiscr,raccessPool%p_RvectorPool(i))
+    end do
+    
+    ! Create the index arrays.
+    allocate(raccessPool%p_IvectorIndex(isize))
+    
+    ! In the beginning, no vectors are read in.
+    raccessPool%p_IvectorIndex(:) = 0
+    
+    raccessPool%inextFreeVector = 1
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_releaseAccessPool (raccessPool)
+
+!<description>
+  ! Releases an access pool for space-time vectors.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be released.
+  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+
+    ! Clean up.
+    nullify(raccessPool%p_rspaceTimeVector)
+    
+    do i=1,size(raccessPool%p_RvectorPool)
+      call lsysbl_releaseVector (raccessPool%p_RvectorPool(i))
+    end do
+    
+    deallocate(raccessPool%p_RvectorPool)
+    deallocate(raccessPool%p_IvectorIndex)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_getVectorFromPool (raccessPool,iindex,p_rx)
+
+!<description>
+  ! Reads in space-vector iindex from the space time vector of raccessPool
+  ! (if necessary) and returns a pointer to the space-vector in the pool
+  ! representing this.
+  !
+  ! Warning: The last isize pointers read from the pool are guaranteed
+  ! to exist. If more than isize pointers are read, the previously read
+  ! vectors and their pointers get invalid!
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index of the vector to be read.
+  integer, intent(in) :: iindex
+  
+  ! Pointer which is set to a spatial vector representing timestep iindex
+  ! of the space-time vector.
+  ! Returns NULL if the corresponding vector is not available.
+  type(t_vectorBlock), pointer :: p_rx
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+  
+    ! Take a look if we already have that vector
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+        p_rx => raccessPool%p_RvectorPool(i)
+        return
+      end if
+    end do
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      ! We have no source vector, so indicate that we cannot return
+      ! a pointer to the vector.
+      nullify(p_rx)
+      return
+    end if
+    
+    ! Otherwise we have to get the vector from the space-time vector
+    ! and save it to our buffer. Throw away the first vector from the pool.
+    call sptivec_getTimestepData (raccessPool%p_rspaceTimeVector, iindex, &
+        raccessPool%p_RvectorPool(raccessPool%inextFreeVector))
+    raccessPool%p_IvectorIndex(raccessPool%inextFreeVector) = iindex
+    
+    ! Here is our read vector
+    p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
+    
+    ! Increase the number of the next free vector.
+    ! We use the buffer as a ring buffer.
+    raccessPool%inextFreeVector = &
+        mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_getFreeBufferFromPool (raccessPool,iindex,p_rx)
+
+!<description>
+  ! Returns a pointer to a new free buffer in the pool.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index (timestep) that should be associated to the vector.
+  ! A sptivec_getVectorFromPool with this index will return this pointer again.
+  integer, intent(in) :: iindex
+  
+  ! Pointer which is set to a spatial vector that can be used to store data.
+  type(t_vectorBlock), pointer :: p_rx
+!</inputoutput>
+
+!</subroutine>
+   
+    ! Here is our read vector
+    p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
+
+    ! Associate the index.
+    raccessPool%p_IvectorIndex(raccessPool%inextFreeVector) = iindex
+    
+    ! Increase the number of the next free vector.
+    ! We use the buffer as a ring buffer.
+    raccessPool%inextFreeVector = &
+        mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+    
   end subroutine
 
 end module
