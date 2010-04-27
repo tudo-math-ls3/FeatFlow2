@@ -33,7 +33,6 @@ contains
 !<description>
     ! This subroutine is called during the matrix assembly. It computes the coefficients
     ! in front of the terms of the bilinear form.
-    !
     ! The routine accepts a set of elements and a set of points on these elements
     ! (cubature points) in real coordinates.
     ! According to the terms in the bilinear form, the routine simultaneously computes
@@ -44,58 +43,48 @@ contains
 !</description>
     
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; trial space.
+    ! discretisation structure of the trial space
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTrial
     
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.; test space.
+    ! discretisation structure of the test space
     type(t_spatialDiscretisation), intent(in) :: rdiscretisationTest
 
-    ! The bilinear form which is currently being evaluated:
+    ! bilinear form to be evaluated
     type(t_bilinearForm), intent(in) :: rform
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, npointsPerElement, nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(#local DOF in trial space,nelements)
+    ! array of trial space DOF in all elements
+    ! DIMENSION(#local DOF in trial space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTrial
     
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(#local DOF in test space,nelements)
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-    
 !</input>
+
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
   
 !<output>
-    ! A list of all coefficients in front of all terms in the bilinear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the bilinear form.
+    ! array of coefficients of the terms in the bilinear form for all given points on
+    ! all given elements, DIMENSION(itermCount, npointsPerElement, nelements)
+    ! with itermCount the number of terms in the bilinear form
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-    
 !</subroutine>
 
     Dcoefficients = 1.0_DP
@@ -126,46 +115,40 @@ contains
 !</description>
     
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! The linear form which is currently to be evaluated:
+    ! linear form to be evaluated
     type(t_linearForm), intent(in) :: rform
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, npointsPerElement, nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in test space,nelements)
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-    
 !</input>
+
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+    
   
 !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
+    ! array of coefficients of the terms in the linear form for all given points on
+    ! all given elements, DIMENSION(itermCount, npointsPerElement, nelements)
+    ! with itermCount the number of terms in the linear form
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
 !</subroutine>
@@ -213,60 +196,48 @@ contains
 !</description>
 
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! The linear form which is currently to be evaluated:
+    ! linear form to be evaluated
     type(t_linearForm), intent(in) :: rform
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, npointsPerElement, nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
-    ! This is the number of the boundary component that contains the
-    ! points in Dpoint. All points are on the same boundary component.
+    ! index of the boundary component that contains the points
     integer, intent(in) :: ibct
     
-    ! For every point under consideration, this specifies the parameter
-    ! value of the point on the boundary component. The parameter value
-    ! is calculated in LENGTH PARAMETRISATION!
-    ! DIMENSION(npointsPerElement,nelements)
+    ! parameter values (LENGTH PARAMETRISATION) of the points on the boundary component
+    ! DIMENSION(npointsPerElement, nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
     
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(#local DOF in test space,nelements)
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! optional collection structure for additional information provided by the user
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
+    ! array of coefficients of the terms in the linear form for all given points on
+    ! all given elements, DIMENSION(itermCount, npointsPerElement, nelements)
+    ! with itermCount the number of terms in the linear form
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-
 !</subroutine>
 
     ! local variables
@@ -358,46 +329,40 @@ contains
 !</description>
     
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! The linear form which is currently to be evaluated:
+    ! linear form to be evaluated
     type(t_linearForm), intent(in) :: rform
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, npointsPerElement, nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF in test space,nelements)
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
 
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-    
 !</input>
 
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+    
+
 !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
+    ! array of coefficients of the terms in the linear form for all given points on
+    ! all given elements, DIMENSION(itermCount, npointsPerElement, nelements)
+    ! with itermCount the number of terms in the linear form
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
 !</subroutine>
@@ -481,64 +446,52 @@ contains
 !</description>
 
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! The linear form which is currently to be evaluated:
+    ! linear form to be evaluated
     type(t_linearForm), intent(in) :: rform
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
+    ! array of all points on all elements where coefficients are to be computed
+    ! DIMENSION(spatial dimension, npointsPerElement, nelements)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
     
-    ! This is the number of the boundary component that contains the
-    ! points in Dpoint. All points are on the same boundary component.
+    ! index of the boundary component that contains the points
     integer, intent(in) :: ibct
     
-    ! For every point under consideration, this specifies the parameter
-    ! value of the point on the boundary component. The parameter value
-    ! is calculated in LENGTH PARAMETRISATION!
-    ! DIMENSION(npointsPerElement,nelements)
+    ! parameter values (LENGTH PARAMETRISATION) of the points on the boundary component
+    ! DIMENSION(npointsPerElement, nelements)
     real(DP), dimension(:,:), intent(in) :: DpointPar
     
-    ! An array accepting the DOF on all elements trial in the trial space.
-    ! DIMENSION(#local DOF in test space,nelements)
+    ! array of test space DOF in all elements
+    ! DIMENSION(#local DOF in test space, nelements)
     integer, dimension(:,:), intent(in) :: IdofsTest
     
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 !</input>
 
 !<inputoutput>
-    ! Optional: A collection structure to provide additional
-    ! information to the coefficient routine.
+    ! optional collection structure for additional information provided by the user
     type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 
 !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
+    ! array of coefficients of the terms in the linear form for all given points on
+    ! all given elements, DIMENSION(itermCount, npointsPerElement, nelements)
+    ! with itermCount the number of terms in the linear form
     real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
 !</output>
-
 !</subroutine>
 
     ! local variables
-    real(DP), dimension(:,:,:,:), pointer :: DstressTensor
+    real(DP), dimension(:,:,:), pointer :: DstressTensor
     real(DP) :: dminPar, dmaxPar, dt, dnx, dny
     integer :: iel, ipoint, icomp, iseg
 
@@ -561,8 +514,8 @@ contains
       ! sigma * n, where sigma is the Cauchy stress tensor and n the normal vector
       
       ! compute the stress tensor sigma
-      allocate(DstressTensor(2,2,npointsPerElement,nelements))
-      call elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints,&
+      allocate(DstressTensor(2,npointsPerElement,nelements))
+      call elast_stressTensor(icomp, rdiscretisation, nelements, npointsPerElement, Dpoints,&
                               rdomainIntSubset, DstressTensor, rcollection)
       do iel = 1, nelements
         do ipoint = 1, npointsPerElement
@@ -586,8 +539,8 @@ contains
           endif
 
           ! Now compute sigma * n
-          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(icomp,1,ipoint,iel) &
-                                      + dny * DstressTensor(icomp,2,ipoint,iel)
+          Dcoefficients(1,ipoint,iel) = dnx * DstressTensor(1,ipoint,iel) &
+                                      + dny * DstressTensor(2,ipoint,iel)
         enddo
       enddo
       deallocate(DstressTensor)
@@ -608,10 +561,9 @@ contains
 
   
 !<subroutine>
-  subroutine elast_stressTensor(rdiscretisation, nelements, npointsPerElement, Dpoints, &
-                                rdomainIntSubset, Dvalues, rcollection)
+  subroutine elast_stressTensor(irow, rdiscretisation, nelements, npointsPerElement, &
+                                Dpoints, rdomainIntSubset, Dstresses, rcollection)
 
-!BRAL: nur eine Zeile des Spannungstensors berechnen (also icomp uebergeben)!!
 !BRAL: an mixed formulation anpassen
 
     use fsystem
@@ -622,44 +574,39 @@ contains
     use elasticity_basic
 
 !<description>
+    ! This routine computes one row of the 2x2 Cauchy stress tensor in a given set
+    ! of points/elements.
 !</description>
   
 !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! specifies which row of the stress tensor is to be computed
+    integer, intent(in) :: irow
+  
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! Number of elements, where the coefficients must be computed.
+    ! number of elements where the coefficients are to be computed
     integer, intent(in) :: nelements
     
-    ! Number of points per element, where the coefficients must be computed
+    ! number of points per element where the coefficients are to be computed
     integer, intent(in) :: npointsPerElement
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! array of all points on all elements where coefficients are to be computed
+    ! (usually coincides with rdomainSubset%p_DcubPtsReal)
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
   
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
+    ! optional collection structure for additional information provided by the user
     type(t_collection), intent(inout), optional :: rcollection
-  
 !</input>
 
 !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
-    real(DP), dimension(:,:,:,:), intent(out) :: Dvalues
+    ! array for storing the desired stresses in all points on all elements
+    !   DIMENSION(2, snpointsPerElement, nelements)
+    real(DP), dimension(:,:,:), intent(out) :: Dstresses
 !</output>
-
 !</subroutine>
 
     real(DP), dimension(:,:), pointer :: Du1x, Du2x, Du1y, Du2y
@@ -678,11 +625,13 @@ contains
     call elast_analFunc(2, DER_DERIV_Y, rdiscretisation, nelements, npointsPerElement, &
                         Dpoints, rdomainIntSubset, Du2y, rcollection)                       
     
-    Dvalues(1,1,:,:) =   2*rprob%dmu * Du1x(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
-    Dvalues(1,2,:,:) = rprob%dmu * (Du1y(:,:) + Du2x(:,:))
-    Dvalues(2,1,:,:) = rprob%dmu * (Du2x(:,:) + Du1y(:,:))
-    Dvalues(2,2,:,:) =   2*rprob%dmu * Du2y(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
-    
+    if (irow .eq. 1) then
+      Dstresses(1,:,:) = 2*rprob%dmu * Du1x(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
+      Dstresses(2,:,:) = rprob%dmu * (Du1y(:,:) + Du2x(:,:))
+    else
+      Dstresses(1,:,:) = rprob%dmu * (Du2x(:,:) + Du1y(:,:))
+      Dstresses(2,:,:) = 2*rprob%dmu * Du2y(:,:) + rprob%dlambda * (Du1x(:,:) + Du2y(:,:))
+    endif    
     deallocate(Du1x, Du2x, Du1y, Du2y)
 
   end subroutine elast_stressTensor
@@ -711,65 +660,54 @@ contains
 !</description>
   
 !<input>
-    ! Component specifierFor Dirichlet boundary: 
-    !   Icomponents(1) defines the number of the boundary component, the value
-    !   is to be calculated for (e.g. 1=1st solution component, i.e. x-displacement, 
-    !   2=2nd solution component, i.e. y-displacement,...)
+    ! specifier for Dirichlet boundary
+    ! Icomponents(1) defines the index of the boundary component the value is to be
+    ! calculated for (e.g., 1 = 1st solution component = x-displacement, 2 = 2nd solution
+    ! component = y-displacement)
     integer, dimension(:), intent(in) :: Icomponents
   
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! Boundary region that is currently being processed.
+    ! current boundary region
     type(t_boundaryRegion), intent(in) :: rboundaryRegion
     
-    ! The element number on the boundary which is currently being processed
+    ! number of the current element on the boundary
     integer, intent(in) :: ielement
     
-    ! The type of information, the routine should calculate. One of the
-    ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-    ! to return one or multiple information value in the result array.
+    ! The type of information, the routine should calculate. One of the DISCBC_NEEDxxxx
+    ! constants. Depending on the constant, the routine has to return one or more
+    ! information values in the result array.
     integer, intent(in) :: cinfoNeeded
     
-    ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! Reference to a geometric object where information is to be computed.
+    ! cinfoNeeded = DISCBC_NEEDFUNC / DISCBC_NEEDDERIV:
     !   iwhere = number of the point in the triangulation or
     !          = 0, if only the parameter value of the point is known; this
     !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
-    !   iwhere = number of the point in the triangulation or
-    !          = 0, if only the parameter value of the point is known; this
-    !               can be found in dwhere,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-    !   iwhere = number of the edge where the value integral mean value
-    !            should be computed
+    ! cinfoNeeded = DISCBC_NEEDINTMEAN:
+    !   iwhere = number of the edge where the integral mean value is to be computed
     integer, intent(in) :: iwhere
   
-    ! A reference to a geometric object where information should be computed.
-    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    ! Reference to a geometric object where information is to be computed.
+    ! cinfoNeeded = DISCBC_NEEDFUNC / DISCBC_NEEDDERIV:
     !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDDERIV : 
-    !   dwhere = parameter value of the point where the value should be computed,
-    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    ! cinfoNeeded = DISCBC_NEEDINTMEAN:
     !   dwhere = 0 (not used)
     real(DP), intent(in) :: dwhere
-  
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
-  
 !</input>
-
+  
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+  
 !<output>
-    ! This array receives the calculated information. If the caller
-    ! only needs one value, the computed quantity is put into Dvalues(1). 
-    ! If multiple values are needed, they are collected here (e.g. for 
-    ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+    ! Array for storing the calculated values. If only one value is needed it is stored
+    ! in Dvalues(1). If multiple values are needed, then, e.g., for DISCBC_NEEDDERIV:
+    ! Dvalues(1) = x-derivative, Dvalues(2) = y-derivative, ...
     real(DP), dimension(:), intent(out) :: Dvalues
 !</output>
-  
 !</subroutine>
 
     real(DP), dimension(2,1,1) :: Dpoints
