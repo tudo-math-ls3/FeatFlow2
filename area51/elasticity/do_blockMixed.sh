@@ -18,16 +18,25 @@ solver="UMFPACK"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-levelMaxs="06"
+levelMaxs="04"
 #levelMaxs="02 03 04 05 06 07 08"
-levelMin="06"
+levelMin="04"
 
 #-----------------------------
 
-# set temporary base name of dat-file and result file
-datFile="elasticity_2d_block"
-resultFile="result"
+# set default log directory
+logdir="log"
+# make sure default log directory exists
+test -d "log" || mkdir -p "log"
 
+# To be able to run several instances of the same binary concurrently, one can call
+# this script via 'do.sh <foo>'. Then, dat files and log files are created in the
+# subdirectory './log/<foo>'.
+if test $# -gt 0; then
+  logdir="$logdir/$1"
+  # make sure log subdirectory exists
+  test -d $logdir || mkdir -p $logdir
+fi
 
 # loop over all mu
 for mu in ${mus}; do
@@ -35,11 +44,21 @@ for mu in ${mus}; do
 # loop over all nu
 for nu in ${nus}; do
 
+# set base name of dat-file and result file
+datFile="$logdir/${grid}_mu${mu}_nu${nu}_mixed"
+resultFile="$logdir/${grid}_mu${mu}_nu${nu}_mixed"
+
+# remove existing files
+test -f $datFile.dat && \rm $datFile.dat
+test -f $resultFile.log && \rm $resultFile.log
+# create empty result file
+touch $resultFile.log
+
 # loop over all MG levels
 for levelMax in ${levelMaxs}; do
 
 # create the temporary dat file
-cat > dat/${datFile}.dat <<END_OF_DATA
+cat > ${datFile}.dat <<END_OF_DATA
 #
 #    |<--5-->|<------4------>|<--3-->|
 #    ---------------------------------
@@ -125,28 +144,28 @@ END_OF_DATA
 echo "*** ************************************"
 echo "*** Start computation on level ${levelMax}..."
 echo "*** ************************************"
-
-./elasticity dat/${datFile}.dat | tee ${resultFile}.log
-
+./elasticity ${datFile}.dat | tee ${resultFile}.log
 echo "*** ************************************"
 echo "*** ... computation finished!"
 echo "*** ************************************"
-
-# move/rename dat file and result file
-datFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
-resultFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
-
-\mv dat/${datFile}.dat ${datFile2}.dat
-\mv ${resultFile}.log ${resultFile2}.log
-
-echo "*** Moved dat file to ${datFile2}.dat."
-echo "*** Moved result file to ${resultFile2}.log."
-
+echo "*** stored dat file ${datFile}.dat"
 echo ""
-echo "*** ----------------------------------------------------------"
+echo "--------------------------------------------------------------------------------"
 echo ""
+
+# collect the logs of all MG levels in one file
+echo "#######################################################" >> ${resultFile}.allMG.log
+echo "###            MG level $levelMax                          ###" >> ${resultFile}.allMG.log
+echo "#######################################################" >> ${resultFile}.allMG.log
+cat ${resultFile}.log >> ${resultFile}.allMG.log
+echo "" >> ${resultFile}.allMG.log
 
 done # levelMaxs
+
+# move/rename dat file and result file
+\mv ${resultFile}.allMG.log ${resultFile}.log
+echo "*** stored the results of all levels in ${resultFile}.log"
+
 done # nus
 done # mus
 

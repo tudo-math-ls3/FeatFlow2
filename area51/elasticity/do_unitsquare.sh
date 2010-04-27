@@ -11,23 +11,32 @@ nus="0.3"
 
 # set solver file base name (expected: ./dat/<basename>.dat)
 #solver="UMFPACK"
-solver="BICGSTAB"
-#solver="MG"
+#solver="BICGSTAB"
+solver="MG"
 #solver="BICGSTAB_MG"
 #solver="MG_BICGSTAB"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-levelMaxs="04"
-#levelMaxs="02 03 04 05 06 07 08"
+#levelMaxs="04"
+levelMaxs="02 03 04 05 06 07 08"
 levelMin="01"
 
 #-----------------------------
 
-# set temporary base name of dat-file and result file
-datFile="elasticity_2d_unitsquare"
-resultFile="result"
+# set default log directory
+logdir="log"
+# make sure default log directory exists
+test -d "log" || mkdir -p "log"
 
+# To be able to run several instances of the same binary concurrently, one can call
+# this script via 'do.sh <foo>'. Then, dat files and log files are created in the
+# subdirectory './log/<foo>'.
+if test $# -gt 0; then
+  logdir="$logdir/$1"
+  # make sure log subdirectory exists
+  test -d $logdir || mkdir -p $logdir
+fi
 
 # loop over all mu
 for mu in ${mus}; do
@@ -35,11 +44,21 @@ for mu in ${mus}; do
 # loop over all nu
 for nu in ${nus}; do
 
+# set base name of dat-file and result file
+datFile="$logdir/${grid}_mu${mu}_nu${nu}"
+resultFile="$logdir/${grid}_mu${mu}_nu${nu}"
+
+# remove existing files
+test -f $datFile.dat && \rm $datFile.dat
+test -f $resultFile.log && \rm $resultFile.log
+# create empty result file
+touch $resultFile.log
+
 # loop over all MG levels
 for levelMax in ${levelMaxs}; do
 
 # create the temporary dat file
-cat > dat/${datFile}.dat <<END_OF_DATA
+cat > ${datFile}.dat <<END_OF_DATA
 # PRM-file of the domain
 gridFilePRM = './pre/${grid}.prm'
 
@@ -77,7 +96,7 @@ funcID_u1 = 4
 funcID_u2 = 52
 
 # finite element discretisation ('Q1' or 'Q2')
-element = Q1
+element = Q2
 
 # minimum and maximum grid level
 levelMin = ${levelMin}
@@ -89,14 +108,6 @@ solverFile = ./dat/${solver}.dat
 # show deformation in visual output ('YES' or 'NO')
 showDeformation = YES
 
-## x- and y-coordinate of points where the FE solution is to be evaluated
-evalPoints(1) =
-0.5  0.5
-
-# reference solution values for u1 and u2 in evaluation points
-#refSols(1) =
-#-20.648992  27.642747
-
 END_OF_DATA
 # dat file has been created now
 
@@ -105,28 +116,28 @@ END_OF_DATA
 echo "*** ************************************"
 echo "*** Start computation on level ${levelMax}..."
 echo "*** ************************************"
-
-./elasticity dat/${datFile}.dat | tee ${resultFile}.log
-
+./elasticity ${datFile}.dat | tee ${resultFile}.log
 echo "*** ************************************"
 echo "*** ... computation finished!"
 echo "*** ************************************"
-
-# move/rename dat file and result file
-datFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
-resultFile2="log/${grid}_mu${mu}_nu${nu}_mg${levelMax}"
-
-\mv dat/${datFile}.dat ${datFile2}.dat
-\mv ${resultFile}.log ${resultFile2}.log
-
-echo "*** Moved dat file to ${datFile2}.dat."
-echo "*** Moved result file to ${resultFile2}.log."
-
+echo "*** stored dat file ${datFile}.dat"
 echo ""
-echo "*** ----------------------------------------------------------"
+echo "--------------------------------------------------------------------------------"
 echo ""
+
+# collect the logs of all MG levels in one file
+echo "#######################################################" >> ${resultFile}.allMG.log
+echo "###            MG level $levelMax                          ###" >> ${resultFile}.allMG.log
+echo "#######################################################" >> ${resultFile}.allMG.log
+cat ${resultFile}.log >> ${resultFile}.allMG.log
+echo "" >> ${resultFile}.allMG.log
 
 done # levelMaxs
+
+# move/rename dat file and result file
+\mv ${resultFile}.allMG.log ${resultFile}.log
+echo "*** stored the results of all levels in ${resultFile}.log"
+
 done # nus
 done # mus
 
