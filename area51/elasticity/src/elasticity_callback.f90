@@ -172,21 +172,19 @@ contains
 
     real(DP), dimension(:,:), pointer :: Duxx, Duyy
     
-    allocate(Duxx(npointsPerElement,nelements), Duyy(npointsPerElement,nelements))
-    call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                        Dpoints, rdomainIntSubset, Duxx, rcollection)
-    call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                        Dpoints, rdomainIntSubset, Duyy, rcollection)
-    
     if (rprob%csimulation .eq. SIMUL_REAL) then
       Dcoefficients(1,:,:) = rprob%dforceVolumeX
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       ! compute Laplace operator
+      allocate(Duxx(npointsPerElement,nelements), Duyy(npointsPerElement,nelements))
+      call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Duxx, rcollection)
+      call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                          Dpoints, rdomainIntSubset, Duyy, rcollection)
       Dcoefficients(1,:,:) = -Duxx - Duyy
+      deallocate(Duxx, Duyy)
     endif
-    
-    deallocate(Duxx, Duyy)
-  
+
   end subroutine elast_RHS_Poisson_2D_vol
 
 
@@ -334,7 +332,6 @@ contains
       Dcoefficients(1,ipoint,iel) = rprob%DbcValue(1, iseg, ibct)
     endif
 
-
   end subroutine elast_RHS_Poisson_2D_bound
 
 
@@ -409,53 +406,52 @@ contains
     
     if (rcollection%IquickAccess(1) .eq. 1) then
       ! forces in x-direction
-      allocate(Du1xx(npointsPerElement,nelements), &
-               Du1yy(npointsPerElement,nelements), &
-               Du2xy(npointsPerElement,nelements))
-      
-      call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du1xx, rcollection)
-      
-      call elast_analFunc(2, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du2xy, rcollection)
-      
-      call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du1yy, rcollection)
+
       if (rprob%csimulation .eq. SIMUL_REAL) then
         Dcoefficients(1,:,:) = rprob%dforceVolumeX
+
       else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+        allocate(Du1xx(npointsPerElement,nelements), &
+                 Du1yy(npointsPerElement,nelements), &
+                 Du2xy(npointsPerElement,nelements))
+        call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du1xx, rcollection)
+        
+        call elast_analFunc(2, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du2xy, rcollection)
+        
+        call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du1yy, rcollection)
         Dcoefficients(1,:,:) = - (2 * rprob%dmu + rprob%dlambda) * Du1xx &
                                -  rprob%dmu                      * Du1yy &
                                - (rprob%dmu + rprob%dlambda)     * Du2xy
+        deallocate(Du1xx, Du1yy, Du2xy)
       endif
-
-      deallocate(Du1xx, Du1yy, Du2xy)
   
     else if (rcollection%IquickAccess(1) .eq. 2) then
       ! forces in y-direction
-      allocate(Du2xx(npointsPerElement,nelements), &
-               Du2yy(npointsPerElement,nelements), &
-               Du1yx(npointsPerElement,nelements))
-  
-      call elast_analFunc(2, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du2xx, rcollection)
-      
-      call elast_analFunc(1, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du1yx,rcollection)
-      
-      call elast_analFunc(2, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
-                          Dpoints, rdomainIntSubset, Du2yy, rcollection)
-      
+
       if (rprob%csimulation .eq. SIMUL_REAL) then
         Dcoefficients(1,:,:) = rprob%dforceVolumeY
+
       else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+        allocate(Du2xx(npointsPerElement,nelements), &
+                 Du2yy(npointsPerElement,nelements), &
+                 Du1yx(npointsPerElement,nelements))
+        call elast_analFunc(2, DER_DERIV_XX, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du2xx, rcollection)
+        
+        call elast_analFunc(1, DER_DERIV_XY, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du1yx,rcollection)
+        
+        call elast_analFunc(2, DER_DERIV_YY, rdiscretisation, nelements, npointsPerElement, &
+                            Dpoints, rdomainIntSubset, Du2yy, rcollection)
+        
         Dcoefficients(1,:,:) = - (rprob%dmu + rprob%dlambda)     * Du1yx &
                                -  rprob%dmu                      * Du2xx &
                                - (2 * rprob%dmu + rprob%dlambda) * Du2yy
+        deallocate(Du2xx, Du2yy, Du1yx)
       endif
-  
-      deallocate(Du2xx, Du2yy, Du1yx)
-      
     endif
     
   end subroutine elast_RHS_2D_vol
@@ -605,7 +601,6 @@ contains
       Dcoefficients(1,:,:) = rprob%DbcValue(icomp, iseg, ibct)
     endif
 
-
   end subroutine elast_RHS_2D_surf
 
 
@@ -670,7 +665,6 @@ contains
     real(DP), dimension(:,:), pointer :: Du1x, Du2x, Du1y, Du2y
     allocate(Du1x(npointsPerElement,nelements), Du2x(npointsPerElement,nelements), &
              Du1y(npointsPerElement,nelements), Du2y(npointsPerElement,nelements))
-    
     
     call elast_analFunc(1, DER_DERIV_X,rdiscretisation, nelements, npointsPerElement, &
                         Dpoints, rdomainIntSubset, Du1x, rcollection)
