@@ -308,6 +308,40 @@ contains
         
     ! Now depending on the order, create the matrix.
     select case (iorder)
+    
+    case (0)
+      ! Constant prolongation. Just shift the value from
+      ! the coarse mesh to the fine mesh.
+    
+      rprolMatrix%NA = ndofFine
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KLD', &
+          ndofFine+1, ST_INT, rprolMatrix%h_KLD,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'KCOL', &
+          rprolMatrix%NA, ST_INT, rprolMatrix%h_KCOL,ST_NEWBLOCK_ZERO)
+      call storage_new ('sptipr_getProlMatrixPrimal', 'DA', &
+          rprolMatrix%NA, ST_DOUBLE, rprolMatrix%h_Da,ST_NEWBLOCK_ZERO)
+
+      call lsyssc_getbase_double (rprolMatrix,p_Da)
+      call lsyssc_getbase_Kcol (rprolMatrix,p_Kcol)
+      call lsyssc_getbase_Kld (rprolMatrix,p_Kld)
+      
+      ! Fill KLD.
+      do irow = 1,ndofFine+1
+        p_Kld(irow) = irow
+      end do
+      
+      ! Fill KCOL and DA
+      p_Da(1) = 1.0_DP
+      p_Kcol(1) = 1
+      
+      do icol = 1,ndofCoarse-1
+        p_Kcol(2+2*(icol-1)) = icol
+        p_Da(2+2*(icol-1)) = 1.0_DP
+
+        p_Kcol(3+2*(icol-1)) = icol+1
+        p_Da(3+2*(icol-1)) = 1.0_DP
+      end do
+
     case (1,2)
       ! Simplest case.
       ! For simplicity, we take the lineaer interpolation, which is also
@@ -358,7 +392,7 @@ contains
       p_Kld(ndoffine+1) = rprolMatrix%NA+1
       
       ! Fill KCOL and DA
-      p_Da(1) = 1.0
+      p_Da(1) = 1.0_DP
       p_Kcol(1) = 1
       
       do icol = 1,ndofCoarse-1
@@ -390,7 +424,7 @@ contains
       ! Fill KCOL and DA
       p_Kld(1) = 1
       p_Kcol(1) = 1
-      p_Da(1) = 1.0
+      p_Da(1) = 1.0_DP
       
       p_Kld(2) = 2
       p_Kcol(2) = 1
@@ -565,8 +599,6 @@ contains
         
     ! Now depending on the order, create the matrix.
     select case (iorder)
-    case (1)
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
 
     case (2)
       ! Slightly harder case.
@@ -857,10 +889,6 @@ contains
         
     ! Now depending on the order, create the matrix.
     select case (iorder)
-    case (1)
-      ! In this case, the interpolation matrix for the dual matches
-      ! that of the primal.
-      call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
 
     case (2)
       ! Slightly harder case.
@@ -954,8 +982,8 @@ contains
         p_Da(2+2*(icol-2)+1) = 1.0_DP-dtheta
       end do
 
-    case (3)
-      ! Default case, standard handling.
+    case default
+      ! Default case, standard handling. Take the matrix from the primal.
       call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
 
     end select
@@ -2004,8 +2032,8 @@ contains
     call lsyssc_releaseVector (rtempVecFineScalar)
 
     ! DEBUG!!!
-    call sptivec_saveToFileSequence (rcoarseVector,"(""coarse.txt."",I5.5)",.true.,&
-        rtempVecFine)
+    !call sptivec_saveToFileSequence (rcoarseVector,"(""coarse.txt."",I5.5)",.true.,&
+    !    rtempVecFine)
     !call sys_halt()
         
 ! ********************************************************************************************
