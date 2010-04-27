@@ -548,9 +548,27 @@ contains
         rprob%ccubaturePress1D = CUB_G3_1D
         rprob%ccubaturePress2D = CUB_G3X3
         call output_line('pressure element Q2, cubature G3 / G3X3')
+      else if (trim(sstring) .eq. "P1") then
+        ! QP1-element
+        rprob%celementPress =  EL_QP1
+        rprob%ccubaturePress1D = CUB_G2_1D
+        rprob%ccubaturePress2D = CUB_G2X2
+        call output_line('pressure element P1, cubature G2 / G2X2')
+      else if (trim(sstring) .eq. "P1_NP") then
+        ! QP1-element, nonparametric
+        rprob%celementPress =  EL_QP1NP
+        rprob%ccubaturePress1D = CUB_G2_1D
+        rprob%ccubaturePress2D = CUB_G2X2
+        call output_line('pressure element P1 non parametric, cubature G2 / G2X2')
+      else if (trim(sstring) .eq. "P1_NPD") then
+        ! QP1-element, nonparametric, direct on element
+        rprob%celementPress =  EL_QP1NPD
+        rprob%ccubaturePress1D = CUB_G2_1D
+        rprob%ccubaturePress2D = CUB_G2X2
+        call output_line('pressure element P1 non parametric direct, cubature G2 / G2X2')
       else
         call output_line('invalid pressure element:' // trim(sstring) // &
-                         ', currently only Q1 and Q2 supported!', &
+                         ', currently only Q1, Q2, P1, P1_NP and P1_NPD supported!', &
                          OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
         call sys_halt()
       endif
