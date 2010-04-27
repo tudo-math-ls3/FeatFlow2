@@ -14,14 +14,32 @@ ifneq ($(strip $(INTEL_MKL_LIB)),)
 LIBDIR   := $(LIBDIR) -L$(subst :, -L,$(INTEL_MKL_LIB))
 endif
 
-LIBS     := $(LIBS) -lmkl -lguide -lpthread
+# Settings working with older Intel MKL releases (that did provide a generic libmkl.so)
+# LIBS     := $(LIBS) -lmkl -lguide -lpthread
 
+# Settings working with Intel MKL 10.2 Update X
+# 32 bit
+ifeq ($(call match,$(ID),pc-.*-linux-.*-mkl.*),yes)
+LIBS := $(LIBS) -lmkl_intel -lmkl_sequential -lmkl_core
+endif
+# 64 bit
+ifeq ($(call match,$(ID),pc64-.*-linux-.*-mkl.*),yes)
+LIBS := $(LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+endif
 
 
 ##############################################################################
 # BLAS and LAPACK also needed by the Sparse Banded Blas benchmark
 ##############################################################################
-SBB_LIBS     := $(SBB_LIBS) -lmkl -lguide -lpthread
+# SBB_LIBS     := $(SBB_LIBS) -lmkl -lguide -lpthread
+# 32 bit
+ifeq ($(call match,$(ID),.*-.*-linux32-.*-mkl.*),yes)
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel -lmkl_sequential -lmkl_core
+endif
+# 64 bit
+ifeq ($(call match,$(ID),.*-.*-linux64-.*-mkl.*),yes)
+SBB_LIBS := $(SBB_LIBS) -lmkl_intel_lp64 -lmkl_sequential -lmkl_core
+endif
 
 
 # The settings needed to compile a FEAT2 application are "wildly" distributed
