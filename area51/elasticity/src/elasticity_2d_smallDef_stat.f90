@@ -175,7 +175,8 @@ contains
             Rlevels(ilev)%rdiscretisation%RspatialDiscr(j))
       enddo
 
-      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+          rprob%cformulation .eq. FORMULATION_STOKES) then
         ! In case of the mixed formulation, a separate discretisation is set up for the
         ! 3rd component (=pressure). It is 'derived' from the displacement discretisation.
         call spdiscr_deriveSimpleDiscrSc(Rlevels(ilev)%rdiscretisation%RspatialDiscr(1), &
@@ -220,7 +221,8 @@ contains
                Rlevels(ilev)%rmatrix%RmatrixBlock(1,1), elast_mat_Poisson_2D)
       else if (rprob%cequation .eq. EQ_ELASTICITY) then
         
-        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+            rprob%cformulation .eq. FORMULATION_STOKES) then
           ! store the information that this matrix is of saddle-point type. Some solvers
           ! make use of this special structure.
           Rlevels(ilev)%rmatrix%imatrixSpec = LSYSBS_MSPEC_SADDLEPOINT
@@ -255,10 +257,14 @@ contains
                 ! (2*mu + lambda) * u1_x * v1_x + mu * u1_y * v1_y
                 rform%Dcoefficients(1)  = 2*rprob%dmu + rprob%dlambda
                 rform%Dcoefficients(2)  = rprob%dmu
-              else
+              else if (rprob%cformulation .eq. FORMULATION_MIXED) then
                 ! 2*mu * u1_x * v1_x + mu * u1_y * v1_y
                 rform%Dcoefficients(1)  = 2*rprob%dmu
                 rform%Dcoefficients(2)  = rprob%dmu
+              else ! FORMULATION_STOKES
+                ! 2*mu * (u1_x * v1_x + u1_y * v1_y)
+                rform%Dcoefficients(1)  = 2*rprob%dmu
+                rform%Dcoefficients(2)  = 2*rprob%dmu
               endif
             
             else if (irow .eq. 1 .and. jcol .eq. 2) then
@@ -272,12 +278,18 @@ contains
                 rform%Idescriptors(2,2) = DER_DERIV_X
                 rform%Dcoefficients(1)  = rprob%dmu
                 rform%Dcoefficients(2)  = rprob%dlambda
-              else
+              else if (rprob%cformulation .eq. FORMULATION_MIXED) then
                 ! mu * u2_x * v1_y
                 rform%itermCount = 1
                 rform%Idescriptors(1,1) = DER_DERIV_X
                 rform%Idescriptors(2,1) = DER_DERIV_Y
                 rform%Dcoefficients(1)  = rprob%dmu
+              else ! FORMULATION_STOKES
+!BRAL: geht hier auch rform%itermCount = 0 ?!?
+                rform%itermCount = 1
+                rform%Idescriptors(1,1) = DER_FUNC
+                rform%Idescriptors(2,1) = DER_FUNC
+                rform%Dcoefficients(1)  = 0.0_DP
               endif
 
             else if (irow .eq. 2 .and. jcol .eq. 1) then
@@ -291,12 +303,18 @@ contains
                 rform%Idescriptors(2,2) = DER_DERIV_Y
                 rform%Dcoefficients(1)  = rprob%dmu
                 rform%Dcoefficients(2)  = rprob%dlambda
-              else
+              else if (rprob%cformulation .eq. FORMULATION_MIXED) then
                 ! mu * u1_y * v2_x
                 rform%itermCount = 1
                 rform%Idescriptors(1,1) = DER_DERIV_Y
                 rform%Idescriptors(2,1) = DER_DERIV_X
                 rform%Dcoefficients(1)  = rprob%dmu
+              else ! FORMULATION_STOKES
+!BRAL: geht hier auch rform%itermCount = 0 ?!?
+                rform%itermCount = 1
+                rform%Idescriptors(1,1) = DER_FUNC
+                rform%Idescriptors(2,1) = DER_FUNC
+                rform%Dcoefficients(1)  = 0.0_DP
               endif
 
             else if (irow .eq. 2 .and. jcol .eq. 2) then
@@ -310,14 +328,18 @@ contains
                 ! mu * u2_x * v2_x + (2*mu + lambda) * u2_y * v2_y
                 rform%Dcoefficients(1)  = rprob%dmu
                 rform%Dcoefficients(2)  = 2*rprob%dmu + rprob%dlambda
-              else
+              else if (rprob%cformulation .eq. FORMULATION_MIXED) then
                 ! mu * u2_x * v2_x + 2*mu * u2_y * v2_y
                 rform%Dcoefficients(1)  = rprob%dmu
+                rform%Dcoefficients(2)  = 2*rprob%dmu
+              else ! FORMULATION_STOKES
+                ! 2*mu * (u2_x * v2_x + u2_y * v2_y)
+                rform%Dcoefficients(1)  = 2*rprob%dmu
                 rform%Dcoefficients(2)  = 2*rprob%dmu
               endif
 
             else if (irow .eq. 1 .and. jcol .eq. 3) then
-              ! block (1,3) (only for FORMULATION_MIXED)
+              ! block (1,3) (only for FORMULATION_MIXED or FORMULATION_STOKES)
               ! -p * v1_x
               rform%itermCount = 1
               rform%Idescriptors(1,1) = DER_FUNC
@@ -325,7 +347,7 @@ contains
               rform%Dcoefficients(1)  = -1.0_DP
 
             else if (irow .eq. 2 .and. jcol .eq. 3) then
-              ! block (2,3) (only for FORMULATION_MIXED)
+              ! block (2,3) (only for FORMULATION_MIXED or FORMULATION_STOKES)
               ! -p * v2_y
               rform%itermCount = 1
               rform%Idescriptors(1,1) = DER_FUNC
@@ -333,7 +355,7 @@ contains
               rform%Dcoefficients(1)  = -1.0_DP
 
             else if (irow .eq. 3 .and. jcol .eq. 1) then
-              ! block (3,1) (only for FORMULATION_MIXED)
+              ! block (3,1) (only for FORMULATION_MIXED or FORMULATION_STOKES)
               ! -u1_x * q
               rform%itermCount = 1
               rform%Idescriptors(1,1) = DER_DERIV_X
@@ -341,7 +363,7 @@ contains
               rform%Dcoefficients(1)  = -1.0_DP
 
             else if (irow .eq. 3 .and. jcol .eq. 2) then
-              ! block (3,2) (only for FORMULATION_MIXED)
+              ! block (3,2) (only for FORMULATION_MIXED or FORMULATION_STOKES)
               ! -u2_y * q
               rform%itermCount = 1
               rform%Idescriptors(1,1) = DER_DERIV_Y
@@ -349,13 +371,15 @@ contains
               rform%Dcoefficients(1)  = -1.0_DP
 
             else if (irow .eq. 3 .and. jcol .eq. 3) then
-              ! block (3,3) (only for FORMULATION_MIXED)
+              ! block (3,3) (only for FORMULATION_MIXED or FORMULATION_STOKES)
               ! -1/lambda * q * q in the compressible or nearly incompressible case,
               ! 0 * q * p in the purely incompressible case (since lambda = infinity)
+              ! and in the Stokes case
               rform%itermCount = 1
               rform%Idescriptors(1,1) = DER_FUNC
               rform%Idescriptors(2,1) = DER_FUNC
-              if (rprob%dnu .eq. 0.5) then
+              if (rprob%dnu .eq. 0.5 .or. rprob%cformulation .eq. FORMULATION_STOKES) then
+!BRAL: geht hier auch rform%itermCount = 0 ?!?
                 ! purely incompressible case
                 rform%Dcoefficients(1)  = 0.0_DP
               else
@@ -597,7 +621,8 @@ contains
     ! add the displacement solution to the file
     if (rprob%cequation .eq. EQ_ELASTICITY) then
       call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata, p_Ddata2)
-      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+          rprob%cformulation .eq. FORMULATION_STOKES) then
         call lsyssc_getbase_double(rsol%RvectorBlock(3), p_Ddata)
         call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
       endif

@@ -81,7 +81,7 @@ gridFileTRI = './pre/${grid}.tri'
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
-# FE formulation ('displ' (= pure displacement) or 'mixed' (=mixed u/p formulation))
+# FE formulation ('displ' (= pure displacement), 'mixed' (=mixed u/p), 'Stokes')
 formulation = mixed
 
 # material parameters (Poisson ratio nu and shear modulus mu)
@@ -109,13 +109,13 @@ forceVolumeY   = 0.0
 # ID of analytical function for u1 and u2 in case of analytical simulation
 funcID_u1 = 0
 funcID_u2 = 0
-funcID_p = 0
+funcID_p  = 0
 
 # finite element discretisation ('Q1' or 'Q2')
 element = Q1
 
 # FE discretisation of the pressure space ('Q1' or 'Q2')
-# (only necessary in case of the mixed formulation) 
+# (only necessary in case of the mixed formulation or Stokes) 
 elementPress = Q1
 
 # minimum and maximum grid level

@@ -79,6 +79,20 @@ echo "H1 error reduction:"
 calc_err_red "H1 error for  u:" $*
 echo "--------------------------------"
 
+pressurePresent=$(grep "pressure element" $*)
+if test "$pressurePresent" != ""; then
+  echo "pressure L2 error:"
+  grep "L2 error for  p:" $* | awk '{print $(NF)}'
+  echo "pressure L2 error reduction:"
+  calc_err_red "L2 error for  p:" $*
+  echo "--------------------------------"
+  echo "pressure H1 error:"
+  grep "H1 error for  p:" $* | awk '{print $(NF)}'
+  echo "pressure H1 error reduction:"
+  calc_err_red "H1 error for  p:" $*
+  echo "--------------------------------"
+fi
+
 echo "#DOF:"
 grep "Number of DOF:" $* | awk '{print $(NF)}'
 echo "--------------------------------"

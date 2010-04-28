@@ -81,7 +81,7 @@ gridFileTRI = './pre/${grid}.tri'
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
-# FE formulation ('displ' (= pure displacement) or 'mixed' (=mixed u/p formulation))
+# FE formulation ('displ' (= pure displacement), 'mixed' (=mixed u/p), 'Stokes')
 formulation = displ
 
 # material parameters (Poisson ratio nu and shear modulus mu)

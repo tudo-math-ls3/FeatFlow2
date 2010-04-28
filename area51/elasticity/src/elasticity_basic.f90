@@ -27,6 +27,7 @@ module elasticity_basic
 
   integer, parameter :: FORMULATION_DISPL   = 1
   integer, parameter :: FORMULATION_MIXED   = 2
+  integer, parameter :: FORMULATION_STOKES  = 3
 
   integer, parameter :: SIMUL_REAL          = 1
   integer, parameter :: SIMUL_ANALYTICAL    = 2
@@ -67,7 +68,8 @@ module elasticity_basic
     ! kind of equation (possible values: EQ_POISSON, EQ_ELASTICITY)
     integer :: cequation = EQ_ELASTICITY
 
-    ! finite element formulation (possible values: FORMULATION_DISPL, FORMULATION_MIXED)
+    ! finite element formulation
+    ! (possible values: FORMULATION_DISPL, FORMULATION_MIXED, FORMULATION_STOKES)
     integer :: cformulation = FORMULATION_DISPL
 
     ! number of blocks (1 for Poisson equation, 2 for 2D elasticity equation in pure
@@ -101,8 +103,8 @@ module elasticity_basic
     ! finite element (possible values: EL_Q1, EL_Q2)
     integer :: celement = EL_Q1
 
-    ! finite element for the pressure space (possible values: EL_Q1, EL_Q2)
-    ! (only necessary in case of the mixed formulation)
+    ! finite element for the pressure space (possible values: EL_Q1, EL_Q2,
+    ! EL_QP1, EL_QP1NP, EL_QP1NPD) (only necessary in case of the mixed formulation)
     integer :: celementPress = EL_Q1
 
     ! 1D and 2D cubature formulas (they are automatically chosen according to the
@@ -240,6 +242,9 @@ contains
     !   - element
     !       'Q1' or 'Q2'
     !
+    !   - elementPress
+    !       'Q1', 'Q2', 'P1', 'P1_NP' or 'P1_NPD'
+    !
     !   - levelMin
     !   - levelMax
     !
@@ -346,7 +351,7 @@ contains
       rprob%nblocks = 2
     else
       call output_line('invalid equation:' // trim(sstring), OU_CLASS_ERROR, &
-                       OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                       OU_MODE_STD, 'elast_readParameterFile')
       call sys_halt()
     end if
     call output_line('equation: '//trim(sstring))
@@ -360,11 +365,15 @@ contains
       else if(trim(sstring) .eq. 'mixed') then
         rprob%cformulation = FORMULATION_MIXED
         rprob%nblocks = 3
+      else if(trim(sstring) .eq. 'Stokes') then
+        rprob%cformulation = FORMULATION_STOKES
+        rprob%nblocks = 3
       else
         call output_line('invalid FE formulation:' // trim(sstring), OU_CLASS_ERROR, &
-                         OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                         OU_MODE_STD, 'elast_readParameterFile')
         call sys_halt()
       end if
+      call output_line('FE formulation: '//trim(sstring))
     endif
 
     ! material parameters (Poisson ratio nu and shear modulus mu)
@@ -372,13 +381,13 @@ contains
       call parlst_getvalue_double(rparams, '', 'nu', rprob%dnu)
       if (rprob%dnu .le. 0.0_DP .or. rprob%dnu .gt. 0.5) then
         call output_line('invalid value for nu:' // trim(sys_sdL(rprob%dnu,8)), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
         call sys_halt()
       endif
       call parlst_getvalue_double(rparams, '', 'mu', rprob%dmu)
       if (rprob%dmu .le. 0.0_DP) then
         call output_line('invalid value for mu:' // trim(sys_sdL(rprob%dmu,8)), &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
         call sys_halt()
       endif
       call output_line('nu: ' // trim(sys_sdL(rprob%dnu,6)))
@@ -387,12 +396,17 @@ contains
       if (rprob%dnu .eq. 0.5) then
         if (rprob%cformulation .eq. FORMULATION_DISPL) then
           call output_line('nu = 0.5 not feasible in pure displacement formulation', &
-                           OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                           OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
           call sys_halt()
         endif
         rprob%dlambda = SYS_INFINITY
         call output_line('lambda: infinity')
-      else
+      else ! dnu .lt. 0.5
+        if (rprob%cformulation .eq. FORMULATION_STOKES) then
+          call output_line('nu .ne. 0.5 not feasible in Stokes formulation', &
+                           OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
+          call sys_halt()
+        endif
         rprob%dlambda = 2.0_DP*rprob%dmu * rprob%dnu/(1.0_DP - 2.0_DP*rprob%dnu)
         call output_line('lambda: ' // trim(sys_sdEL(rprob%dlambda,6)))
       endif
@@ -406,7 +420,7 @@ contains
       rprob%csimulation = SIMUL_REAL
     else
       call output_line('invalid simulation:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
       call sys_halt()
     end if
     call output_line('simulation: '//trim(sstring))
@@ -462,7 +476,7 @@ contains
             call output_line('invalid boundary condition:' // trim(sstring) // &
                              ', currently only D (Dirichlet) and N (Neumann) supported!',&
                              OU_CLASS_ERROR, OU_MODE_STD, &
-                             'elast_2d_disp_smallDeform_static')
+                             'elast_readParameterFile')
             call sys_halt()
           endif
           sstring = "  segment " // trim(sys_siL(j,1)) // ", comp " // &
@@ -484,7 +498,7 @@ contains
                                  trim(sys_sdEL(Dval(k),2)) // &
                                  ', currently only zero Dirichlet values supported!',&
                                  OU_CLASS_ERROR, OU_MODE_STD, &
-                                 'elast_2d_disp_smallDeform_static')
+                                 'elast_readParameterFile')
               endif
             else
               if (k .le. rprob%ndim) then
@@ -512,7 +526,8 @@ contains
       call parlst_getvalue_int(rparams, '', 'funcID_u2', rprob%CfuncID(2))
       call output_line('function ID for u1: ' // trim(sys_siL(rprob%CfuncID(1),3)))
       call output_line('function ID for u2: ' // trim(sys_siL(rprob%CfuncID(2),3)))
-      if (rprob%cformulation .eq. FORMULATION_MIXED) then
+      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+          rprob%cformulation .eq. FORMULATION_STOKES) then
         call parlst_getvalue_int(rparams, '', 'funcID_p', rprob%CfuncID(3))
         call output_line('function ID for p: ' // trim(sys_siL(rprob%CfuncID(3),3)))
       endif
@@ -533,10 +548,11 @@ contains
     else
       call output_line('invalid element:' // trim(sstring) // &
                        ', currently only Q1 and Q2 supported!', &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
       call sys_halt()
     endif
-    if (rprob%cformulation .eq. FORMULATION_MIXED) then
+    if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+        rprob%cformulation .eq. FORMULATION_STOKES) then
       call parlst_getvalue_string(rparams, '', 'elementPress', sstring)
       if (trim(sstring) .eq. "Q1") then
         rprob%celementPress = EL_Q1
@@ -569,7 +585,7 @@ contains
       else
         call output_line('invalid pressure element:' // trim(sstring) // &
                          ', currently only Q1, Q2, P1, P1_NP and P1_NPD supported!', &
-                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                         OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
         call sys_halt()
       endif
     endif
@@ -601,7 +617,7 @@ contains
       rprob%cshowDeformation = NO
     else
       call output_line('invalid value for showDeformation:' // trim(sstring), &
-                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_2d_disp_smallDeform_static')
+                       OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
       call sys_halt()
     end if
     call output_line('show deformation: '//trim(sstring))
@@ -689,8 +705,8 @@ contains
 
     ! error between FE function and reference function
     type(t_errorScVec) :: rerror
-    real(DP), dimension(2), target :: DerrorL2
-    real(DP), dimension(2), target :: DerrorH1
+    real(DP), dimension(:), pointer :: DerrorL2
+    real(DP), dimension(:), pointer :: DerrorH1
 
     ! which function value types to calculate in evaluation points (required by the
     ! subroutine fevl_evaluate2(...))
@@ -716,7 +732,8 @@ contains
                          ', ' // trim(sys_sdL(rprob%DevalPoints(2,i),4)) // ')')
         call output_line('     u1h: ' // trim(sys_sdEL(rprob%Dvalues(1,1,i),10)))
         call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
-        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+            rprob%cformulation .eq. FORMULATION_STOKES) then
           call output_line('      ph: ' // trim(sys_sdEL(rprob%Dvalues(3,1,i),10)))
         endif
         deps11 = rprob%Dvalues(1,2,i)
@@ -753,7 +770,8 @@ contains
         call output_line('     u1*: ' // trim(sys_sdEL(rprob%DrefSols(1,i),10)))
         call output_line('     u2h: ' // trim(sys_sdEL(rprob%Dvalues(2,1,i),10)))
         call output_line('     u2*: ' // trim(sys_sdEL(rprob%DrefSols(2,i),10)))
-        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+            rprob%cformulation .eq. FORMULATION_STOKES) then
           call output_line('      ph: ' // trim(sys_sdEL(rprob%Dvalues(3,1,i),10)))
           call output_line('      p*: ' // trim(sys_sdEL(rprob%DrefSols(3,i),10)))
         endif
@@ -781,7 +799,8 @@ contains
         call output_line(' error u: ' // trim(sys_sdEL(daux2, 10)))
         call output_lbrk()
 
-        if (rprob%cformulation .eq. FORMULATION_MIXED) then
+        if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+            rprob%cformulation .eq. FORMULATION_STOKES) then
           daux1 = rprob%DrefSols(3,i)
           daux2 = rprob%DrefSols(3,i) - rprob%Dvalues(3,1,i)
           if (daux1 .ne. 0.0_DP) then
@@ -794,10 +813,11 @@ contains
 
     ! calculate the error between FE and reference solution
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
+      allocate(DerrorL2(rprob%nblocks), DerrorH1(rprob%nblocks))
       ! set pointers
-      rerror%p_RvecCoeff => rsol%RvectorBlock(1:2)
-      rerror%p_DerrorL2 => DerrorL2(1:2)
-      rerror%p_DerrorH1 => DerrorH1(1:2)
+      rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%nblocks)
+      rerror%p_DerrorL2 => DerrorL2(1:rprob%nblocks)
+      rerror%p_DerrorH1 => DerrorH1(1:rprob%nblocks)
 
       ! call the corresponding error routine
       call pperr_scalarVec(rerror, elast_analFunc)
@@ -807,10 +827,19 @@ contains
       call output_line('L2 error for u2: ' // sys_sdEL(DerrorL2(2),10) )
       call output_line('L2 error for  u: ' // &
                        sys_sdEL(sqrt(DerrorL2(1)**2 + DerrorL2(2)**2),10) )
+      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+          rprob%cformulation .eq. FORMULATION_STOKES) then
+        call output_line('L2 error for  p: ' // sys_sdEL(DerrorL2(3),10) )
+      endif
       call output_line('H1 error for u1: ' // sys_sdEL(DerrorH1(1),10) )
       call output_line('H1 error for u2: ' // sys_sdEL(DerrorH1(2),10) )
       call output_line('H1 error for  u: ' // &
                        sys_sdEL(sqrt(DerrorH1(1)**2 + DerrorH1(2)**2),10) )
+      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
+          rprob%cformulation .eq. FORMULATION_STOKES) then
+        call output_line('H1 error for  p: ' // sys_sdEL(DerrorH1(3),10) )
+      endif
+      deallocate(DerrorL2, DerrorH1)
     end if
 
   end subroutine elast_calcErrors
@@ -820,15 +849,13 @@ contains
 
 
 !<subroutine>
-  subroutine elast_analFunc(icomp, cderivative, rdiscretisation, nelements, &
-                            npointsPerElement, Dpoints, rdomainIntSubset, &
-                            Dvalues, rcollection)
+  subroutine elast_analFunc(icomp, cderivative, rdiscretisation, nel, nptsPerEl, &
+                            Dpoints, rdomainIntSubset, Dvalues, rcollection)
   
     use fsystem
-!    use basicgeometry
     use spatialdiscretisation
+    use derivatives
     use collection
-!    use scalarpde
     use domainintegration
     
 !<description>
@@ -841,54 +868,82 @@ contains
     ! component for which the analytical function is to tbe computed
     integer, intent(in) :: icomp
   
-    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-    ! The result must be written to the Dvalue-array below.
+    ! DER_xxxx derivative identifier that specifies what to compute: DER_FUNC=function
+    ! value, DER_DERIV_X=x-derivative,...
     integer, intent(in) :: cderivative
   
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
+    ! discretisation structure
     type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
+    ! number of elements, where the values are to be computed
+    integer, intent(in) :: nel
     
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
+    ! number of points per element, where the values are to be computed
+    integer, intent(in) :: nptsPerEl
     
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! array of all points on all the elements where the values are to be computed
     real(DP), dimension(:,:,:), intent(in) :: Dpoints
   
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    ! structure providing more detailed information about the current element set
     type(t_domainIntSubset), intent(in) :: rdomainIntSubset
-  
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(inout), optional :: rcollection
 !</input>
+  
+!<inputoutput>
+    ! optional collection structure for additional information provided by the user
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
 
 !<output>
-    ! This array has to receive the values of the (analytical) function
-    ! in all the points specified in Dpoints, or the appropriate derivative
-    ! of the function, respectively, according to cderivative.
-    !   DIMENSION(npointsPerElement,nelements)
+    ! array for storing the values of the (analytical) function (or derivative) in all
+    ! points specified in Dpoints, DIMENSION(nptsPerEl, nel)
     real(DP), dimension(:,:), intent(out) :: Dvalues
 !</output>
 
 !</subroutine>
 
-    ! this strange '1:nelements' is necessary here, since in some situations the
-    ! dimensions of Davlues do *not* coincide with the npointsPerElement x nelements!
+    if (icomp .lt. 3) then
+      ! compute solution for x- or y-displacement (u1 or u2)
+
+      ! this strange '1:nel' is necessary here, since in some situations the
+      ! dimensions of Davlues do *not* coincide with nptsPerEl x nel!
 !BRAL: ueberpruefen, ob das nicht zu teuer ist (interne Kopie?)
 !BRAL: elast_danalyticFunction() vielleicht besser als subroutine aufziehen...
-    Dvalues(:,1:nelements) = &
-      elast_danalyticFunction(Dpoints(:,:,1:nelements), nelements, npointsPerElement, &
-                              cderivative, rprob%CfuncID(icomp))
+      Dvalues(:,1:nel) = elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                                 cderivative, rprob%CfuncID(icomp))
+    else
+      ! compute pressure solution
+
+      if (rprob%dnu .eq. 0.5) then
+        ! incompressible case
+        Dvalues(:,1:nel) = elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                                   cderivative, rprob%CfuncID(icomp))
+      else
+        ! in the compressible case the pressure is related to the displacements
+        ! via p = - dlambda * div(u)
+        if (cderivative .eq. DER_FUNC) then
+          ! p = -dlambda * (u1_x + u2_y)
+          Dvalues(:,1:nel) = -rprob%dlambda * &
+            (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_X, rprob%CfuncID(1)) &
+           + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_Y, rprob%CfuncID(2)))  
+        else if (cderivative .eq. DER_DERIV_X) then
+          ! p_x = -dlambda * (u1_xx + u2_xy)
+          Dvalues(:,1:nel) = -rprob%dlambda * &
+            (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_XX, rprob%CfuncID(1)) &
+           + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_XY, rprob%CfuncID(2)))  
+        else if (cderivative .eq. DER_DERIV_Y) then
+          ! p_x = -dlambda * (u1_xy + u2_yy)
+          Dvalues(:,1:nel) = -rprob%dlambda * &
+            (elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_XY, rprob%CfuncID(1)) &
+           + elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
+                                     DER_DERIV_YY, rprob%CfuncID(2)))  
+        endif
+      endif
+    endif
 
   end subroutine elast_analFunc
 
@@ -897,8 +952,8 @@ contains
 
 
 !<function>
-  function elast_danalyticFunction(Dpts, nelements, npointsPerElement, cderiv, cselect, &
-                                   dparam) result(Dval)
+  function elast_danalyticFunction(Dpts, nel, nptsPerEl, cderiv, cselect, dparam) &
+                                   result(Dval)
 
     use fsystem
     use derivatives
@@ -915,10 +970,10 @@ contains
     real(DP), dimension(:,:,:), intent(in) :: Dpts
 
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(in) :: nelements
+    integer, intent(in) :: nel
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(in) :: npointsPerElement
+    integer, intent(in) :: nptsPerEl
   
     ! derivative of the function to be calculated
     integer(I32), intent(in) :: cderiv
@@ -1025,7 +1080,7 @@ contains
 
 !<result>
     ! (The result of the function calculation)
-    real(DP), dimension(npointsPerElement, nelements) :: Dval
+    real(DP), dimension(nptsPerEl, nel) :: Dval
 
 !</result>
 
@@ -1194,15 +1249,15 @@ contains
 !                               + 1.0_DP*Dpts(1,:,:)
 !      end select
 !
-!    case (12) ! u(x,y) = sin(x) * sin(y)
-!      select case (cderiv)
-!      case (DER_FUNC);     Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_X);  Dval(:,:) =  cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_Y);  Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_XX); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_XY); Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_YY); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      end select
+    case (12) ! u(x,y) = sin(x) * sin(y)
+      select case (cderiv)
+      case (DER_FUNC);     Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_X);  Dval(:,:) =  cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) =  sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_XY); Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_YY); Dval(:,:) = -sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      end select
 !
 !    case (13) ! u(x,y) = 0.05 * sin(4*PI*x)*sin(4*PI*y)
 !      select case (cderiv)
@@ -1219,15 +1274,15 @@ contains
 !                              * sin(4.0_DP*SYS_PI*Dpts(1,:,:)) * sin(4.0_DP*SYS_PI*Dpts(2,:,:))
 !      end select
 !
-!    case (14) ! u(x,y) = cos(x) * cos(y)
-!      select case (cderiv)
-!      case (DER_FUNC);     Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_X);  Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_Y);  Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_XX); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_XY); Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_YY); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      end select
+    case (14) ! u(x,y) = cos(x) * cos(y)
+      select case (cderiv)
+      case (DER_FUNC);     Dval(:,:) =  cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_X);  Dval(:,:) = -sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) = -cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_XY); Dval(:,:) =  sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_YY); Dval(:,:) = -cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      end select
 !
 !    case (15) ! u(x,y) = cos(PI/2 * (x + y))
 !      select case (cderiv)
@@ -1370,17 +1425,16 @@ contains
 !      case (DER_DERIV_YY); Dval(:,:) =  0.0_DP
 !      end select
 !
-!    case (28) ! u(x,y) = 2 cos(x) sin(y) - 2 sin(1) + 2 sin(1) cos(1)
-!      select case (cderiv)
-!      case (DER_FUNC);     Dval(:,:) =   2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:)) &
-!                                - 2.0_DP*sin(1.0_DP) &
-!                                + 2.0_DP*sin(1.0_DP) * cos(1.0_DP)
-!      case (DER_DERIV_X);  Dval(:,:) = -2.0_DP*sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_Y);  Dval(:,:) =  2.0_DP*cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_XX); Dval(:,:) = -2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP*sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
-!      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
-!      end select
+    case (28) ! u(x,y) = 2 cos(x) sin(y) - 2 sin(1) + 2 sin(1) cos(1)
+      select case (cderiv)
+      case (DER_FUNC);     Dval(:,:) =   2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:)) &
+                                - 2.0_DP*sin(1.0_DP) + 2.0_DP*sin(1.0_DP) * cos(1.0_DP)
+      case (DER_DERIV_X);  Dval(:,:) = -2.0_DP*sin(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_Y);  Dval(:,:) =  2.0_DP*cos(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_XX); Dval(:,:) = -2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      case (DER_DERIV_XY); Dval(:,:) = -2.0_DP*sin(Dpts(1,:,:)) * cos(Dpts(2,:,:))
+      case (DER_DERIV_YY); Dval(:,:) = -2.0_DP*cos(Dpts(1,:,:)) * sin(Dpts(2,:,:))
+      end select
 !
 !    case (29) ! u(x,y) = xy - 1/4
 !      select case (cderiv)

@@ -10,16 +10,16 @@ mus="0.5"
 nus="0.3"
 
 # set solver file base name (expected: ./dat/<basename>.dat)
-#solver="UMFPACK"
+solver="UMFPACK"
 #solver="BICGSTAB"
-solver="MG"
+#solver="MG"
 #solver="BICGSTAB_MG"
 #solver="MG_BICGSTAB"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
 #levelMaxs="04"
-levelMaxs="02 03 04 05 06 07 08"
+levelMaxs="02 03 04 05 06"
 levelMin="01"
 
 #-----------------------------
@@ -68,7 +68,7 @@ gridFileTRI = './pre/${grid}.tri'
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
-# FE formulation ('displ' (= pure displacement) or 'mixed' (=mixed u/p formulation))
+# FE formulation ('displ' (= pure displacement), 'mixed' (=mixed u/p), 'Stokes')
 formulation = displ
 
 # material parameters (Poisson ratio nu and shear modulus mu)
@@ -83,9 +83,9 @@ simulation = analytic
 # type of BC for the two components (values can be omitted when simulation = analytical) 
 bc1(4) =
 'D' 'D'
+'N' 'N'
 'D' 'D'
-'N' 'N'
-'N' 'N'
+'D' 'D'
 
 # given constant volume force in x- and y-direction in case of real simulation
 forceVolumeX   = 0.0
@@ -96,7 +96,7 @@ funcID_u1 = 4
 funcID_u2 = 52
 
 # finite element discretisation ('Q1' or 'Q2')
-element = Q2
+element = Q1
 
 # minimum and maximum grid level
 levelMin = ${levelMin}
@@ -107,6 +107,10 @@ solverFile = ./dat/${solver}.dat
 
 # show deformation in visual output ('YES' or 'NO')
 showDeformation = YES
+
+# x- and y-coordinate of points where the FE solution is to be evaluated
+evalPoints(1) =
+0.75   0.75
 
 END_OF_DATA
 # dat file has been created now

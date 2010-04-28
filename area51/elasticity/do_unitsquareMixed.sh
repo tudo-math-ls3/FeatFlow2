@@ -1,26 +1,26 @@
 #!/bin/bash
 
 # set grid base name (expected: ./pre/<basename>.tri, ./pre/<basename>.prm)
-grid="cook"
+grid="unitsquare"
 
 # choose shear modulus
-mus="80.194"
+mus="0.5"
 
 # choose Poisson ratio
 nus="0.3"
 
 # set solver file base name (expected: ./dat/<basename>.dat)
-#solver="UMFPACK"
-solver="BICGSTAB"
+solver="UMFPACK"
+#solver="BICGSTAB"
 #solver="MG"
 #solver="BICGSTAB_MG"
 #solver="MG_BICGSTAB"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-levelMaxs="04"
-#levelMaxs="02 03 04 05 06 07 08"
-levelMin="04"
+#levelMaxs="04"
+levelMaxs="02 03 04 05 06"
+levelMin="01"
 
 #-----------------------------
 
@@ -45,8 +45,8 @@ for mu in ${mus}; do
 for nu in ${nus}; do
 
 # set base name of dat-file and result file
-datFile="$logdir/${grid}_mu${mu}_nu${nu}"
-resultFile="$logdir/${grid}_mu${mu}_nu${nu}"
+datFile="$logdir/${grid}_mu${mu}_nu${nu}_mixed"
+resultFile="$logdir/${grid}_mu${mu}_nu${nu}_mixed"
 
 # remove existing files
 test -f $datFile.dat && \rm $datFile.dat
@@ -59,53 +59,52 @@ for levelMax in ${levelMaxs}; do
 
 # create the temporary dat file
 cat > ${datFile}.dat <<END_OF_DATA
-#         3    
-#       _____ ---|
-#   |---         | 2
-#   |           _|
-#   |         _/
-# 4 |      _/
-#   |  _ /   1
-#   |/
-#
 # PRM-file of the domain
 gridFilePRM = './pre/${grid}.prm'
 
 # TRI-file of the mesh
 gridFileTRI = './pre/${grid}.tri'
 
-# type of equation to solve ('Poisson' or 'elasticity')
+# type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
 # FE formulation ('displ' (= pure displacement), 'mixed' (=mixed u/p), 'Stokes')
-formulation = displ
+formulation = mixed
 
 # material parameters (Poisson ratio nu and shear modulus mu)
 nu = ${nu}
 mu = ${mu}
 
 # type of simulation ('real' or 'analytic')
-simulation = real
+simulation = analytic
 
 # boundary conditions
-# bc[i](#segments)
-# type of BC for the two components, then values (displacement ('D') or force ('N')) 
+# bc[i](#segments x #blocks)
+# type of BC for the three components (values can be omitted when simulation = analytical) 
 bc1(4) =
-'N' 'N' 0.0 0.0
-'N' 'N' 0.0 15.625
-'N' 'N' 0.0 0.0
-'D' 'D' 0.0 0.0
+'D' 'D' 'N'
+'N' 'N' 'N'
+'D' 'D' 'N'
+'D' 'D' 'N'
 
 # given constant volume force in x- and y-direction in case of real simulation
 forceVolumeX   = 0.0
 forceVolumeY   = 0.0
 
 # ID of analytical function for u1 and u2 in case of analytical simulation
-funcID_u1 = 0
-funcID_u2 = 0
+#funcID_u1 = 12
+#funcID_u2 = 14
+#funcID_p  = 28
+funcID_u1 = 4
+funcID_u2 = 52
+funcID_p  = 0
 
 # finite element discretisation ('Q1' or 'Q2')
 element = Q1
+
+# FE discretisation of the pressure space ('Q1' or 'Q2')
+# (only necessary in case of the mixed formulation or Stokes) 
+elementPress = Q1
 
 # minimum and maximum grid level
 levelMin = ${levelMin}
@@ -119,11 +118,7 @@ showDeformation = YES
 
 # x- and y-coordinate of points where the FE solution is to be evaluated
 evalPoints(1) =
-48.0  60.0
-
-# reference solution values for u1 and u2 in evaluation points
-refSols(1) =
--20.648992  27.642747
+0.75   0.75
 
 END_OF_DATA
 # dat file has been created now
