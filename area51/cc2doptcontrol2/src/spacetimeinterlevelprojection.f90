@@ -180,11 +180,17 @@ contains
       !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
           
       ! The restriction matrices are given as their transpose...
+      !
+      ! WARNING!!!
+      ! The primal restriction matrix is the transpose of the dual prolongation matrix!
+      ! The dual restriction matrix is the transpose of the primal prolongation matrix!
+      ! This is because the primal RHS is located at the timesteps of the dual
+      ! solution (between the primal timesteps) and vice versa!!!
       call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
-          rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+          rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
           
       call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
-          rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+          rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
           
       ! The restriction matrices have to be divided by 2 as they are
       ! finite difference restrictions, not finite element restrictions!
