@@ -4490,7 +4490,7 @@ contains
     type(t_triangulation), pointer :: p_rtriangulation
 
  	! Local variables
- 	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, lexipunkt, i
+ 	integer :: Vert, Elm, currentelm, nVertex, Neighbour, i_NVBD, i
     real(DP) :: dxi1,dxi2,dxi3
     real(DP) :: dx,dy
     ! Coordinates of the cornervertices
@@ -4574,8 +4574,8 @@ contains
 	  rParticles%p_element(iPart) = currentelm
 
 	  ! Check if the is/was a particle-wall-collision
-	  !call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
-	  call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
+	  call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
+	  !call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
   end subroutine eulerlagrange_wrongelement
@@ -5869,7 +5869,7 @@ contains
 			    exit Boundary_Search
 			
 	        elseif (iintersect == 0) then
-            
+            pause
             end if
        
        end if
@@ -6122,53 +6122,55 @@ contains
         ! Set the new particle position on the boundary
         rParticles%p_xpos(iPart) = rParticles%p_xpos(iPart)   !dx
         rParticles%p_ypos(iPart) = rParticles%p_ypos(iPart)   !dy
-!
-!        ! Movementvector to the boundary
-!        velo_rest(1)= rParticles%p_xpos_old(iPart) - dx
-!        velo_rest(2)= rParticles%p_ypos_old(iPart) - dy
-!        ! Norming the vector
-!		velo_rest(1)= velo_rest(1)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
-!		velo_rest(2)= velo_rest(2)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
-!
-!		! Tangent in x-direction
-!		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
-!		! Tangent in y-direction
-!		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
-!        ! Norming of the tangent
-!		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
-!		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
-!        ! Normal in x-direction
-!        norm(1)= tang(2)
-!        ! Normal in y-direction
-!        norm(2)= -tang(1)
-!
-!        ! Projection to the boundary
-!        proj_tang = velo_rest(1)*tang(1)+velo_rest(2)*tang(2)
-!        proj_norm = velo_rest(1)*norm(1)+velo_rest(2)*norm(2)
-!
-!	    ! Calculate the rest-vector of the movement
-!	    bdy_move(1)= rParticles%tang_val*proj_tang*tang(1)+&
-!					 rParticles%norm_val*proj_norm*norm(1)
-!	    bdy_move(2)= rParticles%tang_val*proj_tang*tang(2)+&
-!					 rParticles%norm_val*proj_norm*norm(2)
-!
-!		! Compute the new coordinates after the collision
-		rParticles%p_xvelo(iPart) = 0 !bdy_move(1)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
-		rParticles%p_yvelo(iPart) = 0 !bdy_move(2)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
-!
-!        ! Set new "old position" and "old velocity" of the particle
-!        rParticles%p_xpos_old(iPart)= dx
-!        rParticles%p_ypos_old(iPart)= dy
-!
-!        ! Set new position of the particle
-!        rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt*(1-da) * rParticles%p_xvelo(iPart)
-!        rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
+
+        ! Movementvector to the boundary
+        velo_rest(1)= rParticles%p_xpos_old(iPart) - dx
+        velo_rest(2)= rParticles%p_ypos_old(iPart) - dy
+        ! Norming the vector
+        IF (sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp) .ne. 0) THEN
+		    velo_rest(1)= velo_rest(1)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
+		    velo_rest(2)= velo_rest(2)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
+        END IF
+
+		! Tangent in x-direction
+		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+		! Tangent in y-direction
+		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+        ! Norming of the tangent
+		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
+		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
+        ! Normal in x-direction
+        norm(1)= tang(2)
+        ! Normal in y-direction
+        norm(2)= -tang(1)
+
+        ! Projection to the boundary
+        proj_tang = velo_rest(1)*tang(1)+velo_rest(2)*tang(2)
+        proj_norm = velo_rest(1)*norm(1)+velo_rest(2)*norm(2)
+
+	    ! Calculate the rest-vector of the movement
+	    bdy_move(1)= rParticles%tang_val*proj_tang*tang(1)+&
+					 rParticles%norm_val*proj_norm*norm(1)
+	    bdy_move(2)= rParticles%tang_val*proj_tang*tang(2)+&
+					 rParticles%norm_val*proj_norm*norm(2)
+
+		! Compute the new coordinates after the collision
+		rParticles%p_xvelo(iPart) = bdy_move(1)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+		rParticles%p_yvelo(iPart) = bdy_move(2)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+
+        ! Set new "old position" and "old velocity" of the particle
+        rParticles%p_xpos_old(iPart)= dx
+        rParticles%p_ypos_old(iPart)= dy
+
+        ! Set new position of the particle
+        rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt*(1-da) * rParticles%p_xvelo(iPart)
+        rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
 
     else
         write(*,*) 'Particle-wall-collision failed!'
         ! Set new "old position" and "old velocity" of the particle
-        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart)  !dx
-        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart)  !dy
+        rParticles%p_xpos(iPart)= dx
+        rParticles%p_ypos(iPart)= dy
         rParticles%p_xvelo(iPart)= 0.0_dp
         rParticles%p_yvelo(iPart)= 0.0_dp
     end if
