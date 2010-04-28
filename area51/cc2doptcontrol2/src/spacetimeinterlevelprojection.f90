@@ -1133,8 +1133,8 @@ contains
     ! in time as lambda, not as y!
     !
     ! Get the matrix.
-    p_rprolMatrixPrim => rprojHier%p_RprolongationMatPrimal(itimelevelcoarse)
-    p_rprolMatrixDual => rprojHier%p_RprolongationMatDual(itimelevelcoarse)
+    p_rprolMatrixPrim => rprojHier%p_RprolongationMatPrimal(ilevelfine-1)
+    p_rprolMatrixDual => rprojHier%p_RprolongationMatDual(ilevelfine-1)
     
     call lsyssc_getbase_double (p_rprolMatrixPrim,p_DaPrim)
     call lsyssc_getbase_double (p_rprolMatrixDual,p_DaDual)
@@ -1958,8 +1958,8 @@ contains
     ! in time as lambda, not as y!
     !
     ! Get the matrix.
-    p_rrestMatrixPrim => rprojHier%p_rrestrictionMatPrimal(itimelevelcoarse)
-    p_rrestMatrixDual => rprojHier%p_rrestrictionMatDual(itimelevelcoarse)
+    p_rrestMatrixPrim => rprojHier%p_rrestrictionMatPrimal(ilevelfine-1)
+    p_rrestMatrixDual => rprojHier%p_rrestrictionMatDual(ilevelfine-1)
     
     call lsyssc_getbase_double (p_rrestMatrixPrim,p_DaPrim)
     call lsyssc_getbase_double (p_rrestMatrixDual,p_DaDual)
@@ -2948,8 +2948,8 @@ contains
     ! in time as lambda, not as y!
     !
     ! Get the matrix.
-    p_rinterpMatrixPrim => rprojHier%p_RinterpolationMatPrimal(itimelevelcoarse)
-    p_rinterpMatrixDual => rprojHier%p_RinterpolationMatDual(itimelevelcoarse)
+    p_rinterpMatrixPrim => rprojHier%p_RinterpolationMatPrimal(ilevelfine-1)
+    p_rinterpMatrixDual => rprojHier%p_RinterpolationMatDual(ilevelfine-1)
     
     call lsyssc_getbase_double (p_rinterpMatrixPrim,p_DaPrim)
     call lsyssc_getbase_double (p_rinterpMatrixDual,p_DaDual)
