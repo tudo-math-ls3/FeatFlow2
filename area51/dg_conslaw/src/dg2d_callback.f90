@@ -346,15 +346,65 @@ integer :: ielement, ipoint
 
 
 
-! sin
+!! sin
+!
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       Dvalues(i,j) = sin(SYS_PI*(Dpoints(1,i,j) - Dpoints(2,i,j)))
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
 
+
+!! Source Term 1
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       Dvalues(i,j) = 1.0_dp+Dpoints(1,i,j) + Dpoints(2,i,j)
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select
+  
+  
+  
+  
+  
+  
+! Source Term 2
   select case (cderivative)
   case (DER_FUNC)
     
                     
     do i = 1, size(Dvalues,1)
     do j = 1, size(Dvalues,2)
-       Dvalues(i,j) = sin(SYS_PI*(Dpoints(1,i,j) - Dpoints(2,i,j)))
+       Dvalues(i,j) = (1.0_dp+Dpoints(1,i,j)**4.0_dp+Dpoints(2,i,j)**4.0_dp)
     end do
     end do
                               
@@ -367,11 +417,8 @@ integer :: ielement, ipoint
   case DEFAULT
     ! Unknown. Set the result to 0.0.
     Dvalues = 0.0_DP
-  end select
-
-
-
-
+  end select  
+  
 
 !    ! Compare to less refined solution
 !
@@ -1740,7 +1787,7 @@ integer :: iel
 !
 !    close(iunit)
 
-    Dcoefficients (1,:,:) = 0.0_dp
+    !Dcoefficients (1,:,:) = 0.0_dp
 
     
     select case (rcollection%IquickAccess(1))
@@ -1791,9 +1838,9 @@ integer :: iel
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
-!            ! Water hill
-!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
-!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+            ! Water hill
+            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
+                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
                      
 !            ! Water hill Poly
 !            r = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
@@ -1897,8 +1944,8 @@ integer :: iel
 !            else
 !              Dcoefficients (1,ipoint,iel)=1.0_dp
 !            end if
-
-            
+ 
+           
           end do
         end do
       
@@ -1908,7 +1955,7 @@ integer :: iel
       
       case (3) ! Set y-momentum
         Dcoefficients (1,:,:) = 0.0_dp
-      
+        
     end select
     
     ! Release the function parser
@@ -2469,10 +2516,20 @@ integer :: iel
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
-        ! No BCs
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+!        ! No BCs
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+
+!        ! BC for Source term 1
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx+dy)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = (1.0_dp+dx+dy)*dx
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = (1.0_dp+dx+dy)*dy
+        
+        ! BC for Source term 2
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dx
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dy
         
 !        ! Reflecting BCs
 !        ! Calculate x- and y- velocity from momentum
@@ -2946,7 +3003,136 @@ integer :: iel
     deallocate(DsolutionValues)
     
   end subroutine
+    
+    
+    
+    
+    
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine Callback_Sourceterm (rdiscretisation,rform, &
+                  nelements,npointsPerElement,Dpoints, &
+                  IdofsTest,rdomainIntSubset,&
+                  Dcoefficients,rcollection)
+    
+    use basicgeometry
+    use triangulation
+    use collection
+    use scalarpde
+    use domainintegration
+    
+  !<description>
+    ! This subroutine is called during the vector assembly. It has to compute
+    ! the coefficients in front of the terms of the linear form.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+  !</description>
+    
+  !<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in)                              :: rform
+    
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in)                                         :: nelements
+    
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in)                                         :: npointsPerElement
+    
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in)  :: Dpoints
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(inout)              :: rdomainIntSubset
+
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+    
+  !</input>
   
+  !<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nvar,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out)                      :: Dcoefficients
+  !</output>
+    
+  !</subroutine>
+
+    integer :: iel, ipoint, ivar, nvar2d, currentvar,nterms
+    real(DP) :: dvx, dvy, dx, dy, dsol, dh, du, dv
+    ! (# of terms, ncubp, NEL, nvar2d)
+    real(dp), dimension(:,:,:,:), allocatable :: DsolutionValues
+    real(dp), dimension(3) :: dQ, DFx, DFy
+    real(dp), dimension(:), pointer :: p_ddata
+    
+    nvar2d = 3
+    
+    rdomainIntSubset%ielementDistribution = 1
+    
+    
+    ! rform%itermCount gives the number of additional terms, here 2
+    nterms = rform%itermCount
+        
+    
+    do iel = 1, size(Dpoints,3)
+      do ipoint = 1, size(Dpoints,2)
+      
+        dx = Dpoints(1,ipoint,iel)
+        dy = Dpoints(2,ipoint,iel)
+        
+       
+!        ! Source Term 1
+!        Dcoefficients (1,1,ipoint,iel) = 2.0_dp+3.0_dp*dx+3.0_dp*dy
+!        Dcoefficients (2,1,ipoint,iel) = 4.0_dp*dx*dx+4.0_dp*dx+4.0_dp*dx*dy+dy+1.0_dp
+!        Dcoefficients (3,1,ipoint,iel) = 4.0_dp*dy*dy+4.0_dp*dy+4.0_dp*dx*dy+dx+1.0_dp
+        
+        ! Source term 2
+        Dcoefficients (1,1,ipoint,iel) = 6.0_dp*(dx**4.0_dp+dy**4.0_dp)+2.0_dp
+        Dcoefficients (2,1,ipoint,iel) = 5.0_dp*dy**4.0_dp*dx+dx+dx**5.0_dp+6.0_dp*dx**5.0_dp+2.0_dp*dx+2.0_dp*dy**4.0_dp*dx+4.0_dp*dx**3.0_dp+4.0_dp*dx**7.0_dp+4.0_dp*dx**3.0_dp*dy**4.0_dp
+        Dcoefficients (3,1,ipoint,iel) = 5.0_dp*dx**4.0_dp*dy+dy+dy**5.0_dp+6.0_dp*dy**5.0_dp+2.0_dp*dy+2.0_dp*dx**4.0_dp*dy+4.0_dp*dy**3.0_dp+4.0_dp*dy**7.0_dp+4.0_dp*dy**3.0_dp*dx**4.0_dp
+       
+        
+      end do
+    end do
+    
+  end subroutine
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 
 end module

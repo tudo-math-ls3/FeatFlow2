@@ -89,7 +89,7 @@ contains
     
     ! A bilinear and linear form describing the analytic problem to solve
     type(t_bilinearForm) :: rform
-    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC
+    type(t_linearForm) :: rlinformconv, rlinformedge, rlinformIC, rlinformSource
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
@@ -99,7 +99,7 @@ contains
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock,rsourceTermBlock
     type(t_vectorBlock), target :: rk1, rk2, rdefBlock, rimf1, rimf2
 
 
@@ -194,6 +194,8 @@ contains
     integer :: iel
     
     integer :: irhstype
+    
+    integer :: iinsertSourceTerm =1
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -428,6 +430,9 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsolSaveBlock,.true.,&
          ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rsourceTermBlock,.true.,&
+         ST_DOUBLE)     
+         
          
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
@@ -554,6 +559,16 @@ contains
     
     
     
+    
+    ! Now calculate the source term
+    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    rlinformSource%itermCount = 1
+    rlinformSource%Idescriptors(1) = DER_FUNC2D
+    call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
+                                       Callback_Sourceterm,rcollection)
+    
+    
+    
 do iwithoutlimiting = 1,1
 if (iwithoutlimiting==2) ilimiter = 0
     
@@ -636,7 +651,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     timestepping: do
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
-       dt= 0.2_dp*dt
+       !dt = 0.2_dp*dt
        
        
        if (dt>ttfinal-ttime) dt = ttfinal-ttime
@@ -692,6 +707,9 @@ if (iwithoutlimiting==2) ilimiter = 0
          end do
          end select                           
        end if
+       
+       ! Implement source term
+       if (iinsertSourceTerm==1) call lsysbl_vectorLinearComb (rsourceTermBlock,rrhsBlock,1.0_dp,1.0_dp)
        
        call profiler_measure(rprofiler,4)
        ! Solve for solution update
@@ -758,6 +776,9 @@ if (iwithoutlimiting==2) ilimiter = 0
          end select
                                             
        end if
+       
+       ! Implement source term
+       if (iinsertSourceTerm==1) call lsysbl_vectorLinearComb (rsourceTermBlock,rrhsBlock,1.0_dp,1.0_dp)
               
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
@@ -821,6 +842,9 @@ if (iwithoutlimiting==2) ilimiter = 0
          end select
                                             
        end if
+       
+       ! Implement source term
+       if (iinsertSourceTerm==1) call lsysbl_vectorLinearComb (rsourceTermBlock,rrhsBlock,1.0_dp,1.0_dp)
               
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
@@ -1103,16 +1127,16 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-!    ! Calculate the error to the reference function.
-!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    ! Calculate the error to the reference function.
+    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
     
     
     
@@ -1158,6 +1182,18 @@ if (iwithoutlimiting==2) ilimiter = 0
     call lsysbl_releaseVector (rsolLimiterBlock)
     call lsysbl_releaseVector (rsolTempBlock)
     call lsysbl_releaseVector (rsolUpBlock)
+    
+    call lsysbl_releaseVector (redgeBlock)
+    call lsysbl_releaseVector (rconvBlock)
+    call lsysbl_releaseVector (rsolLimiterBlock)
+    call lsysbl_releaseVector (rsolOldBlock)
+    call lsysbl_releaseVector (rk1)
+    call lsysbl_releaseVector (rk2)
+    call lsysbl_releaseVector (rdefBlock)
+    call lsysbl_releaseVector (rimf1)
+    call lsysbl_releaseVector (rimf2)
+    call lsysbl_releaseVector (rsolSaveBlock)
+    call lsysbl_releaseVector (rsourceTermBlock)
 
     call lsysbl_releaseMatrix (rmatrixBlock)
 

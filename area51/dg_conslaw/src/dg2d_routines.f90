@@ -6418,8 +6418,7 @@ real(dp), dimension(:) :: Dvalues
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
           if (abs(DIi(ivar))<SYS_EPSREAL) then
-            !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
-            ! That's the same as: Do nothing
+            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
           else
 !            !This is the one following the principles
 !            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
