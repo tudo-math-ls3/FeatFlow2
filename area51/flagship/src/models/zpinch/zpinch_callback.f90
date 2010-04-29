@@ -15,13 +15,10 @@
 !# 2.) zpinch_initVelocityField
 !#     -> Initializes the velocity field for the transport model
 !#
-!# 3.) zpinch_initDensityAveraging
-!#     -> Initializes the density averaged mass matrices
-!#
-!# 4.) zpinch_initLorentzforceTerm
+!# 3.) zpinch_initLorentzforceTerm
 !#     -> Initializes the Lorentz force term for given solutions
 !#
-!# 5.) zpinch_calcLinearisedFCT
+!# 4.) zpinch_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
 !# </purpose>
@@ -60,7 +57,6 @@ module zpinch_callback
   private
   public :: zpinch_nlsolverCallback
   public :: zpinch_initVelocityField
-  public :: zpinch_initDensityAveraging
   public :: zpinch_initLorentzforceTerm
   public :: zpinch_calcLinearisedFCT
   public :: zpinch_checkPressure
@@ -484,80 +480,6 @@ contains
   end subroutine zpinch_initVelocityField
 
   !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_initDensityAveraging(rparlist,&
-      ssectionNameEuler, ssectionNameTransport,&
-      rproblemlevel, rsolutionEuler, rcollection)
-
-!<description>
-    ! This subroutine initializes the density averaged mass matrices
-    ! for the transport model based on the solution from the Euler
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(in) :: rparlist
-
-    ! section names in parameter list
-    character(LEN=*), intent(in) :: ssectionNameEuler
-    character(LEN=*), intent(in) :: ssectionNameTransport
-
-    ! solution vector for Euler model
-    type(t_vectorBlock), intent(in) :: rsolutionEuler
-!</input>
-
-!<inputoutput>
-    ! problem level structure
-    type(t_problemLevel), intent(inout) :: rproblemLevel
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-!!$    ! local variables
-!!$    type(t_vectorScalar) :: rvector
-!!$    real(DP), dimension(:), pointer :: p_ML, p_Density
-!!$    integer :: lumpedMassMatrix, lumpedMassMatrixDensity
-!!$    integer :: i
-
-    ! OK, IN THE CURRENT IMPLEMENTATION WE DO NOT NEED A
-    ! DENSITY_AVERAGED MASS MATRIX, HENCE RETURN
-
-!!$    ! Get global configuration from parameter list
-!!$    call parlst_getvalue_int(rparlist,&
-!!$        ssectionNameEuler, 'lumpedmassmatrix', lumpedMassMatrix)
-!!$    call parlst_getvalue_int(rparlist,&
-!!$        ssectionNameTransport, 'lumpedmassmatrix', lumpedMassMatrixDensity)
-!!$
-!!$    ! Get density distribution from the solution of the Euler model
-!!$    ! and create block vector which is attached to the collection
-!!$    call euler_getVariable(rsolutionEuler, 'density', rvector)
-!!$    call lsyssc_getbase_double(rvector, p_Density)
-!!$
-!!$    ! Create density averaged lumped mass matrix
-!!$    call lsyssc_duplicateMatrix(&
-!!$        rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$        rproblemLevel%Rmatrix(lumpedMassMatrixDensity),&
-!!$        LSYSSC_DUP_SHARE, LSYSSC_DUP_COPY)
-!!$
-!!$    call lsyssc_getbase_double(&
-!!$        rproblemLevel%Rmatrix(lumpedMassMatrixDensity), p_ML)
-!!$
-!!$    !$omp parallel do
-!!$    do i = 1, size(p_Density)
-!!$      p_ML(i) = p_ML(i)*p_Density(i)
-!!$    end do
-!!$    !$omp end parallel do
-!!$
-!!$    ! Release temporal vector
-!!$    call lsyssc_releaseVector(rvector)
-
-  end subroutine zpinch_initDensityAveraging
-
-    !*****************************************************************************
 
 !<subroutine>
 
