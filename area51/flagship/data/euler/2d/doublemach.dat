@@ -138,13 +138,15 @@ ssolutionconstrainvariable(2) =
   pressure
 
 # number of failsafe steps in constrained initialization
-nsolutionfailsafe = 0
+nsolutionfailsafe = 3
 
 # variables for failsafe constrained initialization
-ssolutionfailsafevariable(3) =
+ssolutionfailsafevariable(5) =
+  density
   pressure
   velocity_x
   velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
