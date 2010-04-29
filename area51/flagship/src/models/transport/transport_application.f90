@@ -1657,6 +1657,13 @@ contains
       ! Initialize the FE-function by the L2-projection of the analytical data
       !-------------------------------------------------------------------------
 
+      ! Get global configuration from parameter list
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'ssolutionname', ssolutionName)
+
+      ! Get function parser from collection structure
+      p_rfparser => collct_getvalue_pars(rcollection, 'rfparser')
+
       ! Retrieve the lumped and consistent mass matrices from the
       ! problem level structure or recompute them on-the-fly.
       call parlst_getvalue_int(rparlist,&
