@@ -505,14 +505,18 @@ contains
         !
         ! The question of the sign of the tangential can be answered pretty easily.
         ! Consider for comparison the circle with radius r around the origin which is
-        ! traversed in mathematical positive direction. It can be parameterised by means
-        ! of w(t) = r(cos t, sin t)^T, t \in [0, 2 \pi]. Then holds for tangential:
-        !    grad w(t) = r(-sin t, cos t)^T.
-        ! The FEAT2 convention to number the nodes of a quad counterclockwise. But from
-        ! the point of view of the inner circle that point orientation is
-        ! clockwise. (Consider for instance the point (-1,0) on a circle with radius 1
-        ! around the origin.) Reverse it and we get the formula for the tangential:
-        dtangential = dvt1(:) - dvt2(:)
+        ! traversed in mathematical negative direction. Why negative? Because we are the
+        ! inner circular obstacle has opposite direction... The circle can be
+        ! parameterised by means of w(t) = (r cos t, -r sin t)^T, t \in [0, 2 \pi]. Then
+        ! holds for the tangential:
+        !    grad w(t) = (-r sin t, -r cos t)^T.
+        ! Normalise it:
+        !              = (-sin t, -cos t)^T.
+        ! The FEAT2 convention to number the nodes of a quad is counterclockwise. From the
+        ! point of view of a circle traversed clockwise the very same boundary points are
+        ! traversed clockwise which is fine to determine the tangential vector. So, we
+        ! don't need to reverse the points and get the formula for the tangential:
+        dtangential = dvt2(:) - dvt1(:)
 
         dedgelen = sqrt(dtangential(1)**2 + dtangential(2)**2)
 
