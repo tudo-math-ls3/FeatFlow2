@@ -260,6 +260,10 @@ module eulerlagrange_application
     character(LEN=SYS_STRLEN) :: algorithm
 
 
+    type(t_timer), pointer :: p_rtimerParticlephase
+
+
+
     real(DP), dimension(:), pointer :: p_xpos, p_ypos, p_zpos
     real(DP), dimension(:), pointer :: p_xpos_old, p_ypos_old, p_zpos_old
     real(DP), dimension(:), pointer :: p_xvelo, p_yvelo, p_zvelo
@@ -274,15 +278,15 @@ module eulerlagrange_application
 
     real(DP), dimension(:,:), pointer :: p_midpoints_el
 
-
-
     ! local variables
     integer :: isystemFormat, systemMatrix, ndimension
     
+    ! One-way, two-way cpupling or steady state gas solution
+    integer :: icouplingpart
 
     ! Start total time measurement
     call stat_startTimer(rtimerTotal)
-    
+
     !---------------------------------------------------------------------------
     ! Pre-processing
     !---------------------------------------------------------------------------
@@ -400,12 +404,31 @@ module eulerlagrange_application
         call eulerlagrange_outputSolution(rparlist, 'eulerlagrange', rproblem&
             %p_rproblemLevelMax, rParticles, rsolutionPrimal, dtime=rtimestep&
             %dTime)
-            
+ 
+         ! One way or twoway coupling?
+        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "icouplingpart", icouplingpart)
+         
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        ! Euler-Lagrange
+        ! Euler-Lagrange (for steadystate gas solution)
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        !call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolutionPrimal,rtimestep,rcollection,rParticles)
+        if (icouplingpart == -1) then
+        
+          ! Start time measurement for solution procedure
+          !call stat_startTimer(p_rtimerParticlephase)
 
+            !do 
+          
+              ! Subroutine to compute the particle movement
+              call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
+                    rtimestep,rcollection,rParticles)
+               
+            !end do
+                
+          ! Stop time measurement for solution procedure
+          !call stat_stopTimer(p_rtimerParticlephase)
+        
+        end if
+        
       else
         call output_line(trim(algorithm)//' is not a valid solution algorithm!',&
             OU_CLASS_ERROR,OU_MODE_STD,'eulerlagrange_app')
@@ -2607,6 +2630,7 @@ module eulerlagrange_application
     integer :: isize, ipreadapt, npreadapt, ndimension
     integer, external :: signal_SIGINT
 
+    integer :: icouplingpart
 
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
@@ -2966,16 +2990,22 @@ module eulerlagrange_application
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
       ! Euler-Lagrange (compute particle phase)
       !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      call parlst_getvalue_int(rparlist, 'Eulerlagrange', "icouplingpart", icouplingpart)
+
+      if (icouplingpart .ne. -1) then
       
-      ! Start time measurement for solution procedure
-      call stat_startTimer(p_rtimerParticlephase)
+          ! Start time measurement for solution procedure
+          call stat_startTimer(p_rtimerParticlephase)
+          
+          ! Subroutine to compute the particle movement
+          call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
+                rtimestep,rcollection,rParticles)
+                
+          ! Stop time measurement for solution procedure
+          call stat_stopTimer(p_rtimerParticlephase)
       
-      ! Subroutine to compute the particle movement
-      call eulerlagrange_step(rparlist,rproblem%p_rproblemLevelMax,rsolution,&
-            rtimestep,rcollection,rParticles)
-            
-      ! Stop time measurement for solution procedure
-      call stat_stopTimer(p_rtimerParticlephase)
+      end if
 
 
     end do timeloop
@@ -3861,7 +3891,11 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     case(2)
         ! Subroutine to compute the movement of the particles
         call eulerlagrange_moveparticlestwoway(rparlist,p_rproblemLevel,rsolution,rParticles)
-    
+   
+   case(-1)
+        ! Subroutine to compute the movement of the particles
+        call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+
     case default
             call output_line('Invalid coupling mode!', &
                        OU_CLASS_ERROR,OU_MODE_STD,'flagship_coupling')

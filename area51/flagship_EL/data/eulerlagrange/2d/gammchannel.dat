@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 10000
+nPart = 5000
 
 
 #-------------------------------------------------------------------------------
@@ -121,7 +121,7 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 0e0        #205.709277e0
+velopartx = 205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0
@@ -210,8 +210,9 @@ ipartoutput = 2
 # choice coupling mode (one-way or two-way coupling)
 #-------------------------------------------------------------------------------
 
-# 1 one-way coupling (particles have no influence on the gas phase)
-# 2 two-way coupling
+# 1 	one-way coupling (particles have no influence on the gas phase)
+# 2 	two-way coupling
+# -1	compute particle movement at a steady state gas solution
 icouplingpart = 1
 
 
@@ -363,7 +364,7 @@ istabilisation = 1
 iformatUCD = 3
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.001
 
 # file for UCD output of solution
 sucdsolution = out/gammchannel
@@ -418,7 +419,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.000
+dfinalTime = 0.100
 
 # initial time step size
 dinitialStep = 1e-3

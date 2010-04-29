@@ -5869,7 +5869,7 @@ contains
 			    exit Boundary_Search
 			
 	        elseif (iintersect == 0) then
-            pause
+            
             end if
        
        end if
