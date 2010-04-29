@@ -258,10 +258,10 @@ iprelimiting = 1
 indatfile = %{Zpinch.indatfile}
 
 # section name of boundary condition for primal problem
-sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:1}
+sprimalbdrcondname = %{Zpinch.sprimalbdrcondname:2}
 
 # section name of boundary condition for dual problem
-sdualbdrcondname = %{Zpinch.sdualbdrcondname:1}
+sdualbdrcondname = %{Zpinch.sdualbdrcondname:2}
 
 # number of spatial dimensions
 ndimension = %{Zpinch.ndimension}
