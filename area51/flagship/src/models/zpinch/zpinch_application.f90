@@ -142,8 +142,9 @@ contains
     ! Global function parser which is used to evaluate analytical functions
     type(t_fparser) :: rfparser
 
-    ! Boundary condition structure for the primal problem
-    type(t_boundaryCondition) :: rbdrCondEuler, rbdrCondTransport
+    ! Boundary condition structures for the primal problem and pointers
+    type(t_boundaryCondition), dimension(2), target :: RbdrCond
+    type(t_boundaryCondition), pointer :: p_rbdrCondEuler, p_rbdrCondTransport
 
     ! Problem structure which holds all internal data (vectors/matrices)
     type(t_problem) :: rproblem
@@ -151,12 +152,12 @@ contains
     ! Time-stepping structures
     type(t_timestep) :: rtimestep
 
-    ! Global solver structure and points
+    ! Global solver structure and point
     type(t_solver) :: rsolver
     type(t_solver), pointer :: p_rsolver => null()
 
     ! Solution vectors and pointers
-    type(t_vectorBlock), dimension(2), target :: rsolution
+    type(t_vectorBlock), dimension(2), target :: Rsolution
     type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
 
     ! Timer for the total solution process
@@ -207,8 +208,12 @@ contains
     ! Start time measurement
     call stat_startTimer(rtimerPrePostprocess, STAT_TIMERSHORT)
 
-    p_rsolutionEuler => rsolution(1)
-    p_rsolutionTransport => rsolution(2)
+    ! Set pointer
+    p_rbdrCondEuler => RbdrCond(1)
+    p_rsolutionEuler => Rsolution(1)
+
+    p_rsolutionTransport => Rsolution(2)
+    p_rbdrCondTransport => RbdrCond(2)
 
     ! Retrieve section names of sub-applications
     call parlst_getvalue_string(rparlist,&
@@ -348,7 +353,7 @@ contains
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrf_readBoundaryCondition(rbdrCondEuler, sindatfileName,&
+      call bdrf_readBoundaryCondition(p_rbdrCondEuler, sindatfileName,&
           '['//trim(sbdrcondName)//']', ndimension)
 
       ! Initialize the boundary condition for the transport model
@@ -359,7 +364,7 @@ contains
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrf_readBoundaryCondition(rbdrCondTransport,&
+      call bdrf_readBoundaryCondition(p_rbdrCondTransport,&
           sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
       
       ! What solution algorithm should be applied?
@@ -369,9 +374,8 @@ contains
         ! Solve the primal formulation for the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call zpinch_solveTransientPrimal(rparlist, ssectionName,&
-            ssectionNameEuler, ssectionNameTransport, rbdrCondEuler,&
-            rbdrCondTransport, rproblem, rtimestep, rsolver,&
-            rsolution, rcollection)
+            ssectionNameEuler, ssectionNameTransport, RbdrCond,&
+            rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
         call zpinch_outputSolution(rparlist, ssectionName,&
             rproblem%p_rproblemLevelMax, rsolution, rtimestep%dTime)
@@ -407,8 +411,8 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrf_release(rbdrCondEuler)
-    call bdrf_release(rbdrCondTransport)
+    call bdrf_release(p_rbdrCondEuler)
+    call bdrf_release(p_rbdrCondTransport)
 
     ! Release vectors
     call lsysbl_releaseVector(p_rsolutionEuler)
@@ -598,289 +602,6 @@ contains
     end do
 
   end subroutine zpinch_initProblem
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_redistributeMassEuler(rparlist, ssectionName,&
-      rproblemLevel, rsolution, rcollection)
-
-!<description>
-    ! This subroutine redistributes the mass so that the total mass
-    ! is equal to the total mass of Bank and Shadid
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(in) :: rparlist
-
-    ! section names in parameter list
-    character(LEN=*), intent(in) :: ssectionName
-
-    ! problem level structure
-    type(t_problemLevel), intent(in), target :: rproblemLevel
-!</input>
-
-!<inputoutput>
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_triangulation), pointer :: p_rtriangulation
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_ML, p_u
-    real(DP) :: ddensity1, ddensity2, ddensity3
-    real(DP) :: dmass1, dmass2, dmass3, dradius
-    integer :: lumpedMassMatrix, isystemFormat
-    integer :: ivt
-
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-    call parlst_getvalue_int(rparlist,&
-          ssectionName, 'isystemformat', isystemFormat)
-
-    ! Compute total densities
-    ddensity1 = SYS_PI
-    ddensity2 = SYS_PI * (1.05_DP**2-1._DP) * 1e6_DP
-    ddensity3 = SYS_PI * (1.5_DP**2-1.05_DP**2) * 5e-1_DP
-
-    ! Set pointer to triangulation
-    p_rtriangulation => rproblemLevel%rtriangulation
-
-    ! Set pointer to coordinate vector
-    call storage_getbase_double2D(&
-        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-    ! Set pointer to lumped mass matrix
-    call lsyssc_getbase_double(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-
-    ! Set pointer to conservative variables
-    call lsysbl_getbase_double(rsolution, p_u)
-
-    ! Compute total masses
-    dmass1 = 0.0_DP
-    dmass2 = 0.0_DP
-    dmass3 = 0.0_DP
-
-    ! Loop over all vertices
-    do ivt = 1, p_rtriangulation%NVT
-
-      ! Compute distance to origin
-      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
-                     p_DvertexCoords(2,ivt)**2)
-
-      if (dradius .lt. 1.0_DP) then
-        dmass1 = dmass1 + p_ML(ivt)
-      elseif (dradius .gt. 1.05_DP) then
-        dmass3 = dmass3 + p_ML(ivt)
-      else
-        dmass2 = dmass2 + p_ML(ivt)
-      end if
-    end do
-
-    ddensity1 = ddensity1/dmass1
-    ddensity2 = ddensity2/dmass2
-    ddensity3 = ddensity3/dmass3
-
-    select case(isystemFormat)
-    case(SYSTEM_INTERLEAVEFORMAT)
-      call doRedistributeInterleaveFormat(rproblemLevel&
-          %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
-          ddensity2, ddensity3, p_DvertexCoords, p_ML, p_u)
-
-    case(SYSTEM_BLOCKFORMAT)
-      call doRedistributeBlockFormat(rproblemLevel&
-          %Rmatrix(lumpedMassMatrix)%NEQ, NVAR2D, ddensity1,&
-          ddensity2, ddensity3, p_DvertexCoords, p_ML, p_u)
-
-    case DEFAULT
-      call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_redistributeMassEuler')
-      call sys_halt()
-    end select
-
-  contains
-
-    ! Here, the working routine follow
-
-    !**************************************************************
-    ! Redistribute mass density stored in interleave format
-
-    subroutine doRedistributeInterleaveFormat(neq, nvar, ddensity1,&
-        ddensity2, ddensity3, DvertexCoords, ML, u)
-
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(:), intent(in) :: ML
-      real(DP), intent(in) :: ddensity1,ddensity2,ddensity3
-      integer, intent(in) :: neq, nvar
-
-      real(DP), dimension(nvar,neq), intent(inout) :: u
-
-      ! local vairables
-      integer :: ieq
-      real(DP) :: dradius
-
-      !$omp parallel do private(dradius)
-      do ieq = 1, neq
-
-        ! Compute distance to origin
-        dradius = sqrt(DvertexCoords(1,ieq)**2 +&
-                       DvertexCoords(2,ieq)**2)
-
-        if (dradius .lt. 1.0_DP) then
-          u(1,ieq) = ddensity1
-        elseif (dradius .gt. 1.05_DP) then
-          u(1,ieq) = ddensity3
-        else
-          u(1,ieq) = ddensity2
-        end if
-      end do
-      !$omp end parallel do
-
-    end subroutine doRedistributeInterleaveFormat
-
-    !**************************************************************
-    ! Redistribute mass density stored in block format
-
-    subroutine doRedistributeBlockFormat(neq, nvar, ddensity1,&
-        ddensity2, ddensity3, DvertexCoords, ML, u)
-
-      real(DP), dimension(:,:), intent(in) :: DvertexCoords
-      real(DP), dimension(:), intent(in) :: ML
-      real(DP), intent(in) :: ddensity1,ddensity2,ddensity3
-      integer, intent(in) :: neq, nvar
-
-      real(DP), dimension(neq,nvar), intent(inout) :: u
-
-      ! local vairables
-      integer :: ieq
-      real(DP) :: dradius
-
-      !$omp parallel do private(dradius)
-      do ieq = 1, neq
-
-        ! Compute distance to origin
-        dradius = sqrt(DvertexCoords(1,ieq)**2 +&
-                       DvertexCoords(2,ieq)**2)
-
-        if (dradius .lt. 1.0_DP) then
-          u(ieq,1) = ddensity1
-        elseif (dradius .gt. 1.05_DP) then
-          u(ieq,1) = ddensity3
-        else
-          u(ieq,1) = ddensity2
-        end if
-      end do
-      !$omp end parallel do
-
-    end subroutine doRedistributeBlockFormat
-
-  end subroutine zpinch_redistributeMassEuler
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  subroutine zpinch_redistributeMassTransport(rparlist, ssectionName,&
-      rproblemLevel, rsolution, rcollection)
-
-!<description>
-    ! This subroutine redistributes the mass so that the total mass
-    ! is equal to the total mass of Bank and Shadid
-!</description>
-
-!<input>
-    ! parameter list
-    type(t_parlist), intent(in) :: rparlist
-
-    ! section names in parameter list
-    character(LEN=*), intent(in) :: ssectionName
-
-    ! problem level structure
-    type(t_problemLevel), intent(in), target :: rproblemLevel
-!</input>
-
-!<inputoutput>
-    ! solution vector
-    type(t_vectorBlock), intent(inout) :: rsolution
-
-    ! collection structure
-    type(t_collection), intent(inout) :: rcollection
-!</inputoutput>
-!</subroutine>
-
-    ! local variables
-    type(t_triangulation), pointer :: p_rtriangulation
-    real(DP), dimension(:,:), pointer :: p_DvertexCoords
-    real(DP), dimension(:), pointer :: p_ML, p_u
-    real(DP) :: ddensity, dmass, dradius
-    integer :: lumpedMassMatrix
-    integer :: ivt
-
-    ! Get global configuration from parameter list
-    call parlst_getvalue_int(rparlist,&
-        ssectionName, 'lumpedmassmatrix', lumpedMassMatrix)
-
-    ! Compute total density
-    ddensity = SYS_PI * (1.05_DP**2-1._DP) * 1e6_DP
-
-    ! Set pointer to triangulation
-    p_rtriangulation => rproblemLevel%rtriangulation
-
-    ! Set pointer to coordinate vector
-    call storage_getbase_double2D(&
-        p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
-
-    ! Set pointer to lumped mass matrix
-    call lsyssc_getbase_double(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-
-    ! Set pointer to conservative variables
-    call lsysbl_getbase_double(rsolution, p_u)
-
-    ! Compute total mass
-    dmass = 0.0_DP
-
-    ! Loop over all vertices
-    do ivt = 1, p_rtriangulation%NVT
-
-      ! Compute distance to origin
-      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
-                     p_DvertexCoords(2,ivt)**2)
-
-      if (dradius .ge. 1.0_DP .and.&
-          dradius .le. 1.05_DP) then
-        dmass = dmass + p_ML(ivt)
-      end if
-    end do
-
-    ddensity = ddensity/dmass
-
-    !$omp parallel do private(dradius)
-    do ivt = 1, p_rtriangulation%NVT
-
-      ! Compute distance to origin
-      dradius = sqrt(p_DvertexCoords(1,ivt)**2 +&
-                     p_DvertexCoords(2,ivt)**2)
-
-      if (dradius .ge. 1.0_DP .and.&
-          dradius .le. 1.05_DP) then
-        p_u(ivt) = ddensity
-      else
-        p_u(ivt) = 0.0_DP
-      end if
-    end do
-    !$omp end parallel do
-
-  end subroutine zpinch_redistributeMassTransport
 
   !*****************************************************************************
 
@@ -1861,9 +1582,8 @@ contains
 !<subroutine>
 
   subroutine zpinch_solveTransientPrimal(rparlist, ssectionName,&
-      ssectionNameEuler, ssectionNameTransport, rbdrCondEuler,&
-      rbdrCondTransport, rproblem, rtimestep, rsolver, rsolution,&
-      rcollection)
+      ssectionNameEuler, ssectionNameTransport, RbdrCond,&
+      rproblem, rtimestep, rsolver, Rsolution, rcollection)
 
 !<description>
       ! This subroutine solves the transient primal simplified MHD problem.
@@ -1875,9 +1595,8 @@ contains
     character(LEN=*), intent(in) :: ssectionNameEuler
     character(LEN=*), intent(in) :: ssectionNameTransport
 
-    ! boundary condition structure
-    type(t_boundaryCondition), intent(in) :: rbdrCondEuler
-    type(t_boundaryCondition), intent(in) :: rbdrCondTransport
+    ! array of boundary condition structures
+    type(t_boundaryCondition), dimension(:), intent(in), target :: RbdrCond
 !</input>
 
 !<inputoutput>
@@ -1893,8 +1612,8 @@ contains
     ! solver structure
     type(t_solver), intent(inout), target :: rsolver
 
-    ! primal solution vector
-    type(t_vectorBlock), dimension(:), intent(inout), target :: rsolution
+    ! array of primal solution vectors
+    type(t_vectorBlock), dimension(:), intent(inout), target :: Rsolution
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -1912,6 +1631,9 @@ contains
 
     ! Pointer to the solution vectors
     type(t_vectorBlock), pointer :: p_rsolutionEuler, p_rsolutionTransport
+
+    ! Pointer to the boundary condition structure
+    type(t_boundaryCondition), pointer :: p_rbdrCondEuler, p_rbdrCondTransport
 
     ! Vector for the element-wise feature indicator
     type(t_vectorScalar) :: relementError
@@ -1946,9 +1668,6 @@ contains
     integer :: isize, ipreadapt, npreadapt, ndimension, ilorentzForceType
     integer, external :: signal_SIGINT
 
-    real(DP) :: dmassEuler0, dmassEuler
-    real(DP) :: dmassTransport0, dmassTransport
-
     ! Get timer structures
     p_rtimerPrePostprocess => collct_getvalue_timer(rcollection, 'rtimerPrePostprocess')
     p_rtimerSolution => collct_getvalue_timer(rcollection, 'rtimerSolution')
@@ -1962,8 +1681,12 @@ contains
     p_rsolverTransport => solver_getNextSolver(rsolver, 2)
 
     ! Set pointers to solution vectors
-    p_rsolutionEuler => rsolution(1)
-    p_rsolutionTransport => rsolution(2)
+    p_rsolutionEuler => Rsolution(1)
+    p_rsolutionTransport => Rsolution(2)
+
+    ! Set pointer to boundary condition structures
+    p_rbdrCondEuler => RbdrCond(1)
+    p_rbdrCondTransport => RbdrCond(2)
 
     ! Start time measurement for pre-processing
     call stat_startTimer(p_rtimerPrePostprocess, STAT_TIMERSHORT)
@@ -2003,25 +1726,21 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime, p_rsolutionEuler,&
         rcollection)
     
-!!$    ! Redistribute the density
-!!$    call zpinch_redistributeMassEuler(rparlist, ssectionNameEuler,&
-!!$        p_rproblemLevel, p_rsolutionEuler, rcollection)
-
     ! Impose boundary conditions
     select case(ndimension)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
+      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues1d)
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
+      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues2d)
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, p_rsolutionEuler,&
+      call bdrf_filterVectorExplicit(p_rbdrCondEuler, p_rsolutionEuler,&
           rtimestep%dinitialTime, euler_calcBoundaryvalues3d)
     end select
 
     ! Attach the boundary condition
-    call solver_setBoundaryCondition(p_rsolverEuler, rbdrCondEuler, .true.)
+    call solver_setBoundaryCondition(p_rsolverEuler, p_rbdrCondEuler, .true.)
 
     ! Set collection to primal problem mode
     call parlst_addvalue(rparlist, ssectionNameEuler, 'mode', 'primal')
@@ -2046,18 +1765,13 @@ contains
         p_rproblemLevel, rtimestep%dinitialTime,&
         p_rsolutionTransport, rcollection)
 
-!!$    ! Redistribute the tracer
-!!$    call zpinch_redistributeMassTransport(rparlist,&
-!!$        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport,&
-!!$        rcollection)
-
     ! Impose boundary conditions
-    call bdrf_filterVectorExplicit(rbdrCondTransport,&
+    call bdrf_filterVectorExplicit(p_rbdrCondTransport,&
         p_rsolutionTransport, rtimestep%dinitialTime)
 
     ! Attach the boundary condition
     call solver_setBoundaryCondition(p_rsolverTransport,&
-        rbdrCondTransport, .true.)
+        p_rbdrCondTransport, .true.)
 
     ! Set collection to primal problem mode
     call parlst_addvalue(rparlist,&
@@ -2070,13 +1784,8 @@ contains
         ssectionName, 'output', soutputName)
     call parlst_getvalue_double(rparlist,&
         trim(soutputName), 'dstepUCD', dstepUCD, 0.0_DP)
-
     
-    call zpinch_outputSolution(rparlist, ssectionName,&
-        p_rproblemLevel, rsolution, rtimestep%dTime)
-    stop
     
-
     !---------------------------------------------------------------------------
     ! Initialize the h-adaptation structure and perform pre-adaptation
     !---------------------------------------------------------------------------
@@ -2165,25 +1874,20 @@ contains
                 p_rproblemLevel, rtimestep%dinitialTime,&
                 p_rsolutionEuler, rcollection)
 
-            ! Redistribute the density
-            call zpinch_redistributeMassEuler(rparlist,&
-                ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler,&
-                rcollection)
-
             ! Impose boundary conditions
             select case(ndimension)
             case (NDIM1D)
-              call bdrf_filterVectorExplicit(rbdrCondEuler,&
+              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
                   p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues1d)
 
             case (NDIM2D)
-              call bdrf_filterVectorExplicit(rbdrCondEuler,&
+              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
                   p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues2d)
 
             case (NDIM3D)
-              call bdrf_filterVectorExplicit(rbdrCondEuler,&
+              call bdrf_filterVectorExplicit(p_rbdrCondEuler,&
                   p_rsolutionEuler, rtimestep%dinitialTime,&
                   euler_calcBoundaryvalues3d)
             end select
@@ -2193,13 +1897,8 @@ contains
                 p_rproblemLevel, rtimestep%dinitialTime,&
                 p_rsolutionTransport, rcollection)
 
-            ! Redistribute the tracer
-            call zpinch_redistributeMassTransport(rparlist,&
-                ssectionNameTransport, p_rproblemLevel,&
-                p_rsolutionTransport, rcollection)
-
             ! Impose boundary conditions
-            call bdrf_filterVectorExplicit(rbdrCondTransport,&
+            call bdrf_filterVectorExplicit(p_rbdrCondTransport,&
                 p_rsolutionTransport, rtimestep%dinitialTime)
           end do
 
@@ -2258,15 +1957,6 @@ contains
 
     ! Stop time measurement for pre-processing
     call stat_stopTimer(p_rtimerPrePostprocess)
-
-
-    ! CHECKS
-    dmassEuler0 = zpinch_checkConservation(rparlist,&
-        ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
-
-    dmassTransport0 = zpinch_checkConservation(rparlist,&
-        ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
-    ! CHECKS
 
     !---------------------------------------------------------------------------
     ! Infinite time stepping loop
@@ -2354,7 +2044,7 @@ contains
       rcollection%SquickAccess(2) = ssectionNameTransport
 
       ! Apply linearised FCT correction for Euler model
-      call zpinch_calcLinearisedFCT(rbdrCondEuler, rbdrCondTransport,&
+      call zpinch_calcLinearisedFCT(p_rbdrCondEuler, p_rbdrCondTransport,&
           p_rproblemLevel, rtimestep, p_rsolutionEuler,&
           p_rsolutionTransport, rcollection)
 
@@ -2378,21 +2068,7 @@ contains
             p_rproblemLevel, rtimestep, p_rsolutionTransport,&
             p_rsolutionEuler, rcollection)
       end if
-
-      ! CHECKS
-      dmassEuler = zpinch_checkConservation(rparlist,&
-          ssectionNameEuler, p_rproblemLevel, p_rsolutionEuler, 1)
-
-      dmassTransport = zpinch_checkConservation(rparlist,&
-          ssectionNameTransport, p_rproblemLevel, p_rsolutionTransport, 2)
-      ! CHECKS
-
-      print *, "################################################################"
-      print *, "MASS CONSERVATION"
-      print *, (dmassEuler0-dmassEuler)/dmassEuler0
-      print *, (dmassTransport0-dmassTransport)/dmassTransport0
-      print *, "################################################################"
-
+      
       ! Reached final time, then exit the infinite time loop?
       if (rtimestep%dTime .ge. rtimestep%dfinalTime) exit timeloop
 
