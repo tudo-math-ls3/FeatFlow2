@@ -1952,7 +1952,7 @@ contains
     ! based on the initial solution U^0 of the Euler model
     !---------------------------------------------------------------------------
 
-    call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+    call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
         p_rproblemLevel, p_rsolutionEuler, rcollection)
 
     ! Stop time measurement for pre-processing
@@ -1985,7 +1985,7 @@ contains
 
       ! Calculate explicit part of the Lorentz force term
       if (dscaleLorentzForceTerm   .ne. 0.0_DP) then
-        call zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+        call zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
             ssectionNameEuler, ssectionNameTransport, p_rproblemLevel,&
             p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime, &
             dscaleLorentzForceTerm, rforce(1), rcollection)
@@ -2005,13 +2005,20 @@ contains
       select case(rtimestep%ctimestepType)
 
       case (TSTEP_RK_SCHEME)
+        
+        ! Adopt explicit Runge-Kutta scheme
+        if (dscaleLorentzForceTerm .ne. 0.0_DP) then
+          
+          ! ... with source term
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback,&
+              rcollection, rforce)
+        else
+          ! ... without source term
+          call tstep_performRKStep(p_rproblemLevel, rtimestep,&
+              rsolver, rsolution, zpinch_nlsolverCallback, rcollection)
+        end if
 
-!!$        ! Adopt explicit Runge-Kutta scheme
-!!$        call tstep_performRKStep(p_rproblemLevel, rtimestep,&
-!!$            rsolver, rsolution, zpinch_nlsolverCallback,&
-!!$            rcollection, rforce)
-        print *, "RK method is not implemented yet"
-        stop
 
       case (TSTEP_THETA_SCHEME)
 
@@ -2025,9 +2032,9 @@ contains
         else
           ! ... without source term
           call tstep_performThetaStep(p_rproblemLevel, rtimestep,&
-              rsolver, rsolution, zpinch_nlsolverCallback,&
-              rcollection)
+              rsolver, rsolution, zpinch_nlsolverCallback, rcollection)
         end if
+
 
       case DEFAULT
         call output_line('Unsupported time-stepping algorithm!',&
@@ -2043,13 +2050,13 @@ contains
       rcollection%SquickAccess(1) = ssectionNameEuler
       rcollection%SquickAccess(2) = ssectionNameTransport
 
-      ! Apply linearised FCT correction for Euler model
+      ! Apply linearised FEM-FCT post-processing
       call zpinch_calcLinearisedFCT(p_rbdrCondEuler, p_rbdrCondTransport,&
           p_rproblemLevel, rtimestep, p_rsolutionEuler,&
           p_rsolutionTransport, rcollection)
 
       ! Calculate velocity field (\rho v)
-      call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+      call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
           p_rproblemLevel, p_rsolutionEuler, rcollection)
 
       ! Stop time measurement for solution procedure
@@ -2206,7 +2213,7 @@ contains
         call solver_updateStructure(p_rsolverTransport)
 
         ! Calculate velocity field (\rho v)
-        call zpinch_initVelocityField(rparlist, ssectionNameTransport,&
+        call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
             p_rproblemLevel, p_rsolutionEuler, rcollection)
 
         ! Stop time measurement for generation of constant
