@@ -369,7 +369,7 @@ contains
 
 !<subroutine>
   subroutine fevl_evaluate2 (CderType, Dvalues, rvectorBlock, Dpoints, Ielements, &
-                             IelementsHint, cnonmeshPoints)
+                             IelementsHint, cnonmeshPoints, iblockMin, iblockMax)
                                       
 !<description>
   ! This subroutine is an extension of fevl_evaluate1(). It simultaneously evaluates
@@ -421,7 +421,15 @@ contains
   ! located outside of the domain. May happen e.g. in nonconvex domains.
   ! FEVL_NONMESHPTS_NONE is the default parameter if cnonmeshPoints is not specified. 
   integer, intent(in), optional :: cnonmeshPoints
-  
+
+  ! OPTIONAL: For the case that not all components of the vector are to be processed, the
+  ! can provide these two parameters so that only the components from iblockMin to
+  ! iblockMax are processed. This can be necessary, e.g., in case of a saddle point
+  ! problem where the last component of the solution vector (=pressure) is discretised
+  ! in a different way than the first components (=velocity/displacement).
+  ! If iblockMin (iblockMax) is not present, the minimal (maximal) block number is
+  ! assumed to be 1 (rvectorBlock%nblocks).
+  integer, intent(in), optional :: iblockMin, iblockMax
 !</input>
 
 !<output>
@@ -434,7 +442,7 @@ contains
 
     ! local variables
     integer :: cnonmesh
-    integer :: ipoint, indof, nve, ibas, ider, iblock
+    integer :: ipoint, indof, nve, ibas, ider, iblock, iblMin, iblMax
     integer(I32) :: celement
     integer :: iel
     integer, dimension(:), pointer :: p_IelementDistr
@@ -463,8 +471,19 @@ contains
     type(t_evalElement) :: revalElement
     integer(I32) :: cevaluationTag
 
+    if (present(iblockMin)) then
+      iblMin = iblockMin
+    else
+      iblMin = 1
+    endif
+    if (present(iblockMax)) then
+      iblMax = iblockMax
+    else
+      iblMax = rvectorBlock%nblocks
+    endif
+    
     ! set shortcuts
-    p_rspatDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(1)
+    p_rspatDiscr => rvectorBlock%p_rblockDiscr%RspatialDiscr(iblMin)
     p_RelementDistribution => p_rspatDiscr%RelementDistr
     
     if (p_rspatDiscr%ccomplexity .eq. SPDISC_UNIFORM) then
@@ -552,7 +571,7 @@ contains
             
           else if (cnonmesh .eq. FEVL_NONMESHPTS_ZERO) then
             ! if no then set the value to zero
-            Dvalues(:,:,ipoint) = 0.0_DP
+            Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
             ! go to next iteration
             cycle
           end if
@@ -563,7 +582,7 @@ contains
         ! report when element has not been found and go to next iteration
         call output_line ('Point ' // trim(sys_siL(ipoint,10)) // ' not found!', &
                           OU_CLASS_ERROR, OU_MODE_STD, 'fevl_evaluate2')
-        Dvalues(:,:,ipoint) = 0.0_DP
+        Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
         cycle
       end if
     
@@ -604,14 +623,14 @@ contains
       call elem_generic2 (celement, revalElement, Bder, Dbas)
 
       ! number of equations in one scalar component
-      neqsc = rvectorBlock%RvectorBlock(1)%neq
+      neqsc = rvectorBlock%RvectorBlock(iblMin)%neq
       
       ! calculate function values by multiplying the FE-coefficients with the values of
       ! the basis functions and summing up
-      Dvalues(:,:,ipoint) = 0.0_DP
+      Dvalues(iblMin:iblMax,:,ipoint) = 0.0_DP
       if (rvectorBlock%cdataType .eq. ST_DOUBLE) then
         do ider = 1,size(CderType)
-          do iblock = 1,rvectorBlock%nblocks
+          do iblock = iblMin,iblMax
             dval = 0.0_DP
             do ibas = 1,indof
               dval = dval +   p_Ddata((iblock-1)*neqsc + Idofs(ibas)) &
@@ -622,7 +641,7 @@ contains
         enddo
       else if (rvectorBlock%cdataType .eq. ST_SINGLE) then
         do ider = 1,size(CderType)
-          do iblock = 1,rvectorBlock%nblocks
+          do iblock = iblMin,iblMax
             dval = 0.0_DP
             do ibas = 1,indof
               dval = dval +   p_Fdata((iblock-1)*neqsc + Idofs(ibas)) &
