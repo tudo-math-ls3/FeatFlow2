@@ -4547,9 +4547,9 @@ contains
 
           do irow = 1, NEQ
             
-            DO ivar = 1, NVAR
+            do ivar = 1, NVAR
               Ddtmp(ivar) = cx*p_Dx(NVAR*(irow-1)+ivar)
-            end DO
+            end do
             
             do ia = p_Kld(irow), p_Kld(irow+1)-1
               icol = p_Kcol(ia)
