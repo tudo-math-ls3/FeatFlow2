@@ -68,27 +68,27 @@ if test $# -ne 1 -o "$1" = "-h" -o "$1" = "--help"; then
 fi
 
 echo "--------------------------------"
-echo "L2 error:"
-grep "L2 error for  u:" $* | awk '{print $(NF)}'
-echo "L2 error reduction:"
+#echo "L2 error:"
+#grep "L2 error for  u:" $* | awk '{print $(NF)}'
+echo "L2 error + reduction:"
 calc_err_red "L2 error for  u:" $*
 echo "--------------------------------"
-echo "H1 error:"
-grep "H1 error for  u:" $* | awk '{print $(NF)}'
-echo "H1 error reduction:"
+#echo "H1 error:"
+#grep "H1 error for  u:" $* | awk '{print $(NF)}'
+echo "H1 error + reduction:"
 calc_err_red "H1 error for  u:" $*
 echo "--------------------------------"
 
 pressurePresent=$(grep "pressure element" $*)
 if test "$pressurePresent" != ""; then
-  echo "pressure L2 error:"
-  grep "L2 error for  p:" $* | awk '{print $(NF)}'
-  echo "pressure L2 error reduction:"
+#  echo "pressure L2 error:"
+#  grep "L2 error for  p:" $* | awk '{print $(NF)}'
+  echo "pressure L2 error + reduction:"
   calc_err_red "L2 error for  p:" $*
   echo "--------------------------------"
-  echo "pressure H1 error:"
-  grep "H1 error for  p:" $* | awk '{print $(NF)}'
-  echo "pressure H1 error reduction:"
+#  echo "pressure H1 error:"
+#  grep "H1 error for  p:" $* | awk '{print $(NF)}'
+  echo "pressure H1 error + reduction:"
   calc_err_red "H1 error for  p:" $*
   echo "--------------------------------"
 fi
