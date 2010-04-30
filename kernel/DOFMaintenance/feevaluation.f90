@@ -423,7 +423,7 @@ contains
   integer, intent(in), optional :: cnonmeshPoints
 
   ! OPTIONAL: For the case that not all components of the vector are to be processed, the
-  ! can provide these two parameters so that only the components from iblockMin to
+  ! user can provide these two parameters so that only the components from iblockMin to
   ! iblockMax are processed. This can be necessary, e.g., in case of a saddle point
   ! problem where the last component of the solution vector (=pressure) is discretised
   ! in a different way than the first components (=velocity/displacement).
