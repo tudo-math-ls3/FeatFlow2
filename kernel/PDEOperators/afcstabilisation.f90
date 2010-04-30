@@ -21,30 +21,33 @@
 !#                                   afcstab_resizeStabIndBlock
 !#     -> Resizes a stabilisation structure
 !#
-!# 4.) afcstab_getbase_IverticesAtEdge
+!# 4.) afcstab_duplicateStabilisation
+!#     -> Duplicates a stabilisation structure
+!#
+!# 5.) afcstab_getbase_IverticesAtEdge
 !#     -> Returns pointer to the vertices at edge structure
 !#
-!# 5.) afcstab_getbase_IsupdiagEdgeIdx
+!# 6.) afcstab_getbase_IsupdiagEdgeIdx
 !#     -> Returns pointer to the index pointer for the
 !#        superdiagonal edge numbers
 !#
-!# 6.) afcstab_getbase_IsubdiagEdgeIdx
+!# 7.) afcstab_getbase_IsubdiagEdgeIdx
 !#     -> Returns pointer to the index pointer for the
 !#        subdiagonal edge numbers
 !#
-!# 7.) afcstab_getbase_IsubdiagEdge
+!# 8.) afcstab_getbase_IsubdiagEdge
 !#     -> Returns pointer to the subdiagonal edge numbers
 !#
-!# 8.) afcstab_getbase_DcoeffsAtEdge
+!# 9.) afcstab_getbase_DcoeffsAtEdge
 !#     -> Returns pointer to edge data
 !#
-!# 9.) afcstab_generateVerticesAtEdge
-!#     -> Generates the standard edge data structure
+!# 10.) afcstab_generateVerticesAtEdge
+!#      -> Generates the standard edge data structure
 !#
-!# 10.) afcstab_generateOffdiagEdges
+!# 11.) afcstab_generateOffdiagEdges
 !#      -> Generates the subdiagonal edge data structure
 !#
-!# 11.) afcstab_generateExtSparsity
+!# 12.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
 !# 12.) afcstab_failsafeLimiting
@@ -76,6 +79,7 @@ module afcstabilisation
   public :: afcstab_initFromParameterlist
   public :: afcstab_releaseStabilisation
   public :: afcstab_resizeStabilisation
+  public :: afcstab_duplicateStabilisation
   public :: afcstab_getbase_IverticesAtEdge
   public :: afcstab_getbase_IsupdiagEdgeIdx
   public :: afcstab_getbase_IsubdiagEdgeIdx
@@ -133,9 +137,10 @@ module afcstabilisation
   
 !</constantblock>
 
-!<constantblock description="Bitfield identifiers for state of stabilisation">
-  
-  ! Stabilisation is undefined
+
+!<constantblock description="Bitfield identifiers for duplication">
+
+! Stabilisation is undefined
   integer(I32), parameter, public :: AFCSTAB_UNDEFINED            = 2_I32**0
 
   ! Stabilisation has been initialised
@@ -167,8 +172,41 @@ module afcstabilisation
   
   ! Edgewise correction factors: ALPHA
   integer(I32), parameter, public :: AFCSTAB_HAS_EDGELIMITER      = 2_I32**10
+
+!</constantblock>
+
+
+!<constantblock description="Bitfield identifiers for state of stabilisation">
+  
+  ! Stabilisation has been initialised
+  integer(I32), parameter, public :: AFCSTAB_DUP_STRUCTURE        = 2_I32**1
+
+  ! Edge-based structure generated: IverticesAtEdge
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGESTRUCTURE    = AFCSTAB_HAS_EDGESTRUCTURE
+
+  ! Edge-based values computed from matrix: DcoefficientsAtEdge
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGEVALUES       = AFCSTAB_HAS_EDGEVALUES 
+
+  ! Subdiagonal edge-based structure generated
+  integer(I32), parameter, public :: AFCSTAB_DUP_OFFDIAGONALEDGES = AFCSTAB_HAS_OFFDIAGONALEDGES
+  
+  ! Precomputed antidiffusive fluxes
+  integer(I32), parameter, public :: AFCSTAB_DUP_ADFLUXES         = AFCSTAB_HAS_ADFLUXES 
+  
+  ! Nodal sums of antidiffusive increments: PP, PM
+  integer(I32), parameter, public :: AFCSTAB_DUP_ADINCREMENTS     = AFCSTAB_HAS_ADINCREMENTS
+
+  ! Nodal upper/lower bounds: QP, QM
+  integer(I32), parameter, public :: AFCSTAB_DUP_BOUNDS           = AFCSTAB_HAS_BOUNDS
+  
+  ! Nodal correction factors: RP, RM
+  integer(I32), parameter, public :: AFCSTAB_DUP_NODELIMITER      = AFCSTAB_HAS_NODELIMITER
+  
+  ! Edgewise correction factors: ALPHA
+  integer(I32), parameter, public :: AFCSTAB_DUP_EDGELIMITER      = AFCSTAB_HAS_EDGELIMITER
     
 !</constantblock>
+
 
 !<constantblock description="Bitfield identifiers for FCT-algorithm">
 
@@ -741,6 +779,123 @@ contains
         p_IsuperdiagEdgesIdx,rafcstab%NEQ+1)
 
   end subroutine afcstab_getbase_IsupdiagEdgeIdx
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_duplicateStabilisation(rafcstabSrc, rafcstabDest, iduplicateFlag)
+
+!<description>
+    ! This subroutine duplicates an existing stabilisation structure, creates
+    ! a new stabilisation structure rafcstabDest based on the template
+    ! structure rafcstabSrc
+!</description>
+
+!<input>
+    ! Source stabilisation structure
+    type(t_afcstab), intent(in) :: rafcstabSrc
+    
+    ! Duplication flag that decides on how to set up the structure
+    integer, intent(in) :: iduplicateFlag
+!</input>
+
+!<inputoutput>
+    ! Destination stabilisation structure
+    type(t_afcstab), intent(inout) :: rafcstabDest
+!</inputoutput>
+!</subroutine>
+   
+    ! Duplicate structural data
+    if (iand(iduplicateFlag, AFCSTAB_DUP_STRUCTURE)) then
+      rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
+      rafcstabDest%NEQ                   = rafcstabSrc%NEQ
+      rafcstabDest%NVAR                  = rafcstabSrc%NVAR
+      rafcstabDest%NVARtransformed       = rafcstabSrc%NVARtransformed
+      rafcstabDest%NEDGE                 = rafcstabSrc%NEDGE
+      rafcstabDest%NNVEDGE               = rafcstabSrc%NNVEDGE
+      rafcstabDest%bprelimiting          = rafcstabSrc%bprelimiting
+    end if
+
+    ! Duplicate edge structre
+    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGESTRUCTURE)) then
+      call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
+          rafcstabDest%h_IverticesAtEdge)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGESTRUCTURE))
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEORIENTATION))
+    end if
+
+    ! Duplicate edge values
+    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGEVALUES)) then
+      call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
+          rafcstabDest%h_DcoefficientsAtEdge)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEVALUES))
+    end if
+
+    ! Duplicate off-diagonal edges
+    if (iand(iduplicateFlag, AFCSTAB_DUP_OFFDIAGONALEDGES)) then
+      call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
+          rafcstabDest%h_IsuperdiagEdgesIdx)
+      call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
+          rafcstabDest%h_IsubdiagEdgesIdx)
+      call storage_copy(rafcstabSrc%h_IsubdiagEdges,&
+          rafcstabDest%h_IsubdiagEdges)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES))
+    end if
+
+    ! Duplicate antidiffusive fluxes
+    if (iand(iduplicateFlag, AFCSTAB_DUP_ADFLUXES)) then
+      if (associated(rafcstabSrc%p_rvectorFlux0)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorFlux0, rafcstabDest%p_rvectorFlux0)
+      if (associated(rafcstabSrc%p_rvectorFlux)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorFlux, rafcstabDest%p_rvectorFlux)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_ADFLUXES))
+    end if
+
+    ! Duplicate antidiffusive increments
+    if (iand(iduplicateFlag, AFCSTAB_DUP_ADINCREMENTS)) then
+      if (associated(rafcstabSrc%p_rvectorPp)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorPp, rafcstabDest%p_rvectorPp)
+      if (associated(rafcstabSrc%p_rvectorPm)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorPm, rafcstabDest%p_rvectorPm)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_ADINCREMENTS))
+    end if
+
+    ! Duplicate upper/lower bounds
+    if (iand(iduplicateFlag, AFCSTAB_DUP_BOUNDS)) then
+      if (associated(rafcstabSrc%p_rvectorQp)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorQp, rafcstabDest%p_rvectorQp)
+      if (associated(rafcstabSrc%p_rvectorQm)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorQm, rafcstabDest%p_rvectorQm)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_BOUNDS))
+    end if
+
+    ! Duplicate nodal limiting coefficients
+    if (iand(iduplicateFlag, AFCSTAB_DUP_NODELIMITER)) then
+      if (associated(rafcstabSrc%p_rvectorRp)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorRp, rafcstabDest%p_rvectorRp)
+      if (associated(rafcstabSrc%p_rvectorRm)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorRm, rafcstabDest%p_rvectorRm)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_NODELIMITER))
+    end if
+
+    ! Duplicate edge-wise limiting coefficients
+    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGELIMITER)) then
+      if (associated(rafcstabSrc%p_rvectorAlpha)) call lsyssc_copyVector(&
+          rafcstabSrc%p_rvectorAlpha, rafcstabDest%p_rvectorAlpha)
+      rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
+          iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGELIMITER))
+    end if
+
+  end subroutine afcstab_duplicateStabilisation
 
   !*****************************************************************************
 
