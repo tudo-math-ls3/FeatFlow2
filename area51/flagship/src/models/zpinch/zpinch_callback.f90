@@ -12,11 +12,11 @@
 !# 1.) zpinch_nlsolverCallback
 !#     -> Callback routine for the nonlinear solver
 !#
-!# 2.) zpinch_initVelocityField
-!#     -> Initializes the velocity field for the transport model
+!# 2.) zpinch_calcVelocityField
+!#     -> Calculates the velocity field for the transport model
 !#
-!# 3.) zpinch_initLorentzforceTerm
-!#     -> Initializes the Lorentz force term for given solutions
+!# 3.) zpinch_calcLorentzforceTerm
+!#     -> Calculates the Lorentz force term for given solutions
 !#
 !# 4.) zpinch_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
@@ -27,17 +27,20 @@
 module zpinch_callback
 
   use afcstabilisation
+  use basicgeometry
   use boundaryfilter
   use collection
   use derivatives
   use euler_basic
   use euler_callback
+  use euler_callback1d
   use euler_callback2d
+  use euler_callback3d
   use flagship_basic
   use fparser
   use fsystem
   use genoutput
-  use basicgeometry
+  use groupfemscalar
   use linearalgebra
   use linearsystemblock
   use linearsystemscalar
@@ -48,7 +51,9 @@ module zpinch_callback
   use storage
   use timestepaux
   use transport_callback
+  use transport_callback1d
   use transport_callback2d
+  use transport_callback3d
   use trilinearformevaluation
   use zpinch_callback2d
 
@@ -56,8 +61,8 @@ module zpinch_callback
 
   private
   public :: zpinch_nlsolverCallback
-  public :: zpinch_initVelocityField
-  public :: zpinch_initLorentzforceTerm
+  public :: zpinch_calcVelocityField
+  public :: zpinch_calcLorentzforceTerm
   public :: zpinch_calcLinearisedFCT
   public :: zpinch_checkPressure
 
@@ -131,7 +136,7 @@ contains
     real(DP) :: dscaleLorentzForceTerm
     integer :: ilorentzForceType
     integer(i32) :: iSpec
-    integer :: jacobianMatrix
+    integer :: isystemFormat, jacobianMatrix
 
     if (trim(rsolver%ssolverName) .eq. 'NonlinearSolverEuler') then
 
@@ -175,9 +180,9 @@ contains
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
         ! Get parameters from parameter list
-        call parlst_getvalue_int(p_rparlist, rcollection&
-            %SquickAccess(2), 'ilorentzforcetype', ilorentzForceType)
-
+        call parlst_getvalue_int(p_rparlist,&
+            rcollection%SquickAccess(2), 'ilorentzforcetype', ilorentzForceType)
+        
         ! Calculate scaling for implicit part of the Lorentz force
         dscaleLorentzForceTerm = -rtimestep%theta * rtimestep%dStep
 
@@ -185,7 +190,7 @@ contains
             (dscaleLorentzForceTerm .ne. 0.0_DP)) then
 
           ! Compute the implicit part of the Lorentz force
-          call zpinch_initLorentzforceTerm(p_rparlist,&
+          call zpinch_calcLorentzforceTerm(p_rparlist,&
               rcollection%SquickAccess(2), rcollection%SquickAccess(3),&
               rcollection%SquickAccess(4), rproblemLevel,&
               p_rsolutionEuler, p_rsolutionTransport, rtimestep%dTime,&
@@ -204,8 +209,7 @@ contains
 
           ! Compute the residual without the Lorentz force term
           call euler_calcResidualThetaScheme(rproblemLevel, rtimestep,&
-              rsolver, rsolution, rsolution0, rrhs, rres, istep,&
-              rcollection)
+              rsolver, rsolution, rsolution0, rrhs, rres, istep, rcollection)
 
         end if
       end if
@@ -224,9 +228,16 @@ contains
     elseif (trim(rsolver%ssolverName) .eq. 'NonlinearSolverTransport') then
 
       ! Set the first string quick access array to the section name
-      ! of the Euler model which is stored in the fourth array
+      ! of the transport model which is stored in the fourth array
       rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
 
+      ! Set pointer to parameter list
+      p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+      
+      ! Get configuration from Euler section of parameter list 
+      call parlst_getvalue_int(p_rparlist,&
+          rcollection%SquickAccess(3), 'isystemformat', isystemFormat)
+      
       !###########################################################################
       ! REMARK: The order in which the operations are performed is
       ! essential. This is due to the fact that the calculation of the
@@ -244,21 +255,42 @@ contains
       ! --------------------------------------------------------------------------
       if ((iand(iSpec, NLSOL_OPSPEC_CALCRHS)  .ne. 0)) then
 
-        ! Compute the preconditioner
-        call transp_calcPrecondThetaScheme(rproblemLevel,&
-            rtimestep, rsolver, rsolution, rcollection,&
-            zpinch_calcMatRusConvectionP2d,&
-            zpinch_calcMatRusConvectionD2d,&
-            transp_coeffMatBdrConvectionP2d,&
-            transp_coeffMatBdrConvectionD2d)
+        ! What type of system format are we?
+        select case(isystemFormat)
+          
+        case (SYSTEM_INTERLEAVEFORMAT)
+          
+          ! Compute the preconditioner in interleaved format
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rcollection,&
+              zpinch_calcMatRusConvIntlP2d,&
+              zpinch_calcMatRusConvIntlD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
 
+        case (SYSTEM_BLOCKFORMAT)
+
+          ! Compute the preconditioner in block format
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rcollection,&
+              zpinch_calcMatRusConvBlockP2d,&
+              zpinch_calcMatRusConvBlockD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
+
+        case DEFAULT
+          call output_line('Invalid system format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+          call sys_halt()
+        end select
+        
         ! Compute the right-hand side
         call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
             rrhs, istep, rcollection,&
             fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvectionP2d,&
             fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvectionD2d)
-
+        
         ! Remove specifier for the preconditioner (if any)
         iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
       end if
@@ -269,21 +301,42 @@ contains
       if (iand(iSpec, NLSOL_OPSPEC_CALCRESIDUAL) .ne. 0) then
 
         if (istep .eq. 0) then
-
+          
           if (dtimeTransport .ne. rtimestep%dTime) then
 
             ! Update time variable so that no re-evaluation of the
             ! const right-hand side takes place for current time step
             dtimeTransport = rtimestep%dTime
 
-            ! Compute the preconditioner
-            call transp_calcPrecondThetaScheme(rproblemLevel,&
+            ! What type of system format are we?
+            select case(isystemFormat)
+              
+            case (SYSTEM_INTERLEAVEFORMAT)
+              
+              ! Compute the preconditioner in interleaved format
+              call transp_calcPrecondThetaScheme(rproblemLevel,&
                   rtimestep, rsolver, rsolution0, rcollection,&
-                  zpinch_calcMatRusConvectionP2d,&
-                  zpinch_calcMatRusConvectionD2d,&
+                  zpinch_calcMatRusConvIntlP2d,&
+                  zpinch_calcMatRusConvIntlD2d,&
                   transp_coeffMatBdrConvectionP2d,&
                   transp_coeffMatBdrConvectionD2d)
 
+            case (SYSTEM_BLOCKFORMAT)
+
+              ! Compute the preconditioner in block format
+              call transp_calcPrecondThetaScheme(rproblemLevel,&
+                  rtimestep, rsolver, rsolution0, rcollection,&
+                  zpinch_calcMatRusConvBlockP2d,&
+                  zpinch_calcMatRusConvBlockD2d,&
+                  transp_coeffMatBdrConvectionP2d,&
+                  transp_coeffMatBdrConvectionD2d)
+
+            case DEFAULT
+              call output_line('Invalid system format!',&
+                  OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+              call sys_halt()
+            end select
+            
             ! Assemble the constant right-hand side
             call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution0, rrhs, rcollection,&
@@ -292,31 +345,49 @@ contains
 
           end if
 
-          ! Set pointer to parameter list
-          p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
-
           ! Set pointer to the solution vector of the Euler model
           ! from the current time step
           p_rsolutionEuler => rcollection%p_rvectorQuickAccess1
 
           ! Calculate the velocity vector using the solution of the
           ! Euler model from the current time step
-          call zpinch_initVelocityField(p_rparlist,&
+          call zpinch_calcVelocityField(p_rparlist,&
               rcollection%SquickAccess(1), rproblemLevel,&
               p_rsolutionEuler, rcollection)
 
-          ! Compute the preconditioner
-          call transp_calcPrecondThetaScheme(rproblemLevel,&
-              rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvectionP2d,&
-              zpinch_calcMatRusConvectionD2d,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+          ! What type of system format are we?
+          select case(isystemFormat)
+            
+          case (SYSTEM_INTERLEAVEFORMAT)
+            
+            ! Compute the preconditioner in interleaved format
+            call transp_calcPrecondThetaScheme(rproblemLevel,&
+                rtimestep, rsolver, rsolution, rcollection,&
+                zpinch_calcMatRusConvIntlP2d,&
+                zpinch_calcMatRusConvIntlD2d,&
+                transp_coeffMatBdrConvectionP2d,&
+                transp_coeffMatBdrConvectionD2d)
 
+          case (SYSTEM_BLOCKFORMAT)
+            
+            ! Compute the preconditioner in block format
+            call transp_calcPrecondThetaScheme(rproblemLevel,&
+                rtimestep, rsolver, rsolution, rcollection,&
+                zpinch_calcMatRusConvBlockP2d,&
+                zpinch_calcMatRusConvBlockD2d,&
+                transp_coeffMatBdrConvectionP2d,&
+                transp_coeffMatBdrConvectionD2d)
+
+          case DEFAULT
+            call output_line('Invalid system format!',&
+                OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+            call sys_halt()
+          end select
+          
           ! Remove specifier for the preconditioner (if any)
           iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
         end if
-
+        
         ! Compute the residual
         call transp_calcResidualThetaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
@@ -327,14 +398,35 @@ contains
       ! Do we have to calculate the preconditioner?
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCPRECOND) .ne. 0) then
+        
+        ! What type of system format are we?
+        select case(isystemFormat)
+          
+        case (SYSTEM_INTERLEAVEFORMAT)
+          
+          ! Compute the preconditioner in interleaved format
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rcollection,&
+              zpinch_calcMatRusConvIntlP2d,&
+              zpinch_calcMatRusConvIntlD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
 
-        ! Compute the preconditioner
-        call transp_calcPrecondThetaScheme(rproblemLevel,&
-            rtimestep, rsolver, rsolution, rcollection,&
-            zpinch_calcMatRusConvectionP2d,&
-            zpinch_calcMatRusConvectionD2d,&
-            transp_coeffMatBdrConvectionP2d,&
-            transp_coeffMatBdrConvectionD2d)
+        case (SYSTEM_BLOCKFORMAT)
+          
+          ! Compute the preconditioner in block format
+          call transp_calcPrecondThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rcollection,&
+              zpinch_calcMatRusConvBlockP2d,&
+              zpinch_calcMatRusConvBlockD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
+
+        case DEFAULT
+          call output_line('Invalid system format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+          call sys_halt()
+        end select
       end if
 
 
@@ -342,13 +434,34 @@ contains
       ! --------------------------------------------------------------------------
       if (iand(iSpec, NLSOL_OPSPEC_CALCJACOBIAN) .ne. 0) then
 
-        ! Compute the Jacobian matrix
-        call transp_calcJacobianThetaScheme(rproblemLevel,&
-            rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-            zpinch_calcMatRusConvectionP2d,&
-            zpinch_calcMatRusConvectionD2d,&
-            transp_coeffMatBdrConvectionP2d,&
-            transp_coeffMatBdrConvectionD2d)
+        ! What type of system format are we?
+        select case(isystemFormat)
+          
+        case (SYSTEM_INTERLEAVEFORMAT)
+          
+          ! Compute the Jacobian matrix in interleaved format
+          call transp_calcJacobianThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rsolution0, rcollection,&
+              zpinch_calcMatRusConvIntlP2d,&
+              zpinch_calcMatRusConvIntlD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
+
+        case (SYSTEM_BLOCKFORMAT)
+
+          ! Compute the Jacobian matrix in block format
+          call transp_calcJacobianThetaScheme(rproblemLevel,&
+              rtimestep, rsolver, rsolution, rsolution0, rcollection,&
+              zpinch_calcMatRusConvBlockP2d,&
+              zpinch_calcMatRusConvBlockD2d,&
+              transp_coeffMatBdrConvectionP2d,&
+              transp_coeffMatBdrConvectionD2d)
+
+        case DEFAULT
+          call output_line('Invalid system format!',&
+              OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+          call sys_halt()
+        end select
       end if
 
 
@@ -370,8 +483,8 @@ contains
         p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
         ! Get position of Jacobian matrix
-        call parlst_getvalue_int(p_rparlist, rcollection&
-            %SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
+        call parlst_getvalue_int(p_rparlist,&
+            rcollection%SquickAccess(1), 'jacobianMatrix', jacobianMatrix)
 
         ! Apply Jacobian matrix
         call lsyssc_scalarMatVec(&
@@ -379,7 +492,13 @@ contains
             rsolution%RvectorBlock(1), rres%RvectorBlock(1),&
             1.0_DP, 1.0_DP)
       end if
+      
+    else
 
+      call output_line('Invalid nonlinear solver!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_nlsolverCallback')
+      call sys_halt()
+      
     end if
 
     ! Set status flag
@@ -391,7 +510,7 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_initVelocityField(rparlist, ssectionName,&
+  subroutine zpinch_calcVelocityField(rparlist, ssectionName,&
       rproblemLevel, rsolution, rcollection)
 
 !<description>
@@ -444,18 +563,6 @@ contains
           neq, .true.)
     end if
 
-!!$    ! Set x-velocity, i.e., momentum in x-direction
-!!$    call euler_getVariable(rsolution, 'momentum_x',&
-!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
-!!$    call zpinch_setVariable2d(&
-!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1), 1)
-!!$
-!!$    ! Set y-velocity, i.e., momentum in y-direction
-!!$    call euler_getVariable(rsolution, 'momentum_y',&
-!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2))
-!!$    call zpinch_setVariable2d(&
-!!$        rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
-
     ! Set x-velocity
     call euler_getVariable(rsolution, 'velocity_x',&
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(1))
@@ -469,21 +576,22 @@ contains
         rproblemLevel%RvectorBlock(velocityfield)%RvectorBlock(2), 2)
 
     ! Set the global solution vector at the current time step
-    call lsysbl_duplicateVector(rsolution, rproblemLevel&
-        %RvectorBlock(2), LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+    call lsysbl_duplicateVector(rsolution,&
+        rproblemLevel%RvectorBlock(2),&
+        LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
     call zpinch_setVariable2d(rproblemLevel%RvectorBlock(2), 3)
 
     ! Set update notification in problem level structure
     rproblemLevel%iproblemSpec = ior(rproblemLevel%iproblemSpec,&
                                      PROBLEV_MSPEC_UPDATE)
 
-  end subroutine zpinch_initVelocityField
+  end subroutine zpinch_calcVelocityField
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine zpinch_initLorentzforceTerm(rparlist, ssectionName,&
+  subroutine zpinch_calcLorentzforceTerm(rparlist, ssectionName,&
       ssectionNameEuler, ssectionNameTransport, rproblemLevel,&
       rsolutionEuler, rsolutionTransport, dtime, dscale, rforce,&
       rcollection)
@@ -533,9 +641,9 @@ contains
     real(DP), dimension(:), pointer :: p_DdataTransport, p_DdataEuler, p_Ddata
     real(DP), dimension(:), pointer :: p_DlumpedMassMatrix
     character(LEN=SYS_STRLEN) :: slorentzforceName
-    real(DP) :: dcurrentDrive
+    real(DP) :: dcurrentDrive, deffectiveRadius
     integer :: isystemFormat, lumpedMassMatrix
-    integer :: neq, nvar, icomp, icoords
+    integer :: neq, nvar, icomp, icoordinatesystem
     logical :: bcompatible
 
 
@@ -547,17 +655,25 @@ contains
     ! Get global configuration from parameter list
     call parlst_getvalue_string(rparlist, ssectionName,&
         'slorentzforcename', slorentzforceName)
+    call parlst_getvalue_double(rparlist, ssectionName,&
+        'deffectiveradius', deffectiveRadius)
     call parlst_getvalue_int(rparlist, ssectionName,&
-        'icoords', icoords)
+        'icoordinatesystem', icoordinatesystem)
     call parlst_getvalue_int(rparlist, ssectionNameEuler,&
         'lumpedmassmatrix', lumpedMassMatrix)
     call parlst_getvalue_int(rparlist, ssectionNameEuler,&
         'isystemformat', isystemFormat)
-
+    
     ! Get lumped and consistent mass matrix
-    call lsyssc_getbase_double(&
-        rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
-
+    if (lumpedMassMatrix .gt. 0) then
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix), p_DlumpedMassMatrix)
+    else
+      call output_line('Lumped mass matrix is not available!',&
+          OU_CLASS_ERROR, OU_MODE_STD, 'zpinch_calcLorentzforceTerm')
+      call sys_halt()
+    end if
+    
     ! Set pointer to global solution vectors
     call lsysbl_getbase_double(rforce, p_Ddata)
     call lsysbl_getbase_double(rsolutionEuler, p_DdataEuler)
@@ -579,8 +695,7 @@ contains
     icomp = fparser_getFunctionNumber(p_rfparser, slorentzforceName)
 
     ! Evaluate the function parser
-    call fparser_evalFunction(p_rfparser, icomp,&
-        (/dtime/), dcurrentDrive)
+    call fparser_evalFunction(p_rfparser, icomp, (/dtime/), dcurrentDrive)
 
     ! Multiply scaling parameter by the time step
     dcurrentDrive = dscale * dcurrentDrive
@@ -591,45 +706,45 @@ contains
     case (SYSTEM_INTERLEAVEFORMAT)
 
       ! What type of coordinate system are we?
-      select case(icoords)
+      select case(icoordinatesystem)
       case(1)
-        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
-            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
-            p_DdataEuler, p_Ddata)
+        call calcForceXYInterleaveFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataEuler, p_Ddata)
 
       case(2)
-        call calcForceRZInterleaveFormat(dcurrentDrive, neq, nvar,&
-            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
-            p_DdataEuler, p_Ddata)
+        call calcForceRZInterleaveFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataEuler, p_Ddata)
 
       case default
         call output_line('Invalid type of coordinate system!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
         call sys_halt()
       end select
 
     case (SYSTEM_BLOCKFORMAT)
       ! What type of coordinate system are we?
-      select case(icoords)
+      select case(icoordinatesystem)
       case(1)
-        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
-            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
-            p_DdataEuler, p_Ddata)
+        call calcForceXYBlockFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataEuler, p_Ddata)
 
       case(2)
-        call calcForceXYInterleaveFormat(dcurrentDrive, neq, nvar,&
-            p_DvertexCoords, p_DlumpedMassMatrix, p_DdataTransport,&
-            p_DdataEuler, p_Ddata)
+        call calcForceRZBlockFormat(dcurrentDrive, deffectiveRadius,&
+            neq, nvar, p_DvertexCoords, p_DlumpedMassMatrix,&
+            p_DdataTransport, p_DdataEuler, p_Ddata)
 
       case default
         call output_line('Invalid type of coordinate system!',&
-            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+            OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
         call sys_halt()
       end select
 
     case DEFAULT
       call output_line('Invalid system format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_initLorentzforceTerm')
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLorentzforceTerm')
       call sys_halt()
     end select
 
@@ -642,136 +757,590 @@ contains
     ! Calculate the Lorentz force term in x-y coordinates.
     ! The system is stored in interleave format.
 
-    subroutine calcForceXYInterleaveFormat(dconst, neq, nvar,&
-        DvertexCoords, DmassMatrix, DdataTransport, DdataEuler,&
-        DdataForce)
+    subroutine calcForceXYInterleaveFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, DvertexCoords,&
+        DmassMatrix, DdataTransport, DdataEuler, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
-      real(DP), intent(in) :: dconst
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
 
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
 
       ! local variables
-      real(DP) :: drad, dang, daux1, daux2, x1, x2
+      real(DP) :: drad, daux, x1, x2
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux1,daux2)
+      !$omp parallel do private(x1,x2,drad,daux)
       do i = 1, neq
 
         ! Get coordinates at node i
         x1 = DvertexCoords(1, i)
         x2 = DvertexCoords(2, i)
-
-        ! Compute unit vector
-        drad = sqrt(x1*x1 + x2*x2)
-
-!!$        ! Compute polar coordinates
-!!$        drad = sqrt(x1*x1 + x2*x2)
-!!$        dang = atan2(x2, x1)
-
+        
         ! Compute unit vector into origin
-        if (drad .gt. 1e-4) then
+        drad = sqrt(x1*x1 + x2*x2)
+        if (drad .gt. SYS_EPSREAL) then
           x1 = x1/drad
           x2 = x2/drad
         else
-          x1 = 0.0; x2 = 0.0
+          x1 = 0.0_DP
+          x2 = 0.0_DP
         end if
-
-!!$        ! Compute source term
-!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-!!$                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
-!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-!!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-!!$                         max(drad, 1.0e-4_DP)
-
-        ! Compute source term
-        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
-        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
-                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-                         max(drad, 1.0e-4_DP)
+        
+        ! Compute Lorentz source term
+        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+               max(drad, deffectiveRadius)
 
         ! Impose source values
-        DdataForce(1, i) = 0.0_DP
-        DdataForce(2, i) = daux1 * x1
-        DdataForce(3, i) = daux1 * x2
-        DdataForce(4, i) = daux2
+        DdataForce(1,i) = 0.0_DP
+        DdataForce(2,i) = daux * x1
+        DdataForce(3,i) = daux * x2
+        DdataForce(4,i) = daux * (DdataEuler(2,i)*x1 +&
+                                  DdataEuler(3,i)*x2) / DdataEuler(1,i)
       end do
       !$omp end parallel do
 
     end subroutine calcForceXYInterleaveFormat
 
+
     !**************************************************************
     ! Calculate the Lorentz force term in r-z coordinates.
     ! The system is stored in interleave format.
 
-    subroutine calcForceRZInterleaveFormat(dconst, neq, nvar,&
-        DvertexCoords, DmassMatrix, DdataTransport, DdataEuler,&
-        DdataForce)
+    subroutine calcForceRZInterleaveFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
+        DdataTransport, DdataEuler, DdataForce)
 
       real(DP), dimension(:,:), intent(in) :: DvertexCoords
       real(DP), dimension(nvar,neq), intent(in) :: DdataEuler
       real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
-      real(DP), intent(in) :: dconst
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
       integer, intent(in) :: neq, nvar
-
+      
       real(DP), dimension(nvar,neq), intent(out) :: DdataForce
-
+      
       ! local variables
-      real(DP) :: drad, dang, daux1, daux2, x1, x2
+      real(DP) :: drad, daux, x1
       integer :: i
 
       ! Loop over all rows
-      !$omp parallel do private(x1,x2,drad,daux1,daux2)
+      !$omp parallel do private(x1,drad,daux)
       do i = 1, neq
 
-        ! Get coordinates at node i
-        x1 = DvertexCoords(1, i)
-        x2 = DvertexCoords(2, i)
-
-        ! Get coordinates at node i
-        drad = x1
-
+        ! Get x-coordinate at node i
+        x1 = DvertexCoords(1, i); drad = x1
+        
         ! Compute unit vector into origin
-        if (drad .gt. 1e-4) then
-          x1 = 1.0; x2 = 0.0
+        if (drad .gt. SYS_EPSREAL) then
+          x1 = 1.0_DP
         else
-          x1 = 0.0; x2 = 0.0
+          x1 = 0.0_DP
         end if
 
-!!$        ! Compute source term
-!!$        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-!!$                         DdataEuler(1, i) / max(drad, 1.0e-4_DP)
-!!$        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) *&
-!!$                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-!!$                         max(drad, 1.0e-4_DP)
-
-        ! Compute source term
-        daux1 = dconst * DmassMatrix(i) * DdataTransport(i) / max(drad, 1.0e-4_DP)
-        daux2 = dconst * DmassMatrix(i) * DdataTransport(i) / DdataEuler(1, i) *&
-                         (DdataEuler(2, i) * x1 + DdataEuler(3,i) * x2) /&
-                         max(drad, 1.0e-4_DP)
-
+        ! Compute Lorentz source term
+        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+               max(drad, deffectiveRadius)
+        
         ! Impose source values
-        DdataForce(1, i) = 0.0_DP
-        DdataForce(2, i) = daux1 * x1
-        DdataForce(3, i) = daux1 * x2
-        DdataForce(4, i) = daux2
+        DdataForce(1,i) = 0.0_DP
+        DdataForce(2,i) = daux * x1
+        DdataForce(3,i) = 0.0_DP
+        DdataForce(4,i) = daux * DdataEuler(2,i)*x1 / DdataEuler(1,i)
       end do
       !$omp end parallel do
 
     end subroutine calcForceRZInterleaveFormat
 
-  end subroutine zpinch_initLorentzforceTerm
+
+    !**************************************************************
+    ! Calculate the Lorentz force term in x-y coordinates.
+    ! The system is stored in block format.
+
+    subroutine calcForceXYBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, DvertexCoords,&
+        DmassMatrix, DdataTransport, DdataEuler, DdataForce)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(neq,nvar), intent(in) :: DdataEuler
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+
+      real(DP), dimension(neq,nvar), intent(out) :: DdataForce
+
+      ! local variables
+      real(DP) :: drad, daux, x1, x2
+      integer :: i
+
+      ! Loop over all rows
+      !$omp parallel do private(x1,x2,drad,daux)
+      do i = 1, neq
+
+        ! Get coordinates at node i
+        x1 = DvertexCoords(1, i)
+        x2 = DvertexCoords(2, i)
+        
+        ! Compute unit vector into origin
+        drad = sqrt(x1*x1 + x2*x2)
+        if (drad .gt. SYS_EPSREAL) then
+          x1 = x1/drad
+          x2 = x2/drad
+        else
+          x1 = 0.0_DP
+          x2 = 0.0_DP
+        end if
+        
+        ! Compute Lorentz source term
+        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+               max(drad, deffectiveRadius)
+
+        ! Impose source values
+        DdataForce(i,1) = 0.0_DP
+        DdataForce(i,2) = daux * x1
+        DdataForce(i,3) = daux * x2
+        DdataForce(i,4) = daux * (DdataEuler(i,2)*x1 +&
+                                  DdataEuler(i,3)*x2) / DdataEuler(i,1)
+      end do
+      !$omp end parallel do
+
+    end subroutine calcForceXYBlockFormat
+
+
+    !**************************************************************
+    ! Calculate the Lorentz force term in r-z coordinates.
+    ! The system is stored in block format.
+
+    subroutine calcForceRZBlockFormat(dcurrentDrive,&
+        deffectiveRadius, neq, nvar, DvertexCoords, DmassMatrix,&
+        DdataTransport, DdataEuler, DdataForce)
+
+      real(DP), dimension(:,:), intent(in) :: DvertexCoords
+      real(DP), dimension(neq,nvar), intent(in) :: DdataEuler
+      real(DP), dimension(:), intent(in) :: DmassMatrix, DdataTransport
+      real(DP), intent(in) :: dcurrentDrive, deffectiveRadius
+      integer, intent(in) :: neq, nvar
+      
+      real(DP), dimension(neq,nvar), intent(out) :: DdataForce
+      
+      ! local variables
+      real(DP) :: drad, daux, x1
+      integer :: i
+
+      ! Loop over all rows
+      !$omp parallel do private(x1,drad,daux)
+      do i = 1, neq
+
+        ! Get x-coordinate at node i
+        x1 = DvertexCoords(1, i); drad = x1
+        
+        ! Compute unit vector into origin
+        if (drad .gt. SYS_EPSREAL) then
+          x1 = 1.0_DP
+        else
+          x1 = 0.0_DP
+        end if
+
+        ! Compute Lorentz source term
+        daux = dcurrentDrive * DmassMatrix(i)*DdataTransport(i) /&
+               max(drad, deffectiveRadius)
+        
+        ! Impose source values
+        DdataForce(i,1) = 0.0_DP
+        DdataForce(i,2) = daux * x1
+        DdataForce(i,3) = 0.0_DP
+        DdataForce(i,4) = daux * DdataEuler(i,2)*x1 / DdataEuler(i,1)
+      end do
+      !$omp end parallel do
+
+    end subroutine calcForceRZBlockFormat
+
+  end subroutine zpinch_calcLorentzforceTerm
 
   !*****************************************************************************
 
-  !<subroutine>
+!<subroutine>
 
-  subroutine zpinch_calcLinearisedFCT(rbdrCondEuler,&
+  subroutine zpinch_calcLinearisedFCT(rbdrCondEuler, rbdrcondTransport,&
+      rproblemLevel, rtimestep, rsolverEuler, rsolverTransport,&
+      rsolutionEuler, rsolutionTransport, rcollection, rsourceEuler)
+
+!<description>
+    ! This subroutine calculates the linearised FCT correction
+!</description>
+
+!<input>
+    ! boundary condition structure
+    type(t_boundaryCondition), intent(in) :: rbdrCondEuler
+    type(t_boundaryCondition), intent(in) :: rbdrCondTransport
+
+    ! time-stepping algorithm
+    type(t_timestep), intent(in) :: rtimestep
+
+    ! OPTIONAL: source vector
+    type(t_vectorBlock), intent(in), optional :: rsourceEuler
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! solver structures
+    type(t_solver), intent(inout) :: rsolverEuler
+    type(t_solver), intent(inout) :: rsolverTransport
+
+    ! solution vectors
+    type(t_vectorBlock), intent(inout) :: rsolutionEuler
+    type(t_vectorBlock), intent(inout) :: rsolutionTransport
+
+    ! collection structure
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_timestep) :: rtimestepAux
+    type(t_vectorBlock), pointer :: p_rpredictorEuler,p_rpredictorTransport
+    type(t_parlist), pointer :: p_rparlist
+    character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
+    real(DP), dimension(:), pointer :: p_DalphaEuler, p_DalphaTransport
+    integer :: convectionAFC,inviscidAFC,lumpedMassMatrix,consistentMassMatrix
+    integer :: imassantidiffusiontype,nfailsafe,ivariable,nvariable
+    integer :: ilimitersynchronisation
+    
+    ! Set pointer to parameter list
+    p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
+
+    ! Get parameters from parameter list
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(3), 'inviscidAFC', inviscidAFC)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(4), 'convectionAFC', convectionAFC)
+
+    ! Do we have to apply linearised FEM-FCT?
+    if ((inviscidAFC .le. 0) .or. (convectionAFC .le. 0)) return
+    if ((rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
+         .ne. AFCSTAB_FEMFCT_LINEARISED) .or.&
+        (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
+         .ne. AFCSTAB_FEMFCT_LINEARISED)) return
+
+    ! Get more parameters from parameter list
+     call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(2),&
+        'ilimitersynchronisation', ilimitersynchronisation)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(3),&
+        'lumpedmassmatrix', lumpedmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(3),&
+        'consistentmassmatrix', consistentmassmatrix)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(3),&
+        'nfailsafe', nfailsafe)
+    call parlst_getvalue_int(p_rparlist,&
+        rcollection%SquickAccess(4),&
+        'imassantidiffusiontype', imassantidiffusiontype)
+    
+    !---------------------------------------------------------------------------
+    ! Linearised FEM-FCT algorithm
+    !---------------------------------------------------------------------------
+
+    ! Initialize dummy timestep
+    rtimestepAux%dStep = 1.0_DP
+    rtimestepAux%theta = 0.0_DP
+    
+    !--- compressible Euler model ----------------------------------------------
+
+    ! Set pointer to predictor
+    p_rpredictorEuler => rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorPredictor
+
+    ! Set the first string quick access array to the section name
+    ! of the Euler model which is stored in the third array
+    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
+
+    ! Compute low-order "right-hand side" without theta parameter
+    call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+        rsolverEuler, rsolutionEuler, p_rpredictorEuler, rcollection,&
+        rsourceEuler)
+
+    ! Compute low-order predictor
+    call lsysbl_invertedDiagMatVec(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        p_rpredictorEuler, 1.0_DP, p_rpredictorEuler)
+
+    ! Compute the raw antidiffusive fluxes
+    call euler_calcFluxFCT(rproblemLevel, p_rpredictorEuler,&
+        rsolutionEuler, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
+
+    !--- transport model -------------------------------------------------------
+
+    ! Set pointer to predictor
+    p_rpredictorTransport => rproblemLevel%Rafcstab(convectionAFC)%p_rvectorPredictor
+
+    ! Set the first string quick access array to the section name
+    ! of the transport model which is stored in the fourth array
+    rcollection%SquickAccess(1) = rcollection%SquickAccess(4)
+
+    ! Compute the preconditioner
+    call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
+        rsolverTransport, rsolutionTransport, rcollection)
+
+    ! Compute low-order "right-hand side" without theta parameter
+    call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
+        rsolverTransport, rsolutionTransport, p_rpredictorTransport,&
+        rcollection,&
+        fcb_coeffVecBdrPrimal_sim = transp_coeffVecBdrConvectionP2d,&
+        fcb_coeffVecBdrDual_sim = transp_coeffVecBdrConvectionD2d)
+
+    ! Compute low-order predictor
+    call lsysbl_invertedDiagMatVec(&
+        rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        p_rpredictorTransport, 1.0_DP, p_rpredictorTransport)
+
+    ! Should we apply consistent mass antidiffusion?
+    if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          p_rpredictorTransport, rsolutionTransport,&
+          rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
+          rproblemLevel%Rmatrix(consistentMassMatrix))
+    else
+      call gfsc_buildFluxFCT(&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          p_rpredictorTransport, rsolutionTransport,&
+          rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
+    end if
+
+    !---------------------------------------------------------------------------
+    ! Perform failsafe flux correction (if required)
+    !---------------------------------------------------------------------------
+    
+    ! Set the first string quick access array to the section name
+    ! of the Euler model which is stored in the third array
+    rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
+    
+    ! What type of limiter synchronisation is performed?
+    select case(ilimitersynchronisation)
+      
+    case (0)   ! no synchronisation
+      
+      ! Compute linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      
+
+    case (1)   ! minimum synchronisation
+      
+      ! Compute linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          rsolutionEuler, rcollection)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      
+      ! Compute minimum correction factor
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_DalphaEuler)
+      call lsyssc_getbase_double(&
+          rproblemLevel%Rafcstab(convectionAFC)%p_rvectorAlpha, p_DalphaTransport)
+      
+      p_DalphaEuler = min(p_DalphaEuler, p_DalphaTransport)
+      call lalg_copyVector(p_DalphaEuler, p_DalphaTransport)
+      
+      ! Apply linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+
+
+    case (2)   ! Euler first, transport second
+      
+      ! Compute linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          rsolutionEuler, rcollection)
+      
+      ! Copy correction factor for Euler system to transport model
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      
+      ! Copy final correction factor back to Euler system
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      ! Apply linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+
+
+    case (3)   ! Transport first, Euler second
+      
+      ! Compute linearised FEM-FCT correction      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      
+      ! Copy correction factor for transport model to Euler system
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          rsolutionEuler, rcollection)
+      
+      ! Copy final correction factor back to transport model
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      ! Apply linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+
+
+    case (4)   ! Euler system only
+      
+      ! Apply linearised FEM-FCT correction      
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+      ! Copy correction factor for Euler system to transport model
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      ! Apply linearised FEM-FCT correction
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      
+    case (5)   ! Transport model only
+      
+      ! Apply linearised FEM-FCT correction
+      call gfsc_buildConvVectorFCT(&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rsolutionTransport, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      
+      ! Copy correction factor for transport model to Euler system
+      call afcstab_duplicateStabilisation(&
+          rproblemLevel%Rafcstab(convectionAFC),&
+          rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
+      
+      ! Apply linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolutionEuler, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_CORRECT+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolutionEuler, rcollection)
+      
+    case default
+      call output_line('Invalid type of limiter synchronisation!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLinearisedFCT')
+      call sys_halt()
+    end select
+    
+    
+    ! Impose boundary conditions for the solution vector
+    select case(rproblemLevel%rtriangulation%ndim)
+    case (NDIM1D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+          rtimestep%dTime, euler_calcBoundaryvalues1d)
+
+    case (NDIM2D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+          rtimestep%dTime, euler_calcBoundaryvalues2d)
+
+    case (NDIM3D)
+      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+          rtimestep%dTime, euler_calcBoundaryvalues3d)
+    end select
+
+    ! Impose boundary conditions for the solution vector
+    call bdrf_filterVectorExplicit(rbdrCondTransport, rsolutionTransport,&
+        rtimestep%dTime)
+    
+  end subroutine zpinch_calcLinearisedFCT
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_calcLinearisedFCT_OLD(rbdrCondEuler,&
       rbdrcondTransport, rproblemLevel, rtimestep,&
       rsolutionEuler, rsolutionTransport, rcollection)
 
@@ -821,6 +1390,9 @@ contains
     integer :: lumpedMassMatrix,  consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY
 
+
+    print *, "HERE"
+    stop
 
     ! Get parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -1310,7 +1882,7 @@ contains
 
     end subroutine applyCorrection
 
-  end subroutine zpinch_calcLinearisedFCT
+  end subroutine zpinch_calcLinearisedFCT_OLD
 
   !*****************************************************************************
 

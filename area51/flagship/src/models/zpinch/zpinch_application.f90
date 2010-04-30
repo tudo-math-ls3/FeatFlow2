@@ -2047,13 +2047,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Prepare quick access arrays
-      rcollection%SquickAccess(1) = ssectionNameEuler
-      rcollection%SquickAccess(2) = ssectionNameTransport
+      rcollection%SquickAccess(1) = 'null'
+      rcollection%SquickAccess(2) = ssectionName
+      rcollection%SquickAccess(3) = ssectionNameEuler
+      rcollection%SquickAccess(4) = ssectionNameTransport
 
       ! Apply linearised FEM-FCT post-processing
       call zpinch_calcLinearisedFCT(p_rbdrCondEuler, p_rbdrCondTransport,&
-          p_rproblemLevel, rtimestep, p_rsolutionEuler,&
-          p_rsolutionTransport, rcollection)
+          p_rproblemLevel, rtimestep, p_rsolverEuler, p_rsolverTransport,&
+          p_rsolutionEuler, p_rsolutionTransport, rcollection, rforce(1))
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
