@@ -58,6 +58,18 @@ ilorentzforcetype = 1
 # section name of Lorentz force term
 slorentzforcename = @forceterm
 
+# minimum effective radius
+deffectiveradius = 1e-4
+
+# type of synchronization used for flux correction
+# 0 = no synchronization
+# 1 = minimum synchronization
+# 2 = Euler system first, transport model second
+# 3 = Transport model first, Euler system second
+# 4 = Euler system only
+# 5 = Transport model only
+ilimitersynchronisation = 5
+
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
@@ -236,7 +248,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
