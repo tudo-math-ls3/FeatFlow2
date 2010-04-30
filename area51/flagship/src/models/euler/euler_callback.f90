@@ -2295,15 +2295,16 @@ contains
     integer :: inviscidAFC, lumpedMassMatrix
     integer :: nfailsafe, ivariable, nvariable
 
-    ! Get parameters from parameter list
+    ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
-    ! Get more parameter from parameter list
+    ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
 
     ! Do we have to apply linearised FEM-FCT?
+    if (inviscidAFC .le. 0) return
     if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
         .ne. AFCSTAB_FEMFCT_LINEARISED) return
 
