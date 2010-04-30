@@ -554,7 +554,13 @@ contains
     if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
         rprob%cformulation .eq. FORMULATION_STOKES) then
       call parlst_getvalue_string(rparams, '', 'elementPress', sstring)
-      if (trim(sstring) .eq. "Q1") then
+      if (trim(sstring) .eq. "Q0") then
+        rprob%celementPress = EL_Q0
+! BRAL: sinnvolle Kubatur-Formel?
+        rprob%ccubaturePress1D = CUB_G2_1D
+        rprob%ccubaturePress2D = CUB_G2X2
+        call output_line('pressure element Q0, cubature G2 / G2X2')
+      else if (trim(sstring) .eq. "Q1") then
         rprob%celementPress = EL_Q1
         rprob%ccubaturePress1D = CUB_G2_1D
         rprob%ccubaturePress2D = CUB_G2X2
@@ -584,7 +590,7 @@ contains
         call output_line('pressure element P1 non parametric direct, cubature G2 / G2X2')
       else
         call output_line('invalid pressure element:' // trim(sstring) // &
-                         ', currently only Q1, Q2, P1, P1_NP and P1_NPD supported!', &
+                         ', currently only Q0, Q1, Q2, P1, P1_NP and P1_NPD supported!', &
                          OU_CLASS_ERROR, OU_MODE_STD, 'elast_readParameterFile')
         call sys_halt()
       endif
@@ -720,11 +726,23 @@ contains
     ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
     ! strains, stresses
     if (rprob%nevalPoints .gt. 0) then
-      ! call the appropriate evaluation routine, that calculates all required function
+
+      ! Call the appropriate evaluation routine, that calculates all required function
       ! value types for all FE components in all evaluation points in one sweep. The
       ! FE solution values are stored in rprob%Dvalues(:,:,:) with dimension
       ! nblocks x 3 x nevalPoints (3 since we need FUNC, DERX and DERY)
-      call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints)
+      if (rprob%cformulation .ne. FORMULATION_DISPL .and. &
+          rprob%celement .ne. rprob%celementPress) then
+        ! In case of the mixed formulation or Stokes with different discretisations for
+        ! u and p, there have to be two calls of the function.
+        call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints, &
+                           iblockMin = 1, iblockMax = rprob%ndim)
+        call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints, &
+                           iblockMin = rprob%nblocks, iblockMax = rprob%nblocks)
+      else
+        ! otherwise, the discretisation is the same for all components
+        call fevl_evaluate(CderType, rprob%Dvalues, rsol, rprob%DevalPoints)
+      endif
 
       call output_line('Values in evaluation points:')
       do i = 1, rprob%nevalPoints
@@ -814,31 +832,48 @@ contains
     ! calculate the error between FE and reference solution
     if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       allocate(DerrorL2(rprob%nblocks), DerrorH1(rprob%nblocks))
+
       ! set pointers
-      rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%nblocks)
-      rerror%p_DerrorL2 => DerrorL2(1:rprob%nblocks)
-      rerror%p_DerrorH1 => DerrorH1(1:rprob%nblocks)
+      if (rprob%cformulation .ne. FORMULATION_DISPL .and. &
+          rprob%celement .ne. rprob%celementPress) then
+        ! In case of the mixed formulation or Stokes with different discretisations for
+        ! u and p, there have to be two calls of the error routine.
+        rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%ndim)
+        rerror%p_DerrorL2 => DerrorL2(1:rprob%ndim)
+        rerror%p_DerrorH1 => DerrorH1(1:rprob%ndim)
+      else
+        ! otherwise, the discretisation is the same for all components
+        rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%nblocks)
+        rerror%p_DerrorL2 => DerrorL2(1:rprob%nblocks)
+        rerror%p_DerrorH1 => DerrorH1(1:rprob%nblocks)
+      endif
 
       ! call the corresponding error routine
       call pperr_scalarVec(rerror, elast_analFunc)
 
-      ! print the errors
+      ! print the displacement errors
       call output_line('L2 error for u1: ' // sys_sdEL(DerrorL2(1),10) )
       call output_line('L2 error for u2: ' // sys_sdEL(DerrorL2(2),10) )
       call output_line('L2 error for  u: ' // &
                        sys_sdEL(sqrt(DerrorL2(1)**2 + DerrorL2(2)**2),10) )
-      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
-          rprob%cformulation .eq. FORMULATION_STOKES) then
-        call output_line('L2 error for  p: ' // sys_sdEL(DerrorL2(3),10) )
-      endif
       call output_line('H1 error for u1: ' // sys_sdEL(DerrorH1(1),10) )
       call output_line('H1 error for u2: ' // sys_sdEL(DerrorH1(2),10) )
       call output_line('H1 error for  u: ' // &
                        sys_sdEL(sqrt(DerrorH1(1)**2 + DerrorH1(2)**2),10) )
-      if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
-          rprob%cformulation .eq. FORMULATION_STOKES) then
-        call output_line('H1 error for  p: ' // sys_sdEL(DerrorH1(3),10) )
+
+      ! print (and eventually compute) the pressure errors
+      if (rprob%cformulation .ne. FORMULATION_DISPL) then
+        if (rprob%celement .ne. rprob%celementPress) then
+          ! call the error routine again for the pressure component if necessary
+          rerror%p_RvecCoeff => rsol%RvectorBlock(rprob%nblocks:rprob%nblocks)
+          rerror%p_DerrorL2 => DerrorL2(rprob%nblocks:rprob%nblocks)
+          rerror%p_DerrorH1 => DerrorH1(rprob%nblocks:rprob%nblocks)
+          call pperr_scalarVec(rerror, elast_analFunc)
+        endif
+        call output_line('L2 error for  p: ' // sys_sdEL(DerrorL2(rprob%nblocks),10) )
+        call output_line('H1 error for  p: ' // sys_sdEL(DerrorH1(rprob%nblocks),10) )
       endif
+
       deallocate(DerrorL2, DerrorH1)
     end if
 

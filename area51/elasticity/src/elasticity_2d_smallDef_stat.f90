@@ -33,6 +33,7 @@ contains
     use bcassembly
     use linearsolver
     use linearsolverautoinitialise
+    use spdiscprojection
     use filtersupport
     use linearsystemscalar
     use matrixfilters
@@ -66,7 +67,7 @@ contains
     type(t_linearForm) :: rlinform
     
     ! block vectors for solution, right hand side and temp. vector
-    type(t_vectorBlock) :: rsol, rrhs, rtempBlock
+    type(t_vectorBlock), target :: rsol, rrhs, rtempBlock
 
     ! variable for selecting a specifig boundary region
     type(t_boundaryRegion) :: rboundaryRegion
@@ -100,7 +101,15 @@ contains
     ! parameter list read from the parameter file
     type (t_parlist) :: rparams
 
-    
+    ! flags whether projection for UCD output is necessary for u and/or p component
+    logical :: bprojU, bprojP
+    ! additional variables eventually needed for UCD output: discretisation structure,
+    ! block vector, discrete boundary conditions
+    type(t_blockDiscretisation) :: rdiscretisationUCD
+    type(t_vectorBlock), target :: rsolUCD
+    type(t_discreteBC), target :: rdiscreteBCUCD
+    type(t_vectorBlock), pointer :: p_rsolUCD
+
     ! +------------------------------------------------------------------------
     ! | READ PARAMETER FILE
     ! +------------------------------------------------------------------------
@@ -435,7 +444,7 @@ contains
 
     ! print number of DOF
     call lsysbl_getbase_double(rsol, p_Ddata)
-    call output_line('Number of DOF: ' // trim(sys_siL(size(p_Ddata),12)) )
+    call output_line('Number of DOF: ' // trim(sys_siL(size(p_Ddata),12)))
   
     ! For implementing boundary conditions, we use a filter technique with discretised
     ! boundary conditions. This means, we first have to calculate a discrete version of
@@ -587,6 +596,86 @@ contains
     ! calculate and display errors
     call elast_calcErrors(rprob, rsol)
 
+    ! +------------------------------------------------------------------------
+    ! | UCD output
+    ! +------------------------------------------------------------------------
+
+    ! All components that are not discretised with Q1/P1/Q0, must be projected for
+    ! UCD output.
+
+    ! inquire which components have to be projected
+    bprojU = .false.
+    bprojP = .false.
+    if (rprob%celement .ne. EL_Q1) then
+      bprojU = .true.
+    endif
+    if (rprob%cformulation .ne. FORMULATION_DISPL .and. &
+        rprob%celementPress .ne. EL_Q0 .and. &
+        rprob%celementPress .ne. EL_Q1 .and. &
+        rprob%celementPress .ne. EL_QP1 .and. &
+        rprob%celementPress .ne. EL_QP1NP .and. &
+        rprob%celementPress .ne. EL_QP1NPD) then
+      bprojP = .true.
+    endif
+    
+    if (bprojU .or. bprojP) then
+      call spdiscr_duplicateBlockDiscr(Rlevels(rprob%ilevelMax)%rdiscretisation, &
+                                       rdiscretisationUCD)
+      ! first treat the displacement discretisation
+      if (bprojU) then
+        do i = 1,rprob%ndim
+          ! create a 'derived' simple discretisation structure based on Q1 by copying
+          ! and modifying the discretisation structure
+          call spdiscr_deriveSimpleDiscrSc(&
+                 Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(i), EL_Q1, &
+                 CUB_G2X2, rdiscretisationUCD%RspatialDiscr(i))
+        enddo
+      endif
+      ! now treat the pressure discretisation
+      if (bprojP) then
+        call spdiscr_deriveSimpleDiscrSc(&
+               Rlevels(rprob%ilevelMax)%rdiscretisation%RspatialDiscr(3), EL_Q1, &
+               CUB_G2X2, rdiscretisationUCD%RspatialDiscr(3))
+      endif
+
+      ! set up a solution vector based on th new discretisation (allocates memory!)
+      call lsysbl_createVecBlockByDiscr(rdiscretisationUCD, rsolUCD, .false.)
+      
+      ! convert the original solution vector according to the new discretisation
+      call spdp_projectSolution (rsol, rsolUCD)
+
+      ! discretise the boundary conditions according to the derived discretisation.
+      call bcasm_initDiscreteBC(rdiscreteBCUCD)
+
+      ! set up the boundary conditions per boundary and segment
+      do i = 1, boundary_igetNBoundComp(rprob%rboundary)
+        do j = 1,boundary_igetNsegments(rprob%rboundary,i)
+          ! create boundary region
+          call boundary_createRegion(rprob%rboundary, i, j, rboundaryRegion)
+          ! mark start and end point as belonging to the region
+          rboundaryRegion%iproperties = BDR_PROP_WITHSTART + BDR_PROP_WITHEND
+          ! currently, only the displacements have to be treated
+          do k = 1, rprob%ndim
+            if (rprob%Cbc(k,j,i) .eq. BC_DIRICHLET) then
+              ! create Dirichlet BC
+              call bcasm_newDirichletBConRealBD(rdiscretisationUCD, k, rboundaryRegion, &
+                                                rdiscreteBCUCD, elast_boundValue_2D)
+            end if
+          enddo
+        end do ! end segments
+      end do ! end boundaries
+
+      ! attach the UCD boundary conditions to the UCD solution vector
+      rsolUCD%p_rdiscreteBC => rdiscreteBCUCD
+
+      ! modify the vector according to the attached discrete boundary conditions
+      call vecfil_discreteBCsol(rsolUCD)
+      p_rsolUCD => rsolUCD
+    else
+      ! otherwise simply set the pointer
+      p_rsolUCD => rsol
+    endif
+
     ! Get the path for writing postprocessing files from the environment variable
     ! $UCDDIR. If that does not exist, write to the directory "./gmv".
     if (.not. sys_getenv_string("UCDDIR", sucddir)) then
@@ -594,13 +683,13 @@ contains
     endif
 
     ! get pointers to the arrays containing the displacement solutions
-    call lsyssc_getbase_double(rsol%RvectorBlock(1), p_Ddata)
+    call lsyssc_getbase_double(p_rsolUCD%RvectorBlock(1), p_Ddata)
     if (rprob%cequation .eq. EQ_ELASTICITY) then
-      call lsyssc_getbase_double(rsol%RvectorBlock(2),p_Ddata2)
+      call lsyssc_getbase_double(p_rsolUCD%RvectorBlock(2), p_Ddata2)
     end if
   
-    ! add displacements to the vertex coordinates when deformation is to be displayed
-    ! in the gmv file
+    ! add displacements to the vertex coordinates when deformation is to be displayed in
+    ! the gmv file
     if (rprob%cshowDeformation .eq. YES .and. rprob%cequation .eq. EQ_ELASTICITY) then
       ! get pointer to the arrays containing the vertex coordinates
       call storage_getbase_double2D( &
@@ -613,18 +702,24 @@ contains
       end do
     end if
 
+    call output_line('Prepare UCD output...')
     ! initialise UCD export to GMV file
     call ucd_startGMV(rexport, UCD_FLAG_STANDARD, &
                       Rlevels(rprob%ilevelMax)%rtriangulation, &
                       trim(sucddir) // '/elasticity_2d.gmv')
 
-    ! add the displacement solution to the file
     if (rprob%cequation .eq. EQ_ELASTICITY) then
+      ! add the displacement solution to the file
       call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata, p_Ddata2)
       if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
           rprob%cformulation .eq. FORMULATION_STOKES) then
-        call lsyssc_getbase_double(rsol%RvectorBlock(3), p_Ddata)
-        call ucd_addVariableVertexBased (rexport,'pressure',UCD_VAR_STANDARD, p_Ddata)
+        ! add pressure solution
+        call lsyssc_getbase_double(p_rsolUCD%RvectorBlock(3), p_Ddata)
+        if (rprob%celementPress .eq. EL_Q1 .or. bprojP) then
+          call ucd_addVariableVertexBased(rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
+        else ! Q0, P1, P1_NP, P1_NPD
+          call ucd_addVariableElementBased(rexport, 'pressure', UCD_VAR_STANDARD, p_Ddata)
+        endif
       endif
     else if (rprob%cequation .eq. EQ_POISSON) then
       call ucd_addVarVertBasedVec(rexport, 'velocity', p_Ddata)
@@ -648,6 +743,9 @@ contains
 
     ! release block matrix/vectors
     call lsysbl_releaseVector(rsol)
+    if (bprojU .or. bprojP) then
+      call lsysbl_releaseVector(rsolUCD)
+    endif
     call lsysbl_releaseVector(rtempBlock)
     call lsysbl_releaseVector(rrhs)
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
@@ -658,11 +756,17 @@ contains
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
       call bcasm_releaseDiscreteBC(Rlevels(ilev)%rdiscreteBC)
     end do
-
+    if (bprojU .or. bprojP) then
+      call bcasm_releaseDiscreteBC(rdiscreteBCUCD)
+    endif
+    
     ! release discretisation structure
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
       call spdiscr_releaseBlockDiscr(Rlevels(ilev)%rdiscretisation)
     end do
+    if (bprojU .or. bprojP) then
+      call spdiscr_releaseBlockDiscr(rdiscretisationUCD)
+    endif
     
     ! release triangulation
     do ilev = rprob%ilevelMax, rprob%ilevelMin, -1
