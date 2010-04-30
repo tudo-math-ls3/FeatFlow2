@@ -121,7 +121,7 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 205.709277e0
+velopartx = 0e0   #205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0
@@ -155,7 +155,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = 0 #-9.81
+gravityy = -9.81
 
 
 #-------------------------------------------------------------------------------
