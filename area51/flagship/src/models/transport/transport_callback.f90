@@ -4191,6 +4191,9 @@ contains
         rcollection%SquickAccess(1),&
         'imassantidiffusiontype', imassantidiffusiontype)
 
+    !---------------------------------------------------------------------------
+    ! Linearised FEM-FCT algorithm
+    !---------------------------------------------------------------------------
 
     ! Initialize dummy timestep
     rtimestepAux%dStep = 1.0_DP
@@ -4226,7 +4229,7 @@ contains
           rtimestepAux%dStep, 1.0_DP, .true.)
     end if
 
-    ! Apply linearised FEM-FCT algorithm
+    ! Apply linearised FEM-FCT correction
     call gfsc_buildConvVectorFCT(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rproblemLevel%Rafcstab(convectionAFC),&
