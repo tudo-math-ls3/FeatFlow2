@@ -21,11 +21,22 @@
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
-!# 4.) zpinch_calcMatRusConvectionP2d
+!# 4.) zpinch_calcMatRusConvIntlP2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
+!#        for Euler systems stored in interleaved format
 !#
-!# 5.) zpinch_calcMatRusConvectionD2d
+!# 5.) zpinch_calcMatRusConvIntlD2d
 !#     -> Calculates the transport coefficients for linear convection in 2D
+!#        for Euler systems stored in interleaved format
+!#
+!# 6.) zpinch_calcMatRusConvBlockP2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
+!#        for Euler systems stored in block format
+!#
+!# 7.) zpinch_calcMatRusConvBlockD2d
+!#     -> Calculates the transport coefficients for linear convection in 2D
+!#        for Euler systems stored in block format
+!#
 !#
 !# </purpose>
 !##############################################################################
@@ -48,8 +59,10 @@ module zpinch_callback2d
   public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
   public :: zpinch_hadaptCallbackBlock2d
-  public :: zpinch_calcMatRusConvectionP2d
-  public :: zpinch_calcMatRusConvectionD2d
+  public :: zpinch_calcMatRusConvIntlP2d
+  public :: zpinch_calcMatRusConvIntlD2d
+  public :: zpinch_calcMatRusConvBlockP2d
+  public :: zpinch_calcMatRusConvBlockD2d
 
   interface zpinch_setVariable2d
     module procedure zpinch_setVariableScalar2d
@@ -500,14 +513,17 @@ contains
 
 !<subroutine>
 
-  subroutine zpinch_calcMatRusConvectionP2d(&
+  pure subroutine zpinch_calcMatRusConvIntlP2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -537,10 +553,7 @@ contains
     ! Compute convective coefficients
     k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
     k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
-
-!!$    ! Compute artificial diffusion coefficient
-!!$    d_ij = max( abs(k_ij), abs(k_ji) )
-
+    
     ! Compute base indices
     idx = 4*(i-1); jdx = 4*(j-1)
 
@@ -563,20 +576,66 @@ contains
     d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
                 abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
 
-  end subroutine zpinch_calcMatRusConvectionP2d
+  end subroutine zpinch_calcMatRusConvIntlP2d
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine zpinch_calcMatRusConvectionD2d(&
+  pure subroutine zpinch_calcMatRusConvIntlD2d(&
       u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
     ! Moreover, scalar artificial diffusion is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+    
+    ! Compute convective coefficients
+    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
+    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
+    
+    ! Compute artificial diffusion coefficient
+    d_ij = max( abs(k_ij), abs(k_ji) )
+
+  end subroutine zpinch_calcMatRusConvIntlD2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvBlockP2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in block format.
 !</description>
 
 !<input>
@@ -596,13 +655,82 @@ contains
 !</output>
 !</subroutine>
 
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+
+    ! local variables
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj, d2_ij
+    integer :: neq
+
+    ! Compute convective coefficients
+    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
+    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
+    
+    ! Get number of equations for single variable
+    neq = size(p_Dvariable1)
+
+    ! Compute auxiliary variables
+    ui = p_Dvariable3(neq  +i)/p_Dvariable3(i)
+    vi = p_Dvariable3(neq*2+i)/p_Dvariable3(i)
+    Ei = p_Dvariable3(neq*3+i)/p_Dvariable3(i)
+    uj = p_Dvariable3(neq  +j)/p_Dvariable3(j)
+    vj = p_Dvariable3(neq*2+j)/p_Dvariable3(j)
+    Ej = p_Dvariable3(neq*3+j)/p_Dvariable3(j)
+
+    ! Compute auxiliary quantities
+    hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+    hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+
+    ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+    cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+
+    ! Compute dissipation tensor D_ij
+    d_ij = max( abs(C_ij(1)*uj+C_ij(2)*vj) + sqrt(C_ij(1)**2+C_ij(2)**2)*cj,&
+                abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
+
+  end subroutine zpinch_calcMatRusConvBlockP2d
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvBlockD2d(&
+      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! solution vector
+    real(DP), intent(in) :: u_i, u_j
+
+    ! coefficients from spatial discretization
+    real(DP), dimension(:), intent(in) :: C_ij, C_ji
+
+    ! nodal indices
+    integer, intent(in) :: i, j
+!</input>
+
+!<output>
+    ! convective coefficients
+    real(DP), intent(out) :: k_ij,k_ji,d_ij
+!</output>
+!</subroutine>
+    
     ! Compute convective coefficients
     k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
     k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
-
+    
     ! Compute artificial diffusion coefficient
     d_ij = max( abs(k_ij), abs(k_ji) )
 
-  end subroutine zpinch_calcMatRusConvectionD2d
+  end subroutine zpinch_calcMatRusConvBlockD2d
 
 end module zpinch_callback2d
