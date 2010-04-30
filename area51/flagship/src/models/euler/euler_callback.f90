@@ -2292,8 +2292,8 @@ contains
     type(t_vectorBlock), pointer :: p_rpredictor
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
-    integer :: inviscidAFC, lumpedMassMatrix
-    integer :: nfailsafe, ivariable, nvariable
+    integer :: inviscidAFC,lumpedMassMatrix
+    integer :: nfailsafe,ivariable,nvariable
 
     ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
@@ -2380,7 +2380,7 @@ contains
 
     else
       
-      ! Compute and apply FEM-FCT correction
+      ! Apply linearised FEM-FCT correction
       call euler_calcCorrectionFCT(rproblemLevel,&
           rsolution, rtimestep%dStep, .false.,&
           AFCSTAB_FCTALGO_STANDARD+&
