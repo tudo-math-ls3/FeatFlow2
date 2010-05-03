@@ -848,6 +848,12 @@ contains
         ssectionName, 'discretisation', discretisation)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'celement', celement)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
 
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
