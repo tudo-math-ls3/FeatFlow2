@@ -414,6 +414,11 @@ module multilevelprojection
     ! -------------------------------------------------------------------------
     ! The prolongation matrix that is to be used
     type(t_matrixScalar)        :: rmatrixProl
+
+    ! The restriction matrix that is to be used.
+    ! May be undefined, in this case, the restriction matrix is automatically
+    ! derived from the prolongation matrix.
+    type(t_matrixScalar)        :: rmatrixRest
     
     ! The interpolation matrix that is to be used.
     type(t_matrixScalar)        :: rmatrixInterp
@@ -751,6 +756,8 @@ contains
             call lsyssc_releaseMatrix(p_rprj%rmatrixProl)
             if(lsyssc_hasMatrixStructure(p_rprj%rmatrixInterp)) &
               call lsyssc_releaseMatrix(p_rprj%rmatrixInterp)
+            if(lsyssc_hasMatrixStructure(p_rprj%rmatrixRest)) &
+              call lsyssc_releaseMatrix(p_rprj%rmatrixRest)
           
           end select
         
@@ -1785,9 +1792,17 @@ contains
       case(MLP_PROJ_TYPE_MATRIX)
         
         ! Matrix-based restriction
-        call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
-          rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
-          1.0_DP, 0.0_DP, .true.)
+        if (lsyssc_hasMatrixStructure(rprojection%RscalarProjection(1,i)%rmatrixRest)) then
+          ! Uwse the restriction matrix specified in the structure.
+          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixRest,&
+            rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
+            1.0_DP, 0.0_DP)
+        else
+          ! The restriction is the transposed f the prolongation.
+          call lsyssc_scalarMatVec(rprojection%RscalarProjection(1,i)%rmatrixProl,&
+            rfineVector%RvectorBlock(i), rcoarseVector%RvectorBlock(i), &
+            1.0_DP, 0.0_DP, .true.)
+        end if
         
         ! Continue with next block
         cycle
@@ -10689,7 +10704,8 @@ contains
   
 !<subroutine>
 
-  subroutine mlprj_initMatrixProjection (rprojection,rmatrixProl,rmatrixInterp)
+  subroutine mlprj_initMatrixProjection (rprojection,rmatrixProl,rmatrixInterp,&
+      rmatrixRest)
 
 !<description>
   ! Sets the prolongation and (optionally) the interpolation matrices which
@@ -10703,6 +10719,10 @@ contains
   ! OPTIONAL: The interpolation matrix. If given, the interpolation matrix
   ! is assumed to be stored transposed!
   type(t_matrixScalar), optional, intent(in) :: rmatrixInterp
+
+  ! OPTIONAL: The restriction matrix. If not specified, the restriction is
+  ! automatically derived from the prolongation.
+  type(t_matrixScalar), optional, intent(in) :: rmatrixRest
 !</input>
 
 !<inputoutput>
@@ -10722,6 +10742,11 @@ contains
     ! Do we have an interpolation matrix?
     if(present(rmatrixInterp)) &
       call lsyssc_duplicateMatrix(rmatrixInterp, rprojection%rmatrixInterp, &
+                                  LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
+
+    ! Is there a restriction matrix?
+    if(present(rmatrixRest)) &
+      call lsyssc_duplicateMatrix(rmatrixRest, rprojection%rmatrixRest, &
                                   LSYSSC_DUP_SHARE, LSYSSC_DUP_SHARE)
     
     ! That is it

@@ -274,6 +274,13 @@
 !# 8.) lsyssc_createEmptyMatrixStub
 !#     -> Creates an empty matrix without allocating data. Basic tags are
 !#        initialised.
+!#
+!# 9.) lsyssc_createEmptyMatrix9
+!#     -> Manually creates an empty matrix in format 9 for being
+!#        build with lsyssc_setRowMatrix9.
+!#
+!# 10.) lsyssc_setRowMatrix9
+!#      -> Adds or replaces a row in a format-9 matrix.
 !# </purpose>
 !##############################################################################
 
@@ -852,6 +859,8 @@ module linearsystemscalar
   public :: lsyssc_auxcopy_Kld
   public :: lsyssc_auxcopy_Kdiagonal
   public :: lsyssc_createEmptyMatrixStub
+  public :: lsyssc_setRowMatrix9
+  public :: lsyssc_createEmptyMatrix9
 
 contains
 
@@ -20480,6 +20489,170 @@ contains
       rmatrix%NCOLS = neq
     end if
             
+  end subroutine
+
+  ! ***************************************************************************
+!<subroutine>
+
+  subroutine lsyssc_createEmptyMatrix9 (rmatrix,neq,na,ncols)
+  
+!<description>
+  ! Creates an empty matrix in matrix format 9 (CSR). The matrix is designed
+  ! to have na entries, neq rows and ncols columns.
+!</description>
+
+!<input>
+  ! Number of rows.
+  integer, intent(in) :: neq
+  
+  ! Number of entries in the matrix.
+  integer, intent(in) :: na
+  
+  ! OPTIONAL: Number of columns. If not present, NEQ is assumed.
+  integer, intent(in), optional :: ncols
+!</input>
+
+!<output>
+  ! Matrix to create.
+  type(t_matrixScalar), intent(out), target :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:), pointer :: p_Kld
+
+    ! Create basic matrix stub.
+    call lsyssc_createEmptyMatrixStub (rmatrix,LSYSSC_MATRIX9,neq,ncols)
+
+    ! Allocate memory
+    rmatrix%na = na
+    
+    call storage_new ("lsyssc_createMatrixFormat9", "Da", &
+        rmatrix%na, ST_DOUBLE, rmatrix%h_Da, ST_NEWBLOCK_ZERO)
+    call storage_new ("lsyssc_createMatrixFormat9", "Kcol", &
+        rmatrix%na, ST_INT, rmatrix%h_Kcol, ST_NEWBLOCK_ZERO)
+    call storage_new ("lsyssc_createMatrixFormat9", "Kld", &
+        neq+1, ST_INT, rmatrix%h_Kld, ST_NEWBLOCK_ZERO)
+    call storage_new ("lsyssc_createMatrixFormat9", "Kdiagonal", &
+        neq, ST_INT, rmatrix%h_Kdiagonal, ST_NEWBLOCK_ZERO)
+        
+    ! Element na+1 in Kld must be = 1 since there are no elements
+    ! in the matrix.
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
+    p_Kld(neq+1) = 1
+
+  end subroutine
+
+  ! ***************************************************************************
+!<subroutine>
+
+  subroutine lsyssc_setRowMatrix9 (rmatrix,irow,nentries,Kcol,Da)
+  
+!<description>
+  ! Replaces row irow by the column and matrix data specified in
+  ! Kcol and Da. If the row does not exist, it is created.
+!</description>
+
+!<input>
+  ! Row to modify
+  integer, intent(in) :: irow
+  
+  ! Number of entries, the row should have.
+  ! If the row already exists, a value "-1" replaces the existing
+  ! entries in the row, the length is automatically calculated.
+  integer, intent(in) :: nentries
+  
+  ! Column numbers that should be added.
+  integer, dimension(:), intent(in) :: Kcol
+  
+  ! OPTIONAL: Matrix data to be added.
+  real(DP), dimension(:), intent(in), optional :: Da
+!</input>
+
+!<output>
+  ! Matrix to create.
+  type(t_matrixScalar), intent(inout), target :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer :: i,n
+    integer, dimension(:), pointer :: p_Kcol, p_Kld, P_Kdiagonal
+    real(DP), dimension(:), pointer :: p_Da
+    
+    ! Get pointers to the matrix data.
+    call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+    call lsyssc_getbase_Kld (rmatrix,p_Kld)
+    call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+    
+    ! Does the row already exist?
+    if ((p_Kld(irow) .gt. 0) .and. (p_Kld(irow+1) .ge. p_Kld(irow))) then
+      ! Does the number of entries match?
+      n = nentries
+      if (n .lt. 0) then
+        n = p_Kld(irow+1)-p_Kld(irow+1)
+      else
+        if (n .ne. (p_Kld(irow+1)-p_Kld(irow))) then
+          call output_line("Number of entries in the existing row does not match nentries!",&
+              OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
+          call sys_halt()
+        end if
+      end if
+    else
+      n = nentries
+      if (n .lt. 0) then
+        call output_line("Number of entried that should be put into the row not specified.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
+        call sys_halt()
+      end if
+      
+      if ((irow .gt. 1) .and. (p_Kld(irow) .eq. 0)) then
+        call output_line("Insertion at arbitrary position currently not supported!"//&
+                         " Only appending allowed.",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
+        call sys_halt()
+      end if
+    
+      ! Create the row.
+      p_Kld(irow) = p_Kld(rmatrix%neq+1)
+      p_Kld(irow+1) = p_Kld(rmatrix%neq+1) + n
+      p_Kld(rmatrix%neq+1) = p_Kld(rmatrix%neq+1) + n
+      
+      if (irow .eq. rmatrix%neq-1) then
+        ! Last but one row. set up the last entry in KLD appropriately.
+        p_Kld(rmatrix%neq+1) = rmatrix%na+1
+      end if
+      
+    end if
+    
+    ! Copy column data into the row
+    p_Kcol(p_Kld(irow):p_Kld(irow+1)-1) = Kcol(1:n)
+    
+    ! Find the diagonal
+    p_Kdiagonal(irow) = p_Kld(irow+1)
+    do i=1,n
+      if (Kcol(i) .ge. irow) then
+        p_Kdiagonal(irow) = p_Kld(irow)+i-1
+        exit
+      end if
+    end do
+    
+    ! Probably copy matrix data.
+    if (present(Da)) then
+    
+      if (rmatrix%cdataType .ne. ST_DOUBLE) then
+        call output_line("Only double precision matrices supported!",&
+            OU_CLASS_ERROR,OU_MODE_STD,'lsyssc_setRowMatrix9')
+        call sys_halt()
+      end if
+    
+      call lsyssc_getbase_double (rmatrix,p_Da)
+      p_Da(p_Kld(irow):p_Kld(irow+1)-1) = Da(1:n)
+      
+    end if
+
   end subroutine
 
 end module
