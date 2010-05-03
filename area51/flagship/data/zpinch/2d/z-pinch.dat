@@ -68,7 +68,7 @@ deffectiveradius = 1e-4
 # 3 = Transport model first, Euler system second
 # 4 = Euler system only
 # 5 = Transport model only
-ilimitersynchronisation = 5
+ilimitersynchronisation = 3
 
 #-------------------------------------------------------------------------------
 
@@ -80,11 +80,6 @@ trifile = grids/2d/z-pinch_paper.tri
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
-
-#-------------------------------------------------------------------------------
-
-# Number of refinement steps used for summed cubature rules
-nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
@@ -172,13 +167,13 @@ slimitingvariable(2) =
   pressure
 
 # number of failsafe steps
-nfailsafe = 0
+nfailsafe = 3
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
+  density
   pressure
-  velocity_x
-  velocity_y
+  advect
 
 #-------------------------------------------------------------------------------
 
@@ -222,11 +217,8 @@ ssolutionconstrainvariable(1) =
 nsolutionfailsafe = 0
 
 # variables for failsafe constrained initialization
-ssolutionfailsafevariable(5) =
+ssolutionfailsafevariable(2) =
   density
-  pressure
-  velocity_x
-  velocity_y
   energy
 
 #-------------------------------------------------------------------------------
@@ -252,6 +244,11 @@ isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
+
+#-------------------------------------------------------------------------------
+
 # section name of the inviscid stabilization
 inviscid = Inviscid
 
@@ -273,7 +270,7 @@ inviscid = Inviscid
 istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -416,6 +413,11 @@ ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = %{Euler.nsumcubRefLinForm}
+
+#-------------------------------------------------------------------------------
+
 # section name of the convection stabilization
 convection = Convection
 
@@ -452,7 +454,7 @@ iprelimiting = %{Inviscid.iprelimiting}
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.005
+dstepUCD = 0.05
 
 # file for UCD output of solution
 sucdsolution = out/zpinch
@@ -482,7 +484,7 @@ sucdvariable(5) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 4
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -507,10 +509,10 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1e-4
+dfinalTime = 1.1
 
 # initial time step size
-dinitialStep = 1e-4
+dinitialStep = 1e-5
 
 # lower bound for the admissible time step
 dminStep = 1e-4
@@ -699,7 +701,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 25 #100
+nmaxIterations = 25
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -741,10 +743,10 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-11
+depsAbs = 1e-10
 
 # relative tolerance for residual
-depsRel = 1e-3
+depsRel = 1e-2
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -777,7 +779,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 25 #100
+nmaxIterations = 25
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -876,13 +878,13 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-4
+depsRel = 1e-3
 
 # relative tolerance for stagnation
 depsStag = 0.0
 
 # name of preconditioner
-sprecondName = LinearPrecond
+sprecondName =
 
 
 ################################################################################
