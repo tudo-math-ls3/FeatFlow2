@@ -83,6 +83,14 @@ ifeq ($(strip $(ID)), pc64-coreduo-linux)
 ID:=$(strip $(ID))-intel-goto
 endif
 
+ifeq ($(strip $(ID)), pc-nehalem-linux)
+ID:=$(strip $(ID))-intel-goto
+endif
+
+ifeq ($(strip $(ID)), pc64-nehalem-linux)
+ID:=$(strip $(ID))-intel-goto
+endif
+
 ifeq ($(strip $(ID)), pc-athlon64-linux)
 ID:=$(strip $(ID))-gcc-goto
 endif
@@ -159,11 +167,11 @@ ifeq ($(strip $(ID)), pc-coresolo-darwin)
 ID:=$(strip $(ID))-gcc-goto
 endif
 
-ifeq ($(strip $(ID)), pc-coredup-darwin)
+ifeq ($(strip $(ID)), pc-coreduo-darwin)
 ID:=$(strip $(ID))-gcc-blas
 endif
 
-ifeq ($(strip $(ID)), pc64-coredup-darwin)
+ifeq ($(strip $(ID)), pc64-coreduo-darwin)
 ID:=$(strip $(ID))-gcc-blas
 endif
 
