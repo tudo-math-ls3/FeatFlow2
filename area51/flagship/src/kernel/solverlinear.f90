@@ -1208,7 +1208,7 @@ contains
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
 
-    ! Initialization
+    ! Initialisation
     neq         = ru%NEQ
     iiterations = 1
 
@@ -1221,7 +1221,7 @@ contains
     rsolver%dfinalDefect     = rsolver%dinitialDefect
     doldDefect               = rsolver%dinitialDefect
 
-    ! Initialization
+    ! Initialisation
 100 rho0  = 1.0_DP
     alpha = 0.0_DP
     omega = 1.0_DP
@@ -1478,7 +1478,7 @@ contains
     call lsysbl_isVectorCompatible(ru, rf)
     call lsysbl_isMatrixCompatible(ru, p_rmatrix, .false.)
 
-    ! Initialization
+    ! Initialisation
     neq = ru%NEQ
 
     ! Compute initial residual v(1)=f-A*u
@@ -1981,7 +1981,7 @@ contains
     integer :: iblock
     logical :: bsymmetric
 
-    ! Initialization
+    ! Initialisation
     bsymmetric = (rsolver%isolver .eq. LINSOL_SOLVER_SSOR)
 
     ! Set relaxation parameter
@@ -3383,7 +3383,7 @@ contains
   subroutine linsol_smoothILU(rsolver, ru, rf)
 
 !<description>
-    ! This subroutine performs smoothing by means of ILU factorization
+    ! This subroutine performs smoothing by means of ILU factorisation
 !</description>
 
 !<input>

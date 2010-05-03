@@ -1017,7 +1017,7 @@ contains
         ! Compute scaling parameter
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
-        ! What type if stabilization is applied?
+        ! What type if stabilisation is applied?
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
         case (AFCSTAB_GALERKIN)
@@ -1467,7 +1467,7 @@ contains
     ! Compute scaling parameter
     dscale = rtimestep%theta*rtimestep%dStep
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
     case (AFCSTAB_GALERKIN)
@@ -1695,7 +1695,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-------------------------------------------------------------------------
-      ! Compute the low-order residual + FEM-TVD stabilization
+      ! Compute the low-order residual + FEM-TVD stabilisation
       !
       !   $$ res = res + dt*theta*L(U^{(m)})*U^{(m)} + F(U^{(m)}) $$
       !-------------------------------------------------------------------------
@@ -1736,7 +1736,7 @@ contains
     !   $$ res = res + f^*(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
@@ -2109,7 +2109,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-----------------------------------------------------------------------
-      ! Compute the low-order right-hand side + FEM-TVD stabilization
+      ! Compute the low-order right-hand side + FEM-TVD stabilisation
       !
       !   $$ rhs = M*U+weight*(1-theta)*dt*L(U)*U + F(U) $$
       !-----------------------------------------------------------------------
@@ -2139,7 +2139,7 @@ contains
       end select
 
     case DEFAULT
-      call output_line('Invalid type of stabilization!',&
+      call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
       call sys_halt()
     end select
@@ -3603,7 +3603,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients

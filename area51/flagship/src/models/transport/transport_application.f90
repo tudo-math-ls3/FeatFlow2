@@ -48,16 +48,16 @@
 !#
 !#
 !# The reactive term $r(u)$ is ignored at the moment. However, some
-!# proper linearization is required to preserve positivity.
+!# proper linearisation is required to preserve positivity.
 !#
 !#
 !# The load vector $b$ is constant throughout the simulation.
 !#
 !#
-!# The spatial discretization is perform by means of the algebraic
+!# The spatial discretisation is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
 !# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the
+!# FCT-type are available. For the temporal discretisation, the
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
@@ -91,7 +91,7 @@
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
-!#        initialization routine transp_initAllProblemLevels.
+!#        initialisation routine transp_initAllProblemLevels.
 !#
 !# 5.) transp_initAllProblemLevels
 !#     -> Initializes ALL problem levels attached to the global
@@ -727,7 +727,7 @@ contains
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 1 ! one discretisation
-    rproblemDescriptor%nafcstab        = 2 ! convective and diffusive stabilization
+    rproblemDescriptor%nafcstab        = 2 ! convective and diffusive stabilisation
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 7
@@ -773,7 +773,7 @@ contains
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
-    ! generates the discretization, the template matrix and the
+    ! generates the discretisation, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
 !</description>
 
@@ -857,7 +857,7 @@ contains
     ! Create discretisation structure
     if (discretisation > 0) then
 
-      ! Initialize the discretization structure
+      ! Initialize the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         call spdiscr_initBlockDiscr(p_rdiscretisation, 1, p_rtriangulation)
@@ -985,7 +985,7 @@ contains
 
     ! If the template matrix has no structure data then generate the
     ! finite element matrix sparsity structure based on the spatial
-    ! descretization and store it as the template matrix. Otherwise we
+    ! descretisation and store it as the template matrix. Otherwise we
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
       call parlst_getvalue_int(rparlist, ssectionName, 'imatrixFormat', imatrixFormat)
@@ -1217,7 +1217,7 @@ contains
     end if
 
 
-    ! Resize stabilization structure if necessary and remove the
+    ! Resize stabilisation structure if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (convectionAFC > 0) then
@@ -1238,7 +1238,7 @@ contains
     end if
 
 
-    ! The same applies to the diffusive stabilization structure
+    ! The same applies to the diffusive stabilisation structure
     if (diffusionAFC > 0) then
       if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(&
@@ -1262,7 +1262,7 @@ contains
 
   contains
 
-    ! Here, the initialization routines for the diffusion matrix follow.
+    ! Here, the initialisation routines for the diffusion matrix follow.
 
     !**************************************************************
 
@@ -1473,7 +1473,7 @@ contains
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
-    ! the global problem structure. It generates the discretization,
+    ! the global problem structure. It generates the discretisation,
     ! the template matrix and the coefficient matrices as duplicates
     ! of the template matrix.
 !</description>
@@ -2236,7 +2236,7 @@ contains
     ! Ok, this is a little bit tricky. We need to compute the residual
     ! vector for the steady-state Galerkin scheme for the zeroth
     ! iteration. To this end, we switch off all types of
-    ! stabilization, mass matrices, time stepping parameter, etc., and
+    ! stabilisation, mass matrices, time stepping parameter, etc., and
     ! force the velocity field, and hence, the preconditioner to be
     ! updated. Then the steady-state residual vector is evaluated.
 
@@ -2252,7 +2252,7 @@ contains
     dStep = rtimestep%dStep; rtimestep%dStep = 1.0_DP
     theta = rtimestep%theta; rtimestep%theta = 1.0_DP
 
-    ! Set stabilization to standard Galerkin
+    ! Set stabilisation to standard Galerkin
     cconvectionStabilisation =&
         rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
     rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation = AFCSTAB_GALERKIN
@@ -2278,7 +2278,7 @@ contains
         rsolver, rsolutionPrimal, rsolutionPrimal, rvector1,&
         rvector2, 0, rcollection)
 
-    ! Ok, now we have to switch on all types of stabilization again
+    ! Ok, now we have to switch on all types of stabilisation again
     rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation =&
         cconvectionStabilisation
     rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation =&
@@ -3641,7 +3641,7 @@ contains
 
 
         !-------------------------------------------------------------------------
-        ! Re-generate the discretization and coefficient matrices
+        ! Re-generate the discretisation and coefficient matrices
         !-------------------------------------------------------------------------
 
         ! Start time measurement for generation of the triangulation
@@ -4025,7 +4025,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Re-generate the discretization and coefficient matrices
+      ! Re-generate the discretisation and coefficient matrices
       !-------------------------------------------------------------------------
 
       ! Start time measurement for generation of the triangulation
@@ -4417,7 +4417,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Re-generate the discretization and coefficient matrices
+      ! Re-generate the discretisation and coefficient matrices
       !-------------------------------------------------------------------------
 
       ! Start time measurement for generation of the triangulation
@@ -4718,7 +4718,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Re-generate the discretization and coefficient matrices
+      ! Re-generate the discretisation and coefficient matrices
       !-------------------------------------------------------------------------
 
       ! Start time measurement for generation of the triangulation
@@ -5117,7 +5117,7 @@ contains
 
 
       !-------------------------------------------------------------------------
-      ! Re-generate the discretization and coefficient matrices
+      ! Re-generate the discretisation and coefficient matrices
       !-------------------------------------------------------------------------
 
       ! Start time measurement for generation of the triangulation

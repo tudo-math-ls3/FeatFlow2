@@ -7,10 +7,10 @@
 !# This application solves the time-dependent magnetohydrodynamic equations
 !# in the one-, two- or three-dimensional domain $\Omega$.
 !#
-!# The spatial discretization is perform by means of the algebraic
+!# The spatial discretisation is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
 !# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the
+!# FCT-type are available. For the temporal discretisation, the
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
@@ -567,7 +567,7 @@ contains
 
     ! Set additional problem descriptor
     rproblemDescriptor%ndiscretisation = 2
-    rproblemDescriptor%nafcstab        = 2   ! for inviscid and convective stabilization
+    rproblemDescriptor%nafcstab        = 2   ! for inviscid and convective stabilisation
     rproblemDescriptor%nlmin           = nlmin
     rproblemDescriptor%nlmax           = nlmax
     rproblemDescriptor%nmatrixScalar   = rproblemDescriptor%ndimension + 10
@@ -2053,9 +2053,8 @@ contains
       rcollection%SquickAccess(4) = ssectionNameTransport
 
       ! Apply linearised FEM-FCT post-processing
-      call zpinch_calcLinearisedFCT(p_rbdrCondEuler, p_rbdrCondTransport,&
-          p_rproblemLevel, rtimestep, p_rsolverEuler, p_rsolverTransport,&
-          p_rsolutionEuler, p_rsolutionTransport, rcollection, rforce(1))
+      call zpinch_calcLinearisedFCT(RbdrCond, p_rproblemLevel, rtimestep,&
+          p_rsolverEuler, p_rsolverTransport, Rsolution, rcollection, Rforce)
 
       ! Calculate velocity field (\rho v)
       call zpinch_calcVelocityField(rparlist, ssectionNameTransport,&
@@ -2165,7 +2164,7 @@ contains
 
 
         !-------------------------------------------------------------------------
-        ! Re-generate the discretization and coefficient matrices
+        ! Re-generate the discretisation and coefficient matrices
         !-------------------------------------------------------------------------
 
         ! Start time measurement for generation of the triangulation

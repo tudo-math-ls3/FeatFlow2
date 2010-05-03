@@ -21,10 +21,10 @@
 !#
 !# in the two- or three-dimensional domain $\Omega$.
 !#
-!# The spatial discretization is perform by means of the algebraic
+!# The spatial discretisation is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
 !# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the
+!# FCT-type are available. For the temporal discretisation, the
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
@@ -58,7 +58,7 @@
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
-!#        initialization routine euler_initAllProblemLevels.
+!#        initialisation routine euler_initAllProblemLevels.
 !#
 !# 5.) euler_initAllProblemLevels
 !#     -> Initializes ALL problem levels attached to the global
@@ -581,7 +581,7 @@ contains
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
-    ! generates the discretization, the template matrix and the
+    ! generates the discretisation, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
 !</description>
 
@@ -657,7 +657,7 @@ contains
     ! Create discretisation structure
     if (discretisation > 0) then
 
-      ! Initialize the discretization structure
+      ! Initialize the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         select case(isystemFormat)
@@ -807,7 +807,7 @@ contains
 
     ! If the template matrix has no structure data then generate the
     ! finite element matrix sparsity structure based on the spatial
-    ! descretization and store it as the template matrix. Otherwise we
+    ! descretisation and store it as the template matrix. Otherwise we
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
       call bilf_createMatrixStructure(&
@@ -1098,7 +1098,7 @@ contains
 
     end if
 
-    ! Resize stabilization structures if necessary and remove the
+    ! Resize stabilisation structures if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
@@ -1149,7 +1149,7 @@ contains
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
-    ! the global problem structure. It generates the discretization,
+    ! the global problem structure. It generates the discretisation,
     ! the template matrix and the coefficient matrices as duplicates
     ! of the template matrix.
 !</description>
@@ -1264,7 +1264,7 @@ contains
       ! Initialize the nodal values by the data of a graymap image
       !-------------------------------------------------------------------------
 
-      call output_line('Initialization if solution by graymap image is not yet supported!',&
+      call output_line('Initialisation if solution by graymap image is not yet supported!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'euler_initSolution')
       call sys_halt()
 
@@ -1311,7 +1311,7 @@ contains
         ! Set pointer to data array
         call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
 
-        ! Initialization for scalar subvector
+        ! Initialisation for scalar subvector
         neq  = rvector%RvectorBlock(iblock)%NEQ
         nvar = rvector%RvectorBlock(iblock)%NVAR
 
@@ -2810,7 +2810,7 @@ contains
 
 
         !-------------------------------------------------------------------------
-        ! Re-generate the discretization and coefficient matrices
+        ! Re-generate the discretisation and coefficient matrices
         !-------------------------------------------------------------------------
 
         ! Start time measurement for generation of the triangulation
