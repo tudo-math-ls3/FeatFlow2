@@ -50,7 +50,8 @@
 !# 12.) afcstab_generateExtSparsity
 !#      -> Generates the extended sparsity pattern
 !#
-!# 12.) afcstab_failsafeLimiting
+!# 12.) afcstab_failsafeLimiting = afcstab_failsafeLimitingBlock /
+!#                                 afcstab_failsafeLimitingArray
 !#      -> Perform failsafe flux correction
 !#
 !# The following auxiliary routines are available:
@@ -381,6 +382,11 @@ module afcstabilisation
     module procedure afcstab_resizeStabDirect
     module procedure afcstab_resizeStabIndScalar
     module procedure afcstab_resizeStabIndBlock
+  end interface
+
+  interface afcstab_failsafeLimiting
+    module procedure afcstab_failsafeLimitingBlock
+    module procedure afcstab_failsafeLimitingArray
   end interface
 
   interface afcstab_limit
@@ -784,7 +790,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_duplicateStabilisation(rafcstabSrc, rafcstabDest, iduplicateFlag)
+  subroutine afcstab_duplicateStabilisation(rafcstabSrc, rafcstabDest, idupFlag)
 
 !<description>
     ! This subroutine duplicates an existing stabilisation structure, creates
@@ -797,7 +803,7 @@ contains
     type(t_afcstab), intent(in) :: rafcstabSrc
     
     ! Duplication flag that decides on how to set up the structure
-    integer, intent(in) :: iduplicateFlag
+    integer, intent(in) :: idupFlag
 !</input>
 
 !<inputoutput>
@@ -807,7 +813,7 @@ contains
 !</subroutine>
    
     ! Duplicate structural data
-    if (iand(iduplicateFlag, AFCSTAB_DUP_STRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_STRUCTURE)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
@@ -818,7 +824,7 @@ contains
     end if
 
     ! Duplicate edge structre
-    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGESTRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE)) then
       call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
           rafcstabDest%h_IverticesAtEdge)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
@@ -828,7 +834,7 @@ contains
     end if
 
     ! Duplicate edge values
-    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGEVALUES)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES)) then
       call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
           rafcstabDest%h_DcoefficientsAtEdge)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
@@ -836,7 +842,7 @@ contains
     end if
 
     ! Duplicate off-diagonal edges
-    if (iand(iduplicateFlag, AFCSTAB_DUP_OFFDIAGONALEDGES)) then
+    if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES)) then
       call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
           rafcstabDest%h_IsuperdiagEdgesIdx)
       call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
@@ -848,7 +854,7 @@ contains
     end if
 
     ! Duplicate antidiffusive fluxes
-    if (iand(iduplicateFlag, AFCSTAB_DUP_ADFLUXES)) then
+    if (check(idupFlag, AFCSTAB_DUP_ADFLUXES)) then
       if (associated(rafcstabSrc%p_rvectorFlux0)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorFlux0, rafcstabDest%p_rvectorFlux0)
       if (associated(rafcstabSrc%p_rvectorFlux)) call lsyssc_copyVector(&
@@ -858,7 +864,7 @@ contains
     end if
 
     ! Duplicate antidiffusive increments
-    if (iand(iduplicateFlag, AFCSTAB_DUP_ADINCREMENTS)) then
+    if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS)) then
       if (associated(rafcstabSrc%p_rvectorPp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorPp, rafcstabDest%p_rvectorPp)
       if (associated(rafcstabSrc%p_rvectorPm)) call lsyssc_copyVector(&
@@ -868,7 +874,7 @@ contains
     end if
 
     ! Duplicate upper/lower bounds
-    if (iand(iduplicateFlag, AFCSTAB_DUP_BOUNDS)) then
+    if (check(idupFlag, AFCSTAB_DUP_BOUNDS)) then
       if (associated(rafcstabSrc%p_rvectorQp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorQp, rafcstabDest%p_rvectorQp)
       if (associated(rafcstabSrc%p_rvectorQm)) call lsyssc_copyVector(&
@@ -878,7 +884,7 @@ contains
     end if
 
     ! Duplicate nodal limiting coefficients
-    if (iand(iduplicateFlag, AFCSTAB_DUP_NODELIMITER)) then
+    if (check(idupFlag, AFCSTAB_DUP_NODELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorRp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorRp, rafcstabDest%p_rvectorRp)
       if (associated(rafcstabSrc%p_rvectorRm)) call lsyssc_copyVector(&
@@ -888,12 +894,28 @@ contains
     end if
 
     ! Duplicate edge-wise limiting coefficients
-    if (iand(iduplicateFlag, AFCSTAB_DUP_EDGELIMITER)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorAlpha)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorAlpha, rafcstabDest%p_rvectorAlpha)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
           iand(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGELIMITER))
     end if
+
+  contains
+
+    !**************************************************************
+    ! Checks if idupFlag has all bits ibitfield set.
+
+    pure function check(idupFlag, ibitfield)
+      
+      integer(I32), intent(in) :: idupFlag
+      integer(I32), intent(in) :: ibitfield
+      
+      logical :: check
+      
+      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
+
+    end function check
 
   end subroutine afcstab_duplicateStabilisation
 
@@ -1418,7 +1440,7 @@ contains
 
 !<subroutine>
 
-  subroutine afcstab_failsafeLimiting(rafcstab, rlumpedMassMatrix,&
+  subroutine afcstab_failsafeLimitingBlock(rafcstab, rlumpedMassMatrix,&
       Cvariables, dscale, nsteps, fcb_extractVariableBlock, rvector, rvectorTmp)
 
 !<description>
@@ -1557,7 +1579,55 @@ contains
       deallocate(p_rvectorTmp)
     end if
 
-  end subroutine afcstab_failsafeLimiting
+  end subroutine afcstab_failsafeLimitingBlock
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine afcstab_failsafeLimitingArray(Rafcstab, rlumpedMassMatrix,&
+      Cvariables, dscale, nsteps, fcb_extractVariableArray, Rvector, RvectorTmp)
+
+!<description>
+    ! This subroutine performs failsafe flux limiting as described in
+    ! the paper by Kuzmin, Möller, Shadid, and Shashkov: "Failsafe
+    ! flux limiting and constrained data projection for systems of
+    ! conservation laws" submitted to JCP 2010.
+    !
+    ! This subroutine works for arrays of block vectors, that is, is
+    ! handles coupled problems consisting of individual subproblems
+!</description>
+
+!<input>
+    ! array of stabilisation structures
+    type(t_afcstab), dimension(:), intent(in) :: Rafcstab
+
+    ! lumped mass matrix
+    type(t_matrixScalar), intent(in) :: rlumpedMassMatrix
+
+    ! control variable names
+    character(len=*), dimension(:), intent(in) :: Cvariables
+    
+    ! scaling parameter
+    real(DP), intent(in) :: dscale
+
+    ! number of failsafe steps to be performed
+    integer, intent(in) :: nsteps
+
+    ! callback function to extract variables
+    include 'intf_afcstabcallback.inc'
+!</input>
+
+!<inputoutput>
+    ! array of vectors to be corrected
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rvector
+
+    ! array of temporal vectors
+    type(t_vectorBlock), dimension(:), intent(inout), target, optional :: rvectorTmp
+!</inputoutput>
+!</subroutine>
+
+  end subroutine afcstab_failsafeLimitingArray
 
   !*****************************************************************************
 
