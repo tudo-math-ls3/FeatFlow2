@@ -23,18 +23,18 @@
 !#     by the routines from the iluk.f90 module.
 !#
 !# 2.) Prelimiting does not work for FEM-FCT algorithms except for the
-!#     linearized version. We still need to think about how to assemble
+!#     linearised version. We still need to think about how to assemble
 !#     the fluxes for prelimiting.
 !#
 !# 3.) FEM-FCT algorithms for Euler model are not working except for the
-!#     linearized version.
+!#     linearised version.
 !#
 !# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
 !#     fixed (it was based on the fluxes but now it has to be based on the
 !#     edgewise correciton factors).
 !#
 !# 5.) Modify Z-pinch application so that it uses the new implementation
-!#     of the linearized FCT algorithm with failsafe strategy.
+!#     of the linearised FCT algorithm with failsafe strategy.
 !#
 !# </purpose>
 !##############################################################################

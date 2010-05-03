@@ -1589,7 +1589,7 @@ contains
     ! Check if weighting coefficient is zero
     if (anorm .gt. SYS_EPSREAL) then
 
-      ! Compute normalized weighting coefficient
+      ! Compute normalised weighting coefficient
       a1  = Dweight(1)/anorm
 
       ! Compute Roe mean values

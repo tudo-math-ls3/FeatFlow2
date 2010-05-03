@@ -167,7 +167,7 @@
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
 !# 41.) euler_limitEdgewiseVelocity2D
-!#      -> Performs synchronized flux correction for the velocity in 2D
+!#      -> Performs synchronised flux correction for the velocity in 2D
 !#
 !# </purpose>
 !##############################################################################
@@ -2378,7 +2378,7 @@ contains
     ! Check if weighting coefficient is zero
     if (anorm .gt. SYS_EPSREAL) then
 
-      ! Compute normalized weighting coefficient
+      ! Compute normalised weighting coefficient
       a1  = Dweight(1)/anorm
       a2  = Dweight(2)/anorm
 

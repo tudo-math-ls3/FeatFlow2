@@ -216,7 +216,7 @@ contains
     ! REMARK: The order in which the operations are performed is
     ! essential. This is due to the fact that the calculation of the
     ! residual/rhs requires the discrete transport operator to be
-    ! initialized which is assembled in the calculation of the
+    ! initialised which is assembled in the calculation of the
     ! preconditioner. To prevent the re-assembly of the
     ! preconditioner twice, we remove the specifier
     ! NLSOL_OPSPEC_CALCPRECOND if the residual/rhs vector is built.
@@ -417,7 +417,7 @@ contains
     !
     ! The diffusion operator is symmetric so that it is the same for
     ! the primal and the dual problem. If no diffusion is present,
-    ! i.e. $D \equiv 0$, then the transport operator is initialized by
+    ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
     ! then we may also initialize some stabilization structure.
     !
@@ -1274,7 +1274,7 @@ contains
     !
     ! The diffusion operator is symmetric so that it is the same for
     ! the primal and the dual problem. If no diffusion is present,
-    ! i.e. $D \equiv 0$, then the transport operator is initialized by
+    ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
     ! then we may also initialize some stabilization structure.
     !
@@ -2923,7 +2923,7 @@ contains
     ! of velocity/ diffusion.
     !###########################################################################
 
-    ! Check if the preconditioner has to be initialized
+    ! Check if the preconditioner has to be initialised
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
@@ -3142,7 +3142,7 @@ contains
     ! of velocity/ diffusion.
     !###########################################################################
 
-    ! Check if the preconditioner has to be initialized
+    ! Check if the preconditioner has to be initialised
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&

@@ -2186,7 +2186,7 @@ contains
       rtimestep%drelChange = dChange
 
       ! Check if solver did not converge, that is, the convergence rate equals
-      ! unity or the normalized changes exceed maximum tolerance
+      ! unity or the normalised changes exceed maximum tolerance
       breject = (dChange .gt. p_rpidController%dmaxRel) .or.&
                 (rsolver%istatus .eq. SV_DIVERGED)
 

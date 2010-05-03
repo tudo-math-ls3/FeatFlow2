@@ -802,13 +802,13 @@ module solveraux
     ! Handle to array [1..NA] of doubles.
     integer :: h_Ddata = ST_NOHANDLE
 
-    ! Parameter 1 returned by SPLIB for factorized matrix
+    ! Parameter 1 returned by SPLIB for factorised matrix
     integer :: lu = 0
 
-    ! Parameter 2 returned by SPLIB for factorized matrix
+    ! Parameter 2 returned by SPLIB for factorised matrix
     integer :: jlu = 0
 
-    ! Parameter 3 returned by SPLIB for factorized matrix
+    ! Parameter 3 returned by SPLIB for factorised matrix
     integer :: ilup = 0
 
     ! INPUT: tolerance for ILU-factorization
@@ -965,7 +965,7 @@ contains
       ! nonlinear algebraic system on all multigrid levels from NLMIN up to NLMAX.
       ! Note that it suffices to have one nonlinear coarse grid solver for all
       ! multigrid levels since the nonlinear solver has no matrices and all
-      ! temporal vectors are resized in the nonlinear solver routines.
+      ! temporal vectors are resised in the nonlinear solver routines.
       allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       ! Get type of solver and create solver structure recursively:
@@ -1494,7 +1494,7 @@ contains
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~
 
         ! Create linear smoother recursively. Note that we create an array of solvers
-        ! for each level. Each level is created and initialized individually.
+        ! for each level. Each level is created and initialised individually.
         if (rsolver%nlmin .lt. rsolver%nlmax) then
           allocate(rsolver%p_smoother(rsolver%nlmin+1:rsolver%nlmax))
           do i = rsolver%nlmin+1, rsolver%nlmax
@@ -4622,7 +4622,7 @@ contains
     !
     ! 2.) If the internal structures exist and if, e.g., matrices are
     !     attached, then the temporal vectors, etc. are created
-    !     /resized to the correct dimensions. Consequently, the
+    !     /resised to the correct dimensions. Consequently, the
     !     subroutione should be called whenever the structure of the
     !     problem, e.g., triangulation, discretization, changes and
     !     requires some modifications of the solver structure.

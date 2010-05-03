@@ -38,7 +38,7 @@
 !# 1.) euler_app
 !#     -> The main routine of the application called from the main
 !#        program. The routine gets all required information from the
-!#        parameter list which needs to be initialized and filled in
+!#        parameter list which needs to be initialised and filled in
 !#        the main program. It then works black-box, that is, it
 !#        determines the solution algorithm to be used and performs
 !#        the simulation. The user should only have to modify this
@@ -1247,7 +1247,7 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
 
-    ! How should the solution be initialized?
+    ! How should the solution be initialised?
     select case(isolutionType)
     case (SOLUTION_ZERO)
       

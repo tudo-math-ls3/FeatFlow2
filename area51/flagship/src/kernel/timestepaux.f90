@@ -70,7 +70,7 @@ module timestepaux
 !<typeblock>
 
   ! This data structure contains settings/parameters for time-stepping. Before
-  ! calling the time-stepping algorithm the basic settings need to be initialized.
+  ! calling the time-stepping algorithm the basic settings need to be initialised.
 
   type t_timestep
 

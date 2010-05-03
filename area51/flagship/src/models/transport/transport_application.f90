@@ -71,7 +71,7 @@
 !# 1.) transp_app
 !#     -> The main routine of the application called from the main
 !#        program. The routine gets all required information from the
-!#        parameter list which needs to be initialized and filled in
+!#        parameter list which needs to be initialised and filled in
 !#        the main program. It then works black-box, that is, it
 !#        determines the solution algorithm to be used and performs
 !#        the simulation. The user should only have to modify this
@@ -1570,7 +1570,7 @@ contains
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
 
-    ! How should the solution be initialized?
+    ! How should the solution be initialised?
     select case(isolutionType)
     case (SOLUTION_ZERO)
 
@@ -1849,7 +1849,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
                              'irhstype', irhstype)
 
-    ! How should the right-hand side be initialized?
+    ! How should the right-hand side be initialised?
     select case(irhstype)
     case (RHS_ZERO)
       ! Initialize right-hand side by zeros
@@ -1876,7 +1876,7 @@ contains
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
-      ! Build the discretized right-hand side vector
+      ! Build the discretised right-hand side vector
       call linf_buildVectorScalar2(rform, .true., rvector%RvectorBlock(1),&
                                    transp_coeffVectorAnalytic, rcollection)
 
@@ -1934,7 +1934,7 @@ contains
     call parlst_getvalue_int(rparlist, ssectionName,&
         'itargetfunctype', itargetfunctype)
 
-    ! How should the target functional be initialized?
+    ! How should the target functional be initialised?
     select case(itargetfunctype)
     case (TFUNC_ZERO,&
           TFUNC_SURFINTG)
@@ -1966,7 +1966,7 @@ contains
       rform%itermCount      = 1
       rform%Idescriptors(1) = DER_FUNC
 
-      ! Build the discretized target functional. The contribution of
+      ! Build the discretised target functional. The contribution of
       ! the surfae integral comes in be weakly impose boundary conditions
       call linf_buildVectorScalar2(rform, .true., rvector&
           %RvectorBlock(1), transp_coeffVectorAnalytic, rcollection)
@@ -4306,7 +4306,7 @@ contains
       ! Set dual problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
 
-      ! Create dual solution vector initialized by zeros
+      ! Create dual solution vector initialised by zeros
       call lsysbl_releaseVector(rsolutionDual)
       call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
 
@@ -4322,7 +4322,7 @@ contains
           rsolver, rsolutionDual, transp_nlsolverCallback,&
           rcollection, rtargetFunc)
 
-      ! Release discretized target functional
+      ! Release discretised target functional
       call lsysbl_releaseVector(rtargetFunc)
 
       ! Stop time measurement for solution procedure
@@ -5006,7 +5006,7 @@ contains
       ! Set dual problem mode
       call parlst_addvalue(rparlist, ssectionName, 'mode', 'dual')
 
-      ! Create dual solution vector initialized by zeros
+      ! Create dual solution vector initialised by zeros
       call lsysbl_releaseVector(rsolutionDual)
       call lsysbl_createVectorBlock(rsolutionPrimal, rsolutionDual, .true.)
 
@@ -5022,7 +5022,7 @@ contains
           rsolutionDual, transp_nlsolverCallback, rcollection,&
           rtargetFunc)
 
-      ! Release discretized target functional
+      ! Release discretised target functional
       call lsysbl_releaseVector(rtargetFunc)
 
       ! Stop time measurement for solution procedure

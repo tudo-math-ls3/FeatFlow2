@@ -52,10 +52,10 @@
 !#        limited by the FCT algorithm and applies them to the residual
 !#
 !# 10.) euler_limitEdgewiseVelocity
-!#      -> Performs synchronized flux correction for the velocity
+!#      -> Performs synchronised flux correction for the velocity
 !#
 !# 11.) euler_limitEdgewiseMomentum
-!#      -> Performs synchronized flux correction for the momentum
+!#      -> Performs synchronised flux correction for the momentum
 !#
 !# 12.) euler_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
@@ -3022,7 +3022,7 @@ contains
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the velocity vector in synchronized fashion.
+    ! for the velocity vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.
@@ -3176,7 +3176,7 @@ contains
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the momentum vector in synchronized fashion.
+    ! for the momentum vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.

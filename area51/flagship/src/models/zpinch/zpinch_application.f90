@@ -23,7 +23,7 @@
 !# 1.) zpinch_app
 !#     -> The main routine of the application called from the main
 !#        program. The routine gets all required information from the
-!#        parameter list which needs to be initialized and filled in
+!#        parameter list which needs to be initialised and filled in
 !#        the main program. It then works black-box, that is, it
 !#        determines the solution algorithm to be used and performs
 !#        the simulation. The user should only have to modify this
@@ -776,7 +776,7 @@ contains
       integer :: i,j,ij
 
 
-      ! Create temporal memory initialized by zero
+      ! Create temporal memory initialised by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 
@@ -862,7 +862,7 @@ contains
       integer :: i,j,ij
 
 
-      ! Create temporal memory initialized by zero
+      ! Create temporal memory initialised by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 
@@ -941,7 +941,7 @@ contains
       real(DP) :: drad, dang, daux, x1, x2, p, rq
       integer :: i,j,ij
 
-      ! Create temporal memory initialized by zero
+      ! Create temporal memory initialised by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 
@@ -1032,7 +1032,7 @@ contains
       real(DP) :: drad, dang, daux, x1, x2, p, rq
       integer :: i,j,ij
 
-      ! Create temporal memory initialized by zero
+      ! Create temporal memory initialised by zero
       allocate(DsourceTerm(2,neq))
       call lalg_clearVector(DsourceTerm)
 

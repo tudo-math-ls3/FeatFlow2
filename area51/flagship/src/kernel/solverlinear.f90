@@ -444,7 +444,7 @@ contains
     ! Given the initial solution $U^f$ and the right-hand side $F^f$ on the fine grid,
     ! a prescribed number of pre-smoothing steps is performed. Afterward, the
     ! linear residual $R^f=F^f-A^f*u^f$ is evaluated and restricted to the coarse
-    ! grid, i.e. $R^c=I_f^c R^f$. The solution on the coarse grid is initialized
+    ! grid, i.e. $R^c=I_f^c R^f$. The solution on the coarse grid is initialised
     ! by zero and the coarse grid correction is computed by calling the two-grid
     ! algorithm recursively. Finally, the fine grid solution is corrected as
     ! $U^f:=U^f+I_c^f U^c$ and a prescribed number of post-smoothing steps is performed.
@@ -537,7 +537,7 @@ contains
       call bdrf_filterVectorByValue(rsolver%rboundaryCondition, p_rresc, 0.0_DP)
 
       ! Compute the coarse grid correction recursively, whereby
-      ! raux is initialized by zeros (see above)
+      ! raux is initialised by zeros (see above)
       do icycle = 1, merge(1, mgcycle, rproblemLevel%p_rproblemLevelCoarse%ilev .eq.&
                                        rsolver%p_solverMultigrid%nlmin)
         call linsol_solveTwogrid(rproblemLevel%p_rproblemLevelCoarse,&
@@ -2764,7 +2764,7 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
         end if
       else
-        call output_line('Block-ILU preconditioner is not initialized!',&
+        call output_line('Block-ILU preconditioner is not initialised!',&
             OU_CLASS_ERROR,OU_MODE_STD,'linsol_precondILU')
         call sys_halt()
       end if

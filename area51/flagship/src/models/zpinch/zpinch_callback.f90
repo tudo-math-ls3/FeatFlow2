@@ -242,7 +242,7 @@ contains
       ! REMARK: The order in which the operations are performed is
       ! essential. This is due to the fact that the calculation of the
       ! residual/rhs requires the discrete transport operator to be
-      ! initialized which is assembled in the calculation of the
+      ! initialised which is assembled in the calculation of the
       ! preconditioner. To prevent the re-assembly of the
       ! preconditioner twice, we remove the specifier
       ! NLSOL_OPSPEC_CALCPRECOND if the residual/rhs vector is built.
