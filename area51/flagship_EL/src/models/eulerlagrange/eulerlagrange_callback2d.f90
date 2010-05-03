@@ -4574,8 +4574,8 @@ contains
 	  rParticles%p_element(iPart) = currentelm
 
 	  ! Check if the is/was a particle-wall-collision
-	  call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
-	  !call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
+	  !call eulerlagrange_checkboundary(rparlist,p_rproblemLevel,rParticles,iPart)
+	  call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)
     end if
 
   end subroutine eulerlagrange_wrongelement
@@ -5881,6 +5881,18 @@ contains
     if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
     if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
 
+    ! Find the new start element for the particle
+    call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
+
+    ! Calculate barycentric coordinates
+    call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+
+    ! Wrong element
+    if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
+              abs(rParticles%p_lambda3(iPart))-1) .ge. 0.00001) then
+        call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
+    end if
+
   end subroutine eulerlagrange_checkboundary
 
   !*****************************************************************************
@@ -6173,6 +6185,8 @@ contains
         rParticles%p_ypos(iPart)= dy
         rParticles%p_xvelo(iPart)= 0.0_dp
         rParticles%p_yvelo(iPart)= 0.0_dp
+        rParticles%p_xvelo_gas(iPart)= 0.0_dp
+        rParticles%p_yvelo_gas(iPart)= 0.0_dp
     end if
 	
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
@@ -6180,11 +6194,17 @@ contains
     if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
     if (rParticles%p_ypos(iPart) .ge. maxval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = maxval(p_DvertexCoords(2,:))
 
-    ! Find the new element for the particle
+    ! Find the new start element for the particle
     call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
     ! Calculate barycentric coordinates
     call eulerlagrange_calcbarycoords(p_rproblemLevel,rParticles,iPart)
+
+    ! Wrong element
+    if ((abs(rParticles%p_lambda1(iPart))+abs(rParticles%p_lambda2(iPart))+&
+              abs(rParticles%p_lambda3(iPart))-1) .ge. 0.00001) then
+        call eulerlagrange_wrongelement(rparlist,p_rproblemLevel,rParticles,iPart)
+    end if
 
 
   end subroutine eulerlagrange_partwallcollision

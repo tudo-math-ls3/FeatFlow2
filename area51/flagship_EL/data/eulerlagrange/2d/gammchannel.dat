@@ -108,7 +108,7 @@ particledensitymax = 0.39
 idiampart = 0
 
 # particle-diameter
-particlediam = 2e-5
+particlediam = 2e-6
 
 # particle diameter minimum in meter
 particlediammin = 1e-8
@@ -155,7 +155,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = -9.81
+gravityy = 0 #-9.81
 
 
 #-------------------------------------------------------------------------------
@@ -419,7 +419,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.100
+dfinalTime = 1.000
 
 # initial time step size
 dinitialStep = 1e-3
