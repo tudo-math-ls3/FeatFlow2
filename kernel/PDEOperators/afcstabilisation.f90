@@ -813,7 +813,8 @@ contains
 !</subroutine>
    
     ! Duplicate structural data
-    if (check(idupFlag, AFCSTAB_DUP_STRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_STRUCTURE) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_INITIALISED)) then
       rafcstabDest%ctypeAFCstabilisation = rafcstabSrc%ctypeAFCstabilisation
       rafcstabDest%NEQ                   = rafcstabSrc%NEQ
       rafcstabDest%NVAR                  = rafcstabSrc%NVAR
@@ -824,7 +825,8 @@ contains
     end if
 
     ! Duplicate edge structre
-    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGESTRUCTURE) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)) then
       call storage_copy(rafcstabSrc%h_IverticesAtEdge,&
           rafcstabDest%h_IverticesAtEdge)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
@@ -834,7 +836,8 @@ contains
     end if
 
     ! Duplicate edge values
-    if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGEVALUES) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGEVALUES)) then
       call storage_copy(rafcstabSrc%h_DcoefficientsAtEdge,&
           rafcstabDest%h_DcoefficientsAtEdge)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
@@ -842,7 +845,8 @@ contains
     end if
 
     ! Duplicate off-diagonal edges
-    if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES)) then
+    if (check(idupFlag, AFCSTAB_DUP_OFFDIAGONALEDGES) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_OFFDIAGONALEDGES)) then
       call storage_copy(rafcstabSrc%h_IsuperdiagEdgesIdx,&
           rafcstabDest%h_IsuperdiagEdgesIdx)
       call storage_copy(rafcstabSrc%h_IsubdiagEdgesIdx,&
@@ -854,7 +858,8 @@ contains
     end if
 
     ! Duplicate antidiffusive fluxes
-    if (check(idupFlag, AFCSTAB_DUP_ADFLUXES)) then
+    if (check(idupFlag, AFCSTAB_DUP_ADFLUXES) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_ADFLUXES)) then
       if (associated(rafcstabSrc%p_rvectorFlux0)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorFlux0, rafcstabDest%p_rvectorFlux0)
       if (associated(rafcstabSrc%p_rvectorFlux)) call lsyssc_copyVector(&
@@ -864,7 +869,8 @@ contains
     end if
 
     ! Duplicate antidiffusive increments
-    if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS)) then
+    if (check(idupFlag, AFCSTAB_DUP_ADINCREMENTS) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_ADINCREMENTS)) then
       if (associated(rafcstabSrc%p_rvectorPp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorPp, rafcstabDest%p_rvectorPp)
       if (associated(rafcstabSrc%p_rvectorPm)) call lsyssc_copyVector(&
@@ -874,7 +880,8 @@ contains
     end if
 
     ! Duplicate upper/lower bounds
-    if (check(idupFlag, AFCSTAB_DUP_BOUNDS)) then
+    if (check(idupFlag, AFCSTAB_DUP_BOUNDS) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_BOUNDS)) then
       if (associated(rafcstabSrc%p_rvectorQp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorQp, rafcstabDest%p_rvectorQp)
       if (associated(rafcstabSrc%p_rvectorQm)) call lsyssc_copyVector(&
@@ -884,7 +891,8 @@ contains
     end if
 
     ! Duplicate nodal limiting coefficients
-    if (check(idupFlag, AFCSTAB_DUP_NODELIMITER)) then
+    if (check(idupFlag, AFCSTAB_DUP_NODELIMITER) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_NODELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorRp)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorRp, rafcstabDest%p_rvectorRp)
       if (associated(rafcstabSrc%p_rvectorRm)) call lsyssc_copyVector(&
@@ -894,7 +902,8 @@ contains
     end if
 
     ! Duplicate edge-wise limiting coefficients
-    if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER)) then
+    if (check(idupFlag, AFCSTAB_DUP_EDGELIMITER) .and.&
+        check(rafcstabSrc%iSpec, AFCSTAB_HAS_EDGELIMITER)) then
       if (associated(rafcstabSrc%p_rvectorAlpha)) call lsyssc_copyVector(&
           rafcstabSrc%p_rvectorAlpha, rafcstabDest%p_rvectorAlpha)
       rafcstabDest%iSpec = ior(rafcstabDest%iSpec,&
@@ -906,14 +915,13 @@ contains
     !**************************************************************
     ! Checks if idupFlag has all bits ibitfield set.
 
-    pure function check(idupFlag, ibitfield)
+    pure function check(iflag, ibitfield)
       
-      integer(I32), intent(in) :: idupFlag
-      integer(I32), intent(in) :: ibitfield
+      integer(I32), intent(in) :: iflag,ibitfield
       
       logical :: check
       
-      check = (iand(idupFlag,ibitfield) .ne. ibitfield)
+      check = (iand(iflag,ibitfield) .eq. ibitfield)
 
     end function check
 
