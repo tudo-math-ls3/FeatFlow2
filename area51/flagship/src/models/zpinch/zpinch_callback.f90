@@ -1176,8 +1176,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
                 
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
@@ -1223,8 +1224,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
@@ -1271,8 +1273,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
 
       else
         
@@ -1319,8 +1322,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
 
       else
       
@@ -1357,8 +1361,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
@@ -1402,8 +1407,9 @@ contains
             zpinch_getVariable, Rsolution, p_Rpredictor)
         
         ! Deallocate temporal memory
-        deallocate(SfailsafeVariables)
-        deallocate(p_Rpredictor)
+        call lsysbl_releaseVector(p_Rpredictor(1))
+        call lsysbl_releaseVector(p_Rpredictor(2))
+        deallocate(SfailsafeVariables, p_Rpredictor)
         
       else
         
