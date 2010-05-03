@@ -21,6 +21,10 @@
 !# 4.) zpinch_calcLinearisedFCT
 !#     -> Calculates the linearised FCT correction
 !#
+!# 5.) zpinch_getVariable
+!#     -> Extracts a single variable from the vector of conservative
+!#        variables stores in interleave or block format
+!#
 !# </purpose>
 !##############################################################################
 
@@ -963,25 +967,23 @@ contains
   !*****************************************************************************
 
 !<subroutine>
-
-  subroutine zpinch_calcLinearisedFCT(rbdrCondEuler, rbdrcondTransport,&
-      rproblemLevel, rtimestep, rsolverEuler, rsolverTransport,&
-      rsolutionEuler, rsolutionTransport, rcollection, rsourceEuler)
+  
+  subroutine zpinch_calcLinearisedFCT(RbdrCond, rproblemLevel, rtimestep,&
+      rsolverEuler, rsolverTransport, Rsolution, rcollection, Rsource)
 
 !<description>
     ! This subroutine calculates the linearised FCT correction
 !</description>
 
 !<input>
-    ! boundary condition structure
-    type(t_boundaryCondition), intent(in) :: rbdrCondEuler
-    type(t_boundaryCondition), intent(in) :: rbdrCondTransport
+    ! array of boundary condition structure
+    type(t_boundaryCondition), dimension(:), intent(in) :: RbdrCond
 
     ! time-stepping algorithm
     type(t_timestep), intent(in) :: rtimestep
 
     ! OPTIONAL: source vector
-    type(t_vectorBlock), intent(in), optional :: rsourceEuler
+    type(t_vectorBlock), dimension(:), intent(in), optional :: Rsource
 !</input>
 
 !<inputoutput>
@@ -993,8 +995,7 @@ contains
     type(t_solver), intent(inout) :: rsolverTransport
 
     ! solution vectors
-    type(t_vectorBlock), intent(inout) :: rsolutionEuler
-    type(t_vectorBlock), intent(inout) :: rsolutionTransport
+    type(t_vectorBlock), dimension(:), intent(inout) :: Rsolution
 
     ! collection structure
     type(t_collection), intent(inout) :: rcollection
@@ -1003,10 +1004,12 @@ contains
 
     ! local variables
     type(t_timestep) :: rtimestepAux
+    type(t_vectorBlock), dimension(:), pointer :: p_Rpredictor
     type(t_vectorBlock), pointer :: p_rpredictorEuler,p_rpredictorTransport
     type(t_parlist), pointer :: p_rparlist
     character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
     real(DP), dimension(:), pointer :: p_DalphaEuler, p_DalphaTransport
+    integer, dimension(2) :: IposAFC
     integer :: convectionAFC,inviscidAFC,lumpedMassMatrix,consistentMassMatrix
     integer :: imassantidiffusiontype,nfailsafe,ivariable,nvariable
     integer :: ilimitersynchronisation
@@ -1027,6 +1030,9 @@ contains
         (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
          .ne. AFCSTAB_FEMFCT_LINEARISED)) return
 
+    ! Set positions of stabilisation structures
+    IposAFC=(/inviscidAFC, convectionAFC/)
+
     ! Get more parameters from parameter list
      call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(2),&
@@ -1041,7 +1047,7 @@ contains
         rcollection%SquickAccess(3),&
         'nfailsafe', nfailsafe)
     call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(4),&
+        rcollection%SquickAccess(3),&
         'imassantidiffusiontype', imassantidiffusiontype)
     
     !---------------------------------------------------------------------------
@@ -1063,8 +1069,7 @@ contains
 
     ! Compute low-order "right-hand side" without theta parameter
     call euler_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolverEuler, rsolutionEuler, p_rpredictorEuler, rcollection,&
-        rsourceEuler)
+        rsolverEuler, Rsolution(1), p_rpredictorEuler, rcollection, Rsource(1))
 
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
@@ -1073,7 +1078,7 @@ contains
 
     ! Compute the raw antidiffusive fluxes
     call euler_calcFluxFCT(rproblemLevel, p_rpredictorEuler,&
-        rsolutionEuler, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
+        Rsolution(1), 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
 
     !--- transport model -------------------------------------------------------
 
@@ -1086,11 +1091,11 @@ contains
 
     ! Compute the preconditioner
     call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
-        rsolverTransport, rsolutionTransport, rcollection)
+        rsolverTransport, Rsolution(2), rcollection)
 
     ! Compute low-order "right-hand side" without theta parameter
     call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
-        rsolverTransport, rsolutionTransport, p_rpredictorTransport,&
+        rsolverTransport, Rsolution(2), p_rpredictorTransport,&
         rcollection,&
         fcb_coeffVecBdrPrimal_sim = transp_coeffVecBdrConvectionP2d,&
         fcb_coeffVecBdrDual_sim = transp_coeffVecBdrConvectionD2d)
@@ -1102,15 +1107,13 @@ contains
 
     ! Should we apply consistent mass antidiffusion?
     if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-      call gfsc_buildFluxFCT(&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictorTransport, rsolutionTransport,&
+      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+          p_rpredictorTransport, Rsolution(2),&
           rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.,&
           rproblemLevel%Rmatrix(consistentMassMatrix))
     else
-      call gfsc_buildFluxFCT(&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          p_rpredictorTransport, rsolutionTransport,&
+      call gfsc_buildFluxFCT(rproblemLevel%Rafcstab(convectionAFC),&
+          p_rpredictorTransport, Rsolution(2),&
           rtimestepAux%theta, rtimestepAux%dStep, 1.0_DP, .true.)
     end if
 
@@ -1118,6 +1121,33 @@ contains
     ! Perform failsafe flux correction (if required)
     !---------------------------------------------------------------------------
     
+    if (nfailsafe .gt. 0) then
+      
+      ! Get number of failsafe variables
+      nvariable = max(1,&
+          parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(3), 'sfailsafevariable'))
+      
+      ! Allocate character array that stores all failsafe variable names
+      allocate(SfailsafeVariables(nvariable))
+      
+      ! Initialize character array with failsafe variable names
+      do ivariable = 1, nvariable
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(3), 'sfailsafevariable',&
+            Sfailsafevariables(ivariable), isubstring=ivariable)
+      end do
+
+      ! Set up the predictor, that is, make a virtual copy of the
+      ! predictor vectors from the Euler system and the scalar tracer
+      ! equation which can be passed to the failsafe subroutine.
+      allocate(p_rpredictor(2))
+      call lsysbl_duplicateVector(p_rpredictorEuler, p_Rpredictor(1),&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
+      call lsysbl_duplicateVector(p_rpredictorTransport, p_Rpredictor(2),&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_SHARE)
+    end if
+
     ! Set the first string quick access array to the section name
     ! of the Euler model which is stored in the third array
     rcollection%SquickAccess(1) = rcollection%SquickAccess(3)
@@ -1127,36 +1157,53 @@ contains
       
     case (0)   ! no synchronisation
       
-      ! Compute linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
-      
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      if (nfailsafe .gt. 0) then
+        
+        ! Compute linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+        
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+                
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+        
+      else
+        
+        ! Compute linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+        
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+      end if
       
 
     case (1)   ! minimum synchronisation
       
       ! Compute linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT,&
-          rsolutionEuler, rcollection)
+      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Compute minimum correction factor
       call lsyssc_getbase_double(&
@@ -1167,147 +1214,217 @@ contains
       p_DalphaEuler = min(p_DalphaEuler, p_DalphaTransport)
       call lalg_copyVector(p_DalphaEuler, p_DalphaTransport)
       
-      ! Apply linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
-      
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      if (nfailsafe .gt. 0) then
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+        
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+        
+      else
+        
+        ! Apply linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+        
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+      end if
 
 
     case (2)   ! Euler first, transport second
       
       ! Compute linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT,&
-          rsolutionEuler, rcollection)
+      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
       ! Copy correction factor for Euler system to transport model
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy final correction factor back to Euler system
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
-      ! Apply linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
-      
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
+      if (nfailsafe .gt. 0) then
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+        
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+
+      else
+        
+        ! Apply linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+        
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+      end if
 
 
     case (3)   ! Transport first, Euler second
       
       ! Compute linearised FEM-FCT correction      
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, rsolutionTransport)
+      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy correction factor for transport model to Euler system
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT,&
-          rsolutionEuler, rcollection)
+      call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+          rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
       ! Copy final correction factor back to transport model
       call afcstab_duplicateStabilisation(&
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
-      
-      ! Apply linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
-      
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
 
+      if (nfailsafe .gt. 0) then
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+        
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+
+      else
+      
+        ! Apply linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+        
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+      end if
+      
 
     case (4)   ! Euler system only
       
-      ! Apply linearised FEM-FCT correction      
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
+      if (nfailsafe .gt. 0) then
+
+        ! Compute linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+
+        ! Copy correction factor for Euler system to transport model
+        call afcstab_duplicateStabilisation(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+        
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+        
+      else
+        
+        ! Apply linearised FEM-FCT correction      
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+        
+        ! Copy correction factor for Euler system to transport model
+        call afcstab_duplicateStabilisation(&
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
+        
+        ! Apply linearised FEM-FCT correction
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+      end if
       
-      ! Copy correction factor for Euler system to transport model
-      call afcstab_duplicateStabilisation(&
-          rproblemLevel%Rafcstab(inviscidAFC),&
-          rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
-      
-      ! Apply linearised FEM-FCT correction
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
       
     case (5)   ! Transport model only
       
-      ! Apply linearised FEM-FCT correction
-      call gfsc_buildConvVectorFCT(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix),&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rsolutionTransport, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_STANDARD+&
-          AFCSTAB_FCTALGO_SCALEBYMASS, rsolutionTransport)
-      
-      ! Copy correction factor for transport model to Euler system
-      call afcstab_duplicateStabilisation(&
-          rproblemLevel%Rafcstab(convectionAFC),&
-          rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
-      
-      ! Apply linearised FEM-FCT correction
-      call euler_calcCorrectionFCT(rproblemLevel,&
-          rsolutionEuler, rtimestep%dStep, .false.,&
-          AFCSTAB_FCTALGO_CORRECT+&
-          AFCSTAB_FCTALGO_SCALEBYMASS,&
-          rsolutionEuler, rcollection)
-      
+      if (nfailsafe .gt. 0) then
+
+        ! Compute linearised FEM-FCT correction
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
+            AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
+
+        ! Copy correction factor for transport model to Euler system
+        call afcstab_duplicateStabilisation(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
+
+        ! Apply failsafe flux correction
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+            rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+            zpinch_getVariable, Rsolution, p_Rpredictor)
+        
+        ! Deallocate temporal memory
+        deallocate(SfailsafeVariables)
+        deallocate(p_Rpredictor)
+        
+      else
+        
+        ! Apply linearised FEM-FCT correction
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+        
+        ! Copy correction factor for transport model to Euler system
+        call afcstab_duplicateStabilisation(&
+            rproblemLevel%Rafcstab(convectionAFC),&
+            rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
+        
+        ! Apply linearised FEM-FCT correction
+        call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
+      end if
+
+
     case default
       call output_line('Invalid type of limiter synchronisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'zpinch_calcLinearisedFCT')
@@ -1318,23 +1435,63 @@ contains
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
           rtimestep%dTime, euler_calcBoundaryvalues1d)
 
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
           rtimestep%dTime, euler_calcBoundaryvalues2d)
 
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCondEuler, rsolutionEuler,&
+      call bdrf_filterVectorExplicit(rbdrCond(1), Rsolution(1),&
           rtimestep%dTime, euler_calcBoundaryvalues3d)
     end select
 
     ! Impose boundary conditions for the solution vector
-    call bdrf_filterVectorExplicit(rbdrCondTransport, rsolutionTransport,&
+    call bdrf_filterVectorExplicit(rbdrCond(2), Rsolution(2),&
         rtimestep%dTime)
     
   end subroutine zpinch_calcLinearisedFCT
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine zpinch_getVariable(RvectorBlock, cvariable, rvectorScalar)
+
+!<description>
+    ! This subroutine extracts a single variable from the vector of
+    ! conservative variables which is stored in interleave of block 
+    ! format. In contrast to the corresponding subroutine from the
+    ! Euler model, this subroutine accepts arrays of block vectors,
+    ! e.g., to pass the solution from the Euler system and the
+    ! scalar tracer equation simultaneously.
+    !
+    ! This subroutine is a wrapper which calls either the getVariable
+    ! subroutine for the Euler system or returns the scalar tracer.
+!</description>
+
+!<input>
+    ! Vector of conservative variables
+    type(t_vectorBlock), dimension(:), intent(in) :: RvectorBlock
+
+    ! Identifier for the variable
+    character(LEN=*), intent(in) :: cvariable
+!</input>
+
+!<inputoutput>
+    ! Extracted single variable
+    type(t_vectorScalar), intent(inout) :: rvectorScalar
+!</inputoutput>
+!</subroutine>
+
+    if (trim(cvariable) .eq. 'advect') then
+      call lsyssc_copyVector(RvectorBlock(2)%RvectorBlock(1), rvectorScalar)
+    else
+      call euler_getVariable(RvectorBlock(1), cvariable, rvectorScalar)
+    end if
+
+  end subroutine zpinch_getVariable
 
   !*****************************************************************************
 
