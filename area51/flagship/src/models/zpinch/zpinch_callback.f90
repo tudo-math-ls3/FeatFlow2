@@ -1164,16 +1164,21 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
-            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
-            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-            AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
-
         ! Apply failsafe flux correction
-        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(IposAFC),&
+        call afcstab_failsafeLimiting(rproblemLevel%Rafcstab(inviscidAFC),&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             SfailsafeVariables, rtimestep%dStep, nfailsafe,&
-            zpinch_getVariable, Rsolution, p_Rpredictor)
+            euler_getVariable, Rsolution(1), p_rpredictorEuler)
+
+        ! Apply linearised FEM-FCT correction
+        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+            rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
+            rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
+            AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
+
+        !!!
+        ! NOTE: We may add failsafe for scalar transport problem here!
+        !!!
                 
         ! Deallocate temporal memory
         call lsysbl_releaseVector(p_Rpredictor(1))
@@ -1254,10 +1259,11 @@ contains
           rproblemLevel%Rafcstab(inviscidAFC),&
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
+      ! Compute linearised FEM-FCT correction (without initialisation)
       call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
+          AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
       
       ! Copy final correction factor back to Euler system
       call afcstab_duplicateStabilisation(&
@@ -1304,9 +1310,11 @@ contains
           rproblemLevel%Rafcstab(convectionAFC),&
           rproblemLevel%Rafcstab(inviscidAFC), AFCSTAB_DUP_EDGELIMITER)
       
+      ! Compute linearised FEM-FCT correction (without initialisation)
       call euler_calcCorrectionFCT(rproblemLevel, Rsolution(1),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
-          AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
+          AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT,&
+          Rsolution(1), rcollection)
       
       ! Copy final correction factor back to transport model
       call afcstab_duplicateStabilisation(&
