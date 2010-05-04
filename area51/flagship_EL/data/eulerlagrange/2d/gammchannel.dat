@@ -108,7 +108,7 @@ particledensitymax = 0.39
 idiampart = 0
 
 # particle-diameter
-particlediam = 2e-6
+particlediam = 2e-5
 
 # particle diameter minimum in meter
 particlediammin = 1e-8
@@ -121,7 +121,7 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 0e0   #205.709277e0
+velopartx = 0e0  #205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0

@@ -4815,6 +4815,11 @@ contains
 	rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt * rParticles%p_xvelo(iPart)
 	rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt * rParticles%p_yvelo(iPart)
 	
+    ! Descaling the velocity of the gasphase
+    rParticles%p_xvelo_gas(iPart)=rParticles%p_xvelo_gas(iPart)/velogasx
+    rParticles%p_yvelo_gas(iPart)=rParticles%p_yvelo_gas(iPart)/velogasy
+
+	
 	! If the particle comes to the outlet
 	if (rParticles%p_xpos(iPart).ge.rParticles%maxvalx) then
 	
@@ -4928,7 +4933,7 @@ contains
           partxmin= minval(p_DvertexCoords(1,:))
         
           ! Set startingpositions of the particle
-          rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
+          rParticles%p_xpos(iPart)= partxmin + 0.0001 + random1*dt*rParticles%p_xvelo(iPart)
           rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
@@ -6144,10 +6149,10 @@ contains
 		    velo_rest(2)= velo_rest(2)/sqrt(velo_rest(1)**2.0_dp+velo_rest(2)**2.0_dp)
         END IF
 
-		! Tangent in x-direction
-		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(1,iedge))
+		! Tangent in x-direction 
+		tang(1)= p_DvertexCoords(1,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
 		! Tangent in y-direction
-		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(2,p_IverticesAtEdge(1,iedge))
+		tang(2)= p_DvertexCoords(2,p_IverticesAtEdge(2,iedge)) - p_DvertexCoords(1,p_IverticesAtEdge(2,iedge))
         ! Norming of the tangent
 		tang(1)= tang(1)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
 		tang(2)= tang(2)/sqrt(tang(1)**2.0_dp+tang(2)**2.0_dp)
@@ -6167,8 +6172,12 @@ contains
 					 rParticles%norm_val*proj_norm*norm(2)
 
 		! Compute the new coordinates after the collision
-		rParticles%p_xvelo(iPart) = bdy_move(1)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+		rParticles%p_xvelo(iPart) = -bdy_move(1)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
 		rParticles%p_yvelo(iPart) = bdy_move(2)*sqrt(rParticles%p_xvelo(iPart)**2+rParticles%p_yvelo(iPart)**2)
+
+        ! Set the new "old" velocity
+        rParticles%p_xvelo_old(iPart)= rParticles%p_xvelo(iPart)
+        rParticles%p_yvelo_old(iPart)= rParticles%p_yvelo(iPart)
 
         ! Set new "old position" and "old velocity" of the particle
         rParticles%p_xpos_old(iPart)= dx
