@@ -25,6 +25,9 @@ gridFileTRI = './pre/cook.tri'
 # type of equatio to solve ('Poisson' or 'elasticity')
 equation = elasticity
 
+# FE formulation ('displ' (= pure displacement), 'mixed' (=mixed u/p), 'Stokes')
+formulation = displ
+
 # material parameters (Poisson ratio nu and shear modulus mu)
 nu = 0.3
 mu = 80.194
