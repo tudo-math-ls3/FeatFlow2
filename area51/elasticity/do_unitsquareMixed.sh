@@ -7,7 +7,7 @@ grid="unitsquare"
 mus="0.5"
 
 # choose Poisson ratio
-nus="0.3"
+nus="0.5"
 
 # set solver file base name (expected: ./dat/<basename>.dat)
 solver="UMFPACK"
@@ -18,9 +18,9 @@ solver="UMFPACK"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-#levelMaxs="04"
-levelMaxs="02 03 04 05 06"
-levelMin="01"
+#levelMaxs="08"
+levelMaxs="02 03 04 05"
+levelMin="0"
 
 #-----------------------------
 
@@ -92,19 +92,19 @@ forceVolumeX   = 0.0
 forceVolumeY   = 0.0
 
 # ID of analytical function for u1 and u2 in case of analytical simulation
-#funcID_u1 = 12
-#funcID_u2 = 14
-#funcID_p  = 28
-funcID_u1 = 4
-funcID_u2 = 52
-funcID_p  = 0
+funcID_u1 = 12
+funcID_u2 = 14
+funcID_p  = 28
+#funcID_u1 = 4
+#funcID_u2 = 52
+#funcID_p  = 0
 
 # finite element discretisation ('Q1' or 'Q2')
-element = Q1
+element = Q2
 
 # FE discretisation of the pressure space ('Q1' or 'Q2')
 # (only necessary in case of the mixed formulation or Stokes) 
-elementPress = Q1
+elementPress = P1
 
 # minimum and maximum grid level
 levelMin = ${levelMin}
@@ -114,11 +114,15 @@ levelMax = ${levelMax}
 solverFile = ./dat/${solver}.dat
 
 # show deformation in visual output ('YES' or 'NO')
-showDeformation = YES
+showDeformation = NO
 
 # x- and y-coordinate of points where the FE solution is to be evaluated
-evalPoints(1) =
-0.75   0.75
+#evalPoints(1) =
+#0.6   0.6
+
+# reference solution values for u1 and u2 in evaluation points
+#refSols(1) =
+#3.5999625438E-02  3.2721335614E-02  1.1203535942E-01
 
 END_OF_DATA
 # dat file has been created now

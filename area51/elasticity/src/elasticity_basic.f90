@@ -599,13 +599,19 @@ contains
     ! minimum and maximum level
     call parlst_getvalue_int(rparams, '', 'levelMin', rprob%ilevelMin)   
     call parlst_getvalue_int(rparams, '', 'levelMax', rprob%ilevelMax)
-    if (rprob%ilevelMin .le. 0 .or. rprob%ilevelMax .le. 0 .or. &
-        rprob%ilevelMin .gt. rprob%ilevelMax) then
-      call output_line('invalid combination of min./max. grid level: ' // &
-                       trim(sys_siL(rprob%ilevelMin,3)) // &
-                       "/" // trim(sys_siL(rprob%ilevelMax,3)))
+    if (rprob%ilevelMax .le. 0) then
+      call output_line('invalid max. grid level: ' // trim(sys_siL(rprob%ilevelMax,3)))
+      call sys_halt()
     endif
-
+    if (rprob%ilevelMin .le. 0 .or. rprob%ilevelMin .gt. rprob%ilevelMax) then
+      ! every "invalid" min. level is replaced by max level (so the user can set
+      ! "levelMin = 0" or "levelMin = 666" in his dat file in order to always perform a
+      ! one-level computation on level levelMax)
+      call output_line('replacing (invalid) min. level ' // &
+                       trim(sys_siL(rprob%ilevelMin,3)) // " by max. level " // &
+                       trim(sys_siL(rprob%ilevelMax,3)))
+    endif
+    
     ! name of the solver file
     call parlst_getvalue_string(rparams, '', 'solverFile', sstring)
     call output_line('solver file: '//trim(sstring))
@@ -799,14 +805,14 @@ contains
         if (daux1 .ne. 0.0_DP) then
           daux2 = daux2/daux1
         endif
-        call output_line('error u1: ' // trim(sys_sdEL(daux2, 10)))
+        call output_line('error u1: ' // trim(sys_sdEL(abs(daux2), 10)))
 
         daux1 = rprob%DrefSols(2,i)
         daux2 = rprob%DrefSols(2,i) - rprob%Dvalues(2,1,i)
         if (daux1 .ne. 0.0_DP) then
           daux2 = daux2/daux1
         endif
-        call output_line('error u2: ' // trim(sys_sdEL(daux2, 10)))
+        call output_line('error u2: ' // trim(sys_sdEL(abs(daux2), 10)))
 
         daux1 = sqrt(rprob%DrefSols(1,i)**2 + rprob%DrefSols(2,i)**2)
         daux2 = sqrt(  (rprob%DrefSols(1,i)-rprob%Dvalues(1,1,i))**2 &
@@ -815,8 +821,6 @@ contains
           daux2 = daux2/daux1
         endif
         call output_line(' error u: ' // trim(sys_sdEL(daux2, 10)))
-        call output_lbrk()
-
         if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
             rprob%cformulation .eq. FORMULATION_STOKES) then
           daux1 = rprob%DrefSols(3,i)
@@ -824,8 +828,9 @@ contains
           if (daux1 .ne. 0.0_DP) then
             daux2 = daux2/daux1
           endif
-          call output_line(' error p: ' // trim(sys_sdEL(daux2, 10)))
+          call output_line(' error p: ' // trim(sys_sdEL(abs(daux2), 10)))
         endif
+        call output_lbrk()
       enddo
     end if
 

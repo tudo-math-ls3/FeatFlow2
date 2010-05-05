@@ -606,8 +606,6 @@ contains
   subroutine elast_stressTensor(irow, rdiscretisation, nel, nptsPerEl, Dpoints, &
                                 rdomainIntSubset, Dstresses, rcollection)
 
-!BRAL: an mixed formulation anpassen
-
     use fsystem
     use genoutput
     use collection
