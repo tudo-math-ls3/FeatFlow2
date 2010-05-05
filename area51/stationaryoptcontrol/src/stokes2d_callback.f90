@@ -250,6 +250,9 @@ contains
   !</output>
     
   !</subroutine>
+  
+    integer :: i,j
+    real(dp) :: X,Y,C,dalphaC
 
     !    u(x,y) = 16*x*(1-x)*y*(1-y)
     ! => f(x,y) = 32 * (y*(1-y)+x*(1-x))
@@ -257,6 +260,32 @@ contains
     !                ( Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + &
     !                  Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
     Dcoefficients (1,:,:) = 0.0_DP
+    
+    dalphaC = rcollection%DquickAccess(1)
+    
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = -0.3D1 * x * y ** 2 - x ** 3
+          
+          Dcoefficients(1,j,i) = C
+        end do
+      end do
+    else
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = y ** 3 + 0.3D1 * x ** 2 * y
+          
+          Dcoefficients(1,j,i) = C
+        end do
+      end do
+    end if
 
   end subroutine
 
@@ -264,7 +293,7 @@ contains
 
 !<subroutine>
 
-  subroutine coeff_RHSx_dual_2D (rdiscretisation,rform, &
+  subroutine coeff_RHS_dual_2D (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset,&
                   Dcoefficients,rcollection)
@@ -332,111 +361,42 @@ contains
     
   !</subroutine>
 
+    integer :: i,j
+    real(dp) :: X,Y,C,Z,dalphaC
     integer, dimension(2) :: Isize
     real(DP), dimension(:,:), allocatable :: Dvalues
 
-    ! RHS of the dual equation is the negative target function:
-    !
-    !    u(x,y) = 16*x*(1-x)*y*(1-y)
-    ! => z(x,y) = -u(x,y)
-    Isize(1) = Ubound(Dcoefficients,2)
-    Isize(2) = Ubound(Dcoefficients,3)
-    allocate (Dvalues(Isize(1),Isize(2)))
-    call getReferenceFunctionX_2D (DER_FUNC,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,Dvalues,rcollection)
-    Dcoefficients (1,:,:) = -Dvalues
-    deallocate (Dvalues)
+    Dcoefficients (1,:,:) = 0.0_DP
 
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine coeff_RHSy_dual_2D (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,&
-                  Dcoefficients,rcollection)
+    dalphaC = rcollection%DquickAccess(1)
     
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                        :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-
-    integer, dimension(2) :: Isize
-    real(DP), dimension(:,:), allocatable :: Dvalues
-
-    ! RHS of the dual equation is the negative target function:
-    !
-    !    u(x,y) = 16*x*(1-x)*y*(1-y)
-    ! => z(x,y) = -u(x,y)
-    Isize(1) = Ubound(Dcoefficients,2)
-    Isize(2) = Ubound(Dcoefficients,3)
-    allocate (Dvalues(Isize(1),Isize(2)))
-    call getReferenceFunctionY_2D (DER_FUNC,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,Dvalues,rcollection)
-    Dcoefficients (1,:,:) = -Dvalues
-    deallocate (Dvalues)
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = -0.3D1 * x * y ** 2 - x ** 3 + x ** 3 * y ** 2
+          
+          Z = X ** 3 * Y ** 2
+          
+          Dcoefficients(1,j,i) = C - Z
+        end do
+      end do
+    else
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = y ** 3 + 0.3D1 * x ** 2 * y - x ** 2 * y ** 3
+          
+          Z = -X ** 2 * Y ** 3
+          
+          Dcoefficients(1,j,i) = C - Z
+        end do
+      end do
+    end if
 
   end subroutine
 
@@ -514,27 +474,35 @@ contains
   
 !</subroutine>
 
-  select case (cderivative)
-  case (DER_FUNC)
-    ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-  case (DER_DERIV_X)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-  case (DER_DERIV_Y)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
-  
+    integer :: i,j
+    real(dp) :: X,Y,C,dalphaC
+
+    dalphaC = rcollection%DquickAccess(1)
+    
+    select case (cderivative)
+    case (DER_FUNC)
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = X ** 3 * Y ** 2 / 2
+          
+          Dvalues(j,i) = C
+        end do
+      end do
+    case (DER_DERIV_X)
+      !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+      ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
+      Dvalues (:,:) = 0
+    case (DER_DERIV_Y)
+      !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+      ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
+      Dvalues (:,:) = 0
+    case DEFAULT
+      ! Unknown. Set the result to 0.0.
+      Dvalues = 0.0_DP
+    end select
 
   end subroutine
 
@@ -612,27 +580,35 @@ contains
   
 !</subroutine>
 
-  select case (cderivative)
-  case (DER_FUNC)
-    ! u(x,y) = 16*x*(1-x)*y*(1-y)
-    Dvalues (:,:) = 0.0_DP
-  case (DER_DERIV_X)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(2,:,:)) )
-  case (DER_DERIV_Y)
-    !    u(x,y)   = 16*x*(1-x)*y*(1-y)
-    ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
-    Dvalues (:,:) = 16.0_DP * ( &
-        Dpoints(1,:,:) * (1.0_DP-Dpoints(1,:,:)) * (1.0_DP-Dpoints(2,:,:)) - &
-        Dpoints(1,:,:) * Dpoints(2,:,:) * (1.0_DP-Dpoints(1,:,:)) )
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select
-  
+  integer :: i,j
+    real(dp) :: X,Y,C,dalphaC
+
+    dalphaC = rcollection%DquickAccess(1)
+    
+    select case (cderivative)
+    case (DER_FUNC)
+      do i=1,nelements
+        do j=1,npointsPerElement
+          X = Dpoints(1,j,i)
+          Y = Dpoints(2,j,i)
+          
+          C = -X ** 2 * Y ** 3 / 2
+          
+          Dvalues(j,i) = C
+        end do
+      end do
+    case (DER_DERIV_X)
+      !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+      ! => u_x(x,y) = 16 * ( y*(1-x)*(1-y)-x*y*(1-y) )
+      Dvalues (:,:) = 0
+    case (DER_DERIV_Y)
+      !    u(x,y)   = 16*x*(1-x)*y*(1-y)
+      ! => u_y(x,y) = 16 * ( x*(1-x)*(1-y)-x*y*(1-x) )
+      Dvalues (:,:) = 0
+    case DEFAULT
+      ! Unknown. Set the result to 0.0.
+      Dvalues = 0.0_DP
+    end select
 
   end subroutine
 
@@ -817,91 +793,117 @@ contains
 
   subroutine getBoundaryValues_2D (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
                                    cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
-  
-  use collection
-  use spatialdiscretisation
-  use discretebc
-  
-!<description>
-  ! This subroutine is called during the discretisation of boundary
-  ! conditions. It calculates a special quantity on the boundary, which is
-  ! then used by the discretisation routines to generate a discrete
-  ! 'snapshot' of the (actually analytic) boundary conditions.
-!</description>
-  
-!<input>
-  ! Component specifier.
-  ! For Dirichlet boundary: 
-  !   Icomponents(1) defines the number of the boundary component, the value
-  !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
-  !   2=2nd solution component, e.g. Y-velocity,...)
-  integer, dimension(:), intent(IN)                           :: Icomponents
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Boundary region that is currently being processed.
-  type(t_boundaryRegion), intent(IN)                          :: rboundaryRegion
-  
-  ! The element number on the boundary which is currently being processed
-  integer, intent(IN)                                    :: ielement
-  
-  ! The type of information, the routine should calculate. One of the
-  ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
-  ! to return one or multiple information value in the result array.
-  integer, intent(IN)                                         :: cinfoNeeded
-  
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   iwhere = number of the point in the triangulation or
-  !          = 0, if only the parameter value of the point is known; this
-  !               can be found in dwhere,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   iwhere = number of the edge where the value integral mean value
-  !            should be computed
-  integer, intent(IN)                                     :: iwhere
-
-  ! A reference to a geometric object where information should be computed.
-  ! cinfoNeeded=DISCBC_NEEDFUNC : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDDERIV : 
-  !   dwhere = parameter value of the point where the value should be computed,
-  ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
-  !   dwhere = 0 (not used)
-  real(DP), intent(IN)                                        :: dwhere
     
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(IN), optional      :: rcollection
-
-!</input>
-
-!<output>
-  ! This array receives the calculated information. If the caller
-  ! only needs one value, the computed quantity is put into Dvalues(1). 
-  ! If multiple values are needed, they are collected here (e.g. for 
-  ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
-  real(DP), dimension(:), intent(OUT)                         :: Dvalues
-!</output>
+    use fsystem
+    use boundary
+    use collection
+    use spatialdiscretisation
+    use discretebc
+    
+  !<description>
+    ! This subroutine is called during the discretisation of boundary
+    ! conditions. It calculates a special quantity on the boundary, which is
+    ! then used by the discretisation routines to generate a discrete
+    ! 'snapshot' of the (actually analytic) boundary conditions.
+  !</description>
+    
+  !<input>
+    ! Component specifier.
+    ! For Dirichlet boundary: 
+    !   Icomponents(1) defines the number of the solution component, the value
+    !   should be calculated for (e.g. 1=1st solution component, e.g. X-velocitry, 
+    !   2=2nd solution component, e.g. Y-velocity,...,
+    !   3=3rd solution component, e.g. pressure)
+    ! For pressure drop boundary / normal stress:
+    !   Velocity components that are affected by the normal stress
+    !   (usually "1 2" for x- and y-velocity while returned value musr specify
+    !   the pressure at the boundary)
+    integer, dimension(:), intent(in)                           :: Icomponents
   
-!</subroutine>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in)                   :: rdiscretisation
+    
+    ! Boundary region that is currently being processed.
+    type(t_boundaryRegion), intent(in)                          :: rboundaryRegion
+    
+    ! The element number on the boundary which is currently being processed
+    integer, intent(in)                                         :: ielement
+    
+    ! The type of information, the routine should calculate. One of the
+    ! DISCBC_NEEDxxxx constants. Depending on the constant, the routine has
+    ! to return one or multiple information value in the result array.
+    integer, intent(in)                                         :: cinfoNeeded
+    
+    ! A reference to a geometric object where information should be computed.
+    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    !   iwhere = number of the point in the triangulation or
+    !          = 0, if only the parameter value of the point is known; this
+    !               can be found in dwhere,
+    ! cinfoNeeded=DISCBC_NEEDFUNCMID : 
+    !   iwhere = number of the edge in which midpoint the value
+    !            should be computed
+    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    !   iwhere = number of the point in the triangulation or
+    !          = 0, if only the parameter value of the point is known; this
+    !               can be found in dwhere,
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    !   iwhere = number of the edge where the value integral mean value
+    !            should be computed
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    !   iwhere = Number of the edge where the normal stress should be computed.
+    integer, intent(in)                                         :: iwhere
+
+    ! A reference to a geometric object where information should be computed.
+    ! cinfoNeeded=DISCBC_NEEDFUNC : 
+    !   dwhere = parameter value of the point where the value should be computed,
+    ! cinfoNeeded=DISCBC_NEEDDERIV : 
+    !   dwhere = parameter value of the point where the value should be computed,
+    ! cinfoNeeded=DISCBC_NEEDINTMEAN : 
+    !   dwhere = 0 (not used)
+    ! cinfoNeeded=DISCBC_NEEDNORMALSTRESS : 
+    !   dwhere = parameter value of the point on edge iwhere where the normal
+    !            stress should be computed.
+    real(DP), intent(in)                                        :: dwhere
+     
+    ! Optional: A collection structure to provide additional 
+    ! information to the coefficient routine. 
+    type(t_collection), intent(inout), optional      :: rcollection
+
+  !</input>
+  
+  !<output>
+    ! This array receives the calculated information. If the caller
+    ! only needs one value, the computed quantity is put into Dvalues(1). 
+    ! If multiple values are needed, they are collected here (e.g. for 
+    ! DISCBC_NEEDDERIV: Dvalues(1)=x-derivative, Dvalues(2)=y-derivative,...)
+    !
+    ! The function may return SYS_INFINITY as a value. This indicates the
+    ! framework to ignore the node and treat it as 'natural boundary condition'
+    ! node.
+    real(DP), dimension(:), intent(out)                         :: Dvalues
+  !</output>
+    
+  !</subroutine>
 
     ! To get the X/Y-coordinates of the boundary point, use:
     !
-    ! REAL(DP) :: dx,dy
-    !
-    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-
-    ! Return zero Dirichlet boundary values for all situations.
-    Dvalues(1) = 0.0_DP
-  
+    REAL(DP) :: X,Y
+    
+    CALL boundary_getCoords(rdiscretisation%p_rboundary, &
+        rboundaryRegion%iboundCompIdx, dwhere, X, Y)
+    
+    if (rcollection%IquickAccess(1) .eq. 1) then
+      Dvalues(1) = X ** 3 * Y ** 2 / 2
+    else if (rcollection%IquickAccess(1) .eq. 2) then
+      Dvalues(1) = -X ** 2 * Y ** 3 / 2
+    else if (rcollection%IquickAccess(1) .eq. 4) then
+      Dvalues(1) = X ** 3 * Y ** 2 / 2
+    else if (rcollection%IquickAccess(1) .eq. 5) then
+      Dvalues(1) = -X ** 2 * Y ** 3 / 2
+    end if
+      
   end subroutine
 
   ! ***************************************************************************

@@ -121,6 +121,7 @@ module stokes2d_method0_simple
   use multilevelprojection
   use linearsolver
   use matrixmodification
+  use matrixio
     
   use stokes2d_callback
   
@@ -187,7 +188,8 @@ contains
     type(t_discreteBC), target :: rdiscreteBC
 
     ! A solver node that accepts parameters for the linear solver    
-    type(t_linsolNode), pointer :: p_rsolverNode
+    type(t_linsolNode), pointer :: p_rsolverNode,p_rprecond
+    TYPE(t_filterChain), DIMENSION(2), TARGET :: RfilterChain
 
     ! An array for the system matrix(matrices) during the initialisation of
     ! the linear solver.
@@ -213,12 +215,12 @@ contains
     
     ! Output block for UCD output to GMV file
     type(t_ucdExport) :: rexport
-    real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY
+    real(DP), dimension(:), pointer :: p_Ddata,p_DdataX,p_DdataY,p_DdataRhs,p_DdataRhsTemp
 
     ! Ok, let's start. 
     !
     ! We want to solve our Poisson problem on level... 
-    NLMAX = 6
+    NLMAX = 2
     
     ! Newton iteration counter
     nmaxiterations = 1000
@@ -227,8 +229,8 @@ contains
     dalpha = 0.01_DP
     
     ! Control active or not.
-    bcontrolactive = .true.
-    bdualcoupledtoprimal = .true.
+    bcontrolactive = .false.
+    bdualcoupledtoprimal = .false.
     
     ! Bounds on the control
     bboundsActive = .false.
@@ -238,14 +240,14 @@ contains
     dmax2 = 1E99_DP
     
     ! Viscosity constant
-    dnu = 1.0_DP/1000.0_DP
+    dnu = 1.0_DP
     
     ! Discretisation. 1=EM30, 2=Q2
     idiscretisation = 1
     
     ! TRUE emulates a timestep with implicit Euler, timestep length dt, 
     ! starting from a zero solution
-    bemulateTimestep = .true.
+    bemulateTimestep = .false.
     
     ! Timestep length
     dt = 1.0_DP
@@ -344,53 +346,98 @@ contains
     call bcasm_initDiscreteBC(rdiscreteBC)
     
     ! Edge 1 of boundary component 1 the domain.
+    rcollection%IquickAccess(1) = 1
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
                              
     ! Now to the edge 2 of boundary component 1 the domain.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
                              
     ! Edge 3 of boundary component 1.
+    rcollection%IquickAccess(1) = 2
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
     
+
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
+
     ! Edge 4 of boundary component 1. That's it.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,2,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
 
     ! ---
     ! The same for the dual variable.
+    rcollection%IquickAccess(1) = 4
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
                              
     ! Now to the edge 2 of boundary component 1 the domain.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+                                       
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,4,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
                              
     ! Edge 3 of boundary component 1.
+    rcollection%IquickAccess(1) = 5
     call boundary_createRegion(rboundary,1,1,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
     
     ! Edge 4 of boundary component 1. That's it.
     call boundary_createRegion(rboundary,1,3,rboundaryRegion)
     call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
                                        rboundaryRegion,rdiscreteBC,&
-                                       getBoundaryValues_2D)
+                                       getBoundaryValues_2D,rcollection)
+
+    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+    call bcasm_newDirichletBConRealBD (rdiscretisation,5,&
+                                       rboundaryRegion,rdiscreteBC,&
+                                       getBoundaryValues_2D,rcollection)
 
     ! -----
     ! Linear system: Basic structure.
@@ -402,24 +449,33 @@ contains
     call lsysbl_createVecBlockByDiscr (rdiscretisation,rtempRhsBlock)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rvectorTmp)
     
+    call lsysbl_getbase_double (rtempRhsBlock,p_DdataRhsTemp)
+    call lsysbl_getbase_double (rRhsBlock,p_DdataRhs)
+    
     ! Create the RHS vector f of the primal equation
+    rcollection%DquickAccess(1) = dalpha
     rlinform%itermCount = 1
     rlinform%Idescriptors(1) = DER_FUNC
+    rcollection%IquickAccess(1) = 1
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(1),&
-                                  coeff_RHS_primal_2D)
+                                  coeff_RHS_primal_2D,rcollection)
+    
+    rcollection%IquickAccess(1) = 2
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(2),&
-                                  coeff_RHS_primal_2D)
+                                  coeff_RHS_primal_2D,rcollection)
     call lsyssc_clearVector (rrhsBlock%RvectorBlock(3))
                                   
     ! Create the RHS vector -z of the dual equation
+    rcollection%IquickAccess(1) = 1
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(4),&
-                                  coeff_RHSx_dual_2D)
+                                  coeff_RHS_dual_2D,rcollection)
+    rcollection%IquickAccess(1) = 2
     call linf_buildVectorScalar (rdiscretisation%RspatialDiscr(1),&
                                   rlinform,.true.,rrhsBlock%RvectorBlock(5),&
-                                  coeff_RHSy_dual_2D)
+                                  coeff_RHS_dual_2D,rcollection)
     call lsyssc_clearVector (rrhsBlock%RvectorBlock(6))
   
     ! Implement BC's
@@ -553,8 +609,8 @@ contains
       call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(2,3),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(3,1),LSYSSC_TR_VIRTUAL)
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(3,2),LSYSSC_TR_VIRTUAL)
+      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(3,1),LSYSSC_TR_ALL)
+      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(3,2),LSYSSC_TR_ALL)
 
       call lsyssc_duplicateMatrix (rmatrixLaplace,rmatrixBlock%RmatrixBlock(4,4),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
@@ -579,8 +635,8 @@ contains
       call lsyssc_duplicateMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(5,6),&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_COPY)
 
-      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(6,4),LSYSSC_TR_VIRTUAL)
-      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(6,5),LSYSSC_TR_VIRTUAL)
+      call lsyssc_transposeMatrix (rmatrixB1,rmatrixBlock%RmatrixBlock(6,4),LSYSSC_TR_ALL)
+      call lsyssc_transposeMatrix (rmatrixB2,rmatrixBlock%RmatrixBlock(6,5),LSYSSC_TR_ALL)
 
       if (bdualcoupledtoprimal) then
         call lsyssc_duplicateMatrix (rmatrixMass,rmatrixBlock%RmatrixBlock(4,1),&
@@ -669,11 +725,25 @@ contains
       
       call matfil_discreteBC (rmatrixBlock,rdiscreteBC)
       
-      ! Prepare an UMFPACK solver for the system
-      call linsol_initUMFPACK4(p_rsolverNode)
+      RfilterChain(1)%ifilterType = FILTER_SMALLL1TO0
+      RfilterChain(1)%ismallL1to0component = 3
+      RfilterChain(2)%ifilterType = FILTER_SMALLL1TO0
+      RfilterChain(2)%ismallL1to0component = 6
     
+      ! Prepare an UMFPACK solver for the system
+      !
+      !call linsol_initUMFPACK4(p_rsolverNode)
+      call linsol_initVANKA(p_rprecond,0.7_DP,LINSOL_VANKA_GENERAL)
+      CALL linsol_initDefCorr (p_rsolverNode,p_rprecond,RfilterChain)
+      p_rsolverNode%ioutputLevel = 2
+      p_rsolverNode%nmaxIterations = 1000
+      p_rsolverNode%depsRel = 1E-13_DP
+      
       ! Set the output level of the solver to 2 for some output
       p_rsolverNode%ioutputLevel = 2
+      
+      !call matio_writeBlockMatrixHR (rmatrixBlock, 'matrix',&
+      !    .true., 0, "matrix.txt","(E20.10)")
       
       ! Attach the system matrix to the solver.
       ! First create an array with the matrix data (on all levels, but we
@@ -715,8 +785,8 @@ contains
     ! That's it, rvectorBlock now contains our solution. We can now
     ! start the postprocessing. 
     ! Start UCD export to GMV file:
-    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-                       'gmv/ust2d_0_simple.gmv')
+    call ucd_startVTK (rexport,UCD_FLAG_STANDARD,rtriangulation,&
+                       'gmv/ust2d_0_simple.vtk')
                        
     call spdp_stdProjectionToP1Q1Scalar (rvectorBlock%RvectorBlock(1),&
       rvectorOutputX,rdiscrOutput)
@@ -737,6 +807,8 @@ contains
         rvectorOutputY,rdiscrOutput)
     call ucd_addVariableVertexBased (rexport,'dualvelX',UCD_VAR_STANDARD, p_DdataX)
     call ucd_addVariableVertexBased (rexport,'dualvelY',UCD_VAR_STANDARD, p_DdataY)
+
+    call ucd_addVarVertBasedVec (rexport, 'dualvel', p_DdataX, p_DdataY)
 
     call lsyssc_getbase_double (rvectorBlock%RvectorBlock(6),p_Ddata)
     call ucd_addVariableElementBased (rexport,'dualP',UCD_VAR_STANDARD, p_Ddata)

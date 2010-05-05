@@ -57,13 +57,13 @@ program poisson
   call output_lbrk ()
   call output_line ('Calculating Stokes-2D-Problem with method 0 - simple')
   call output_line ('-----------------------------------------------------')
-  !call stokes2d_0_simple
+  call stokes2d_0_simple
 
   ! Call the problem to solve. Navier-Stokes 2D method 1 - simple:
   call output_lbrk ()
   call output_line ('Calculating Navier-Stokes-2D-Problem with method 0 - simple')
   call output_line ('-----------------------------------------------------------')
-  call navstokes2d_0_simple
+  !call navstokes2d_0_simple
 
   ! Print out heap statistics - just to check if everything
   ! is cleaned up.
