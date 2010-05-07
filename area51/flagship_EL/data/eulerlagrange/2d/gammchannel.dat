@@ -121,22 +121,24 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 0e0  #205.709277e0
+velopartx = 0  #205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0
                
 
 #-------------------------------------------------------------------------------
-# scalars for the velocity of the gas phase (from .indat file)
+# scalars for the gas phase (from .indat file)
 #-------------------------------------------------------------------------------
 
-# velocity in x-direction in m/s
+# scalar for the velocity in x-direction
 velogasx = 205.709277e0
 
-# velocity in y-direction in m/s
+# scalar for the velocity in y-direction
 velogasy = 1e0
 
+# scalar for density of the gas phase
+rho_gas= 1.5e0 
                                      
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
@@ -212,8 +214,8 @@ ipartoutput = 2
 
 # 1 	one-way coupling (particles have no influence on the gas phase)
 # 2 	two-way coupling
-# -1	compute particle movement at a steady state gas solution
-icouplingpart = 1
+# -1	compute paricle movement at a steady state gas solution
+icouplingpart = 2
 
 
 

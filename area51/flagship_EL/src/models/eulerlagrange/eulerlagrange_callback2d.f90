@@ -4673,8 +4673,8 @@ contains
     ! Velocity of the particles
     real(DP) :: velopartx, veloparty, random1, random2, random3
 
-    ! Scalars for the velocity of the gas phase
-    real(DP) :: velogasx, velogasy
+    ! Scalars for the velocity and density of the gas phase
+    real(DP) :: velogasx, velogasy, rhogas
 
     ! Variables for particle-diameter, -mass and -temperature
     real(DP) :: particledensity, particledensitymin, particledensitymax
@@ -4714,9 +4714,10 @@ contains
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
-    ! Get scalars for gasvelocity
+    ! Get scalars for velocity an density of the gas phase
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "rho_gas", rhogas)
 
     ! Get data from solution
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
@@ -4770,6 +4771,8 @@ contains
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
 	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3) 
 
+    ! Scaling the density of the gas phase
+    rho_g= rhogas*rho_g
 
 	! Calculate particle Reynoldsnumber
 	!
@@ -5200,6 +5203,12 @@ contains
 
     ! Specific heats at constant volume
     real(DP) :: c_v_gas, c_v_part
+    
+    ! Forces for the movement
+    real(DP), dimension(2) :: F_ges, F_D, F_G
+    
+    ! Volumefraction of the position of the particle
+    real(DP) ::  alpha_p
 
     ! Variables for starting position from PGM-file
     integer, dimension(:,:), pointer :: p_Idata
@@ -5238,9 +5247,9 @@ contains
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_double(rparlist, 'Timestepping', "dinitialStep", dt)
 
-!    ! Get scalars for gasvelocity
-!    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
-!    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
+    ! Get scalars for gasvelocity
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
 
     ! Get data from solution
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
@@ -5286,13 +5295,18 @@ contains
 									rParticles%p_lambda2(iPart)*uy2_part + &
 									rParticles%p_lambda3(iPart)*uy3_part
 
-!    ! Scaling the velocity of the gasphase
-!    rParticles%p_xvelo_gas(iPart)=rParticles%p_xvelo_gas(iPart)*velogasx
-!    rParticles%p_yvelo_gas(iPart)=rParticles%p_yvelo_gas(iPart)*velogasy
+    ! Scaling the velocity of the gasphase
+    rParticles%p_xvelo_gas(iPart)=rParticles%p_xvelo_gas(iPart)*velogasx
+    rParticles%p_yvelo_gas(iPart)=rParticles%p_yvelo_gas(iPart)*velogasy
 
 	! Calculate the density of the gas in the position of the particle
 	rho_g= 	rParticles%p_lambda1(iPart)*rho_gas(1) + rParticles%p_lambda2(iPart)*&
 	        rho_gas(2) + rParticles%p_lambda3(iPart)*rho_gas(3) 
+
+
+	! Calculate the relative velocity
+	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2.0_dp +&
+	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2.0_dp)
 
 
 	! Calculate particle Reynoldsnumber
@@ -5300,9 +5314,7 @@ contains
 	! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
 	! with \nu_g=\frac{\eta_g}{\rho_g}
 	!
-	Re_p= (rho_g*0.5_dp*rParticles%p_diam(iPart)/rParticles%nu_g)*(sqrt((rParticles%p_xvelo_gas(iPart)- &
-	       rParticles%p_xvelo_old(iPart))**2.0_dp+&
-		  (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp))
+    Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
     ! get values for the energie calculation
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "temp_gas", Temp_gas)
@@ -5330,27 +5342,46 @@ contains
 	if (Re_p<1000) then
 		C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
 	else
-		C_W= 24.0_dp/Re_p
+		C_W= 0.44_dp   !24.0_dp/Re_p
 	end if
 
 	! Calculate alpha_n
 	rParticles%p_alpha_n(iPart)= C_W*c_pi*rho_g/8.0_dp 
 
-	! Calculate the relative velocity
-	Velo_rel= sqrt((rParticles%p_xvelo_old(iPart)-rParticles%p_xvelo_gas(iPart))**2.0_dp +&
-	               (rParticles%p_yvelo_old(iPart)-rParticles%p_yvelo_gas(iPart))**2.0_dp)
 
-	! Calculate new velocity of the particle
-	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
-								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25_dp * rParticles%p_diam(iPart)**2.0_dp &
-								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * rParticles%gravity(1))/&
-								(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
-								0.25*rParticles%p_diam(iPart)**2.0_dp)
-	rParticles%p_yvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_yvelo_old(iPart)+&
-								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25_dp*rParticles%p_diam(iPart)**2.0_dp &
-								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*rParticles%gravity(2))/&
-    							(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
-    							0.25*rParticles%p_diam(iPart)**2.0_dp)
+!	! Calculate new velocity of the particle
+!	rParticles%p_xvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_xvelo_old(iPart)+&
+!								dt*rParticles%p_alpha_n(iPart) * Velo_rel * 0.25_dp * rParticles%p_diam(iPart)**2.0_dp &
+!								* rParticles%p_xvelo_gas(iPart)+ dt*rParticles%p_mass(iPart) * rParticles%gravity(1))/&
+!								(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
+!								0.25*rParticles%p_diam(iPart)**2.0_dp)
+!	rParticles%p_yvelo(iPart)= 	(rParticles%p_mass(iPart) * rParticles%p_yvelo_old(iPart)+&
+!								dt*rParticles%p_alpha_n(iPart)*Velo_rel*0.25_dp*rParticles%p_diam(iPart)**2.0_dp &
+!								* rParticles%p_yvelo_gas(iPart)+ dt*rParticles%p_mass(iPart)*rParticles%gravity(2))/&
+!    							(rParticles%p_mass(iPart) + dt*rParticles%p_alpha_n(iPart)*Velo_rel*&
+!    							0.25*rParticles%p_diam(iPart)**2.0_dp)
+
+alpha_p= 0.0002_dp
+
+! Compute the dragforce
+! F_D= \frac{3}{4} * C_W * \frac{\alpha_p \rho_g}{d_p} |u_g - u_p| (u_g - u_p) 
+F_D(1)= 3*C_W*alpha_p*rho_g*Velo_rel*(rParticles%p_xvelo_gas(iPart)-&
+        rParticles%p_xvelo_old(iPart))/(rParticles%p_diam(iPart)*4)
+F_D(2)= 3*C_W*alpha_p*rho_g*Velo_rel*(rParticles%p_yvelo_gas(iPart)-&
+        rParticles%p_yvelo_old(iPart))/(rParticles%p_diam(iPart)*4)
+
+! Compute the gravity
+F_G(1)= rParticles%gravity(1)
+F_G(2)= rParticles%gravity(2)
+
+! Set force
+F_ges(1)= F_D(1) + F_G(1)
+F_ges(2)= F_D(2) + F_G(2)
+
+! Compute new velocity of the particles
+! a = F_ges/m_p
+rParticles%p_xvelo(iPart)=  rParticles%p_xvelo_old(iPart)+dt*F_ges(1)  !/rParticles%p_mass(iPart)
+rParticles%p_yvelo(iPart)=  rParticles%p_xvelo_old(iPart)+dt*F_ges(2)  !/rParticles%p_mass(iPart)
 
 	!---------------------------------------------------------------------------------
 	! Calculate the new position of the particle
@@ -5485,6 +5516,11 @@ contains
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
          
         case(3)
+         
+          ! Get random numbers
+          call random_number(random1)
+          call random_number(random2)
+               
           partymin= minval(p_DvertexCoords(2,:))
           partymax= maxval(p_DvertexCoords(2,:))
           partxmin= minval(p_DvertexCoords(1,:))
@@ -6188,7 +6224,6 @@ contains
         rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
 
     else
-        write(*,*) 'Particle-wall-collision failed!'
         ! Set new "old position" and "old velocity" of the particle
         rParticles%p_xpos(iPart)= dx
         rParticles%p_ypos(iPart)= dy
