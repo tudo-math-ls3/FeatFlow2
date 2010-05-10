@@ -111,6 +111,12 @@ module timediscretisation
     !  =1.0: Backward Euler (Standard),
     !  =0.5: Crank Nicolson.
     real(DP) :: dtheta = 1.0_DP
+    
+    ! User defined integer tag
+    integer :: itag = 0
+    
+    ! User defined double precision tag
+    real(DP) :: dtag = 0.0_DP
   
   end type
 

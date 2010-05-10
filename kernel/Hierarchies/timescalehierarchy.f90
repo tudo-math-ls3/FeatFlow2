@@ -126,9 +126,11 @@ contains
     ! Refine.
     do i=2,nlevels
 
-      if (bprint) then
-        ! Print current state.
-        call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
+      if (present(bprint)) then
+        if (bprint) then
+          ! Print current state.
+          call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
+        end if
       end if
 
       rtimeHierarchy%p_RtimeLevels(i) = rtimeHierarchy%p_RtimeLevels(i-1)

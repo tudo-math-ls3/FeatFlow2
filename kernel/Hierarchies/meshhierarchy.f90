@@ -195,9 +195,11 @@ contains
     ! refinement to create all missing levels.
     do i=rmeshHierarchy%nlevels+1,max(rmeshHierarchy%nmaxlevels,nlevels)
     
-      if (bprint) then
-        ! Print current state.
-        call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
+      if (present(bprint)) then
+        if (bprint) then
+          ! Print current state.
+          call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
+        end if
       end if
     
       ! Refine.
