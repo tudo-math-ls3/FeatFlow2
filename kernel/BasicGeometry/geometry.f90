@@ -625,7 +625,19 @@ module geometry
     real(dp) :: dtransVelYold  = 0.0_dp  
     
     ! the angular of the particle
-    real(dp) :: dangVelocity   = 0.0_dp  
+    real(dp) :: dangVelocity   = 0.0_dp
+    
+    ! the actual x-position of the particle from the previous timestep
+    real(dp) :: PosXactual = 0.0_dp  
+
+    ! the actual y-position of the particle from the previous timestep
+    real(dp) :: PosYactual = 0.0_dp  
+    
+    ! the area/volume of the particle
+    real(dp) :: dvolume = 0.0_dp  
+
+    ! the moment of inertia about mass center of the particle
+    real(dp) :: dimomir = 0.0_dp  
     
     ! A particle is considered a fictitious boundary object
     ! these FBOs are described by a 01-Vector. If we have
@@ -743,6 +755,10 @@ module geometry
     ! number of particles in the particle collection
     ! this number is initialized with 0
     integer :: nparticles = 0
+  
+    ! condition to avtivate adaptive time step
+    integer :: dminDistWall = 0
+    integer :: dminDistParticle = 0
   
     ! pointer to the particle structures
     type(t_particle), dimension(:), pointer :: p_rParticles
