@@ -5380,8 +5380,8 @@ F_ges(2)= F_D(2) + F_G(2)
 
 ! Compute new velocity of the particles
 ! a = F_ges/m_p
-rParticles%p_xvelo(iPart)=  rParticles%p_xvelo_old(iPart)+dt*F_ges(1)  !/rParticles%p_mass(iPart)
-rParticles%p_yvelo(iPart)=  rParticles%p_xvelo_old(iPart)+dt*F_ges(2)  !/rParticles%p_mass(iPart)
+rParticles%p_xvelo(iPart)=  rParticles%p_xvelo_old(iPart)+0.001*dt*F_ges(1) !/rParticles%p_mass(iPart)
+rParticles%p_yvelo(iPart)=  rParticles%p_xvelo_old(iPart)+0.001*dt*F_ges(2) !/rParticles%p_mass(iPart)
 
 	!---------------------------------------------------------------------------------
 	! Calculate the new position of the particle
@@ -6224,13 +6224,13 @@ rParticles%p_yvelo(iPart)=  rParticles%p_xvelo_old(iPart)+dt*F_ges(2)  !/rPartic
         rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
 
     else
-        ! Set new "old position" and "old velocity" of the particle
+!        ! Set new "old position" and "old velocity" of the particle
         rParticles%p_xpos(iPart)= dx
         rParticles%p_ypos(iPart)= dy
-        rParticles%p_xvelo(iPart)= 0.0_dp
-        rParticles%p_yvelo(iPart)= 0.0_dp
-        rParticles%p_xvelo_gas(iPart)= 0.0_dp
-        rParticles%p_yvelo_gas(iPart)= 0.0_dp
+!        rParticles%p_xvelo(iPart)= 0.0_dp
+!        rParticles%p_yvelo(iPart)= 0.0_dp
+!        rParticles%p_xvelo_gas(iPart)= 0.0_dp
+!        rParticles%p_yvelo_gas(iPart)= 0.0_dp
     end if
 	
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))

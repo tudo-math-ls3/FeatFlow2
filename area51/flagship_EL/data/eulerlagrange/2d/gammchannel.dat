@@ -121,7 +121,7 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 0  #205.709277e0
+velopartx = 205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0
