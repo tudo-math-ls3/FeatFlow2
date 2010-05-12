@@ -637,9 +637,9 @@ module chemotaxis_pattern_FCT
                 ! we use linsol_solveAdaptively. If b is a defect
                 ! RHS and x a defect update to be added to a solution vector,
                 p_rsolverNode%ioutputLevel = 2
-                p_rsolverNode%depsRel=1E-15_DP
+                p_rsolverNode%depsRel=1E-11_DP
                 p_rsolverNode%nminIterations=1
-                p_rsolverNode%nmaxIterations=1000
+                p_rsolverNode%nmaxIterations=400
                 call linsol_solveAdaptively (p_rsolverNode,rvectorBlockchemo,rrhsBlockchemo,rtempBlock)
 
                 ! Store the iterationstats
@@ -673,7 +673,7 @@ module chemotaxis_pattern_FCT
                 call  chemo_defcorr(  rcell, rchemoattract, rcellBlock, rmassmatrix, rlaplace, rmatrGradX, rmatrGradY, &
                                     rrhscell, rdiscretisation, rdiscreteBC, dtstep, D_1, CHI, ALPHA, r, GAMMA, N, maxiterationdef, defectTol ,&
                                     iteration_u_max, iteration_u_min, iteration_u_average, iteration_defcorr_max, &
-                                    iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation)
+                                    iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation, rtriangulation)
         end do coupledloop 
         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         !!!!! end of the coupledloop  !!!!!
@@ -1332,30 +1332,30 @@ module chemotaxis_pattern_FCT
         ! here the Dirichlet chemo-code
         call bcasm_initDiscreteBC(rdiscreteBC) 
           
-!        call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-!        ! We use this boundary region and specify that we want to have Dirichlet
-!        ! boundary there. 
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_u_callback, rcollection)
-!                                
-!        ! Now to the edge 2 of boundary component 1 the domain.
-!        call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&		
-!                                        getBoundaryValues_u_callback, rcollection)
-!                                       							
-!        ! Edge 3 of boundary component 1.
-!        call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_u_callback, rcollection)
-!
-!        ! Edge 4 of boundary component 1. That's it.
-!        call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_u_callback, rcollection)
+        call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+        ! We use this boundary region and specify that we want to have Dirichlet
+        ! boundary there. 
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_u_callback, rcollection)
+                                
+        ! Now to the edge 2 of boundary component 1 the domain.
+        call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&		
+                                        getBoundaryValues_u_callback, rcollection)
+                                       							
+        ! Edge 3 of boundary component 1.
+        call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_u_callback, rcollection)
+
+        ! Edge 4 of boundary component 1. That's it.
+        call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_u_callback, rcollection)
         
         ! deactivate collection
         call collct_done(rcollection)
@@ -1409,30 +1409,30 @@ module chemotaxis_pattern_FCT
         ! here the Dirichlet chemo-code
         call bcasm_initDiscreteBC(rdiscreteBC) 
           
-!        call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-!        ! We use this boundary region and specify that we want to have Dirichlet
-!        ! boundary there. 
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_c_callback, rcollection)
-!                                
-!        ! Now to the edge 2 of boundary component 1 the domain.
-!        call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&		
-!                                        getBoundaryValues_c_callback, rcollection)
-!                                       							
-!        ! Edge 3 of boundary component 1.
-!        call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_c_callback, rcollection)
-!
-!        ! Edge 4 of boundary component 1. That's it.
-!        call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                        rboundaryRegion,rdiscreteBC,&
-!                                        getBoundaryValues_c_callback, rcollection)
+        call boundary_createRegion(rboundary,1,1,rboundaryRegion)
+        ! We use this boundary region and specify that we want to have Dirichlet
+        ! boundary there. 
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_c_callback, rcollection)
+                                
+        ! Now to the edge 2 of boundary component 1 the domain.
+        call boundary_createRegion(rboundary,1,2,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&		
+                                        getBoundaryValues_c_callback, rcollection)
+                                       							
+        ! Edge 3 of boundary component 1.
+        call boundary_createRegion(rboundary,1,3,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_c_callback, rcollection)
+
+        ! Edge 4 of boundary component 1. That's it.
+        call boundary_createRegion(rboundary,1,4,rboundaryRegion)
+        call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
+                                        rboundaryRegion,rdiscreteBC,&
+                                        getBoundaryValues_c_callback, rcollection)
         
         ! deactivate collection
         call collct_done(rcollection)
@@ -1524,7 +1524,7 @@ module chemotaxis_pattern_FCT
     subroutine chemo_defcorr(  rcell , rchemoattract , rcellBlock , rmassmatrix , rlaplace, rmatrGradX, rmatrGradY, &
                 rrhscell , rdiscretisation , rdiscreteBC , dtstep , D_1, CHI, ALPHA, r, GAMMA, N, maxiterationdef , defectTol,&
                 iteration_u_max, iteration_u_min, iteration_u_average, iteration_defcorr_max, &
-                iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation)
+                iteration_defcorr_min, iteration_defcorr_average, rfu, rfuBlock, itimestep, convecRelaxation, rtriangulation)
 
 
         ! sol vectors
@@ -1542,7 +1542,8 @@ module chemotaxis_pattern_FCT
         type(t_vectorBlock)  , intent(INOUT) :: rfuBlock    
 
         ! The underlying discretisation and BCs
-        type(t_Blockdiscretisation) , intent(IN) :: rdiscretisation
+        type(t_Blockdiscretisation), intent(IN) :: rdiscretisation
+        type(t_triangulation), intent(IN) :: rtriangulation
         type(t_discreteBC) , intent(IN) , target :: rdiscreteBC
         ! Some params (needed to derive the sys matrix)
         real(DP) , intent(IN) :: dtstep , D_1, CHI, ALPHA, r, GAMMA, N
@@ -1563,6 +1564,7 @@ module chemotaxis_pattern_FCT
 
         ! temporal matrix    
         type(t_matrixScalar) :: rK , rmatrix, rlumpedmass
+        type(t_matrixBlock) :: rKBlock
         ! defect ctrl variable
         real(DP) :: defect
         ! A solver node that accepts parameters for the linear solver
@@ -1671,7 +1673,15 @@ module chemotaxis_pattern_FCT
             rform%BconstantCoeff(1) = .false.
             rform%BconstantCoeff(2) = .false.
             call bilf_buildMatrixScalar (rform,.true.,rK, callback_K, rcollection)
-                        
+
+            ! here I apply Dirichlet boundary conditions to the matrix rK
+            call lsysbl_createMatFromScalar (rK,rKBlock,rdiscretisation)                        
+            rKBlock%p_rdiscreteBC => rdiscreteBC            
+            call matfil_discreteBC (rKBlock)            
+            call lsysbl_releaseMatrix (rKBlock)
+                       
+            !call testPrintMatrix9(rK)
+            
             if(k.eq.1) then
                 allocate ( kedge ( 2, rK%NA ) )
                 allocate ( dedge ( rK%NA ) )
@@ -1681,7 +1691,7 @@ module chemotaxis_pattern_FCT
             !**********************
             ! Adding some artificial diffusion to obtain positivity + smooth sol.
             ! K->K* (rK)
-            call chemo_artdiff( rmassmatrix, rK, dedge, kedge, nedge, aedge_mass )
+            call chemo_artdiff( rmassmatrix, rK, dedge, kedge, nedge, aedge_mass, rtriangulation )
             !call chemo_artdiff( rlumpedmass, rK, dedge, kedge, nedge, aedge_mass )
             !**********************
 
@@ -1795,9 +1805,9 @@ module chemotaxis_pattern_FCT
             ! Finally solve the system. 
             ! Set the output level of the solver to 2 for some output
             p_rsolverNode_cells%ioutputLevel = 2
-            p_rsolverNode_cells%depsRel=1E-15_DP
+            p_rsolverNode_cells%depsRel=1E-11_DP
             p_rsolverNode_cells%nminIterations=1
-            p_rsolverNode_cells%nmaxIterations=1000
+            p_rsolverNode_cells%nmaxIterations=400
             call linsol_precondDefect( p_rsolverNode_cells , rdefBlock )
             
             ! Store the iterationstats
@@ -1849,7 +1859,7 @@ module chemotaxis_pattern_FCT
 
         ! Applying the FCT code
         call chemo_fct_lim ( rdiscretisation, rcell, kedge, dedge, nedge, aedge_mass,&
-                             rlumpedmass, rlaplace, rK, dtstep )
+                             rlumpedmass, rlaplace, rK, dtstep, rtriangulation)
 
         deallocate ( kedge )
         deallocate ( dedge )
@@ -1874,7 +1884,7 @@ module chemotaxis_pattern_FCT
     !!!!!   begin of chemo_artdiff subroutine  !!!!!
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     ! This subroutine adds some artificial diffusion to the matrix rmatrix
-    subroutine chemo_artdiff( rmassmatrix, rmatrix, dedge, kedge, nedge, aedge_mass )
+    subroutine chemo_artdiff( rmassmatrix, rmatrix, dedge, kedge, nedge, aedge_mass, rtriangulation )
 
         ! The matrix wich is to be modified
         type(t_matrixScalar) , intent(INOUT) :: rmassmatrix, rmatrix
@@ -1893,7 +1903,16 @@ module chemotaxis_pattern_FCT
         real(DP), dimension(:), pointer :: p_Da_mass, p_Da
         integer , dimension(:) , allocatable :: iaux
 
+        !for boundary nodes treatment
+        type(t_triangulation), intent(IN) :: rtriangulation
+        integer, dimension(:), pointer :: p_InodalProperty
+        
+        
         print *,">>start of the subroutine chemo_artdiff ... "
+
+        !set the array of all boundary nodes
+        call storage_getbase_int(&
+            rtriangulation%h_InodalProperty, p_InodalProperty)
         
         ! Get the structure (rmassmatrix and rmatrix have the same structure)
         call lsyssc_getbase_double (rmassmatrix,p_Da_mass)
@@ -1911,9 +1930,30 @@ module chemotaxis_pattern_FCT
         DO i = 1,nvt
             ii_loc = p_Kdiagonal ( i )
 
+            !skip the boundary ii nodes
+            !IF( ii_loc <= nvt) THEN
+            !    IF( p_InodalProperty( ii_loc ) .ne. 0  ) THEN
+            !        print *,''
+            !        cycle            
+            !    END IF
+            !END IF
+
             DO ij_loc = iaux ( i )+1 ,p_Kld( i+1 ) - 1
+           
             j = p_Kcol ( ij_loc )
             jj_loc = p_Kdiagonal ( j )
+            
+            !skip the boundary ii nodes
+            !print *,'NVT=',NVT
+            !print *,'ii_loc=',ii_loc
+            !print *,'jj_loc=',jj_loc
+            !IF( jj_loc <= nvt) THEN
+            !    IF( p_InodalProperty( jj_loc ) .ne. 0  ) THEN                
+            !        print *,''
+            !        cycle            
+            !    END IF
+            !END IF 
+            
             ji_loc = iaux ( j )
             iaux ( j )=iaux ( j )+1
             
@@ -1953,11 +1993,12 @@ module chemotaxis_pattern_FCT
     ! Here we set up the antidiffusive fluxes as well as the diff.limiters
     ! This routine should follow the ideas of D.Kuzmins and M.M�lers "Algebraic Flux Correction I. Scalar Conservation Laws", March 2004
     subroutine chemo_fct_lim ( rdiscretisation, rvector, kedge, dedge, nedge, aedge_mass,&
-                                rlumpedmatrix, rlaplace, rK, dtstep )
+                                rlumpedmatrix, rlaplace, rK, dtstep, rtriangulation)
                             
         type(t_vectorScalar), intent(INOUT) :: rvector
         type(t_matrixScalar), intent(IN) :: rlumpedmatrix, rlaplace, rK
         type(t_Blockdiscretisation), intent(IN) :: rdiscretisation
+        type(t_triangulation), intent(IN) :: rtriangulation
         real(DP), dimension(:), intent(IN) :: dedge, aedge_mass
         integer, dimension(:,:), intent(IN) :: kedge
         integer, intent(IN) :: nedge
@@ -1965,16 +2006,42 @@ module chemotaxis_pattern_FCT
 
         ! Some local variables
         integer :: i, j, iedge, nedge_mass, nedge_D, neq
+        integer :: ivert 
         real(DP) :: f_ij, du, eps, counter
         real(DP), dimension (: ), allocatable  :: pp, pm, qp, qm, rm, rp, f, flux
         type(t_vectorScalar) :: ru_dot, rvector_temp
         type(t_matrixScalar) :: rD, rtemp
         real(DP), dimension(:), pointer :: p_Da, p_vectorentries, p_udot
         integer , dimension(:), pointer :: p_Kdiagonal
+
+        !array of all boundary nodes
+        integer, dimension(:), pointer :: p_InodalProperty
+        integer :: icount
+
         neq = rK%NEQ
         eps = 1e-16
+        icount = 0
 
         print *,">>start of the subroutine chemo_fct_lim ... "
+        
+        !set the array of all boundary nodes
+        call storage_getbase_int(&
+            rtriangulation%h_InodalProperty, p_InodalProperty)
+        
+        !test: just to see all boundary nodes
+        !print *,rtriangulation%NVT
+        !DO iedge = 1 , nedge
+        !    i = kedge ( 1, iedge )
+        !    j = kedge ( 2, iedge )
+        !    IF( p_InodalProperty(i) .ne. 0 ) THEN 
+        !        icount=icount+1 
+        !    END IF
+        !    IF( p_InodalProperty(j) .ne. 0 ) THEN 
+        !        icount=icount+1 
+        !    END IF
+        !END DO
+
+        !print *,icount
         
         allocate ( pp (neq) )
         allocate ( pm (neq) )
@@ -2008,6 +2075,12 @@ module chemotaxis_pattern_FCT
 
         !Constructing fluxes
         DO iedge = 1,nedge
+            
+            !skip boundary nodes
+            !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
+            !    cycle            
+            !END IF
+        
             !flux ( iedge ) = aedge_mass (iedge) * ( p_udot ( kedge (1,iedge) ) - &
             !                            p_udot ( kedge (2,iedge) ) ) + &
             flux ( iedge ) = dedge ( iedge ) * ( p_vectorentries ( kedge (1,iedge) ) - &
@@ -2018,6 +2091,11 @@ module chemotaxis_pattern_FCT
 
         ! Now the actual implementation of the FCT stabilization for the Keller-Segel model starts
         DO iedge = 1 , nedge
+       
+            !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
+            !    cycle            
+            !END IF
+
             i = kedge ( 1, iedge )
             j = kedge ( 2, iedge )
 
@@ -2026,9 +2104,10 @@ module chemotaxis_pattern_FCT
             f_ij = flux ( iedge )
 
             ! Prelimiting of antidiffusive fluxes
-            if ( f_ij * du > 0 ) then
-                f_ij = 0 ; flux ( iedge ) = f_ij
-            end if
+            ! HERE IS THE PROBLEM (in the sign)!!!
+            !if ( f_ij * du > 0 ) then
+            !    f_ij = 0 ; flux ( iedge ) = f_ij
+            !end if
 
             ! Positive/negative edge contributions
             pp ( i ) = pp ( i ) + MAX ( 0.0_DP , f_ij ) 
@@ -2049,6 +2128,11 @@ module chemotaxis_pattern_FCT
                 
         ! Correction of the right-hand side
         DO iedge = 1 , nedge
+        
+            !IF( ( p_InodalProperty( kedge(1,iedge) ) .ne. 0 ).or.( p_InodalProperty( kedge(2,iedge) ) .ne. 0 ) ) THEN
+            !    cycle            
+            !END IF
+
             ! Node numbers for the current edge
             i = kedge ( 1 , iedge )  
             j = kedge ( 2 , iedge )
@@ -2059,16 +2143,27 @@ module chemotaxis_pattern_FCT
             ! Multiplication by alpha_ij
             ! f_ij = alpha_ij * f_ij
 	        !!! if i or j \in boundary => set alpha_ij=0 (so the low order approximation near the boundary)	
-            !IF ( f_ij  > 0 ) THEN
-            !    f_ij = MIN ( rp ( i ) , rm ( j ) ) * f_ij
-            !ELSE
-            !    f_ij = MIN ( rm ( i ) , rp ( j ) ) * f_ij
-            !END IF
+            IF ( f_ij  > 0 ) THEN
+                f_ij = MIN ( rp ( i ) , rm ( j ) ) * f_ij
+            ELSE IF ( f_ij  < 0 ) THEN
+                f_ij = MIN ( rm ( i ) , rp ( j ) ) * f_ij
+            END IF
 	
             ! Insertion into the global vector
             f ( i ) = f ( i ) + f_ij 
             f ( j ) = f ( j ) - f_ij
         END DO
+
+        ! here I set boundary \alpha_ij to zero
+        !DO ivert = 1, rtriangulation%NVT
+        !      IF ( p_InodalProperty(ivert) .ne. 0 ) THEN              
+        !        print *,p_InodalProperty(ivert)
+        !        f(ivert)=0
+        !      ELSE 
+        !        print *,p_InodalProperty(ivert)
+        !        f(ivert)=f(ivert)                  
+        !      END IF
+        !END DO
 
         DO i = 1, neq
             ! The actual reconstruction to the "mid-order" solution
