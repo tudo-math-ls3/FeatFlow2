@@ -11489,6 +11489,7 @@ contains
 !</subroutine>
 
     type(t_matrixScalar) :: rmatrix2
+    integer :: itrans
 
     ! Transpose the matrix to a temporary copy.    
     call lsyssc_transposeMatrix (rmatrix,rmatrix2,itransFlag)
@@ -11499,8 +11500,11 @@ contains
     ! one -- and the new matrix may do this as well!
     !
     ! We have to separate some cases...
+
+    itrans = LSYSSC_TR_ALL
+    if (present(itransFlag)) itrans = itransFlag
     
-    select case (itransFlag)
+    select case (itrans)
     case (LSYSSC_TR_ALL,LSYSSC_TR_VIRTUALCOPY)
       ! These are the simple cases: The new matrix is independent.
       ! Release the old one.
