@@ -7,7 +7,7 @@
 [GENERAL]
 
 # Level where to solve. >= NLMIN !
-NLMAX = 6
+NLMAX = 4
 # Output level. 
 # =2 export the last solution vectors only
 # =1 export data to gmv files
@@ -126,6 +126,6 @@ convecRelaxation = 1.0
 
 [WEAKDIRICHLET]
 
-lambda_c = 1000000.0
-lambda_u = 1000000.0
+lambda_c = 0.0
+lambda_u = 0.0
 
