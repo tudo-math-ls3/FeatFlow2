@@ -842,7 +842,8 @@ contains
       if (rprob%cformulation .ne. FORMULATION_DISPL .and. &
           rprob%celement .ne. rprob%celementPress) then
         ! In case of the mixed formulation or Stokes with different discretisations for
-        ! u and p, there have to be two calls of the error routine.
+        ! u and p, there have to be two calls of the error routine: first one for u,
+        ! second one for p
         rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%ndim)
         rerror%p_DerrorL2 => DerrorL2(1:rprob%ndim)
         rerror%p_DerrorH1 => DerrorH1(1:rprob%ndim)
@@ -866,15 +867,17 @@ contains
       call output_line('H1 error for  u: ' // &
                        sys_sdEL(sqrt(DerrorH1(1)**2 + DerrorH1(2)**2),10) )
 
-      ! print (and eventually compute) the pressure errors
+      ! Now treat the pressure errors.
       if (rprob%cformulation .ne. FORMULATION_DISPL) then
         if (rprob%celement .ne. rprob%celementPress) then
-          ! call the error routine again for the pressure component if necessary
+          ! If different discretisations are used for u and p, the pressure error has to
+          ! be computed now.
           rerror%p_RvecCoeff => rsol%RvectorBlock(rprob%nblocks:rprob%nblocks)
           rerror%p_DerrorL2 => DerrorL2(rprob%nblocks:rprob%nblocks)
           rerror%p_DerrorH1 => DerrorH1(rprob%nblocks:rprob%nblocks)
           call pperr_scalarVec(rerror, elast_analFunc)
         endif
+        ! output the pressure error
         call output_line('L2 error for  p: ' // sys_sdEL(DerrorL2(rprob%nblocks),10) )
         call output_line('H1 error for  p: ' // sys_sdEL(DerrorH1(rprob%nblocks),10) )
       endif
