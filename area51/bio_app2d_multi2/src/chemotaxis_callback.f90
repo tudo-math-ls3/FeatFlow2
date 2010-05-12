@@ -349,7 +349,7 @@ contains
    !end if
    
    !Dvalues(1) = sin(PI*dx) + sin(PI*dy) 
-   Dvalues(1) = - dx*(1_DP - dx)*dy*(1_DP - dy)
+   Dvalues(1) = dx + dy
    
   end subroutine
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
@@ -580,8 +580,8 @@ contains
             x=Dpoints(1,icub,iel)
             y=Dpoints(2,icub,iel)
             
-            Dcoefficients(1,icub,iel) =  - 2*y*(1_DP - y) - 2*x*(1_DP - x) + &
-					 ( - x*(1_DP - x)*y*(1_DP - y) ) - PHI*( x*(1_DP - x)*y*(1_DP - y) )
+            Dcoefficients(1,icub,iel) =  &
+					 ( x + y ) - PHI*( x*(1_DP - x)*y*(1_DP - y) )
 
         END DO
     END DO
@@ -703,8 +703,8 @@ contains
 
             Dcoefficients(1,icub,iel) = dtstep*( 2_DP*y*(1_DP - y) + 2_DP*x*(1_DP - x) + &
 				convecRelaxation*( &
-				    2_DP*y*(1_DP - y)*( x*(1_DP - x)*y*(1_DP - y) ) - (1_DP - 2_DP*x)*y*(1_DP - y)*(1_DP - 2_DP*x)*y*(1_DP - y) &
-			     +	2_DP*x*(1_DP - x)*( x*(1_DP - x)*y*(1_DP - y) ) - (1_DP - 2_DP*y)*x*(1_DP - x)*(1_DP - 2_DP*y)*x*(1_DP - x) &
+				 + (1_DP - 2_DP*x)*y*(1_DP - y) &
+			     + (1_DP - 2_DP*y)*x*(1_DP - x) &
 				) &
 				)
             
@@ -1301,8 +1301,7 @@ contains
 !             Dvalues(icub, iel) = Dpoints(1,icub,iel)**2+Dpoints(2,icub,iel)+Dpoints(3,icub,iel)
                 !RS: andriy and linear test-case
             !Dvalues(icub, iel) = sin(PI*Dpoints(1,icub,iel)) + sin(PI*Dpoints(2,icub,iel)) 
-            Dvalues( icub, iel ) = -Dpoints(1,icub,iel)*( 1_DP - Dpoints(1,icub,iel)) & 
-				                 * Dpoints(2,icub,iel)*( 1_DP - Dpoints(2,icub,iel)) 	
+            Dvalues( icub, iel ) = Dpoints(1,icub,iel) +  Dpoints(2,icub,iel)
 
             
         END DO
@@ -1436,7 +1435,7 @@ contains
 		real(DP) :: func_result
 
         ! setting initial solution
-        func_result = -x*(1_DP-x)*y*(1_DP-y) 
+        func_result = x + y 
                 
 	end function userPresc_chemoattrInitCond 
     
@@ -1526,8 +1525,7 @@ contains
     end if
 
     !Dvalues(:,:) = sin(PI*Dpoints(1,:,:)) + sin(PI*Dpoints(2,:,:)) 
-    Dvalues(:,:) = -Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		         * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:)) 
+    Dvalues(:,:) = Dpoints(1,:,:) + Dpoints(2,:,:)
 
   end subroutine
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
@@ -1714,12 +1712,11 @@ contains
     end if
 
    IF (cderivative .EQ. DER_FUNC) THEN
-     Dvalues(:,:) = -Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:)) & 
-		  * Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))  
+     Dvalues(:,:) = Dpoints(1,:,:) + Dpoints(2,:,:)
    ELSE IF (cderivative .EQ. DER_DERIV_X) THEN
-     Dvalues(:,:) = -(1_DP - 2*Dpoints(1,:,:))* Dpoints(2,:,:)*(1_DP - Dpoints(2,:,:))
+     Dvalues(:,:) = 1_DP
    ELSE IF (cderivative .EQ. DER_DERIV_Y) THEN
-     Dvalues(:,:) = -(1_DP - 2*Dpoints(2,:,:))* Dpoints(1,:,:)*(1_DP - Dpoints(1,:,:))
+     Dvalues(:,:) = 1_DP 
    END IF     
      
   end subroutine
@@ -1745,7 +1742,7 @@ contains
   
 !<description>
   ! If the analytical solution is unknown, this routine does not make sense.
-  ! In this case, error analysis should be deactivated in the .DAT files!
+  ! In this case, error asnalysis should be deactivated in the .DAT files!
 !</description>
   
 !<input>
@@ -2476,7 +2473,7 @@ contains
             y=Dpoints(2,icub,iel)
 
             if( onDirichletBoundary_chemo( x, y ) ) then 
-                Dcoefficients(1,icub,iel) =  dtstep*lambda_c*( -x*(1_DP - x) * y*(1_DP - y) ) ! here to make changes!!!!!!!!!                                               )
+                Dcoefficients(1,icub,iel) =  dtstep*lambda_c*( x + y ) ! here to make changes!!!!!!!!!                                               )
             else
                 Dcoefficients(1,icub,iel) = 0.0_DP
             end if            
