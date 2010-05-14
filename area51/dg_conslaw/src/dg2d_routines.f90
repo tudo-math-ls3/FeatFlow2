@@ -1498,7 +1498,7 @@ end subroutine
   
 !<subroutine>  
   
-  subroutine dg_linearLimiter (rvector)
+  subroutine dg_linearLimiter (rvector,ralpha)
 
 !<description>
 
@@ -1514,12 +1514,15 @@ end subroutine
   ! A vector to limit
   type(t_vectorScalar), intent(inout) :: rvector  
   
+  ! The limiting factors
+  type(t_vectorScalar), intent(inout) :: ralpha
+  
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables, used by all processors
-  real(DP), dimension(:), pointer :: p_Ddata
+  real(DP), dimension(:), pointer :: p_Ddata, p_rAlpha_Ddata
   integer :: indof, NEL, iel, NVE, ivt, NVT
     
   ! The underlying triangulation
@@ -1561,6 +1564,8 @@ end subroutine
   ! Get pointer to the solution data
   call lsyssc_getbase_double (rvector,p_Ddata)
   
+  call lsyssc_getbase_double (ralpha,p_rAlpha_Ddata)
+    
   ! Get pointers for quicker access
   p_rspatialDiscr => rvector%p_rspatialDiscr
   p_rtriangulation => p_rspatialDiscr%p_rtriangulation
@@ -1708,6 +1713,10 @@ end subroutine
     
     ! Multiply the linear part of the solution vector with the correction factor
     p_Ddata(IdofGlob(2:3)) = p_Ddata(IdofGlob(2:3))*dalpha
+    
+    ! Save limiting factor for output later
+    p_rAlpha_Ddata(IdofGlob(1)) = dalpha
+    p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
     
   end do ! iel
   
@@ -1961,7 +1970,7 @@ end subroutine
   
 !<subroutine>  
   
-  subroutine dg_quadraticLimiter (rvector)
+  subroutine dg_quadraticLimiter (rvector,ralpha)
 
 !<description>
 
@@ -1977,12 +1986,15 @@ end subroutine
   ! A vector to limit
   type(t_vectorScalar), intent(inout) :: rvector  
   
+  ! The limiting factors
+  type(t_vectorScalar), intent(inout) :: ralpha
+  
 !</inputoutput>
   
 !</subroutine>
 
   ! local variables, used by all processors
-  real(DP), dimension(:), pointer :: p_Ddata
+  real(DP), dimension(:), pointer :: p_Ddata, p_rAlpha_Ddata
   integer :: indof, NEL, iel, NVE, ivt, NVT
     
   ! The underlying triangulation
@@ -2027,6 +2039,8 @@ end subroutine
 
   ! Get pointer to the solution data
   call lsyssc_getbase_double (rvector,p_Ddata)
+  
+  call lsyssc_getbase_double (ralpha,p_rAlpha_Ddata)
   
   ! Get pointers for quicker access
   p_rspatialDiscr => rvector%p_rspatialDiscr
@@ -2220,9 +2234,9 @@ end subroutine
             
       ! Find the maximum/minimum value of the solution in the centroids
       ! of all elements containing this vertex
-      if (ddu > 0.0_dp) then
+      if (ddu > 10.0_dp*SYS_EPSREAL) then
         dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
-      elseif (ddu < 0.0_dp) then
+      elseif (ddu < -10.0_dp*SYS_EPSREAL) then
         dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
       else ! (dui==duc)
         dalphatemp = 1.0_dp
@@ -2253,6 +2267,9 @@ end subroutine
     
         ! Multiply the linear part of the solution vector with the correction factor
         p_Ddata(IdofGlob(4:6)) = p_Ddata(IdofGlob(4:6))*Dalpha(1,iel)
+        
+        p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
+        p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
     
       end do ! iel
     
@@ -6114,6 +6131,8 @@ real(dp), dimension(:) :: Dvalues
   
   integer, parameter :: nmaxneighbours = 10
   
+  integer, dimension(:), pointer :: p_InodalProperty 
+  
   ! Get number of variables of the system
   nvar = rvectorBlock%nblocks
   
@@ -6157,7 +6176,9 @@ real(dp), dimension(:) :: Dvalues
   call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
                                p_IelementsAtVertexIdx)
   call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
-                               p_IverticesAtBoundary)                               
+                               p_IverticesAtBoundary)   
+  call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
+                               p_InodalProperty)                              
                               
   ! Allocate the space for solution differences, transformed solution differences,
   ! limited transformed solution differences, limited backtransformed solution differences
@@ -6279,6 +6300,9 @@ real(dp), dimension(:) :: Dvalues
   do ilim = ilimstart, 3
   
   do iel = 1, NEL
+  
+!    ! No limiting of elements at boundary
+!    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
    
     ! Get values in the center of the element for all variables
     if (ilim<3) then
@@ -6417,10 +6441,10 @@ real(dp), dimension(:) :: Dvalues
         ! Calculate the correction factor
         ! for this element, for this edge, for this dimension (take min of all dimensions)
         do ivar = 1, nvar
-          if (abs(DIi(ivar))<SYS_EPSREAL) then
+          if (abs(DIi(ivar))<10.0_dp*SYS_EPSREAL) then
             Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), 1.0_dp)
           else
-!            !This is the one following the principles
+!            !This is the one following the principles (than even adjust initialisation of Dalphaei!!!)
 !            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt), max(0.0_dp, min(DlIi(ivar)/DIi(ivar),1.0_dp) ))
             
             ! This one is less limiting
@@ -6434,10 +6458,10 @@ real(dp), dimension(:) :: Dvalues
             
           end if
           
-          ! No limiting at boundary
-          if (iidx<3) then
-            Dalphaei(ivar,ivt) = 1.0_dp
-          end if
+!          ! No limiting at boundary
+!          if (iidx<3) then
+!            Dalphaei(ivar,ivt) = 1.0_dp
+!          end if
           
         end do
       
@@ -7062,6 +7086,493 @@ close(iunit)
   
 
 end subroutine
+
+
+
+
+
+
+
+
+!****************************************************************************
   
+!<subroutine>  
+  
+  subroutine dg_realKuzmin (rvectorBlock, raddTriaData)
+
+!<description>
+
+  ! Limits a dg_T1 or dg_T2 element vector.
+
+!</description>
+
+!<input>
+! The additional triangulation data
+  type(t_additionalTriaData), intent(in):: raddTriaData
+!</input>
+
+!<inputoutput>
+
+  ! A vector to limit
+  type(t_vectorBlock), intent(inout) :: rvectorBlock
+  
+!</inputoutput>
+  
+!</subroutine>
+
+  ! local variables, used by all processors
+  real(DP), dimension(:), pointer :: p_Ddata
+  integer :: indof, NEL, iel, NVE, ivt, NVT
+    
+  ! The underlying triangulation
+  type(t_triangulation), pointer :: p_rtriangulation
+  
+  ! The underlying spatial discretisation
+  type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
+  
+  ! The coordinates of the points in which to evaluate the solution vector
+  real(dp), dimension(2,17) :: Dpoints
+  
+  ! The list of elements, in which these points can be found
+  integer, dimension(17) :: Ielements
+  
+  ! The values of the solution vector in the points
+  real(dp), dimension(17) :: Dvalues
+  
+  ! Pointers to some data from the triangulation
+  integer, dimension(:,:), pointer :: p_IverticesAtElement
+  integer, dimension(:), pointer :: p_IelementsAtVertexIdx, p_IelementsAtVertex
+  real(dp), dimension(:,:), pointer :: p_DvertexCoords
+  
+  real(dp), dimension(:), allocatable :: duimax, duimin
+  
+  integer, dimension(:), pointer :: p_IverticesAtBoundary
+  
+  real(dp) :: xc,yc
+  integer :: iidx, nvert, ivert, ineighbour, ineighElm
+  integer, dimension(4) :: IhomeIndex
+  
+  real(dp) :: dui, ddu, duc
+  
+  integer, dimension(:,:), allocatable :: IdofGlob
+
+  integer :: NVBD
+  
+  integer :: nvar, ivar, idim
+  
+  real(dp), dimension(:), allocatable :: DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi, DQchar,DWc
+  
+  real(dp), dimension(:,:), allocatable :: DLin, DtLin, Dalphaei, DL, DR, Dalpha, DL2, DR2, DlinearGradient, Dquadraticgradient, DmAlpha
+  
+  ! Array of pointers to the data of the blockvector to limit
+  type(t_dpPointer), dimension(:), allocatable :: p_DoutputData
+  
+  integer :: iglobVtNumber, iglobNeighNum
+  
+  integer :: ilim, ideriv, ilimstart
+  
+  integer :: nDOFloc
+ 
+  real(dp) :: da, db, dquo
+  
+  integer, parameter :: nelemSim = 1000
+  
+  integer(I32) :: celement
+  
+  integer :: npoints
+  
+  integer :: i,j
+  
+  integer, dimension(:), pointer :: p_IelIdx
+  
+  ! Values of the linear part of the solution, Dimension (nvar,# points per element (midpoint+corners),NEL)
+  real(dp), dimension(:,:,:), allocatable :: DLinPartValues
+  
+  ! Dimension (nvar,# points per element (midpoint+corners),# derivatives (2, x- and y-),NEL)
+  real(dp), dimension(:,:,:,:), allocatable :: DDerivativeQuadraticValues
+  
+  integer, parameter :: nmaxneighbours = 10
+  
+  integer, dimension(:), pointer :: p_InodalProperty 
+  
+  real(dp), dimension(3,3) :: DTemp1, DTemp2
+  
+  real(dp) :: dWstar
+  
+  ! Get number of variables of the system
+  nvar = rvectorBlock%nblocks
+  
+  ! Get pointers for quicker access
+  p_rspatialDiscr => rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
+  p_rtriangulation => p_rspatialDiscr%p_rtriangulation
+  
+  ! Allocate the space for the pointer to the Data of the different blocks of the output vector
+!  allocate(p_DoutputData(nvar))
+!    
+!  do ivar = 1, nvar
+!    call lsyssc_getbase_double(rvectorBlock%RvectorBlock(ivar),p_DoutputData(ivar)%p_Ddata)
+!  end do
+
+  ! Get pointer to the data of the (solution) vector
+  call lsysbl_getbase_double (rvectorBlock, p_Ddata)
+    
+  ! Get number of elements
+  NEL = p_rtriangulation%NEL
+  
+  ! What is the current element type?
+  celement = p_rspatialDiscr%RelementDistr(1)%celement
+  
+  ! Number of vertices per element
+  NVE = elem_igetNVE(celement)
+  !NVE = 4
+  
+  ! Get number of local DOF
+  nDOFloc = elem_igetNDofLoc(celement)
+  
+  ! Number of vertices
+  NVT = p_rtriangulation%NVT
+  
+  ! Get pointers to the data form the triangulation
+  call storage_getbase_int2D(p_rtriangulation%h_IverticesAtElement,&
+                               p_IverticesAtElement)
+  call storage_getbase_double2D(p_rtriangulation%h_DvertexCoords,&
+                               p_DvertexCoords)
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex ,&
+                               p_IelementsAtVertex) 
+  call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx ,&
+                               p_IelementsAtVertexIdx)
+  call storage_getbase_int(p_rtriangulation%h_IverticesAtBoundary ,&
+                               p_IverticesAtBoundary)   
+  call storage_getbase_int(p_rtriangulation%h_InodalProperty ,&
+                               p_InodalProperty)                              
+                              
+  ! Allocate the space for solution differences, transformed solution differences,
+  ! limited transformed solution differences, limited backtransformed solution differences
+  ! and limiting factors
+  allocate(DVec(nvar), DVei(nvar), DIi(nvar), DtIi(nvar), DtLinMax(nvar), DtLinMin(nvar), DltIi(nvar), DlIi(nvar),DQchar(nvar),DWc(nvar))
+  !allocate(DLin(nvar,NVE-1), DtLin(nvar,NVE-1), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL))
+  allocate(DLin(nvar,10), DtLin(nvar,10), Dalphaei(nvar,NVE), DL(nvar,nvar), DR(nvar,nvar), Dalpha(nvar, NEL), DL2(nvar,nvar), DR2(nvar,nvar),DlinearGradient(nvar,2), DquadraticGradient(nvar,3), DmAlpha(nvar,nvar))
+  
+!  ! Get the number of elements
+!  NEL = p_rspatialDiscr%RelementDistr(1)%NEL
+  
+  ! Allocate the space for the global DOF
+  allocate(IdofGlob(nDOFloc,NEL))
+  
+  ! Number of points on each element, where the solution has to be evaluated (corner vertives + midpoint)
+  npoints = 1 + NVE
+  
+  ! Allocate space for the values of the linear part of the solution vector 
+  allocate(DLinPartValues(nvar,npoints,NEL))
+ 
+  ! Get list of (all) elements
+  call storage_getbase_int(p_rspatialDiscr%RelementDistr(1)%h_IelementList, p_IelIdx)
+    
+  ! Get global DOFs for these (all) elements
+  call dof_locGlobMapping_mult(p_rspatialDiscr, p_IelIdx, IdofGlob)
+  
+  ! Get the values of the linear part of the solution vector 
+  call dg_evaluateLinearPart_mult(rvectorBlock, p_IelIdx, IdofGlob, DLinPartValues)
+  
+  ! Test, if we have quadratic elements
+  if (celement == EL_DG_T2_2D) then
+    ! Allocate space for the values of the derivatives of the quadratic solution vector 
+    allocate(DDerivativeQuadraticValues(nvar,npoints,2,NEL))
+  
+    ! Get the values of the derivatives of the quadratic solution vector 
+    call dg_evaluateDerivativeQuadratic_mult (rvectorBlock, p_IelIdx, DDerivativeQuadraticValues, raddTriaData)
+  end if
+  
+  
+  select case (celement)
+  case (EL_DG_T2_2D) 
+    ilimstart = 1
+    Dalpha = 1.0_DP
+  case (EL_DG_T1_2D) 
+    ilimstart = 3
+    Dalpha = 0.0_DP
+  end select
+  
+  
+  
+  
+  do ilim = ilimstart, 3
+  
+  do iel = 1, NEL
+  
+!    ! No limiting of elements at boundary
+!    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+   
+    ! Get values in the center of the element for all variables
+    if (ilim<3) then
+      DVec = DDerivativeQuadraticValues(:,1,ilim,iel)
+    else
+      DVec = DLinPartValues(:,1,iel)
+    end if
+
+    DQchar = DLinPartValues(:,1,iel)
+
+    ! Here we should maybe get a local value of NVE
+
+    ! Initialise the correction factor
+    Dalphaei(:,:) = 0.0_dp
+    
+    ! Now calculate the limiting factor for every vertex on our element
+    do ivt = 1, NVE
+      
+      ! Get global vertex number of our local vertex
+      iglobVtNumber = p_IverticesAtElement(ivt,iel)
+      
+      if (ilim<3) then
+        DVei = DDerivativeQuadraticValues(:,1+ivt,ilim,iel)
+      else
+        DVei = DLinPartValues(:,1+ivt,iel)
+      end if
+      
+      ! Calculate solution difference
+      DIi = DVei - DVec
+      
+      ! Get center values of all variables in all neighbour vertices and calculate
+      ! the solution differences Dlin(nvar,nneighbors)
+      iidx = 0
+      DLin = 0.0_dp
+      do ineighbour = p_IelementsAtVertexIdx(iglobVtNumber), p_IelementsAtVertexIdx(iglobVtNumber+1)-1
+        iglobNeighNum = p_IelementsAtVertex(ineighbour)
+        !if (iglobNeighNum.ne.iel) then
+        
+        iidx = iidx +1
+    
+        ! Get values in the center of the element for all variables
+        
+
+        if (ilim<3) then
+          DLin(:,iidx) = DDerivativeQuadraticValues(:,1,ilim,iglobNeighNum)
+        else
+          DLin(:,iidx) = DLinPartValues(:,1,iglobNeighNum)
+        end if
+        
+        ! Calculate solution difference
+        DLin(:,iidx) = DLin(:,iidx)
+          
+        !end if
+      end do
+      
+    
+      
+      if (iidx.ne.0) then
+      ! Dimensional splitting
+      do idim = 1,1
+        ! Now we need the trafo matrices
+        
+        
+        if (idim==1) then
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+        elseif (idim==2) then
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+        elseif (idim==3) then
+          DL = buildMixedL2(DQchar,-1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,-1.0_dp,0.0_dp)
+          
+          elseif (idim==4) then
+          DL = buildMixedL2(DQchar,0.0_dp,-1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,-1.0_dp)
+          
+        else if (idim==5) then
+        da = DQchar(2)
+        db = DQchar(3)
+        dquo = da*da+db*db
+        if (dquo<SYS_EPSREAL) then
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+        else
+          da = da/dquo
+          db = db/dquo
+          DL = buildMixedL2(DQchar,da,db)
+          DR = buildMixedR2(DQchar,da,db)
+        end if
+        
+        else if (idim==6) then
+        da = DQchar(2)
+        db = DQchar(3)
+        dquo = da*da+db*db
+        if (dquo<SYS_EPSREAL) then
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+        else
+          da = da/dquo
+          db = db/dquo
+          DL = buildMixedL2(DQchar,-db,da)
+          DR = buildMixedR2(DQchar,-db,da)
+        end if
+        end if
+
+        ! Transform neighbouring limits
+        DtIi = matmul(DL,DIi)
+        do ineighbour = 1, iidx
+        
+          if (idim==1) then
+            DL2 = buildMixedL2(Dlin(:,ineighbour),1.0_dp,0.0_dp)
+          
+          elseif (idim==2) then
+            DL2 = buildMixedL2(Dlin(:,ineighbour),0.0_dp,1.0_dp)
+          
+          end if
+        
+          DtLin(:,ineighbour) = matmul(DL,Dlin(:,ineighbour))
+        end do
+        
+        
+        ! Now, as the differences are transformed, we can limit every component on its own
+        DWc=matmul(DL,DVec)
+        
+        do ivar = 1, nvar
+          if (DtIi(ivar) > 10.0_dp*SYS_EPSREAL) then
+            dWstar = maxval(DtLin(ivar,1:iidx))
+            !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+          elseif (DtIi(ivar) < -10.0_dp*SYS_EPSREAL) then
+            dWstar = minval(DtLin(ivar,1:iidx))
+            !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+            Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+          else
+            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
+          end if
+        end do
+        
+        
+        
+        
+      
+      end do ! idim
+      end if
+      
+    end do ! ivt
+    
+    
+    
+    select case (ilim)
+    case (1)
+    
+      ! Get minimum of all correction factors of all vertices on this element
+      do ivar = 1, nvar
+        Dalpha(ivar, iel) = minval(Dalphaei(ivar,1:NVE))
+      end do
+      
+    case (2)
+      
+      DmAlpha = 0.0_dp
+      
+      ! Get minimum of all correction factors of all vertices on this element
+      do ivar = 1, nvar
+        Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
+        
+        DmAlpha(ivar,ivar) = Dalpha(ivar, iel)
+        
+        Dquadraticgradient(ivar,1:3) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)
+
+      end do
+      
+      DquadraticGradient = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient)
+        
+      do ivar = 1, nvar  
+        p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = Dquadraticgradient(ivar,1:3)
+      end do
+      
+    case (3)
+    
+      ! Get minimum of all correction factors of all vertices on this element
+      do ivar = 1, nvar
+        Dalpha(ivar, iel) = max(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
+        
+        DmAlpha(ivar,ivar) = Dalpha(ivar, iel)
+        
+        DlinearGradient(ivar,1:2) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)
+        
+      end do
+      
+!      do idim = 1, 1
+!        ! Now we need the trafo matrices
+!        
+!        if (idim==1) then
+!          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+!          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+!        elseif (idim==2) then
+!          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+!          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+!        end if
+!        
+!        if (idim==1) then
+!          DTemp1(1:3,1:2) = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)
+!        else
+!          DTemp2(1:3,1:2) = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)
+!          do i=1,3
+!          do j=1,2
+!            if (abs(DTemp2(i,j))>abs(DTemp1(i,j))) DTemp1(i,j) = DTemp2(i,j)
+!          end do
+!          end do
+!        end if
+!        
+!      end do
+!      DlinearGradient=DTemp1(1:3,1:2)
+
+       DlinearGradient = matmul(matmul(matmul(DR,DmAlpha),DL),DlinearGradient)  
+      
+      do ivar = 1, nvar
+        p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = DlinearGradient(ivar,1:2)
+      end do
+      
+    end select
+    
+  end do !iel
+  
+  
+!  ! *** Now limit the solution ***
+!  do iel = 1, NEL
+!  
+!  
+!  select case (ilim)
+!  case (1)
+!  
+!    ! Do nothing      
+!    
+!  case (2)
+!      
+!    ! Multiply the quadratic part of the solution vector with the correction factor
+!    do ivar = 1, nvar
+!      !p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(4:6))*Dalpha(ivar, iel)
+!      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)*Dalpha(ivar, iel)
+!    end do
+!
+!      
+!  case (3)
+!
+!   ! Multiply the linear part of the solution vector with the correction factor
+!    do ivar = 1, nvar
+!      !p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3)) = p_DoutputData(ivar)%p_Ddata(IdofGlob(2:3))*Dalpha(ivar, iel)
+!      p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)*Dalpha(ivar, iel)
+!    end do
+!    
+!
+!  end select
+!  
+!    end do ! iel
+!  
+!  
+  end do ! ilim
+
+  
+  !deallocate(p_DoutputData)
+  deallocate(DVec, DVei, DIi, DtIi, DtLinMax, DtLinMin, DltIi, DlIi, DQchar,DWc)
+  deallocate(DL,DR,DL2,DR2,DlinearGradient, Dquadraticgradient, DmAlpha)
+  deallocate(DLin, DtLin, Dalphaei)
+  deallocate(IdofGlob)
+  deallocate(DLinPartValues)
+  if (celement == EL_DG_T2_2D) deallocate(DDerivativeQuadraticValues)
+  
+  end subroutine
+
+ 
   
 end module

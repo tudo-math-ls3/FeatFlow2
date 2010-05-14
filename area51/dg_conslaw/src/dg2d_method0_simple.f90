@@ -90,12 +90,12 @@ contains
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
     type(t_matrixScalar) :: rmatrixMC, rmatrixCX, rmatrixCY
-    type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold
+    type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold,ralpha
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
     type(t_matrixBlock) :: rmatrixBlock
-    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock
+    type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,ralphaBlock
 
     ! A set of variables describing the discrete boundary conditions.    
     type(t_boundaryRegion) :: rboundaryRegion
@@ -154,13 +154,17 @@ contains
     ! How many extra points for output
     integer :: iextraPoints
     
+    integer, dimension(6) :: IdofGlob
+    
+    integer :: iel, NEL
+    
     ! For time measurement
     real(dp) :: dtime1, dtime2
     
     type(t_additionalTriaData) :: raddTriaData
     
     integer :: ilimiter
-    
+   
     ! Name of output file
     character (LEN=SYS_STRLEN) :: sofile
     
@@ -346,6 +350,7 @@ contains
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhstemp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolUp ,.true.,ST_DOUBLE)
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rsolOld ,.true.,ST_DOUBLE)
+    call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),ralpha ,.true.,ST_DOUBLE)
                                  
 !    ! Test the new DG edgebased routine                                 
 !    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
@@ -362,6 +367,8 @@ contains
     call lsysbl_createVecFromScalar (rsol,rsolBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rsolTemp,rsolTempBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (rsolUp,rsolUpBlock,rdiscretisation)
+    call lsysbl_createVecFromScalar (ralpha,ralphaBlock,rdiscretisation)
+    
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
 !    ! conditions.
@@ -479,7 +486,6 @@ contains
     
     
     
-    
     ! Now set the initial conditions via L2 projection
     rlinformIC%itermCount = 1
     rlinformIC%Idescriptors(1) = DER_FUNC2D
@@ -489,10 +495,19 @@ contains
     call linf_buildVectorScalar2 (rlinformIC, .true., rrhs,&
                                   coeff_RHS_IC, rcollection)
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)
+
     
     ! Limit the solution vector
-    if (ilimiting.eq.1) call dg_linearLimiter (rsol)
-    if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
+    if (ilimiting.eq.1) call dg_linearLimiter (rsol,ralpha)
+    if (ilimiting.eq.2) call dg_quadraticLimiter (rsol,ralpha)
+
+!    ! Kill all quadratic parts (needed, if unsteady initial condition is applied with dg_t2)
+!    call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
+!    do iel = 1, size(p_Ddata,1)/6
+!    ! Get global DOFs of the element
+!    call dof_locGlobMapping(rdiscretisation%RspatialDiscr(1), iel, IdofGlob(:))
+!        p_Ddata(IdofGlob(4:6)) = 0.0_dp
+!    end do
     
     
     rlinformconv%itermCount = 2
@@ -555,8 +570,8 @@ contains
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
        
        ! Limit the solution vector
-       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
-       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp,ralpha)
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp,ralpha)
     
        
        ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
@@ -596,8 +611,8 @@ contains
        call lsyssc_vectorLinearComb (rsol,rsolUp,0.75_DP,0.25_DP,rsoltemp)
        
               ! Limit the solution vector
-       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
-       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp,ralpha)
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp,ralpha)
 
        ! Step 3/3
        
@@ -632,8 +647,8 @@ contains
        call lsyssc_vectorLinearComb (rsolUp,rsol,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
        
        ! Limit the solution vector
-       if (ilimiting.eq.1) call dg_linearLimiter (rsol)
-       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol)
+       if (ilimiting.eq.1) call dg_linearLimiter (rsol,ralpha)
+       if (ilimiting.eq.2) call dg_quadraticLimiter (rsol,ralpha)
       
 !       ! Test, if the solution has converged
 !       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
@@ -691,6 +706,9 @@ contains
     sofile = './gmv/u2d'
     call dg2gmv(rsol,iextraPoints,sofile,-1)
     call dg2vtk(rsol,iextraPoints,sofile,-1)
+    ! Output limiting factors
+    sofile = './gmv/alpha'
+    call dg2vtk(ralpha,0,sofile,-1)
 
 
 
@@ -758,6 +776,7 @@ contains
 !    ! We are finished - but not completely!
 !    ! Now, clean up so that all the memory is available again.
 !    !
+
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)

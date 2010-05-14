@@ -397,27 +397,27 @@ integer :: ielement, ipoint
   
   
   
-! Source Term 2
-  select case (cderivative)
-  case (DER_FUNC)
-    
-                    
-    do i = 1, size(Dvalues,1)
-    do j = 1, size(Dvalues,2)
-       Dvalues(i,j) = (1.0_dp+Dpoints(1,i,j)**4.0_dp+Dpoints(2,i,j)**4.0_dp)
-    end do
-    end do
-                              
-  case (DER_DERIV_X)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case (DER_DERIV_Y)
-  write(*,*) 'Error in calculating L2-error'
-    
-  case DEFAULT
-    ! Unknown. Set the result to 0.0.
-    Dvalues = 0.0_DP
-  end select  
+!! Source Term 2
+!  select case (cderivative)
+!  case (DER_FUNC)
+!    
+!                    
+!    do i = 1, size(Dvalues,1)
+!    do j = 1, size(Dvalues,2)
+!       Dvalues(i,j) = (1.0_dp+Dpoints(1,i,j)**4.0_dp+Dpoints(2,i,j)**4.0_dp)
+!    end do
+!    end do
+!                              
+!  case (DER_DERIV_X)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case (DER_DERIV_Y)
+!  write(*,*) 'Error in calculating L2-error'
+!    
+!  case DEFAULT
+!    ! Unknown. Set the result to 0.0.
+!    Dvalues = 0.0_DP
+!  end select  
   
 
 !    ! Compare to less refined solution
@@ -729,14 +729,14 @@ integer :: ielement, ipoint
 !            end do
 !            end do
             
-!            ! Zalesak test smooth
-!            Dvalues(:,:)= 0.0_dp
-!            do i = 1, npointsperelement
-!            do j = 1, nelements
-!            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
-!            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
-!            end do
-!            end do
+            ! Zalesak test smooth
+            Dvalues(:,:)= 0.0_dp
+            do i = 1, npointsperelement
+            do j = 1, nelements
+            r1 = sqrt(((Dpoints(1,i,j)-0.25_dp)**2+(Dpoints(2,i,j)-0.5_dp)**2))
+            if (r1.le.0.15_dp) Dvalues(i,j)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
+            end do
+            end do
   
 
   end subroutine
@@ -1608,13 +1608,13 @@ integer :: iel
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
-!      ! Zalesak
-!      Dvel(1)=0.5_DP-dy
-!      Dvel(2)=dx-0.5_DP
+      ! Zalesak
+      Dvel(1)=0.5_DP-dy
+      Dvel(2)=dx-0.5_DP
       
-      ! Constant velocity
-      Dvel(1)=1.0_dp
-      Dvel(2)=1.0_dp
+!      ! Constant velocity
+!      Dvel(1)=1.0_dp
+!      Dvel(2)=1.0_dp
       
 !      ! Steady circular convection
 !      Dvel(1)=dy
@@ -1625,10 +1625,12 @@ integer :: iel
       ! Set initial condition on the inflow boundary
       !call fparser_evalFunction(rfparser, 1, rintSubset(1)%p_DcubPtsReal(:,ipoint,iel), DsolVals(ubound(Dcoefficients,2)-ipoint+1,2,iel))
       
-      ! BC for sinus
-      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(-SYS_Pi*dy)
-      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin( SYS_Pi*dx)
-      
+!      ! BC for sinus
+!      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(-SYS_Pi*dy)
+!      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin( SYS_Pi*dx)
+
+      ! BC for quad: zero
+      if ((dx.le.0.0_dp).or.(dx.ge.1.0_dp).or.(dy.le.0.0_dp).or.(dy.ge.1.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.0_dp
       
 !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
 !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
@@ -1787,7 +1789,7 @@ integer :: iel
 !
 !    close(iunit)
 
-    !Dcoefficients (1,:,:) = 0.0_dp
+    Dcoefficients (1,:,:) = 0.0_dp
 
     
     select case (rcollection%IquickAccess(1))
@@ -1810,7 +1812,11 @@ integer :: iel
 !            ! Rotating hill
 !            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
 !            Dcoefficients(1,ipoint,iel)=0.5_dp*exp(-10.0_dp*r1)
-            
+
+!            ! Rotating unsteady thing
+!            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            if ((r1.le.0.35_dp).and.(abs(Dpoints(1,ipoint,iel)-0.5).ge.0.025_dp).and.(abs(Dpoints(2,ipoint,iel)-0.5).ge.0.025_dp)) Dcoefficients(1,ipoint,iel)=1.0_dp
+
             
 !            ! Zalesak
 !            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.75_dp)**2))
@@ -1838,9 +1844,9 @@ integer :: iel
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
-            ! Water hill
-            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
-                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
+!            ! Water hill
+!            Dcoefficients (1,ipoint,iel) = 1.0_dp + 0.3_dp*&
+!                     exp(-40.0_dp*((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
                      
 !            ! Water hill Poly
 !            r = sqrt(((Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
@@ -1884,7 +1890,7 @@ integer :: iel
 
 !          ! Zylinders
 !          if (Dpoints(1,ipoint,iel)<15.0_dp) then
-!            Dcoefficients (1,ipoint,iel)=1.5_dp
+!            Dcoefficients (1,ipoint,iel)=10.0_dp
 !          else
 !            Dcoefficients (1,ipoint,iel)=1.0_dp
 !          end if
@@ -1917,12 +1923,12 @@ integer :: iel
 !              Dcoefficients (1,ipoint,iel)=1.0_dp
 !            end if
 
-!            ! Circular Dambreak
-!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
-!              Dcoefficients (1,ipoint,iel)=2.5_dp
-!            else
-!              Dcoefficients (1,ipoint,iel)=0.5_dp
-!            end if
+            ! Circular Dambreak
+            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+              Dcoefficients (1,ipoint,iel)=2.5_dp
+            else
+              Dcoefficients (1,ipoint,iel)=0.5_dp
+            end if
 
 !            ! Test on Quad
 !            if ( ( (Dpoints(1,ipoint,iel)-0.5_dp) * (Dpoints(2,ipoint,iel)-0.5_dp) ) >=0.0_dp ) then
@@ -2375,13 +2381,13 @@ integer :: iel
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
         
-!        ! Zalesak
-!        dvx=0.5_DP-dy
-!        dvy=dx-0.5_DP
+        ! Zalesak
+        dvx=0.5_DP-dy
+        dvy=dx-0.5_DP
 
-        ! Constant velocity
-        dvx=1.0_dp
-        dvy=1.0_dp
+!        ! Constant velocity
+!        dvx=1.0_dp
+!        dvy=1.0_dp
         
 !        ! Circular convection
 !        dvx = dy
@@ -2516,20 +2522,20 @@ integer :: iel
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
-!        ! No BCs
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+        ! No BCs
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
 
 !        ! BC for Source term 1
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx+dy)
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = (1.0_dp+dx+dy)*dx
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = (1.0_dp+dx+dy)*dy
         
-        ! BC for Source term 2
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dx
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dy
+!        ! BC for Source term 2
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dx
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = (1.0_dp+dx**4.0_dp+dy**4.0_dp)*dy
         
 !        ! Reflecting BCs
 !        ! Calculate x- and y- velocity from momentum

@@ -2,14 +2,13 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 4
+nlmax = 7
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-prmname = ./pre/QUAD.prm
-#prmname = ./pre/zehnm.prm
-#prmname = ./pre/zylinderuse.prm
+#prmname = ./pre/QUAD.prm
+prmname = ./pre/zehnm.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
@@ -20,9 +19,8 @@ prmname = ./pre/QUAD.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-triname = ./pre/QUAD.tri
-#triname = ./pre/zehnm.tri
-#triname = ./pre/zylinderuse.tri
+#triname = ./pre/QUAD.tri
+triname = ./pre/zehnm.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
@@ -41,10 +39,10 @@ FEkind = 2
 [TIMESTEPPING]
 
 # Timestepsize
-dt = 0.05
+dt = 0.001
 
 # Final time
-ttfinal = 7
+ttfinal = 1.0
 
 
 [SOLVER]
@@ -54,7 +52,7 @@ ttfinal = 7
 [METHOD]
 # What limiter to use
 # 0: No limiter
-limiter = 0
+limiter = 12
 
 # What kind of time stepping to use
 # 1: RK SSP 3rd order

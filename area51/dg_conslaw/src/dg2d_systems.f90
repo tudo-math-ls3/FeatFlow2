@@ -195,7 +195,7 @@ contains
     
     integer :: irhstype
     
-    integer :: iinsertSourceTerm =1
+    integer :: iinsertSourceTerm =0
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -616,6 +616,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
     if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
     if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+    if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
         
     ! Write first video file (the initial conditions)
     ! If we want to make a video
@@ -721,6 +722,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        
        call profiler_measure(rprofiler,5)
               ! Limit the solution vector
+              
        !if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
        !if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
@@ -731,7 +733,8 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
-    
+       if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
+!    
        
 !       ! If we just wanted to use explicit euler, we would use this line instead of step 2 and 3
 !       call lsysbl_copyVector (rsoltempBlock,rsolBlock)
@@ -801,6 +804,7 @@ if (iwithoutlimiting==2) ilimiter = 0
         if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
         if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
         if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
 
 
        ! Step 3/3
@@ -849,11 +853,23 @@ if (iwithoutlimiting==2) ilimiter = 0
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+
+       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
+       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+       write(*,*) 'SolUp:', derror 
+       
+       
+       call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
+       call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
+       call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
+       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+       write(*,*) 'Res  :', derror 
+       
        
        ! Get new temp solution
        call profiler_measure(rprofiler,1)
        call lsysbl_vectorLinearComb (rsoltempBlock,rsolUpBlock,1.0_DP,dt)
-       call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)       
+       call lsysbl_vectorLinearComb (rsolUpBlock,rsolBlock,2.0_DP/3.0_DP,1.0_DP/3.0_DP)   
        
 !       ! Limit the solution vector
         call profiler_measure(rprofiler,5)
@@ -867,6 +883,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+       if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
 
 !       
 !       ! Test, if the solution has converged
@@ -1036,6 +1053,7 @@ if (iwithoutlimiting==2) ilimiter = 0
       if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolBlock)
       if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
       if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
+      if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
 
 
 
@@ -1127,16 +1145,16 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-    ! Calculate the error to the reference function.
-    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-
-    ! Calculate the error to the reference function.
-    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-                       getReferenceFunction_2D)
-    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+!    ! Calculate the error to the reference function.
+!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+!
+!    ! Calculate the error to the reference function.
+!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+!                       getReferenceFunction_2D)
+!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
     
     
     
