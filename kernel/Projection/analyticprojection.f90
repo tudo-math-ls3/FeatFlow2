@@ -23,7 +23,7 @@
 !#     -> Calculate the characteristic function of a boundary region
 !#
 !#
-!# 4.) anprj_analytL2projectionConstrained
+!# 4.) anprj_analytL2projectionConstr
 !#     -> Performs an L2-projection using the lumped mass matrix and applies
 !#        constrained mass antidiffusive to improve the resolution
 !# </purpose>
@@ -59,7 +59,7 @@ module analyticprojection
   
   public :: t_configL2ProjectionByMass
   public :: anprj_analytL2projectionByMass
-  public :: anprj_analytL2projectionConstrained
+  public :: anprj_analytL2projectionConstr
   public :: anprj_discrDirect
   public :: anprj_charFctRealBdComp
 
@@ -1021,7 +1021,7 @@ contains
 
 !<subroutine>
 
-  subroutine anprj_analytL2projectionConstrained (rvector, rmatrixMass,&
+  subroutine anprj_analytL2projectionConstr (rvector, rmatrixMass,&
       fcoeff_buildVectorSc_sim, rcollection,&
       rL2ProjectionConfig, rmatrixMassLumped, rvectorTemp1, rvectorTemp2)
 
@@ -1132,6 +1132,6 @@ contains
       deallocate(p_rmatrixMassLumped)
     end if
     
-  end subroutine anprj_analytL2projectionConstrained
+  end subroutine
   
 end module
