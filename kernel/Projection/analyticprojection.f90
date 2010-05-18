@@ -574,19 +574,38 @@ contains
         end if
         
       case (EL_Q2)
-        ! Evaluate in the corners, edge midpoints and the element midpoint.
-        ccub = CUB_SIMPSON_2D
         ! Get the coordinates of that points.
-        ! The weights Domega are ignored in the following...
+        ! Here, we have to follow the order of the local DOF´s of Q2!
         allocate(p_DcubPtsRef(trafo_igetReferenceDimension(ctrafoType),CUB_MAXCUBP))
-        call cub_getCubPoints(ccub, ncubp, Dxi, Domega)
+        
+        p_DcubPtsRef(1,1) = -1.0_DP
+        p_DcubPtsRef(2,1) = -1.0_DP
 
-        ! Reformat the cubature points; they are in the wrong shape!
-        do i=1,ncubp
-          do k=1,ubound(p_DcubPtsRef,1)
-            p_DcubPtsRef(k,i) = Dxi(i,k)
-          end do
-        end do
+        p_DcubPtsRef(1,2) =  1.0_DP
+        p_DcubPtsRef(2,2) = -1.0_DP
+
+        p_DcubPtsRef(1,3) =  1.0_DP
+        p_DcubPtsRef(2,3) =  1.0_DP
+
+        p_DcubPtsRef(1,4) = -1.0_DP
+        p_DcubPtsRef(2,4) =  1.0_DP
+
+        p_DcubPtsRef(1,5) =  0.0_DP
+        p_DcubPtsRef(2,5) = -1.0_DP
+
+        p_DcubPtsRef(1,6) =  1.0_DP
+        p_DcubPtsRef(2,6) =  0.0_DP
+
+        p_DcubPtsRef(1,7) =  0.0_DP
+        p_DcubPtsRef(2,7) =  1.0_DP
+
+        p_DcubPtsRef(1,8) = -1.0_DP
+        p_DcubPtsRef(2,8) =  0.0_DP
+
+        p_DcubPtsRef(1,9) =  0.0_DP
+        p_DcubPtsRef(2,9) =  0.0_DP
+
+        ncubp = 9
 
       case default
         ! For most of the standard finite elements based on point values,
