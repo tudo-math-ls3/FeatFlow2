@@ -156,7 +156,7 @@ program interpdbg
 !!$      rmatrixMassLumped = rmatrixMassLumped2)
  
   ! Constrained L2-projection
-  call anprj_analytL2projectionConstrained(rvector2%RvectorBlock(1), &
+  call anprj_analytL2projectionConstr(rvector2%RvectorBlock(1), &
       rmatrix2%RmatrixBlock(1,1), interp_buildVector, rcollection,&
       rmatrixMassLumped = rmatrixMassLumped2)
  
