@@ -185,30 +185,48 @@ contains
     allocate (rprojHier%p_RinterpolationMatDual(max(1,rspaceTimeHierarchy%nlevels-1)))
     
     do i=1,rspaceTimeHierarchy%nlevels-1
-      call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-          rprojHier%p_RprolongationMatPrimal(i))
-          
-      !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
-      !    .true., 0, "matrixp."//trim(sys_siL(i,10)), "(E20.10)")
-      
-      call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-          rprojHier%p_RprolongationMatDual(i))
+      if (rprojHier%itimeOrder .ne. 4) then
+        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
+            rprojHier%p_RprolongationMatPrimal(i))
+            
+        !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
+        !    .true., 0, "matrixp."//trim(sys_siL(i,10)), "(E20.10)")
+        
+        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
+            rprojHier%p_RprolongationMatDual(i))
 
-      !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
-      !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
-          
-      ! The restriction matrices are given as their transpose...
-      !
-      ! WARNING!!!
-      ! The primal restriction matrix is the transpose of the dual prolongation matrix!
-      ! The dual restriction matrix is the transpose of the primal prolongation matrix!
-      ! This is because the primal RHS is located at the timesteps of the dual
-      ! solution (between the primal timesteps) and vice versa!!!
-      call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
-          rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
-          
-      call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
-          rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+        !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
+        !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
+            
+        ! The restriction matrices are given as their transpose...
+        !
+        ! WARNING!!!
+        ! The primal restriction matrix is the transpose of the dual prolongation matrix!
+        ! The dual restriction matrix is the transpose of the primal prolongation matrix!
+        ! This is because the primal RHS is located at the timesteps of the dual
+        ! solution (between the primal timesteps) and vice versa!!!
+        call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
+            rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+            
+        call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
+            rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+      else
+        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,1,&
+            rprojHier%p_RprolongationMatPrimal(i))
+            
+        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,3,&
+            rprojHier%p_RprolongationMatDual(i))
+
+
+        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,2,&
+            rprojHier%p_RrestrictionMatDual(i))
+            
+        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,4,&
+            rprojHier%p_RrestrictionMatPrimal(i))
+            
+        call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatPrimal(i))
+        call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatDual(i))
+      end if
           
       ! The restriction matrices have to be divided by 2 as they are
       ! finite difference restrictions, not finite element restrictions!
@@ -323,6 +341,8 @@ contains
     integer, dimension(:), pointer :: p_Kld, p_Kcol
     real(DP), dimension(:), pointer :: p_Da
     integer :: irow,icol
+    integer, dimension(10) :: Kcol
+    real(DP), dimension(10) :: Da
 
     ! Get the time levels of the two levels where we have to interpolate
     ! inbetween. The number of timesteps gives us the size of the matrix.
@@ -500,6 +520,41 @@ contains
       p_Da(rprolMatrix%NA) = 1.0_DP
 
       p_Kld(ndoffine+1) = rprolMatrix%NA+1
+      
+    case (4)
+      ! Piecewise linear with larger stencil and interpolation to the
+      ! points in time.
+      call lsyssc_createEmptyMatrix9 (rprolMatrix,ndofFine,(ndofFine-5)*3+1+2+3+2+2,ndofCoarse)
+      
+      Da(1) = 1.0_DP
+      Kcol(1) = 1
+      call lsyssc_setRowMatrix9 (rprolMatrix,1,1,Kcol,Da)
+      
+      Da(1:2) = (/0.5_DP,0.5_DP/)
+      Kcol(1:2) = (/1,2/)
+      call lsyssc_setRowMatrix9 (rprolMatrix,2,2,Kcol,Da)
+      
+      Da(1:3) = (/0.25_DP,0.375_DP,0.375_DP/)
+      Kcol(1:3) = (/1,2,3/)
+      call lsyssc_setRowMatrix9 (rprolMatrix,3,3,Kcol,Da)
+      
+      do irow = 3,ndofcoarse-1
+        Kcol(1:3) = (/irow-1,irow,irow+1/)
+        
+        Da(1:3) = (/0.375_DP,0.5_DP,0.125_DP/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3),3,Kcol,Da)
+        
+        Da(1:3) = (/0.125_DP,0.5_DP,0.375_DP/)
+        call lsyssc_setRowMatrix9 (rprolMatrix,4+2*(irow-3)+1,3,Kcol,Da)
+      end do
+
+      Kcol(1:2) = (/ndofcoarse-1,ndofcoarse/)
+      
+      Da(1:2) = (/0.25_DP,0.75_DP/)
+      call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine-1,2,Kcol,Da)
+
+      Da(1:2) = (/-0.25_DP,1.25_DP/)
+      call lsyssc_setRowMatrix9 (rprolMatrix,ndofFine,2,Kcol,Da)
 
 !    case (2)
 !      ! Slightly harder case.
@@ -753,6 +808,9 @@ contains
       p_Da(5+4*(ndofCoarse-2)) = -0.5_DP+0.5_DP*dtheta  ! -0.25_DP
       p_Da(5+4*(ndofCoarse-2)+1) = 2.0_DP-1.5_DP*dtheta ! 1.25_DP
       
+    case (4)
+      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,4,rprolMatrix)
+
     case default
       call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
 
@@ -1146,6 +1204,8 @@ contains
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (3)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,4)
+    case default
+      call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,10)
     end select
     
     ! Prolongation means, we multiply with the prolongation matrix.
@@ -1334,6 +1394,8 @@ contains
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (3)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
+    case default
+      call sptivec_createAccessPool (rfineVector,raccessPool,10)
     end select
     
     ! Prolongation means, we multiply with the prolongation matrix.
@@ -1419,8 +1481,8 @@ contains
     call lsyssc_releaseVector (rtempVecFineScalar)
 
     ! DEBUG!!!
-    !call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
-    !    rtempVecFine)
+    call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
+        rtempVecCoarse)
     !call sys_halt()
         
   contains
@@ -1544,6 +1606,8 @@ contains
     case (2)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
     case (3)
+      call sptivec_createAccessPool (rfineVector,raccessPool,10)
+    case default
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
     end select
     

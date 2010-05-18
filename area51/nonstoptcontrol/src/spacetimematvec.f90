@@ -21,6 +21,7 @@ module spacetimematvec
   use vectorio
   use derivatives
   use timediscretisation
+  use matrixfilters
   
   use stdoperators
   use bilinearformevaluation
@@ -272,9 +273,10 @@ contains
   
     ! local variables
     real(DP) :: dtheta, dtstep, dalpha, dgamma
-    real(DP) :: dcoupleDualToPrimal,dcouplePrimalToDual
+    real(DP) :: dcoupleDualToPrimal,dcouplePrimalToDual,dcoupleTermCond
   
     ! Clear the destination matrix.
+    rsubMatrix%RmatrixBlock(:,:)%dscaleFactor = 1.0_DP
     call lsysbl_clearMatrix(rsubmatrix)
   
     ! Matrix depends on the physics, on the time discretisation
@@ -289,6 +291,7 @@ contains
       dgamma = rmatrix%p_rphysics%doptControlGamma
       dcoupleDualToPrimal = rmatrix%p_rphysics%dcoupleDualToPrimal
       dcouplePrimalToDual = rmatrix%p_rphysics%dcouplePrimalToDual
+      dcoupleTermCond = 0.0_DP
     
       ! Standard 1-step theta scheme.
       select case (rmatrix%p_rphysics%cequation)
@@ -438,7 +441,7 @@ contains
 
             ! Coupling of the primal to the dual
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP+dgamma/dtstep),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                 rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
                 
@@ -549,8 +552,45 @@ contains
         
       end select
 
-    end select      
+    end select
+    
+    if (irow .eq. icol) then
+    
+      ! The matrix is a diagonal matrix in the supermatrix.
+      rsubmatrix%imatrixSpec = iand(rsubmatrix%imatrixSpec,not(LSYSBS_MSPEC_OFFDIAGSUBMATRIX))
+      
+    else
+      
+      ! The matrix is an offdiagonalmatrix in the supermatrix.
+      rsubmatrix%imatrixSpec = ior(rsubmatrix%imatrixSpec,LSYSBS_MSPEC_OFFDIAGSUBMATRIX)
+    
+    end if
     
   end subroutine
 
+  ! ***************************************************************************
+
+  subroutine stmv_implementDefBCSubmatrix (rboundaryCond, rsubmatrix, irow, icol, rdiscreteBC)
+  
+  ! Implements boundary conditions into a submatrix of the global matrix.
+  
+  ! Boundary conditions.
+  type(t_spacetimeBC), intent(in), target :: rboundaryCond
+
+  ! Spatial submatrix of the global space-time matrix
+  type(t_matrixBlock), intent(inout) :: rsubmatrix
+  
+  ! Row and column in the global space-time matrix corresponding to
+  ! rsubmatrix.
+  integer, intent(in) :: irow, icol
+  
+  ! Temporary boundary condition structure.
+  type(t_discreteBC), intent(inout) :: rdiscreteBC
+  
+    call bcasm_clearDiscreteBC (rdiscreteBC)
+    call spop_assembleSpaceBC (rboundaryCond, irow, SPOP_DEFECT, rdiscreteBC)
+    call matfil_discreteBC (rsubmatrix,rdiscreteBC)
+
+  end subroutine
+  
 end module

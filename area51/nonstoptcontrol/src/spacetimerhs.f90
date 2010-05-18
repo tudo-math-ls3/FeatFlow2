@@ -37,7 +37,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine strhs_assembleSpaceRHS (rphysics,dtime,icomponent,rrhs)
+  subroutine strhs_assembleSpaceRHS (rphysics,dtime,dtstep,icomponent,rrhs)
   
   ! Assembles one component of the RHS at a special point in time.
 
@@ -46,6 +46,9 @@ contains
 
   ! Time
   real(DP), intent(in) :: dtime
+  
+  ! Timestep
+  real(DP), intent(in) :: dtstep
   
   ! Component to assemble
   integer, intent(in) :: icomponent
@@ -62,6 +65,7 @@ contains
     rcollection%IquickAccess(1) = icomponent
     rcollection%DquickAccess(1) = dtime
     rcollection%DquickAccess(2) = rphysics%doptControlAlpha
+    rcollection%DquickAccess(3) = dtstep
     
     select case (rphysics%cequation)
     case (0)
@@ -126,10 +130,10 @@ contains
         select case (rphysics%cequation)
         case (0)
           ! Heat equation, one primal and one dual component.
-          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,1,&
+          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,1,&
               rrhsSpace%RvectorBlock(1))
 
-          call strhs_assembleSpaceRHS (rphysics,dtimedual,2,&
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,2,&
               rrhsSpace%RvectorBlock(2))
         
         end select

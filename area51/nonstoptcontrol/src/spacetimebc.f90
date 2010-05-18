@@ -30,6 +30,8 @@ module spacetimebc
   use discretebc
   use bcassembly
   use boundary
+  
+  use analyticprojection
 
   use physics
   
@@ -276,13 +278,20 @@ contains
         if (istep .eq. 1) then
           call lsyssc_clearVector (rtempVec%RvectorBlock(1))
         end if
-        if (istep .eq. rvector%NEQtime) then
-          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
-        end if
+!        if (istep .eq. rvector%NEQtime) then
+!          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
+!        end if
       case (SPOP_RHS)
         call vecfil_discreteBCrhs (rtempVec,rdiscreteBC)
       case (SPOP_SOLUTION)
         call vecfil_discreteBCsol (rtempVec,rdiscreteBC)
+
+        ! DEBUG!!!
+        if (istep .eq. rvector%NEQtime) then
+          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
+          call anprj_discrDirect (rtempVec%RvectorBlock(2),&
+              ffunctionTermCond)
+        end if
       end select
         
       call sptivec_setTimestepData (rvector, istep, rtempVec)

@@ -141,6 +141,57 @@ contains
     end do
     
     deallocate(Dnorms)
+    
+    call lsysbl_releaseVector (rspacetemp)
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stpp_printDefectSubnormsDirect (rd)
+
+    ! Prints the norms of the defects in each timestep to the terminal.
+    
+    ! Defect vector
+    type(t_spacetimeVector), intent(inout) :: rd
+  
+    ! local variables
+    integer :: istep, icomp
+    real(DP) :: dnormsum
+    real(DP), dimension(:), allocatable :: Dnorms
+    integer, dimension(:), allocatable :: Cnorms
+    type(t_vectorBlock) :: rspacetemp
+    
+    ! create a temp vector
+    call lsysbl_createVectorBlock (rd%p_rspaceDiscr,rspacetemp)
+    
+    ! Print the defect norm in each timestep
+    allocate (Dnorms(rspacetemp%nblocks))
+    allocate (Cnorms(rspacetemp%nblocks))
+    Cnorms(:) = LINALG_NORMEUCLID
+    
+    do istep=1,rd%NEQtime
+
+      ! Calculate the euclidian norm
+      call sptivec_getTimestepData (rd, istep, rspacetemp)
+      call lsysbl_vectorNormBlock (rspacetemp,Cnorms,Dnorms)
+      
+      ! Calculate the L2-norm(s) of every block.
+      dnormsum = sum(Dnorms)
+      call output_line ("||D_"//trim(sys_siL(istep,10))//"|| = "//&
+        trim(sys_sdEP(dnormsum/real(rspaceTemp%NEQ,DP),16,8)))
+      do icomp = 1,rspacetemp%nblocks
+        call output_line ("  ||D_"//trim(sys_siL(istep,10))//&
+           "^"//trim(sys_siL(icomp,10))//"|| = "//&
+           trim(sys_sdEP(Dnorms(icomp)/ &
+                real(rspaceTemp%RvectorBlock(icomp)%NEQ,DP),16,8)))
+      end do
+    end do
+    
+    deallocate(Dnorms)
+    
+    call lsysbl_releaseVector (rspacetemp)
+    
   end subroutine
 
 end module

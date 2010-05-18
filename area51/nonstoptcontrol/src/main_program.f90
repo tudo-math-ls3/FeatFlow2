@@ -220,12 +220,16 @@ contains
 
     ! local variables
     integer :: csolverType
-    integer :: ilev,nsmoothingSteps,iorderTimeProlRest
+    integer :: ilev,nsmoothingSteps,iorderTimeProlRest,nmaxiterations
+    integer :: ismoother,icoarsegridsolver
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     
     csolverType = 1
-    nsmoothingSteps = 0
-    iorderTimeProlRest = 1
+    nsmoothingSteps = 4
+    nmaxiterations = 1000
+    ismoother = 0
+    icoarsegridsolver = 1
+    iorderTimeProlRest = -1
     
     rsolver%csolverType = csolverType
     
@@ -235,27 +239,50 @@ contains
 
       ! Create the solver.
       call stls_initBlockJacobi (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
+      
+      rsolver%rsolver%nmaxIterations = nmaxiterations
+          
+    case (2)
+      ! Defect correction with Block FBGS preconditioning
+
+      ! Create the solver.
+      call stls_initBlockFBGS (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
+          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+      call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
+          rsolver%rpreconditioner)
+          
+      rsolver%rsolver%nmaxIterations = nmaxiterations
           
     case (1)
       ! MG-Solver with block Jacobi preconditioning.
       
       ! Create the coarse grid solver.
-      call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-          1,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+      if (icoarsegridsolver .eq. 0) then
+        call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+      else
+        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+      end if
       call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
           rsolver%rcoarsePreconditioner)
-      rsolver%rcoarseGridSolver%ioutputLevel = 0
-      rsolver%rcoarseGridSolver%domega = 1.0_DP
+      rsolver%rcoarseGridSolver%ioutputLevel = 2
+      !rsolver%rcoarseGridSolver%domega = 0.7_DP
           
       ! Create the smoothers.
       allocate (rsolver%p_RsmootherPrecond(nlevels))
       allocate (rsolver%p_Rsmoothers(nlevels))
       do ilev = 2,nlevels
-        call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-            ilev,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        if (ismoother .eq. 0) then
+          call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        else
+          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        end if
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
             rsolver%p_RsmootherPrecond(ilev))
         call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
@@ -280,7 +307,7 @@ contains
       ! Create the solver.
       call stls_initMultigrid (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rprojection, rsolver%rcoarseGridSolver, RpostSmoothers=rsolver%p_Rsmoothers)
-      rsolver%rsolver%nmaxIterations = 1
+      rsolver%rsolver%nmaxIterations = nmaxiterations
           
     end select
       
@@ -314,6 +341,13 @@ contains
       call stls_done(rsolver%rpreconditioner)
       call stls_done(rsolver%rsolver)
       
+    case (2)
+      ! Defect correction with Block FBGS preconditioning
+
+      ! Release the solver.
+      call stls_done(rsolver%rpreconditioner)
+      call stls_done(rsolver%rsolver)
+
     case (1)
       ! MG-Solver with block Jacobi preconditioning.
       call mlprj_releasePrjHierarchy (rsolver%rprojHierarchySpace)
@@ -330,6 +364,11 @@ contains
       deallocate (rsolver%p_RsmootherPrecond)
       deallocate (rsolver%p_Rsmoothers)
       
+    case default
+    
+      call output_line ("main_doneLinearSolver: Unknown solver!")
+      call sys_halt()
+      
     end select
 
   end subroutine
@@ -342,7 +381,7 @@ contains
   
 !<description>
   ! Calculates the optimisation problem based on the parameter
-  ! in the parameter list.s
+  ! in the parameter list.
 !</description>
 
 !<input>
@@ -365,11 +404,11 @@ contains
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
-    nspacelevels = 1
+    nspacelevels = 4
     ntimelevels = 2
-    nminlevelspace = 2
-    nminleveltime = 1
-    ntstepscoarse = 10*2**(nminleveltime-1)
+    nminlevelspace = 1
+    nminleveltime = 4
+    ntstepscoarse = 5*2**(nminleveltime-1)
     dtheta = 1.0_DP
     
     ! Get parameters
@@ -452,8 +491,9 @@ contains
     call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
         SPOP_SOLUTION, rsolution)
     
-    !call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
-    !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
+    call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
+        trim(sys_siL(nminleveltime,2))//"-"//&
+        trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
     
     ! Solve
     call stls_initData (rlinearSolver%rsolver)
@@ -468,7 +508,7 @@ contains
     ! Postprocessing
     call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
         rsolution,rrhs,rtemp)
-    call sptivec_saveToFileSequence (rsolution,"('ns/solution2_"//&
+    call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
         trim(sys_siL(nminleveltime,2))//"-"//&
         trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
     call stpp_postproc (rparams%rphysics,rsolution)
@@ -519,7 +559,7 @@ contains
     call parlst_readfromfile(rparlist,trim(DIR_DATA)//"/nonstoptcontrol.dat")
     
     ! Initialise log file for output.
-    call output_init ()
+    call output_init ("log/output.log")
     OU_LINE_LENGTH = 132
     
     ! Now we can really start!
