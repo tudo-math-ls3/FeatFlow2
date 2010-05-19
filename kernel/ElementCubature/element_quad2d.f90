@@ -2061,8 +2061,8 @@ contains
       !  sigma^-1(z1,z2) = [1/2*(deta1 dxi1)]^-1 * (x - xm)
       !                    [    (deta2 dxi2)]      (y   ym)
       !
-      !                  = 2/lambda ( dxi2*(x-xm) - deta2*(y-ym) )
-      !                             ( deta1*(y-ym) - dxi1*(x-xm) )
+      !                  = 2/lambda ( dxi2*(x-xm)  - dxi1*(y-ym)  )
+      !                             ( deta1*(y-ym) - deta2*(x-xm) )
       !
       !  with lambda = determinant of the matrix.
       !
@@ -2081,8 +2081,8 @@ contains
       !  Phi3(x,y) = 2/lambda ( deta1(y-ym) - dxi1(x-xm) )
       
       Dbas(1,DER_FUNC) = 1
-      Dbas(2,DER_FUNC) = dxj * (dxi2*dx - deta2*dy)
-      Dbas(3,DER_FUNC) = dxj * (deta1*dy - dxi1*dx)
+      Dbas(2,DER_FUNC) = dxj * (dxi2*dx - dxi1*dy)
+      Dbas(3,DER_FUNC) = dxj * (deta1*dy - deta2*dx)
     
       ! Using these definitions, we can also calculate the derivative directly.
       !
