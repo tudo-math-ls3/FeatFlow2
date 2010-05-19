@@ -39,24 +39,40 @@ module spatialoperators
     ! General FE template matrix.
     type(t_matrixScalar) :: rmatrixTemplateA11
   
+    ! Template for B-matrices
+    type(t_matrixScalar) :: rmatrixTemplateB
+
+    ! Template for D-matrices
+    type(t_matrixScalar) :: rmatrixTemplateD
+  
     ! Mass matrix
     type(t_matrixScalar) :: rmatrixMassA11
     
     ! Laplace matrix
     type(t_matrixScalar) :: rmatrixLaplaceA11
-  
+
+    ! B-matrices
+    type(t_matrixScalar) :: rmatrixB1
+    type(t_matrixScalar) :: rmatrixB2
+
+    ! D-matrices
+    type(t_matrixScalar) :: rmatrixD1
+    type(t_matrixScalar) :: rmatrixD2
   end type
 
 contains
 
   ! ***************************************************************************
 
-  subroutine spop_calcMatrices (rspaceDiscr, rmatvecTempl)
+  subroutine spop_calcMatrices (rspaceDiscr, rphysics, rmatvecTempl)
 
     ! Calculates template matrices in rmatvecTempl
     
     ! Underlying spatial discretisation structure
     type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
+
+    ! Physics of the problem.
+    type(t_physics), intent(in) :: rphysics
     
     ! Template structure to be created
     type(t_matVecTemplates), intent(inout) :: rmatvecTempl
@@ -81,6 +97,57 @@ contains
     call stdop_assembleSimpleMatrix (rmatvecTempl%rmatrixMassA11,DER_FUNC,DER_FUNC,1.0_DP,&
       .true.)
   
+    select case (rphysics%cequation)
+    case (0)
+      ! Heat equation. Nothing to do.
+      
+    case (1)
+      ! Stokes equation. Generate additional B and D matrices
+
+      call bilf_createMatrixStructure (rspaceDiscr%RspatialDiscr(3),LSYSSC_MATRIX9,&
+          rmatvecTempl%rmatrixTemplateB,rspaceDiscr%RspatialDiscr(1))
+          
+      call lsyssc_transposeMatrix (rmatvecTempl%rmatrixTemplateB,rmatvecTempl%rmatrixTemplateD,&
+          LSYSSC_TR_STRUCTURE)
+
+      call lsyssc_duplicateMatrix(&
+          rmatvecTempl%rmatrixTemplateB,rmatvecTempl%rmatrixB1,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+      call lsyssc_duplicateMatrix(&
+          rmatvecTempl%rmatrixTemplateB,rmatvecTempl%rmatrixB2,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix(&
+          rmatvecTempl%rmatrixTemplateD,rmatvecTempl%rmatrixD1,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+          
+      call lsyssc_duplicateMatrix(&
+          rmatvecTempl%rmatrixTemplateD,rmatvecTempl%rmatrixD2,&
+          LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+      
+      !die B-matrizen sind gegenüber dem Referenzcode falsch; an einigen Stellen finden sich
+      !"-"-Zeichen!?!
+          
+      call stdop_assembleSimpleMatrix (rmatvecTempl%rmatrixB1,DER_FUNC,DER_DERIV_X,-1.0_DP,&
+        .true.)
+
+      call stdop_assembleSimpleMatrix (rmatvecTempl%rmatrixB2,DER_FUNC,DER_DERIV_Y,-1.0_DP,&
+        .true.)
+
+      call lsyssc_transposeMatrix (rmatvecTempl%rmatrixB1,rmatvecTempl%rmatrixD1,&
+          LSYSSC_TR_CONTENT)
+
+      call lsyssc_transposeMatrix (rmatvecTempl%rmatrixB2,rmatvecTempl%rmatrixD2,&
+          LSYSSC_TR_CONTENT)
+      
+    case default
+    
+      call output_line ("Equation not supported.")
+      call sys_halt()
+
+    end select
+  
   end subroutine
 
   ! ***************************************************************************
@@ -93,48 +160,16 @@ contains
     type(t_matVecTemplates), intent(inout) :: rmatvecTempl
     
     ! Release...
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixB1)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixB2)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixD1)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixD2)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateB)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateD)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixLaplaceA11)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixMassA11)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateA11)
   
   end subroutine
 
-  ! ***************************************************************************
-
-  subroutine spop_allocateMatrix (rmatvecTempl,rphysics,rmatrix)
-
-    ! Allocates memory for a spatial matrix.
-    
-    ! Template structure 
-    type(t_matVecTemplates), intent(in) :: rmatvecTempl
-    
-    ! Physics of the problem. Defines the matrix structure.
-    type(t_physics), intent(in) :: rphysics
-    
-    ! Output matrix
-    type(t_matrixBlock), intent(out) :: rmatrix
-  
-    ! Set up the corresponding block matrix.
-    call lsysbl_createMatBlockByDiscr (rmatvecTempl%p_rspaceDiscr,rmatrix)
-
-    select case (rphysics%cequation)
-    case (0)
-      ! Heat equation.
-      !
-      ! A FE-matrices at block (1..2,1..2) 
-      call lsyssc_duplicateMatrix (rmatvecTempl%rmatrixTemplateA11,&
-          rmatrix%RmatrixBlock(1,1), LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (rmatvecTempl%rmatrixTemplateA11,&
-          rmatrix%RmatrixBlock(2,1), LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (rmatvecTempl%rmatrixTemplateA11,&
-          rmatrix%RmatrixBlock(1,2), LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-
-      call lsyssc_duplicateMatrix (rmatvecTempl%rmatrixTemplateA11,&
-          rmatrix%RmatrixBlock(2,2), LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-    end select
-  
-  end subroutine
-  
 end module

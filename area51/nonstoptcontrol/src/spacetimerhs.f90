@@ -78,7 +78,22 @@ contains
      
       call linf_buildVectorScalar2 (rlinform, .true., rrhs,&
           rhs_heatEquation, rcollection)
+
+    case (1)
+      ! Stokes equation.
+     
+      rlinform%itermcount = 1
+      rlinform%Dcoefficients(1) = 1.0_DP
+      rlinform%Idescriptors(1) = 1
+     
+      call linf_buildVectorScalar2 (rlinform, .true., rrhs,&
+          rhs_stokesEquation, rcollection)
     
+    case default
+    
+      call output_line ("Equation not supported.")
+      call sys_halt()
+
     end select
 
   end subroutine
@@ -100,12 +115,16 @@ contains
     real(DP) :: dtimePrimal,dtimeDual,dtheta
     real(DP) :: dtimeend,dtstep,dtimestart
     type(t_vectorBlock) :: rrhsSpace
+    real(DP), dimension(:), pointer :: p_Ddata
   
     ! Clear the RHS.
     call sptivec_clearVector (rrhs)
     
     ! Temp vector
     call lsysbl_createVectorBlock (rrhs%p_rspaceDiscr,rrhsSpace)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rrhsSpace, p_Ddata)
     
     ! Time discretisation scheme
     select case (rrhs%p_rtimeDiscr%ctype)
@@ -135,7 +154,40 @@ contains
 
           call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,2,&
               rrhsSpace%RvectorBlock(2))
+              
+          if (istep .eq. 1) then
+            ! Scale the RHS according to the timestep scheme.
+            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
+                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+          end if
         
+        case (1)
+          ! Stokes equation.
+          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,1,&
+              rrhsSpace%RvectorBlock(1))
+
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,2,&
+              rrhsSpace%RvectorBlock(2))
+
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,4,&
+              rrhsSpace%RvectorBlock(4))
+
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,5,&
+              rrhsSpace%RvectorBlock(5))
+
+          if (istep .eq. 1) then
+            ! Scale the RHS according to the timestep scheme.
+            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
+                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
+                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+          end if
+
+        case default
+        
+          call output_line ("Equation not supported.")
+          call sys_halt()
+
         end select
         
         call sptivec_setTimestepData (rrhs, istep, rrhsSpace)

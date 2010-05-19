@@ -1301,6 +1301,76 @@ contains
               
         end do
         
+      case (1)
+        ! Stokes equation
+      
+        ! Primal space: y,xi
+        do icol = p_KldPrim(irow),p_KldPrim(irow+1)-1
+        
+          ! Try to get the vector from the vector pool. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+          if (.not. associated(p_rx)) then
+            ! No, we have to fetch/calculate the vector.
+            !
+            ! Get a buffer where to save it.
+            call sptivec_getFreeBufferFromPool (raccessPool,p_KcolPrim(icol),p_rx)
+            
+            ! Read the source vector. The column of the matrix specifies
+            ! the timestep.
+            call getSpatialVector (rprojHier,rcoarseVector,p_KcolPrim(icol),p_rx,&
+                rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+          end if
+          
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(1),rtempVecFine%RvectorBlock(1),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(2),rtempVecFine%RvectorBlock(2),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(6),rtempVecFine%RvectorBlock(6),dscalePrim*p_DaPrim(icol),1.0_DP)
+              
+        end do
+        
+        ! Dual space: lambda/p
+        do icol = p_KldDual(irow),p_KldDual(irow+1)-1
+        
+          ! Try to get the vector from the vector pool. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+          if (.not. associated(p_rx)) then
+            ! No, we have to fetch/calculate the vector.
+            !
+            ! Get a buffer where to save it.
+            call sptivec_getFreeBufferFromPool (raccessPool,p_KcolDual(icol),p_rx)
+            
+            ! Read the source vector. The column of the matrix specifies
+            ! the timestep.
+            call getSpatialVector (rprojHier,rcoarseVector,p_KcolDual(icol),p_rx,&
+                rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
+          end if
+          
+          ! DEBUG!!!
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(4),rtempVecFine%RvectorBlock(4),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(5),rtempVecFine%RvectorBlock(5),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(3),rtempVecFine%RvectorBlock(3),dscaleDual*p_DaDual(icol),1.0_DP)
+              
+        end do
+
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
+
       end select
 
       ! Vector finished.
@@ -1467,6 +1537,51 @@ contains
               
         end do
         
+      case (1)
+        ! Stokes equation
+
+        ! Primal space: y,xi
+        do icol = p_KldPrim(irow),p_KldPrim(irow+1)-1
+        
+          ! Get the fine grid vector using the vector pool as buffer. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+          
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(1),rtempVecFine%RvectorBlock(1),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(2),rtempVecFine%RvectorBlock(2),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(6),rtempVecFine%RvectorBlock(6),dscalePrim*p_DaPrim(icol),1.0_DP)
+              
+        end do
+        
+        ! Dual space: lambda/p
+        do icol = p_KldDual(irow),p_KldDual(irow+1)-1
+        
+          ! Try to get the vector from the vector pool. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+          
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(4),rtempVecFine%RvectorBlock(4),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(5),rtempVecFine%RvectorBlock(5),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(3),rtempVecFine%RvectorBlock(3),dscaleDual*p_DaDual(icol),1.0_DP)
+              
+        end do
+
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
       end select
       
       ! Vector finished.
@@ -1680,6 +1795,51 @@ contains
               
         end do
         
+      case (1)
+        ! Stokes equation
+
+        ! Primal space: y,xi
+        do icol = p_KldPrim(irow),p_KldPrim(irow+1)-1
+        
+          ! Get the fine grid vector using the vector pool as buffer. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+          
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(1),rtempVecFine%RvectorBlock(1),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(2),rtempVecFine%RvectorBlock(2),dscalePrim*p_DaPrim(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(6),rtempVecFine%RvectorBlock(6),dscalePrim*p_DaPrim(icol),1.0_DP)
+              
+        end do
+        
+        ! Dual space: lambda/p
+        do icol = p_KldDual(irow),p_KldDual(irow+1)-1
+        
+          ! Try to get the vector from the vector pool. Saves time.
+          call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+          
+          call lsysbl_getbase_double (p_rx,p_DdataCoarse)
+          
+          ! Now, rx is the time vector at timestep icol. Weighted multiplication
+          ! into rtempVecFine for y and xi.
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(4),rtempVecFine%RvectorBlock(4),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(5),rtempVecFine%RvectorBlock(5),dscaleDual*p_DaDual(icol),1.0_DP)
+          call lsyssc_vectorLinearComb(&
+              p_rx%RvectorBlock(3),rtempVecFine%RvectorBlock(3),dscaleDual*p_DaDual(icol),1.0_DP)
+              
+        end do
+
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
       end select
       
       ! Vector finished.

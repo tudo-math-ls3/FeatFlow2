@@ -180,11 +180,40 @@ contains
 !      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
 !          rdiscr%RspatialDiscr(2))
 
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
+          rtriangulation, rboundary)
+      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
+          rdiscr%RspatialDiscr(2))
+    
+    case (1)
+      ! Stokes equation
+      call spdiscr_initBlockDiscr (rdiscr,6,rtriangulation, rboundary)
+      
+!      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
+!          rtriangulation, rboundary)
+!      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
+!          rdiscr%RspatialDiscr(2))
+
       call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q2_2D, CUB_G4X4,&
           rtriangulation, rboundary)
       call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
           rdiscr%RspatialDiscr(2))
+
+      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+          rdiscr%RspatialDiscr(4))
+      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+          rdiscr%RspatialDiscr(5))
+
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1NP, CUB_G4X4,&
+          rtriangulation, rboundary)
+      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(3), EL_QP1, CUB_G4X4, &
+          rdiscr%RspatialDiscr(6))
+
+    case default
     
+      call output_line ("Equation not supported.")
+      call sys_halt()
+
     end select
   
   end subroutine
@@ -224,11 +253,15 @@ contains
     integer :: ismoother,icoarsegridsolver
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     
-    csolverType = 1
+    if (nlevels .eq. 1) then
+      csolverType = 0
+    else
+      csolverType = 1
+    end if
     nsmoothingSteps = 4
     nmaxiterations = 1000
     ismoother = 0
-    icoarsegridsolver = 1
+    icoarsegridsolver = 0
     iorderTimeProlRest = -1
     
     rsolver%csolverType = csolverType
@@ -239,7 +272,7 @@ contains
 
       ! Create the solver.
       call stls_initBlockJacobi (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          nlevels,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
       
@@ -249,7 +282,7 @@ contains
       ! Defect correction with Block FBGS preconditioning
 
       ! Create the solver.
-      call stls_initBlockFBGS (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
+      call stls_initBlockFBGS2 (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
           nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
@@ -264,12 +297,12 @@ contains
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       else
-        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       end if
       call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
           rsolver%rcoarsePreconditioner)
-      rsolver%rcoarseGridSolver%ioutputLevel = 2
+      rsolver%rcoarseGridSolver%ioutputLevel = 0
       !rsolver%rcoarseGridSolver%domega = 0.7_DP
           
       ! Create the smoothers.
@@ -280,7 +313,7 @@ contains
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
         else
-          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+          call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
         end if
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
@@ -404,10 +437,10 @@ contains
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
-    nspacelevels = 4
+    nspacelevels = 2
     ntimelevels = 2
     nminlevelspace = 1
-    nminleveltime = 4
+    nminleveltime = 1
     ntstepscoarse = 5*2**(nminleveltime-1)
     dtheta = 1.0_DP
     
@@ -435,7 +468,7 @@ contains
     call sth_initHierarchy (rparams%rspacetimeHierarchy,&
         rparams%rfeHierarchy,rparams%rtimeHierarchy)
     call sth_defineHierarchyByCoarsening (rparams%rspacetimeHierarchy,&
-        1,nspacelevels,1,ntimelevels)
+        nspacelevels,nspacelevels,1,ntimelevels)
     
     ! Boundary conditions on all levels.
     allocate (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels))
@@ -461,7 +494,7 @@ contains
     do ilev=1,nspacelevels
       p_rspaceDiscr => rparams%rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation
       ! Template matrices
-      call spop_calcMatrices (p_rspaceDiscr, rparams%p_RmatvecTempl(ilev))
+      call spop_calcMatrices (p_rspaceDiscr,rparams%rphysics,rparams%p_RmatvecTempl(ilev))
     end do
 
     ! Get the discretisation info of the max. level.
@@ -494,6 +527,10 @@ contains
     call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
         trim(sys_siL(nminleveltime,2))//"-"//&
         trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
+
+    ! Initial defect    
+    call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
+        rsolution,rrhs,rtemp)
     
     ! Solve
     call stls_initData (rlinearSolver%rsolver)

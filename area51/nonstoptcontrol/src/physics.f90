@@ -36,6 +36,9 @@ module physics
 
     ! Couple the primal equation to the dual
     real(DP) :: dcouplePrimalToDual = 1.0_DP
+    
+    ! Couple the terminal condition to the dual solution.
+    real(DP) :: dcoupleTermCond = 1.0_DP
 
   end type
 

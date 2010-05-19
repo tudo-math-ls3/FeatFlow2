@@ -171,6 +171,7 @@ contains
   
     select case (rbc%p_rphysics%cequation)
     case (0)
+      ! Heat equation
       do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
         do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc)
           ! Get the segment and create Dirichlet BC's there.
@@ -187,6 +188,34 @@ contains
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
       end do
+
+    case (1)
+      ! Stokes equation
+      do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
+      
+        ! Last segment is Neumann!
+        do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc) - 1
+          ! Get the segment and create Dirichlet BC's there.
+          call boundary_createRegion (rbc%p_rspaceDiscr%p_rboundary, ibc, isegment, &
+              rregion)
+          rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+                             
+          ! IQuickAccess(1) is the number of the primal equation. Here we only have one!
+          ! IquickAccess(2) is the equation.
+          ! DquickAccess(1) is the time.
+          rcollection%IquickAccess(1) = icomponent
+          rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
+          rcollection%DquickAccess(1) = dtime
+          call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
+              icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
+        end do
+      end do
+
+    case default
+    
+      call output_line ("Equation not supported.")
+      call sys_halt()
+
     end select
   
   end subroutine
@@ -219,13 +248,33 @@ contains
 
     call spop_getPrimalDualTime (rbc%p_rtimeDiscr,istep,dprimalTime,ddualTime)
 
-    select case (ctype)
-    case (SPOP_DEFECT,SPOP_SOLUTION)
-      call spop_assembleSpaceBCtime (rbc, dprimalTime, 1, rdiscreteBC)
-      call spop_assembleSpaceBCtime (rbc, ddualTime, 2, rdiscreteBC)
-    case (SPOP_RHS)
-      call spop_assembleSpaceBCtime (rbc, ddualTime, 1, rdiscreteBC)
-      call spop_assembleSpaceBCtime (rbc, dprimalTime, 2, rdiscreteBC)
+    select case (rbc%p_rphysics%cequation)
+    case (0)
+      ! Heat equation
+      select case (ctype)
+      case (SPOP_DEFECT,SPOP_SOLUTION)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 2, rdiscreteBC)
+      case (SPOP_RHS)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 2, rdiscreteBC)
+      end select
+    
+    case (1)
+      ! Stokes equation
+      select case (ctype)
+      case (SPOP_DEFECT,SPOP_SOLUTION)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 5, rdiscreteBC)
+      case (SPOP_RHS)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ddualTime, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dprimalTime, 5, rdiscreteBC)
+      end select
+
     end select
       
   end subroutine
@@ -275,9 +324,9 @@ contains
         call vecfil_discreteBCdef (rtempVec,rdiscreteBC)
         
         ! DEBUG!!!
-        if (istep .eq. 1) then
-          call lsyssc_clearVector (rtempVec%RvectorBlock(1))
-        end if
+!        if (istep .eq. 1) then
+!          call lsyssc_clearVector (rtempVec%RvectorBlock(1))
+!        end if
 !        if (istep .eq. rvector%NEQtime) then
 !          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
 !        end if
@@ -287,11 +336,11 @@ contains
         call vecfil_discreteBCsol (rtempVec,rdiscreteBC)
 
         ! DEBUG!!!
-        if (istep .eq. rvector%NEQtime) then
-          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
-          call anprj_discrDirect (rtempVec%RvectorBlock(2),&
-              ffunctionTermCond)
-        end if
+!        if (istep .eq. rvector%NEQtime) then
+!          call lsyssc_clearVector (rtempVec%RvectorBlock(2))
+!          call anprj_discrDirect (rtempVec%RvectorBlock(2),&
+!              ffunctionTermCond)
+!        end if
       end select
         
       call sptivec_setTimestepData (rvector, istep, rtempVec)

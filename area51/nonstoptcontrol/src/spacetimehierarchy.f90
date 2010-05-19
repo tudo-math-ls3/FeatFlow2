@@ -255,7 +255,7 @@ contains
         end if
         if (dcurrentfactor .ge. 1.0_DP) then
           ! Coarsening in space if possible
-          if (icurrent .gt. 1) &
+          if (icurrent .gt. nminSpace) &
             icurrent = icurrent - 1
           dcurrentfactor = mod(dcurrentfactor,1.0_DP)
         end if

@@ -18,6 +18,7 @@ module spacetimelinsol
   use linearsystemblock
   use linearsolver
   use matrixfilters
+  use matrixio
   
   use physics
   
@@ -38,14 +39,17 @@ module spacetimelinsol
   ! Jacobi
   integer, parameter :: STLS_TYPE_JACOBI     = 1
   
-  ! FB-SOR
+  ! FB-GS
   integer, parameter :: STLS_TYPE_FBGS      = 2
+
+  ! FB-GS2
+  integer, parameter :: STLS_TYPE_FBGS2     = 3
   
   ! Defect correction
-  integer, parameter :: STLS_TYPE_DEFCORR    = 3
+  integer, parameter :: STLS_TYPE_DEFCORR    = 4
   
   ! Two-grid
-  integer, parameter :: STLS_TYPE_MULTIGRID  = 4
+  integer, parameter :: STLS_TYPE_MULTIGRID  = 5
 
   ! Linear solver structure.
   type t_spacetimelinsol
@@ -363,6 +367,14 @@ contains
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp2)
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp3)
       call sptivec_initVector (rsolver%rspaceTimeTemp1,p_rtimeDiscr,p_rspaceDiscr)
+
+    case (STLS_TYPE_FBGS2)
+      
+      ! Allocate temp vectors.
+      call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp1)
+      call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp2)
+      call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp3)
+      call sptivec_initVector (rsolver%rspaceTimeTemp1,p_rtimeDiscr,p_rspaceDiscr)
     
     case (STLS_TYPE_DEFCORR)
 
@@ -417,10 +429,9 @@ contains
             p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
         
-        call stmv_allocSubmatrix (rsolver%p_rmatrix%cmatrixType,p_rspaceDiscr,&
-            rsolver%p_rmatrix%p_rphysics,&
-            rsolver%p_RdiscreteBC(ilev),rsolver%p_RmatVecTempl(ispaceLevel),&
-            rsolver%p_RspaceMatrices(ilev))
+        call stmv_allocSubmatrix (rsolver%p_rmatrix%cmatrixType,&
+            rsolver%p_rmatrix%p_rphysics,rsolver%p_RmatVecTempl(ispaceLevel),&
+            rsolver%p_RspaceMatrices(ilev),rsolver%p_RdiscreteBC(ilev))
             
       end do
       
@@ -474,6 +485,14 @@ contains
       call lsysbl_releaseVector (rsolver%rspaceTemp1)
     
     case (STLS_TYPE_FBGS)
+      
+      ! Deallocate temp vectors.
+      call sptivec_releaseVector (rsolver%rspaceTimeTemp1)
+      call lsysbl_releaseVector (rsolver%rspaceTemp3)
+      call lsysbl_releaseVector (rsolver%rspaceTemp2)
+      call lsysbl_releaseVector (rsolver%rspaceTemp1)
+
+    case (STLS_TYPE_FBGS2)
       
       ! Deallocate temp vectors.
       call sptivec_releaseVector (rsolver%rspaceTimeTemp1)
@@ -554,6 +573,8 @@ contains
       call stls_precondBlockJacobi (rsolver, rd)
     case (STLS_TYPE_FBGS)
       call stls_precondBlockFBGS (rsolver, rd)
+    case (STLS_TYPE_FBGS2)
+      call stls_precondBlockFBGS2 (rsolver, rd)
     case (STLS_TYPE_MULTIGRID)
       call stls_precondMultigrid (rsolver, rd)
     end select
@@ -787,6 +808,9 @@ contains
           rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
           rsolver%p_RdiscreteBC(rsolver%ilevel))
       
+      !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), "matrix",&
+      !    .true., 0, "matrix.txt", "(E10.3)")
+
       ! Apply the space solver
       call linsol_initData(rsolver%p_rspaceSolver,ierror)
       if (ierror .ne. 0) then
@@ -813,7 +837,7 @@ contains
   subroutine stls_initBlockFBGS (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
       cspaceSolverType,RmatVecTempl)
   
-  ! Initialise a block Jacobi correction solver.
+  ! Initialise a block GS correction solver, working on the decoupled solution.
   
   ! Solver structure to be initialised
   type(t_spacetimelinsol), intent(out) :: rsolver
@@ -989,6 +1013,197 @@ contains
 
     ! Scale, finish.
     call sptivec_scaleVector(rd,rsolver%domega)
+
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stls_initBlockFBGS2 (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
+      cspaceSolverType,RmatVecTempl)
+  
+  ! Initialise a block GS correction solver, working on the coupled solution.
+  
+  ! Solver structure to be initialised
+  type(t_spacetimelinsol), intent(out) :: rsolver
+  
+  ! Underlying space-time hierarchy
+  type(t_spacetimeHierarchy), intent(in), target :: rspaceTimeHierarchy
+  
+  ! Level of the solver  in the space-time hierarchy
+  integer, intent(in) :: ilevel
+
+  ! Relaxation parameter
+  real(DP), intent(in) :: drelax
+
+  ! OPTIONAL: Identifier for a linear solver in space that might be used
+  ! for preconditioning.
+  ! =0: UMFPACK
+  integer, intent(in) :: cspaceSolverType
+
+  ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
+  ! preconditioner in space is used.
+  type(t_matvecTemplates), dimension(:), intent(in), target :: RmatVecTempl
+
+    ! Basic initialisation
+    call stls_init(rsolver,STLS_TYPE_FBGS2,rspaceTimeHierarchy,ilevel,&
+        .false.,.false.,cspaceSolverType=cspaceSolverType,RmatVecTempl=RmatVecTempl)
+        
+    rsolver%drelax = drelax
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  recursive subroutine stls_precondBlockFBGS2 (rsolver, rd)
+  
+  ! General preconditioning to a defect vector rd
+  
+  ! Solver structure
+  type(t_spacetimelinsol), intent(inout) :: rsolver
+  
+  ! Defect vector to apply preconditioning to.
+  type(t_spaceTimeVector), intent(inout) :: rd
+
+    ! local variables
+    integer :: istep, ierror
+    real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Ddata
+    
+    ! Initialise the linear solver.
+    call linsol_initStructure(rsolver%p_rspaceSolver,ierror)
+    if (ierror .ne. 0) then
+      call output_line ("Spatial system cannot be symbolically factorised in timestep "&
+          //trim(sys_siL(istep,10)))
+      call sys_halt()
+    end if
+    
+    call lsysbl_getbase_double (rsolver%rspaceTemp1,p_Dd)
+    call lsysbl_getbase_double (rsolver%rspaceTemp2,p_Dx)
+    call lsysbl_getbase_double (rsolver%rspaceTemp3,p_Ddata)
+    
+    ! Clear the output vector.
+    call sptivec_clearVector (rsolver%rspaceTimeTemp1)
+    
+    ! Forward sweep.
+      
+    ! We loop through the timesteps and apply the spatial solver in each timestep.
+    do istep = 1,rd%NEQtime
+      
+      ! Load the timestep.
+      call sptivec_getTimestepData(rd,istep,rsolver%rspaceTemp1)
+      
+      if (istep .gt. 1) then
+        ! Load the previous timestep.
+        call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
+        
+        ! Subtract the primal.
+        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep-1, &
+            rsolver%p_RspaceMatrices(rsolver%ilevel))
+
+        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
+            rsolver%p_RdiscreteBC(rsolver%ilevel))
+
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+            rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+      end if
+      
+      ! Subtract the diagonal, set up the preconditioner matrix
+      
+      ! Assemble diagonal submatrix of that timestep.
+      call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
+          rsolver%p_RspaceMatrices(rsolver%ilevel))
+          
+      ! Apply the boundary conditions to the matrix
+      call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
+          rsolver%p_RdiscreteBC(rsolver%ilevel))
+
+      ! Subtract the diagonal.
+      call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
+      
+      call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+      
+      ! Apply the space solver
+      call linsol_initData(rsolver%p_rspaceSolver,ierror)
+      if (ierror .ne. 0) then
+        call output_line ("Spatial system cannot be factorised in timestep "//&
+            trim(sys_siL(istep,10)))
+            
+        call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+            "matrix", .true., 0, "matrix.txt", "(E10.3)") 
+            
+        call sys_halt()
+      end if
+      
+      call linsol_precondDefect (rsolver%p_rspaceSolver,rsolver%rspaceTemp1)
+      call linsol_doneData(rsolver%p_rspaceSolver,ierror)
+      
+      call lsysbl_vectorLinearComb (rsolver%rspaceTemp1,rsolver%rspaceTemp2,rsolver%drelax,1.0_DP)
+      
+      call sptivec_setTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
+      
+    end do
+    
+    ! Backward sweep.
+      
+    ! We loop through the timesteps and apply the spatial solver in each timestep.
+    do istep = rd%NEQtime,1,-1
+      
+      ! Load the timestep.
+      call sptivec_getTimestepData(rd,istep,rsolver%rspaceTemp1)
+      
+      if (istep .lt. rd%NEQtime) then
+        ! Load the previous timestep.
+        call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
+        
+        ! Subtract the primal.
+        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+            rsolver%p_RspaceMatrices(rsolver%ilevel))
+
+        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+            rsolver%p_RdiscreteBC(rsolver%ilevel))
+
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+            rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+      end if
+      
+      ! Assemble diagonal submatrix of that timestep.
+      call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
+          rsolver%p_RspaceMatrices(rsolver%ilevel))
+          
+      ! Apply the boundary conditions to the matrix
+      call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
+          rsolver%p_RdiscreteBC(rsolver%ilevel))
+      
+      ! Subtract the diagonal.
+      call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
+      
+      call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+      
+      ! Apply the space solver
+      call linsol_initData(rsolver%p_rspaceSolver,ierror)
+      if (ierror .ne. 0) then
+        call output_line ("Spatial system cannot be factorised in timestep "//&
+            trim(sys_siL(istep,10)))
+        call sys_halt()
+      end if
+      
+      call linsol_precondDefect (rsolver%p_rspaceSolver,rsolver%rspaceTemp1)
+      call linsol_doneData(rsolver%p_rspaceSolver,ierror)
+      
+      call lsysbl_vectorLinearComb (rsolver%rspaceTemp1,rsolver%rspaceTemp2,rsolver%drelax,1.0_DP)
+      
+      call sptivec_setTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
+    end do
+    
+    call linsol_doneStructure(rsolver%p_rspaceSolver,ierror)
+
+    ! Write back the output vector.
+    call sptivec_vectorLinearComb (rsolver%rspaceTimeTemp1,rd,rsolver%domega,0.0_DP)
 
   end subroutine
 
@@ -1202,7 +1417,7 @@ contains
             rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel))
         
         ! Boundary conditions.
-        !call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors1(ilevel))
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors1(ilevel))
 
         ! Solve on the lower level
         call stls_precondMultigridInternal (rsolver, ilevel-1)
@@ -1213,13 +1428,22 @@ contains
             rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel))
         
         ! Boundary conditions.
-        !call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors1(ilevel))
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors1(ilevel))
         
         !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
         
         ! Coarse grid correction
         call sptivec_vectorLinearComb (rsolver%p_Rvectors3(ilevel),rsolver%p_Rvectors1(ilevel),&
           1.0_DP,1.0_DP)
+
+       ! call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
+
+!          call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
+!          call stmv_matvec (rsolver%p_rmatrix, &
+!              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
+!          call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+
+        !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
         
 !        if (ilevel .eq. rsolver%ilevel) then
 !          call output_line ("Defect before smoothing:")
@@ -1241,6 +1465,8 @@ contains
           end if
         end if
         
+        !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
+
         ! New defect on the max. level for residuum checks.
         if (ilevel .eq. rsolver%ilevel) then
           call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))

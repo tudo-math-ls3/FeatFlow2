@@ -12,6 +12,7 @@ module callback
 
   use fsystem
   use storage
+  use genoutput
   use collection
   use spatialdiscretisation
   use boundary
@@ -43,6 +44,7 @@ contains
     rphysics%doptControlGamma = 0.0_DP
     rphysics%dcouplePrimalToDual = 1.0_DP
     rphysics%dcoupleDualToPrimal = 1.0_DP
+    rphysics%dcoupleTermCond = 1.0_DP
   
   end subroutine
 
@@ -120,6 +122,60 @@ contains
   end subroutine
   
   ! ***************************************************************************
+
+  subroutine rhs_stokesEquation (rdiscretisation, rform, &
+                nelements, npointsPerElement, Dpoints, &
+                IdofsTest, rdomainIntSubset, &
+                Dcoefficients, rcollection)
+  
+  ! Coefficient function for the RHS of the heat equation
+  
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  type(t_linearForm), intent(in) :: rform
+  integer, intent(in) :: nelements
+  integer, intent(in) :: npointsPerElement
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+  integer, dimension(:,:), intent(in) :: IdofsTest
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
+  type(t_collection), intent(inout), optional :: rcollection
+
+  real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
+  
+    integer :: icomponent
+    real(DP) :: dtime,dalpha,dtstep
+    
+    icomponent = rcollection%IquickAccess(1)
+    dtime = rcollection%DquickAccess(1)
+    dalpha = rcollection%DquickAccess(2)
+    dtstep = rcollection%DquickAccess(3)
+    
+    Dcoefficients(1,:,:) = 0.0_DP
+    
+    ! Primal or dual?
+    select case (icomponent)
+    case (1)
+      ! Primal: f1
+
+    case (2)
+      ! Primal: f2
+      
+    case (4)
+      ! Dual: -z1
+      Dcoefficients(1,:,:) =  2.0_DP*Dpoints(1,:,:) - dtime**2*Dpoints(1,:,:) 
+
+    case (5)
+      ! Dual: -z2
+      Dcoefficients(1,:,:) =  - 2.0_DP*Dpoints(2,:,:) + dtime**2*Dpoints(2,:,:) 
+
+    case default
+      ! Should not happen
+      call sys_halt()
+    end select      
+
+
+  end subroutine
+  
+  ! ***************************************************************************
   
   subroutine cb_getBoundaryValuesOptC (Icomponents,rdiscretisation,rboundaryRegion,ielement, &
       cinfoNeeded,iwhere,dwhere, Dvalues, rcollection)
@@ -169,6 +225,33 @@ contains
         ! Should not happen
         call sys_halt()
       end select
+
+    case (1)
+      ! Stokes equation
+      select case (icomponent)
+      
+      ! Primal BC
+      case (1)
+        Dvalues(1) = dtime**2 * dx
+      case (2)
+        Dvalues(1) = - dtime**2 * dy
+      
+      ! Dual BC
+      case (4)
+        Dvalues(1) = -2.0_DP*dtime*dx
+      case (5)
+        Dvalues(1) = 2.0_DP*dtime*dy
+      
+      case default
+        ! Should not happen
+        call sys_halt()
+      end select
+      
+    case default
+    
+      call output_line ("Equation not supported.")
+      call sys_halt()
+      
     end select
 
   end subroutine
