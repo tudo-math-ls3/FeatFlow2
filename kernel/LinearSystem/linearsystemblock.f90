@@ -233,6 +233,9 @@
 !#
 !# 69.) lsysbl_convertBlockScalarVector
 !#      -> Converts a block vector into scalar vector (in interleaved format)
+!#
+!# 70.) lsysbl_scaleMatrix
+!#      -> Scale a matrix by a constant
 !# </purpose>
 !##############################################################################
 
@@ -522,6 +525,7 @@ module linearsystemblock
   public :: lsysbl_infoVector
   public :: lsysbl_infoMatrix
   public :: lsysbl_clearMatrix
+  public :: lsysbl_scaleMatrix
   public :: lsysbl_convertVecFromScalar
   public :: lsysbl_convertMatFromScalar
   public :: lsysbl_insertSubmatrix
@@ -3553,6 +3557,41 @@ contains
     do j=1,rmatrix%nblocksPerRow
       if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
         call lsyssc_clearMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
+    end do
+  end do
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine lsysbl_scaleMatrix (rmatrix,dvalue)
+  
+!<description>
+  ! Scales the entries in all submatrices of a block matrix. 
+!</description>
+  
+!<inputoutput>
+  ! The block matrix which is to be updated.
+  type(t_matrixBlock), intent(inout) :: rmatrix
+
+  ! OPTIONAL: Value to write into the matrix.
+  ! If not specified, all matrix entries are set to 0.0.
+  ! If specified, all matrix entries are set to dvalue.
+  real(DP), intent(in), optional :: dvalue
+!</inputoutput>
+
+!</subroutine>
+
+  integer :: i,j
+  
+  ! Loop through all blocks and clear the matrices
+  ! block matrix
+  do i=1,rmatrix%nblocksPerCol
+    do j=1,rmatrix%nblocksPerRow
+      if (lsysbl_isSubmatrixPresent (rmatrix,i,j)) &
+        call lsyssc_scaleMatrix (rmatrix%RmatrixBlock(i,j),dvalue)
     end do
   end do
 
