@@ -688,10 +688,10 @@ contains
       ! Set the value of the dirichlet condition
       p_DdirichletValues(1) = dleft
       
-      ! Get the index of the boundary vertice
-      ibndVert = p_IvertAtBnd(p_IbndCpIdx(idx))
+      ! Get the index of the boundary vertex
+      ibndVert = p_IvertAtBnd(1)
       
-      ! As we know that a boundary vertice has only one element that is
+      ! As we know that a boundary vertex has only one element that is
       ! adjacent to it, we can read it out directly
       ibndElem = p_IelemAtVert(p_IelemAtVertIdx(ibndVert))
       
@@ -707,28 +707,28 @@ contains
       
       case (EL_P1_1D)
         ! P1_1D element
-        ! In this case the boundary vertice is one of the two DOFs of the
-        ! element - for the left boundary vertice it is the first DOF of
+        ! In this case the boundary vertex is one of the two DOFs of the
+        ! element - for the left boundary vertex it is the first DOF of
         ! the left boundary element, for the right one it is the second.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(1)
         
       case (EL_P2_1D)
         ! P2_1D element
-        ! For the left boundary vertice we need to fix the first DOF, for
+        ! For the left boundary vertex we need to fix the first DOF, for
         ! the right boundary we need the second DOF.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(1)
       
       case (EL_S31_1D)
         ! S31_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(1)
       
       case (EL_PN_1D)
         ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(1)
               
       end select
           
@@ -752,8 +752,12 @@ contains
       
       ! In the current setting, there is always 1 boundary component
       ! and 1 DOF to be processed.
-      p_rdirichlet%icomponent = 1
       p_rdirichlet%nDOF = 1
+
+      ! Initialise the BC's for equation iequation if present.
+      p_rdirichlet%icomponent = 1
+      if (present(iequation)) &
+        p_rdirichlet%icomponent = iequation
 
       ! Allocate the arrays
       call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
@@ -768,10 +772,10 @@ contains
       ! Set the value of the dirichlet condition
       p_DdirichletValues(1) = dright
       
-      ! Get the index of the boundary vertice
-      ibndVert = p_IvertAtBnd(p_IbndCpIdx(idx))
+      ! Get the index of the boundary vertex
+      ibndVert = p_IvertAtBnd(2)
       
-      ! As we know that a boundary vertice has only one element that is
+      ! As we know that a boundary vertex has only one element that is
       ! adjacent to it, we can read it out directly
       ibndElem = p_IelemAtVert(p_IelemAtVertIdx(ibndVert))
       
@@ -787,28 +791,28 @@ contains
       
       case (EL_P1_1D)
         ! P1_1D element
-        ! In this case the boundary vertice is one of the two DOFs of the
-        ! element - for the left boundary vertice it is the first DOF of
+        ! In this case the boundary vertex is one of the two DOFs of the
+        ! element - for the left boundary vertex it is the first DOF of
         ! the left boundary element, for the right one it is the second.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(2)
         
       case (EL_P2_1D)
         ! P2_1D element
-        ! For the left boundary vertice we need to fix the first DOF, for
+        ! For the left boundary vertex we need to fix the first DOF, for
         ! the right boundary we need the second DOF.
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(2)
 
       case (EL_S31_1D)
         ! S31_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(2)
       
       case (EL_PN_1D)
         ! PN_1D element
         call dof_locGlobMapping(p_rspatialDiscr, ibndElem, IDOFs)
-        iDOF = IDOFs(idx)
+        iDOF = IDOFs(2)
 
       end select
           
@@ -4246,7 +4250,7 @@ contains
 
     end if
     
-    ! Get the vertice coordinates and vertice index arrays from the triangulation
+    ! Get the vertex coordinates and vertex index arrays from the triangulation
     call storage_getbase_double2D(p_rtria%h_DvertexCoords, p_DvertexCoords)
     call storage_getbase_int2D(p_rtria%h_IverticesAtElement, p_IvertsAtElem)
     call storage_getbase_int(p_rtria%h_IelementsAtVertexIdx, p_IelemAtVertIdx)
@@ -4423,13 +4427,13 @@ contains
     ! First of all, go through all vertices in the mesh region (if any at all)
     do i = 1, iregionNVT
     
-      ! Get the index of the vertice
+      ! Get the index of the vertex
       ivt = p_IvertexIdx(i)
       
       ! Store it to Iwhere
       Iwhere(1) = ivt
       
-      ! And go through all elements which are adjacent to this vertice
+      ! And go through all elements which are adjacent to this vertex
       do idx=p_IelemAtVertIdx(ivt), p_IelemAtVertIdx(ivt+1)-1
       
         ! Get the index of the element
@@ -4537,11 +4541,11 @@ contains
         ! And mark the DOF as 'processed' in the bitmap
         p_IdofBitmap(idofHigh) = ior(p_IdofBitmap(idofHigh),int(idofMask))
         
-        ! Let us go for the next element adjacent to the vertice
+        ! Let us go for the next element adjacent to the vertex
       
       end do ! idx
       
-      ! Go for the next vertice in the mesh region
+      ! Go for the next vertex in the mesh region
     
     end do ! ivt
     
