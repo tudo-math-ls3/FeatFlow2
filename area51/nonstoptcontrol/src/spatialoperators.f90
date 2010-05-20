@@ -44,6 +44,9 @@ module spatialoperators
 
     ! Template for D-matrices
     type(t_matrixScalar) :: rmatrixTemplateD
+
+    ! Template for C-matrices
+    type(t_matrixScalar) :: rmatrixTemplateC
   
     ! Mass matrix
     type(t_matrixScalar) :: rmatrixMassA11
@@ -98,7 +101,7 @@ contains
       .true.)
   
     select case (rphysics%cequation)
-    case (0)
+    case (0,2)
       ! Heat equation. Nothing to do.
       
     case (1)
@@ -125,10 +128,7 @@ contains
       call lsyssc_duplicateMatrix(&
           rmatvecTempl%rmatrixTemplateD,rmatvecTempl%rmatrixD2,&
           LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
-      
-      !die B-matrizen sind gegenüber dem Referenzcode falsch; an einigen Stellen finden sich
-      !"-"-Zeichen!?!
-          
+
       call stdop_assembleSimpleMatrix (rmatvecTempl%rmatrixB1,DER_FUNC,DER_DERIV_X,-1.0_DP,&
         .true.)
 
@@ -141,6 +141,10 @@ contains
       call lsyssc_transposeMatrix (rmatvecTempl%rmatrixB2,rmatvecTempl%rmatrixD2,&
           LSYSSC_TR_CONTENT)
       
+      ! C-matrix -- diagonal in the pressure.
+      call bilf_createMatrixStructure (rspaceDiscr%RspatialDiscr(3),LSYSSC_MATRIX9,&
+          rmatvecTempl%rmatrixTemplateC)
+          
     case default
     
       call output_line ("Equation not supported.")
@@ -165,6 +169,7 @@ contains
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixD1)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixD2)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateB)
+    call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateC)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixTemplateD)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixLaplaceA11)
     call lsyssc_releaseMatrix (rmatvecTempl%rmatrixMassA11)

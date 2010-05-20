@@ -211,6 +211,10 @@ contains
         end do
       end do
 
+    case (2)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, dleft = 0.0_DP, iequation = 1)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, dright = 0.0_DP, iequation = 2)
+
     case default
     
       call output_line ("Equation not supported.")
@@ -249,7 +253,7 @@ contains
     call spop_getPrimalDualTime (rbc%p_rtimeDiscr,istep,dprimalTime,ddualTime)
 
     select case (rbc%p_rphysics%cequation)
-    case (0)
+    case (0,2)
       ! Heat equation
       select case (ctype)
       case (SPOP_DEFECT,SPOP_SOLUTION)

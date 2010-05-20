@@ -1244,7 +1244,7 @@ contains
       call lsysbl_getbase_double (rtempVecFine,p_DdataFine)
       
       select case (rprojHier%p_rphysics%cequation)
-      case (0)
+      case (0,2)
         ! Heat equation
       
         ! Primal space: y,xi
@@ -1504,7 +1504,7 @@ contains
       call lsysbl_clearVector (rtempVecFine)
       
       select case (rprojHier%p_rphysics%cequation)
-      case (0)
+      case (0,2)
         ! Heat equation
 
         ! Primal space: y,xi
@@ -1762,7 +1762,7 @@ contains
       call lsysbl_clearVector (rtempVecFine)
       
       select case (rprojHier%p_rphysics%cequation)
-      case (0)
+      case (0,2)
         ! Heat equation
 
         ! Primal space: y,xi

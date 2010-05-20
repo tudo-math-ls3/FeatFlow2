@@ -144,6 +144,9 @@ module main_program
     ! Preconditioner of the smoothers 
     type(t_spacetimelinsol), dimension(:), pointer :: p_RsmootherPrecond
     
+    !! DEBUG!!! Preconditioners on each level
+    !type(t_spacetimelinsol), dimension(:), pointer :: p_Rpreconditioners
+    
     ! Projection hierarchy for the MG solver
     type(t_sptiProjHierarchy) :: rprojection
 
@@ -204,10 +207,19 @@ contains
       call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
           rdiscr%RspatialDiscr(5))
 
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1NP, CUB_G4X4,&
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1, CUB_G4X4,&
           rtriangulation, rboundary)
       call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(3), EL_QP1, CUB_G4X4, &
           rdiscr%RspatialDiscr(6))
+
+    case (2)
+      ! Heat equation in 1D
+      call spdiscr_initBlockDiscr (rdiscr,2,rtriangulation, rboundary)
+      
+      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_P1_1D, CUB_G2_1D,&
+          rtriangulation, rboundary)
+      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_P1_1D, CUB_G2_1D, &
+          rdiscr%RspatialDiscr(2))
 
     case default
     
@@ -260,7 +272,7 @@ contains
     end if
     nsmoothingSteps = 4
     nmaxiterations = 1000
-    ismoother = 0
+    ismoother = 1
     icoarsegridsolver = 0
     iorderTimeProlRest = -1
     
@@ -308,17 +320,32 @@ contains
       ! Create the smoothers.
       allocate (rsolver%p_RsmootherPrecond(nlevels))
       allocate (rsolver%p_Rsmoothers(nlevels))
+      !allocate (rsolver%p_Rpreconditioners(nlevels))
       do ilev = 2,nlevels
         if (ismoother .eq. 0) then
+        
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
-        else
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        
+        else if (ismoother .eq. 1) then
+        
+          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
+        
+        else if (ismoother .eq. 2) then
+        
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        
         end if
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
             rsolver%p_RsmootherPrecond(ilev))
         call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+
+        !call stls_initDefCorr (rsolver%p_Rpreconditioners(ilev),rparams%rspacetimeHierarchy,ilev,&
+        !    rsolver%p_RsmootherPrecond(ilev))
+        !rsolver%p_Rpreconditioners(ilev)%nmaxIterations = 50
       end do
       
       ! Initialise the interlevel projection in space
@@ -339,7 +366,8 @@ contains
       
       ! Create the solver.
       call stls_initMultigrid (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
-          rsolver%rprojection, rsolver%rcoarseGridSolver, RpostSmoothers=rsolver%p_Rsmoothers)
+          rsolver%rprojection, rsolver%rcoarseGridSolver, RpreSmoothers=rsolver%p_Rsmoothers)
+          !Rpreconditioners=rsolver%p_Rpreconditioners)
       rsolver%rsolver%nmaxIterations = nmaxiterations
           
     end select
@@ -434,13 +462,14 @@ contains
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_spaceTimeMatrix), dimension(:), pointer :: p_Rmatrices
+    type(t_triangulation) :: rtria1D
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
     nspacelevels = 2
     ntimelevels = 2
     nminlevelspace = 1
-    nminleveltime = 1
+    nminleveltime = 5
     ntstepscoarse = 5*2**(nminleveltime-1)
     dtheta = 1.0_DP
     
@@ -448,9 +477,29 @@ contains
     call cb_getPhysicsHeatEqn(rparams%rphysics)    
     
     ! Read boundary and generate mesh hierarchy
-    call boundary_read_prm(rparams%rboundary, "./pre/QUAD.prm")
-    call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,"./pre/QUAD.tri",&
-        NDIM2D,nminlevelspace-1,rparams%rboundary)
+    select case (rparams%rphysics%cequation)
+    case (0,1)
+      
+      ! 2D mesh
+      call boundary_read_prm(rparams%rboundary, "./pre/QUAD.prm")
+      call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,"./pre/QUAD.tri",&
+          NDIM2D,nminlevelspace-1,rparams%rboundary)
+
+    case (2)
+
+      ! 1D mesh
+      call tria_createRawTria1D(rtria1D, 0.0_DP, 1.0_DP, 1+2**(nminlevelspace))
+      call mshh_initHierarchy (rparams%rmeshHierarchy,rtria1D,0,nspacelevels,&
+          cdupFlag=TR_SHARE_NONE)
+      call tria_done (rtria1D)
+
+    case default
+        
+      call output_line ("Equation not supported.")
+      call sys_halt()
+  
+    end select
+
     call mshh_refineHierarchy2lv(rparams%rmeshHierarchy,nspacelevels,&
         rboundary=rparams%rboundary)
     
@@ -458,7 +507,7 @@ contains
     rcollection%IquickAccess (1) = rparams%rphysics%cequation
     call fesph_createHierarchy (rparams%rfeHierarchy,nspacelevels,&
         rparams%rmeshHierarchy,main_getDiscr,rcollection,rparams%rboundary)
-  
+
     ! Time coarse mesh and time hierarchy
     call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
     call tmsh_createHierarchy (rparams%rtimecoarse,rparams%rtimeHierarchy,&

@@ -145,6 +145,7 @@ contains
     integer :: istep
     type(t_vectorBlock) :: rtempVecY,rtempVecX1,rtempVecX2,rtempVecX3
     type(t_matrixBlock) :: rsubmatrix
+    real(DP) :: dnormy
     real(DP), dimension(:), pointer :: p_Dx1, p_Dx2, p_Dx3, p_Dy
     
     ! Allocate a temp vectors and matrices
@@ -196,6 +197,8 @@ contains
       
       call sptivec_setTimestepData(ry,istep,rtempVecY)
 
+      dnormy = lsysbl_vectorNorm(rtempVecY,LINALG_NORML2)
+
     end do
     
     ! Release the temp vector.
@@ -241,7 +244,7 @@ contains
     !
     ! Type of equation?
     select case (rphysics%cequation)
-    case (0)
+    case (0,2)
       ! Heat equation
       
       call lsyssc_duplicateMatrix (rmatVecTempl%rmatrixTemplateA11,&
@@ -310,6 +313,13 @@ contains
       call lsyssc_duplicateMatrix (rmatVecTempl%rmatrixTemplateD,&
           rsubmatrix%RmatrixBlock(6,5),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
 
+
+      call lsyssc_duplicateMatrix (rmatVecTempl%rmatrixTemplateC,&
+          rsubmatrix%RmatrixBlock(3,3),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
+      call lsyssc_duplicateMatrix (rmatVecTempl%rmatrixTemplateC,&
+          rsubmatrix%RmatrixBlock(6,6),LSYSSC_DUP_SHARE,LSYSSC_DUP_EMPTY)
+
     case default
     
       call output_line ("Equation not supported.")
@@ -317,6 +327,60 @@ contains
 
     end select
 
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stmv_reduceDiagToPrimal (rsubmatrix)
+  
+  ! Removes the coupling and dual part from a spatial matrix.
+  
+  ! Underlying space-time matrix
+  type(t_matrixBlock), intent(inout) :: rsubmatrix
+  
+    integer :: i,k
+  
+    ! Decouple.
+    k = rsubmatrix%nblocksPerRow
+    
+    rsubmatrix%RmatrixBlock(k/2+1:,1:k/2)%dscaleFactor = 0.0_DP
+    rsubmatrix%RmatrixBlock(1:k/2,k/2+1:)%dscaleFactor = 0.0_DP
+    rsubmatrix%RmatrixBlock(k/2+1:,k/2+1:)%dscaleFactor = 0.0_DP
+  
+    ! Initialise the other matrices with identities on the diagonal.
+    do i=rsubmatrix%nblocksPerRow/2+1,rsubmatrix%nblocksPerRow
+      rsubmatrix%RmatrixBlock(i,i)%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,i))
+      call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+  subroutine stmv_reduceDiagToDual (rsubmatrix)
+  
+  ! Removes the coupling and primal part from a spatial matrix.
+  
+  ! Underlying space-time matrix
+  type(t_matrixBlock), intent(inout) :: rsubmatrix
+  
+    integer :: i,k
+  
+    ! Decouple.
+    k = rsubmatrix%nblocksPerRow
+    
+    rsubmatrix%RmatrixBlock(k/2+1:,1:k/2)%dscaleFactor = 0.0_DP
+    rsubmatrix%RmatrixBlock(1:k/2,k/2+1:)%dscaleFactor = 0.0_DP
+    rsubmatrix%RmatrixBlock(1:k/2,1:k/2)%dscaleFactor = 0.0_DP
+  
+    ! Initialise the other matrices with identities on the diagonal.
+    do i=1,rsubmatrix%nblocksPerRow/2
+      rsubmatrix%RmatrixBlock(i,i)%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,i))
+      call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+    end do
+  
   end subroutine
 
   ! ***************************************************************************
@@ -358,7 +422,7 @@ contains
     
       ! Standard 1-step theta scheme.
       select case (rmatrix%p_rphysics%cequation)
-      case (0)
+      case (0,2)
         ! ###############################################################################
         ! Heat equation. Equation is linear, so the Frechet-derivative
         ! matches the standard matrix!
@@ -1147,6 +1211,9 @@ contains
       rsubmatrix%imatrixSpec = ior(rsubmatrix%imatrixSpec,LSYSBS_MSPEC_OFFDIAGSUBMATRIX)
     
     end if
+    
+    ! DEBUG: Scale the matrix by dtstep.
+    !call lsysbl_scaleMatrix (rsubMatrix,dtstep)
     
   end subroutine
 

@@ -57,7 +57,7 @@ contains
     do istep=1,rvector%NEQtime
       
       select case (rphysics%cequation)
-      case (0)
+      case (0,2)
         ! Heat equation
       
         ! Write to vtk file.

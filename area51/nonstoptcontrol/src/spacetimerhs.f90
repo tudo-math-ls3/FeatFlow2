@@ -64,11 +64,12 @@ contains
     ! DquickAccess(1) = current time
     rcollection%IquickAccess(1) = icomponent
     rcollection%DquickAccess(1) = dtime
-    rcollection%DquickAccess(2) = rphysics%doptControlAlpha
-    rcollection%DquickAccess(3) = dtstep
+    rcollection%DquickAccess(2) = dtstep
+    rcollection%DquickAccess(3) = rphysics%doptControlAlpha
+    rcollection%DquickAccess(4) = rphysics%doptControlGamma
     
     select case (rphysics%cequation)
-    case (0)
+    case (0,2)
       ! Heat equation, one primal and one dual component.
       ! icomponent decides upon that.
      
@@ -95,6 +96,9 @@ contains
       call sys_halt()
 
     end select
+    
+    ! DEBUG: Scale the RHS by dtstep.
+    !call lsyssc_scaleVector (rrhs,dtstep)
 
   end subroutine
 
@@ -147,7 +151,7 @@ contains
         call lsysbl_clearVector (rrhsSpace)
     
         select case (rphysics%cequation)
-        case (0)
+        case (0,2)
           ! Heat equation, one primal and one dual component.
           call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,1,&
               rrhsSpace%RvectorBlock(1))
