@@ -570,7 +570,7 @@ contains
 
 !<subroutine>
 
-  subroutine bcasm_newDirichletBC_1D(rblockDiscr, rdiscreteBC, dleft, dright)
+  subroutine bcasm_newDirichletBC_1D(rblockDiscr, rdiscreteBC, dleft, dright, iequation)
 
 !<description>
   ! Directly adds dirichlet boundary conditions for a 1D discretisation.
@@ -583,6 +583,9 @@ contains
   ! The dirichlet boundary values for the left and right interval ends.
   real(DP), intent(in), optional :: dleft, dright
 
+  ! OPTIONAL: The equation for which the BC's should be applied to.
+  ! If not present, this defaults to the first equation.
+  integer, optional :: iequation
 !</input>  
 
 !<inputoutput>
@@ -665,8 +668,12 @@ contains
       
       ! In the current setting, there is always 1 boundary component
       ! and 1 DOF to be processed.
-      p_rdirichlet%icomponent = 1
       p_rdirichlet%nDOF = 1
+
+      ! Initialise the BC's for equation iequation if present.
+      p_rdirichlet%icomponent = 1
+      if (present(iequation)) &
+        p_rdirichlet%icomponent = iequation
 
       ! Allocate the arrays
       call storage_new('bcasm_newDirichletBC_1D', 'h_IdirichletDOFs', &
