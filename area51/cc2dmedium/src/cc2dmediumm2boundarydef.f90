@@ -39,7 +39,8 @@ module cc2dmediumm2boundarydef
   use spdiscprojection
   use nonlinearsolver
   use paramlist
-  
+  use boundarycondition
+
   use collection
   use convection
     

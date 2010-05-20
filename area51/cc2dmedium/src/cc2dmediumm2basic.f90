@@ -29,7 +29,11 @@ module cc2dmediumm2basic
   use nonlinearsolver
   use paramlist
   use timestepping
-  
+  use linearsystemscalar
+  use linearsystemblock
+  use discretebc
+  use discretefbc
+
   use collection
   
   use adaptivetimestep
