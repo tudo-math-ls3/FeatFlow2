@@ -144,7 +144,7 @@ FLAGBENCHMARKFINISHED=/tmp/FEAT2_BENCHMARK_FINISHED
 #
 # recipient of email error and report messages
 #RECIPIENT=feat2users@math.tu-dortmund.de
-RECIPIENT=feat2kernel@math.tu-dortmund.de,sven.buijssen@math.tu-dortmund.de
+RECIPIENT=feat2kernel@math.tu-dortmund.de
 #RECIPIENT=buijssen@math.tu-dortmund.de
 
 
