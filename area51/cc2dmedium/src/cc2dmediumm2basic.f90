@@ -16,6 +16,7 @@ module cc2dmediumm2basic
   use storage
   use linearsolver
   use boundary
+  use boundarycondition
   use bilinearformevaluation
   use linearformevaluation
   use cubature
@@ -195,6 +196,8 @@ module cc2dmediumm2basic
     ! This value must be initialised before the matrices are set
     ! up and must not be changed afterwards.
     logical :: bdecoupledXY
+
+    type(t_boundaryConditions), pointer :: p_rboundaryConditions
 
     ! iboundary parameter from the DAT file. Specifies whether to update
     ! boundary conditions in nonstationary simulations or not.

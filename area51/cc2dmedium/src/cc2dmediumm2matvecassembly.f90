@@ -77,6 +77,9 @@ module cc2dmediumm2matvecassembly
   use matrixrestriction
   use trilinearformevaluation
   use matrixio
+  use linearsystemscalar
+  use basicgeometry
+  use genoutput
   
   use convection
     

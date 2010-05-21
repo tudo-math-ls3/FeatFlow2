@@ -211,7 +211,8 @@ contains
     use collection
     use scalarpde
     use domainintegration
-    
+    use dofmapping
+
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
     ! the coefficients in front of the terms of the bilinear form.
@@ -291,6 +292,7 @@ contains
     use collection
     use scalarpde
     use domainintegration
+    use dofmapping
     
   !<description>
     ! This subroutine is called during the matrix assembly. It has to compute
@@ -372,6 +374,7 @@ contains
     use collection
     use scalarpde
     use domainintegration
+    use dofmapping
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -459,6 +462,7 @@ contains
     use collection
     use scalarpde
     use domainintegration
+    use dofmapping
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
@@ -546,6 +550,8 @@ contains
   use collection
   use scalarpde
   use domainintegration
+  use derivatives
+  use dofmapping
   
 !<description>
   ! This subroutine is called during the postprocessing. 
@@ -642,6 +648,8 @@ contains
   use collection
   use scalarpde
   use domainintegration
+  use derivatives
+  use dofmapping
   
 !<description>
   ! This subroutine is called during the postprocessing. 
@@ -738,6 +746,8 @@ contains
   use collection
   use scalarpde
   use domainintegration
+  use derivatives
+  use dofmapping
   
 !<description>
   ! This subroutine is called during the postprocessing. 
