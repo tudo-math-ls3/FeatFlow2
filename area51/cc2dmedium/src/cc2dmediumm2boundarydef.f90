@@ -43,6 +43,7 @@ module cc2dmediumm2boundarydef
 
   use collection
   use convection
+  use basicgeometry
     
   use cc2dmediumm2basic
   
@@ -190,7 +191,7 @@ contains
     ! Create a parser structure for as many expressions as configured
     allocate (p_rparser)
     call fparser_create (p_rparser,&
-         parlst_querysubstrings_indir (p_rsection, 'bdExpressions'))
+         parlst_querysubstrings (p_rsection, 'bdExpressions'))
     
     ! Add the parser to the collection
     call collct_setvalue_pars (rproblem%rcollection, BDC_BDPARSER, p_rparser, &
@@ -198,9 +199,9 @@ contains
     
     ! Add the boundary expressions to the collection into the
     ! specified section.
-    do i=1,parlst_querysubstrings_indir (p_rsection, 'bdExpressions')
+    do i=1,parlst_querysubstrings (p_rsection, 'bdExpressions')
     
-      call parlst_getvalue_string_indir (p_rsection, 'bdExpressions', cstr, '', i)
+      call parlst_getvalue_string (p_rsection, 'bdExpressions', cstr, '', i)
       
       ! Get the type and decide on the identifier how to save the expression.
       read(cstr,*) cname,ityp
@@ -265,10 +266,10 @@ contains
       ! We start at parameter value 0.0.
       dpar1 = 0.0_DP
       
-      i = parlst_queryvalue_indir (p_rbdcond, cstr)
+      i = parlst_queryvalue (p_rbdcond, cstr)
       if (i .ne. 0) then
         ! Parameter exists. Get the values in there.
-        do isegment = 1,parlst_querysubstrings_indir (p_rbdcond, cstr)
+        do isegment = 1,parlst_querysubstrings (p_rbdcond, cstr)
           
           call parlst_getvalue_string_fetch (p_rbdcond, &
                                             i, cstr, isubstring=isegment)
