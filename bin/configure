@@ -115,16 +115,20 @@ my $progname = &basename($0);
 # This information is used to locate Makefile settings and source files. To locate those
 # files from somewhere in the FeatFlow2 source tree, use the path information that is
 # supplied on invocation of this script.
+
+# version with relative paths, guessed from path used to invoke this
+# script from the appliction directory
+# Constraints: none
+(my $FEAT2BASEDIR = &dirname($0)) =~ s/\/bin$//;
+
 #
 # version with relative paths
-# is not available in FEAT2 as there is no general rule to set up the directory
-# structure of any application such that this script can be found via ../../bin.
-# (It would be different, though, if one could be sure that any FEAT2 application 
-#  resides in a directory exactly two hierarchy levels beneath the FEAT2 root 
-#  directory. Then we could simply set)
-my $FEAT2BASEDIR = "../..";
+# Constraints: ensure that any FEAT2 application resides in a directory exactly two
+#              hierarchy levels beneath the FEAT2 root directory.
+#my $FEAT2BASEDIR = "../..";
 
 # version with absolute paths
+# Constraints: none
 #my $FEAT2BASEDIR = &abs_path(&dirname($0) . "/..");
 
 # another version with absolute paths
@@ -507,7 +511,7 @@ if ($#{$entry} >= 0 &&
     # complete benchmark just because configuring one application
     # failed.
     print "creating $MAKEFILE (with empty targets).\n";
-    open(MAKEFILE_HDL, ">" , $MAKEFILE) or 
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or
         die "\n$progname: ERROR:\n" .
             "Cannot open file <$MAKEFILE> for writing: $!\n";
     print MAKEFILE_HDL
@@ -536,7 +540,7 @@ if ($#{$entry} >= 0 &&
 # Backup old Makefile if existent and has not zero size
 if ( -e $MAKEFILE && -s $MAKEFILE ) {
     print "renaming existing $MAKEFILE to $MAKEFILE" . ".bak\n";
-    rename($MAKEFILE, $MAKEFILE . ".bak") or 
+    rename($MAKEFILE, $MAKEFILE . ".bak") or
 	die "\n$progname: ERROR:\n" .
 	    "Failed to rename $MAKEFILE to $MAKEFILE" . ".bak.\n";
 }
@@ -769,7 +773,7 @@ sub check_make_sets_make_variable {
 
     } else {
         my $tmpfile = POSIX::tmpnam();
-        open(TMPFILE, ">", $tmpfile) or 
+        open(TMPFILE, ">", $tmpfile) or
             die "\n$progname: ERROR:\n".
 	        "Cannot open file <$tmpfile> for writing: $!\n";
         print TMPFILE "all:\n\t\@echo 'maketemp=\"\${MAKE}\"'";
@@ -1081,7 +1085,7 @@ sub create_feastAppMakefile {
 			   $entry, 1, "o", "o",
 			   "\$(OBJDIR)") . "\n\n";
 
-    # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA) 
+    # Dependencies of Fortran 90 files listed in Makefile variable $(SRCEXTRA)
     # can not be determined unfortunately at configure time. Because they may
     # be defined using Makefile variables (e.g. $(FEAT2BASEDIR)/kernel/arch/amub.f90)
     # which cannnot easily be expanded by configure.
@@ -1146,7 +1150,7 @@ sub create_feastAppMakefile {
     # Start to create the Makefile
     #
     print "creating $MAKEFILE.\n";
-    open(MAKEFILE_HDL, ">" , $MAKEFILE) or 
+    open(MAKEFILE_HDL, ">" , $MAKEFILE) or
 	die "\n$progname: ERROR:\n".
 	    "Cannot open file <$MAKEFILE> for writing: $!\n";
 
@@ -1281,7 +1285,7 @@ sub create_feastAppMakefile {
     #    .../applications/poisson/object/<build ID>/
     #    .../applications/tutorial/object/<build ID>/
     #    .../object/<build ID>/
-    $objdir_lib = File::Spec->catdir("..", "..", OBJDIR_LIB);
+    $objdir_lib = File::Spec->catdir($FEAT2BASEDIR, OBJDIR_LIB);
 
     if ($cl{'objdirprefix'}) {
         # Prefix given for object directories, override defaults
@@ -2141,7 +2145,7 @@ sub create_feastAppMakefile {
 	"# in the working directory.\n" .
 	"# Note 2:\n" .
 	"# Fortran 90 source files listed in in SRCEXTRA may try to 'use' Fortran 90\n" .
-	"# modules from the kernel. Add the complete list of object files generated\n" . 
+	"# modules from the kernel. Add the complete list of object files generated\n" .
 	"# from the kernel's Fortran 90 sources to the dependency list of the\n" .
 	"# SRCEXTRA's Fortran 90 source files to prevent them from being compiled\n" .
 	"# prematurely, e.g. in a highly parallel make run (make -j N, with N>32 or\n" .
@@ -3952,7 +3956,7 @@ sub get_buildID {
             # See section 5.6.4 of GNU Make Manual,
             # http://www.gnu.org/software/make/manual/html_mono/make.html#IDX250
             my $command = "cd \"" . &dirname(&concat_filename($FEAT2BASEDIR, $MAKEFILE_INC)) .
-                          "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) . 
+                          "\" && $make --no-print-directory -f " . &basename($MAKEFILE_INC) .
                           " MPI=$mpi FEAT2BASEDIR=. .idonly";
             $buildID = `$command`;
             chomp($buildID);
@@ -3985,7 +3989,7 @@ sub get_dependency {
     my $aux;
 
 #    open (INFILE, "<:utf8", $file) or die "$progname: Cannot open file <$file> for reading: $!\n";
-    open (INFILE, "<", $file) or 
+    open (INFILE, "<", $file) or
 	die "\n$progname: ERROR:\n".
 	    "Cannot open file <$file> for reading: $!\n";
 
@@ -4085,7 +4089,7 @@ sub get_programsourcefile {
 	    # Get rid of setting "DETERMINED_ON_DEMAND_IF_UNSET"
 	    undef $defaults{'PROGRAMFILE'};
 	    foreach my $file ( &get_sourcefilelist() ) {
-		open (INFILE, "<", $file) or 
+		open (INFILE, "<", $file) or
 		    die "\n$progname: ERROR:\n".
 		        "Cannot open file <$file> for reading: $!\n";
 
@@ -4094,7 +4098,7 @@ sub get_programsourcefile {
 		  # Remove comments
 		  $line =~ s/\!.*$//;
 		  $line =~ s/^[Cc].*$//;
-		
+
 		  # Parse for "program foobar" statements
 		  # and add the module to the list
 		  if ($line =~ m/^\s*program\s+\w+/i) {
@@ -4102,7 +4106,7 @@ sub get_programsourcefile {
 		  }
 		}
 		close (INFILE);
-	       
+
 		# Ensure there is only *one* program source file
 		if ($#programfiles > 0) {
 		    die "\n\n$progname: ERROR:\n".
@@ -4135,7 +4139,7 @@ sub get_sourcefilelist {
     # $cl{'SRCLIST_APP'} has been passed as an array to GetOptions()
     # and as such is always defined. But is does not necessarily have
     # entries. So, don't test with perl function defined() whether it is
-    # set. Instead test whether it contains one or more entries. 
+    # set. Instead test whether it contains one or more entries.
     # (Remember that Perl starts counting from zero, like C does.)
     if ($#{ $cl{'SRCLIST_APP'} } >= 0) {
         # Remove duplicate entries from application source file list
@@ -4156,7 +4160,7 @@ sub get_sourcefilelist {
 	return @tmplist;
     } else {
 	# If no app source list given on the command line, try to dynamically
-	# determine a list: Use all source files in a generic src subdirectory 
+	# determine a list: Use all source files in a generic src subdirectory
 	# for a FEAT2 application.
 	if (${ $defaults{'SRCLIST_APP'} }[0] ne "DETERMINED_ON_DEMAND_IF_UNSET") {
 	    # Either the default value is set to some proper value
@@ -4183,7 +4187,7 @@ sub get_sourcefilelist {
 			"subdirectory <" . SRCDIR_APP . ">, searched by default for " .
 			"application-specific\n" .
 			"source files in such a case, does not contain any *.f90 file.\n" .
-			"I refuse to create <" . $MAKEFILE . ">.\n\n" . 
+			"I refuse to create <" . $MAKEFILE . ">.\n\n" .
 			"Please specify the list of application-specific source files with\n" .
 			"the --srclist-app command line option.\n";
 		}
@@ -4335,7 +4339,7 @@ sub list_ids {
 	# given or set build ID with prefix "pc-coreduo-cygwin_nt5.1" result in
 	# the following matches
 	#     pc-coreduo-cygwin_nt.*-.*-blas.*
-	#     pc-coreduo-cygwin_nt.*-g95-.* 
+	#     pc-coreduo-cygwin_nt.*-g95-.*
 	# (note the "nt5.1" in the prefix and the "nt.*" in the matches which is
 	#  exactly the opposite of what we would like to have)
 	# extract the first three tokens of $entry and try to match the first tokens
@@ -4343,7 +4347,7 @@ sub list_ids {
 	# matching rule, i.e. the complete $entry.
 	my $match_1st3tokens = $complete_matching_rule;
 	$match_1st3tokens =~ s/([^-]+-[^-]+-[^-]+)(-.*)$/$1/;
-	
+
 	if ($id_1st3tokens =~ m/$match_1st3tokens/) {
             if ($complete_matching_rule eq $buildID) {
                 print "* $complete_matching_rule (default)\n";
@@ -4480,7 +4484,7 @@ sub make_dep_list {
 			    # or lies on a different file system for strange reasons.
 			    #
 			    # Compute sum of current file content
-			    open(HEADERFILE, "<", $aux) or 
+			    open(HEADERFILE, "<", $aux) or
 				die "\n$progname: ERROR:\n".
 				    "Cannot open header file <$aux> for reading: $!\n";
 			    my $auxData = do { local $/; <HEADERFILE> };
@@ -4505,7 +4509,7 @@ sub make_dep_list {
 		    # Store inode
 		    $headerfiles{$auxBasename}->{'inode'} = stat($aux)->ino;
 		    # Compute and md5 sum of file content
-		    open(HEADERFILE, "<", $aux) or 
+		    open(HEADERFILE, "<", $aux) or
 			die "\n$progname: ERROR:\n".
 		            "Cannot open header file <$aux> for reading: $!\n";
 		    my $auxData = do { local $/; <HEADERFILE> };
