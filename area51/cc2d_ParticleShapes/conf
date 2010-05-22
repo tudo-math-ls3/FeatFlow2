@@ -1,8 +1,0 @@
-../../bin/configure \
-        --appname=cc2d_ParticleShapes \
-        --programfile=src/cc2d_pf.f90 \
-        --srclist_app="`ls src/*.f90`" \
-	--apponlyflags="-DFEAT2_NURBS" \
-	--id=pc64-opteron-linux-gcc-blas \
-	--libs="-lumfpack,-lamd,-lsplib,-llapack,-lblas,-linshape2d,-lstdc++"
-        
