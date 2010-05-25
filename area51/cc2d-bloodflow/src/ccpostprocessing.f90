@@ -165,7 +165,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocvessing structure. 
+  ! Postprocessing structure. 
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -223,7 +223,7 @@ contains
   ! A problem structure saving problem-dependent information.
   type(t_problem), intent(inout), target :: rproblem
 
-  ! Postprocvessing structure. Defines what to do with solution vectors.
+  ! Postprocessing structure. Defines what to do with solution vectors.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
@@ -1657,7 +1657,7 @@ contains
 !</input>
 
 !<output>  
-  ! Postprocvessing structure.
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(out) :: rpostprocessing
 !</output>
 
@@ -1756,7 +1756,7 @@ contains
 !</description>
 
 !<inputoutput>  
-  ! Postprocvessing structure.
+  ! Postprocessing structure.
   type(t_c2d2postprocessing), intent(inout) :: rpostprocessing
 !</inputoutput>
 
