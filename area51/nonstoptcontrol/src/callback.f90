@@ -45,7 +45,7 @@ contains
     rphysics%cequation = 2
     rphysics%dviscosity = 1.0_DP
     rphysics%doptControlAlpha = 1.0_DP
-    rphysics%doptControlGamma = 1.0_DP
+    rphysics%doptControlGamma = 0.0_DP
     rphysics%dcouplePrimalToDual = 1.0_DP
     rphysics%dcoupleDualToPrimal = 1.0_DP
     rphysics%dcoupleTermCond = 1.0_DP
@@ -95,9 +95,18 @@ contains
         !                     + ((1.0_DP-dtime)/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
         !Dcoefficients(1,:,:) = 2*dtime*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) &
-        !                     + 2*dtime**2*(Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))) 
+        !                     + 2*dtime**2*(Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)))        !                     + ((1.0_DP-dtime)**2/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
-        !                     + ((1.0_DP-dtime)**2/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+        ! 1.)
+        ! Dcoefficients(1,:,:) = 0.0_DP
+        
+        ! 2.)
+        !Dcoefficients(1,:,:) = &
+        !  3.0_DP*dtime*Dpoints(1,:,:)-7.0_DP*dtime**2*Dpoints(1,:,:)+4*dtime**3*Dpoints(1,:,:)
+
+        ! 3.)
+        Dcoefficients(1,:,:) = &
+          3.0_DP*dtime*Dpoints(1,:,:)-8.0_DP*dtime**2*Dpoints(1,:,:)+5*dtime**3*Dpoints(1,:,:)
                             
       end if
       
@@ -114,8 +123,16 @@ contains
       !Dcoefficients(1,:,:) = (2.0_DP*Dpoints(1,:,:)*(1-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) &
       !                     - 8.0_DP*dtime**2 &
       !                     + dtime**2*Dpoints(1,:,:)*(1-Dpoints(1,:,:))*Dpoints(2,:,:)*(1-Dpoints(2,:,:)) )
+      
+      !Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + (dtime**2-2*dtime)*Dpoints(1,:,:))
+      
+      ! 1.)
       !Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + dtime**2*Dpoints(1,:,:))
-      Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + (dtime**2-2*dtime)*Dpoints(1,:,:))
+      
+      ! 2.)
+      Dcoefficients(1,:,:) = &
+          -( (1.0_DP-dtime)**2*Dpoints(1,:,:)-2.0_DP*dtime*(1.0_DP-dtime)*Dpoints(1,:,:)+&
+             dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:) )
       
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
@@ -168,10 +185,14 @@ contains
       
     case (4)
       ! Dual: -z1
+      
+      ! 1.)
       Dcoefficients(1,:,:) =  2.0_DP*Dpoints(1,:,:) - dtime**2*Dpoints(1,:,:) 
 
     case (5)
       ! Dual: -z2
+      
+      ! 1.)
       Dcoefficients(1,:,:) =  - 2.0_DP*Dpoints(2,:,:) + dtime**2*Dpoints(2,:,:) 
 
     case default
@@ -227,12 +248,28 @@ contains
       case (1)
         !Dvalues(1) = dtime*(dx*dy)
         !Dvalues(1) = 0.0_DP
-        Dvalues(1) = (dtime**2 - 2*dtime) * dx 
+        
+        ! 1.)
+        !Dvalues(1) = dtime**2 * dx 
+        
+        ! 2.) -> BC in spacetimebc.f90 beachten!
+        !Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+
+        ! 3.) -> BC in spacetimebc.f90 beachten!
+        Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
       case (2)
         !Dvalues(1) = (1.0_DP-dtime)*(dx*dy)
         !Dvalues(1) = 0.0_DP
         !Dvalues(1) = - (2.0_DP*dtime**2 * dy*(1.0_DP-dy)  +  2.0_DP*dtime**2.0_DP * dx*(1.0_DP-dx) )
-        Dvalues(1) = -(2.0_DP*dtime-2.0_DP)*dx
+        
+        ! 1.)
+        !Dvalues(1) = - 2.0_DP*dtime * dx
+        
+        ! 2.) -> BC in spacetimebc.f90 beachten!
+        !Dvalues(1) = dtime * (1.0_DP-dtime) * dx 
+
+        ! 3.) -> BC in spacetimebc.f90 beachten!
+        Dvalues(1) = dtime * (1.0_DP-dtime)**2 * dx 
       case default
         ! Should not happen
         call sys_halt()
@@ -250,8 +287,14 @@ contains
       
       ! Dual BC
       case (4)
+      
+        ! 1.)
         Dvalues(1) = -2.0_DP*dtime*dx
+        
+        
       case (5)
+      
+        ! 1.)
         Dvalues(1) = 2.0_DP*dtime*dy
       
       case default

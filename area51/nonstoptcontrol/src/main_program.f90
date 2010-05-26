@@ -144,8 +144,8 @@ module main_program
     ! Preconditioner of the smoothers 
     type(t_spacetimelinsol), dimension(:), pointer :: p_RsmootherPrecond
     
-    !! DEBUG!!! Preconditioners on each level
-    !type(t_spacetimelinsol), dimension(:), pointer :: p_Rpreconditioners
+    ! DEBUG!!! Preconditioners on each level
+    type(t_spacetimelinsol), dimension(:), pointer :: p_Rpreconditioners
     
     ! Projection hierarchy for the MG solver
     type(t_sptiProjHierarchy) :: rprojection
@@ -273,7 +273,7 @@ contains
     nsmoothingSteps = 4
     nmaxiterations = 1000
     ismoother = 1
-    icoarsegridsolver = 0
+    icoarsegridsolver = 1
     iorderTimeProlRest = -1
     
     rsolver%csolverType = csolverType
@@ -307,7 +307,7 @@ contains
       ! Create the coarse grid solver.
       if (icoarsegridsolver .eq. 0) then
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,0.5_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       else
         call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
@@ -316,27 +316,34 @@ contains
           rsolver%rcoarsePreconditioner)
       rsolver%rcoarseGridSolver%ioutputLevel = 0
       !rsolver%rcoarseGridSolver%domega = 0.7_DP
+      !rsolver%rcoarseGridSolver%domega = 0.0_DP
+      
+      if (rsolver%rcoarseGridSolver%domega .eq. 0.0_DP) then
+        rsolver%rcoarseGridSolver%nmaxIterations = 0
+      end if
           
       ! Create the smoothers.
       allocate (rsolver%p_RsmootherPrecond(nlevels))
       allocate (rsolver%p_Rsmoothers(nlevels))
-      !allocate (rsolver%p_Rpreconditioners(nlevels))
+      allocate (rsolver%p_Rpreconditioners(nlevels))
       do ilev = 2,nlevels
         if (ismoother .eq. 0) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,0.5_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
         
         else if (ismoother .eq. 1) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
           rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
+          !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
         
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
         end if
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
@@ -367,8 +374,10 @@ contains
       ! Create the solver.
       call stls_initMultigrid (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rprojection, rsolver%rcoarseGridSolver, RpreSmoothers=rsolver%p_Rsmoothers)
+          !,&
           !Rpreconditioners=rsolver%p_Rpreconditioners)
       rsolver%rsolver%nmaxIterations = nmaxiterations
+      rsolver%rsolver%depsrel = 1E-10
           
     end select
       
@@ -469,163 +478,167 @@ contains
     nspacelevels = 2
     ntimelevels = 2
     nminlevelspace = 1
-    nminleveltime = 5
-    ntstepscoarse = 5*2**(nminleveltime-1)
     dtheta = 1.0_DP
+
+    do nminleveltime = 1,7
+
+      ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     
-    ! Get parameters
-    call cb_getPhysicsHeatEqn(rparams%rphysics)    
-    
-    ! Read boundary and generate mesh hierarchy
-    select case (rparams%rphysics%cequation)
-    case (0,1)
+      ! Get parameters
+      call cb_getPhysicsHeatEqn(rparams%rphysics)
       
-      ! 2D mesh
-      call boundary_read_prm(rparams%rboundary, "./pre/QUAD.prm")
-      call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,"./pre/QUAD.tri",&
-          NDIM2D,nminlevelspace-1,rparams%rboundary)
-
-    case (2)
-
-      ! 1D mesh
-      call tria_createRawTria1D(rtria1D, 0.0_DP, 1.0_DP, 1+2**(nminlevelspace))
-      call mshh_initHierarchy (rparams%rmeshHierarchy,rtria1D,0,nspacelevels,&
-          cdupFlag=TR_SHARE_NONE)
-      call tria_done (rtria1D)
-
-    case default
+      ! Read boundary and generate mesh hierarchy
+      select case (rparams%rphysics%cequation)
+      case (0,1)
         
-      call output_line ("Equation not supported.")
-      call sys_halt()
-  
-    end select
+        ! 2D mesh
+        call boundary_read_prm(rparams%rboundary, "./pre/QUAD.prm")
+        call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,"./pre/QUAD.tri",&
+            NDIM2D,nminlevelspace-1,rparams%rboundary)
 
-    call mshh_refineHierarchy2lv(rparams%rmeshHierarchy,nspacelevels,&
-        rboundary=rparams%rboundary)
-    
-    ! Space hierarchy
-    rcollection%IquickAccess (1) = rparams%rphysics%cequation
-    call fesph_createHierarchy (rparams%rfeHierarchy,nspacelevels,&
-        rparams%rmeshHierarchy,main_getDiscr,rcollection,rparams%rboundary)
+      case (2)
 
-    ! Time coarse mesh and time hierarchy
-    call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
-    call tmsh_createHierarchy (rparams%rtimecoarse,rparams%rtimeHierarchy,&
-        0,ntimelevels)
+        ! 1D mesh
+        call tria_createRawTria1D(rtria1D, 0.0_DP, 1.0_DP, 1+2**(nminlevelspace-1))
+        call tria_initStandardMeshFromRaw (rtria1D)
+        call mshh_initHierarchy (rparams%rmeshHierarchy,rtria1D,0,nspacelevels,&
+            cdupFlag=TR_SHARE_NONE)
+        call tria_done (rtria1D)
+
+      case default
+          
+        call output_line ("Equation not supported.")
+        call sys_halt()
     
-    ! Space-time hierarchy.
-    call sth_initHierarchy (rparams%rspacetimeHierarchy,&
-        rparams%rfeHierarchy,rparams%rtimeHierarchy)
-    call sth_defineHierarchyByCoarsening (rparams%rspacetimeHierarchy,&
-        nspacelevels,nspacelevels,1,ntimelevels)
-    
-    ! Boundary conditions on all levels.
-    allocate (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels))
-    allocate (rparams%p_RmatvecTempl(nspacelevels))
-    allocate (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels))
-    
-    do ilev=1,rparams%rspacetimeHierarchy%nlevels
-    
-      call sth_getLevel (rparams%rspacetimeHierarchy,ilev,&
-        p_rfeSpaceLevel,p_rtimeDiscr,ispacelev)
+      end select
+
+      call mshh_refineHierarchy2lv(rparams%rmeshHierarchy,nspacelevels,&
+          rboundary=rparams%rboundary)
+      
+      ! Space hierarchy
+      rcollection%IquickAccess (1) = rparams%rphysics%cequation
+      call fesph_createHierarchy (rparams%rfeHierarchy,nspacelevels,&
+          rparams%rmeshHierarchy,main_getDiscr,rcollection,rparams%rboundary)
+
+      ! Time coarse mesh and time hierarchy
+      call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
+      call tmsh_createHierarchy (rparams%rtimecoarse,rparams%rtimeHierarchy,&
+          0,ntimelevels)
+      
+      ! Space-time hierarchy.
+      call sth_initHierarchy (rparams%rspacetimeHierarchy,&
+          rparams%rfeHierarchy,rparams%rtimeHierarchy)
+      call sth_defineHierarchyByCoarsening (rparams%rspacetimeHierarchy,&
+          nspacelevels,nspacelevels,1,ntimelevels)
+      
+      ! Boundary conditions on all levels.
+      allocate (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels))
+      allocate (rparams%p_RmatvecTempl(nspacelevels))
+      allocate (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels))
+      
+      do ilev=1,rparams%rspacetimeHierarchy%nlevels
+      
+        call sth_getLevel (rparams%rspacetimeHierarchy,ilev,&
+          p_rfeSpaceLevel,p_rtimeDiscr,ispacelev)
+        p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
+        
+        ! Boundary conditions
+        call spop_createBC(p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
+            rparams%p_RspaceTimeBC(ilev))
+
+        ! Matrix
+        call stmv_createMatrix (0,p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
+            rparams%p_RspaceTimeBC(ilev),rparams%p_RmatvecTempl(ispacelev),p_Rmatrices(ilev))
+
+      end do
+      
+      do ilev=1,nspacelevels
+        p_rspaceDiscr => rparams%rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation
+        ! Template matrices
+        call spop_calcMatrices (p_rspaceDiscr,rparams%rphysics,rparams%p_RmatvecTempl(ilev))
+      end do
+
+      ! Get the discretisation info of the max. level.
+      call sth_getLevel (rparams%rspacetimeHierarchy,rparams%rspacetimeHierarchy%nlevels,&
+        p_rfeSpaceLevel,p_rtimeDiscr)
       p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
       
-      ! Boundary conditions
-      call spop_createBC(p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
-          rparams%p_RspaceTimeBC(ilev))
+      ! Create the right hand side.
+      call sptivec_initVector (rrhs,p_rtimeDiscr,p_rspaceDiscr)
+      call strhs_assembleRHS (rparams%rphysics,rrhs)
+      
+      ! Create the solver.
+      call main_initLinearSolver (rparlist,rparams,ntimelevels,rlinearSolver)
+      
+      ! Attach matrices
+      do ilev = 1,rparams%rspacetimeHierarchy%nlevels
+        call stls_setMatrix (rlinearSolver%rsolver,ilev,p_Rmatrices(ilev))
+      end do
 
-      ! Matrix
-      call stmv_createMatrix (0,p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
-          rparams%p_RspaceTimeBC(ilev),rparams%p_RmatvecTempl(ispacelev),p_Rmatrices(ilev))
+      ! Apply boundary conditions, prepare to solve.    
+      call sptivec_initVector (rtemp,p_rtimeDiscr,p_rspaceDiscr)
+      call sptivec_initVector (rsolution,p_rtimeDiscr,p_rspaceDiscr)
+      call sptivec_clearVector (rsolution)
+      
+      call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
+          SPOP_RHS, rrhs)
+      call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
+          SPOP_SOLUTION, rsolution)
+      
+      !call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
+      !    trim(sys_siL(nminleveltime,2))//"-"//&
+      !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
 
-    end do
-    
-    do ilev=1,nspacelevels
-      p_rspaceDiscr => rparams%rfeHierarchy%p_rfeSpaces(ilev)%p_rdiscretisation
-      ! Template matrices
-      call spop_calcMatrices (p_rspaceDiscr,rparams%rphysics,rparams%p_RmatvecTempl(ilev))
-    end do
+      ! Initial defect    
+      !call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
+      !    rsolution,rrhs,rtemp)
+      
+      ! Solve
+      call stls_initData (rlinearSolver%rsolver)
+      call stls_solveAdaptively (rlinearSolver%rsolver,rsolution,rrhs,rtemp)
+      call stls_doneData (rlinearSolver%rsolver)
+      
+      call main_doneLinearSolver (rlinearSolver)
 
-    ! Get the discretisation info of the max. level.
-    call sth_getLevel (rparams%rspacetimeHierarchy,rparams%rspacetimeHierarchy%nlevels,&
-      p_rfeSpaceLevel,p_rtimeDiscr)
-    p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-    
-    ! Create the right hand side.
-    call sptivec_initVector (rrhs,p_rtimeDiscr,p_rspaceDiscr)
-    call strhs_assembleRHS (rparams%rphysics,rrhs)
-    
-    ! Create the solver.
-    call main_initLinearSolver (rparlist,rparams,ntimelevels,rlinearSolver)
-    
-    ! Attach matrices
-    do ilev = 1,rparams%rspacetimeHierarchy%nlevels
-      call stls_setMatrix (rlinearSolver%rsolver,ilev,p_Rmatrices(ilev))
-    end do
+      call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
+          SPOP_SOLUTION, rsolution)
+      
+      ! Postprocessing
+      !call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
+      !    rsolution,rrhs,rtemp)
+      !call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
+      !    trim(sys_siL(nminleveltime,2))//"-"//&
+      !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
+      call stpp_postproc (rparams%rphysics,rsolution)
+      
+      do ilev=1,rparams%rspacetimeHierarchy%nlevels
+        call stmv_releaseMatrix(p_Rmatrices(ilev))
+        call spop_releaseBC(rparams%p_RspaceTimeBC(ilev))
+      end do
 
-    ! Apply boundary conditions, prepare to solve.    
-    call sptivec_initVector (rtemp,p_rtimeDiscr,p_rspaceDiscr)
-    call sptivec_initVector (rsolution,p_rtimeDiscr,p_rspaceDiscr)
-    call sptivec_clearVector (rsolution)
-    
-    call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
-        SPOP_RHS, rrhs)
-    call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
-        SPOP_SOLUTION, rsolution)
-    
-    call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
-        trim(sys_siL(nminleveltime,2))//"-"//&
-        trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
+      do ilev=1,nspacelevels
+        call spop_releaseMatrices(rparams%p_RmatvecTempl(ilev))
+      end do
 
-    ! Initial defect    
-    call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
-        rsolution,rrhs,rtemp)
-    
-    ! Solve
-    call stls_initData (rlinearSolver%rsolver)
-    call stls_solveAdaptively (rlinearSolver%rsolver,rsolution,rrhs,rtemp)
-    call stls_doneData (rlinearSolver%rsolver)
-    
-    call main_doneLinearSolver (rlinearSolver)
+      deallocate(p_Rmatrices)
+      deallocate(rparams%p_RmatvecTempl)
+      deallocate(rparams%p_RspaceTimeBC)
+      
+      call sptivec_releaseVector(rtemp)
+      call sptivec_releaseVector(rsolution)
+      call sptivec_releaseVector(rrhs)
+      
+      call sth_doneHierarchy(rparams%rspacetimeHierarchy)
+      
+      call tmsh_releaseHierarchy(rparams%rtimeHierarchy)
+      call tdiscr_done(rparams%rtimecoarse)
+      
+      call fesph_releaseHierarchy (rparams%rfeHierarchy)
+          
+      call mshh_releaseHierarchy(rparams%rmeshHierarchy)
+      call boundary_release(rparams%rboundary)
 
-    call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
-        SPOP_SOLUTION, rsolution)
-    
-    ! Postprocessing
-    call stpp_printDefectSubnorms (p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),&
-        rsolution,rrhs,rtemp)
-    call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
-        trim(sys_siL(nminleveltime,2))//"-"//&
-        trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
-    call stpp_postproc (rparams%rphysics,rsolution)
-    
-    do ilev=1,rparams%rspacetimeHierarchy%nlevels
-      call stmv_releaseMatrix(p_Rmatrices(ilev))
-      call spop_releaseBC(rparams%p_RspaceTimeBC(ilev))
-    end do
-
-    do ilev=1,nspacelevels
-      call spop_releaseMatrices(rparams%p_RmatvecTempl(ilev))
-    end do
-
-    deallocate(p_Rmatrices)
-    deallocate(rparams%p_RmatvecTempl)
-    deallocate(rparams%p_RspaceTimeBC)
-    
-    call sptivec_releaseVector(rtemp)
-    call sptivec_releaseVector(rsolution)
-    call sptivec_releaseVector(rrhs)
-    
-    call sth_doneHierarchy(rparams%rspacetimeHierarchy)
-    
-    call tmsh_releaseHierarchy(rparams%rtimeHierarchy)
-    call tdiscr_done(rparams%rtimecoarse)
-    
-    call fesph_releaseHierarchy (rparams%rfeHierarchy)
-        
-    call mshh_releaseHierarchy(rparams%rmeshHierarchy)
-    call boundary_release(rparams%rboundary)
-    
+    end do    
 
   end subroutine
 

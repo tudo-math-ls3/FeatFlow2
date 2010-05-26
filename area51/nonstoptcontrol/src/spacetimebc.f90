@@ -212,9 +212,19 @@ contains
       end do
 
     case (2)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, dleft = 0.0_DP, iequation = 1)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, dright = 0.0_DP, iequation = 2)
+    
+      ! 1.)
+      !call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, (dtime**2 - 2*dtime), iequation = 1)
+      !call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -(2.0_DP*dtime-2.0_DP), iequation = 2)
 
+      ! 2.)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime), iequation = 2)
+
+      ! 3.)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime)**2, iequation = 2)
+      
     case default
     
       call output_line ("Equation not supported.")
