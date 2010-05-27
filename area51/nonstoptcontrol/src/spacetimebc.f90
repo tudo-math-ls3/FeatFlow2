@@ -171,7 +171,7 @@ contains
   
     select case (rbc%p_rphysics%cequation)
     case (0)
-      ! Heat equation
+      ! 2D Heat equation
       do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
         do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc)
           ! Get the segment and create Dirichlet BC's there.
@@ -183,6 +183,7 @@ contains
           ! DquickAccess(1) is the time.
           rcollection%IquickAccess(1) = icomponent
           rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
+          rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
           rcollection%DquickAccess(1) = dtime
           call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
@@ -205,6 +206,7 @@ contains
           ! DquickAccess(1) is the time.
           rcollection%IquickAccess(1) = icomponent
           rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
+          rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
           rcollection%DquickAccess(1) = dtime
           call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
@@ -213,21 +215,32 @@ contains
 
     case (2)
     
-      ! 1.)
-      !call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, (dtime**2 - 2*dtime), iequation = 1)
-      !call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -(2.0_DP*dtime-2.0_DP), iequation = 2)
+      ! 1D Heat equation
+    
+      select case (rbc%p_rphysics%creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, (dtime**2 - 2*dtime), iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -(2.0_DP*dtime-2.0_DP), iequation = 2)
 
-      ! 2.)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime), iequation = 2)
+      case (2)
+        ! 2.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime), iequation = 2)
 
-      ! 3.)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-      call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime)**2, iequation = 2)
+      case (3)
+        ! 3.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime)**2, iequation = 2)
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
       
     case default
     
-      call output_line ("Equation not supported.")
+      call output_line ("Problem not supported.")
       call sys_halt()
 
     end select

@@ -42,7 +42,8 @@ contains
     ! 0 = 2D heat equation
     ! 1 = 2D Stokes
     ! 2 = 1D heat equation
-    rphysics%cequation = 2
+    rphysics%cequation = 1
+    rphysics%creferenceProblem = 1
     rphysics%dviscosity = 1.0_DP
     rphysics%doptControlAlpha = 1.0_DP
     rphysics%doptControlGamma = 0.0_DP
@@ -72,10 +73,11 @@ contains
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
-    integer :: icomponent
+    integer :: icomponent,creferenceProblem
     real(DP) :: dtime,dalpha,dtstep,dgamma
     
     icomponent = rcollection%IquickAccess(1)
+    creferenceProblem = rcollection%IquickAccess(2)
     dtime = rcollection%DquickAccess(1)
     dtstep = rcollection%DquickAccess(2)
     dalpha = rcollection%DquickAccess(3)
@@ -97,16 +99,26 @@ contains
         !Dcoefficients(1,:,:) = 2*dtime*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) &
         !                     + 2*dtime**2*(Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)))        !                     + ((1.0_DP-dtime)**2/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
-        ! 1.)
-        ! Dcoefficients(1,:,:) = 0.0_DP
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          ! 1.)
+          Dcoefficients(1,:,:) = 0.0_DP
         
-        ! 2.)
-        !Dcoefficients(1,:,:) = &
-        !  3.0_DP*dtime*Dpoints(1,:,:)-7.0_DP*dtime**2*Dpoints(1,:,:)+4*dtime**3*Dpoints(1,:,:)
+        case (2)
+          ! 2.)
+          Dcoefficients(1,:,:) = &
+            3.0_DP*dtime*Dpoints(1,:,:)-7.0_DP*dtime**2*Dpoints(1,:,:)+4*dtime**3*Dpoints(1,:,:)
 
-        ! 3.)
-        Dcoefficients(1,:,:) = &
-          3.0_DP*dtime*Dpoints(1,:,:)-8.0_DP*dtime**2*Dpoints(1,:,:)+5*dtime**3*Dpoints(1,:,:)
+        case (3)
+          ! 3.)
+          Dcoefficients(1,:,:) = &
+            3.0_DP*dtime*Dpoints(1,:,:)-8.0_DP*dtime**2*Dpoints(1,:,:)+5*dtime**3*Dpoints(1,:,:)
+
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
                             
       end if
       
@@ -126,13 +138,27 @@ contains
       
       !Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + (dtime**2-2*dtime)*Dpoints(1,:,:))
       
-      ! 1.)
-      !Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + dtime**2*Dpoints(1,:,:))
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        Dcoefficients(1,:,:) = -(-2.0_DP*Dpoints(1,:,:) + dtime**2*Dpoints(1,:,:))
       
-      ! 2.)
-      Dcoefficients(1,:,:) = &
-          -( (1.0_DP-dtime)**2*Dpoints(1,:,:)-2.0_DP*dtime*(1.0_DP-dtime)*Dpoints(1,:,:)+&
-             dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:) )
+      case (2)  
+        ! 2.)
+        Dcoefficients(1,:,:) = &
+            -( (1.0_DP-dtime)*Dpoints(1,:,:)-dtime*Dpoints(1,:,:)+&
+              dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:) )
+
+      case (3)  
+        ! 3.)
+        Dcoefficients(1,:,:) = &
+            -( (1.0_DP-dtime)**2*Dpoints(1,:,:)-2.0_DP*dtime*(1.0_DP-dtime)*Dpoints(1,:,:)+&
+              dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:) )
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
       
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
@@ -165,10 +191,11 @@ contains
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
-    integer :: icomponent
+    integer :: icomponent,creferenceProblem
     real(DP) :: dtime,dalpha,dtstep
     
     icomponent = rcollection%IquickAccess(1)
+    creferenceProblem = rcollection%IquickAccess(2)
     dtime = rcollection%DquickAccess(1)
     dalpha = rcollection%DquickAccess(2)
     dtstep = rcollection%DquickAccess(3)
@@ -179,21 +206,51 @@ contains
     select case (icomponent)
     case (1)
       ! Primal: f1
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        Dcoefficients(1,:,:) = 0.0_DP
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
 
     case (2)
       ! Primal: f2
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        Dcoefficients(1,:,:) = 0.0_DP
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
       
     case (4)
       ! Dual: -z1
       
-      ! 1.)
-      Dcoefficients(1,:,:) =  2.0_DP*Dpoints(1,:,:) - dtime**2*Dpoints(1,:,:) 
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        Dcoefficients(1,:,:) =  2.0_DP*Dpoints(1,:,:) - dtime**2*Dpoints(1,:,:) 
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
 
     case (5)
       ! Dual: -z2
       
-      ! 1.)
-      Dcoefficients(1,:,:) =  - 2.0_DP*Dpoints(2,:,:) + dtime**2*Dpoints(2,:,:) 
+      select case (creferenceProblem)
+      case (0)
+      case (1)
+        ! 1.)
+        Dcoefficients(1,:,:) =  - 2.0_DP*Dpoints(2,:,:) + dtime**2*Dpoints(2,:,:) 
+      case default
+        call output_line ("Problem not supported.")
+        call sys_halt()
+      end select
 
     case default
       ! Should not happen
@@ -225,10 +282,11 @@ contains
     !
     real(DP) :: dx,dy
     real(DP) :: dtime
-    integer :: icomponent,cequation
+    integer :: icomponent,cequation,creferenceProblem
     
     icomponent = rcollection%IquickAccess(1)
     cequation = rcollection%IquickAccess(2)
+    creferenceProblem = rcollection%IquickAccess(3)
     dtime = rcollection%DquickAccess(1)
     
     if (rdiscretisation%p_rtriangulation%ndim .eq. NDIM2D) then
@@ -249,27 +307,45 @@ contains
         !Dvalues(1) = dtime*(dx*dy)
         !Dvalues(1) = 0.0_DP
         
-        ! 1.)
-        !Dvalues(1) = dtime**2 * dx 
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          ! 1.)
+          Dvalues(1) = dtime**2 * dx 
         
-        ! 2.) -> BC in spacetimebc.f90 beachten!
-        !Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+        case (2)
+          ! 2.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
 
-        ! 3.) -> BC in spacetimebc.f90 beachten!
-        Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+        case (3)
+          ! 3.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
       case (2)
         !Dvalues(1) = (1.0_DP-dtime)*(dx*dy)
         !Dvalues(1) = 0.0_DP
         !Dvalues(1) = - (2.0_DP*dtime**2 * dy*(1.0_DP-dy)  +  2.0_DP*dtime**2.0_DP * dx*(1.0_DP-dx) )
         
-        ! 1.)
-        !Dvalues(1) = - 2.0_DP*dtime * dx
-        
-        ! 2.) -> BC in spacetimebc.f90 beachten!
-        !Dvalues(1) = dtime * (1.0_DP-dtime) * dx 
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          ! 1.)
+          Dvalues(1) = - 2.0_DP*dtime * dx
+          
+        case (2)
+          ! 2.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dtime * (1.0_DP-dtime) * dx 
 
-        ! 3.) -> BC in spacetimebc.f90 beachten!
-        Dvalues(1) = dtime * (1.0_DP-dtime)**2 * dx 
+        case (3)
+          ! 3.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dtime * (1.0_DP-dtime)**2 * dx 
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
       case default
         ! Should not happen
         call sys_halt()
@@ -281,21 +357,49 @@ contains
       
       ! Primal BC
       case (1)
-        Dvalues(1) = dtime**2 * dx
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          Dvalues(1) = dtime**2 * dx
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
+        
       case (2)
-        Dvalues(1) = - dtime**2 * dy
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          Dvalues(1) = - dtime**2 * dy
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
       
       ! Dual BC
       case (4)
       
-        ! 1.)
-        Dvalues(1) = -2.0_DP*dtime*dx
-        
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          ! 1.)
+          Dvalues(1) = -2.0_DP*dtime*dx
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
         
       case (5)
       
-        ! 1.)
-        Dvalues(1) = 2.0_DP*dtime*dy
+        select case (creferenceProblem)
+        case (0)
+        case (1)
+          ! 1.)
+          Dvalues(1) = 2.0_DP*dtime*dy
+        case default
+          call output_line ("Problem not supported.")
+          call sys_halt()
+        end select
       
       case default
         ! Should not happen

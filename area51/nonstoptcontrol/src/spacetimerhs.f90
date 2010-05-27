@@ -63,6 +63,7 @@ contains
     ! IquickAccess(1) = the component
     ! DquickAccess(1) = current time
     rcollection%IquickAccess(1) = icomponent
+    rcollection%IquickAccess(2) = rphysics%creferenceProblem
     rcollection%DquickAccess(1) = dtime
     rcollection%DquickAccess(2) = dtstep
     rcollection%DquickAccess(3) = rphysics%doptControlAlpha

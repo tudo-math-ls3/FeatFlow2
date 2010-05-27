@@ -19,8 +19,36 @@ module physics
   type t_physics
   
     ! Type of the underlying operator.
-    ! =0: optimal distributed control of the heat equation, constant viscosity
+    ! optimal distributed control of the ...
+    ! =0: 2D heat equation
+    ! =1: 2D Stokes
+    ! =2: 1D heat equation
     integer :: cequation = 0
+    
+    ! Type of reference problem. Depending on cequation.
+    ! creferenceproblem = 0: no chosen reference problem.
+    !
+    ! cequation = 0/2: (1D/2D heat equation)
+    !
+    !   creferenceproblem = 1:
+    !      y      = t^2 x
+    !      lambda = -2 t x
+    !
+    !   creferenceproblem = 2:
+    !      y      = t^2 (1-t)^2 x
+    !      lambda = t (1-t) x
+    !
+    !   creferenceproblem = 3:
+    !      y      = t^2 (1-t)^2 x
+    !      lambda = t (1-t)^2 x
+    !
+    ! cequation = 1: (2D Stokes equation)
+    !
+    !   creferenceproblem = 1:
+    !      y      = t^2 (x1,-x2)
+    !      lambda = -2 t (x1,-x2)
+    !
+    integer :: creferenceproblem = 0
     
     ! Viscosity parameter
     real(DP) :: dviscosity = 0.0_DP
