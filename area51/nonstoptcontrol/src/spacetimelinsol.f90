@@ -924,7 +924,7 @@ contains
     ! Clear the output vector.
     call sptivec_clearVector (rsolver%rspaceTimeTemp1)
     
-    do jstep = 1,2
+    do jstep = 1,1
     
       ! Forward sweep.
         
@@ -985,7 +985,7 @@ contains
         call linsol_precondDefect (rsolver%p_rspaceSolver,rsolver%rspaceTemp1)
         call linsol_doneData(rsolver%p_rspaceSolver,ierror)
         
-        do i=rsolver%rspaceTemp1%nblocks/2+1,rsolver%rspaceTemp1%nblocks
+        do i=1,rsolver%rspaceTemp1%nblocks/2
           call lsyssc_vectorLinearComb (rsolver%rspaceTemp1%RvectorBlock(i),&
               rsolver%rspaceTemp2%RvectorBlock(i),rsolver%drelax,1.0_DP)
         end do
@@ -1047,7 +1047,7 @@ contains
         call linsol_precondDefect (rsolver%p_rspaceSolver,rsolver%rspaceTemp1)
         call linsol_doneData(rsolver%p_rspaceSolver,ierror)
         
-        do i=1,rsolver%rspaceTemp1%nblocks/2
+        do i=rsolver%rspaceTemp1%nblocks/2+1,rsolver%rspaceTemp1%nblocks
           call lsyssc_vectorLinearComb (rsolver%rspaceTemp1%RvectorBlock(i),&
               rsolver%rspaceTemp2%RvectorBlock(i),rsolver%drelax,1.0_DP)
         end do
