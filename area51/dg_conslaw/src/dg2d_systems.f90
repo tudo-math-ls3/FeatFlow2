@@ -191,11 +191,13 @@ contains
     
     integer, dimension(6) :: IdofGlob
     
-    integer :: iel
+    integer :: iel, NEL
     
     integer :: irhstype
     
-    integer :: iinsertSourceTerm =0
+    real(dp) :: dtheta
+    
+    integer :: iinsertSourceTerm = 0
      
     ! Start time measurement
     call cpu_time(dtime1)
@@ -228,6 +230,9 @@ contains
     
     ! To the final time
     call parlst_getvalue_double(rparlist, 'PROBLEM', 'gravconst', dgravconst)
+    
+    ! Theta for theta-scheme
+    call parlst_getvalue_double(rparlist, 'TIMESTEPPING', 'theta', dtheta)
     
     ! Type of finite element to use
     call parlst_getvalue_int(rparlist, 'TRIANGULATION', 'FEkind', ielementType, 2)
@@ -433,6 +438,9 @@ contains
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rsourceTermBlock,.true.,&
          ST_DOUBLE)     
          
+    ! Get number of elements in the triangulation
+    NEL = rsolBlock%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
+         
          
     
 !    ! Now we have the raw problem. What is missing is the definition of the boundary
@@ -566,8 +574,8 @@ contains
     rlinformSource%Idescriptors(1) = DER_FUNC2D
     call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
                                        Callback_Sourceterm,rcollection)
-    
-    
+
+     
     
 do iwithoutlimiting = 1,1
 if (iwithoutlimiting==2) ilimiter = 0
@@ -652,7 +660,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     timestepping: do
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
-       !dt = 0.2_dp*dt
+       ! dt = 0.5_dp*dt
        
        
        if (dt>ttfinal-ttime) dt = ttfinal-ttime
@@ -854,16 +862,16 @@ if (iwithoutlimiting==2) ilimiter = 0
        call profiler_measure(rprofiler,4)
        call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
 
-       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
-       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-       write(*,*) 'SolUp:', derror 
+!       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
+!       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'SolUp:', derror 
        
        
-       call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
-       call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
-       call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
-       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-       write(*,*) 'Res  :', derror 
+!       call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
+!       call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
+!       call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
+!       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'Res  :', derror 
        
        
        ! Get new temp solution
@@ -1073,6 +1081,125 @@ if (iwithoutlimiting==2) ilimiter = 0
    
       ! Release the profiler and print statistics
    call profiler_release(rprofiler)
+   
+   
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   case(3)  
+   
+  
+  ! Initialise the profiler with 5 timers
+  call profiler_init(rprofiler, 5)
+   
+  ttime = 0.0_DP
+    
+  if (ttfinal > 0.0_dp)then
+    timestepping3: do
+
+      ! Compute solution from time step t^n to time step t^{n+1}
+      write(*,*)
+      write(*,*)
+      write(*,*) 'TIME STEP:', ttime
+      write(*,*)
+      
+      idef = 0
+      
+      ! Calculate rimf2
+      call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                          rrhsBlock,rsolBlock,&
+                                           raddTriaData,&
+                                           flux_dg_buildVectorBlEdge2D_sim,&
+                                           rcollection)
+       
+      call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+      if(ielementType .ne. EL_DG_T0_2D) then
+       
+        rcollection%p_rvectorQuickAccess1 => rsolBlock
+        call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                     flux_sys_block,rcollection)
+                                            
+      end if
+       
+      call linsol_solveAdaptively (p_rsolverNode,rimf2,rrhsBlock,rtempBlock)
+      
+      ! Calculate K1
+      call lsysbl_vectorLinearComb (rsolBlock,rimf2,1.0_dp,dt*(1-dtheta),rk1)
+      
+      ! Initalise temp solution with current solution
+      call lsysbl_copyVector(rsolBlock,rsoltempBlock)
+      
+      cn_iteration: do
+      
+      call lsysbl_copyVector(rsolTempBlock,rimf1)
+      
+      ! Calculate RHS
+      call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock, rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       if(ielementType .ne. EL_DG_T0_2D) then
+       
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+                                            
+       end if
+       
+       call linsol_solveAdaptively (p_rsolverNode,rk2,rrhsBlock,rtempBlock)
+      
+      ! Calculate new temp solution
+      call lsysbl_vectorLinearComb (rk1,rk2,1.0_dp,dt*dtheta,rsolTempBlock)
+      
+      ! Calculate solution update
+      call lsysbl_vectorLinearComb (rsolTempBlock,rimf1,-1.0_dp,1.0_dp)
+      
+      ddefNorm = lsysbl_vectorNorm (rimf1,LINALG_NORML2)/lsysbl_vectorNorm (rsolTempBlock,LINALG_NORML2)
+      write(*,*) '   Defect:', ddefNorm
+      
+      if (ddefnorm < 1e-12) exit cn_iteration
+      
+      
+      idef = idef +1
+      
+      if (idef > 20) exit cn_iteration
+      
+      end do cn_iteration
+      
+      call lsysbl_copyVector(rsolTempBlock,rsolBlock)
+      
+      
+      
+      ! Limit the solution vector
+      if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
+
+
+
+     ! Go on to the next time step
+     ttime = ttime + dt
+     ! If we would go beyond the final time in our next time step,
+     ! then reduce the timestep
+     !if (ttfinal-ttime<dt) dt = ttfinal-ttime
+
+     ! Leave the time stepping loop if final time is reached
+     if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping3
+       
+
+    end do timestepping3
+   end if
+   
+   
+      ! Release the profiler and print statistics
+   call profiler_release(rprofiler)
+   
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   
+   
    end select
    
    
@@ -1141,7 +1268,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     call saveSolutionData(rsolBlock%Rvectorblock(1),sofile,ifilenumber)
 
     
-!    sofile = 'l7'
+!    sofile = 'l9'
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
@@ -1182,6 +1309,8 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    ! We are finished - but not completely!
 !    ! Now, clean up so that all the memory is available again.
 !    !
+
+
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
     call linsol_doneStructure (p_rsolverNode)

@@ -44,6 +44,10 @@ dt = 0.001
 # Final time
 ttfinal = 1.0
 
+# Theta for theta-scheme
+# 0.5 : Crank Nicolson
+theta = 0.5
+
 
 [SOLVER]
 
@@ -57,6 +61,7 @@ limiter = 12
 # What kind of time stepping to use
 # 1: RK SSP 3rd order
 # 2: dGP(2) 3rd/4th order
+# 3: Theta scheme
 timestepping = 1
 
 # What type to build the RHS

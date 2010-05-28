@@ -1435,6 +1435,9 @@ end subroutine
     ibaseN = (iel-1)*nnodesOnRef
     call fevl_evaluate_mult1 (DER_FUNC, dnodeValues(ibaseN+1:ibaseN+nnodesOnRef),&
                               rvector, iel, drefCoords(1:2,:))
+                              
+!    call fevl_evaluate_mult1 (DER_DERIV_X, dnodeValues(ibaseN+1:ibaseN+nnodesOnRef),&
+!                              rvector, iel, drefCoords(1:2,:))
   end do
   
   
@@ -2236,8 +2239,16 @@ end subroutine
       ! of all elements containing this vertex
       if (ddu > 10.0_dp*SYS_EPSREAL) then
         dalphatemp = min(1.0_dp, (duimax(nvert)-duc)/ddu)
+        
+        ! Extremumfix
+        if (duimax(nvert)-duc<SYS_EPSREAL) dalphatemp = 1.0_dp
+        
       elseif (ddu < -10.0_dp*SYS_EPSREAL) then
         dalphatemp = min(1.0_dp, (duimin(nvert)-duc)/ddu)
+        
+        ! Extremumfix
+        if (duimin(nvert)-duc>-SYS_EPSREAL) dalphatemp = 1.0_dp
+        
       else ! (dui==duc)
         dalphatemp = 1.0_dp
       end if
@@ -2258,18 +2269,38 @@ end subroutine
       ! Now we have the limitingfactors for the quadratic part in Dalpha(1:2,:)
       ! Get the Minimum and multiply it with the corresponding DOFs
       do iel = 1, NEL  
-  
-        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
-      
+        
+        
+!        ! Limiting like Kuzmin did it
+!        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
+!      
+!        ! Get global DOFs of the element
+!        call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
+!    
+!    
+!        ! Multiply the linear part of the solution vector with the correction factor
+!        p_Ddata(IdofGlob(4:6)) = p_Ddata(IdofGlob(4:6))*Dalpha(1,iel)
+!        
+!        p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
+!        p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
+        
+        
+        ! Limiting using different limiting factors for the second derivatives
         ! Get global DOFs of the element
         call dof_locGlobMapping(p_rspatialDiscr, iel, IdofGlob)
     
     
         ! Multiply the linear part of the solution vector with the correction factor
-        p_Ddata(IdofGlob(4:6)) = p_Ddata(IdofGlob(4:6))*Dalpha(1,iel)
+        p_Ddata(IdofGlob(4)) = p_Ddata(IdofGlob(4))*Dalpha(1,iel)
+        p_Ddata(IdofGlob(5)) = p_Ddata(IdofGlob(5))*min(Dalpha(1,iel),Dalpha(2,iel))
+        p_Ddata(IdofGlob(6)) = p_Ddata(IdofGlob(6))*Dalpha(2,iel)
+        
+        
+        Dalpha(1,iel) = min(Dalpha(1,iel),Dalpha(2,iel))
         
         p_rAlpha_Ddata(IdofGlob(1)) = Dalpha(1,iel)
         p_rAlpha_Ddata(IdofGlob(2:3)) = 0.0_dp
+        
     
       end do ! iel
     
@@ -7115,7 +7146,7 @@ end subroutine
 
   ! A vector to limit
   type(t_vectorBlock), intent(inout) :: rvectorBlock
-  
+
 !</inputoutput>
   
 !</subroutine>
@@ -7198,6 +7229,10 @@ end subroutine
   real(dp), dimension(3,3) :: DTemp1, DTemp2
   
   real(dp) :: dWstar
+  
+  real(dp) :: dl2x, dl2y
+  
+ 
   
   ! Get number of variables of the system
   nvar = rvectorBlock%nblocks
@@ -7283,6 +7318,10 @@ end subroutine
     call dg_evaluateDerivativeQuadratic_mult (rvectorBlock, p_IelIdx, DDerivativeQuadraticValues, raddTriaData)
   end if
   
+  do iel = 1,nel
+    if (p_IelIdx(iel) .ne. iel) write(*,*) 'Warning'
+  end do
+  
   
   select case (celement)
   case (EL_DG_T2_2D) 
@@ -7300,8 +7339,8 @@ end subroutine
   
   do iel = 1, NEL
   
-!    ! No limiting of elements at boundary
-!    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
+    ! No limiting of elements at boundary
+    if ((p_InodalProperty(p_IverticesAtElement(1, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(2, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(3, iel))>0).or.(p_InodalProperty(p_IverticesAtElement(4, iel))>0)) cycle
    
     ! Get values in the center of the element for all variables
     if (ilim<3) then
@@ -7361,13 +7400,18 @@ end subroutine
       
       if (iidx.ne.0) then
       ! Dimensional splitting
-      do idim = 1,1
+      do idim = 5,5
         ! Now we need the trafo matrices
         
         
         if (idim==1) then
           DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
           DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+        elseif (idim==0) then  
+          da = 1.0_dp/sqrt(2.0_dp)
+          db = 1.0_dp/sqrt(2.0_dp)
+          DL = buildMixedL2(DQchar,da,db)
+          DR = buildMixedR2(DQchar,da,db)
         elseif (idim==2) then
           DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
           DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
@@ -7382,7 +7426,7 @@ end subroutine
         else if (idim==5) then
         da = DQchar(2)
         db = DQchar(3)
-        dquo = da*da+db*db
+        dquo = sqrt(da*da+db*db)
         if (dquo<SYS_EPSREAL) then
           DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
           DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
@@ -7396,7 +7440,7 @@ end subroutine
         else if (idim==6) then
         da = DQchar(2)
         db = DQchar(3)
-        dquo = da*da+db*db
+        dquo = sqrt(da*da+db*db)
         if (dquo<SYS_EPSREAL) then
           DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
           DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
@@ -7406,38 +7450,106 @@ end subroutine
           DL = buildMixedL2(DQchar,-db,da)
           DR = buildMixedR2(DQchar,-db,da)
         end if
+        
+        else if (idim==7) then
+          da = DQchar(2)
+          db = DQchar(3)
+          if (abs(da)>abs(db)) then
+            DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+            DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+          else
+            DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+            DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+          end if
+        
+        else if (idim==8) then
+        da = DQchar(2)
+        db = DQchar(3)
+        
+        if (abs(da)>abs(db)) then
+          if(da>0.0_dp)then
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+          else
+          DL = buildMixedL2(DQchar,-1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,-1.0_dp,0.0_dp)
+          end if
+        else
+          if(db>0.0_dp)then
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+          else
+          DL = buildMixedL2(DQchar,0.0_dp,-1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,-1.0_dp)
+          end if
+        end if
+        
+        else if (idim==9) then
+        da = raddTriaData%p_DmidPoints(1,iel)-0.5_dp
+        db = raddTriaData%p_DmidPoints(2,iel)-0.5_dp
+        
+        if (abs(da)>abs(db)) then
+          if(da>0.0_dp)then
+          DL = buildMixedL2(DQchar,1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,1.0_dp,0.0_dp)
+          else
+          DL = buildMixedL2(DQchar,-1.0_dp,0.0_dp)
+          DR = buildMixedR2(DQchar,-1.0_dp,0.0_dp)
+          end if
+        else
+          if(db>0.0_dp)then
+          DL = buildMixedL2(DQchar,0.0_dp,1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,1.0_dp)
+          else
+          DL = buildMixedL2(DQchar,0.0_dp,-1.0_dp)
+          DR = buildMixedR2(DQchar,0.0_dp,-1.0_dp)
+          end if
+        end if
+        
         end if
 
         ! Transform neighbouring limits
         DtIi = matmul(DL,DIi)
         do ineighbour = 1, iidx
         
-          if (idim==1) then
-            DL2 = buildMixedL2(Dlin(:,ineighbour),1.0_dp,0.0_dp)
-          
-          elseif (idim==2) then
-            DL2 = buildMixedL2(Dlin(:,ineighbour),0.0_dp,1.0_dp)
-          
-          end if
+!          if (idim==1) then
+!            DL2 = buildMixedL2(Dlin(:,ineighbour),1.0_dp,0.0_dp)
+!          
+!          elseif (idim==2) then
+!            DL2 = buildMixedL2(Dlin(:,ineighbour),0.0_dp,1.0_dp)
+!          
+!          end if
         
           DtLin(:,ineighbour) = matmul(DL,Dlin(:,ineighbour))
         end do
+        
+!        ! or
+!        DtLin(:,1:iidx) = matmul(DL,Dlin(:,1:iidx))
         
         
         ! Now, as the differences are transformed, we can limit every component on its own
         DWc=matmul(DL,DVec)
         
         do ivar = 1, nvar
-          if (DtIi(ivar) > 10.0_dp*SYS_EPSREAL) then
+          if (DtIi(ivar) > 100.0_dp*SYS_EPSREAL) then
             dWstar = maxval(DtLin(ivar,1:iidx))
             !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
             Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
-          elseif (DtIi(ivar) < -10.0_dp*SYS_EPSREAL) then
+            
+!            ! Extremeumfix
+!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
+            
+          elseif (DtIi(ivar) < -100.0_dp*SYS_EPSREAL) then
             dWstar = minval(DtLin(ivar,1:iidx))
             !Dalphaei(ivar,ivt) = min(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
             Dalphaei(ivar,ivt) = max(  Dalphaei(ivar,ivt) ,min(1.0_dp,(dwstar-DWc(ivar))/(DtIi(ivar))))
+            
+!            ! Extremeumfix
+!            if (dwstar-DWc(ivar)<10.0*SYS_EPSREAL) Dalphaei(ivar,ivt) = 1.0_dp
+            
           else
-            Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
+            !Dalphaei(ivar,ivt) = min(Dalphaei(ivar,ivt),1.0_dp)
+            Dalphaei(ivar,ivt) = max(Dalphaei(ivar,ivt),1.0_dp)
           end if
         end do
         
@@ -7462,10 +7574,13 @@ end subroutine
       
     case (2)
       
+      
+      ! Limiting all second derivatives with the same limiting factor
       DmAlpha = 0.0_dp
       
       ! Get minimum of all correction factors of all vertices on this element
       do ivar = 1, nvar
+      
         Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
         
         DmAlpha(ivar,ivar) = Dalpha(ivar, iel)
@@ -7480,8 +7595,60 @@ end subroutine
         p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = Dquadraticgradient(ivar,1:3)
       end do
       
+      
+      
+!      ! Limiting the second derivatives with different limiting factors
+!      DmAlpha = 0.0_dp
+!      
+!      ! Get minimum of all correction factors of all vertices on this element
+!      do ivar = 1, nvar
+!        
+!        Dquadraticgradient(ivar,1:3) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1)
+!
+!      end do
+!      
+!      
+!      
+!      do ivar = 1, nvar
+!      
+!        DmAlpha(ivar,ivar) = Dalpha(ivar, iel)
+!
+!      end do
+!      
+!      DquadraticGradient(1:nvar,1) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,1))
+!      
+!      do ivar = 1, nvar
+!      
+!        DmAlpha(ivar,ivar) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
+!
+!      end do
+!      
+!      DquadraticGradient(1:nvar,2) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,2))
+!      
+!      do ivar = 1, nvar
+!      
+!        DmAlpha(ivar,ivar) = minval(Dalphaei(ivar,1:NVE))
+!
+!      end do
+!      
+!      DquadraticGradient(1:nvar,3) = matmul(matmul(matmul(DR,DmAlpha),DL),DquadraticGradient(1:nvar,3))
+!      
+!      
+!        
+!      do ivar = 1, nvar  
+!        p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(4:6,iel)-1) = Dquadraticgradient(ivar,1:3)
+!        
+!        Dalpha(ivar, iel) = min(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
+!      end do
+            
+            
+      
+      
+      
     case (3)
-    
+      
+      !if(iel==15) write(*,*) 'Quadratic:', Dalpha(1, iel)
+      
       ! Get minimum of all correction factors of all vertices on this element
       do ivar = 1, nvar
         Dalpha(ivar, iel) = max(Dalpha(ivar, iel),minval(Dalphaei(ivar,1:NVE)))
@@ -7491,6 +7658,8 @@ end subroutine
         DlinearGradient(ivar,1:2) = p_Ddata(rvectorBlock%RvectorBlock(ivar)%iidxFirstEntry+IdofGlob(2:3,iel)-1)
         
       end do
+      
+     ! if(iel==15) write(*,*) 'Linear:', Dalpha(1, iel)
       
 !      do idim = 1, 1
 !        ! Now we need the trafo matrices
@@ -7561,6 +7730,25 @@ end subroutine
 !  
 !  
   end do ! ilim
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   
   !deallocate(p_DoutputData)

@@ -223,7 +223,7 @@ contains
       ielementType = EL_DG_T2_2D
       ilimiting = 2
     end select
-    
+
     
     
 !    dt = 0.01_DP
@@ -697,8 +697,6 @@ contains
 !    
 !    
 !    
-    
-    
     
     write(*,*) ''
     write(*,*) 'Writing solution to file'
