@@ -1295,7 +1295,7 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 
-ifeq ($(call match,$(ID),pc64-penryn-linux-.*-mkl.*),yes)
+ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-mkl),yes)
 # Use Intel Math Kernel Library
 include $(TEMPLATESDIR)/mkl-generic.mk
 endif
