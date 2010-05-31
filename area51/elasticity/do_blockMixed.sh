@@ -18,9 +18,9 @@ solver="UMFPACK"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-levelMaxs="04"
-#levelMaxs="02 03 04 05 06 07 08"
-levelMin="04"
+#levelMaxs="04"
+levelMaxs="02 03 04 05 06"
+levelMin="0"
 
 #-----------------------------
 
@@ -112,11 +112,11 @@ funcID_u2 = 0
 funcID_p  = 0
 
 # finite element discretisation ('Q1' or 'Q2')
-element = Q1
+element = Q2
 
-# FE discretisation of the pressure space ('Q1' or 'Q2')
+# FE discretisation of the pressure space
 # (only necessary in case of the mixed formulation or Stokes) 
-elementPress = Q1
+elementPress = P1
 
 # minimum and maximum grid level
 levelMin = ${levelMin}

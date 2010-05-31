@@ -18,8 +18,8 @@ solver="UMFPACK"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-#levelMaxs="08"
-levelMaxs="02 03 04 05"
+#levelMaxs="06"
+levelMaxs="02 03 04 05 06"
 levelMin="0"
 
 #-----------------------------
@@ -102,7 +102,7 @@ funcID_p  = 28
 # finite element discretisation ('Q1' or 'Q2')
 element = Q2
 
-# FE discretisation of the pressure space ('Q1' or 'Q2')
+# FE discretisation of the pressure space
 # (only necessary in case of the mixed formulation or Stokes) 
 elementPress = P1
 

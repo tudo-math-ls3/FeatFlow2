@@ -18,9 +18,9 @@ solver="UMFPACK"
 #solver="BICGSTAB_MG_BICGSTAB"
 
 # choose MG levels
-levelMaxs="04"
-#levelMaxs="02 03 04 05 06 07 08"
-levelMin="04"
+#levelMaxs="04"
+levelMaxs="02 03 04 05 06"
+levelMin="0"
 
 #-----------------------------
 
