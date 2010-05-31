@@ -112,6 +112,8 @@ contains
   ! simulation is time dependent or not. Initialises the time stepping scheme,
   ! start proceduce, error bounds, etc.
   !
+  ! The current simulation time is set to the initial time.
+  !
   ! Note: This will not allocate an memory but only initialise the parameters
   ! in rproblem according to the parameters in rparams from the DAT file.
 !</description>
@@ -148,6 +150,7 @@ contains
     call parlst_getvalue_double (rparams,ssection,'dminTimeDerivative',    &
         rproblem%rtimedependence%dminTimeDerivative, 0.00001_DP)
     rproblem%rtimedependence%itimeStep = 0
+    rproblem%rtimedependence%dtime = rproblem%rtimedependence%dtimeInit
 
     ! Call the initialisation routine for the adaptive time stepping to 
     ! initialise the rest of the parameters.
