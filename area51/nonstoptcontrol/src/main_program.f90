@@ -273,7 +273,7 @@ contains
     nsmoothingSteps = 4
     nmaxiterations = 1000
     ismoother = 1
-    icoarsegridsolver = 1
+    icoarsegridsolver = 2
     iorderTimeProlRest = -1
     
     rsolver%csolverType = csolverType
@@ -295,7 +295,7 @@ contains
 
       ! Create the solver.
       call stls_initBlockFBGS2 (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
           
@@ -308,15 +308,18 @@ contains
       if (icoarsegridsolver .eq. 0) then
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,0.5_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
-      else
-        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+      else if (icoarsegridsolver .eq. 1) then
+        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+      else 
+        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,1.0_DP,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
       end if
       call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
           rsolver%rcoarsePreconditioner)
       rsolver%rcoarseGridSolver%ioutputLevel = 0
-      !rsolver%rcoarseGridSolver%domega = 0.7_DP
-      !rsolver%rcoarseGridSolver%domega = 0.0_DP
+      ! rsolver%rcoarseGridSolver%domega = 0.7_DP
+       rsolver%rcoarseGridSolver%domega = 0.0_DP
       
       if (rsolver%rcoarseGridSolver%domega .eq. 0.0_DP) then
         rsolver%rcoarseGridSolver%nmaxIterations = 0
@@ -336,14 +339,14 @@ contains
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
-          rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
+          !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
           !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
         
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
-          rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,1,rparams%p_RmatvecTempl)
+          !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
         end if
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&

@@ -89,6 +89,9 @@ module spacetimelinsol
     ! =3: extended output
     integer :: ioutputLevel = 2
     
+    ! Algorithm-specific option field.
+    integer :: ialgOptions = 0
+    
     ! System matrix if used as 1-level solver.
     type(t_spaceTimeMatrix), pointer :: p_rmatrix => null()
     
@@ -1067,7 +1070,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockFBGS2 (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
-      cspaceSolverType,RmatVecTempl)
+      cspaceSolverType,icoupling,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the coupled solution.
   
@@ -1087,6 +1090,11 @@ contains
   ! for preconditioning.
   ! =0: UMFPACK
   integer, intent(in) :: cspaceSolverType
+  
+  ! Specifies the coupling in the algorithm.
+  ! =0: standard GS coupling.
+  ! =1: extended GS coupling, also using the lower diagonal in the backward sweep.
+  integer :: icoupling
 
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
@@ -1097,6 +1105,8 @@ contains
         .false.,.false.,cspaceSolverType=cspaceSolverType,RmatVecTempl=RmatVecTempl)
         
     rsolver%drelax = drelax
+    
+    rsolver%ialgoptions = icoupling
   
   end subroutine
 
@@ -1156,6 +1166,22 @@ contains
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
+
+!        if (istep .lt. rd%NEQtime) then
+!          ! Load the previous timestep.
+!          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
+!          
+!          ! Subtract the primal.
+!          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+!              rsolver%p_RspaceMatrices(rsolver%ilevel))
+!
+!          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+!              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+!              rsolver%p_RdiscreteBC(rsolver%ilevel))
+!
+!          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+!              rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+!        end if
         
         ! Subtract the diagonal, set up the preconditioner matrix
         
@@ -1203,20 +1229,38 @@ contains
         ! Load the timestep.
         call sptivec_getTimestepData(rd,istep,rsolver%rspaceTemp1)
         
-        if (istep .lt. rd%NEQtime) then
+        if (istep .gt. 1) then
           ! Load the previous timestep.
-          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
+          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep-1, &
               rsolver%p_RspaceMatrices(rsolver%ilevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(rsolver%ilevel))
 
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+        end if
+
+        if (rsolver%ialgoptions) then
+          if (istep .lt. rd%NEQtime) then
+            ! Load the previous timestep.
+            call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
+            
+            ! Subtract the primal.
+            call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+                rsolver%p_RspaceMatrices(rsolver%ilevel))
+
+            call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+                rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+                rsolver%p_RdiscreteBC(rsolver%ilevel))
+
+            call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+                rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
+          end if
         end if
         
         ! Assemble diagonal submatrix of that timestep.

@@ -42,10 +42,10 @@ contains
     ! 0 = 2D heat equation
     ! 1 = 2D Stokes
     ! 2 = 1D heat equation
-    rphysics%cequation = 1
-    rphysics%creferenceProblem = 1
+    rphysics%cequation = 2
+    rphysics%creferenceProblem = 4
     rphysics%dviscosity = 1.0_DP
-    rphysics%doptControlAlpha = 1.0_DP
+    rphysics%doptControlAlpha = 0.01_DP
     rphysics%doptControlGamma = 0.0_DP
     rphysics%dcouplePrimalToDual = 1.0_DP
     rphysics%dcoupleDualToPrimal = 1.0_DP
@@ -115,6 +115,10 @@ contains
           Dcoefficients(1,:,:) = &
             3.0_DP*dtime*Dpoints(1,:,:)-8.0_DP*dtime**2*Dpoints(1,:,:)+5*dtime**3*Dpoints(1,:,:)
 
+        case (4)
+          ! 4.)
+          Dcoefficients(1,:,:) = 0.0_DP
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -155,6 +159,12 @@ contains
         Dcoefficients(1,:,:) = &
             -( (1.0_DP-dtime)**2*Dpoints(1,:,:)-2.0_DP*dtime*(1.0_DP-dtime)*Dpoints(1,:,:)+&
               dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:) )
+              
+      case (4)
+        ! 4.)
+        Dcoefficients(1,:,:) = &
+            - (- dalpha*2.0_DP*(1-dtime)**2*Dpoints(1,:,:) + dalpha*8.0_DP*dtime*(1-dtime)*Dpoints(1,:,:) &
+               - dalpha*2.0_DP*dtime**2*Dpoints(1,:,:) + dtime**2*(1.0_DP-dtime)**2*Dpoints(1,:,:))
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -281,13 +291,14 @@ contains
     ! To get the X/Y-coordinates of the boundary point, use:
     !
     real(DP) :: dx,dy
-    real(DP) :: dtime
+    real(DP) :: dtime,dalpha
     integer :: icomponent,cequation,creferenceProblem
     
     icomponent = rcollection%IquickAccess(1)
     cequation = rcollection%IquickAccess(2)
     creferenceProblem = rcollection%IquickAccess(3)
     dtime = rcollection%DquickAccess(1)
+    dalpha = rcollection%DquickAccess(2)
     
     if (rdiscretisation%p_rtriangulation%ndim .eq. NDIM2D) then
       call boundary_getCoords(rdiscretisation%p_rboundary, &
@@ -320,10 +331,16 @@ contains
         case (3)
           ! 3.) -> BC in spacetimebc.f90 beachten!
           Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+
+        case (4)
+          ! 4.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dtime**2 * (1.0_DP-dtime)**2 * dx 
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
         end select
+        
       case (2)
         !Dvalues(1) = (1.0_DP-dtime)*(dx*dy)
         !Dvalues(1) = 0.0_DP
@@ -333,15 +350,20 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = - 2.0_DP*dtime * dx
+          Dvalues(1) = dalpha * (- 2.0_DP*dtime * dx)
           
         case (2)
           ! 2.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = dtime * (1.0_DP-dtime) * dx 
+          Dvalues(1) = dalpha * dtime * (1.0_DP-dtime) * dx 
 
         case (3)
           ! 3.) -> BC in spacetimebc.f90 beachten!
-          Dvalues(1) = dtime * (1.0_DP-dtime)**2 * dx 
+          Dvalues(1) = dalpha * dtime * (1.0_DP-dtime)**2 * dx 
+          
+        case (4)
+          ! 4.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = dalpha * (-2.0_DP*dtime*(1.0_DP-dtime)**2*dx + 2.0_DP*dtime**2*(1.0_DP-dtime)*dx)
+          
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -383,7 +405,7 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = -2.0_DP*dtime*dx
+          Dvalues(1) = dalpha * (-2.0_DP*dtime*dx)
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -395,7 +417,7 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dvalues(1) = 2.0_DP*dtime*dy
+          Dvalues(1) = dalpha * (2.0_DP*dtime*dy)
         case default
           call output_line ("Problem not supported.")
           call sys_halt()

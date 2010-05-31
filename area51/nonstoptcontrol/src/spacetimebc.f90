@@ -185,6 +185,8 @@ contains
           rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
           rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
           rcollection%DquickAccess(1) = dtime
+          rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
+          rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
           call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
@@ -208,6 +210,8 @@ contains
           rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
           rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
           rcollection%DquickAccess(1) = dtime
+          rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
+          rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
           call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
@@ -221,18 +225,31 @@ contains
       case (0)
       case (1)
         ! 1.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, (dtime**2 - 2*dtime), iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -(2.0_DP*dtime-2.0_DP), iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -2.0_DP*dtime, iequation = 2)
 
       case (2)
         ! 2.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime), iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
+            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  &
+            rbc%p_rphysics%doptControlAlpha * dtime*(1.0_DP-dtime), iequation = 2)
 
       case (3)
         ! 3.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  dtime*(1.0_DP-dtime)**2, iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
+            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
+            rbc%p_rphysics%doptControlAlpha * dtime*(1.0_DP-dtime)**2, iequation = 2)
+        
+      case (4)
+        ! 4.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
+            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
+            rbc%p_rphysics%doptControlAlpha * &
+            (-2.0_DP*dtime*(1.0_DP-dtime)**2 + 2.0_DP*dtime**2*(1.0_DP-dtime)), iequation = 2)
+        
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
