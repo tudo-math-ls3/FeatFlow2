@@ -23,6 +23,7 @@ module callback
   use linearformevaluation
   use collection
   use domainintegration
+  use paramlist
   
   use physics
   
@@ -32,24 +33,44 @@ contains
 
   ! ***************************************************************************
 
-  subroutine cb_getPhysicsHeatEqn(rphysics)
+  subroutine cb_getPhysicsHeatEqn(rparlist,rphysics)
   
   ! Initialises the physics structure for the equation
   
+  ! Parameter list containing the DAT file parameters
+  type(t_parlist), intent(in) :: rparlist
+
   ! The physics structure to initialise
   type(t_physics), intent(out) :: rphysics
   
     ! 0 = 2D heat equation
     ! 1 = 2D Stokes
     ! 2 = 1D heat equation
-    rphysics%cequation = 2
-    rphysics%creferenceProblem = 4
-    rphysics%dviscosity = 1.0_DP
-    rphysics%doptControlAlpha = 0.01_DP
-    rphysics%doptControlGamma = 0.0_DP
-    rphysics%dcouplePrimalToDual = 1.0_DP
-    rphysics%dcoupleDualToPrimal = 1.0_DP
-    rphysics%dcoupleTermCond = 1.0_DP
+!    rphysics%cequation = 2
+!    rphysics%creferenceProblem = 4
+!    rphysics%dviscosity = 1.0_DP
+!    rphysics%doptControlAlpha = 0.01_DP
+!    rphysics%doptControlGamma = 0.0_DP
+!    rphysics%dcouplePrimalToDual = 1.0_DP
+!    rphysics%dcoupleDualToPrimal = 1.0_DP
+!    rphysics%dcoupleTermCond = 1.0_DP
+  
+    call parlst_getvalue_int (rparlist, "PHYSICS", &
+        "cequation", rphysics%cequation)
+    call parlst_getvalue_int (rparlist, "PHYSICS", &
+        "creferenceProblem", rphysics%creferenceProblem)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dviscosity", rphysics%dviscosity)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "doptControlAlpha", rphysics%doptControlAlpha)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "doptControlGamma", rphysics%doptControlGamma)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dcouplePrimalToDual", rphysics%dcouplePrimalToDual)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dcoupleDualToPrimal", rphysics%dcoupleDualToPrimal)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dcoupleTermCond", rphysics%dcoupleTermCond)
   
   end subroutine
 

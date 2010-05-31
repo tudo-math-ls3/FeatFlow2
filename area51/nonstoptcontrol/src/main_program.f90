@@ -262,19 +262,41 @@ contains
     ! local variables
     integer :: csolverType
     integer :: ilev,nsmoothingSteps,iorderTimeProlRest,nmaxiterations
-    integer :: ismoother,icoarsegridsolver
+    integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
+    real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel
     
-    if (nlevels .eq. 1) then
-      csolverType = 0
-    else
-      csolverType = 1
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "csolverType", csolverType)
+    
+    if (csolverType .eq. -1) then
+      if (nlevels .eq. 1) then
+        csolverType = 0
+      else
+        csolverType = 1
+      end if
     end if
-    nsmoothingSteps = 4
-    nmaxiterations = 1000
-    ismoother = 1
-    icoarsegridsolver = 2
-    iorderTimeProlRest = -1
+    
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "nsmoothingSteps", nsmoothingSteps)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "nmaxiterations", nmaxiterations)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "ismoother", ismoother)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "icoarsegridsolver", icoarsegridsolver)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "iorderTimeProlRest", iorderTimeProlRest)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "ddampingCoarseGridCorrection", ddampingCoarseGridCorrection)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "depsrel", depsrel)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "ddamping", ddamping)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "drelax", drelax)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "ifullcouplingFBGS2", ifullcouplingFBGS2)
     
     rsolver%csolverType = csolverType
     
@@ -284,10 +306,11 @@ contains
 
       ! Create the solver.
       call stls_initBlockJacobi (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,0.9_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
       
+      rsolver%rpreconditioner%domega = ddamping
       rsolver%rsolver%nmaxIterations = nmaxiterations
           
     case (2)
@@ -295,37 +318,61 @@ contains
 
       ! Create the solver.
       call stls_initBlockFBGS2 (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
+          nlevels,drelax,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
           
+      rsolver%rpreconditioner%domega = ddamping
       rsolver%rsolver%nmaxIterations = nmaxiterations
           
     case (1)
       ! MG-Solver with block Jacobi preconditioning.
       
       ! Create the coarse grid solver.
+
+      call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "ddamping", ddamping)
+      call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "drelax", drelax)
+      call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "ifullcouplingFBGS2", ifullcouplingFBGS2)
+      call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "ioutputlevel", ioutputlevel)
+      
       if (icoarsegridsolver .eq. 0) then
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,0.5_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       else if (icoarsegridsolver .eq. 1) then
         call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
       else 
         call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,1.0_DP,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
+            1,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
       end if
+      
+      rsolver%rcoarsePreconditioner%domega = ddamping
+      
       call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
           rsolver%rcoarsePreconditioner)
-      rsolver%rcoarseGridSolver%ioutputLevel = 0
+      rsolver%rcoarseGridSolver%ioutputLevel = ioutputlevel
       ! rsolver%rcoarseGridSolver%domega = 0.7_DP
-       rsolver%rcoarseGridSolver%domega = 0.0_DP
+      rsolver%rcoarseGridSolver%domega = ddampingCoarseGridCorrection
       
       if (rsolver%rcoarseGridSolver%domega .eq. 0.0_DP) then
         rsolver%rcoarseGridSolver%nmaxIterations = 0
       end if
           
       ! Create the smoothers.
+      
+      call parlst_getvalue_double (rparlist, "SPACETIME-SMOOTHER", &
+          "ddamping", ddamping)
+      call parlst_getvalue_double (rparlist, "SPACETIME-SMOOTHER", &
+          "drelax", drelax)
+      call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
+          "ifullcouplingFBGS2", ifullcouplingFBGS2)
+      call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
+          "ioutputlevel", ioutputlevel)
+      
       allocate (rsolver%p_RsmootherPrecond(nlevels))
       allocate (rsolver%p_Rsmoothers(nlevels))
       allocate (rsolver%p_Rpreconditioners(nlevels))
@@ -333,22 +380,25 @@ contains
         if (ismoother .eq. 0) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,0.5_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
         
         else if (ismoother .eq. 1) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
           !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
         
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,1,rparams%p_RmatvecTempl)
+              ilev,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
         end if
+        
+        rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+        
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
             rsolver%p_RsmootherPrecond(ilev))
         call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
@@ -380,7 +430,7 @@ contains
           !,&
           !Rpreconditioners=rsolver%p_Rpreconditioners)
       rsolver%rsolver%nmaxIterations = nmaxiterations
-      rsolver%rsolver%depsrel = 1E-10
+      rsolver%rsolver%depsrel = depsrel
           
     end select
       
@@ -468,6 +518,7 @@ contains
     type(t_maindata) :: rparams
     type(t_collection) :: rcollection
     integer :: nspacelevels,ntimelevels,nminlevelspace,nminleveltime,ilev,ispacelev,ntstepscoarse
+    integer :: nmaxminleveltime
     real(DP) :: dtheta
     type(t_spaceTimeVector) :: rrhs, rsolution, rtemp
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -478,17 +529,23 @@ contains
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
-    nspacelevels = 2
-    ntimelevels = 2
-    nminlevelspace = 1
-    dtheta = 1.0_DP
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "nspacelevels", nspacelevels)
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "ntimelevels", ntimelevels)
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "nminlevelspace", nminlevelspace)
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "nmaxminleveltime", nmaxminleveltime)
+    call parlst_getvalue_double (rparlist, "SPACETIME-DISCRETISATION", &
+        "dtheta", dtheta)
 
-    do nminleveltime = 1,7
+    do nminleveltime = 1,nmaxminleveltime
 
       ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     
       ! Get parameters
-      call cb_getPhysicsHeatEqn(rparams%rphysics)
+      call cb_getPhysicsHeatEqn(rparlist,rparams%rphysics)
       
       ! Read boundary and generate mesh hierarchy
       select case (rparams%rphysics%cequation)
@@ -651,6 +708,7 @@ contains
     
     ! Program parameters
     type(t_parlist) :: rparlist
+    character(len=SYS_STRLEN) :: soutput
     
     ! The very first thing in every application: 
     ! Initialise system-wide settings:
@@ -661,7 +719,9 @@ contains
     call parlst_readfromfile(rparlist,trim(DIR_DATA)//"/nonstoptcontrol.dat")
     
     ! Initialise log file for output.
-    call output_init ("log/output.log")
+    call parlst_getvalue_string (rparlist, "OUTPUT", &
+        "soutputFile", soutput,bdequote=.true.)    
+    call output_init (soutput)
     OU_LINE_LENGTH = 132
     
     ! Now we can really start!

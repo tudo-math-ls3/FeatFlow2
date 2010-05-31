@@ -1,0 +1,53 @@
+[OUTPUT]
+SOUTPUTfILE = "./log/output.txt"
+
+[PHYSICS]
+# 0 = 2D heat equation
+# 1 = 2D Stokes
+# 2 = 1D heat equation
+cequation = 2
+
+creferenceProblem = 4
+
+dviscosity = 1.0
+doptControlAlpha = 0.01
+doptControlGamma = 0.0
+dcouplePrimalToDual = 1.0
+dcoupleDualToPrimal = 1.0
+dcoupleTermCond = 1.0
+
+[SPACETIME-DISCRETISATION]
+nspacelevels = 2
+ntimelevels = 2
+nminlevelspace = 1
+nmaxminleveltime = 7
+dtheta = 1.0
+
+[SPACETIME-LINEARSOLVER]
+csolverType = -1    ! -1=automatic
+nsmoothingSteps = 4
+nmaxiterations = 1000
+ismoother = 1
+icoarsegridsolver = 2
+iorderTimeProlRest = -1
+depsrel = 1E-10
+
+ddamping = 0.9
+drelax = 1.0
+ifullcouplingFBGS2 = 1
+
+ddampingCoarseGridCorrection = 1.0
+
+[SPACETIME-COARSEGRIDSOLVER]
+ioutputlevel = 0
+
+ddamping = 0.9
+drelax = 1.0
+ifullcouplingFBGS2 = 0
+
+[SPACETIME-SMOOTHER]
+ioutputlevel = 0
+
+ddamping = 0.9
+drelax = 1.0
+ifullcouplingFBGS2 = 1
