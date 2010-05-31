@@ -695,6 +695,7 @@ contains
     use derivatives
     use pprocerror
     use feevaluation
+    use collection
 
 !<description>
   ! This routine calculates some values and errors. In given evaluation points, it
@@ -728,6 +729,9 @@ contains
     real(DP) ::  ddivu, deps11, deps22, deps12, daux1, daux2
     real(DP) ::  dsigma11, dsigma12, dsigma22, dsigma33, dtrace, dmises
     integer :: i
+
+    ! collection structure to provide additional information
+    type(t_collection) :: rcollection
 
     ! calculate in given evaluation points: FE solutions, derivatives, absolute error,
     ! strains, stresses
@@ -842,8 +846,10 @@ contains
       if (rprob%cformulation .ne. FORMULATION_DISPL .and. &
           rprob%celement .ne. rprob%celementPress) then
         ! In case of the mixed formulation or Stokes with different discretisations for
-        ! u and p, there have to be two calls of the error routine: first one for u,
-        ! second one for p
+        ! u and p, there have to be two calls of the error routine pperr_scalarVec():
+        ! first one for u, second one for p. (This also requires that one has to pass
+        ! some extra information to elast_analFunc() via the collection structure, see
+        ! below.)
         rerror%p_RvecCoeff => rsol%RvectorBlock(1:rprob%ndim)
         rerror%p_DerrorL2 => DerrorL2(1:rprob%ndim)
         rerror%p_DerrorH1 => DerrorH1(1:rprob%ndim)
@@ -855,7 +861,11 @@ contains
       endif
 
       ! call the corresponding error routine
-      call pperr_scalarVec(rerror, elast_analFunc)
+      ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+      ! that the displacement components are to be treated. (This is necessary due to a
+      ! deficiency of the routine pperr_scalarVec().)
+      rcollection%IquickAccess(4) = 0
+      call pperr_scalarVec(rerror, elast_analFunc, rcollection)
 
       ! print the displacement errors
       call output_line('L2 error for u1: ' // sys_sdEL(DerrorL2(1),10) )
@@ -875,7 +885,12 @@ contains
           rerror%p_RvecCoeff => rsol%RvectorBlock(rprob%nblocks:rprob%nblocks)
           rerror%p_DerrorL2 => DerrorL2(rprob%nblocks:rprob%nblocks)
           rerror%p_DerrorH1 => DerrorH1(rprob%nblocks:rprob%nblocks)
-          call pperr_scalarVec(rerror, elast_analFunc)
+
+          ! Set rcollection%IquickAccess(4) = 1 in order to tell the routine
+          ! elast_analFunc() that the pressure component is to be treated. (This is
+          ! necessary due to a deficiency of the routine pperr_scalarVec().)
+          rcollection%IquickAccess(4) = 1
+          call pperr_scalarVec(rerror, elast_analFunc, rcollection)
         endif
         ! output the pressure error
         call output_line('L2 error for  p: ' // sys_sdEL(DerrorL2(rprob%nblocks),10) )
@@ -944,7 +959,9 @@ contains
 
 !</subroutine>
 
-    if (icomp .lt. 3) then
+    ! If rcollection%IquickAccess(4) .eq. 0 this means that the displacement components
+    ! are to be treated, otherwise the pressure component.
+    if (rcollection%IquickAccess(4) .eq. 0) then
       ! compute solution for x- or y-displacement (u1 or u2)
 
       ! this strange '1:nel' is necessary here, since in some situations the
@@ -959,7 +976,7 @@ contains
       if (rprob%dnu .eq. 0.5) then
         ! incompressible case
         Dvalues(:,1:nel) = elast_danalyticFunction(Dpoints(:,:,1:nel), nel, nptsPerEl, &
-                                                   cderivative, rprob%CfuncID(icomp))
+                                                   cderivative, rprob%CfuncID(3))
       else
         ! in the compressible case the pressure is related to the displacements
         ! via p = - dlambda * div(u)

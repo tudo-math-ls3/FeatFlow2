@@ -160,6 +160,10 @@ contains
     else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
       ! compute Laplace operator
       allocate(Duxx(nptsPerEl,nel), Duyy(nptsPerEl,nel))
+      ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+      ! that the displacement components are to be treated. (See comment in routine
+      ! elast_calcErrors() in module elasticity_basic.)
+      rcollection%IquickAccess(4) = 0
       call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nel, nptsPerEl, Dpoints, &
                           rdomainIntSubset, Duxx, rcollection)
       call elast_analFunc(1, DER_DERIV_YY, rdiscretisation, nel, nptsPerEl, Dpoints, &
@@ -261,6 +265,10 @@ contains
 
       ! compute grad(u)
       allocate(Dux(nptsPerEl,nel), Duy(nptsPerEl,nel))
+      ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+      ! that the displacement components are to be treated. (See comment in routine
+      ! elast_calcErrors() in module elasticity_basic.)
+      rcollection%IquickAccess(4) = 0
       call elast_analFunc(1, DER_DERIV_X, rdiscretisation, nel, nptsPerEl, Dpoints, &
                           rdomainIntSubset, Dux, rcollection)
       call elast_analFunc(1, DER_DERIV_Y, rdiscretisation, nel, nptsPerEl, Dpoints, &
@@ -376,6 +384,10 @@ contains
 
       else ! rprob%csimulation .eq. SIMUL_ANALYTICAL
         allocate(Du1xx(nptsPerEl,nel), Du1yy(nptsPerEl,nel), Du2xy(nptsPerEl,nel))
+        ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+        ! that the displacement components are to be treated. (See comment in routine
+        ! elast_calcErrors() in module elasticity_basic.)
+        rcollection%IquickAccess(4) = 0
         call elast_analFunc(1, DER_DERIV_XX, rdiscretisation, nel, nptsPerEl, Dpoints, &
                             rdomainIntSubset, Du1xx, rcollection)
         if (rprob%cformulation .ne. FORMULATION_STOKES) then
@@ -392,6 +404,10 @@ contains
         else
           ! mixed formulation or Stokes
           allocate(Dpx(nptsPerEl,nel))
+          ! Set rcollection%IquickAccess(4) = 1 in order to tell the routine
+          ! elast_analFunc() that the pressure component is to be treated. (See comment in
+          ! routine elast_calcErrors() in module elasticity_basic.)
+          rcollection%IquickAccess(4) = 1
           call elast_analFunc(3, DER_DERIV_X, rdiscretisation, nel, nptsPerEl, Dpoints, &
                               rdomainIntSubset, Dpx, rcollection)
           if (rprob%cformulation .eq. FORMULATION_MIXED) then
@@ -425,6 +441,10 @@ contains
 
       else if (rprob%csimulation .eq. SIMUL_ANALYTICAL) then
         allocate(Du2xx(nptsPerEl,nel), Du2yy(nptsPerEl,nel), Du1yx(nptsPerEl,nel))
+        ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+        ! that the displacement components are to be treated. (See comment in routine
+        ! elast_calcErrors() in module elasticity_basic.)
+        rcollection%IquickAccess(4) = 0
         call elast_analFunc(2, DER_DERIV_XX, rdiscretisation, nel, nptsPerEl, Dpoints, &
                             rdomainIntSubset, Du2xx, rcollection)
         if (rprob%cformulation .ne. FORMULATION_STOKES) then
@@ -441,6 +461,10 @@ contains
         else
           ! mixed formulation or Stokes
           allocate(Dpy(nptsPerEl,nel))
+          ! Set rcollection%IquickAccess(4) = 1 in order to tell the routine
+          ! elast_analFunc() that the pressure component is to be treated. (See comment in
+          ! routine elast_calcErrors() in module elasticity_basic.)
+          rcollection%IquickAccess(4) = 1
           call elast_analFunc(3, DER_DERIV_Y, rdiscretisation, nel, nptsPerEl, Dpoints, &
                               rdomainIntSubset, Dpy, rcollection)
           if (rprob%cformulation .eq. FORMULATION_MIXED) then
@@ -679,6 +703,10 @@ contains
         rprob%cformulation .eq. FORMULATION_STOKES) then
       allocate(Dpfunc(nptsPerEl,nel))
     endif
+    ! Set rcollection%IquickAccess(4) = 0 in order to tell the routine elast_analFunc()
+    ! that the displacement components are to be treated. (See comment in routine
+    ! elast_calcErrors() in module elasticity_basic.)
+    rcollection%IquickAccess(4) = 0
     call elast_analFunc(1, DER_DERIV_X,rdiscretisation, nel, nptsPerEl, Dpoints, &
                         rdomainIntSubset, Du1x, rcollection)
     call elast_analFunc(1, DER_DERIV_Y,rdiscretisation, nel, nptsPerEl, Dpoints, &
@@ -689,6 +717,10 @@ contains
                         rdomainIntSubset, Du2y, rcollection)                       
     if (rprob%cformulation .eq. FORMULATION_MIXED .or. &
         rprob%cformulation .eq. FORMULATION_STOKES) then
+      ! Set rcollection%IquickAccess(4) = 1 in order to tell the routine
+      ! elast_analFunc() that the pressure component is to be treated. (See comment in
+      ! routine elast_calcErrors() in module elasticity_basic.)
+      rcollection%IquickAccess(4) = 1
       call elast_analFunc(3, DER_FUNC, rdiscretisation, nel, nptsPerEl, Dpoints, &
                           rdomainIntSubset, Dpfunc, rcollection)                       
     endif
