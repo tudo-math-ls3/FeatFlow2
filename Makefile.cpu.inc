@@ -1283,6 +1283,12 @@ include $(TEMPLATESDIR)/mpich2-generic.mk
 endif
 
 
+ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-mkl.*),yes)
+# Use Intel Math Kernel Library
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
+
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-blas.*),yes)
 # Use self-compiled local BLAS
 include $(TEMPLATESDIR)/blas-generic.mk
@@ -1292,12 +1298,6 @@ endif
 ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-goto),yes)
 # Use GotoBLAS
 include $(TEMPLATESDIR)/gotoblas-generic.mk
-endif
-
-
-ifeq ($(call match,$(ID),pc64-opteronx2-linux-.*-mkl),yes)
-# Use Intel Math Kernel Library
-include $(TEMPLATESDIR)/mkl-generic.mk
 endif
 
 
