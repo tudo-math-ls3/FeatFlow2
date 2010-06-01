@@ -16,6 +16,9 @@ dcouplePrimalToDual = 1.0
 dcoupleDualToPrimal = 1.0
 dcoupleTermCond = 1.0
 
+[POSTPROC]
+iwriteUCD = 0
+
 [SPACETIME-DISCRETISATION]
 nspacelevels = 2
 ntimelevels = 2

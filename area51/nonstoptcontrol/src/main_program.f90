@@ -526,6 +526,7 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_spaceTimeMatrix), dimension(:), pointer :: p_Rmatrices
     type(t_triangulation) :: rtria1D
+    integer :: iwriteUCD
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
@@ -539,6 +540,9 @@ contains
         "nmaxminleveltime", nmaxminleveltime)
     call parlst_getvalue_double (rparlist, "SPACETIME-DISCRETISATION", &
         "dtheta", dtheta)
+
+    call parlst_getvalue_int (rparlist, "POSTPROC", &
+        "iwriteUCD", iwriteUCD)
 
     do nminleveltime = 1,nmaxminleveltime
 
@@ -670,7 +674,7 @@ contains
       !call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
-      call stpp_postproc (rparams%rphysics,rsolution)
+      call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0)
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
         call stmv_releaseMatrix(p_Rmatrices(ilev))

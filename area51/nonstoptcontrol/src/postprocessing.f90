@@ -33,7 +33,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stpp_postproc (rphysics,rvector)
+  subroutine stpp_postproc (rphysics,rvector,bwriteUCD)
 
     ! Postprocessing of a space-time vector.
     
@@ -42,6 +42,9 @@ contains
     
     ! Vector to be postprocessed.
     type(t_spacetimeVector), intent(in) :: rvector
+    
+    ! Whether to write UCD output files or not.
+    logical, intent(in) :: bwriteUCD
   
     ! local variables
     integer :: istep
@@ -60,49 +63,53 @@ contains
       case (0,2)
         ! Heat equation
       
-        ! Write to vtk file.
-        call sptivec_getTimestepData (rvector, istep, rspaceVec)
-        
-        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
-            rvector%p_rspaceDiscr%p_rtriangulation,&
-            "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
-            
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
-        call ucd_addVariableVertexBased(rexport,"y",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
+        if (bwriteUCD) then
+          ! Write to vtk file.
+          call sptivec_getTimestepData (rvector, istep, rspaceVec)
+          
+          call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
+              rvector%p_rspaceDiscr%p_rtriangulation,&
+              "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
+              
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
+          call ucd_addVariableVertexBased(rexport,"y",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
 
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata1)
-        call ucd_addVariableVertexBased(rexport,"lambda",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
-        
-        call ucd_write(rexport)
-        call ucd_release (rexport)
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata1)
+          call ucd_addVariableVertexBased(rexport,"lambda",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NVT))
+          
+          call ucd_write(rexport)
+          call ucd_release (rexport)
+        end if
 
       case (1)
         ! Stokes equation
         
-        ! Write to vtk file.
-        call sptivec_getTimestepData (rvector, istep, rspaceVec)
-        
-        call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
-            rvector%p_rspaceDiscr%p_rtriangulation,&
-            "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
-            
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata2)
+        if (bwriteUCD) then
+          ! Write to vtk file.
+          call sptivec_getTimestepData (rvector, istep, rspaceVec)
+          
+          call ucd_startVTK(rexport,UCD_FLAG_STANDARD,&
+              rvector%p_rspaceDiscr%p_rtriangulation,&
+              "./gmv/u.vtk."//trim(sys_si0L(istep-1,5)))
+              
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(1),p_Ddata1)
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(2),p_Ddata2)
 
-        call ucd_addVarVertBasedVec(rexport,"y",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
+          call ucd_addVarVertBasedVec(rexport,"y",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
 
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(3),p_Ddata1)
-        call ucd_addVariableElementBased(rexport,"p",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(3),p_Ddata1)
+          call ucd_addVariableElementBased(rexport,"p",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
 
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(4),p_Ddata1)
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(5),p_Ddata2)
-        call ucd_addVarVertBasedVec(rexport,"lambda",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
-        
-        call lsyssc_getbase_double (rspaceVec%RvectorBlock(6),p_Ddata1)
-        call ucd_addVariableElementBased(rexport,"xi",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
-        
-        call ucd_write(rexport)
-        call ucd_release (rexport)
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(4),p_Ddata1)
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(5),p_Ddata2)
+          call ucd_addVarVertBasedVec(rexport,"lambda",p_Ddata1(1:p_rtria%NVT),p_Ddata2(1:p_rtria%NVT))
+          
+          call lsyssc_getbase_double (rspaceVec%RvectorBlock(6),p_Ddata1)
+          call ucd_addVariableElementBased(rexport,"xi",UCD_VAR_STANDARD,p_Ddata1(1:p_rtria%NEL))
+          
+          call ucd_write(rexport)
+          call ucd_release (rexport)
+        end if
 
       case default
       
