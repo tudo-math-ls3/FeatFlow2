@@ -518,7 +518,7 @@ contains
     type(t_maindata) :: rparams
     type(t_collection) :: rcollection
     integer :: nspacelevels,ntimelevels,nminlevelspace,nminleveltime,ilev,ispacelev,ntstepscoarse
-    integer :: nmaxminleveltime
+    integer :: nmaxminleveltime,csolverStatus
     real(DP) :: dtheta
     type(t_spaceTimeVector) :: rrhs, rsolution, rtemp
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -656,6 +656,7 @@ contains
       ! Solve
       call stls_initData (rlinearSolver%rsolver)
       call stls_solveAdaptively (rlinearSolver%rsolver,rsolution,rrhs,rtemp)
+      csolverStatus = rlinearSolver%rsolver%csolverStatus
       call stls_doneData (rlinearSolver%rsolver)
       
       call main_doneLinearSolver (rlinearSolver)
@@ -697,6 +698,11 @@ contains
           
       call mshh_releaseHierarchy(rparams%rmeshHierarchy)
       call boundary_release(rparams%rboundary)
+
+      if (csolverStatus .eq. 2) then
+        call output_line ("Stopping iteration due to divergence.")
+        exit
+      end if
 
     end do    
 

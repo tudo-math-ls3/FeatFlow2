@@ -53,6 +53,12 @@ module spacetimelinsol
 
   ! Linear solver structure.
   type t_spacetimelinsol
+  
+    ! Output: Status of the solver.
+    ! =0: solver converged.
+    ! =1: solver did not converge
+    ! =2: solver diverged.
+    integer :: csolverStatus = 0
     
     ! Type of the solver.
     integer :: csolverType = STLS_TYPE_NONE
@@ -68,6 +74,12 @@ module spacetimelinsol
 
     ! Absolute stopping criterion
     real(DP) :: depsAbs = 1E-14_DP
+    
+    ! Absolute divergence criterion
+    real(DP) :: ddivAbs = 1E20_DP
+
+    ! Relative divergence criterion
+    real(DP) :: ddivRel = 1E10_DP
     
     ! Whether or not to check the residual for convergence.
     ! =0: do not check.
@@ -594,6 +606,9 @@ contains
   ! Defect vector to apply preconditioning to.
   type(t_spaceTimeVector), intent(inout) :: rd
   
+    ! By default, the solver worked.
+    rsolver%csolverStatus = 0
+
     select case (rsolver%csolverType)
     case (STLS_TYPE_DEFCORR)
       call stls_precondDefCorr (rsolver, rd)
@@ -695,8 +710,11 @@ contains
             trim(sys_sdEP(dresCurrent,15,7)))
       end if
       
-      if (ite .gt. rsolver%nmaxiterations) &
+      if (ite .gt. rsolver%nmaxiterations) then
+        ! Not completed.
+        rsolver%csolverStatus = 1
         exit
+      end if
 
       if (ite .ge. rsolver%nminiterations+1) then
         ! Check the stopping criterion.
@@ -712,6 +730,16 @@ contains
             exit
           end if
         end select
+      end if
+      
+      if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
+          (.not. (dresCurrent .lt. rsolver%ddivRel*dresInit))) then
+        if (rsolver%ioutputlevel .ge. 1) then
+          call output_lbrk()
+          call output_line("Space-Time DefCorr: Divergence detected! Iteration stopped.");
+        end if
+        rsolver%csolverStatus = 2
+        exit
       end if
       
       ! Defect preconditioning
@@ -1245,7 +1273,7 @@ contains
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
 
-        if (rsolver%ialgoptions) then
+        if (rsolver%ialgoptions .eq. 1) then
           if (istep .lt. rd%NEQtime) then
             ! Load the previous timestep.
             call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
@@ -1463,11 +1491,12 @@ contains
       call sptivec_clearVector (rsolver%p_Rvectors1(ilevel))
 
       ! Max. number of iterations.
-      nite = rsolver%nmaxiterations
+      nite = rsolver%nmaxiterations+1
       
       ! If we are on a lower level, do as many iterations as prescribed by the cycle
       ! Otherwise, calculate the initial residuum for residuum checks.
       if (ilevel .lt. rsolver%ilevel) then
+        ! Currently only V-cycle...
         nite = 1
       else
         ! Initial residuum.
@@ -1487,6 +1516,12 @@ contains
                 trim(sys_sdEP(dresCurrent,15,7)))
           end if
 
+          if (ite .gt. rsolver%nmaxiterations) then
+            ! Not completed.
+            rsolver%csolverStatus = 1
+            exit
+          end if
+
           if (ite .ge. rsolver%nminiterations+1) then
             ! Check the stopping criterion.
             select case (rsolver%iresCheck)
@@ -1501,6 +1536,16 @@ contains
                 exit
               end if
             end select
+          end if
+          
+          if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
+              (.not. (dresCurrent .lt. rsolver%ddivRel*dresInit))) then
+            if (rsolver%ioutputlevel .ge. 1) then
+              call output_lbrk()
+              call output_line("Space-Time Multigrid: Divergence detected! Iteration stopped.");
+            end if
+            rsolver%csolverStatus = 2
+            exit
           end if
           
         end if

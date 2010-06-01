@@ -197,23 +197,25 @@ contains
       do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
       
         ! Last segment is Neumann!
-        do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc) - 1
-          ! Get the segment and create Dirichlet BC's there.
-          call boundary_createRegion (rbc%p_rspaceDiscr%p_rboundary, ibc, isegment, &
-              rregion)
-          rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
-                             
-          ! IQuickAccess(1) is the number of the primal equation. Here we only have one!
-          ! IquickAccess(2) is the equation.
-          ! DquickAccess(1) is the time.
-          rcollection%IquickAccess(1) = icomponent
-          rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
-          rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
-          rcollection%DquickAccess(1) = dtime
-          rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
-          rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
-          call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
-              icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
+        do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc)
+          if (isegment .ne. 2) then
+            ! Get the segment and create Dirichlet BC's there.
+            call boundary_createRegion (rbc%p_rspaceDiscr%p_rboundary, ibc, isegment, &
+                rregion)
+            rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
+                               
+            ! IQuickAccess(1) is the number of the primal equation. Here we only have one!
+            ! IquickAccess(2) is the equation.
+            ! DquickAccess(1) is the time.
+            rcollection%IquickAccess(1) = icomponent
+            rcollection%IquickAccess(2) = rbc%p_rphysics%cequation
+            rcollection%IquickAccess(3) = rbc%p_rphysics%creferenceProblem
+            rcollection%DquickAccess(1) = dtime
+            rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
+            rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
+            call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
+                icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
+          end if
         end do
       end do
 

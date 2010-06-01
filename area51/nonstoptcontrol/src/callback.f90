@@ -241,6 +241,7 @@ contains
       case (0)
       case (1)
         Dcoefficients(1,:,:) = 0.0_DP
+      case (2)
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -252,6 +253,7 @@ contains
       case (0)
       case (1)
         Dcoefficients(1,:,:) = 0.0_DP
+      case (2)
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -265,6 +267,15 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  2.0_DP*Dpoints(1,:,:) - dtime**2*Dpoints(1,:,:) 
+      case (2)
+        ! 2.)
+        Dcoefficients(1,:,:) = -( &
+            - Dpoints(2,:,:)*(-1.0_DP+Dpoints(2,:,:))*dtime**2*(-1.0_DP+dtime)**2 &
+            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*Dpoints(2,:,:) &
+                      -12.0_DP*Dpoints(2,:,:)*dtime+12.0_DP*Dpoints(2,:,:)*dtime**2 &
+                      -2.0_DP*Dpoints(2,:,:)**2+12.0_DP*Dpoints(2,:,:)**2*dtime &
+                      -12.0_DP*Dpoints(2,:,:)**2*dtime**2) )
+      
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -278,6 +289,9 @@ contains
       case (1)
         ! 1.)
         Dcoefficients(1,:,:) =  - 2.0_DP*Dpoints(2,:,:) + dtime**2*Dpoints(2,:,:) 
+      case (2)
+        Dcoefficients(1,:,:) = 0.0_DP
+      
       case default
         call output_line ("Problem not supported.")
         call sys_halt()
@@ -403,7 +417,12 @@ contains
         select case (creferenceProblem)
         case (0)
         case (1)
+          ! 1.)
           Dvalues(1) = dtime**2 * dx
+        case (2)
+          ! 2.)
+          Dvalues(1) = dtime**2*(1.0_DP-dtime)**2 * dy*(1.0_DP-dy)
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -413,7 +432,11 @@ contains
         select case (creferenceProblem)
         case (0)
         case (1)
+          ! 1.)
           Dvalues(1) = - dtime**2 * dy
+        case (2)
+          ! 2.)
+          Dvalues(1) = 0.0_DP
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -427,6 +450,11 @@ contains
         case (1)
           ! 1.)
           Dvalues(1) = dalpha * (-2.0_DP*dtime*dx)
+        case (2)
+          ! 2.)
+          Dvalues(1) = -dalpha*( &
+                2.0_DP*dtime**2*(1.0_DP-dtime)**2 + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
+              - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -439,6 +467,9 @@ contains
         case (1)
           ! 1.)
           Dvalues(1) = dalpha * (2.0_DP*dtime*dy)
+        case (2)
+          ! 2.)
+          Dvalues(1) = 0.0_DP
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
