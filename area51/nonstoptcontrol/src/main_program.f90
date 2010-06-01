@@ -730,6 +730,8 @@ contains
     call output_init (soutput)
     OU_LINE_LENGTH = 132
     
+    call parlst_info(rparlist)
+    
     ! Now we can really start!
     !
     ! Initialise the storage management: 
