@@ -34,6 +34,7 @@ ismoother = 1
 icoarsegridsolver = 2
 iorderTimeProlRest = -1
 depsrel = 1E-10
+depsabs = 1E-17
 
 ddamping = 0.9
 drelax = 1.0
@@ -43,6 +44,8 @@ ddampingCoarseGridCorrection = 1.0
 
 [SPACETIME-COARSEGRIDSOLVER]
 ioutputlevel = 0
+depsrel = 1E-18
+depsabs = 1E-17
 
 ddamping = 0.9
 drelax = 1.0
@@ -51,6 +54,6 @@ ifullcouplingFBGS2 = 0
 [SPACETIME-SMOOTHER]
 ioutputlevel = 0
 
-ddamping = 0.9
+ddamping = 0.5
 drelax = 1.0
 ifullcouplingFBGS2 = 1

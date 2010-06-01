@@ -264,7 +264,7 @@ contains
     integer :: ilev,nsmoothingSteps,iorderTimeProlRest,nmaxiterations
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
-    real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel
+    real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel,depsabs
     
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "csolverType", csolverType)
@@ -333,6 +333,10 @@ contains
       call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "ddamping", ddamping)
       call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "depsrel", depsrel)
+      call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
+          "depsabs", depsabs)
+      call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "drelax", drelax)
       call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "ifullcouplingFBGS2", ifullcouplingFBGS2)
@@ -357,6 +361,8 @@ contains
       rsolver%rcoarseGridSolver%ioutputLevel = ioutputlevel
       ! rsolver%rcoarseGridSolver%domega = 0.7_DP
       rsolver%rcoarseGridSolver%domega = ddampingCoarseGridCorrection
+      rsolver%rcoarseGridSolver%depsrel = depsrel
+      rsolver%rcoarseGridSolver%depsabs = depsabs
       
       if (rsolver%rcoarseGridSolver%domega .eq. 0.0_DP) then
         rsolver%rcoarseGridSolver%nmaxIterations = 0
@@ -402,6 +408,7 @@ contains
         call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
             rsolver%p_RsmootherPrecond(ilev))
         call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+        rsolver%p_Rsmoothers(ilev)%ioutputlevel = ioutputlevel
 
         !call stls_initDefCorr (rsolver%p_Rpreconditioners(ilev),rparams%rspacetimeHierarchy,ilev,&
         !    rsolver%p_RsmootherPrecond(ilev))
@@ -424,6 +431,9 @@ contains
       call sptipr_initProjection (rsolver%rprojection,rparams%rspacetimeHierarchy,&
           rsolver%rprojHierarchySpace,rparams%rphysics,iorderTimeProlRest)
       
+      call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+          "depsrel", depsrel)
+
       ! Create the solver.
       call stls_initMultigrid (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rprojection, rsolver%rcoarseGridSolver, RpreSmoothers=rsolver%p_Rsmoothers)
@@ -545,6 +555,8 @@ contains
         "iwriteUCD", iwriteUCD)
 
     do nminleveltime = 1,nmaxminleveltime
+
+      call output_separator (OU_SEP_MINUS)
 
       ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     

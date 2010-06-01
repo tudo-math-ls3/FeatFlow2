@@ -74,6 +74,12 @@ module spacetimelinsol
 
     ! Absolute stopping criterion
     real(DP) :: depsAbs = 1E-14_DP
+
+    ! Relative difference stopping criterion
+    real(DP) :: depsRelDiff = 1E-4_DP
+
+    ! Absolute difference stopping criterion
+    real(DP) :: depsAbsDiff = 0.0_DP
     
     ! Absolute divergence criterion
     real(DP) :: ddivAbs = 1E20_DP
@@ -693,7 +699,7 @@ contains
   
     ! local variables
     integer :: ite
-    real(DP) :: dresInit, dresCurrent, drho
+    real(DP) :: dresInit, dresCurrent, drho, dresLast
     
     ! One temp vector is used for the residuum, one for the solution.
     call sptivec_clearVector (rsolver%rspaceTimeTemp1)
@@ -703,6 +709,7 @@ contains
     call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%rspaceTimeTemp2)
     dresInit = sptivec_vectorNorm (rsolver%rspaceTimeTemp2,LINALG_NORML2)
     dresCurrent = dresInit
+    dresLast = 0.0_DP
     
     do ite = 1,rsolver%nmaxiterations+1
       if (rsolver%ioutputlevel .ge. 2) then
@@ -730,6 +737,10 @@ contains
             exit
           end if
         end select
+        if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
+             (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+          exit
+        end if
       end if
       
       if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
@@ -755,6 +766,7 @@ contains
       call stmv_matvec (rsolver%p_rmatrix, &
           rsolver%rspaceTimeTemp1, rsolver%rspaceTimeTemp2, -1.0_DP, 1.0_DP)
       call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%rspaceTimeTemp2)
+      dresLast = dresCurrent;
       dresCurrent = sptivec_vectorNorm (rsolver%rspaceTimeTemp2,LINALG_NORML2)
       
     end do
@@ -777,8 +789,7 @@ contains
       call output_line("Iterations      : "//trim(sys_siL(ite-1,10)))
       call output_line("Convergence rate: "//trim(sys_sdEP(drho,15,7)))
     else if (rsolver%ioutputlevel .ge. 1) then
-      call output_lbrk()
-      call output_line("Iterations/Conv. rate: "//&
+      call output_line("Space-Time DefCorr: Iterations/Conv. rate: "//&
           trim(sys_siL(ite-1,10))//"/"//trim(sys_sdEP(drho,15,7)))
     end if
     
@@ -1420,6 +1431,7 @@ contains
 
     rsolver%depsRel = 0.0_DP
     rsolver%depsAbs = 0.0_DP
+    rsolver%depsRelDiff = 0.0_DP
     rsolver%nminIterations = nsmoothingSteps
     rsolver%nmaxIterations = nsmoothingSteps
     rsolver%iresCheck  = 0
@@ -1470,7 +1482,7 @@ contains
   
     ! local variables
     integer :: ite,nite
-    real(DP) :: dresInit, dresCurrent, drho, drhoAsymp
+    real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresLast
     real(DP), dimension(3) :: DlastResiduals
   
     ! Are we on the level of the coarse grid solver?
@@ -1505,6 +1517,8 @@ contains
         DlastResiduals (:) = dresInit
       end if
       
+      dresLast = 0.0_DP
+      
       do ite = 1,nite
       
         if (ilevel .eq. rsolver%ilevel) then
@@ -1536,6 +1550,11 @@ contains
                 exit
               end if
             end select
+
+            if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
+                 (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+              exit
+            end if
           end if
           
           if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
@@ -1674,6 +1693,7 @@ contains
 !          call output_line ("Defect after smoothing:")
 !          call stpp_printDefectSubnormsDirect (rsolver%p_Rvectors3(ilevel))
           
+          dresLast = dresCurrent
           dresCurrent = sptivec_vectorNorm (rsolver%p_Rvectors3(ilevel),LINALG_NORML2)
           
           ! Shift the residuals
@@ -1708,8 +1728,7 @@ contains
           call output_line("Convergence rate        : "//trim(sys_sdEP(drho,15,7)))
           call output_line("asympt. convergence rate: "//trim(sys_sdEP(drhoAsymp,15,7)))
         else if (rsolver%ioutputlevel .ge. 1) then
-          call output_lbrk()
-          call output_line("Iterations/Conv. rate: "//&
+          call output_line("Space-Time Multigrid: Iterations/Conv. rate: "//&
               trim(sys_siL(ite-1,10))//"/"//trim(sys_sdEP(drho,15,7)))
         end if
       end if
