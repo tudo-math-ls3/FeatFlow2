@@ -745,6 +745,8 @@ contains
         "soutputFile", soutput,bdequote=.true.)    
     call output_init (soutput)
     OU_LINE_LENGTH = 132
+    cdefaultDateTimeLogPolicy = OU_DTP_ADDDATETIME
+    cdatetimeLogFormat = 1
     
     call parlst_info(rparlist)
     
