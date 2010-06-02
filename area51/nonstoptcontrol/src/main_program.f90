@@ -557,6 +557,8 @@ contains
     do nminleveltime = 1,nmaxminleveltime
 
       call output_separator (OU_SEP_MINUS)
+      call output_line ("Level "//trim(sys_siL(nminleveltime+ntimelevels-1,10)))
+      call output_lbrk
 
       ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     
@@ -762,7 +764,6 @@ contains
     ! Call the problem to solve. 
     call output_lbrk ()
     call output_line ('Calculating problem')
-    call output_separator (OU_SEP_MINUS)
     
     call main_calculate (rparlist)
 
