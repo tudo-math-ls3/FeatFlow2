@@ -648,7 +648,7 @@ contains
         //sys_adjustr(sys_sd(rtimediscr%dtimeInit,6),14) &
         //sys_adjustr(sys_sd(rtimediscr%dtimeMax,6),14) &
         //sys_adjustr(sys_sd(rtimediscr%dtstep,6),14) &
-        //sys_adjustr(sys_sd(rtimediscr%dtheta,3),6) )
+        //sys_adjustr(sys_sd(rtimediscr%dtheta,3),6),cdateTimeLogPolicy=OU_DTP_NONE )
 
   end subroutine 
 

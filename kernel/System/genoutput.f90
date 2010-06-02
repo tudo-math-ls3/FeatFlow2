@@ -296,6 +296,22 @@ module genoutput
 
 !</constantblock>
 
+!<constantblock description = "Constants for setting up adding date/time to each message.">
+
+  ! Do not add date/time.
+  integer, parameter, public :: OU_DTP_NONE            = 0
+
+  ! Add date.
+  integer, parameter, public :: OU_DTP_ADDDATE         = 1
+
+  ! Add time.            
+  integer, parameter, public :: OU_DTP_ADDTIME         = 2
+
+  ! Add date + time.            
+  integer, parameter, public :: OU_DTP_ADDDATETIME     = 3
+
+!</constantblock>
+
 !</constants>  
 
 !<publicvars>
@@ -307,6 +323,19 @@ module genoutput
   ! =2: Full. Write everything into the benchmark log file independent on whether
   !     OU_BENCHLOG is specified in coutputMode or not.
   integer, public, save :: cbenchLogPolicy = 1
+  
+  ! Default date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  integer, public, save :: cdefaultDateTimeLogPolicy = OU_DTP_NONE
+
+  ! Date/Time format.
+  ! =0: english: MM-DD-YYYY HH:MM:SS
+  ! =1: german: DD.MM.YYYY HH:MM:SS
+  integer, public, save :: cdatetimeLogFormat = 0
 
 !</publicvars>
 
@@ -546,7 +575,7 @@ contains
 
 !<function>
 
-  function output_reformatMsg (smessage, coutputClass, ssubroutine) result (s)
+  function output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy) result (s)
 
 !<description>
   ! Reformats an output message according to an output class.
@@ -562,23 +591,38 @@ contains
 
   ! OPTIONAL: Name of a subroutine to include in the message; may be "".
   character(LEN=*), intent(in), optional :: ssubroutine
+
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
 !</input>
 
 !<result>
   ! Reformatted string
 !</result>
 
-  character(LEN=len(smessage)+20+SYS_NAMELEN) :: s
+  character(LEN=len(smessage)+20+SYS_NAMELEN+10+8+3) :: s
 
 !</function>
 
     logical :: bsub
-    integer :: ioc
+    integer :: ioc,cdateTime
+    character(LEN=8) :: sdate
+    character(LEN=10) :: stime
     
     bsub = .false.
     if (present (ssubroutine)) then
       bsub = (ssubroutine .ne. '')
     end if
+    
+    cdateTime = cdefaultDateTimeLogPolicy
+    if (present(cdateTimeLogPolicy)) cdateTime = cdateTimeLogPolicy
     
     ioc = OU_CLASS_MSG
     if (present(coutputClass)) ioc = coutputClass
@@ -623,6 +667,40 @@ contains
 
     end if
 
+    if (cdateTime .ne. OU_DTP_NONE) then
+    
+      ! Get date and time.
+      call DATE_AND_TIME(sdate,stime)
+      
+      ! Reformat the message.
+      select case (cdatetimeLogFormat)
+      case (1)
+        select case (cdateTime)
+        case (OU_DTP_NONE)
+        case (OU_DTP_ADDDATE)
+          s = sdate(7:8)//"."//sdate(5:6)//"."//sdate(1:4)//": "//s
+        case (OU_DTP_ADDTIME)
+          s = stime(1:2)//":"//stime(3:4)//":"//stime(5:6)//": "//s
+        case (OU_DTP_ADDDATETIME)
+          s = sdate(7:8)//"."//sdate(5:6)//"."//sdate(1:4)//" "// &
+              stime(1:2)//":"//stime(3:4)//":"//stime(5:6)//": "//s
+        end select
+      case default
+        select case (cdateTime)
+        case (OU_DTP_NONE)
+        case (OU_DTP_ADDDATE)
+          s = sdate(5:6)//"-"//sdate(7:8)//"-"//sdate(1:4)//": "//s
+        case (OU_DTP_ADDTIME)
+          s = stime(1:2)//":"//stime(3:4)//":"//stime(5:6)//": "//s
+        case (OU_DTP_ADDDATETIME)
+          s = sdate(5:6)//"-"//sdate(7:8)//"-"//sdate(1:4)//" "// &
+              stime(1:2)//":"//stime(3:4)//":"//stime(5:6)//": "//s
+        end select
+      end select
+    
+    end if
+
+
   end function
 
 
@@ -632,7 +710,7 @@ contains
 
   subroutine output_line_std (smessage, &
                               coutputClass, coutputMode, ssubroutine, &
-                              bnolinebreak, bnotrim)
+                              bnolinebreak, bnotrim, cdateTimeLogPolicy)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
@@ -668,6 +746,17 @@ contains
   ! coutputClass=OU_CLASS_MSG and coutputClass=OU_CLASS_ERROR
   ! (or if coutputClass is not specified)!
   logical, intent(in), optional :: bnotrim
+
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
+  
 !</input>
 
 !</subroutine>
@@ -676,7 +765,7 @@ contains
   integer(I32) :: coMode
   integer :: coClass, iofChannel, iotChannel
   logical :: bntrim, bnnewline
-  character(LEN=len(smessage)+20+SYS_NAMELEN) :: smsg
+  character(LEN=len(smessage)+20+SYS_NAMELEN+10+8+3) :: smsg
   
     ! Get the actual parameters.
     
@@ -737,7 +826,7 @@ contains
     else
     
       ! Build the actual error message
-      smsg = output_reformatMsg (smessage, coutputClass, ssubroutine) 
+      smsg = output_reformatMsg (smessage, coutputClass, ssubroutine, cdateTimeLogPolicy) 
       
       ! Where to write the message to?
       if ((iand(coMode,OU_MODE_TERM) .ne. 0) .and. (iotChannel .gt. 0)) then
@@ -819,7 +908,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_lbrk (coutputClass, coutputMode, ssubroutine, nlbrk)
+  subroutine output_lbrk (coutputClass, coutputMode, ssubroutine, nlbrk, cdateTimeLogPolicy)
 
 !<description>
   ! Writes a line break to the terminal, log file or error log file,
@@ -844,6 +933,16 @@ contains
   
   ! OPTIONAL: Number of linebreaks
   integer, intent(in), optional :: nlbrk
+
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
 !</input>
 
 !</subroutine>
@@ -854,12 +953,14 @@ contains
     if (present(nlbrk)) then
 
       do ilbrk = 1, nlbrk
-        call output_line_std ('', coutputClass, coutputMode, ssubroutine)
+        call output_line_std ('', coutputClass, coutputMode, ssubroutine,&
+            cdateTimeLogPolicy=cdateTimeLogPolicy)
       end do
 
     else
 
-      call output_line_std ('', coutputClass, coutputMode, ssubroutine)
+      call output_line_std ('', coutputClass, coutputMode, ssubroutine,&
+            cdateTimeLogPolicy=cdateTimeLogPolicy)
 
     end if
 
@@ -869,7 +970,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_separator (csepType, coutputClass, coutputMode, ssubroutine)
+  subroutine output_separator (csepType, coutputClass, coutputMode, ssubroutine, cdateTimeLogPolicy)
 
 !<description>
   ! Writes a separator line to the terminal, log file or error log file,
@@ -897,7 +998,15 @@ contains
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
   
-  ! OPTIONAL: Name
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
 !</input>
 
 !</subroutine>
@@ -905,29 +1014,45 @@ contains
     ! local variables
     character(LEN=max(1,OU_LINE_LENGTH-1)) :: cstr
     character(LEN=20) :: saux
+    integer :: isub,cdateTime
+
+    cdateTime = cdefaultDateTimeLogPolicy
+    if (present(cdateTimeLogPolicy)) cdateTime = cdateTimeLogPolicy
+
+    ! Determine how much to reduce the line length.
+    isub = 0
+    select case (cdateTime)
+    case (OU_DTP_NONE)
+    case (OU_DTP_ADDDATE)
+      isub = 12
+    case (OU_DTP_ADDTIME)
+      isub = 10
+    case (OU_DTP_ADDDATETIME)
+      isub = 21
+    end select
 
     ! Create the separator line
     select case (csepType)
     case (OU_SEP_MINUS)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''-''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''-''))'
     case (OU_SEP_PLUS)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''+''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''+''))'
     case (OU_SEP_STAR)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''*''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''*''))'
     case (OU_SEP_EQUAL)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''=''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''=''))'
     case (OU_SEP_DOLLAR)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''$''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''$''))'
     case (OU_SEP_AT)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''@''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''@''))'
     case (OU_SEP_TILDE)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''~''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''~''))'
     case (OU_SEP_AMPAND)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''&''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''&''))'
     case (OU_SEP_PERC)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''%''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''%''))'
     case (OU_SEP_HASH)
-      write (saux,'(A,I3,A)') '(',len(cstr),'(''#''))'
+      write (saux,'(A,I3,A)') '(',len(cstr)-isub,'(''#''))'
     case DEFAULT
       write (unit=*, fmt=*) 'output_separator: Unknown separator type: ',&
                             csepType
@@ -936,7 +1061,7 @@ contains
     
     write (cstr,saux)
 
-    call output_line_std (cstr, coutputClass, coutputMode, ssubroutine)
+    call output_line_std (trim(cstr), coutputClass, coutputMode, ssubroutine)
 
   end subroutine
 
@@ -944,7 +1069,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_simple (ioutputLevel, smsg, coutputClass, ssubroutine)
+  subroutine output_simple (ioutputLevel, smsg, coutputClass, ssubroutine, cdateTimeLogPolicy)
 
 !<description>
   ! Writes an output message to the terminal, log file or error log file,
@@ -973,6 +1098,15 @@ contains
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
   
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
 !</input>
 
 !</subroutine>
@@ -989,9 +1123,11 @@ contains
     end select
 
     if (present(smsg)) then
-      call output_line_std (smsg, coutputClass, coMode, ssubroutine)
+      call output_line_std (smsg, coutputClass, coMode, ssubroutine, &
+          cdateTimeLogPolicy=cdateTimeLogPolicy)
     else
-      call output_line_std ('', coutputClass, coMode, ssubroutine)
+      call output_line_std ('', coutputClass, coMode, ssubroutine, &
+          cdateTimeLogPolicy=cdateTimeLogPolicy)
     end if
 
   end subroutine
@@ -1000,7 +1136,7 @@ contains
 
 !<subroutine>
 
-  subroutine output_simple_sep (ioutputLevel, csepType, coutputClass, ssubroutine)
+  subroutine output_simple_sep (ioutputLevel, csepType, coutputClass, ssubroutine, cdateTimeLogPolicy)
 
 !<description>
   ! Writes a separator line to the terminal, log file or error log file,
@@ -1030,6 +1166,15 @@ contains
   ! OPTIONAL: Name of the subroutine that calls this function
   character(LEN=*), intent(in), optional :: ssubroutine
   
+  ! OPTIONAL: Date/time appending flag. Allows to configure the
+  ! output submodule to automatically add the current date/time to the output.
+  ! =OU_DTP_NONE:    do not add date/time (standard).
+  ! =OU_DTP_ADDDATE: add time to the output.
+  ! =OU_DTP_ADDTIME:    add date to the output.
+  ! =OU_DTP_ADDDATETIME:    add both, date and time to the output.
+  ! If the parameter is not present, cdefaultDateTimeLogPolicy will be used
+  ! as default parameter.
+  integer, intent(in), optional :: cdateTimeLogPolicy
 !</input>
 
 !</subroutine>
@@ -1045,7 +1190,7 @@ contains
       coMode = OU_MODE_LOG+OU_MODE_TERM
     end select
 
-    call output_separator (csepType, coutputClass, coMode, ssubroutine)
+    call output_separator (csepType, coutputClass, coMode, ssubroutine, cdateTimeLogPolicy)
 
   end subroutine
   

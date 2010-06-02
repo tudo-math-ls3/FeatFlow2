@@ -969,7 +969,7 @@ contains
              coutputMode=rsolverNode%coutputMode)
         do i=1,nblocks
           call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.,&
-              coutputMode=rsolverNode%coutputMode)
+              coutputMode=rsolverNode%coutputMode,cdateTimeLogPolicy=OU_DTP_NONE)
         end do
         call output_lbrk()
       end if
@@ -1078,9 +1078,9 @@ contains
                   coutputMode=rsolverNode%coutputMode)
               do i=1,nblocks
                 call output_line (' '//trim(sys_sdEL(DvecNorm(i),15)),bnolinebreak=.true.,&
-                coutputMode=rsolverNode%coutputMode)
+                coutputMode=rsolverNode%coutputMode,cdateTimeLogPolicy=OU_DTP_NONE)
               end do
-              call output_lbrk()
+              call output_lbrk(cdateTimeLogPolicy=OU_DTP_NONE)
             end if
           end if
 

@@ -2356,13 +2356,13 @@ contains
         bnoTrim=.true.)
     select case (rspatialDiscr%ccomplexity)
     case (SPDISC_UNIFORM)
-      call output_line ('uniform')
+      call output_line ('uniform',cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_CONFORMAL)
-      call output_line ('conformal')
+      call output_line ('conformal',cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
-      call output_line ('mixed')
+      call output_line ('mixed',cdateTimeLogPolicy=OU_DTP_NONE)
     case DEFAULT
-      call output_line ('undefined')
+      call output_line ('undefined',cdateTimeLogPolicy=OU_DTP_NONE)
     end select
     call output_line ('#DOFs:                        '&
         //trim(sys_siL(dof_igetNDofGlob(rspatialDiscr),16)))
@@ -2422,13 +2422,13 @@ contains
         bnoTrim=.true.)
     select case (rblockDiscr%ccomplexity)
     case (SPDISC_UNIFORM)
-      call output_line ('uniform')
+      call output_line ('uniform',cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_CONFORMAL)
-      call output_line ('conformal')
+      call output_line ('conformal',cdateTimeLogPolicy=OU_DTP_NONE)
     case (SPDISC_MIXED)
-      call output_line ('mixed')
+      call output_line ('mixed',cdateTimeLogPolicy=OU_DTP_NONE)
     case DEFAULT
-      call output_line ('undefined')
+      call output_line ('undefined',cdateTimeLogPolicy=OU_DTP_NONE)
     end select
     call output_line ('#DOFs:                        '&
         //trim(sys_siL(dof_igetNDofGlobBlock(rblockDiscr),16)))

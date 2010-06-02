@@ -1446,14 +1446,15 @@ contains
         ! Print a headline
         call output_line("Lv.",bnoLineBreak=.true.)
         do j=1,rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%ncomponents
-          call output_line("    #dof(x"//trim(sys_si(j,1))//")",bnoLineBreak=.true.)
+          call output_line("    #dof(x"//trim(sys_si(j,1))//")",bnoLineBreak=.true.,&
+              cdateTimeLogPolicy=OU_DTP_NONE)
         end do
-        call output_line(" #dof(total)")
+        call output_line(" #dof(total)",cdateTimeLogPolicy=OU_DTP_NONE)
         call output_line("---",bnoLineBreak=.true.)
         do j=1,rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%ncomponents
-          call output_line("------------",bnoLineBreak=.true.)
+          call output_line("------------",bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
         end do
-        call output_line("------------")
+        call output_line("------------",cdateTimeLogPolicy=OU_DTP_NONE)
       end if
       
       ! Print statistics about that level
@@ -1462,11 +1463,11 @@ contains
         call output_line(&
             trim(sys_si(dof_igetNDofGlob(&
                 rhierarchy%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)),12)),&
-                bnoLineBreak=.true.)
+                bnoLineBreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
       end do
 
       call output_line(trim(sys_si(dof_igetNDofGlobBlock(&
-          rhierarchy%p_rfeSpaces(i)%p_rdiscretisation),12)))
+          rhierarchy%p_rfeSpaces(i)%p_rdiscretisation),12)),cdateTimeLogPolicy=OU_DTP_NONE)
     end do
     
   end subroutine

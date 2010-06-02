@@ -198,7 +198,7 @@ contains
       if (present(bprint)) then
         if (bprint) then
           ! Print current state.
-          call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.)
+          call output_line (" "//trim(sys_siL(i,10)),bnolinebreak=.true.,cdateTimeLogPolicy=OU_DTP_NONE)
         end if
       end if
     

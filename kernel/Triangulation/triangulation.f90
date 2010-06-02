@@ -5598,7 +5598,7 @@ p_InodalPropertyDest = -4711
         //trim(sys_si(rtriangulation%NBCT,8)) &
         //trim(sys_si(rtriangulation%NblindBCT,11)) &
         //trim(sys_si(rtriangulation%NVBD,8)) &
-        //trim(sys_si(rtriangulation%InelOfType(TRIA_NVELINE1D),11)) )
+        //trim(sys_si(rtriangulation%InelOfType(TRIA_NVELINE1D),11)),cdateTimeLogPolicy=OU_DTP_NONE )
 
     case (NDIM2D)
       if (present(bheadline)) then
@@ -5635,7 +5635,7 @@ p_InodalPropertyDest = -4711
         //trim(sys_si(rtriangulation%NblindBCT,11)) &
         //trim(sys_si(rtriangulation%NVBD,8)) &
         //trim(sys_si(rtriangulation%InelOfType(TRIA_NVETRI2D),11)) &
-        //trim(sys_si(rtriangulation%InelOfType(TRIA_NVEQUAD2D),11)) )
+        //trim(sys_si(rtriangulation%InelOfType(TRIA_NVEQUAD2D),11)),cdateTimeLogPolicy=OU_DTP_NONE )
     end select
 
   end subroutine tria_infoStatistics
