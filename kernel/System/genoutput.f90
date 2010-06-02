@@ -213,12 +213,12 @@
 !#
 !# This gives the output:
 !#
-!# <code>
+!# <verb>
 !#    02-06-2010 16:21:00: Hello.
 !#    02-06-2010 16:21:00: This is some output.
 !#    02-06-2010 16:21:00: This sentence is incorrectly printed 02-06-2010 16:21:00: in two statements.
 !#    02-06-2010 16:21:00: This sentence is correctly printed in two statements.
-!# </code>
+!# </verb>
 !#
 !# If cdefaultDateTimeLogPolicy is not set, specifying cdateTimeLogPolicy=OU_DTP_NONE
 !# as parameter in the output does not harm since it has no effect.
