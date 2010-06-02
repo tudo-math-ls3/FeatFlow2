@@ -175,6 +175,54 @@
 !# In all cases, the additional constant OU_MODE_BENCHLOG must be manually
 !# specified as logging to the benchmark log file is not done automatically.
 !#
+!# Adding date/time to the output
+!# ------------------------------
+!# The output module supports automatic adding of the current date and/or
+!# time to the output. This helps to keep track of the execution time
+!# and allows basic profiling of the application. To enable the output
+!# of date/time data, it can be activated using the global
+!# cdefaultDateTimeLogPolicy variable. Using cdatetimeLogFormat allows to
+!# change the format of the output.
+!#
+!# Example: The following code enables printing of date and time:
+!#
+!# <code>
+!#    call output_init()
+!#    cdefaultDateTimeLogPolicy = OU_DTP_ADDDATETIME
+!# </code>
+!#
+!# Using the optional variable cdateTimeLogPolicy in the output subroutines
+!# allows to manually define whether to print date/time or not. This can be
+!# used to switch off the output if some lines are printed without line break.
+!# Example:
+!#
+!# <code>
+!#    call output_init()
+!#    cdefaultDateTimeLogPolicy = OU_DTP_ADDDATETIME
+!#
+!#    call output_line ("Hello")
+!#
+!#    call output_line ("This is some output.")
+!#
+!#    call output_line ("This sentence is incorrectly printed ", bnolinebreak=.true.)
+!#    call output_line ("in two statements.")
+!#
+!#    call output_line ("This sentence is correctly printed ", bnolinebreak=.true.)
+!#    call output_line ("in two statements.", cdateTimeLogPolicy = OU_DTP_NONE)
+!# </code>
+!#
+!# This gives the output:
+!#
+!# <code>
+!#    02-06-2010 16:21:00: Hello.
+!#    02-06-2010 16:21:00: This is some output.
+!#    02-06-2010 16:21:00: This sentence is incorrectly printed 02-06-2010 16:21:00: in two statements.
+!#    02-06-2010 16:21:00: This sentence is correctly printed in two statements.
+!# </code>
+!#
+!# If cdefaultDateTimeLogPolicy is not set, specifying cdateTimeLogPolicy=OU_DTP_NONE
+!# as parameter in the output does not harm since it has no effect.
+!#
 !# </purpose>
 !##############################################################################
 
