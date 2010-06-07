@@ -70,7 +70,7 @@ ipressureFullyImplicit = 1
 
 cadaptiveTimeStepping = 0                 # IADTIM
 
-# max. number of repetitions for |cadaptiveTimeStepping|=3 (IREPIT)
+# max. number of repetitions for cadaptiveTimeStepping > 0 (IREPIT)
 
 irepetitions = 3                          # IREPIT
 
