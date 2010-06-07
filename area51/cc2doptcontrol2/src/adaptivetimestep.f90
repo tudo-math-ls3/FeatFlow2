@@ -153,14 +153,14 @@ module adaptivetimestep
     real(DP) :: depsAdaptiveRelTimeStep       = 0.5_DP
     
     ! Type of start procedure (IADIN) when starting a nonstationary 
-    ! simulation if iadaptiveTimeStepping<>0 (to prevent time step to be reduced to 0.0).
+    ! simulation if cadaptiveTimeStepping<>0 (to prevent time step to be reduced to 0.0).
     ! One of the TADTS_START_xxxx constants.
     ! TADTS_START_STANDARD    = constant start
     ! TADTS_START_LINEAR      = linear start
     ! TADTS_START_LOGARITHMIC = logarithmic start
     integer :: cadTimeStepInit                = TADTS_START_LOGARITHMIC
 
-    ! Time length of start procedure; must be >0 if iadaptiveTimeStepping<>0,
+    ! Time length of start procedure; must be >0 if cadaptiveTimeStepping<>0,
     ! otherwise nonsteady simulations will stuck at the initial time
     ! reducing the time step size to 0.0
     real(DP) :: dadTimeStepInitDuration       = 0.5_DP
