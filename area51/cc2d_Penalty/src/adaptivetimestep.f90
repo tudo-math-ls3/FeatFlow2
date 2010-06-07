@@ -145,11 +145,11 @@ module adaptivetimestep
   
     ! Parameter for error control in the start phase. One of the
     ! TADTS_START_xxxx constants. Standard value is TADTS_START_STANDARD,
-    ! which controls the time stepping in the start phase by depsadi only.
+    ! which controls the time stepping in the start phase by dadTimeStepEpsDuringInit only.
     ! This parameter affects the simulation only if 
     ! ctype=TADTS_PREDREPTIMECONTROL!
     ! If 
-    !  (new time step size)/(old time step size) < depsilonAdaptiveRelTimeStep, 
+    !  (new time step size)/(old time step size) < depsAdaptiveRelTimeStep,
     ! the time step is repeated.
     real(DP) :: depsAdaptiveRelTimeStep       = 0.5_DP
     
