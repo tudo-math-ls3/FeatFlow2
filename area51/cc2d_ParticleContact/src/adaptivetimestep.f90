@@ -167,7 +167,7 @@ module adaptivetimestep
     integer :: cadTimeStepInit                = TADTS_START_LOGARITHMIC
 
     ! Time length of start procedure; must be >0 if cadaptiveTimeStepping<>0,
-    ! otherwise nonsteady simulations will stuck at the initial time
+    ! otherwise nonsteady simulations will be stuck at the initial time
     ! reducing the time step size to 0.0
     real(DP) :: dadTimeStepInitDuration       = 0.5_DP
 
