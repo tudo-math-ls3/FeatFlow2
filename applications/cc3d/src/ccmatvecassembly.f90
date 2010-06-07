@@ -519,7 +519,7 @@ contains
       !    |           A33  B2 |   | A31  A32  A33  A34 |
       !    \ B1^T B2^T B3^T  . /   \ A41  A42  A43  A44 /
       !
-      ! All matices may have multiplication factors in their front.
+      ! All matrices may have multiplication factors in their front.
       !
       ! The structure of the matrices A11 and A22 of the global system matrix 
       ! is governed by the template FEM matrix.
@@ -1264,7 +1264,7 @@ contains
     !    | A21  A22  A33   .  | 
     !    \  .    .    .       /
     !
-    ! assembleVelocityDefect handles exactly these submatices.
+    ! assembleVelocityDefect handles exactly these submatrices.
 
     call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx)
     

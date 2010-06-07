@@ -523,7 +523,7 @@ CONTAINS
     call lsysbl_updateMatStrucInfo (rmatrix)
     
     ! First, we assemble the defect that arises in the velocity components. 
-    ! assembleDefect handles exactly these submatices.
+    ! assembleDefect handles exactly these submatrices.
     call assembleDefect (rnonlinearCHMatrix,rmatrix,rx,rd,p_ry, -dcx, &
 	                     rNSproblem, rNSvector)
 

@@ -330,7 +330,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Proably we have to interpolate the solution to the point dtime in time.
+        ! Probably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONUCD', iinterpolateSolutionUCD,1)
         if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
@@ -376,7 +376,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Proably we have to interpolate the solution to the point dtime in time.
+        ! Probably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONFILM', iinterpolateSolutionFilm,1)
         if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &

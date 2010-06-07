@@ -772,7 +772,7 @@ contains
       !    (      A22  B2  )   ( A21  A22  A23 )
       !    ( D1   D2   .   )   ( A31  A32  A33 )
       !
-      ! All matices may have multiplication factors in their front.
+      ! All matrices may have multiplication factors in their front.
       !
       ! The structure of the matrices A11 and A22 of the global system matrix 
       ! is governed by the template FEM matrix.
@@ -1813,7 +1813,7 @@ contains
     !    ( A21  A22  .  ) 
     !    ( .    .    .  ) 
     !
-    ! assembleVelocityDefect handles exactly these submatices.
+    ! assembleVelocityDefect handles exactly these submatrices.
 
     call assembleVelocityDefect (rnonlinearCCMatrix,rmatrix,rx,rd,p_ry,-dcx,rproblem)
     
@@ -1823,7 +1823,7 @@ contains
     !    ( .    .    B2  ) 
     !    ( D1   D2   .   ) 
 
-    ! To build the appropriate defect, we firat remove the velocity blocks:
+    ! To build the appropriate defect, we first remove the velocity blocks:
     
     call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,1))
     call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))

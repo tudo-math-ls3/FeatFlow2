@@ -94,7 +94,7 @@ swriteSolutionFilename = ''
 # Timestep counter for writing out solutions if cwriteFinalSolution=3/4.
 # The solution will be written out every iwriteSolDeltaSteps timesteps.
 # =1: write out every timestep.
-# This switch works cumulative to iwriteSolDeltaSteps, so the solution is
+# This switch works cumulative to iwriteSolDeltaTime, so the solution is
 # written out if either the condition given by iwriteSolDeltaSteps or 
 # dwriteSolDeltaTime is reached.
 

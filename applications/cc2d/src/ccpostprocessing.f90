@@ -280,8 +280,8 @@ contains
     if (iwriteSolDeltaSteps .lt. 1) iwriteSolDeltaSteps = 1
     
     ! Figure out if we have to write the solution. This is the case if
-    ! 1.) Precious and current time is the same or
-    ! 2.) The solution crossed the next timestep.
+    ! 1.) Previous and current time is the same (= first call) or
+    ! 2.) The solution "crossed the next timestep".
   
     if ((dwriteSolDeltaTime .gt. 0.0_DP) .and. (dtimePrev .ne. dtime)) then
       itime1 = int((dtimePrev-rproblem%rtimedependence%dtimeInit)/dwriteSolDeltaTime)
@@ -356,7 +356,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Proably we have to interpolate the solution to the point dtime in time.
+        ! Probably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONUCD', iinterpolateSolutionUCD,1)
         if ((iinterpolateSolutionUCD .eq. 0) .or. (dtimeDifferenceUCD .eq. 0.0_DP) &
@@ -401,7 +401,7 @@ contains
       end if
     
       if (itime1 .ne. itime2) then
-        ! Proably we have to interpolate the solution to the point dtime in time.
+        ! Probably we have to interpolate the solution to the point dtime in time.
         call parlst_getvalue_int (rproblem%rparamList, 'CC-POSTPROCESSING', &
             'IINTERPOLATESOLUTIONFILM', iinterpolateSolutionFilm,1)
         if ((iinterpolateSolutionFilm .eq. 0) .or. (dtimeDifferenceFilm .eq. 0.0_DP) &

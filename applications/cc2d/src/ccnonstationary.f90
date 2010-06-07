@@ -765,7 +765,7 @@ contains
       ! step size of three steps in the Fractional Step Theta scheme :-)
       ! So after each three substeps, the simulation time of the small
       ! substeps will always coincide with the simulation time after the
-      ! large mactostep
+      ! large macrostep
       !
       ! Do we use adaptive time stepping?
       select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
@@ -1308,7 +1308,7 @@ contains
         !  c2) the solver for the nonlinear iteration (predictor
         !      or corrector step) broke down
         ! c2) is an exception to the rule that we do not repeat
-        ! time steps in adaptive time stepping technique 1!
+        !     time steps in adaptive time stepping technique 1!
         
         ! Do we have a time stepping algorithm that allowes recomputation?          
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
@@ -1368,7 +1368,7 @@ contains
       
         ! No, time step is ok. If this is the last time step of the macrostep,
         ! reset the repetition counter such that it starts with 0 for the
-        ! next mactostep.
+        ! next macrostep.
         if (mod(rproblem%rtimedependence%itimeStep,3) .eq. 0) then
           irepetition = 0
         end if

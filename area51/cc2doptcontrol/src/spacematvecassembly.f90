@@ -1625,7 +1625,7 @@ contains
       !    ( .    A22  B2  ) 
       !    ( B1^T B2^T C   ) 
       !
-      ! All matices may have multiplication factors in their front.
+      ! All matrices may have multiplication factors in their front.
       !
       ! The structure of the matrices A11 and A22 of the global system matrix 
       ! is governed by the template FEM matrix.
@@ -2659,7 +2659,7 @@ contains
 !      !    ( .    A22  B2  .   M   .   )   ( .    A22  A23 .   A25 .   )
 !      !    ( B1^T B2^T .   .   .   .   )   ( A31  A32  .   .   .   .   )
 !      !
-!      ! All matices may have multiplication factors in their front.
+!      ! All matrices may have multiplication factors in their front.
 !      !
 !      ! The structure of the matrices A11 and A22 of the global system matrix 
 !      ! is governed by the template FEM matrix.
@@ -2825,7 +2825,7 @@ contains
 !      !    ( .    R2   .   .    A55  B2  )   ( .    A52  .   .   A55 A56 )
 !      !    ( .    .    .   B1^T B2^T .   )   ( .    .    .   A64 A65 .   )
 !      !
-!      ! All matices may have multiplication factors in their front.
+!      ! All matrices may have multiplication factors in their front.
 !      !
 !      ! The structure of the matrices A44 and A55 of the global system matrix 
 !      ! is governed by the template FEM matrix.
@@ -4694,7 +4694,7 @@ contains
 !    !    (               A54  A55     ) 
 !    !    (                            ) 
 !    ! 
-!    ! assembleVelocityDefect handles exactly these submatices.
+!    ! assembleVelocityDefect handles exactly these submatrices.
 !    ! We call the routine twice -- once for the primal and once for the dual
 !    ! equation. In both cases, we specify the primal velocity p_ry
 !    ! as velocity field (!).
@@ -4726,7 +4726,7 @@ contains
 !    !    (      M        .    .    B2  ) 
 !    !    (               B1^T B2^T .   ) 
 !
-!    ! To build the appropriate defect, we firat remove the velocity blocks:
+!    ! To build the appropriate defect, we first remove the velocity blocks:
 !    
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,1))
 !    call lsyssc_releaseMatrix (rmatrix%RmatrixBlock(1,2))

@@ -455,7 +455,7 @@ contains
       if (iand(isolverStatus,&
                TADTS_SST_NLFAIL + TADTS_SST_NLPRECFAIL + TADTS_SST_NLPREDFAIL) .ne. 0) then
       
-        ! If the linear solvers of the predictior step or
+        ! If the linear solvers of the predictor step or
         ! the nonlinear solver of the correction step broke down,
         ! broke down, reduce the time step by sqrt(dtimeStepFactor)
       
@@ -501,7 +501,7 @@ contains
         
       endif
 
-      ! The nonlinear solver in the predictior step might break
+      ! The nonlinear solver in the predictor step might break
       ! down, while the other solvers work.
       ! When the nonlinear solver broke down and we are in a time
       ! stepping mode that allowes repetition of the time step,

@@ -1528,7 +1528,7 @@ contains
     call cc_initNonlinMatrix (rnonlinearSpatialMatrix,rproblem,&
         p_rlevelInfo%rdiscretisation,p_rlevelInfo%rstaticInfo)
 
-    ! Disable the submatices for the dual solution and the coupling.
+    ! Disable the submatrices for the dual solution and the coupling.
     ! We only want to generate the RHS for the primal solution.
     call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
     call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
