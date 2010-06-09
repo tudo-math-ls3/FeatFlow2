@@ -889,11 +889,11 @@ contains
       call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
       select case (ispaceTimeFormulation)
       case (0)
-        call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
-        call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
-      case (1)
         call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),1.0_DP/dalpha)
         call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),1.0_DP/dalpha)
+      case (1)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
       end select
       
       if (rconstraints%ccontrolConstraints .ne. 0) then
@@ -905,11 +905,11 @@ contains
     else
       select case (ispaceTimeFormulation)
       case (0)
-        call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
-        call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
-      case (1)
         call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),1.0_DP/dalpha)
         call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),1.0_DP/dalpha)
+      case (1)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
       end select
       
       if (rconstraints%ccontrolConstraints .ne. 0) then
