@@ -40,6 +40,7 @@ TIMENLMAX = 1
 # Time-stepping scheme;
 # 0=one step scheme
 # 1=FS-Theta 3-step scheme
+# 2=One-step scheme with old time discretisation for the dual.
 
 ctimeStepScheme = 0
 
