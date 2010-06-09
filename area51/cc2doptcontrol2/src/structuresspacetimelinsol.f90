@@ -604,7 +604,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%domega)
+          p_rprecond,1.0_DP)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -637,7 +637,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%domega)
+          p_rprecond,1.0_DP)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -806,7 +806,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%domega)
+          p_rprecond,1.0_DP)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega
@@ -841,7 +841,7 @@ contains
       ! Create a Block_Jacobi preconditioner
       call sptils_initBlockJacobi (rsettings,ispaceTimeLevel,&
           rprecsettings%p_rparlist,rprecsettings%slinearSpaceSolver,&
-          p_rprecond,rprecsettings%domega)
+          p_rprecond,1.0_DP)
           
       p_rprecond%ioutputLevel = rprecsettings%ioutputLevel
       p_rprecond%domega = rprecsettings%domega

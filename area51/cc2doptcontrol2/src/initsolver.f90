@@ -650,6 +650,9 @@ contains
   type(t_triangulation), intent(out) :: rtriangulation
   
   ! Time coarse mesh.
+  ! The rdiscrTime%itag tag decides upon the type of one-step scheme, if
+  ! a one-step scheme is chosen.
+  ! =0: Standard, =1: Old (not respecting any minimisation problem)
   type(t_timeDiscretisation) :: rdiscrTime
 !</output>
 
@@ -722,11 +725,24 @@ contains
       ! One-step scheme.
       call tdiscr_initOneStepTheta (rdiscrTime, &
           dtimeInit, dtimeMax, niterations, dtimeStepTheta)
+          
+      ! Default time stepping.
+      ! itag=0/1 decides upon whether the new or old 1-step method is used.
+      rdiscrTime%itag = 0
     case (1)
       ! FS-Theta scheme.
       call tdiscr_initFSTheta (rdiscrTime, dtimeInit, dtimeMax, niterations)
 
     case (2)
+      ! Old One-step scheme.
+      call tdiscr_initOneStepTheta (rdiscrTime, &
+          dtimeInit, dtimeMax, niterations, dtimeStepTheta)
+          
+      ! Old time stepping.
+      ! itag=0/1 decides upon whether the new or old 1-step method is used.
+      rdiscrTime%itag = 1
+
+    case (3)
       ! dG(0)
       call tdiscr_initdG0 (rdiscrTime, dtimeInit, dtimeMax, niterations)
     end select
@@ -1260,20 +1276,6 @@ contains
     call parlst_getvalue_int (rparlist, ssection, &
         'iorderTimeProlRest', iorderTimeProlRest, -1)
         
-    if (iorderTimeProlRest .eq. -1) then
-      ! Automatic mode. Check the time stepping theta to determine
-      ! if we have 1st or 2nd order in time.
-      iorderTimeProlRest = 1
-      if (rtimeDisr%dtheta .eq. 0.5_DP) then
-        ! 2nd order Crank Nicolson
-        iorderTimeProlRest = 2
-      end if
-      if (rtimeDisr%ctype .eq. TDISCR_FSTHETA) then
-        ! 2nd order FS-Theta
-        iorderTimeProlRest = 2
-      end if
-    end if
-    
     call sptipr_initProjection (rprjHierarchy,rhierarchy,&
         rprojHierarchySpace,iorderTimeProlRest)
     

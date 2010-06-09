@@ -532,6 +532,7 @@ contains
 
     real(DP) :: dprimalDualCoupling, ddualPrimalCoupling
     real(DP) :: dterminalCondDecoupled, dtimeCoupling
+    logical :: boldOneStepScheme
 
     ! This constant defines the type of equation. There are two equivalent
     ! formulations of the dual equation which only differs in the sign
@@ -586,7 +587,12 @@ contains
     dtheta = p_rtimeDiscr%dtheta
     dtstep = p_rtimeDiscr%dtstep
     neqTime = tdiscr_igetNDofGlob(p_rtimeDiscr)
-    
+
+    ! The 'old' one step scheme (indicated by ITAG=1) sets up a time discretisation
+    ! with all solutions located in the points in time, not inbetween.
+    ! This does not correspond to any known analytical minimisation problem.
+    boldOneStepScheme = p_rtimeDiscr%itag .eq. 1
+   
     ! Clear the coefficients
     rnonlinearSpatialMatrix%Diota(:,:) = 0.0_DP
     rnonlinearSpatialMatrix%Dalpha(:,:) = 0.0_DP
@@ -794,9 +800,13 @@ contains
         
         end if
 
-        !rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
-        !    (-dequationType) * (1.0_DP-dtheta) &
-        !                  / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+        if (boldOneStepScheme) then
+          ! Activate the old timestep scheme. The coupling to the dual must be
+          ! weighted by 1-dtheta.
+          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+              (-dequationType) * (1.0_DP-dtheta) &
+                          / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+        end if
 
       else if (irelpos .eq. 0) then    
 
@@ -847,6 +857,17 @@ contains
         rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
             ( dequationType) * 1.0_DP 
             
+        if (boldOneStepScheme) then
+          ! Activate the old timestep scheme. The coupling to the dual must be
+          ! weighted by dtheta.
+          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+              (-dequationType) * dtheta &
+                          / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+
+          rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+              ( dequationType) * dtheta
+        end if
+        
         if (.not. bconvectionExplicit) then
 
           if (dnewton .ne. 0.0_DP) then
@@ -920,8 +941,12 @@ contains
         
         end if
 
-        !rnonlinearSpatialMatrix%Dalpha(2,1) = dtimeCoupling * ddualPrimalCoupling * &
-        !    ( dequationType) * (1.0_DP-dtheta) 
+        if (boldOneStepScheme) then
+          ! Activate the old timestep scheme. The coupling to the dual must be
+          ! weighted by 1-dtheta.
+          rnonlinearSpatialMatrix%Dalpha(2,1) = ddualPrimalCoupling * &
+              ( dequationType) * (1.0_DP-dtheta)
+        end if
             
         if (bconvectionExplicit) then
 
@@ -985,9 +1010,13 @@ contains
           
         end if
 
-        !rnonlinearSpatialMatrix%Dalpha(1,2) = dtimeCoupling * dprimalDualCoupling * &
-        !    (-dequationType) * (1.0_DP-dtheta) &
-        !                  / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+        if (boldOneStepScheme) then
+          ! Activate the old timestep scheme. The coupling to the dual must be
+          ! weighted by 1-dtheta.
+          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+              (-dequationType) * (1.0_DP-dtheta) &
+                          / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+        end if
 
       else if (irelpos .eq. 0) then    
 
@@ -1038,6 +1067,18 @@ contains
         rnonlinearSpatialMatrix%Dalpha(2,1) = dterminalCondDecoupled * &
             ( dequationType) * &
             (dtheta + rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dgammaC / dtstep)
+
+        if (boldOneStepScheme) then
+          ! Activate the old timestep scheme. The coupling to the dual must be
+          ! weighted by dtheta.
+          rnonlinearSpatialMatrix%Dalpha(1,2) = dprimalDualCoupling * &
+              (-dequationType) * dtheta &
+                          / rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dalphaC
+
+          rnonlinearSpatialMatrix%Dalpha(2,1) = dterminalCondDecoupled * &
+              ( dequationType) * &
+              (1.0_DP + rspaceTimeMatrix%rdiscrData%p_rsettingsOptControl%dgammaC / dtstep)
+        end if
             
         if (.not. bconvectionExplicit) then
         

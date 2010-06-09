@@ -143,6 +143,8 @@ contains
 
 !</subroutine>
     integer :: i
+    real(DP), dimension(:), pointer :: p_Da
+    integer, dimension(:), pointer :: p_Kcol, p_Kld
 
     ! Remember the discretisation and projection hierarchy in space.  
     rprojHier%p_rspaceTimeHierarchy => rspaceTimeHierarchy
@@ -156,6 +158,13 @@ contains
     if (rprojHier%itimeOrder .eq. -1) then
       ! Automatic mode. Select the order based on the time stepping scheme.
       call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,rprojHier%itimeOrder)
+      
+      ! If our special 1-step scheme is activated, reduce iorder to 1 in order
+      ! to activate the corresponding prol/rest.
+      if (rprojHier%p_rtimeCoarseDiscr%itag .eq. 1) then
+        rprojHier%itimeOrder = 1
+      end if
+      
     end if
     
     ! Create prolongation and restriction matrices.
@@ -196,6 +205,12 @@ contains
       ! finite difference restrictions, not finite element restrictions!
       call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatPrimal(i),0.5_DP)
       call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatDual(i),0.5_DP)
+      
+!      call lsyssc_getbase_double (rprojHier%p_RrestrictionMatPrimal(i),p_Da)
+!      call lsyssc_getbase_Kcol (rprojHier%p_RrestrictionMatPrimal(i),p_Kcol)
+!      call lsyssc_getbase_Kld (rprojHier%p_RrestrictionMatPrimal(i),p_Kld)
+!      p_Da(1) = 2.0_DP*p_Da(1)
+!      p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA) = 2.0_DP*p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA)
 
       ! Finally, calculate the interpolation matrices.
       call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
@@ -2038,9 +2053,9 @@ contains
     call lsyssc_releaseVector (rtempVecFineScalar)
 
     ! DEBUG!!!
-    !call sptivec_saveToFileSequence (rcoarseVector,"(""coarse.txt."",I5.5)",.true.,&
-    !    rtempVecFine)
-    !call sys_halt()
+!    call sptivec_saveToFileSequence (rcoarseVector,"(""coarse.txt."",I5.5)",.true.,&
+!        rtempVecFine)
+!    call sys_halt()
         
 ! ********************************************************************************************
 

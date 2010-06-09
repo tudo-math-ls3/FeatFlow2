@@ -443,7 +443,7 @@ contains
           rcontrolVector,.true.)
     
       call optcpp_calcControl (rvector,roptControl%rconstraints,&
-          roptControl%dalphaC,rcontrolVector)  
+          roptControl%dalphaC,roptcontrol%ispaceTimeFormulation,rcontrolVector)
     
       ! Write the current solution to disc as it is.
       sfilename = trim(rpostproc%sfinalControlFileName)//'.'//sys_si0(ifileid,5)
@@ -608,7 +608,8 @@ contains
         end if
 
         ! Control u = P[min/max](-1/alpha lambda)
-        call optcpp_calcControl (rprjVector,roptControl%rconstraints,roptControl%dalphaC)
+        call optcpp_calcControl (rprjVector,roptControl%rconstraints,roptControl%dalphaC,&
+            roptcontrol%ispaceTimeFormulation)
         
         call lsyssc_getbase_double (rprjVector%RvectorBlock(4),p_Ddata)
         call lsyssc_getbase_double (rprjVector%RvectorBlock(5),p_Ddata2)
@@ -848,7 +849,8 @@ contains
 
 !<subroutine>
 
-  subroutine optcpp_calcControl (rvectorSol,rconstraints,dalpha,rvectorControl)
+  subroutine optcpp_calcControl (rvectorSol,rconstraints,dalpha,ispacetimeFormulation,&
+      rvectorControl)
   
 !<description>
   ! Uses the dual solution in rvectorSol to calculate the discrete 
@@ -861,6 +863,12 @@ contains
 
   ! Regularisation parameter $\alpha$.
   real(DP), intent(in) :: dalpha
+  
+  ! Formulation of the Space-time problem.
+  ! =0: Formulation for the generation of reference results from papers
+  ! =1: usual formulation as specified in the DFG applicance
+  ! The two formulations differ in a "-"-sign in front of the dual velocity.
+  integer, intent(in) :: ispaceTimeFormulation
 !</input>
 
 !<inputoutput>
@@ -879,8 +887,14 @@ contains
     if (present(rvectorControl)) then
       call lsyssc_copyVector (rvectorSol%RvectorBlock(4),rvectorControl%RvectorBlock(1))
       call lsyssc_copyVector (rvectorSol%RvectorBlock(5),rvectorControl%RvectorBlock(2))
-      call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
-      call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
+      select case (ispaceTimeFormulation)
+      case (0)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),-1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),-1.0_DP/dalpha)
+      case (1)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(1),1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorControl%RvectorBlock(2),1.0_DP/dalpha)
+      end select
       
       if (rconstraints%ccontrolConstraints .ne. 0) then
         call smva_projectControlTimestep (rvectorControl%RvectorBlock(1),&
@@ -889,8 +903,14 @@ contains
             rconstraints%dumin2,rconstraints%dumax2)
       end if
     else
-      call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
-      call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
+      select case (ispaceTimeFormulation)
+      case (0)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),-1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),-1.0_DP/dalpha)
+      case (1)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(4),1.0_DP/dalpha)
+        call lsyssc_scaleVector (rvectorSol%RvectorBlock(5),1.0_DP/dalpha)
+      end select
       
       if (rconstraints%ccontrolConstraints .ne. 0) then
         call smva_projectControlTimestep (rvectorSol%RvectorBlock(4),&

@@ -340,9 +340,12 @@ contains
 
     ! Assemble the defect.
     call sptivec_copyVector (rb,rd)
+    
+    ! DEBUG!!!
     call stlin_spaceTimeMatVec (rmatrix, rx, rd, &
         -1.0_DP, 1.0_DP, SPTID_FILTER_DEFECT,&
         ddefNorm,rsettings%roptcBDC,rnlstsolver%ioutputLevel .ge. 2)
+    !ddefNorm = 1.0_DP
 
     dinitDefNorm = ddefNorm
     dlastDefNorm = 0.0_DP

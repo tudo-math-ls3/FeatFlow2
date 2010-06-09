@@ -2644,7 +2644,7 @@ contains
     do iiterate = 1,neqtime
     
       ! Current time step?
-      call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal)
+      call tdiscr_getTimestep(rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,iiterate-1,dtimePrimal,dtstep)
       dtimeDual = dtimePrimal - (1.0_DP-rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr%dtheta)*dtstep
 
       ! Update the boundary conditions to the current time
@@ -2671,6 +2671,9 @@ contains
       ! Assemble the preconditioner matrices on all levels.
       call fbsim_assemblePrecMatrices (p_rpreconditioner,&
           iiterate,0,rsolverNode%rmatrix,rnonlinearData,.true.)
+        
+      !call matio_writeBlockMatrixHR (p_rpreconditioner%p_RmatrixPrecondFullSpace(2), "matrix",&
+      !    .true., 0, "matrix.txt", "(E10.3)")
         
       ! Perform preconditioning of the spatial defect with the method provided by the
       ! core equation module.

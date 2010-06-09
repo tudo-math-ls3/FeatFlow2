@@ -173,6 +173,7 @@ contains
     integer :: iiterate,nintervals
     real(DP) :: dtimePrimal,dtstep,dtimePrimal2,dtimeDual,dtimeDual2
     real(DP) :: dweightoldp,dweightnewp,dweightoldd,dweightnewd
+    logical :: boldOneStepScheme
     
     ! Temporary vectors
     type(t_vectorBlock) :: rtempVector1,rtempVector2,rtempVector3
@@ -188,6 +189,11 @@ contains
     call lsysbl_createVectorBlock (rrhsDiscrete%p_rspaceDiscr,rtempVector3,.true.)
 
     nintervals = rrhsDiscrete%p_rtimeDiscr%nintervals
+    
+    ! The 'old' one step scheme (indicated by ITAG=1) sets up a time discretisation
+    ! with all solutions located in the points in time, not inbetween.
+    ! This does not correspond to any known analytical minimisation problem.
+    boldOneStepScheme = rrhsDiscrete%p_rtimeDiscr%itag .eq. 1
     
     ! ----------------------------------------------------------------------
     ! Generate the global RHS vector
@@ -290,41 +296,65 @@ contains
         !
         ! Dual RHS comes from rtempVector3. The primal from the
         ! iiterate-1'th RHS.
-        !
-        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
-        ! dual RHS(0)   = DUALRHS(0)
         
-        call lsyssc_vectorLinearComb (&
-            rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(3))
+        if (.not. boldOneStepScheme) then
+        
+          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+          ! dual RHS(0)   = DUALRHS(0)
+          
+          call lsyssc_vectorLinearComb (&
+              rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(1))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(2))                                        
+          call lsyssc_copyVector (rtempVector2%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
 
-        call lsyssc_copyVector (rtempVector2%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_copyVector (rtempVector2%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-        call lsyssc_copyVector (rtempVector2%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
+          call lsyssc_copyVector (rtempVector2%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
+          call lsyssc_copyVector (rtempVector2%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
+          ! Pressure is fully implicit
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(3))
+       
+       else
         
-!        call lsyssc_vectorLinearComb (&
-!            rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
-!            dweightnewd,dweightoldd,&
-!            rtempVectorRHS%RvectorBlock(4))
-!        call lsyssc_vectorLinearComb (&                                                   
-!            rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
-!            dweightnewd,dweightoldd,&
-!            rtempVectorRHS%RvectorBlock(5))
-!        ! Pressure is fully implicit
-!        call lsyssc_vectorLinearComb (&                                                   
-!            rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
-!            dweightnewd,dweightoldd,&
-!            rtempVectorRHS%RvectorBlock(6))
+          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+          ! dual RHS(0)   = THETA*DUALRHS(0) + (1-THETA)*DUALRHS(1)
+          
+          call lsyssc_vectorLinearComb (&
+              rtempVector1%RvectorBlock(1),rtempVector2%RvectorBlock(1),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(1))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector1%RvectorBlock(2),rtempVector2%RvectorBlock(2),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(2))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector1%RvectorBlock(3),rtempVector2%RvectorBlock(3),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(3))
+
+          ! Pressure is fully implicit
+
+          call lsyssc_vectorLinearComb (&
+              rtempVector2%RvectorBlock(4),rtempVector3%RvectorBlock(4),&
+              dweightnewd,dweightoldd,&
+              rtempVectorRHS%RvectorBlock(4))
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(5),rtempVector3%RvectorBlock(5),&
+              dweightnewd,dweightoldd,&
+              rtempVectorRHS%RvectorBlock(5))
+          ! Pressure is fully implicit
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
+              dweightnewd,dweightoldd,&
+              rtempVectorRHS%RvectorBlock(6))
+
+        end if
         
         if (iiterate .lt. rrhsDiscrete%p_rtimeDiscr%nintervals) then
           ! Shift the RHS vectors and generate the RHS for the next time step.
@@ -346,36 +376,67 @@ contains
         !
         ! Dual RHS comes from rtempVector3. The primal from the
         ! iiterate-1'th RHS and rtempVector3.
-        !
-        ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
-        ! dual RHS(0)   = DUALRHS(0)
-      
-        call lsyssc_vectorLinearComb (&
-            rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(1))                                        
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(2))                                        
-        ! Pressure is fully implicit
-        call lsyssc_vectorLinearComb (&                                                   
-            rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
-            dweightoldp,dweightnewp,&
-            rtempVectorRHS%RvectorBlock(3))
+        
+        if (.not. boldOneStepScheme) then
+        
+          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+          ! dual RHS(0)   = DUALRHS(0)
+        
+          call lsyssc_vectorLinearComb (&
+              rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(1))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(2))                                        
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(3),rtempVectorRHS%RvectorBlock(3))
 
-!        !CALL generateRHS (rproblem,iiterate+1,niterations,&
-!        !    rtempVector3, .TRUE., .FALSE.)
-        call lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
-        call lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
-        call lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
+  !        !CALL generateRHS (rproblem,iiterate+1,niterations,&
+  !        !    rtempVector3, .TRUE., .FALSE.)
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
+
+          ! Pressure is fully implicit
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(6),rtempVector3%RvectorBlock(6),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(6))
+
+        else
+
+          ! primal RHS(0) = THETA*PRIMALRHS(0) + (1-THETA)*PRIMALRHS(-1)
+          ! dual RHS(0)   = DUALRHS(0)
+        
+          call lsyssc_vectorLinearComb (&
+              rtempVector2%RvectorBlock(1),rtempVector3%RvectorBlock(1),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(1))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(2),rtempVector3%RvectorBlock(2),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(2))                                        
+          call lsyssc_vectorLinearComb (&                                                   
+              rtempVector2%RvectorBlock(3),rtempVector3%RvectorBlock(3),&
+              dweightoldp,dweightnewp,&
+              rtempVectorRHS%RvectorBlock(3))
+
+  !        !CALL generateRHS (rproblem,iiterate+1,niterations,&
+  !        !    rtempVector3, .TRUE., .FALSE.)
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(4),rtempVectorRHS%RvectorBlock(4))
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(5),rtempVectorRHS%RvectorBlock(5))
+          call lsyssc_copyVector (rtempVector3%RvectorBlock(6),rtempVectorRHS%RvectorBlock(6))
+
+          ! Pressure is fully implicit
+
+        end if
 
         ! Multiply the last RHS of the dual equation -z by theta+gamma/dtstep, that's it.
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(4),&
             dweightnewd + roptimalControl%dgammaC/dtstep)
         call lsyssc_scaleVector (rtempVectorRHS%RvectorBlock(5),&
             dweightnewd + roptimalControl%dgammaC/dtstep)
-
+            
       end if
 
       ! Implement the boundary conditions into the RHS vector        
