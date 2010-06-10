@@ -680,6 +680,9 @@ contains
 
         end if
         
+        ! DEBUG!!!
+        !call lsysbl_scalematrix (rsubMatrix,dtstep)
+
       case (1)
         ! ###############################################################################
         ! Stokes equation. Equation is linear, so the Frechet-derivative

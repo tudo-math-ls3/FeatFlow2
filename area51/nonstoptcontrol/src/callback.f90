@@ -483,7 +483,7 @@ contains
                 2.0_DP*dtime**2*(1.0_DP-dtime)**2 + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
               - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
         case (3)
-          ! 1.)
+          ! 3.)
           Dvalues(1) = -dalpha*(-2*dy*dtime**2*(1-dtime)**2+2*dx**2*dy*dtime*(1-dtime)**2 &
                                 -2*dx**2*dy*dtime**2*(1-dtime) )
         case default
@@ -502,7 +502,7 @@ contains
           ! 2.)
           Dvalues(1) = 0.0_DP
         case (3)
-          ! 2.)
+          ! 3.)
           Dvalues(1) = -dalpha*(-2*dx*dtime**2*(1-dtime)**2+2*dx*dy**2*dtime*(1-dtime)**2 &
                                 -2*dx*dy**2*dtime**2*(1-dtime) )
         case default

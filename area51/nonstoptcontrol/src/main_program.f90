@@ -733,6 +733,8 @@ contains
     ! Program parameters
     type(t_parlist) :: rparlist
     character(len=SYS_STRLEN) :: soutput
+    character(LEN=SYS_STRLEN) :: smaster
+    logical :: bexists
     
     ! The very first thing in every application: 
     ! Initialise system-wide settings:
@@ -740,7 +742,21 @@ contains
     
     ! Read the program parameters.
     call parlst_init (rparlist)
-    call parlst_readfromfile(rparlist,trim(DIR_DATA)//"/nonstoptcontrol.dat")
+    
+    ! Check if a command line parameter specifies the master.dat file.
+    call sys_getcommandLineArg(1,smaster,sdefault='./data/nonstoptcontrol.dat')
+
+    ! Read the file 'master.dat'.
+    ! If that does not exist, try to manually read files with parameters from a
+    ! couple of files.
+    inquire(file=smaster, exist=bexists)
+    
+    if (.not. bexists) then
+      call output_line ("Cannot find INI file: "//trim(smaster))
+      call sys_halt()
+    end if
+    
+    call parlst_readfromfile(rparlist,smaster)
     
     ! Initialise log file for output.
     call parlst_getvalue_string (rparlist, "OUTPUT", &

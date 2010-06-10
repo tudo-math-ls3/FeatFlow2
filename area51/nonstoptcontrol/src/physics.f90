@@ -42,11 +42,23 @@ module physics
     !      y      = t^2 (1-t)^2 x
     !      lambda = t (1-t)^2 x
     !
+    !   creferenceproblem = 4:
+    !      y      = t^2 (1-t)^2 x
+    !      lambda = passend, so dass f=0; incl. alpha.
+    !
     ! cequation = 1: (2D Stokes equation)
     !
     !   creferenceproblem = 1:
     !      y      = t^2 (x1,-x2)
     !      lambda = -2 t (x1,-x2)
+    !
+    !   creferenceproblem = 2:
+    !      y      = t^2 (1-t)^2 x2(1-x2)
+    !      lambda = passend incl. alpha
+    !
+    !   creferenceproblem = 3:
+    !      y      = t^2 (x1^2 x2,-x1 x2^2)
+    !      lambda = passend incl. alpha
     !
     integer :: creferenceproblem = 0
     
