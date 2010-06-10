@@ -1558,6 +1558,11 @@ ifeq ($(call match,$(ID),pc64-opteron-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+ifeq ($(call match,$(ID),pc64-opteron-linux-.*-mkl.*),yes)
+# Use Intel Math Kernel Library
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
 
 ifeq ($(call match,$(ID),pc64-opteron-linux-.*-.*),yes)
 # Add preprocessor flag to enable 64bit UMFPACK support. 
