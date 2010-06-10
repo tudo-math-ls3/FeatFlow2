@@ -537,6 +537,7 @@ contains
     type(t_spaceTimeMatrix), dimension(:), pointer :: p_Rmatrices
     type(t_triangulation) :: rtria1D
     integer :: iwriteUCD
+    character(LEN=SYS_STRLEN) :: smesh, sboundary
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
@@ -550,6 +551,11 @@ contains
         "nmaxminleveltime", nmaxminleveltime)
     call parlst_getvalue_double (rparlist, "SPACETIME-DISCRETISATION", &
         "dtheta", dtheta)
+        
+    call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
+        "sboundary", sboundary,bdequote=.true.)    
+    call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
+        "smesh", smesh,bdequote=.true.)    
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "iwriteUCD", iwriteUCD)
@@ -570,8 +576,8 @@ contains
       case (0,1)
         
         ! 2D mesh
-        call boundary_read_prm(rparams%rboundary, "./pre/QUAD.prm")
-        call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,"./pre/QUAD.tri",&
+        call boundary_read_prm(rparams%rboundary, sboundary)
+        call mshh_initHierarchy (rparams%rmeshHierarchy,nspacelevels,smesh,&
             NDIM2D,nminlevelspace-1,rparams%rboundary)
 
       case (2)

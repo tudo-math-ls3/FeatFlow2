@@ -1,6 +1,10 @@
 [OUTPUT]
 SOUTPUTfILE = "./log/output.txt"
 
+[PARAMTRIANG]
+sboundary = "./pre/QUAD.prm"
+smesh = "./pre/QUAD.prm"
+
 [PHYSICS]
 # 0 = 2D heat equation
 # 1 = 2D Stokes
@@ -17,7 +21,7 @@ dcoupleDualToPrimal = 1.0
 dcoupleTermCond = 1.0
 
 [POSTPROC]
-iwriteUCD = 0
+iwriteUCD = 1
 
 [SPACETIME-DISCRETISATION]
 nspacelevels = 2
@@ -44,7 +48,7 @@ ddampingCoarseGridCorrection = 1.0
 
 [SPACETIME-COARSEGRIDSOLVER]
 ioutputlevel = 0
-depsrel = 1E-18
+depsrel = 1E-10
 depsabs = 1E-17
 
 ddamping = 0.9
