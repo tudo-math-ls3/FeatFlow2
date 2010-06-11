@@ -1596,8 +1596,8 @@ contains
     call lsyssc_releaseVector (rtempVecFineScalar)
 
     ! DEBUG!!!
-    call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
-        rtempVecCoarse)
+    !call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
+    !    rtempVecCoarse)
     !call sys_halt()
         
   contains
