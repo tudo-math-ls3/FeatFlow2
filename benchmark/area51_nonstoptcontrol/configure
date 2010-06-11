@@ -97,7 +97,7 @@ OBJDIRLIBPREFIX=`dirname \`dirname ${OBJDIRPREFIX}\``
 # Finally, invoke the main workhorse:
 ../../bin/configure \
 	--appname=nonstoptcontrol \
-	--programfile=../../area51/nonstoptcontrol/src/cc2doptc.f90 \
+	--programfile=../../area51/nonstoptcontrol/src/optc.f90 \
 	--srclist_app="`ls ../../area51/nonstoptcontrol/src/*.f90`" \
 	--objdir-prefix=${OBJDIRPREFIX} \
 	--objdir-lib-prefix=${OBJDIRLIBPREFIX} \
