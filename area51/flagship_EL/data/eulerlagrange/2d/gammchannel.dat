@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 5000
+nPart = 1000
 
 
 #-------------------------------------------------------------------------------
@@ -108,7 +108,7 @@ particledensitymax = 0.39
 idiampart = 0
 
 # particle-diameter
-particlediam = 2e-5
+particlediam = 1e-6
 
 # particle diameter minimum in meter
 particlediammin = 1e-8
@@ -121,7 +121,7 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 205.709277e0
+velopartx = 1e0  #205.709277e0
 
 # velocity in y-direction in m/s
 veloparty = 0e0
@@ -132,7 +132,7 @@ veloparty = 0e0
 #-------------------------------------------------------------------------------
 
 # scalar for the velocity in x-direction
-velogasx = 205.709277e0
+velogasx = 1e0  #205.709277e0
 
 # scalar for the velocity in y-direction
 velogasy = 1e0
@@ -216,6 +216,23 @@ ipartoutput = 2
 # 2 	two-way coupling
 # -1	compute paricle movement at a steady state gas solution
 icouplingpart = 2
+
+#-------------------------------------------------------------------------------
+# choice solution algorithmn for the particle phase
+#-------------------------------------------------------------------------------
+
+# 1 	explicit Euler method
+# 2 	improved Euler method
+# 3	classic Runge-Kutta
+isolutionpart = 1
+
+#-------------------------------------------------------------------------------
+# domain with triangle or rectangles
+#-------------------------------------------------------------------------------
+
+# 1 	triangles
+# 2 	rectangles
+idomtype = 1
 
 
 

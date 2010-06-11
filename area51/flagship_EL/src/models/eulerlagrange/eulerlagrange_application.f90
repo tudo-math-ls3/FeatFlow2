@@ -3890,9 +3890,9 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     
     case(2)
         ! Subroutine to compute the movement of the particles
-        call eulerlagrange_moveparticlestwoway(rparlist,p_rproblemLevel,rsolution,rParticles)
+        call eulerlagrange_moveparticlestwoway2(rparlist,p_rproblemLevel,rsolution,rParticles)
    
-   case(-1)
+    case(-1)
         ! Subroutine to compute the movement of the particles
         call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
 
