@@ -436,7 +436,7 @@ contains
 
       ! Create the solver.
       call stls_initMultigrid (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
-          rsolver%rprojection, rsolver%rcoarseGridSolver, RpreSmoothers=rsolver%p_Rsmoothers)
+          rsolver%rprojection, rsolver%rcoarseGridSolver, RpostSmoothers=rsolver%p_Rsmoothers)
           !,&
           !Rpreconditioners=rsolver%p_Rpreconditioners)
       rsolver%rsolver%nmaxIterations = nmaxiterations
