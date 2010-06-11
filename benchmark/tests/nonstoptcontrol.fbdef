@@ -438,6 +438,7 @@ PHYSICS_DOPTCONTROLGAMMA = 0.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 2
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
 
 testid   = NONSTOPTC_HEAT2D_A1G0_TG_SOR5
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
@@ -620,6 +621,201 @@ testid   = NONSTOPTC_HEAT2D_A4G0_SG_SOR9
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
 SPACETIMESMOOTHER_DDAMPING = 0.9
 
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A1G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMELINEARSOLVER_ISMOOTHER = 2
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+testid   = NONSTOPTC_HEAT2D_A1G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A1G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A1G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A1G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A1G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A1G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A1G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A2G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A2G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A2G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A2G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A2G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A2G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A2G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A2G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A3G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A3G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A3G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A3G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A3G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A3G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A3G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A3G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A4G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A4G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A4G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A4G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_HEAT2D_A4G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A4G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A4G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A4G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
 
 
 #============================================================
@@ -1031,6 +1227,7 @@ PHYSICS_DOPTCONTROLGAMMA = 1000.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 2
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
 
 testid   = NONSTOPTC_HEAT2D_A1G1000_TG_SOR5
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
@@ -1213,6 +1410,201 @@ testid   = NONSTOPTC_HEAT2D_A4G1000_SG_SOR9
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
 SPACETIMESMOOTHER_DDAMPING = 0.9
 
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A1G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMELINEARSOLVER_ISMOOTHER = 2
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A1G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A1G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A2G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A2G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A2G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.01, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A3G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.01, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A3G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A3G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.001, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A4G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Heat equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.001, g=1000
+#
+testid   = NONSTOPTC_HEAT2D_A4G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_HEAT2D_A4G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
 
 
 
@@ -1630,6 +2022,7 @@ PHYSICS_DOPTCONTROLGAMMA = 0.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 2
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
 
 testid   = NONSTOPTC_ST2D_A1G0_TG_SOR5
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
@@ -1812,6 +2205,201 @@ testid   = NONSTOPTC_ST2D_A4G0_SG_SOR9
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
 SPACETIMESMOOTHER_DDAMPING = 0.9
 
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_ST2D_A1G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMELINEARSOLVER_ISMOOTHER = 2
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+testid   = NONSTOPTC_ST2D_A1G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A1G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A1G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_ST2D_A1G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A1G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A1G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A1G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_ST2D_A2G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A2G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A2G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A2G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_ST2D_A2G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A2G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A2G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A2G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_ST2D_A3G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A3G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A3G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A3G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_ST2D_A3G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A3G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A3G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A3G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_ST2D_A4G0_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A4G0_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A4G0_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A4G0_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_ST2D_A4G0_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A4G0_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A4G0_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A4G0_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
 
 
 #============================================================
@@ -2223,6 +2811,7 @@ PHYSICS_DOPTCONTROLGAMMA = 1000.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 2
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
 
 testid   = NONSTOPTC_ST2D_A1G1000_TG_SOR5
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
@@ -2402,5 +2991,201 @@ datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
 SPACETIMESMOOTHER_DDAMPING = 0.7
 
 testid   = NONSTOPTC_ST2D_A4G1000_SG_SOR9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_ST2D_A1G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMELINEARSOLVER_ISMOOTHER = 2
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+testid   = NONSTOPTC_ST2D_A1G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A1G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A1G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_ST2D_A1G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A1G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A1G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A1G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_ST2D_A2G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A2G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A2G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A2G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_ST2D_A2G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A2G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A2G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A2G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.01, g=1000
+#
+testid   = NONSTOPTC_ST2D_A3G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A3G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A3G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A3G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.01, g=1000
+#
+testid   = NONSTOPTC_ST2D_A3G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A3G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A3G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A3G1000_SG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+
+
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# Two-grid with coarse grid correction, a=0.001, g=1000
+#
+testid   = NONSTOPTC_ST2D_A4G1000_TG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+testid   = NONSTOPTC_ST2D_A4G1000_TG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A4G1000_TG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A4G1000_TG_SOR2_9
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.9
+
+#============================================================
+# Stokes equation, FBSOR-Smoother, one-way coupled
+# One grid, no coarse grid correction, a=0.001, g=1000
+#
+testid   = NONSTOPTC_ST2D_A4G1000_SG_SOR2_3
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMESMOOTHER_DDAMPING = 0.3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+testid   = NONSTOPTC_ST2D_A4G1000_SG_SOR2_5
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.5
+
+testid   = NONSTOPTC_ST2D_A4G1000_SG_SOR2_7
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_DDAMPING = 0.7
+
+testid   = NONSTOPTC_ST2D_A4G1000_SG_SOR2_9
 datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
 SPACETIMESMOOTHER_DDAMPING = 0.9
