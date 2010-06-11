@@ -1,5 +1,5 @@
 Microsoft Visual Studio Solution File, Format Version 8.00
-Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "wincc2dmediumoptc", "wincc2dmediumoptc.vfproj", "{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}"
+Project("{6989167D-11E4-40FE-8C1A-2192A86A7E90}") = "winnonstoptcontrol", "winnonstoptcontrol.vfproj", "{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}"
 	ProjectSection(ProjectDependencies) = postProject
 		{FBF2AF0D-36AF-4A8D-9EB1-10E13F72D950} = {FBF2AF0D-36AF-4A8D-9EB1-10E13F72D950}
 		{1E909711-327C-4B69-ABE3-4212C46817DC} = {1E909711-327C-4B69-ABE3-4212C46817DC}
@@ -53,14 +53,14 @@ Global
 	GlobalSection(ProjectDependencies) = postSolution
 	EndGlobalSection
 	GlobalSection(ProjectConfiguration) = postSolution
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug.ActiveCfg = Debug|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug.Build.0 = Debug|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug Parallel.ActiveCfg = Debug|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Debug Parallel.Build.0 = Debug|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Release.ActiveCfg = Release|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Release.Build.0 = Release|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Release ohne IPO.ActiveCfg = Release ohne IPO|Win32
-		{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}.Release ohne IPO.Build.0 = Release ohne IPO|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Debug.ActiveCfg = Debug|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Debug.Build.0 = Debug|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Debug Parallel.ActiveCfg = Debug|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Debug Parallel.Build.0 = Debug|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Release.ActiveCfg = Release|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Release.Build.0 = Release|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Release ohne IPO.ActiveCfg = Release ohne IPO|Win32
+		{876450C9-5F0F-4692-AEA5-D8D1A18A24F4}.Release ohne IPO.Build.0 = Release ohne IPO|Win32
 		{AB0D75C1-CDF4-4674-A977-D6280BE59A57}.Debug.ActiveCfg = Debug|Win32
 		{AB0D75C1-CDF4-4674-A977-D6280BE59A57}.Debug.Build.0 = Debug|Win32
 		{AB0D75C1-CDF4-4674-A977-D6280BE59A57}.Debug Parallel.ActiveCfg = Debug Parallel|Win32
