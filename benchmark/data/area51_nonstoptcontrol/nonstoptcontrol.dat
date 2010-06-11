@@ -3,7 +3,7 @@ SOUTPUTfILE = ""
 
 [PARAMTRIANG]
 sboundary = "./data/area51_nonstoptcontrol/QUAD.prm"
-smesh = "./data/area51_nonstoptcontrol/QUAD.prm"
+smesh = "./data/area51_nonstoptcontrol/QUAD.tri"
 
 [PHYSICS]
 # 0 = 2D heat equation
