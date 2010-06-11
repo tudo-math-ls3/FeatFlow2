@@ -9,7 +9,7 @@ smesh = "./data/area51_nonstoptcontrol/QUAD.prm"
 # 0 = 2D heat equation
 # 1 = 2D Stokes
 # 2 = 1D heat equation
-cequation = PHYSICS_CEQUATION
+cequation = $PHYSICS_CEQUATION
 
 # creferenceProblem = 4
 creferenceProblem = $PHYSICS_CREFERENCEPROBLEM
