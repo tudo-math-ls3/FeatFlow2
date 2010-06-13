@@ -20,6 +20,7 @@ module postprocessing
   use collection
   use vectorio
   use derivatives
+  use triangulation
   
   use ucd
  
