@@ -29,7 +29,7 @@ nspacelevels = 1
 ntimelevels = 2
 nminlevelspace = 4
 nmaxminleveltime = 9
-dtheta = SPACETIMEDISCRETISATION_DTHETA
+dtheta = $SPACETIMEDISCRETISATION_DTHETA
 
 [SPACETIME-LINEARSOLVER]
 csolverType = -1    ! -1=automatic
