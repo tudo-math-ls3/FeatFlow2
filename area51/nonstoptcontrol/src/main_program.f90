@@ -169,57 +169,102 @@ contains
   type(t_boundary), intent(in), optional :: rboundary
   
   ! local varianbles
-  integer :: cequation
+  integer :: cequation, cfespace, creferenceProblem
   
     cequation = rcollection%IquickAccess (1)
+    creferenceProblem = rcollection%IquickAccess (2)
+    cfespace = rcollection%IquickAccess (3)
+    
+    ! cfespace: -1=automatic.
+    ! =1: 1st order (Q1, Q1~/Q0)
+    ! =2: 2nd order (Q2, Q2/QP1)
     
     select case (cequation)
     case (0)
       ! Heat equation
       call spdiscr_initBlockDiscr (rdiscr,2,rtriangulation, rboundary)
       
-!      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
-!          rtriangulation, rboundary)
-!      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
-!          rdiscr%RspatialDiscr(2))
+      select case (cfespace)
+      case (-1,1)
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(2))
 
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
-          rtriangulation, rboundary)
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
-          rdiscr%RspatialDiscr(2))
+      case (2)
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q2_2D, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(2))
+
+      case default
+      
+        call output_line ("FE-space not supported.")
+        call sys_halt()
+
+      end select
     
     case (1)
       ! Stokes equation
       call spdiscr_initBlockDiscr (rdiscr,6,rtriangulation, rboundary)
       
-!      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q1_2D, CUB_G4X4,&
-!          rtriangulation, rboundary)
-!      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q1_2D, CUB_G4X4, &
-!          rdiscr%RspatialDiscr(2))
+      select case (cfespace)
+      case (1)
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_EM30_2D, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_EM30_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(2))
+            
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_EM30_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(4))
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_EM30_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(5))
 
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q2_2D, CUB_G4X4,&
-          rtriangulation, rboundary)
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
-          rdiscr%RspatialDiscr(2))
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_Q0, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(3), EL_Q0, CUB_G4X4, &
+            rdiscr%RspatialDiscr(6))
 
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
-          rdiscr%RspatialDiscr(4))
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
-          rdiscr%RspatialDiscr(5))
+      case (-1,2)
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_Q2_2D, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(2))
+            
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(4))
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_Q2_2D, CUB_G4X4, &
+            rdiscr%RspatialDiscr(5))
 
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1, CUB_G4X4,&
-          rtriangulation, rboundary)
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(3), EL_QP1, CUB_G4X4, &
-          rdiscr%RspatialDiscr(6))
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(3),EL_QP1, CUB_G4X4,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(3), EL_QP1, CUB_G4X4, &
+            rdiscr%RspatialDiscr(6))
+
+      case default
+      
+        call output_line ("FE-space not supported.")
+        call sys_halt()
+
+      end select
 
     case (2)
       ! Heat equation in 1D
       call spdiscr_initBlockDiscr (rdiscr,2,rtriangulation, rboundary)
       
-      call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_P1_1D, CUB_G2_1D,&
-          rtriangulation, rboundary)
-      call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_P1_1D, CUB_G2_1D, &
-          rdiscr%RspatialDiscr(2))
+      select case (cfespace)
+      case (-1,1)
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_P1_1D, CUB_G2_1D,&
+            rtriangulation, rboundary)
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_P1_1D, CUB_G2_1D, &
+            rdiscr%RspatialDiscr(2))
+
+      case default
+      
+        call output_line ("FE-space not supported.")
+        call sys_halt()
+
+      end select
 
     case default
     
@@ -536,7 +581,7 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_spaceTimeMatrix), dimension(:), pointer :: p_Rmatrices
     type(t_triangulation) :: rtria1D
-    integer :: iwriteUCD
+    integer :: iwriteUCD, cfespace, icalcError
     character(LEN=SYS_STRLEN) :: smesh, sboundary
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
@@ -559,6 +604,12 @@ contains
 
     call parlst_getvalue_int (rparlist, "POSTPROC", &
         "iwriteUCD", iwriteUCD)
+
+    call parlst_getvalue_int (rparlist, "POSTPROC", &
+        "icalcError", icalcError)
+
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "cfespace", cfespace, -1)
 
     do nminleveltime = 1,nmaxminleveltime
 
@@ -601,6 +652,8 @@ contains
       
       ! Space hierarchy
       rcollection%IquickAccess (1) = rparams%rphysics%cequation
+      rcollection%IquickAccess (2) = rparams%rphysics%creferenceProblem
+      rcollection%IquickAccess (3) = cfespace
       call fesph_createHierarchy (rparams%rfeHierarchy,nspacelevels,&
           rparams%rmeshHierarchy,main_getDiscr,rcollection,rparams%rboundary)
 
@@ -694,7 +747,7 @@ contains
       !call sptivec_saveToFileSequence (rsolution,"('ns/solution_"//&
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
-      call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0)
+      call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,icalcError .ne. 0)
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
         call stmv_releaseMatrix(p_Rmatrices(ilev))

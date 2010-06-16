@@ -227,33 +227,72 @@ contains
       case (0)
       case (1)
         ! 1.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, dtime**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  -2.0_DP*dtime, iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatLambda1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
 
       case (2)
         ! 2.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
-            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP,  &
-            rbc%p_rphysics%doptControlAlpha * dtime*(1.0_DP-dtime), iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha),  &
+            fct_heatLambda2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
 
       case (3)
         ! 3.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
-            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
-            rbc%p_rphysics%doptControlAlpha * dtime*(1.0_DP-dtime)**2, iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatLambda3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
         
       case (4)
         ! 4.)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
-            dtime**2*(1.0_DP-dtime)**2, iequation = 1)
-        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, 0.0_DP, &
-            rbc%p_rphysics%doptControlAlpha * &
-            (-2.0_DP*dtime*(1.0_DP-dtime)**2 + 2.0_DP*dtime**2*(1.0_DP-dtime)), iequation = 2)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatLambda4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
+        
+      case (5)
+        ! 5.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatLambda5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
+        
+      case (6)
+        ! 6.)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatY6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatY6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 1)
+        call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+            fct_heatLambda6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            fct_heatLambda6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+            iequation = 2)
         
       case default
-        call output_line ("Problem not supported.")
+        call output_line ("Problem not supported in 1D.")
         call sys_halt()
       end select
       
