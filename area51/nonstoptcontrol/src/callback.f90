@@ -329,13 +329,13 @@ contains
   elemental real(DP) function fct_stokesZ2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
     fct_stokesZ2_x = &
-        -2 * dtime ** 2 + 4 * dtime ** 3 - 2 * dtime ** 4 + dy * dtime ** 2 &
-        -2 * dtime ** 3 * dy + dtime ** 4 * dy - dy ** 2 * dtime ** 2 &
-        +2 * dtime ** 3 * dy ** 2 - dtime ** 4 * dy ** 2 - 4 * dalpha * dtime &
-        +12 * dalpha * dtime ** 2 - 8 * dalpha * dtime ** 3 - 2 * dalpha * dy &
-        +0.12D2 * dalpha * dy * dtime - 0.12D2 * dalpha * dy * dtime ** 2 &
-        +2 * dalpha * dy ** 2 - 0.12D2 * dalpha * dy ** 2 * dtime &
-        +0.12D2 * dalpha * dy ** 2 * dtime ** 2
+        - 2 * dtime ** 2 + 4 * dtime ** 3 - 2 * dtime ** 4 + dy * dtime ** 2 &
+        - 2 * dtime ** 3 * dy + dtime ** 4 * dy - dy ** 2 * dtime ** 2 &
+        + 2 * dtime ** 3 * dy ** 2 - dtime ** 4 * dy ** 2 - 4 * dalpha * dtime &
+        + 0.12D2 * dalpha * dtime ** 2 - 8 * dalpha * dtime ** 3 &
+        - 2 * dalpha * dy + 0.12D2 * dalpha * dy * dtime &
+        - 0.12D2 * dalpha * dy * dtime ** 2 + 2 * dalpha * dy ** 2 &
+        - 0.12D2 * dalpha * dy ** 2 * dtime + 0.12D2 * dalpha * dy ** 2 * dtime ** 2        
 !            - dy*(-1.0_DP+dy)*dtime**2*(-1.0_DP+dtime)**2 &
 !            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*dy &
 !                      -12.0_DP*dy*dtime+12.0_DP*dy*dtime**2 &
@@ -704,6 +704,7 @@ contains
     
     icomponent = rcollection%IquickAccess(1)
     creferenceProblem = rcollection%IquickAccess(2)
+    dtime = rcollection%DquickAccess(1)
     dtstep = rcollection%DquickAccess(2)
     dalpha = rcollection%DquickAccess(3)
     dgamma = rcollection%DquickAccess(4)
