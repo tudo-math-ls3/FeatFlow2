@@ -308,10 +308,12 @@ contains
 
   elemental real(DP) function fct_stokesLambda2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesLambda2_x = -dalpha*( &
-                2.0_DP*dtime**2*(1.0_DP-dtime)**2 &
-              + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
-              - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
+    fct_stokesLambda2_x = 2 * dalpha * dtime * (-1 + dtime) * &
+        (dtime - dtime ** 2 + dy - 2 * dy * dtime - dy ** 2 + 2 * dy ** 2 * dtime)
+!    -dalpha*( &
+!                2.0_DP*dtime**2*(1.0_DP-dtime)**2 &
+!              + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
+!              - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
   end function
 
   elemental real(DP) function fct_stokesLambda2_y (dx,dy,dtime,dalpha)
@@ -326,11 +328,19 @@ contains
 
   elemental real(DP) function fct_stokesZ2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesZ2_x = - dy*(-1.0_DP+dy)*dtime**2*(-1.0_DP+dtime)**2 &
-            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*dy &
-                      -12.0_DP*dy*dtime+12.0_DP*dy*dtime**2 &
-                      -2.0_DP*dy**2+12.0_DP*dy**2*dtime &
-                      -12.0_DP*dy**2*dtime**2)
+    fct_stokesZ2_x = &
+        -2 * dtime ** 2 + 4 * dtime ** 3 - 2 * dtime ** 4 + dy * dtime ** 2 &
+        -2 * dtime ** 3 * dy + dtime ** 4 * dy - dy ** 2 * dtime ** 2 &
+        +2 * dtime ** 3 * dy ** 2 - dtime ** 4 * dy ** 2 - 4 * dalpha * dtime &
+        +12 * dalpha * dtime ** 2 - 8 * dalpha * dtime ** 3 - 2 * dalpha * dy &
+        +0.12D2 * dalpha * dy * dtime - 0.12D2 * dalpha * dy * dtime ** 2 &
+        +2 * dalpha * dy ** 2 - 0.12D2 * dalpha * dy ** 2 * dtime &
+        +0.12D2 * dalpha * dy ** 2 * dtime ** 2
+!            - dy*(-1.0_DP+dy)*dtime**2*(-1.0_DP+dtime)**2 &
+!            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*dy &
+!                      -12.0_DP*dy*dtime+12.0_DP*dy*dtime**2 &
+!                      -2.0_DP*dy**2+12.0_DP*dy**2*dtime &
+!                      -12.0_DP*dy**2*dtime**2)
   end function
 
   elemental real(DP) function fct_stokesZ2_y (dx,dy,dtime,dalpha)
@@ -655,6 +665,9 @@ contains
         call sys_halt()
       end select
       
+      ! Dual solution lives in the interval midpoints.
+      ! Dual RHS lives in the endpoints of the interval!
+      ! dtime = 1.0 is ok!
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
         Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dgamma/dtstep)

@@ -148,8 +148,8 @@ contains
         call tdiscr_getTimestep(rrhs%p_rtimeDiscr,istep-1,&
             dtimeend,dtstep,dtimestart)
             
-        ! Primal equation lives in the endpoints of the time interval.
-        ! Dual equation lives 'inbetween'.
+        ! Dual rhs lives in the endpoints of the time interval.
+        ! Primal equation lives 'inbetween'.
         dtimeprimal = dtheta*dtimeend + (1-dtheta)*dtimestart
         dtimedual = dtimeend
     
