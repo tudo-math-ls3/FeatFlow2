@@ -3,15 +3,15 @@ SOUTPUTfILE = "./log/output.txt"
 
 [PARAMTRIANG]
 sboundary = "./pre/QUAD.prm"
-smesh = "./pre/QUAD.prm"
+smesh = "./pre/QUAD.tri"
 
 [PHYSICS]
 # 0 = 2D heat equation
 # 1 = 2D Stokes
 # 2 = 1D heat equation
-cequation = 2
+cequation = 0
 
-creferenceProblem = 4
+creferenceProblem = 1
 
 dviscosity = 1.0
 doptControlAlpha = 0.01
@@ -22,8 +22,10 @@ dcoupleTermCond = 1.0
 
 [POSTPROC]
 iwriteUCD = 1
+icalcerror = 1
 
 [SPACETIME-DISCRETISATION]
+cfespace = -1
 nspacelevels = 2
 ntimelevels = 2
 nminlevelspace = 1
