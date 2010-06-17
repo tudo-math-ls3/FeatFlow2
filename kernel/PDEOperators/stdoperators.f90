@@ -141,7 +141,7 @@ contains
   ! trial/test function pair and a constant coefficient:
   !   <tex> $$ a_ij = int_{\Omega} \alpha * \psi^j_k * \phi^i_l $$ </tex>
   ! With $k,l$ being derivative quantifiers.
-  ! This allowes to assemble mass matrices or similar matrices
+  ! This allows to assemble mass matrices or similar matrices
   ! directly. (A mass matrix for example can be assembled using
   ! cderivTrial = cderivTest = DER_FUNC.)
 !</description>

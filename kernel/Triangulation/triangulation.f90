@@ -258,7 +258,7 @@
 !#     not be used for any computations; all the missing informationhas first
 !#     to be 'extracted' or 'generated' based on them. They can only be used
 !#     for very low-level modifications; e.g. the routine tria_rawGridToTri
-!#     allowes to convert a quad mesh in a triangular mesh, which would
+!#     allows to convert a quad mesh in a triangular mesh, which would
 !#     be much harder if all adjacency information is already computed.
 !#     Another possibile thing what can be done with such a 'raw' mesh is to
 !#     do quicker pre-refinement with routines like 

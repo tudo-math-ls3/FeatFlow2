@@ -989,7 +989,7 @@ contains
         !
         ! Compute the actual velocity in the edge II (following the
         ! node II) by a weighted mean of the both velocity vectors
-        ! U1Lx and U2Lx. This allowes e.g. to reconstruct a velocity
+        ! U1Lx and U2Lx. This allows e.g. to reconstruct a velocity
         ! vector by linear extrapolation of two previous time steps.
         !
         ! Subtract the mesh-velocity on the current edge as described

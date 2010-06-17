@@ -812,7 +812,7 @@ contains
           ! Oops, not really good. 
           babortTimestep = .true.
 
-          ! Do we have a time stepping algorithm that allowes recomputation?          
+          ! Do we have a time stepping algorithm that allows recomputation?
           select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
           case (TADTS_FIXED,TADTS_PREDICTION)
             ! That is bad. Our solution is garbage!
@@ -1038,7 +1038,7 @@ contains
         call output_line ('Analysing time derivative...',&
             coutputMode=OU_MODE_STD+OU_MODE_BENCHLOG)
         
-        ! Calculate the norm of the time derivative. This allowes the DO-loop
+        ! Calculate the norm of the time derivative. This allows the DO-loop
         ! above to check if the solution got stationary.
         dtimeDerivative = cc_timeDerivative (&
             rproblem%rtimedependence%radaptiveTimeStepping%cadTimeStepErrorControl,&
@@ -1090,7 +1090,7 @@ contains
         ! c2) is an exception to the rule that we do not repeat
         ! time steps in adaptive time stepping technique 1!
         
-        ! Do we have a time stepping algorithm that allowes recomputation?          
+        ! Do we have a time stepping algorithm that allows recomputation?
         select case (rproblem%rtimedependence%radaptiveTimeStepping%ctype)
         case (TADTS_FIXED) 
           ! That is bad. Our solution is most probably garbage!

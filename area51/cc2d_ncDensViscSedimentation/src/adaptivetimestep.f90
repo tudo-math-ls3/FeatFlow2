@@ -310,7 +310,7 @@ contains
 
 !</function>
 
-    ! lcoal variables
+    ! local variables
     real(DP) :: dtdiff
 
     ! Standard result: dadTimeStepEpsAfterInit
@@ -506,7 +506,7 @@ contains
       ! The nonlinear solver in the predictor step might break
       ! down, while the other solvers work.
       ! When the nonlinear solver broke down and we are in a time
-      ! stepping mode that allowes repetition of the time step,
+      ! stepping mode that allows repetition of the time step,
       ! bound the time step: dnewTimeStep must result in the interval
       ! [ dtimeStep/SQRT(radTimeStepping%dtimeStepFactor) .. dtimeStep ]:
 

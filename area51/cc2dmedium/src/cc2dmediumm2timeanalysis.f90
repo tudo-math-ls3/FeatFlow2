@@ -141,7 +141,7 @@ contains
 !</description>
 
 !<input>
-  ! Type of normto use in space/time; former IEPSAD.
+  ! Type of norm to use in space/time; former IEPSAD.
   ! =TNRM_L2U      : Calculate dtimeerror=drelUL2; standard
   ! =TNRM_LMAX     : Calculate dtimeerror=drelUmax
   ! =TNRM_P2U      : Calculate dtimeerror=drelPL2

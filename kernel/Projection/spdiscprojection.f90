@@ -5,7 +5,7 @@
 !#
 !# <purpose>
 !# This module contains routines to project solution vectors between different
-!# finite element spaces/discretisations. This allowes e.g. to 'convert'
+!# finite element spaces/discretisations. This allows e.g. to 'convert'
 !# a solution vector to another one by projecting it.
 !#
 !# The following routines can be found here:

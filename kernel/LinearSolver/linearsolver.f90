@@ -2365,7 +2365,7 @@ contains
   ! the initialisation routine of the appropriate solver. The solver
   ! initialisation routine itself can call this procedure to initialise
   ! its sub-solver nodes.
-  ! The initialisation of the problem structure allowes the solver component
+  ! The initialisation of the problem structure allows the solver component
   ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can 
   ! perform a symbolical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g..
@@ -2447,7 +2447,7 @@ contains
   ! the initialisation routine of the appropriate solver. The solver
   ! initialisation routine itself can call this procedure to initialise
   ! its sub-solver nodes.
-  ! The initialisation of the problem structure allowes the solver component
+  ! The initialisation of the problem structure allows the solver component
   ! to perform some 'precalculation', e.g. the UMFPACK4 or ILU solver can 
   ! perform a numerical factorisation. The problem structure usually does
   ! not change during a simulation, except when the grid moves e.g.
