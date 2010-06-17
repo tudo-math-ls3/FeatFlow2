@@ -565,10 +565,12 @@ contains
               trim(sys_sdEL(Derrors(6),5)) )
               
           ! Summed trapezoidal rule
-          if ((istep .eq. 1) .or. (istep .eq. rvector%NEQtime)) then
-            DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
-          else
-            DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
+          if ((istep .ne. 2) .and. (istep .ne. rvector%NEQtime)) then
+            if ((istep .eq. 2) .or. (istep .eq. rvector%NEQtime-1)) then
+              DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
+            else
+              DerrorTotal(:) = DerrorTotal(:) + Derrors(:)**2
+            end if
           end if
           
           if (istep .eq. rvector%NEQtime) then

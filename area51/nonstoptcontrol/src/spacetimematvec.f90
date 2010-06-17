@@ -571,7 +571,7 @@ contains
 
             ! Coupling of the primal to the dual
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                 rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
                 
@@ -967,12 +967,12 @@ contains
 
             ! Coupling of the primal to the dual
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                 rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                 rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                 
@@ -1126,12 +1126,12 @@ contains
 
             ! Coupling of the primal to the dual
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, dcouplePrimalToDual*(-1.0_DP),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
                 rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, dcouplePrimalToDual*(-1.0_DP),&
+                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
                 rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                 

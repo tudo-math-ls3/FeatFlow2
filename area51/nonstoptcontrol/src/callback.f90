@@ -106,6 +106,7 @@ contains
   ! Heat equation, function set 2
   !   y = t^2 (1-t)^2   x1 
   !   l = a t (1-t) x1
+  ! No factor 4 due to inconsistent terminal condition.
   ! ***************************************************************************
   
   elemental real(DP) function fct_heatY2 (dx,dy,dtime,dalpha)
@@ -132,6 +133,7 @@ contains
   ! Heat equation, function set 3
   !   y = t^2 (1-t)^2   x1 
   !   l = a t (1-t)^2   x1
+  ! Gives factor 4 with CN due to proper terminal condition.
   ! ***************************************************************************
 
   elemental real(DP) function fct_heatY3 (dx,dy,dtime,dalpha)
@@ -212,9 +214,10 @@ contains
   end function
 
   ! ***************************************************************************
-  ! Heat equation, function set 5.
+  ! Heat equation, function set 6.
   !   y = t^2   x1 
   !   l = (1-t)^2 x1
+  ! Factor 4 in CN due to appropriate terminal condition.
   ! ***************************************************************************
 
   elemental real(DP) function fct_heatY6 (dx,dy,dtime,dalpha)
@@ -287,13 +290,12 @@ contains
 
   ! ***************************************************************************
   ! Stokes, function set 2.
-  !   y = t^2 (1-t)^2  ( x2(1-x2) , 0 , 0 )
-  ! EXAMPLE DOES NOT WORK, NOT DIVERGENCE FREE WHEN BEING TIME DEPENDENT!
+  !   y = t^2 (1-t)^3  ( x2(1-x2) , 0 , 0 )
   ! ***************************************************************************
 
   elemental real(DP) function fct_stokesY2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesY2_x = dtime**2*(1.0_DP-dtime)**2 * dy*(1.0_DP-dy)
+    fct_stokesY2_x = dy * (-1 + dy) * dtime ** 2 * (-1 + dtime) ** 3
   end function
 
   elemental real(DP) function fct_stokesY2_y (dx,dy,dtime,dalpha)
@@ -303,17 +305,14 @@ contains
 
   elemental real(DP) function fct_stokesP2 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesP2 = 0.0_DP !dtime**2*(1.0_DP-dtime)**2*(1.0_DP-dx)*2.0_DP !0.0_DP
+    fct_stokesP2 = 0.0_DP
   end function
 
   elemental real(DP) function fct_stokesLambda2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
-    fct_stokesLambda2_x = 2 * dalpha * dtime * (-1 + dtime) * &
-        (dtime - dtime ** 2 + dy - 2 * dy * dtime - dy ** 2 + 2 * dy ** 2 * dtime)
-!    -dalpha*( &
-!                2.0_DP*dtime**2*(1.0_DP-dtime)**2 &
-!              + 2.0_DP*dy*(1.0_DP-dy)*dtime*(1.0_DP-dtime)**2 &
-!              - 2.0_DP*dy*(1.0_DP-dy)*dtime**2*(1.0_DP-dtime))
+    fct_stokesLambda2_x = &
+        - dalpha * dtime * (-1 + dtime) ** 2 * (2 * dtime - 2 * dtime ** 2 &
+        + 2 * dy - 5 * dy * dtime - 2 * dy ** 2 + 5 * dy ** 2 * dtime)
   end function
 
   elemental real(DP) function fct_stokesLambda2_y (dx,dy,dtime,dalpha)
@@ -329,18 +328,13 @@ contains
   elemental real(DP) function fct_stokesZ2_x (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
     fct_stokesZ2_x = &
-        - 2 * dtime ** 2 + 4 * dtime ** 3 - 2 * dtime ** 4 + dy * dtime ** 2 &
-        - 2 * dtime ** 3 * dy + dtime ** 4 * dy - dy ** 2 * dtime ** 2 &
-        + 2 * dtime ** 3 * dy ** 2 - dtime ** 4 * dy ** 2 - 4 * dalpha * dtime &
-        + 0.12D2 * dalpha * dtime ** 2 - 8 * dalpha * dtime ** 3 &
-        - 2 * dalpha * dy + 0.12D2 * dalpha * dy * dtime &
-        - 0.12D2 * dalpha * dy * dtime ** 2 + 2 * dalpha * dy ** 2 &
-        - 0.12D2 * dalpha * dy ** 2 * dtime + 0.12D2 * dalpha * dy ** 2 * dtime ** 2        
-!            - dy*(-1.0_DP+dy)*dtime**2*(-1.0_DP+dtime)**2 &
-!            - dalpha*(4.0_DP*dtime-12.0_DP*dtime**2+8.0_DP*dtime**3+2.0_DP*dy &
-!                      -12.0_DP*dy*dtime+12.0_DP*dy*dtime**2 &
-!                      -2.0_DP*dy**2+12.0_DP*dy**2*dtime &
-!                      -12.0_DP*dy**2*dtime**2)
+          dy * dtime ** 2 - 3 * dy * dtime ** 3 + 3 * dy * dtime ** 4 &
+        - dy * dtime ** 5 - dy ** 2 * dtime ** 2 + 3 * dy ** 2 * dtime ** 3 &
+        - 3 * dy ** 2 * dtime ** 4 + dy ** 2 * dtime ** 5 - 2 * dalpha * dy &
+        - 0.18D2 * dalpha * dy ** 2 * dtime + 2 * dalpha * dy ** 2 &
+        + 0.18D2 * dalpha * dy * dtime - 0.36D2 * dalpha * dy * dtime ** 2 &
+        + 0.20D2 * dalpha * dy * dtime ** 3 + 0.36D2 * dalpha * dy ** 2 * dtime ** 2 &
+        - 0.20D2 * dalpha * dy ** 2 * dtime ** 3
   end function
 
   elemental real(DP) function fct_stokesZ2_y (dx,dy,dtime,dalpha)
@@ -670,7 +664,7 @@ contains
       ! dtime = 1.0 is ok!
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dgamma/dtstep)
+        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
       end if
     case default
       ! Should not happen
@@ -791,7 +785,7 @@ contains
 
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dgamma/dtstep)
+        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
       end if
 
     case default
