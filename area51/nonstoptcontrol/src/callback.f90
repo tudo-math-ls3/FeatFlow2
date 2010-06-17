@@ -664,7 +664,7 @@ contains
       ! dtime = 1.0 is ok!
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dgamma/dtstep)
       end if
     case default
       ! Should not happen
@@ -785,7 +785,7 @@ contains
 
       if (dtime .eq. 1.0_DP) then
         !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dgamma/dtstep)
       end if
 
     case default
