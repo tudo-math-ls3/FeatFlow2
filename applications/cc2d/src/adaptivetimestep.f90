@@ -526,6 +526,7 @@ contains
         ! Time approximation of 2st order; used for Fractional
         ! step Theta scheme. The error can be represented as:
         !   J(v_k) - J(v) = k^2 e(v) + O(k^4)
+        ! see equation (3.154) of (print version of) Turek`s CFD book.
 
         dnewTimeStep = dtimeStep*sqrt(8.0_DP*depsTime/derrorIndicator)
         
