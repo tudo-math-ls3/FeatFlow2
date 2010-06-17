@@ -390,12 +390,12 @@ contains
   
     ! We have an equation of the type
     !
-    !   d/dt u(x,t)  +  N(u(x,t))  =  f(x,t)
+    !   d/dt u(x,t)  +  N(u(x,t)) u(x,t) =  f(x,t)
     !
     ! Which is discretised in time with a Theta scheme, leading to
     !
-    !   $$ u_{n+1} + w_1*N(u_n+1) 
-    !      =   u_n + w_2*N(u_n)  +  w_3*f_{n+1}  +  w_4*f_n $$
+    !   $$ u_{n+1} + w_1*N(u_n+1) u_{n+1}
+    !      =   u_n + w_2*N(u_n) u_n  +  w_3*f_{n+1}  +  w_4*f_n $$
     !
     ! with k=time step size, u_{n+1} = u(.,t_{n+1}),etc., c.f. timestepping.f90.
     !
