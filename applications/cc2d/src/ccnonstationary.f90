@@ -436,6 +436,7 @@ contains
       rnonlinearCCMatrix%deta = -rtimestepping%dweightMatrixRHS
     end if
     
+    ! Calculate   rtempVectorRhs := -rnonlinearCCMatrix rvector + rtempVectorRhs
     call cc_nonlinearMatMul (rnonlinearCCMatrix,rvector,rtempVectorRhs,-1.0_DP,1.0_DP,rproblem)
 
     ! -------------------------------------------    
