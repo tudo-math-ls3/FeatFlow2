@@ -154,20 +154,20 @@ contains
   integer                        :: ctimeErrorControl
   
   ! Solution vector u2.
-  type(t_vectorBlock), intent(IN) :: rsolution
+  type(t_vectorBlock), intent(in) :: rsolution
   
   ! Solution vector u1 of the predictor calculation.
-  type(t_vectorBlock), intent(INOUT) :: rpredSolution
+  type(t_vectorBlock), intent(inout) :: rpredSolution
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  type(t_vectorBlock), intent(INOUT) :: rauxVector
+  type(t_vectorBlock), intent(inout) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time error analysis block. Returns values of different time error functionals.
-  type(t_timeError), intent(OUT), target, optional :: rtimeError
+  type(t_timeError), intent(out), target, optional :: rtimeError
 !</output>
 
 !<result>
@@ -272,24 +272,24 @@ contains
   integer                        :: ctimeErrorControl
   
   ! Solution vector $u_{n+1}$ at the end of the time step.
-  type(t_vectorBlock), intent(IN) :: rsolutionNew
+  type(t_vectorBlock), intent(in) :: rsolutionNew
   
   ! Solution vector $u_n$ at the beginning of the time step.
-  type(t_vectorBlock), intent(INOUT) :: rsolutionOld
+  type(t_vectorBlock), intent(inout) :: rsolutionOld
   
   ! Length of time step
-  real(DP), intent(IN) :: dtstep
+  real(DP), intent(in) :: dtstep
 !</input>
   
 !<inputoutput>
   ! Auxiliary vector; same structure and size as rsolution.
-  type(t_vectorBlock), intent(INOUT) :: rauxVector
+  type(t_vectorBlock), intent(inout) :: rauxVector
 !</inputoutput>
 
 !<output>
   ! OPTIONAL: Time norm analysis block. Returns different norms of the 
   ! time derivative.
-  type(t_timeDerivatives), intent(INOUT), target, optional :: rtimeDerivNorms
+  type(t_timeDerivatives), intent(inout), target, optional :: rtimeDerivNorms
 !</output>
 
 !<result>
@@ -330,6 +330,9 @@ contains
     p_rtimeNorm%drelPL2 = Dnorms1(4) / (sqrt(real(neqp,DP)) * dtstep)
 
     ! ||d||_max / dtstep
+    Cnorms = LINALG_NORMMAX
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+
     p_rtimeNorm%drelUmax = max(Dnorms1(1),Dnorms1(2),Dnorms1(3)) / dtstep
     p_rtimeNorm%drelPmax = Dnorms1(4) / dtstep
     

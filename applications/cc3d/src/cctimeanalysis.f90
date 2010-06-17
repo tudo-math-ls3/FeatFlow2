@@ -330,6 +330,9 @@ contains
     p_rtimeNorm%drelPL2 = Dnorms1(4) / (sqrt(real(neqp,DP)) * dtstep)
 
     ! ||d||_max / dtstep
+    Cnorms = LINALG_NORMMAX
+    call lsysbl_vectorNormBlock (rauxVector,Cnorms,Dnorms1)
+
     p_rtimeNorm%drelUmax = max(Dnorms1(1),Dnorms1(2),Dnorms1(3)) / dtstep
     p_rtimeNorm%drelPmax = Dnorms1(4) / dtstep
     
