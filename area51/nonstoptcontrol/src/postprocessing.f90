@@ -208,9 +208,11 @@ contains
           case (1)
             ! 1.)
             Dvalues(:,:) = fct_stokesY1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
           case (2)
             ! 2.)
             Dvalues(:,:) = fct_stokesY2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
           case (3)
             ! 3.)
             Dvalues(:,:) = fct_stokesY3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
@@ -222,6 +224,14 @@ contains
           case (5)
             ! 5.)
             Dvalues(:,:) = fct_stokesY5_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesY6_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesY7_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
           case default
             call output_line ("Problem not supported.")
@@ -251,6 +261,14 @@ contains
             ! 5.)
             Dvalues(:,:) = fct_stokesY5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesY6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesY7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -279,6 +297,14 @@ contains
             ! 5.)
             Dvalues(:,:) = fct_stokesP5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesP6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesP7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -306,6 +332,15 @@ contains
           case (5)
             ! 5.)
             Dvalues(:,:) = fct_stokesLambda5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -318,12 +353,15 @@ contains
           case (1)
             ! 1.)
             Dvalues(:,:) = fct_stokesLambda1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
           case (2)
             ! 2.)
             Dvalues(:,:) = fct_stokesLambda2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
           case (3)
             ! 3.)
             Dvalues(:,:) = fct_stokesLambda3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case (4)
             ! 4.)
             Dvalues(:,:) = fct_stokesLambda4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
@@ -331,6 +369,15 @@ contains
           case (5)
             ! 5.)
             Dvalues(:,:) = fct_stokesLambda5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesLambda6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesLambda7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -343,18 +390,31 @@ contains
           case (1)
             ! 1.)
             Dvalues(:,:) = fct_stokesXi1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case (2)
             ! 2.)
             Dvalues(:,:) = fct_stokesXi2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case (3)
             ! 3.)
             Dvalues(:,:) = fct_stokesXi3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case (4)
             ! 4.)
             Dvalues(:,:) = fct_stokesXi4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case (5)
             ! 5.)
             Dvalues(:,:) = fct_stokesXi5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesXi6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesXi7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
           case default
             call output_line ("Problem not supported.")
             call sys_halt()
@@ -472,11 +532,13 @@ contains
               trim(sys_sdEL(Derrors(1),5))//" "// &
               trim(sys_sdEL(Derrors(2),5)) )
               
-          ! Summed trapezoidal rule
-          if ((istep .eq. 1) .or. (istep .eq. rvector%NEQtime)) then
-            DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
-          else
-            DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
+          ! Summed trapezoidal rule, without first and last error.
+          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
+            if ((istep .eq. 2) .or. (istep .eq. rvector%NEQtime-1)) then
+              DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
+            else
+              DerrorTotal(:) = DerrorTotal(:) + Derrors(:)**2
+            end if
           end if
           
           if (istep .eq. rvector%NEQtime) then
@@ -564,8 +626,8 @@ contains
               trim(sys_sdEL(Derrors(5),5))//" "// &
               trim(sys_sdEL(Derrors(6),5)) )
               
-          ! Summed trapezoidal rule
-          if ((istep .ne. 2) .and. (istep .ne. rvector%NEQtime)) then
+          ! Summed trapezoidal rule, without first and last error.
+          if ((istep .ne. 1) .and. (istep .ne. rvector%NEQtime)) then
             if ((istep .eq. 2) .or. (istep .eq. rvector%NEQtime-1)) then
               DerrorTotal(:) = DerrorTotal(:) + 0.5_DP * Derrors(:)**2
             else
