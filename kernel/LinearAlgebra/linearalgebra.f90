@@ -6395,12 +6395,12 @@ contains
 
     case (LINALG_NORML1)
       ! L1-norm: sum sum absolute value of all entries, divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = SASUM(isize,Fx,1) / real(isize,SP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = SNRM2(isize,Fx,1) / sqrt(real(isize,SP))
       
     case (LINALG_NORMMAX)
@@ -6478,12 +6478,12 @@ contains
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = DASUM(isize,Dx,1) / real(isize,DP)
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       resnorm = DNRM2(isize,Dx,1) / sqrt(real(isize,DP))
       
     case (LINALG_NORMMAX)
@@ -6573,7 +6573,7 @@ contains
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i))
@@ -6584,7 +6584,7 @@ contains
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + Qx(i)*Qx(i)
@@ -6698,7 +6698,7 @@ contains
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Fx(i)-Fy(i))*(Fx(i)-Fy(i))
@@ -6812,7 +6812,7 @@ contains
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Dx(i)-Dy(i))
@@ -6822,7 +6822,7 @@ contains
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Dx(i)-Dy(i))*(Dx(i)-Dy(i))
@@ -6936,7 +6936,7 @@ contains
 
     case (LINALG_NORML1)
       ! L1-norm: sum all entries, divide by sqrt(vector length).
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + abs(Qx(i)-Qy(i))
@@ -6946,7 +6946,7 @@ contains
 
     case (LINALG_NORML2)
       ! l_2-norm - like euclidian norm, but divide by vector length.
-      ! So, scale such that the vektor (1111...) to has norm = 1.
+      ! So, scale such that the vector (1111...) has norm = 1.
       !$omp parallel do reduction(+:resnorm)
       do i = 1, isize
         resnorm = resnorm + (Qx(i)-Qy(i))*(Qx(i)-Qy(i))
