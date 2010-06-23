@@ -240,7 +240,7 @@ contains
                        rtimeErrorLocal%drelUmax,rtimeErrorLocal%drelPmax)
     end select
     
-    if (present(rtimeError)) rtimeError = rtimeError
+    if (present(rtimeError)) rtimeError = rtimeErrorLocal
     
   end function
 
