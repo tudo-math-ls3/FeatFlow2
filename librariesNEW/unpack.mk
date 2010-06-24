@@ -34,7 +34,7 @@ UNPACK=if test -f $(LOCKFILE); then \
 	    trap "rm -f $(LOCKFILE)" 2 3 9; \
 	    touch $(LOCKFILE); \
 	    echo "\# Extracting $(NAME)..."; \
-	    gzip -dc $(TARBALL) | ( cd ..; tar --overwrite -xvf - ); \
+	    gzip -dc $(TARBALL) | ( cd ..; tar -xvf - ); \
 	    if test "echoX" != '$(PATCHCMD)X'; then \
 		test -n '$(PATCHTEXT1)' && echo $(PATCHTEXT1); \
 		test -n '$(PATCHTEXT2)' && echo $(PATCHTEXT2); \
