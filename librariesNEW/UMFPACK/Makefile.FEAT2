@@ -467,7 +467,7 @@ SRC_UMFPACK = Include/umfpack.h \
 # existence indicates that the UMFPACK tarball has been unpacked already
 # completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
-LAST_FILE_FROM_UMFPACK_TARBALL = Demo/umfpack_dl_demo.c
+LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Makefile
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
 
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.4 sources"
@@ -478,7 +478,7 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
 ifeq ($(call match,$(ID),sx[68]-none-superux-.*-.*),yes)
 # Fortunately, sed on NEC's gateway is a sed that supports in place editing.
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = sed -i.orig -e "s/\#pragma ivdep/\#pragma cdir nodep/; s/\#pragma novector/\#pragma cdir novector/;" Source/*.c
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.2 sources for NEC..."
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.4 sources for NEC..."
 else
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
 endif
