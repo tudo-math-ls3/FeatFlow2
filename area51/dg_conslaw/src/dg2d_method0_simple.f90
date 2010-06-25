@@ -89,7 +89,7 @@ contains
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    type(t_matrixScalar) :: rmatrixMC, rmatrixCX, rmatrixCY
+    type(t_matrixScalar) :: rmatrixMC, rmatrixiMC, rmatrixCX, rmatrixCY
     type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold,ralpha
 
     ! A block matrix and a couple of block vectors. These will be filled
@@ -168,6 +168,10 @@ contains
     ! Name of output file
     character (LEN=SYS_STRLEN) :: sofile
     
+    integer :: imakeVideo, ifilenumber, ioutputtype
+    
+    real(dp) :: dvideotimestep, dvideotime
+    
     ! Start time measurement
     call cpu_time(dtime1)
     
@@ -212,6 +216,18 @@ contains
     ! What type of limiter to use
     call parlst_getvalue_int(rparlist, 'METHOD', 'limiter', ilimiter, 0)
     
+    ! The output file
+    call parlst_getvalue_string (rparlist, 'OUTPUT', 'ofile', sofile, 'gmv/u2d')
+    
+    ! Make snapshots for video? Default=No.
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'makevideo', imakevideo, 0)
+    
+    ! Type of output files (1 = gmv, 2 = vtk)
+    call parlst_getvalue_int(rparlist, 'OUTPUT', 'outtype', ioutputtype, 1)
+    
+    ! Make gmv snapshot every ... seconds (should be n*dt)
+    call parlst_getvalue_double(rparlist, 'OUTPUT', 'videotimestep', dvideotimestep)
+    
     select case (ielementType)
     case (0)
       ielementType = EL_DG_T0_2D
@@ -223,6 +239,12 @@ contains
       ielementType = EL_DG_T2_2D
       ilimiting = 2
     end select
+    
+    if (ilimiter == 0) ilimiting = 0
+    
+    ! For video files
+    ifilenumber = -1
+    dvideotime = 0.0_dp
 
     
     
@@ -340,6 +362,17 @@ contains
     rlinformedge%Idescriptors(1) = DER_FUNC2D
     
     
+!    ! Lump the mass matrix
+!    call lsyssc_lumpMatrixScalar (rmatrixMC,LSYSSC_LUMP_DIAG,.FALSE.)
+
+    ! Calculate the inverse of the mass matrix
+    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixiMC,&
+         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+    call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
+    call dg_invertMassMatrix(rmatrixiMC)         
+         
+    
+    
     
     ! Create scalar vectors
     call lsyssc_createVecByDiscr (rdiscretisation%RspatialDiscr(1),rrhs ,.true.,ST_DOUBLE)
@@ -369,100 +402,19 @@ contains
     call lsysbl_createVecFromScalar (rsolUp,rsolUpBlock,rdiscretisation)
     call lsysbl_createVecFromScalar (ralpha,ralphaBlock,rdiscretisation)
     
-    
-!    ! Now we have the raw problem. What is missing is the definition of the boundary
-!    ! conditions.
-!    ! For implementing boundary conditions, we use a `filter technique with
-!    ! discretised boundary conditions`. This means, we first have to calculate
-!    ! a discrete version of the analytic BC, which we can implement into the
-!    ! solution/RHS vectors using the corresponding filter.
-!    !
-!    ! Create a t_discreteBC structure where we store all discretised boundary
-!    ! conditions.
-!    call bcasm_initDiscreteBC(rdiscreteBC)
-!    !
-!    ! We 'know' already (from the problem definition) that we have four boundary
-!    ! segments in the domain. Each of these, we want to use for enforcing
-!    ! some kind of boundary condition.
-!    !
-!    ! We ask the bondary routines to create a 'boundary region' - which is
-!    ! simply a part of the boundary corresponding to a boundary segment.
-!    ! A boundary region roughly contains the type, the min/max parameter value
-!    ! and whether the endpoints are inside the region or not.
-!    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-!    
-!    ! We use this boundary region and specify that we want to have Dirichlet
-!    ! boundary there. The following call does the following:
-!    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-!    !   We specify icomponent='1' to indicate that we set up the
-!    !   Dirichlet BC`s for the first (here: one and only) component in the 
-!    !   solution vector.
-!    ! - Discretise the boundary condition so that the BC`s can be applied
-!    !   to matrices and vectors
-!    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Now to the edge 2 of boundary component 1 the domain.
-!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Edge 3 of boundary component 1.
-!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!    
-!    ! Edge 4 of boundary component 1. That is it.
-!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Hang the pointer into the vector and matrix. That way, these
-!    ! boundary conditions are always connected to that matrix and that
-!    ! vector.
-!    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
-!    rrhsBlock%p_rdiscreteBC => rdiscreteBC
-!                             
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution and
-    ! temporary data. Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolBlock, .true.)
-    !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolTempBlock, .true.)
     call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
-!    
-!    ! Next step is to implement boundary conditions into the RHS,
-!    ! solution and matrix. This is done using a vector/matrix filter
-!    ! for discrete boundary conditions.
-!    ! The discrete boundary conditions are already attached to the
-!    ! vectors/matrix. Call the appropriate vector/matrix filter that
-!    ! modifies the vectors/matrix according to the boundary conditions.
-!    call vecfil_discreteBCrhs (rrhsBlock)
-!    call vecfil_discreteBCsol (rvectorBlock)
-!    call matfil_discreteBC (rmatrixBlock)
-!
-!    ! During the linear solver, the boundary conditions are also
-!    ! frequently imposed to the vectors. But as the linear solver
-!    ! does not work with the actual solution vectors but with
-!    ! defect vectors instead.
-!    ! So, set up a filter chain that filters the defect vector
-!    ! during the solution process to implement discrete boundary conditions.
-!    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-!
-    ! Create a BiCGStab-solver. Attach the above filter chain
-    ! to the solver, so that the solver automatically filters
-    ! the vector during the solution process.
+
+    ! Create a UMFPACK-solver.
     nullify(p_rpreconditioner)
     !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     call linsol_initUMFPACK4 (p_rsolverNode)
     
     ! Set the output level of the solver to 2 for some output
     p_rsolverNode%ioutputLevel = 0
+    ! The linear solver stops, when this relative or absolut norm of
+    ! the residual is reached.
+    p_rsolverNode%depsRel = 1.0e-50
+    p_rsolverNode%depsAbs = 1.0e-14
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
@@ -517,8 +469,43 @@ contains
     
     
     
+    
+!    sofile = './u2d'
+!    call loadSolutionData(rsol,sofile)
+!    sofile = './gmv/u2d' 
+
+
+
+
+
+    ! Write first video file (the initial conditions)
+    ! If we want to make a video
+    if (imakevideo == 1) then
+
+      write(*,*) ''
+      write(*,*) 'Writing videofile'
+      
+      ifilenumber = ifilenumber + 1
+      
+      select case (ioutputtype)
+        case (1)
+          ! Output solution to gmv file
+          call dg2gmv(rsol,iextraPoints,sofile,ifilenumber)
+        case (2)
+          ! Output solution to vtk file
+          call dg2vtk(rsol,iextraPoints,sofile,ifilenumber)
+      end select
+      
+      dvideotime = dvideotimestep
+    end if
+
+
+
+
+    
+    
     ttime = 0.0_DP
-    !ttfinal = 2.0_dp*SYS_PI
+
     
     if (ttfinal >0.0_dp) then
     timestepping: do
@@ -564,8 +551,9 @@ contains
        end if
        
        ! Solve for solution update
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-       
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(1), rsolUpBlock%RvectorBlock(1), 1.0_dp, 0.0_dp)
+
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
        
@@ -604,7 +592,8 @@ contains
        end if
               
        ! Solve for solution update
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(1), rsolUpBlock%RvectorBlock(1), 1.0_dp, 0.0_dp)
        
        ! Get new temp solution
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
@@ -640,7 +629,8 @@ contains
        end if
               
        ! Solve for solution update
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(1), rsolUpBlock%RvectorBlock(1), 1.0_dp, 0.0_dp)
        
        ! Get new solution
        call lsyssc_vectorLinearComb (rsoltemp,rsolUp,1.0_DP,dt)
@@ -650,10 +640,33 @@ contains
        if (ilimiting.eq.1) call dg_linearLimiter (rsol,ralpha)
        if (ilimiting.eq.2) call dg_quadraticLimiter (rsol,ralpha)
       
-!       ! Test, if the solution has converged
-!       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
-!       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt!/lsyssc_vectorNorm (rsol,LINALG_NORML2)
-!       write(*,*) dL2updnorm
+       ! Test, if the solution has converged
+       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
+       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt/lsyssc_vectorNorm (rsol,LINALG_NORML2)
+       write(*,*) dL2updnorm
+       
+       
+       ! Write video file (the initial conditions)
+        ! If we want to make a video
+        if (imakevideo == 1) then
+
+          write(*,*) ''
+          write(*,*) 'Writing videofile'
+          
+          ifilenumber = ifilenumber + 1
+          
+          select case (ioutputtype)
+            case (1)
+              ! Output solution to gmv file
+              call dg2gmv(rsol,iextraPoints,sofile,ifilenumber)
+            case (2)
+              ! Output solution to vtk file
+              call dg2vtk(rsol,iextraPoints,sofile,ifilenumber)
+          end select
+          
+          dvideotime = dvideotimestep
+        end if
+       
        
     
        ! Go on to the next time step
@@ -671,32 +684,31 @@ contains
     end if
     
     
-!    
-!    
-!    
-!    
-!    call lsyssc_copyVector(rsol,rsoltemp)
-!    call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .true.,&
-!                                              rrhs,rsolTemp,&
-!                                              flux_dg_buildVectorScEdge2D_sim)
-!       
-!       call lsyssc_scaleVector (rrhs,-1.0_DP)
-!       ! Then add the convection terms
-!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCX, rsolTemp, rrhs, vel(1), 1.0_DP)
-!       if(ielementType .ne. EL_DG_T0_2D) call lsyssc_scalarMatVec (rmatrixCY, rsolTemp, rrhs, vel(2), 1.0_DP)
-!       
-!       ! Solve for solution update
-!       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
-!       
-!       ! Get new temp solution
-!       call lsyssc_vectorLinearComb (rsol,rsolUp,1.0_DP,dt,rsoltemp)
-!    call lsyssc_copyVector(rsoltemp,rsol)
-!    
-!    
-!    
-!    
-!    
-!    
+    
+    ! Write last video file (the initial conditions)
+    ! If we want to make a video
+    if (imakevideo == 1) then
+
+      write(*,*) ''
+      write(*,*) 'Writing videofile'
+      
+      ifilenumber = ifilenumber + 1
+      
+      select case (ioutputtype)
+        case (1)
+          ! Output solution to gmv file
+          call dg2gmv(rsol,iextraPoints,sofile,ifilenumber)
+        case (2)
+          ! Output solution to vtk file
+          call dg2vtk(rsol,iextraPoints,sofile,ifilenumber)
+      end select
+      
+      dvideotime = dvideotimestep
+    end if
+    
+    
+
+!call dg_quadraticLimiter (rsol,ralpha)
     
     write(*,*) ''
     write(*,*) 'Writing solution to file'
@@ -704,9 +716,16 @@ contains
     sofile = './gmv/u2d'
     call dg2gmv(rsol,iextraPoints,sofile,-1)
     call dg2vtk(rsol,iextraPoints,sofile,-1)
+    
+    ! Saving the solution DOFs to file
+    write(*,*) 'Writing DOFs to file'
+    call saveSolutionData(rsol,sofile,1)
+    
     ! Output limiting factors
     sofile = './gmv/alpha'
     call dg2vtk(ralpha,0,sofile,-1)
+    
+
 
 
 
@@ -714,35 +733,10 @@ contains
 
 
     
-!    write(*,*) 'Writing steady solution to file'
-!    ! And output the steady projection
-!     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
+    write(*,*) 'Writing steady solution to file'
+    ! And output the steady projection
+     call dg_proj2steady(rsolBlock,rtriangulation, rboundary)
          
-!    
-!    ! Finally solve the system. As we want to solve Ax=b with
-!    ! b being the real RHS and x being the real solution vector,
-!    ! we use linsol_solveAdaptively. If b is a defect
-!    ! RHS and x a defect update to be added to a solution vector,
-!    ! we would have to use linsol_precondDefect instead.
-!    call linsol_solveAdaptively (p_rsolverNode,rvectorBlock,rrhsBlock,rtempBlock)
-!    
-!    ! That is it, rvectorBlock now contains our solution. We can now
-!    ! start the postprocessing. 
-!    !
-!    ! Get the path for writing postprocessing files from the environment variable
-!    ! $UCDDIR. If that does not exist, write to the directory "./gmv".
-!    if (.not. sys_getenv_string("UCDDIR", sucddir)) sucddir = './gmv'
-!
-!    ! Start UCD export to GMV file:
-!    call ucd_startGMV (rexport,UCD_FLAG_STANDARD,rtriangulation,&
-!                       trim(sucddir)//'/u2d_0_simple.gmv')
-!    
-!    call lsyssc_getbase_double (rvectorBlock%RvectorBlock(1),p_Ddata)
-!    call ucd_addVariableVertexBased (rexport,'sol',UCD_VAR_STANDARD, p_Ddata)
-!    
-!    ! Write the file to disc, that is it.
-!    call ucd_write (rexport)
-!    call ucd_release (rexport)
 !    
 !    ! Calculate the error to the reference function.
 !    call pperr_scalar (rvectorBlock%RvectorBlock(1),PPERR_L2ERROR,derror,&
@@ -770,10 +764,10 @@ contains
 
 
 
-!    
-!    ! We are finished - but not completely!
-!    ! Now, clean up so that all the memory is available again.
-!    !
+    
+    ! We are finished - but not completely!
+    ! Now, clean up so that all the memory is available again.
+    !
 
     ! Release solver data and structure
     call linsol_doneData (p_rsolverNode)
@@ -781,7 +775,7 @@ contains
     
     ! Release the solver node and all subnodes attached to it (if at all):
     call linsol_releaseSolver (p_rsolverNode)
-!    
+    
 !    ! Release the block matrix/vectors
     call lsysbl_releaseVector (rtempBlock)
     call lsysbl_releaseVector (rrhsBlock)

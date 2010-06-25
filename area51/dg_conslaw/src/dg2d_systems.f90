@@ -93,14 +93,14 @@ contains
     
     ! A scalar matrix and vector. The vector accepts the RHS of the problem
     ! in scalar form.
-    type(t_matrixScalar) :: rmatrixMC
+    type(t_matrixScalar) :: rmatrixMC, rmatrixiMC
     type(t_vectorScalar) :: rrhs,rsol,redge,rconv,rsoltemp,rrhstemp,rsolUp,rsolold
 
     ! A block matrix and a couple of block vectors. These will be filled
     ! with data for the linear solver.
-    type(t_matrixBlock) :: rmatrixBlock
+    type(t_matrixBlock) :: rmatrixBlock, rmatrixiBlock
     type(t_vectorBlock), target :: rvectorBlock,rrhsBlock,rtempBlock,rsolBlock,redgeBlock,rconvBlock,rsolTempBlock,rsolUpBlock,rsolOldBlock,rsolLimiterBlock,rsolSaveBlock,rsourceTermBlock
-    type(t_vectorBlock), target :: rk1, rk2, rdefBlock, rimf1, rimf2
+    type(t_vectorBlock), target :: rk0, rk1, rk2, rk3, rdefBlock, rimf1, rimf2
 
 
     ! A set of variables describing the discrete boundary conditions.    
@@ -258,7 +258,7 @@ contains
     ! The output file
     call parlst_getvalue_string (rparlist, 'OUTPUT', 'ofile', sofile, 'gmv/u2d')
     
-    ! Make gmv snapshots for video? Default=No.
+    ! Make snapshots for video? Default=No.
     call parlst_getvalue_int(rparlist, 'OUTPUT', 'makevideo', imakevideo, 0)
     
     ! Type of output files (1 = gmv, 2 = vtk)
@@ -392,7 +392,30 @@ contains
       call lsyssc_duplicateMatrix (rmatrixMC, &
            rmatrixBlock%Rmatrixblock(ivar,ivar), &
            LSYSSC_DUP_SHARE, &
-           !LSYSSC_DUP_EMPTY) !!!!!!!!!!
+           !LSYSSC_DUP_EMPTY)
+           LSYSSC_DUP_SHARE)
+    end do  
+    
+    ! Now we calculate the inverse matrix
+    
+    ! Calculate the inverse of the mass matrix
+    call lsyssc_duplicateMatrix(rmatrixMC, rmatrixiMC,&
+         LSYSSC_DUP_SHARE, LSYSSC_DUP_EMPTY)
+    call lsyssc_copyMatrix (rmatrixMC, rmatrixiMC)
+    call dg_invertMassMatrix(rmatrixiMC)  
+    
+    ! First create an empty block matrix structur with nvar2d x nvar2d blocks
+    call lsysbl_createEmptyMatrix (rmatrixiBlock, nvar2d)
+
+    ! Next create the diagonal blocks of P as empty matrices, using the 
+    ! matrix structur of the matrix MC
+    ! We will only need the diagonal blocks, as we employ a block jacobi
+    ! method here
+    do ivar = 1, nvar2d
+      call lsyssc_duplicateMatrix (rmatrixiMC, &
+           rmatrixiBlock%Rmatrixblock(ivar,ivar), &
+           LSYSSC_DUP_SHARE, &
+           !LSYSSC_DUP_EMPTY)
            LSYSSC_DUP_SHARE)
     end do  
     
@@ -423,9 +446,13 @@ contains
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rTempBlock,.true.,&
          ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rk0,.true.,&
+         ST_DOUBLE)     
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rk1,.true.,&
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rk2,.true.,&
+         ST_DOUBLE)
+    call lsysbl_createVecBlockByDiscr (rDiscretisation,rk3,.true.,&
          ST_DOUBLE)
     call lsysbl_createVecBlockByDiscr (rDiscretisation,rdefBlock,.true.,&
          ST_DOUBLE)
@@ -442,94 +469,9 @@ contains
     NEL = rsolBlock%RvectorBlock(1)%p_rspatialDiscr%p_rtriangulation%NEL
          
          
-    
-!    ! Now we have the raw problem. What is missing is the definition of the boundary
-!    ! conditions.
-!    ! For implementing boundary conditions, we use a `filter technique with
-!    ! discretised boundary conditions`. This means, we first have to calculate
-!    ! a discrete version of the analytic BC, which we can implement into the
-!    ! solution/RHS vectors using the corresponding filter.
-!    !
-!    ! Create a t_discreteBC structure where we store all discretised boundary
-!    ! conditions.
-!    call bcasm_initDiscreteBC(rdiscreteBC)
-!    !
-!    ! We 'know' already (from the problem definition) that we have four boundary
-!    ! segments in the domain. Each of these, we want to use for enforcing
-!    ! some kind of boundary condition.
-!    !
-!    ! We ask the bondary routines to create a 'boundary region' - which is
-!    ! simply a part of the boundary corresponding to a boundary segment.
-!    ! A boundary region roughly contains the type, the min/max parameter value
-!    ! and whether the endpoints are inside the region or not.
-!    call boundary_createRegion(rboundary,1,1,rboundaryRegion)
-!    
-!    ! We use this boundary region and specify that we want to have Dirichlet
-!    ! boundary there. The following call does the following:
-!    ! - Create Dirichlet boundary conditions on the region rboundaryRegion.
-!    !   We specify icomponent='1' to indicate that we set up the
-!    !   Dirichlet BC`s for the first (here: one and only) component in the 
-!    !   solution vector.
-!    ! - Discretise the boundary condition so that the BC`s can be applied
-!    !   to matrices and vectors
-!    ! - Add the calculated discrete BC`s to rdiscreteBC for later use.
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Now to the edge 2 of boundary component 1 the domain.
-!    call boundary_createRegion(rboundary,1,2,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Edge 3 of boundary component 1.
-!    call boundary_createRegion(rboundary,1,3,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!    
-!    ! Edge 4 of boundary component 1. That is it.
-!    call boundary_createRegion(rboundary,1,4,rboundaryRegion)
-!    call bcasm_newDirichletBConRealBD (rdiscretisation,1,&
-!                                       rboundaryRegion,rdiscreteBC,&
-!                                       getBoundaryValues_2D)
-!                             
-!    ! Hang the pointer into the vector and matrix. That way, these
-!    ! boundary conditions are always connected to that matrix and that
-!    ! vector.
-!    rmatrixBlock%p_rdiscreteBC => rdiscreteBC
-!    rrhsBlock%p_rdiscreteBC => rdiscreteBC
-!                             
-    ! Now we have block vectors for the RHS and the matrix. What we
-    ! need additionally is a block vector for the solution and
-    ! temporary data. Create them using the RHS as template.
-    ! Fill the solution vector with 0:
-    !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolBlock, .true.)
-    !call lsysbl_createVecBlockIndirect (rrhsBlock, rsolTempBlock, .true.)
-    !call lsysbl_createVecBlockIndirect (rrhsBlock, rtempBlock, .false.)
-!    
-!    ! Next step is to implement boundary conditions into the RHS,
-!    ! solution and matrix. This is done using a vector/matrix filter
-!    ! for discrete boundary conditions.
-!    ! The discrete boundary conditions are already attached to the
-!    ! vectors/matrix. Call the appropriate vector/matrix filter that
-!    ! modifies the vectors/matrix according to the boundary conditions.
-!    call vecfil_discreteBCrhs (rrhsBlock)
-!    call vecfil_discreteBCsol (rvectorBlock)
-!    call matfil_discreteBC (rmatrixBlock)
+
 !
-!    ! During the linear solver, the boundary conditions are also
-!    ! frequently imposed to the vectors. But as the linear solver
-!    ! does not work with the actual solution vectors but with
-!    ! defect vectors instead.
-!    ! So, set up a filter chain that filters the defect vector
-!    ! during the solution process to implement discrete boundary conditions.
-!    RfilterChain(1)%ifilterType = FILTER_DISCBCDEFREAL
-!
-    ! Create a BiCGStab-solver. Attach the above filter chain
-    ! to the solver, so that the solver automatically filters
-    ! the vector during the solution process.
+    ! Create a UMFPACK-solver.
     nullify(p_rpreconditioner)
     !call linsol_initBiCGStab (p_rsolverNode,p_rpreconditioner,RfilterChain)
     call linsol_initUMFPACK4 (p_rsolverNode)
@@ -539,8 +481,8 @@ contains
     
         ! The linear solver stops, when this relative or absolut norm of
     ! the residual is reached.
-    p_rsolverNode%depsRel = 1.0e-12
-    p_rsolverNode%depsAbs = 1.0e-12
+    p_rsolverNode%depsRel = 1.0e-50
+    p_rsolverNode%depsAbs = 1.0e-14
     
     ! Attach the system matrix to the solver.
     ! First create an array with the matrix data (on all levels, but we
@@ -569,12 +511,14 @@ contains
     
     
     ! Now calculate the source term
-    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-    rlinformSource%itermCount = 1
-    rlinformSource%Idescriptors(1) = DER_FUNC2D
-    call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
-                                       Callback_Sourceterm,rcollection)
-
+    if (iinsertSourceTerm == 1) then
+      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+      rlinformSource%itermCount = 1
+      rlinformSource%Idescriptors(1) = DER_FUNC2D
+      call linf_buildVectorBlock2 (rlinformSource, .true., rsourceTermBlock,&
+                                         Callback_Sourceterm,rcollection)
+      rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G3x3
+    end if
      
     
 do iwithoutlimiting = 1,1
@@ -602,7 +546,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     call linsol_solveAdaptively (p_rsolverNode,rsolBlock,rrhsBlock,rtempBlock)    
     
     
-!    ! Kill all quadratic parts (needed, if unsteady initial condition is applied with dg_t2)
+!    ! Kill all quadratic parts (can be needed, if unsteady initial condition is applied with dg_t2)
 !    call lsyssc_getbase_double (rsolBlock%RvectorBlock(1),p_Ddata)
 !    do iel = 1, size(p_Ddata,1)/6
 !    ! Get global DOFs of the element
@@ -660,7 +604,7 @@ if (iwithoutlimiting==2) ilimiter = 0
     timestepping: do
     
        call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
-       ! dt = 0.5_dp*dt
+       !dt = 0.5_dp*dt
        
        
        if (dt>ttfinal-ttime) dt = ttfinal-ttime
@@ -692,6 +636,66 @@ if (iwithoutlimiting==2) ilimiter = 0
                                               raddTriaData,&
                                               flux_dg_buildVectorBlEdge2D_sim,&
                                               rcollection)
+                                              
+                                              
+                                              
+!       !!!!!!!!!!!!!!!!!!!!!!                                       
+!       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)                                       
+!       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+!       rcollection%SquickAccess(1) = sinlet
+!       call linf_dg_buildVectorScalarEdge2d (rlinformedge, CUB_G3_1D, .false.,&
+!                                              rrhsBlock%rvectorBlock(1),rsolTempBlock%rvectorBlock(1),&
+!                                              raddTriaData,&
+!                                              flux_dg_buildVectorScEdge2D_sim,&
+!                                              rcollection)
+!       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'Difference1:', derror  
+!       
+!       ! If we want to make a video
+!        if ((ttime>dvideotime-0.001_DP*dt)) then
+!
+!          write(*,*) ''
+!          write(*,*) 'Writing videofile'
+!          
+!          ifilenumber = ifilenumber + 1
+!          
+!          select case (ioutputtype)
+!            case (1)
+!              ! Output solution to gmv file
+!              call dg2gmv(rrhsBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!            case (2)
+!              ! Output solution to vtk file
+!              call dg2vtk(rrhsBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+!          end select
+!          
+!          dvideotime = dvideotime + dvideotimestep
+!        end if
+!
+!                                              
+!                                              
+!         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+!         call linf_buildVectorBlock2 (rlinformconv, .true., rrhsBlock,&
+!                                       flux_sys_block,rcollection)
+!         
+!         call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+!         
+!         rcollection%IquickAccess(1) = 1
+!         call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(1),&
+!                                       flux_sys,rcollection)
+!                call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+!       write(*,*) 'Difference2:', derror
+!                                               
+!
+!       call profiler_measure(rprofiler,2)
+!       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+!                                              rrhsBlock,rsolTempBlock,&
+!                                              raddTriaData,&
+!                                              flux_dg_buildVectorBlEdge2D_sim,&
+!                                              rcollection)
+!
+!      !!!!!!!!!!!!!!!!!!!!!!!                                        
+                                              
+                                                                                   
        
        call profiler_measure(rprofiler,1)
        call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
@@ -709,7 +713,6 @@ if (iwithoutlimiting==2) ilimiter = 0
            rcollection%p_rvectorQuickAccess1 => rsolTempBlock
            rcollection%IquickAccess(1) = ivar
          
-
            call linf_buildVectorScalar2 (rlinformconv, .false., rrhsBlock%RvectorBlock(ivar),&
                                          flux_sys,rcollection)
            !call lsyssc_vectorLinearComb (rrhstemp,rrhs,1.0_DP,1.0_DP)
@@ -722,7 +725,11 @@ if (iwithoutlimiting==2) ilimiter = 0
        
        call profiler_measure(rprofiler,4)
        ! Solve for solution update
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
+       do ivar = 1, nvar2d
+        call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+       end do
        
        call profiler_measure(rprofiler,1)
        ! Get new temp solution
@@ -793,7 +800,11 @@ if (iwithoutlimiting==2) ilimiter = 0
               
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)
+       do ivar = 1, nvar2d
+        call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+       end do
        
        call profiler_measure(rprofiler,1)
        ! Get new temp solution
@@ -860,18 +871,22 @@ if (iwithoutlimiting==2) ilimiter = 0
               
        ! Solve for solution update
        call profiler_measure(rprofiler,4)
-       call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call linsol_solveAdaptively (p_rsolverNode,rsolUpBlock,rrhsBlock,rtempBlock)
+       !call lsysbl_blockMatVec (rmatrixiBlock, rrhsBlock, rsolUpBlock, 1.0_dp, 0.0_dp)      
+       do ivar = 1, nvar2d
+        call lsyssc_scalarMatVec (rmatrixiMC, rrhsBlock%RvectorBlock(ivar), rsolUpBlock%RvectorBlock(ivar), 1.0_dp, 0.0_dp)
+       end do
 
-!       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
-!       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-!       write(*,*) 'SolUp:', derror 
+       derror = lsyssc_vectorNorm (rsolUpBlock%Rvectorblock(1),LINALG_NORML1) 
+       call pperr_scalar (rsolUpBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+       write(*,*) 'SolUp:', derror
        
        
-!       call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
-!       call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
-!       call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
-!       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
-!       write(*,*) 'Res  :', derror 
+       call lsysbl_vectorLinearComb (rsolBlock,rsolOldBlock,1.0_DP,-1.0_dp)
+       call lsysbl_scaleVector (rsolOldBlock,1.0_DP/dt)
+       call lsyssc_scalarMatVec (rmatrixMC, rsolOldBlock%Rvectorblock(1), rrhsBlock%Rvectorblock(1), -1.0_dp, 1.0_dp)
+       call pperr_scalar (rrhsBlock%Rvectorblock(1),PPERR_L1ERROR,derror)
+       write(*,*) 'Res  :', derror 
        
        
        ! Get new temp solution
@@ -893,7 +908,7 @@ if (iwithoutlimiting==2) ilimiter = 0
        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolBlock, raddTriaData)
        if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
 
-!       
+      
 !       ! Test, if the solution has converged
 !       call lsyssc_vectorLinearComb (rsol,rsolOld,-1.0_DP,1.0_dp)
 !       dL2updnorm = lsyssc_vectorNorm (rsolOld,LINALG_NORML2) /dt/lsyssc_vectorNorm (rsol,LINALG_NORML2)
@@ -929,7 +944,7 @@ if (iwithoutlimiting==2) ilimiter = 0
         end if
 
        ! Leave the time stepping loop if final time is reached
-       if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping
+       if ((ttime .ge. ttfinal-0.001_DP*dt).or.(abs(derror)<1e-12)) exit timestepping
        
        !if (dL2updnorm.le.1.0e-6) exit timestepping
 
@@ -1200,6 +1215,232 @@ if (iwithoutlimiting==2) ilimiter = 0
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    
    
+   
+  case (4)
+    ttime = 0.0_DP
+    
+    ! Initialise the profiler with 5 timers
+    call profiler_init(rprofiler, 5)
+    
+    if (ttfinal > 0.0_dp)then
+    timestepping4: do
+    
+       call getDtByCfl (rsolBlock, raddTriaData, dCFL, dt, dgravconst)
+       ! dt = 0.5_dp*dt
+       
+       
+       if (dt>ttfinal-ttime) dt = ttfinal-ttime
+
+       ! Compute solution from time step t^n to time step t^{n+1}
+       write(*,*)
+       write(*,*)
+       write(*,*) 'TIME STEP: t =', ttime,'dt =', dt
+       write(*,*)
+       
+       call profiler_measure(rprofiler,1)
+       
+       call lsysbl_copyVector(rsolBlock,rsoltempBlock)
+       call lsysbl_copyVector(rsolBlock,rsolOldBlock)
+       
+       ! Step 1/4
+       
+       ! Create RHS-Vector
+             
+       ! First use the dg-function for the edge terms
+       call profiler_measure(rprofiler,2)
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       
+       call profiler_measure(rprofiler,1)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
+       if(ielementType .ne. EL_DG_T0_2D) then
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)                       
+       end if
+       
+       call profiler_measure(rprofiler,4)
+       ! Solve for solution update
+       call linsol_solveAdaptively (p_rsolverNode,rk0,rrhsBlock,rtempBlock)
+       
+       call profiler_measure(rprofiler,1)
+       ! Get new temp solution
+       call lsysbl_vectorLinearComb (rsolOldBlock,rk0,1.0_DP,0.5_dp*dt,rsoltempBlock)
+       
+       call profiler_measure(rprofiler,5)
+       
+       ! Limit the solution vector
+       if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
+       
+       
+       ! Step 2/4
+       
+       ! Create RHS-Vector
+             
+       call profiler_measure(rprofiler,2)
+       ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+                                              
+       call profiler_measure(rprofiler,1)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
+       if(ielementType .ne. EL_DG_T0_2D) then
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+       end if
+              
+       ! Solve for solution update
+       call profiler_measure(rprofiler,4)
+       call linsol_solveAdaptively (p_rsolverNode,rk1,rrhsBlock,rtempBlock)
+       
+       call profiler_measure(rprofiler,1)
+       ! Get new temp solution
+       call lsysbl_vectorLinearComb (rk1,rsolOldBlock,0.5_dp*dt,1.0_DP,rsoltempBlock)
+
+       call profiler_measure(rprofiler,5)
+!              ! Limit the solution vector
+!       if (ilimiting.eq.1) call dg_linearLimiter (rsoltemp)
+!       if (ilimiting.eq.2) call dg_quadraticLimiter (rsoltemp)
+        if (ilimiter .eq. 4) call dg_linearLimiterBlockIndicatorVar (rsoltempBlock, 1)
+        if (ilimiter .eq. 6) call dg_quadraticLimiterBlockIndicatorVar (rsoltempBlock, 1)
+        if (ilimiter .eq. 7) call dg_quadraticLimiterBlockIndicatorVar_2 (rsoltempBlock, 1)
+        if (ilimiter .eq. 5) call dg_linearLimiterBlockCharVar (rsoltempBlock)
+        if (ilimiter .eq. 8) call dg_quadraticLimiterBlockCharVar (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 9) call dg_linearLimiterBlockCharVar_mixedJacobian (rsolTempBlock)
+        if (ilimiter .eq. 10) call dg_quadraticLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 11) call dg_kuzminLimiterBlockCharVar_mixedJacobian (rsolTempBlock, raddTriaData)
+        if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
+
+
+       ! Step 3/4
+       
+       ! Create RHS-Vector
+             
+       ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       call profiler_measure(rprofiler,2)
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       call profiler_measure(rprofiler,1)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
+       if(ielementType .ne. EL_DG_T0_2D) then
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+       end if
+              
+       ! Solve for solution update
+       call profiler_measure(rprofiler,4)
+       call linsol_solveAdaptively (p_rsolverNode,rk2,rrhsBlock,rtempBlock)
+       
+       ! Get new temp solution
+       call profiler_measure(rprofiler,1)
+       call lsysbl_vectorLinearComb (rsolOldBlock,rk2,1.0_DP,dt,rsolTempBlock)
+       
+!       ! Limit the solution vector
+       if (ilimiter .eq. 12) call dg_realKuzmin (rsolTempBlock, raddTriaData)
+
+
+       ! Step 4/4
+       
+       ! Create RHS-Vector
+             
+       ! First use the dg-function for the edge terms
+       rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+       call profiler_measure(rprofiler,2)
+       call linf_dg_buildVectorBlockEdge2d (rlinformedge, CUB_G3_1D, .true.,&
+                                              rrhsBlock,rsolTempBlock,&
+                                              raddTriaData,&
+                                              flux_dg_buildVectorBlEdge2D_sim,&
+                                              rcollection)
+       call profiler_measure(rprofiler,1)
+       call lsysbl_scaleVector (rrhsBlock,-1.0_DP)
+       
+       ! Then add the convection terms
+       call profiler_measure(rprofiler,3)
+       if(ielementType .ne. EL_DG_T0_2D) then
+         rcollection%p_rvectorQuickAccess1 => rsolTempBlock
+         call linf_buildVectorBlock2 (rlinformconv, .false., rrhsBlock,&
+                                       flux_sys_block,rcollection)
+       end if
+              
+       ! Solve for solution update
+       call profiler_measure(rprofiler,4)
+       call linsol_solveAdaptively (p_rsolverNode,rk3,rrhsBlock,rtempBlock)
+       
+       ! Get solution at next timestep
+       call profiler_measure(rprofiler,1)
+       
+       
+       call lsysbl_vectorLinearComb (rk1,rk0,2.0_dp,1.0_DP)
+       call lsysbl_vectorLinearComb (rk2,rk0,2.0_dp,1.0_DP)
+       call lsysbl_vectorLinearComb (rk3,rk0,1.0_dp,1.0_DP)
+       
+       call lsysbl_vectorLinearComb (rsolOldBlock,rk0,1.0_dp,1.0_dp/6.0_dp*dt,rsolBlock)
+       
+       ! Limit the solution vector
+       if (ilimiter .eq. 12) call dg_realKuzmin (rsolBlock, raddTriaData)
+
+
+    
+    call profiler_measure(rprofiler,1)
+       ! Go on to the next time step
+       ttime = ttime + dt
+       ! If we would go beyond the final time in our next time step,
+       ! then reduce the timestep
+       !if (ttfinal-ttime<dt) dt = ttfinal-ttime
+       
+       ! If we want to make a video
+        if ((imakevideo == 1).and.(ttime>dvideotime-0.001_DP*dt)) then
+
+          write(*,*) ''
+          write(*,*) 'Writing videofile'
+          
+          ifilenumber = ifilenumber + 1
+          
+          select case (ioutputtype)
+            case (1)
+              ! Output solution to gmv file
+              call dg2gmv(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+            case (2)
+              ! Output solution to vtk file
+              call dg2vtk(rsolBlock%Rvectorblock(1),iextraPoints,sofile,ifilenumber)
+          end select
+          
+          dvideotime = dvideotime + dvideotimestep
+        end if
+
+       ! Leave the time stepping loop if final time is reached
+       if (ttime .ge. ttfinal-0.001_DP*dt) exit timestepping4
+       
+       !if (dL2updnorm.le.1.0e-6) exit timestepping
+
+    end do timestepping4
+   end if
+   
+   ! Release the profiler and print statistics
+   call profiler_release(rprofiler)
+   
+   
    end select
    
    
@@ -1272,16 +1513,16 @@ if (iwithoutlimiting==2) ilimiter = 0
 !    call loadSolutionData(rsolBlock%Rvectorblock(1),sofile)
    
  
-!    ! Calculate the error to the reference function.
-!    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
-!
-!    ! Calculate the error to the reference function.
-!    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
-!                       getReferenceFunction_2D)
-!    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
+    ! Calculate the error to the reference function.
+    rsolBlock%p_rblockDiscr%RspatialDiscr(1)%RelementDistr(1)%ccubTypeEval=CUB_G6_2d
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L1ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L1-error: ' // sys_sdEL(derror,10) )
+
+    ! Calculate the error to the reference function.
+    call pperr_scalar (rsolBlock%Rvectorblock(1),PPERR_L2ERROR,derror,&
+                       getReferenceFunction_2D)
+    call output_line ('L2-error: ' // sys_sdEL(derror,10) )    
     
     
     
@@ -1334,8 +1575,10 @@ if (iwithoutlimiting==2) ilimiter = 0
     call lsysbl_releaseVector (rconvBlock)
     call lsysbl_releaseVector (rsolLimiterBlock)
     call lsysbl_releaseVector (rsolOldBlock)
+    call lsysbl_releaseVector (rk0)
     call lsysbl_releaseVector (rk1)
     call lsysbl_releaseVector (rk2)
+    call lsysbl_releaseVector (rk3)
     call lsysbl_releaseVector (rdefBlock)
     call lsysbl_releaseVector (rimf1)
     call lsysbl_releaseVector (rimf2)

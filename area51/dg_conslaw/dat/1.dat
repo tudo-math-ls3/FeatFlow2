@@ -2,13 +2,14 @@
 [TRIANGULATION]
 
 # We want to solve our problem on level ...
-nlmax = 7
+nlmax = 5
+
 
 # Name of the parametrisation file
 #prmname = ./pre/BADQUAD.prm
 #prmname = ./pre/NONCARTQUAD.prm
-#prmname = ./pre/QUAD.prm
-prmname = ./pre/zehnm.prm
+prmname = ./pre/QUAD.prm
+#prmname = ./pre/zehnm.prm
 #prmname = ./pre/threezylindergrob.prm
 #prmname = ./pre/RECT2x1.prm
 #prmname = ./pre/QUAD4x4.prm
@@ -19,8 +20,8 @@ prmname = ./pre/zehnm.prm
 # Name of the triangulation file
 #triname = ./pre/BADQUAD.tri
 #triname = ./pre/NONCARTQUAD.tri
-#triname = ./pre/QUAD.tri
-triname = ./pre/zehnm.tri
+triname = ./pre/QUAD.tri
+#triname = ./pre/zehnm.tri
 #triname = ./pre/threezylindergrob.tri
 #triname = ./pre/RECT2x1.tri
 #triname = ./pre/QUAD4x4.tri
@@ -42,11 +43,11 @@ FEkind = 2
 dt = 0.001
 
 # Final time
-ttfinal = 1.0
+ttfinal = 2.0
 
 # Theta for theta-scheme
 # 0.5 : Crank Nicolson
-theta = 0.5
+theta = 1.0
 
 
 [SOLVER]
@@ -62,6 +63,7 @@ limiter = 12
 # 1: RK SSP 3rd order
 # 2: dGP(2) 3rd/4th order
 # 3: Theta scheme
+# 4: Classical RK of 4th order
 timestepping = 1
 
 # What type to build the RHS
@@ -89,7 +91,7 @@ gravconst = 1.0
 [OUTPUT]
 
 # How fine shall be the DG output file (Default = 3)
-extrapoints = 3
+extrapoints = 1
 
 # Name of output file
 ofile = ./gmv/u2d
@@ -105,4 +107,4 @@ outtype = 2
 makevideo = 0
 
 # Make gmv snapshot every ... seconds (should be n*dt)
-videotimestep = 0.01
+videotimestep = 0.1

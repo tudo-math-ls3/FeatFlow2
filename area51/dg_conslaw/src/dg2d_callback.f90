@@ -340,6 +340,7 @@ contains
 integer :: iunit,i,j
 real(dp),dimension(4000001) :: Dreference
 real(dp) :: r,n,r1
+real(dp) :: dx,dy, dr
 
 integer :: ielement, ipoint
 
@@ -420,121 +421,149 @@ integer :: ielement, ipoint
 !  end select  
   
   
-  
-  
-  
-  
-
-    ! Compare to less refined solution
-
-      ! An object for saving the domain:
-    type(t_boundary) :: rboundary
+  ! Quarter circular convection
+  select case (cderivative)
+  case (DER_FUNC)
     
-    ! An object for saving the triangulation on the domain
-    type(t_triangulation) :: rtriangulation
-    
-    type(t_vectorScalar) :: rsolLoaded
-    
-    ! An object specifying the discretisation.
-    ! This contains also information about trial/test functions,...
-    type(t_blockDiscretisation) :: rdiscretisation2
-    
-    integer :: NLMAX
-    
-    real(DP), dimension(:), pointer :: p_Ddata
-    
-    integer :: ielementtype, iel,i1,i2,i3
-    
-    character (LEN=SYS_STRLEN) :: sofile
-    
-    integer :: ilength
-  
-  
-  
-    
-    
-    ielementtype = EL_DG_T1_2D
-    
-    NLMAX = 8
-    
-    sofile = 'l8.data'
-    
-    call boundary_read_prm(rboundary, './pre/quad.PRM')
-    
-    ! Now read in the basic triangulation.
-    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
-    
-    
-      
-    
-    ! Refine it.
-    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
-    
-    ! And create information about adjacencies and everything one needs from
-    ! a triangulation.
-    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
-  
-    ! Now we can start to initialise the discretisation. At first, set up
-    ! a block discretisation structure that specifies the blocks in the
-    ! solution vector. In this simple problem, we only have one block.
-    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
-                                 rtriangulation, rboundary)
-    
-    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
-    ! structures for every component of the solution vector.
-    ! Initialise the first element of the list to specify the element
-    ! and cubature rule for this solution component:
-    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
-                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
-                 
-    
-    
-    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
-    
-    
-    
-  ! Get pointers to the data form the truangulation
-  call lsyssc_getbase_double(rsolloaded,p_Ddata)
-
-  ! Get the length of the data array
-  ilength = size(p_Ddata,1)  
-  
-  
-  ! ************ WRITE TO FILE PHASE *******************
-  
-  iunit = sys_getFreeUnit()
-  open(iunit, file=trim(sofile))
- 
-  
-  read(iunit,'(I10)') ilength
-
-  do i=1, ilength
-    read(iunit,'(E25.16E3)') p_Ddata(i)
-  end do
-  
-  close(iunit)
-    
-    
-    
-    do iel = 1, nelements
-      ielement=0
-      call tsrch_getElem_raytrace2D (&
-            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
-      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
-                                Dpoints=Dpoints(:,:,iel))
+                    
+    do i = 1, size(Dvalues,1)
+    do j = 1, size(Dvalues,2)
+      dx = Dpoints(1,i,j)
+      dy = Dpoints(2,i,j)
+       
+       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
+       
+       Dvalues(i,j) = 0.3_DP*exp(-25.0_dp*dr*dr)
+          
     end do
-
-            
+    end do
+                              
+  case (DER_DERIV_X)
+  write(*,*) 'Error in calculating L2-error'
     
-    call lsyssc_releaseVector (rsolloaded)
-        
-    call spdiscr_releaseBlockDiscr(rdiscretisation2)
+  case (DER_DERIV_Y)
+  write(*,*) 'Error in calculating L2-error'
+    
+  case DEFAULT
+    ! Unknown. Set the result to 0.0.
+    Dvalues = 0.0_DP
+  end select  
+  
+  
+  
+  
 
-    ! Release the triangulation. 
-    call tria_done (rtriangulation)
-        
-    ! Finally release the domain, that is it.
-    call boundary_release (rboundary)
+!    ! Compare to less refined solution
+!
+!      ! An object for saving the domain:
+!    type(t_boundary) :: rboundary
+!    
+!    ! An object for saving the triangulation on the domain
+!    type(t_triangulation) :: rtriangulation
+!    
+!    type(t_vectorScalar) :: rsolLoaded
+!    
+!    ! An object specifying the discretisation.
+!    ! This contains also information about trial/test functions,...
+!    type(t_blockDiscretisation) :: rdiscretisation2
+!    
+!    integer :: NLMAX
+!    
+!    real(DP), dimension(:), pointer :: p_Ddata
+!    
+!    integer :: ielementtype, iel,i1,i2,i3
+!    
+!    character (LEN=SYS_STRLEN) :: sofile
+!    
+!    integer :: ilength
+!  
+!  
+!  
+!    
+!    
+!    ielementtype = EL_DG_T2_2D
+!    
+!    NLMAX = 8
+!    
+!    sofile = 'l8.data'
+!    
+!    call boundary_read_prm(rboundary, './pre/quad.PRM')
+!    
+!    ! Now read in the basic triangulation.
+!    call tria_readTriFile2D (rtriangulation, './pre/quad.TRI', rboundary, .true.)  
+!    
+!    
+!      
+!    
+!    ! Refine it.
+!    call tria_quickRefine2LevelOrdering (NLMAX-1,rtriangulation,rboundary)
+!    
+!    ! And create information about adjacencies and everything one needs from
+!    ! a triangulation.
+!    call tria_initStandardMeshFromRaw (rtriangulation,rboundary)
+!  
+!    ! Now we can start to initialise the discretisation. At first, set up
+!    ! a block discretisation structure that specifies the blocks in the
+!    ! solution vector. In this simple problem, we only have one block.
+!    call spdiscr_initBlockDiscr (rdiscretisation2,1,&
+!                                 rtriangulation, rboundary)
+!    
+!    ! rdiscretisation%Rdiscretisations is a list of scalar discretisation
+!    ! structures for every component of the solution vector.
+!    ! Initialise the first element of the list to specify the element
+!    ! and cubature rule for this solution component:
+!    call spdiscr_initDiscr_simple (rdiscretisation2%RspatialDiscr(1), &
+!                                   ielementType,CUB_G5X5,rtriangulation, rboundary)
+!                 
+!    
+!    
+!    call lsyssc_createVecByDiscr (rdiscretisation2%RspatialDiscr(1),rsolloaded ,.true.,ST_DOUBLE)
+!    
+!    
+!    
+!  ! Get pointers to the data form the truangulation
+!  call lsyssc_getbase_double(rsolloaded,p_Ddata)
+!
+!  ! Get the length of the data array
+!  ilength = size(p_Ddata,1)  
+!  
+!  
+!  ! ************ WRITE TO FILE PHASE *******************
+!  
+!  iunit = sys_getFreeUnit()
+!  open(iunit, file=trim(sofile))
+! 
+!  
+!  read(iunit,'(I10)') ilength
+!
+!  do i=1, ilength
+!    read(iunit,'(E25.16E3)') p_Ddata(i)
+!  end do
+!  
+!  close(iunit)
+!    
+!    
+!    
+!    do iel = 1, nelements
+!      ielement=0
+!      call tsrch_getElem_raytrace2D (&
+!            Dpoints(:,1,iel),rtriangulation,ielement,i1,i2,i3,100000)
+!      call fevl_evaluate_mult1 (DER_FUNC, Dvalues(:,iel), rsolloaded, ielement, &
+!                                Dpoints=Dpoints(:,:,iel))
+!    end do
+!
+!            
+!    
+!    call lsyssc_releaseVector (rsolloaded)
+!        
+!    call spdiscr_releaseBlockDiscr(rdiscretisation2)
+!
+!    ! Release the triangulation. 
+!    call tria_done (rtriangulation)
+!        
+!    ! Finally release the domain, that is it.
+!    call boundary_release (rboundary)
 
 
 
@@ -1613,17 +1642,17 @@ integer :: iel
       dx = rintSubset(1)%p_DcubPtsReal(1,ipoint,iel)
       dy = rintSubset(1)%p_DcubPtsReal(2,ipoint,iel)
       
-      ! Zalesak
-      Dvel(1)=0.5_DP-dy
-      Dvel(2)=dx-0.5_DP
+!      ! Zalesak
+!      Dvel(1)=0.5_DP-dy
+!      Dvel(2)=dx-0.5_DP
       
 !      ! Constant velocity
 !      Dvel(1)=1.0_dp
 !      Dvel(2)=1.0_dp
       
-!      ! Steady circular convection
-!      Dvel(1)=dy
-!      Dvel(2)=1.0_DP-dx
+      ! Steady circular convection
+      Dvel(1)=dy
+      Dvel(2)=1.0_DP-dx
     
       dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
       
@@ -1633,9 +1662,19 @@ integer :: iel
 !      ! BC for sinus
 !      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(-SYS_Pi*dy)
 !      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin( SYS_Pi*dx)
+      
+      ! BC quarter circlular convection
+!      if ((dx.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.0_dp !0.3_DP*exp(-25.0_dp*(dy-0.5_dp)*(dy-0.5_dp))
+!      if ((dy.le.0.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*(dx-0.5_dp)*(dx-0.5_dp))
 
-      ! BC for quad: zero
-      if ((dx.le.0.0_dp).or.(dx.ge.1.0_dp).or.(dy.le.0.0_dp).or.(dy.ge.1.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.0_dp
+      dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+      ! if ((dy.le.0.0_dp)) 
+      if (IelementList(iel)==0) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
+      
+      
+
+!      ! BC for quad: zero
+!      if ((dx.le.0.0_dp).or.(dx.ge.1.0_dp).or.(dy.le.0.0_dp).or.(dy.ge.1.0_dp)) Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.0_dp
       
 !      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
 !        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
@@ -1653,11 +1692,16 @@ integer :: iel
 !        elseif ((0.5_dp.le.dr).and.(dr.le.0.8_dp)) then
 !          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 0.25_dp*(1+cos(SYS_PI*(dr-0.65_dp)/0.15_dp))
 !        end if
+        
+!      ! BC for circular sinus convection
+!      if ((dx.le.1.0_dp).and.(dy.le.0.0000000000001_dp)) then
+!        dr = sqrt((dx-1.0_dp)**2.0_dp+dy*dy)
 !        
-!        dr = sqrt((dx-0.5_dp)**2.0_dp)
-!        if (dr<0.2)DsolVals(2,ubound(Dcoefficients,2)-ipoint+1,iel) = 1.0_dp
-!      
-!      end if
+!          Dsolutionvalues(2,ubound(Dcoefficients,2)-ipoint+1,iel) = sin(dr)
+!        
+!        end if
+        
+
     
       ! Upwind flux
       if (dvn.ge.0) then
@@ -1761,7 +1805,7 @@ integer :: iel
     
   !</subroutine>
   
-    real(DP) :: r1
+    real(DP) :: r1, dx, dy, dr
 
     integer :: iel, ipoint
     
@@ -1802,6 +1846,30 @@ integer :: iel
     
         do iel = 1, size(Dcoefficients,3)
           do ipoint = 1, size(Dcoefficients,2)
+          
+          dx = Dpoints(1,ipoint,iel)
+          dy = Dpoints(2,ipoint,iel)
+          
+!          ! If you take a look at the limited and unlimited solution on lev 3, then you could get the idea to take different bounds
+!          Dcoefficients (1,ipoint,iel) = 3.0_dp
+!          if ((dx .le. 0.5_dp).and.(dy .ge. 0.5_dp)) Dcoefficients (1,ipoint,iel) = -2.0_dp+4.0_dp*dx+ 5.0_dp*dy
+!          if ((abs(dx-0.5)>0.25).or.( abs(dy-0.5)>0.25)) Dcoefficients (1,ipoint,iel) = 1.0_dp
+
+          
+            ! Zero
+            Dcoefficients (1,ipoint,iel)=0.0_dp
+            
+            
+            
+       
+!       dr = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+!!       dr = abs( sqrt((dx-1.0_dp-dy)*(dx-1.0_dp-dy)) -0.5_dp)
+!       
+!       Dcoefficients (1,ipoint,iel) = 0.3_DP*exp(-25.0_dp*dr*dr)
+            
+          
+!            ! Steady state
+!            Dcoefficients (1,ipoint,iel)=1.0_dp
             
             ! Gauss-Hügel
             !Dcoefficients (1,ipoint,iel) = 0.1_dp*&
@@ -1809,6 +1877,15 @@ integer :: iel
             
             ! Cone 1
             !Dcoefficients(1,ipoint,iel) = max(1.0_dp-3.0_dp*sqrt((Dpoints(1,ipoint,iel)**2+Dpoints(2,ipoint,iel)**2)),0.0_dp)
+            
+!            ! Parabola
+!            Dcoefficients(1,ipoint,iel) = (Dpoints(1,ipoint,iel)-0.5_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2
+            
+!            ! d/dx parabola
+!            Dcoefficients(1,ipoint,iel) = 2.0_dp*Dpoints(1,ipoint,iel)-1.0_dp
+            
+!            ! d/dy parabola
+!            Dcoefficients(1,ipoint,iel) = 2.0_dp*Dpoints(2,ipoint,iel)-1.0_dp
             
             ! Cone 2
             !Dcoefficients(1,ipoint,iel) = max(1.0_dp-6.0_dp*sqrt(((Dpoints(1,ipoint,iel)-0.3_dp)**2+(Dpoints(2,ipoint,iel)-0.3_dp)**2)),0.0_dp)
@@ -1841,11 +1918,11 @@ integer :: iel
 !            r1 = sqrt(((Dpoints(1,ipoint,iel)-0.25_dp)**2+(Dpoints(2,ipoint,iel)-0.5_dp)**2))
 !            if (r1.le.0.15_dp) Dcoefficients(1,ipoint,iel)=0.25_dp*(1.0_dp+cos(SYS_PI*min(1.0_dp,r1/0.15_dp)))
             
-            ! Circular convection
-            !r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
-            !if ((0.2_dp.le.r1).and.(r1.le.0.4_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
-            !if ((0.5_dp.le.r1).and.(r1.le.0.8_dp)) Dcoefficients(1,ipoint,iel) = 0.25_dp*(1.0_dp+cos(SYS_PI*(r1-0.65_dp)/0.15_dp))
-!            
+!             ! Circular convection
+!            r1 = sqrt((Dpoints(1,ipoint,iel)-1.0_dp)**2.0_dp+Dpoints(2,ipoint,iel)*Dpoints(2,ipoint,iel))
+!            if ((0.2_dp.le.r1).and.(r1.le.0.4_dp)) Dcoefficients(1,ipoint,iel) = 1.0_dp
+!            if ((0.5_dp.le.r1).and.(r1.le.0.8_dp)) Dcoefficients(1,ipoint,iel) = 0.25_dp*(1.0_dp+cos(SYS_PI*(r1-0.65_dp)/0.15_dp))
+            
             ! Parser from .dat-file
             !call fparser_evalFunction(rfparser, 1, rdomainIntSubset%p_DcubPtsReal(:,ipoint,iel), Dcoefficients(1,ipoint,iel))
             
@@ -1932,12 +2009,12 @@ integer :: iel
 !              Dcoefficients (1,ipoint,iel)=1.0_dp
 !            end if
 
-            ! Circular Dambreak
-            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
-              Dcoefficients (1,ipoint,iel)=2.5_dp
-            else
-              Dcoefficients (1,ipoint,iel)=0.5_dp
-            end if
+!            ! Circular Dambreak
+!            if ( sqrt((Dpoints(1,ipoint,iel)-0.0_dp)**2+(Dpoints(2,ipoint,iel)-0.0_dp)**2)<2.5_dp) then  
+!              Dcoefficients (1,ipoint,iel)=2.5_dp
+!            else
+!              Dcoefficients (1,ipoint,iel)=0.5_dp
+!            end if
 
 !            ! Test on Quad
 !            if ( ( (Dpoints(1,ipoint,iel)-0.5_dp) * (Dpoints(2,ipoint,iel)-0.5_dp) ) >=0.0_dp ) then
@@ -2390,17 +2467,17 @@ integer :: iel
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
         
-        ! Zalesak
-        dvx=0.5_DP-dy
-        dvy=dx-0.5_DP
+!        ! Zalesak
+!        dvx=0.5_DP-dy
+!        dvy=dx-0.5_DP
 
 !        ! Constant velocity
 !        dvx=1.0_dp
 !        dvy=1.0_dp
         
-!        ! Circular convection
-!        dvx = dy
-!        dvy = 1.0_dp - dx
+        ! Circular convection
+        dvx = dy
+        dvy = 1.0_dp - dx
 
         dsol = Dcoefficients (1,ipoint,iel)
         
@@ -2489,6 +2566,9 @@ integer :: iel
   
   real(dp),dimension(3,3) :: C
   
+  real(dp), dimension(2) :: Dvel
+  real(dp) :: dvn, drad
+  
   
   
   
@@ -2502,7 +2582,7 @@ integer :: iel
   allocate(Dsolutionvalues(2,ubound(DfluxValues,3),ubound(DfluxValues,4),ubound(DfluxValues,1)))
   
   do ivar = 1, size(DfluxValues,1)
-
+  
     ! Get values on the one side of the edge
     call fevl_evaluate_sim4 (rvectorSolBlock%RvectorBlock(ivar), &
                              rIntSubset(1), DER_FUNC, Dsolutionvalues(:,:,:,ivar), 1)
@@ -2532,10 +2612,10 @@ integer :: iel
         !Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.0_dp,0.0_dp,0.0_dp/)
         !if ((dx<0.00001).or.(dy<0.00001)) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,:) = (/1.1_dp,0.0_dp,0.0_dp/)
         
-        ! No BCs
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
-        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
+!        ! No BCs
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = Dsolutionvalues(1,ipoint,iel,1)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,2) = Dsolutionvalues(1,ipoint,iel,2)
+!        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,3) = Dsolutionvalues(1,ipoint,iel,3)
 
 !        ! BC for Source term 1
 !        Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = (1.0_dp+dx+dy)
@@ -2708,6 +2788,8 @@ integer :: iel
 !      ! Save the calculated flux
 !      DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
 
+
+
       ! *** Upwind flux without dimensional splitting (Roe-Flux) and new c ***
       
       ! Get solution values on the in and outside
@@ -2741,6 +2823,42 @@ integer :: iel
       
       ! Save the calculated flux
       DfluxValues(:,1,ipoint,iel) = DFlux + 0.5_dp*matmul(DR,matmul(DaLambda,matmul(DL,DQi - DQa)))
+      
+      
+      
+!      ! *** Upwind flux for quarter circular convection ***
+!    
+!      ! BC for steady circular convection
+!      drad = abs( sqrt((dx-1.0_dp)*(dx-1.0_dp)+(dy-0.0_dp)*(dy-0.0_dp)) -0.5_dp)
+!      if (IelementList(iel)==0) Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1) = 0.3_DP*exp(-25.0_dp*drad*drad)
+!      
+!      ! Get solution values on the in and outside
+!      DQi(1) = Dsolutionvalues(1,ipoint,iel,1)
+!      DQa(1) = Dsolutionvalues(2,ubound(DfluxValues,3)-ipoint+1,iel,1)
+!      
+!!      ! Zalesak
+!!      Dvel(1)=0.5_DP-dy
+!!      Dvel(2)=dx-0.5_DP
+!      
+!!      ! Constant velocity
+!!      Dvel(1)=1.0_dp
+!!      Dvel(2)=1.0_dp
+!      
+!      ! Steady circular convection
+!      Dvel(1)=dy
+!      Dvel(2)=1.0_DP-dx
+!    
+!      dvn = Dvel(1)*normal(1,iel)+Dvel(2)*normal(2,iel)
+!      
+!      ! Upwind flux
+!      if (dvn.ge.0) then
+!        DfluxValues(1,1,ipoint,iel) = dvn *DQi(1)
+!      else
+!        DfluxValues(1,1,ipoint,iel) = dvn *DQa(1)
+!      end if
+      
+      
+      
       
     end do ! ipoint
   end do ! iel
@@ -2850,7 +2968,8 @@ integer :: iel
     real(dp), dimension(3) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
     
-    nvar2d = 3
+    !nvar2d = 1
+    nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
     
     rdomainIntSubset%ielementDistribution = 1
     
@@ -2881,6 +3000,8 @@ integer :: iel
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
         
+        
+        ! Shallow water        
         dQ = DsolutionValues(1,ipoint,iel,:)
         !write(*,*) dQ
         
@@ -2889,6 +3010,26 @@ integer :: iel
         
         Dcoefficients (1,ipoint,iel) = DFx(currentvar)
         Dcoefficients (2,ipoint,iel) = DFy(currentvar)
+
+
+!!        ! Steady circular convection
+!!        ! Zalesak
+!!        dvx=0.5_DP-dy
+!!        dvy=dx-0.5_DP
+!
+!!        ! Constant velocity
+!!        dvx=1.0_dp
+!!        dvy=1.0_dp
+!        
+!        ! Circular convection
+!        dvx = dy
+!        dvy = 1.0_dp - dx
+!
+!        
+!        dQ(1) = DsolutionValues(1,ipoint,iel,1)
+!        
+!        Dcoefficients (1,ipoint,iel) = dQ(1) * dvx
+!        Dcoefficients (2,ipoint,iel) = dQ(1) * dvy
         
       end do
     end do
@@ -2979,7 +3120,8 @@ integer :: iel
     real(dp), dimension(3) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
     
-    nvar2d = 3
+    ! nvar2d = 3
+    nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
     
     rdomainIntSubset%ielementDistribution = 1
     
@@ -3003,7 +3145,8 @@ integer :: iel
       
         dx = Dpoints(1,ipoint,iel)
         dy = Dpoints(2,ipoint,iel)
-        
+
+        ! Shallow Water        
         dQ = DsolutionValues(1,ipoint,iel,:)
         !write(*,*) dQ
         
@@ -3012,6 +3155,18 @@ integer :: iel
         
         Dcoefficients (:,1,ipoint,iel) = DFx(:)
         Dcoefficients (:,2,ipoint,iel) = DFy(:)
+
+       
+       
+!       ! Circular convection
+!        dvx = dy
+!        dvy = 1.0_dp - dx
+!
+!        
+!        dQ(1) = DsolutionValues(1,ipoint,iel,1)
+!        
+!        Dcoefficients (1,1,ipoint,iel) = dQ(1) * dvx
+!        Dcoefficients (1,2,ipoint,iel) = dQ(1) * dvy
         
       end do
     end do
@@ -3103,7 +3258,8 @@ integer :: iel
     real(dp), dimension(3) :: dQ, DFx, DFy
     real(dp), dimension(:), pointer :: p_ddata
     
-    nvar2d = 3
+    !nvar2d = 3
+    nvar2d = rcollection%p_rvectorQuickAccess1%Nblocks
     
     rdomainIntSubset%ielementDistribution = 1
     
