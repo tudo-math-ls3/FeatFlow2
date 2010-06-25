@@ -5768,6 +5768,9 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
 
+    ! Coordinates and velocity of the gas phase in the current position
+    real(DP), dimension(2) :: Dcurrpos, Dvelogas
+
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
  
@@ -5843,7 +5846,7 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-! call eulerlagrange_getgasvelocity(p_rproblemLevel,rParticles,iPart)
+call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,iPart)
 
     ! Set temperature of the particles
     select case(isolutionpart)
@@ -5866,6 +5869,7 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     case (3)
         ! classic Runge-Kutta algorithmn
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
+      
     
         ! Compute first constant for Runge-Kutta
         rk_k1(1)= rParticles%p_xvelo(iPart)
@@ -5910,20 +5914,27 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 
 !<subroutine>
 
-  subroutine eulerlagrange_getgasvelocity(p_rproblemLevel,rParticles,iPart)
+  subroutine eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,iPart)
 
 !<description>
     ! This subroutine gets the velocity of the gas in a position.
 
 !<input>
     ! Particles
-    type(t_Particles), intent(inout) :: rParticles
-    
-    ! Current number of particle
-    integer, intent(inout) :: iPart
-
     ! Pointer to the multigrid level
     type(t_problemLevel), pointer :: p_rproblemLevel
+
+    ! gas velocity at he position
+    real(DP), dimension(2), intent(inout) :: Dcurrpos
+
+    ! gas velocity at he position
+    real(DP), dimension(2), intent(inout) :: Dvelogas
+
+    ! Particles
+    type(t_Particles), intent(inout) :: rParticles
+
+    ! Number of the current particle
+    integer, intent(inout) :: iPart
 
     ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
@@ -5934,14 +5945,12 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     ! Pointer to the vertex coordinates
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
-    ! Current element
-    integer :: currentElement
-
     ! Coordinates of the vertices of the actual element
     real(DP), dimension(2,3) :: vert_coord
 
     ! Local variables
-    integer :: ivt
+    integer :: ivt, currentElement    
+    logical :: binside
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -5965,7 +5974,13 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 
     end do
 
-
+    ! Check if the particle is in the element
+    call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),vert_coord,binside)
+  
+    ! If the particle is in the element, then exit loop
+    if (binside) then
+        pause
+    end if 
 
   end subroutine eulerlagrange_getgasvelocity
 
