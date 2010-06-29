@@ -267,7 +267,7 @@ module eulerlagrange_callback2d
   public :: eulerlagrange_moveparticlestwoway
   public :: eulerlagrange_moveparticlestwoway2
   public :: eulerlagrange_checkboundary
-  public :: eulerlagrange_getgasvelocity
+  public :: eulerlagrange_getbarycoordelm
   public :: eulerlagrange_calcvolpart
   public :: eulerlagrange_calcvelopart
 
@@ -5756,6 +5756,9 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 	! type for solution
 	integer :: isolutionpart
 	
+	! current element
+	integer :: currentElement
+	
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
     
     
@@ -5769,7 +5772,8 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
 
     ! Coordinates and velocity of the gas phase in the current position
-    real(DP), dimension(2) :: Dcurrpos, Dvelogas
+    real(DP), dimension(2) :: Dcurrpos 
+    real(DP), dimension(3) :: Dbarycoords
 
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
@@ -5846,7 +5850,11 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,iPart)
+    Dcurrpos(1) = rParticles%p_xpos(iPart)
+    Dcurrpos(2) = rParticles%p_ypos(iPart)
+
+    call eulerlagrange_getbarycoordelm(p_rproblemLevel,Dcurrpos,Dbarycoords,&
+            rParticles,currentElement,iPart)
 
     ! Set temperature of the particles
     select case(isolutionpart)
@@ -5914,7 +5922,7 @@ call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,i
 
 !<subroutine>
 
-  subroutine eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,iPart)
+  subroutine eulerlagrange_getbarycoordelm(p_rproblemLevel,Dcurrpos,Dbarycoords,rParticles,currentElement,iPart)
 
 !<description>
     ! This subroutine gets the velocity of the gas in a position.
@@ -5928,13 +5936,45 @@ call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,i
     real(DP), dimension(2), intent(inout) :: Dcurrpos
 
     ! gas velocity at he position
-    real(DP), dimension(2), intent(inout) :: Dvelogas
+    real(DP), dimension(3), intent(inout) :: Dbarycoords
 
     ! Particles
     type(t_Particles), intent(inout) :: rParticles
 
     ! Number of the current particle
     integer, intent(inout) :: iPart
+    
+    ! Current element
+    integer, intent(inout) :: currentElement
+
+    ! pointer to array containing the elements adjacent to a vertex.
+    !
+    ! Handle to 
+    !       p_IelementsAtVertex = array(1..*) of integer
+    ! p_IelementsAtVertex ( p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1 )
+    ! contains the number of the adjacent element in a vertex.
+    ! This replaces the old KVEL array.
+    !
+    ! Note: For hanging vertices, this array contains only those
+    ! elements which are 'corner adjacent' to a vertex (i.e. the 'smaller' elements).
+    ! The 'big' elements adjacent to the edge which the hanging vertex
+    ! is a midpoint of are not part of the vertex neighbourhood
+    ! in this array.
+    integer, dimension(:), pointer :: p_IelementsAtVertex
+
+
+    ! Handle to 
+    !       p_IelementsAtVertexIdx=array [1..NVT+1] of integer.
+    ! Index array for p_IelementsAtVertex of length NVT+1 for describing the
+    ! elements adjacent to a corner vertex. for vertex IVT, the array
+    ! p_IelementsAtVertex contains the numbers of the elements around this
+    ! vertex at indices 
+    !     p_IelementsAtVertexIdx(IVT)..p_IelementsAtVertexIdx(IVT+1)-1.
+    ! By subtracting
+    !     p_IelementsAtVertexIdx(IVT+1)-p_IelementsAtVertexIdx(IVT)
+    ! One can get the number of elements adjacent to a vertex IVT.
+    integer, dimension(:), pointer ::  p_IelementsAtVertexIdx
+
 
     ! Pointer to the triangulation
     type(t_triangulation), pointer :: p_rtriangulation
@@ -5946,10 +5986,10 @@ call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,i
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
 
     ! Coordinates of the vertices of the actual element
-    real(DP), dimension(2,3) :: vert_coord
+    real(DP), dimension(2,4) :: Dvert_coord
 
     ! Local variables
-    integer :: ivt, currentElement    
+    integer :: ivt, Vert, Elm, nVertex   
     logical :: binside
 
     ! Set pointer to triangulation
@@ -5963,26 +6003,81 @@ call eulerlagrange_getgasvelocity(p_rproblemLevel,Dcurrpos,Dvelogas,rParticles,i
     call storage_getbase_double2D(&
         p_rtriangulation%h_DvertexCoords, p_DvertexCoords)
 
+    ! Get elements at vertex
+    call storage_getbase_int(p_rtriangulation%h_IelementsAtVertex,&
+        p_IelementsAtVertex)
+    call storage_getbase_int(p_rtriangulation%h_IelementsAtVertexIdx,&
+        p_IelementsAtVertexIdx)
+
     ! store current element
     currentElement = rParticles%p_element(iPart)
 
     ! store coordinates of the vertices
     do ivt=1,3
 
-      vert_coord(1,ivt)= p_DvertexCoords(1,p_IverticesAtElement(ivt,currentElement))
-      vert_coord(2,ivt)= p_DvertexCoords(2,p_IverticesAtElement(ivt,currentElement))
+      Dvert_coord(1,ivt)= p_DvertexCoords(1,p_IverticesAtElement(ivt,currentElement))
+      Dvert_coord(2,ivt)= p_DvertexCoords(2,p_IverticesAtElement(ivt,currentElement))
 
     end do
 
     ! Check if the particle is in the element
-    call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),vert_coord,binside)
+    call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
   
-    ! If the particle is in the element, then exit loop
-    if (binside) then
-        pause
-    end if 
+    ! If the position is not in the element, then search in neighoured elements
+    if (binside == .false.) then
+    
+        ! Loop over the vertices of the element
+        SearchVertex: do Vert = 1, 3												
 
-  end subroutine eulerlagrange_getgasvelocity
+            !Current vertex
+            nVertex = p_IverticesAtElement(Vert, currentElement)
+
+            ! Loop over the element containing to the vertex
+            SearchElement: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+    							
+                if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
+                exit SearchElement
+                end if
+
+                currentElement = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
+
+                ! Store coordinates of cornervertices
+                Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+                Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+                Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+                Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+                Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+                Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+
+                ! Check if the particle is in the element
+                call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
+
+                ! If the particle is in the element, then exit loop
+                if (binside==.true.) exit SearchVertex
+
+            end do SearchElement
+
+        end do SearchVertex
+        
+    end if 
+    if (binside==.true.) then
+        ! Store coordinates of cornervertices
+        Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+        Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+
+        ! Get barycentric coordinates for the current position    
+        call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
+                Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
+ 
+     else
+        pause
+     end if
+                 
+  end subroutine eulerlagrange_getbarycoordelm
 
 
 
