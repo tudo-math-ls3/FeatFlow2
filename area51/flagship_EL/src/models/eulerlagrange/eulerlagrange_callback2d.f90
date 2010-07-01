@@ -5767,6 +5767,10 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     
     ! Constants for Runge-Kutta
     real(DP), dimension(2) :: rk_k1, rk_k2, rk_k3, rk_k4
+    ! velocity vectors for Runge-Kutta
+    real(DP), dimension(2) :: v1_i1, v2_i1, v3_i1
+    ! position vectors for Runge-Kutta
+    real(DP), dimension(2) :: p1_i1, p2_i1, p3_i1
     
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
@@ -5877,29 +5881,121 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     case (3)
         ! classic Runge-Kutta algorithmn
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
-      
-    
+          
         ! Compute first constant for Runge-Kutta
-        rk_k1(1)= rParticles%p_xvelo(iPart)
-        rk_k1(2)= rParticles%p_yvelo(iPart)
+        rk_k1(1)= dt*rParticles%p_xvelo(iPart)
+        rk_k1(2)= dt*rParticles%p_yvelo(iPart)
+        
+        ! first position
+        p1_i1(1)= rParticles%p_xpos(iPart) + rk_k1(1)/2.0_dp
+        p1_i1(2)= rParticles%p_ypos(iPart) + rk_k1(2)/2.0_dp
+ 
+        ! Get element an barycentric coordinates for the position p1
+        call eulerlagrange_getbarycoordelm(p_rproblemLevel,p1_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! first velocity
+        v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
         
         ! Compute second constant for Runge-Kutta
-        rk_k2(1)= 0.0_dp
-        rk_k2(2)= 0.0_dp
+        rk_k2(1)= dt*v1_i1(1)
+        rk_k2(2)= dt*v1_i1(2)
         
+        ! second position
+        p2_i1(1)= rParticles%p_xpos(iPart) + rk_k2(1)/2.0_dp
+        p2_i1(2)= rParticles%p_ypos(iPart) + rk_k2(2)/2.0_dp
+        
+        ! Get element an barycentric coordinates for the position p2
+        call eulerlagrange_getbarycoordelm(p_rproblemLevel,p2_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+ 
+         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! second velocity
+        v2_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v2_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+ 
         ! Compute third constant for Runge-Kutta
-        rk_k3(1)= 0.0_dp
-        rk_k3(2)= 0.0_dp
+        rk_k3(1)= dt*v2_i1(1)
+        rk_k3(2)= dt*v2_i1(2)
         
+        ! third position
+        p3_i1(1)= rParticles%p_xpos(iPart) + rk_k3(1)
+        p3_i1(2)= rParticles%p_ypos(iPart) + rk_k3(2)
+        
+        ! Get element an barycentric coordinates for the position p3
+        call eulerlagrange_getbarycoordelm(p_rproblemLevel,p3_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! third velocity
+        v3_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v3_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+
         ! Compute forth constant for Runge-Kutta
-        rk_k4(1)= 0.0_dp
-        rk_k4(2)= 0.0_dp
+        rk_k4(1)= dt*v3_i1(1)
+        rk_k4(2)= dt*v3_i1(2)
 
         ! Set new particle-position
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
-                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
+                (rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
-                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+                (rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
 
     case default
       call output_line('Invalid solution type!', &
@@ -6074,7 +6170,7 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
                 Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
  
      else
-        pause
+        !pause
      end if
                  
   end subroutine eulerlagrange_getbarycoordelm

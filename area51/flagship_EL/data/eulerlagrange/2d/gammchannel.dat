@@ -224,7 +224,7 @@ icouplingpart = 2
 # 1 	explicit Euler method
 # 2 	improved Euler method
 # 3	classic Runge-Kutta
-isolutionpart = 1
+isolutionpart = 3
 
 #-------------------------------------------------------------------------------
 # domain with triangle or rectangles
@@ -232,6 +232,7 @@ isolutionpart = 1
 
 # 1 	triangles
 # 2 	rectangles
+# 3 	both
 idomtype = 1
 
 
