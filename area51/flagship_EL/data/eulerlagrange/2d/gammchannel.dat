@@ -221,10 +221,10 @@ icouplingpart = 2
 # choice solution algorithmn for the particle phase
 #-------------------------------------------------------------------------------
 
-# 1 	explicit Euler method
-# 2 	improved Euler method
-# 3	classic Runge-Kutta
-isolutionpart = 3
+# 1 	explicit Euler method (first order)
+# 2 	improved Euler method (second order)
+# 3	classic Runge-Kutta (fourth order)
+isolutionpart = 2
 
 #-------------------------------------------------------------------------------
 # domain with triangle or rectangles

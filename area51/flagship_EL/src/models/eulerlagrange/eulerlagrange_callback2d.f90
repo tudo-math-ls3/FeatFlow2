@@ -5873,10 +5873,43 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     case (2)
         ! improved Euler method
         ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
+                
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rParticles%p_xvelo(iPart)
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rParticles%p_yvelo(iPart)
+ 
+        ! Get element an barycentric coordinates for the position p1
+        call eulerlagrange_getbarycoordelm(p_rproblemLevel,p1_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! first velocity
+        v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+
+        
+        ! Compute the new position
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* &
-            (rParticles%p_xvelo(iPart) + p_x1velo_new)/2.0_dp
+            (rParticles%p_xvelo(iPart) + v1_i1(1))/2.0_dp
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* &
-            (rParticles%p_yvelo(iPart) + p_y1velo_new)/2.0_dp
+            (rParticles%p_yvelo(iPart) + v1_i1(2))/2.0_dp
           
     case (3)
         ! classic Runge-Kutta algorithmn
