@@ -5760,17 +5760,15 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 	integer :: currentElement
 	
     real(DP) :: rho_g, C_W, Re_p, Velo_rel, dt, c_pi
-    
-    
-    real(DP) :: p_x1velo_new, p_x2velo_new, p_x3velo_new
-    real(DP) :: p_y1velo_new, p_y2velo_new, p_y3velo_new
-    
+         
     ! Constants for Runge-Kutta
     real(DP), dimension(2) :: rk_k1, rk_k2, rk_k3, rk_k4
     ! velocity vectors for Runge-Kutta
     real(DP), dimension(2) :: v1_i1, v2_i1, v3_i1
     ! position vectors for Runge-Kutta
     real(DP), dimension(2) :: p1_i1, p2_i1, p3_i1
+    ! forces for particle movement
+    real(DP), dimension(2) :: F_G, F_D, F_ges
     
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
     real(DP), dimension(:), pointer :: p_Ddata1, p_Ddata2, p_Ddata3
@@ -5863,16 +5861,20 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
     ! Set temperature of the particles
     select case(isolutionpart)
     case (1)  
+        !*******************************************************************
         ! explicit Euler method
         ! x_i+1 = x_i + \Delta t v_i
+        !*******************************************************************
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
             dt*rParticles%p_xvelo(iPart)
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
             dt*rParticles%p_yvelo(iPart)
             
     case (2)
+        !*******************************************************************
         ! improved Euler method
         ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
+        !*******************************************************************
                 
         p1_i1(1)= rParticles%p_xpos(iPart) + dt*rParticles%p_xvelo(iPart)
         p1_i1(2)= rParticles%p_ypos(iPart) + dt*rParticles%p_yvelo(iPart)
@@ -5912,16 +5914,58 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
             (rParticles%p_yvelo(iPart) + v1_i1(2))/2.0_dp
           
     case (3)
+        !*******************************************************************
         ! classic Runge-Kutta algorithmn
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
+        !*******************************************************************
           
+                  ! Calculate the relative velocity
+        Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
+                       (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp)
+
+
+        ! Calculate particle Reynoldsnumber
+        !
+        ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
+        ! with \nu_g=\frac{\eta_g}{\rho_g}
+        !
+        Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+
+
+        ! Calculate the drag force coefficient
+        if (Re_p<1000) then
+	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
+        else
+	        C_W= 24.0_dp/Re_p
+        end if
+
+        if (Velo_rel.ge.500) pause
+
+        ! Compute the dragforce
+        F_D(1)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))    
+        F_D(2)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))  
+
+        ! Compute the gravity
+        F_G(1)= rParticles%gravity(1)
+        F_G(2)= rParticles%gravity(2)
+
+        ! Set force
+        F_ges(1)= F_D(1) + F_G(1)
+        F_ges(2)= F_D(2) + F_G(2)
+
+        ! Compute new velocity of the particles
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)
+                
         ! Compute first constant for Runge-Kutta
-        rk_k1(1)= dt*rParticles%p_xvelo(iPart)
-        rk_k1(2)= dt*rParticles%p_yvelo(iPart)
+        rk_k1(1)= rParticles%p_xvelo(iPart)
+        rk_k1(2)= rParticles%p_yvelo(iPart)
         
         ! first position
-        p1_i1(1)= rParticles%p_xpos(iPart) + rk_k1(1)/2.0_dp
-        p1_i1(2)= rParticles%p_ypos(iPart) + rk_k1(2)/2.0_dp
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/2.0_dp
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/2.0_dp
  
         ! Get element an barycentric coordinates for the position p1
         call eulerlagrange_getbarycoordelm(p_rproblemLevel,p1_i1,Dbarycoords,&
@@ -5949,14 +5993,49 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
         v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
-        
-        ! Compute second constant for Runge-Kutta
-        rk_k2(1)= dt*v1_i1(1)
-        rk_k2(2)= dt*v1_i1(2)
+   
+        ! Calculate the relative velocity
+        Velo_rel= sqrt((rk_k1(1)-v1_i1(1))**2.0_dp +&
+                       (rk_k1(2)-v1_i1(2))**2.0_dp)
+
+        ! Calculate particle Reynoldsnumber
+        !
+        ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
+        ! with \nu_g=\frac{\eta_g}{\rho_g}
+        !
+        Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+
+
+        ! Calculate the drag force coefficient
+        if (Re_p<1000) then
+	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
+        else
+	        C_W= 24.0_dp/Re_p
+        end if
+
+        if (Velo_rel.ge.500) pause
+
+        ! Compute the dragforce
+        F_D(1)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k1(1)-v1_i1(1))    
+        F_D(2)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k1(2)-v1_i1(2))  
+
+        ! Compute the gravity
+        F_G(1)= rParticles%gravity(1)
+        F_G(2)= rParticles%gravity(2)
+
+        ! Set force
+        F_ges(1)= F_D(1) + F_G(1)
+        F_ges(2)= F_D(2) + F_G(2)
+
+        ! Compute new velocity of the particles
+        rk_k2(1)=  rk_k1(1)+dt*F_ges(1)
+        rk_k2(2)=  rk_k1(2)+dt*F_ges(2)
         
         ! second position
-        p2_i1(1)= rParticles%p_xpos(iPart) + rk_k2(1)/2.0_dp
-        p2_i1(2)= rParticles%p_ypos(iPart) + rk_k2(2)/2.0_dp
+        p2_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k2(1)/2.0_dp
+        p2_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k2(2)/2.0_dp
         
         ! Get element an barycentric coordinates for the position p2
         call eulerlagrange_getbarycoordelm(p_rproblemLevel,p2_i1,Dbarycoords,&
@@ -5985,13 +6064,50 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
  
-        ! Compute third constant for Runge-Kutta
-        rk_k3(1)= dt*v2_i1(1)
-        rk_k3(2)= dt*v2_i1(2)
+ 
+         ! Calculate the relative velocity
+        Velo_rel= sqrt((rk_k2(1)-v2_i1(1))**2.0_dp +&
+                       (rk_k2(2)-v2_i1(2))**2.0_dp)
+
+
+        ! Calculate particle Reynoldsnumber
+        !
+        ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
+        ! with \nu_g=\frac{\eta_g}{\rho_g}
+        !
+        Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+
+
+        ! Calculate the drag force coefficient
+        if (Re_p<1000) then
+	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
+        else
+	        C_W= 24.0_dp/Re_p
+        end if
+
+        if (Velo_rel.ge.500) pause
+
+        ! Compute the dragforce
+        F_D(1)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k2(1)-v2_i1(1))    
+        F_D(2)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k2(2)-v2_i1(2))  
+
+        ! Compute the gravity
+        F_G(1)= rParticles%gravity(1)
+        F_G(2)= rParticles%gravity(2)
+
+        ! Set force
+        F_ges(1)= F_D(1) + F_G(1)
+        F_ges(2)= F_D(2) + F_G(2)
+
+        ! Compute new velocity of the particles
+        rk_k3(1)=  rk_k2(1)+dt*F_ges(1)
+        rk_k3(2)=  rk_k2(2)+dt*F_ges(2)
         
         ! third position
-        p3_i1(1)= rParticles%p_xpos(iPart) + rk_k3(1)
-        p3_i1(2)= rParticles%p_ypos(iPart) + rk_k3(2)
+        p3_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k3(1)
+        p3_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k3(2)
         
         ! Get element an barycentric coordinates for the position p3
         call eulerlagrange_getbarycoordelm(p_rproblemLevel,p3_i1,Dbarycoords,&
@@ -6020,15 +6136,57 @@ rParticles%p_yvelo(iPart)=  rParticles%p_yvelo_old(iPart)+dt*F_ges(2) !/rParticl
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
 
-        ! Compute forth constant for Runge-Kutta
-        rk_k4(1)= dt*v3_i1(1)
-        rk_k4(2)= dt*v3_i1(2)
+ 
+         ! Calculate the relative velocity
+        Velo_rel= sqrt((rk_k3(1)-v3_i1(1))**2.0_dp +&
+                       (rk_k3(2)-v3_i1(2))**2.0_dp)
 
+
+        ! Calculate particle Reynoldsnumber
+        !
+        ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
+        ! with \nu_g=\frac{\eta_g}{\rho_g}
+        !
+        Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+
+
+        ! Calculate the drag force coefficient
+        if (Re_p<1000) then
+	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
+        else
+	        C_W= 24.0_dp/Re_p
+        end if
+
+        if (Velo_rel.ge.500) pause
+
+        ! Compute the dragforce
+        F_D(1)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k3(1)-v3_i1(1))    
+        F_D(2)= (3*rho_g*Velo_rel*C_W)/(4*rParticles%p_density(iPart)*rParticles%p_diam(iPart))*&                
+                (rk_k3(2)-v3_i1(2))  
+
+        ! Compute the gravity
+        F_G(1)= rParticles%gravity(1)
+        F_G(2)= rParticles%gravity(2)
+
+        ! Set force
+        F_ges(1)= F_D(1) + F_G(1)
+        F_ges(2)= F_D(2) + F_G(2)
+
+        ! Compute new velocity of the particles
+        rk_k4(1)=  rk_k3(1)+dt*F_ges(1)
+        rk_k4(2)=  rk_k3(2)+dt*F_ges(2)
+ 
         ! Set new particle-position
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
-                (rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
+                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
-                (rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+
+        ! Set direction of the velocita of the particle
+        rParticles%p_xvelo(iPart)= dt*rk_k4(1)
+        rParticles%p_yvelo(iPart)= dt*rk_k4(2)
+
 
     case default
       call output_line('Invalid solution type!', &

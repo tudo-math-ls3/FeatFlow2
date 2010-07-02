@@ -224,7 +224,7 @@ icouplingpart = 2
 # 1 	explicit Euler method (first order)
 # 2 	improved Euler method (second order)
 # 3	classic Runge-Kutta (fourth order)
-isolutionpart = 2
+isolutionpart = 3
 
 #-------------------------------------------------------------------------------
 # domain with triangle or rectangles
