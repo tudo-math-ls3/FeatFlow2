@@ -63,6 +63,7 @@ module element_quad2d
   public :: elem_eval_E030_2D 
   public :: elem_eval_EB30_2D 
   public :: elem_eval_EM30_2D 
+  public :: elem_eval_EM31_2D 
   public :: elem_eval_E032_2D
   public :: elem_eval_E050_2D 
   public :: elem_eval_EB50_2D 
@@ -8801,6 +8802,188 @@ contains
             
           end do ! i
           
+        end do ! ipt
+        
+      end if ! derivatives evaluation
+
+    end do ! iel
+    
+    ! That is it
+
+  end subroutine
+  
+  !************************************************************************
+  
+!<subroutine>  
+
+  pure subroutine elem_eval_EM31_2D (celement, reval, Bder, Dbas)
+
+!<description>
+  ! This subroutine simultaneously calculates the values of the basic 
+  ! functions of the finite element at multiple given points on the
+  ! reference element for multiple given elements.
+!</description>
+
+!<input>
+  ! The element specifier.
+  integer(I32), intent(in)                       :: celement
+  
+  ! t_evalElementSet-structure that contains cell-specific information and
+  ! coordinates of the evaluation points. revalElementSet must be prepared
+  ! for the evaluation.
+  type(t_evalElementSet), intent(in)             :: reval
+  
+  ! Derivative quantifier array. array [1..DER_MAXNDER] of boolean.
+  ! If bder(DER_xxxx)=true, the corresponding derivative (identified
+  ! by DER_xxxx) is computed by the element (if supported). Otherwise,
+  ! the element might skip the computation of that value type, i.e.
+  ! the corresponding value 'Dvalue(DER_xxxx)' is undefined.
+  logical, dimension(:), intent(in)              :: Bder  
+!</input>
+  
+!<output>
+  ! Value/derivatives of basis functions. 
+  ! array [1..EL_MAXNBAS,1..DER_MAXNDER,1..npointsPerElement,nelements] of double
+  ! Bder(DER_FUNC)=true  => Dbas(i,DER_FUNC,j) defines the value of the i-th 
+  !   basis function of the finite element in the point Dcoords(j) on the 
+  !   reference element,
+  !   Dvalue(i,DER_DERIV_X) the value of the x-derivative of the i-th
+  !   basis function,...
+  ! Bder(DER_xxxx)=false => Dbas(i,DER_xxxx,.) is undefined.
+  real(DP), dimension(:,:,:,:), intent(out)      :: Dbas
+!</output>
+
+!</subroutine>
+
+  ! Element Description
+  ! -------------------
+  ! The EM31_2D element is specified by four polynomials per element.
+  !
+  ! The basis polynomials are constructed from the following set of monomials:
+  !
+  ! { 1, x, y, x^2 - y^2 }
+  !
+  ! The basis polynomials Pi are constructed such that they fulfill the
+  ! following conditions:
+  !
+  ! For all i = 1,...,4:
+  ! {
+  !   For all j = 1,...,4:
+  !   {
+  !     Pi(ej) = kronecker(i,j)
+  !   }
+  ! }
+  !
+  ! With:
+  ! ej being the midpoint of the j-th local edge of the quadrilateral
+  !
+  ! Although this element implementation is non-parametric, we can use
+  ! exactly the same basis functions as the parametric variant, since
+  ! the edge midpoints of the real element are mapped onto the edge
+  ! midpoints of the reference element.
+  !
+  !  P1(x,y) = -(x^2-y^2)/4 - y/2 + 1/4
+  !  P2(x,y) =  (x^2-y^2)/4 + x/2 + 1/4
+  !  P3(x,y) = -(x^2-y^2)/4 + y/2 + 1/4
+  !  P4(x,y) =  (x^2-y^2)/4 - x/2 + 1/4
+  
+
+  ! Parameter: Number of local basis functions
+  integer, parameter :: NBAS = 4
+  
+  ! Corner vertice and edge midpoint coordinates
+  real(DP), dimension(NDIM2D, 4) :: Dvert
+  
+  ! Coefficients for inverse affine transformation
+  real(DP), dimension(NDIM2D,NDIM2D) :: Ds
+  real(DP), dimension(NDIM2D) :: Dr
+
+  ! other local variables
+  integer :: i,iel,ipt
+  real(DP), dimension(NDIM2D,NBAS) :: Dgrad
+  real(DP) :: dx,dy,dt
+  
+    ! Loop over all elements
+    do iel = 1, reval%nelements
+    
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 1: Fetch vertice coordinates
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+    
+      ! Fetch the four corner vertices for that element
+      Dvert(1:2,1:4) = reval%p_Dcoords(1:2,1:4,iel)
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 2: Calculate inverse affine transformation
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! This is a P1 transformation from the real element onto our
+      ! 'reference' element.
+      dr(1) = 0.25_DP * (Dvert(1,1) + Dvert(1,2) + Dvert(1,3) + Dvert(1,4))
+      dr(2) = 0.25_DP * (Dvert(2,1) + Dvert(2,2) + Dvert(2,3) + Dvert(2,4))
+      ds(1,1) =   0.5_DP * (Dvert(2,3) + Dvert(2,4)) - dr(2)
+      ds(1,2) = -(0.5_DP * (Dvert(1,3) + Dvert(1,4)) - dr(1))
+      ds(2,1) = -(0.5_DP * (Dvert(2,2) + Dvert(2,3)) - dr(2))
+      ds(2,2) =   0.5_DP * (Dvert(1,2) + Dvert(1,3)) - dr(1)
+      dt = 1.0_DP / (ds(1,1)*ds(2,2) - ds(1,2)*ds(2,1))
+      Ds = dt * Ds
+      
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 3: Evaluate function values
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_FUNC2D)) then
+      
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+        
+          ! Apply inverse affine trafo to get (x,y)
+          dx = ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+          dy = ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+        
+          ! Evaluate basis functions
+          dt = (dx**2 - dy**2)
+          Dbas(1,DER_FUNC2D,ipt,iel) = 0.25_DP*(-dt - 2.0_DP*dy + 1.0_DP)
+          Dbas(2,DER_FUNC2D,ipt,iel) = 0.25_DP*( dt + 2.0_DP*dx + 1.0_DP)
+          Dbas(3,DER_FUNC2D,ipt,iel) = 0.25_DP*(-dt + 2.0_DP*dy + 1.0_DP)
+          Dbas(4,DER_FUNC2D,ipt,iel) = 0.25_DP*( dt - 2.0_DP*dx + 1.0_DP)
+
+        end do ! ipt
+      
+      end if ! function values evaluation
+
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      ! Step 4: Evaluate derivatives
+      ! -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+      
+      if(Bder(DER_DERIV2D_X) .or. Bder(DER_DERIV2D_Y)) then
+
+        ! Loop over all points then
+        do ipt = 1, reval%npointsPerElement
+        
+          ! Apply inverse affine trafo to get (x,y)
+          dx = ds(1,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(1,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+          dy = ds(2,1)*(reval%p_DpointsReal(1,ipt,iel)-dr(1)) &
+             + ds(2,2)*(reval%p_DpointsReal(2,ipt,iel)-dr(2))
+        
+          ! Calculate 'reference' derivatives
+          Dgrad(1,1) = -0.5_DP*dx
+          Dgrad(1,2) =  0.5_DP*(dx + 1.0_DP)
+          Dgrad(1,3) = -0.5_DP*dx
+          Dgrad(1,4) =  0.5_DP*(dx - 1.0_DP)
+          Dgrad(2,1) =  0.5_DP*(dy - 1.0_DP)
+          Dgrad(2,2) = -0.5_DP*dy
+          Dgrad(2,3) =  0.5_DP*(dy + 1.0_DP)
+          Dgrad(2,4) = -0.5_DP*dy
+          
+          ! Calculate 'real' derivatives
+          do i = 1, NBAS
+            Dbas(i,DER_DERIV2D_X,ipt,iel) = ds(1,1)*Dgrad(1,i) + ds(2,1)*Dgrad(2,i)
+            Dbas(i,DER_DERIV2D_Y,ipt,iel) = ds(1,2)*Dgrad(1,i) + ds(2,2)*Dgrad(2,i)
+          end do ! i
+            
         end do ! ipt
         
       end if ! derivatives evaluation

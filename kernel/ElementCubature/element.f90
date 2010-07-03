@@ -583,6 +583,10 @@ module element
   integer(I32), parameter, public :: EL_EM31    = EL_Q1T + EL_NONPARAMETRIC
   integer(I32), parameter, public :: EL_EM31_2D = EL_EM31
   
+  ! ID of rotated bilinear nonconforming quadrilateral FE, Q1~, edge-midpoint based
+  ! new interface implementations
+  integer(I32), parameter, public :: EL_EM31_NEW = EL_Q1T + EL_NONPARAMETRIC + 2**19
+  
   ! ID of 'rotated bilinear enhanced' nonconforming quarilateral FE
   integer(I32), parameter, public :: EL_E032    = EL_Q1TB + 2**17
   integer(I32), parameter, public :: EL_E032_2D = EL_E032
@@ -783,6 +787,8 @@ contains
       elem_igetID = EL_EM30_UNSCALED
     else if (selem .eq. "EL_EM30_NEW") then
       elem_igetID = EL_EM30_NEW
+    else if (selem .eq. "EL_EM31_NEW") then
+      elem_igetID = EL_EM31_NEW
     else if (selem .eq. "EL_Q1TB" .or. selem .eq. "EL_Q1TB_2D" .or. &
              selem .eq. "EL_EB30" .or. selem .eq. "EL_EB30_2D") then
       elem_igetID = EL_Q1TB_2D
@@ -1897,6 +1903,8 @@ contains
         call elem_EB30 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_EM31)
         call elem_EM31 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
+      case (EL_EM31_NEW)
+        bwrapSim2 = .true.
       case (EL_E031)
         call elem_E031 (celement, Dcoords, Djac, ddetj, Bder, Dpoint, Dbas)
       case (EL_E032)
@@ -2744,6 +2752,10 @@ contains
         revalElementSet%p_Djac, revalElementSet%p_Ddetj, &
         Bder, Dbas, revalElementSet%npointsPerElement, revalElementSet%nelements, &
         revalElementSet%p_DpointsReal)
+    
+    case (EL_EM31_NEW)
+      ! new implementation of 2D EM31
+      call elem_eval_EM31_2D(celement, revalElementSet, Bder, Dbas)
     
     case (EL_E031)
       call elem_E031_sim (celement, revalElementSet%p_Dcoords, &
