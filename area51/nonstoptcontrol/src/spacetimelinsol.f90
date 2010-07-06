@@ -110,6 +110,15 @@ module spacetimelinsol
     ! Algorithm-specific option field.
     integer :: ialgOptions = 0
     
+    ! ONLY MULTIGRID: Specifies the type of the adaptive coarse grid correction used.
+    ! =0: deactivated.
+    ! =1: adaptive coarse grid correction by energy minimisation.
+    integer :: iadcgcorr = 0
+    
+    ! Min/max correction factor
+    real(DP) :: dadcgcorrMin = 0.5_DP
+    real(DP) :: dadcgcorrMax = 2.0_DP
+    
     ! System matrix if used as 1-level solver.
     type(t_spaceTimeMatrix), pointer :: p_rmatrix => null()
     
@@ -154,6 +163,8 @@ module spacetimelinsol
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors1 => null()
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors2 => null()
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors3 => null()
+    type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors4 => null()
+    type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors5 => null()
     
     ! type of the linear solver in space if used.
     ! =LINSOL_ALG_UNDEFINED: not used.
@@ -424,6 +435,12 @@ contains
       allocate(rsolver%p_Rvectors1(rsolver%ilevel))
       allocate(rsolver%p_Rvectors2(rsolver%ilevel))
       allocate(rsolver%p_Rvectors3(rsolver%ilevel))
+      allocate(rsolver%p_Rvectors4(rsolver%ilevel))
+      
+      if (rsolver%iadcgcorr .eq. 2) then
+        allocate(rsolver%p_Rvectors5(rsolver%ilevel))
+      end if
+      
       do ilev = 1,rsolver%ilevel
 
         call sth_getLevel (rsolver%p_rspaceTimeHierarchy,&
@@ -433,6 +450,11 @@ contains
         call sptivec_initVector (rsolver%p_Rvectors1(ilev),p_rtimeDiscr,p_rspaceDiscr)
         call sptivec_initVector (rsolver%p_Rvectors2(ilev),p_rtimeDiscr,p_rspaceDiscr)
         call sptivec_initVector (rsolver%p_Rvectors3(ilev),p_rtimeDiscr,p_rspaceDiscr)
+        call sptivec_initVector (rsolver%p_Rvectors4(ilev),p_rtimeDiscr,p_rspaceDiscr)
+
+        if (associated(rsolver%p_Rvectors5)) then
+          call sptivec_initVector (rsolver%p_Rvectors5(ilev),p_rtimeDiscr,p_rspaceDiscr)
+        end if
       end do
     
       if (associated(rsolver%p_rcoarseGridSolver)) then
@@ -574,13 +596,22 @@ contains
     
       ! Deallocate temp vectors on all levels.
       do ilev = 1,rsolver%ilevel
+        call sptivec_releaseVector (rsolver%p_Rvectors4(ilev))
         call sptivec_releaseVector (rsolver%p_Rvectors3(ilev))
         call sptivec_releaseVector (rsolver%p_Rvectors2(ilev))
         call sptivec_releaseVector (rsolver%p_Rvectors1(ilev))
       end do
+      deallocate(rsolver%p_Rvectors4)
       deallocate(rsolver%p_Rvectors3)
       deallocate(rsolver%p_Rvectors2)
       deallocate(rsolver%p_Rvectors1)
+      
+      if (associated (rsolver%p_Rvectors5)) then
+        do ilev = 1,rsolver%ilevel
+          call sptivec_releaseVector (rsolver%p_Rvectors5(ilev))
+        end do
+        deallocate(rsolver%p_Rvectors5)
+      end if
     
     end select
     
@@ -1376,7 +1407,7 @@ contains
 
   ! Level of the solver in the space-time hierarchy
   integer, intent(in) :: ilevel
-
+  
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_MULTIGRID,rspaceTimeHierarchy,ilevel,.false.,.true.)
     
@@ -1477,7 +1508,6 @@ contains
   
   ! Current level
   integer, intent(in) :: ilevel
-  character (len=5) :: sstring
   real(DP) :: dfactor
   
     ! local variables
@@ -1623,7 +1653,8 @@ contains
         ! Restriction.
         call sptipr_performRestriction (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors2(ilevel-1),rsolver%p_Rvectors3(ilevel),&
-            rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel))
+            rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel),&
+            rsolver%p_Rvectors4(ilevel-1),rsolver%p_Rvectors4(ilevel))
         
         ! Boundary conditions.
         call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors2(ilevel))
@@ -1647,10 +1678,39 @@ contains
 !          print *,"ok"
 !          dfactor = 2.0_DP
 !        end if
+        select case (rsolver%iadcgcorr)
+        case (1)
+          ! Get the factor by energy minimisatino.
+          call stls_mgCalcCgCorrFactorEnergy(rsolver%p_rmatrix,&
+              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel),&
+              rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors4(ilevel),dfactor)
+
+          if (rsolver%ioutputLevel .ge. 2) then
+            call output_line ("Space-Time Multigrid: Coarse grid correction factor = "//&
+                trim(sys_sdEL(dfactor,10)))
+          end if
+          
+          dfactor = max(min(dfactor,rsolver%dadcgcorrMax),rsolver%dadcgcorrMin)
+
+        case (2)
+          ! Get the factor by energy minimisatino.
+          call stls_mgCalcCgCorrFactorDef(rsolver%p_rmatrix,&
+              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel),&
+              rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors4(ilevel),&
+              rsolver%p_Rvectors5(ilevel),dfactor)
+
+          if (rsolver%ioutputLevel .ge. 2) then
+            call output_line ("Space-Time Multigrid: Coarse grid correction factor = "//&
+                trim(sys_sdEL(dfactor,10)))
+          end if
+          
+          dfactor = max(min(dfactor,rsolver%dadcgcorrMax),rsolver%dadcgcorrMin)
+
+        end select
         
         ! Coarse grid correction
-        call sptivec_vectorLinearComb (rsolver%p_Rvectors3(ilevel),rsolver%p_Rvectors1(ilevel),&
-          dfactor,1.0_DP)
+        call sptivec_vectorLinearComb (rsolver%p_Rvectors3(ilevel),&
+            rsolver%p_Rvectors1(ilevel),dfactor,1.0_DP)
 
         !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
 
@@ -1735,6 +1795,117 @@ contains
       
     end if
 
+  end subroutine
+  
+  ! ***************************************************************************
+
+  subroutine stls_mgCalcCgCorrFactorEnergy(rmatrix,rsolution,rcorrection,rrhs,rtemp,dalpha)
+  
+  ! Calculates a factor for the adaptive coarse grid correction by 
+  ! energy minimisation.
+  
+  ! Space-time matrix
+  type(t_spaceTimeMatrix), intent(in) :: rmatrix
+  
+  ! Solution that should be corrected.
+  type(t_spaceTimeVector), intent(in) :: rsolution
+
+  ! prolongated correction vector
+  type(t_spaceTimeVector), intent(in) :: rcorrection
+
+  ! Temp vector
+  type(t_spaceTimeVector), intent(inout) :: rtemp
+  
+  ! RHS vector
+  type(t_spaceTimeVector), intent(in) :: rrhs
+  
+  ! OUT: Correction factor.
+  real(DP), intent(out) :: dalpha
+  
+    ! local variables
+    real(DP) :: d1,d2
+    
+    dalpha = 1.0_DP
+    
+    ! Calculate the nominator.
+    call sptivec_copyVector (rrhs,rtemp)
+    call stmv_matvec (rmatrix, rsolution, rtemp, -1.0_DP, 1.0_DP)
+    call spop_applyBC (rmatrix%p_rboundaryCond, SPOP_DEFECT, rtemp)
+    d1 = sptivec_scalarProduct(rtemp,rcorrection)
+    if (d1 .eq. 0.0_DP) then
+      ! Cancel. No correction or solution reached.
+      return
+    end if
+    
+    ! Calculate the denominator.
+    call stmv_matvec (rmatrix, rcorrection, rtemp, 1.0_DP, 0.0_DP)
+    call spop_applyBC (rmatrix%p_rboundaryCond, SPOP_DEFECT, rtemp)
+    d2 = sptivec_scalarProduct(rtemp,rcorrection)
+    if (d2 .eq. 0.0_DP) then
+      ! Cancel. No correction.
+      return
+    end if
+    
+    ! Get the correction.
+    dalpha = d1 / d2
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stls_mgCalcCgCorrFactorDef(rmatrix,rsolution,rcorrection,rrhs,&
+      rtemp1,rtemp2,dalpha)
+  
+  ! Calculates a factor for the adaptive coarse grid correction by 
+  ! defect minimisation.
+  
+  ! Space-time matrix
+  type(t_spaceTimeMatrix), intent(in) :: rmatrix
+  
+  ! Solution that should be corrected.
+  type(t_spaceTimeVector), intent(in) :: rsolution
+
+  ! prolongated correction vector
+  type(t_spaceTimeVector), intent(in) :: rcorrection
+
+  ! Temp vectors
+  type(t_spaceTimeVector), intent(inout) :: rtemp1,rtemp2
+  
+  ! RHS vector
+  type(t_spaceTimeVector), intent(in) :: rrhs
+  
+  ! OUT: Correction factor.
+  real(DP), intent(out) :: dalpha
+  
+    ! local variables
+    real(DP) :: d1,d2
+    
+    dalpha = 1.0_DP
+    
+    ! Calculate the nominator.
+    call sptivec_copyVector (rrhs,rtemp1)
+    call stmv_matvec (rmatrix, rsolution, rtemp1, -1.0_DP, 1.0_DP)
+    call spop_applyBC (rmatrix%p_rboundaryCond, SPOP_DEFECT, rtemp1)
+    
+    call stmv_matvec (rmatrix, rcorrection, rtemp2, 1.0_DP, 0.0_DP)
+    call spop_applyBC (rmatrix%p_rboundaryCond, SPOP_DEFECT, rtemp2)
+    
+    d1 = sptivec_scalarProduct(rtemp1,rtemp2)
+    if (d1 .eq. 0.0_DP) then
+      ! Cancel. No correction or solution reached.
+      return
+    end if
+    
+    ! Calculate the denominator.
+    d2 = sptivec_scalarProduct(rtemp2,rtemp2)
+    if (d2 .eq. 0.0_DP) then
+      ! Cancel. No correction.
+      return
+    end if
+    
+    ! Get the correction.
+    dalpha = d1 / d2
+    
   end subroutine
 
 end module

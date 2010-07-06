@@ -254,9 +254,9 @@ contains
       
       select case (cfespace)
       case (-1,1)
-        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_P1_1D, CUB_G2_1D,&
+        call spdiscr_initDiscr_simple (rdiscr%RspatialDiscr(1),EL_P1_1D, CUB_G3_1D,&
             rtriangulation, rboundary)
-        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_P1_1D, CUB_G2_1D, &
+        call spdiscr_deriveSimpleDiscrSc (rdiscr%RspatialDiscr(1), EL_P1_1D, CUB_G3_1D, &
             rdiscr%RspatialDiscr(2))
 
       case default
@@ -306,7 +306,9 @@ contains
 
     ! local variables
     integer :: csolverType
-    integer :: ilev,nsmoothingSteps,iorderTimeProlRest,nmaxiterations
+    integer :: iadcgcorr
+    real(DP) :: dadcgcorrMin,dadcgcorrMax
+    integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel,depsabs
@@ -331,7 +333,7 @@ contains
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "icoarsegridsolver", icoarsegridsolver)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
-        "iorderTimeProlRest", iorderTimeProlRest)
+        "itypeProjection", itypeProjection)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "ddampingCoarseGridCorrection", ddampingCoarseGridCorrection)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
@@ -342,6 +344,12 @@ contains
         "drelax", drelax)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "ifullcouplingFBGS2", ifullcouplingFBGS2)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "iadcgcorr", iadcgcorr)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "dadcgcorrMin", dadcgcorrMin,0.5_DP)
+    call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
+        "dadcgcorrMax", dadcgcorrMax,2.0_DP)
     
     rsolver%csolverType = csolverType
     
@@ -474,7 +482,7 @@ contains
       
       ! Initialise the interlevel projection in space/time
       call sptipr_initProjection (rsolver%rprojection,rparams%rspacetimeHierarchy,&
-          rsolver%rprojHierarchySpace,rparams%rphysics,iorderTimeProlRest)
+          rsolver%rprojHierarchySpace,rparams%rphysics,itypeProjection)
       
       call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
           "depsrel", depsrel)
@@ -486,6 +494,9 @@ contains
           !Rpreconditioners=rsolver%p_Rpreconditioners)
       rsolver%rsolver%nmaxIterations = nmaxiterations
       rsolver%rsolver%depsrel = depsrel
+      rsolver%rsolver%iadcgcorr = iadcgcorr
+      rsolver%rsolver%dadcgcorrMin = dadcgcorrMin
+      rsolver%rsolver%dadcgcorrMax = dadcgcorrMax
           
     end select
       

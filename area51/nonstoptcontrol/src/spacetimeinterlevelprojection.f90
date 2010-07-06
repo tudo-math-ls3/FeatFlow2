@@ -69,10 +69,23 @@ module spacetimeinterlevelprojection
   ! of space-time levels.
   type t_sptiProjHierarchy
 
-    ! Order of projection in time.
-    ! =1: first order implicit Euler, 
-    ! =2: Full 1-step Theta scheme up to second order (Crank Nicolson)
-    integer :: itimeOrder = 0
+    ! Type of projection in time.
+    ! =0: constant prolongation/restriction
+    ! =1: linear prolongation/restriction. primal+dual solutions located
+    !     at the endpoints of the time interval.
+    ! =2: linear prolonggation/restriction, primal+dual solutions located
+    !     according to the 1-step theta scheme. No time negotiation, so
+    !     the restriction uses a constant interpolation of the primal
+    !     space to synchronise in time with the dual space.
+    ! =3: linear prolongation/restriction, primal+dual solutions located
+    !     according to the 1-step theta scheme. Full linear restriction
+    !     with interpolation in time.
+    ! =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
+    !     extrapolation at the time endpoints. Solutions located at the
+    !     time endpoints. (not completely implemented)
+    ! =5: Piecewise linear with larger stencil. Solutions located at the
+    !     time endpoints. (not completely implemented)
+    integer :: ctimeProjection = -1
     
     ! Underlying physics
     type(t_physics), pointer :: p_rphysics
@@ -105,6 +118,12 @@ module spacetimeinterlevelprojection
     type(t_matrixScalar), dimension(:), pointer :: p_RinterpolationMatPrimal
     type(t_matrixScalar), dimension(:), pointer :: p_RinterpolationMatDual
 
+    ! An array of embedding matrices that embed the primal in the dual space
+    ! and vice versa. Used to convert solutions between the spaces on every level.
+    ! The matrices are saved transposed as they are only used that way.
+    type(t_matrixScalar), dimension(:), pointer :: p_RembedMatPrimalInDualT
+    type(t_matrixScalar), dimension(:), pointer :: p_RembedMatDualInPrimalT
+
   end type
 
 !</typeblock>
@@ -119,7 +138,7 @@ contains
 !<subroutine>
 
   subroutine sptipr_initProjection (rprojHier,rspaceTimeHierarchy,&
-      rprojHierarchySpace,rphysics,iorderTimeProlRest)
+      rprojHierarchySpace,rphysics,ctimeProjection)
   
 !<description>
   ! 
@@ -136,11 +155,24 @@ contains
   ! Underlying physics
   type(t_physics), intent(in), target :: rphysics
 
-  ! Order of the prolongation/restriction in time.
-  ! =-1: Automatic
-  ! =1: 1st order (bilinear)
-  ! =2: 2nd order
-  integer, intent(in), optional :: iorderTimeProlRest
+  ! Type of projection in time.
+  ! =-1: automatic.
+  ! =0: constant prolongation/restriction
+  ! =1: linear prolongation/restriction. primal+dual solutions located
+  !     at the endpoints of the time interval.
+  ! =2: linear prolonggation/restriction, primal+dual solutions located
+  !     according to the 1-step theta scheme. No time negotiation, so
+  !     the restriction uses a constant interpolation of the primal
+  !     space to synchronise in time with the dual space.
+  ! =3: linear prolonggation/restriction, primal+dual solutions located
+  !     according to the 1-step theta scheme. Full linear restriction
+  !     with interpolation in time.
+  ! =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
+  !     extrapolation at the time endpoints. Solutions located at the
+  !     time endpoints.
+  ! =5: Piecewise linear with larger stencil. Solutions located at the
+  !     time endpoints. (not completely implemented)
+  integer, intent(in), optional :: ctimeProjection
   
 !</input>
 
@@ -150,7 +182,7 @@ contains
 !</output>
 
 !</subroutine>
-    integer :: i
+    integer :: i,itimeOrder
 
     ! Remember the physics; necessary so we know how and what to project
     rprojHier%p_rphysics => rphysics
@@ -160,18 +192,28 @@ contains
     rprojHier%p_rprojHierarchySpace => rprojHierarchySpace
     rprojHier%p_rtimeCoarseDiscr => rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)
     
-    ! Set itimeOrder <> 0 -> structure initialised.
-    rprojHier%itimeOrder = -1
-    if (present(iorderTimeProlRest)) rprojHier%itimeOrder = iorderTimeProlRest
+    ! Set ctimeProjection
+    rprojHier%ctimeProjection = -1
+    if (present(ctimeProjection)) rprojHier%ctimeProjection = ctimeProjection
 
-    if (rprojHier%itimeOrder .eq. -1) then
+    if (rprojHier%ctimeProjection .eq. -1) then
       ! Automatic mode. Select the order based on the time stepping scheme.
-      call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,rprojHier%itimeOrder)
+      call tdiscr_getOrder(rprojHier%p_rtimeCoarseDiscr,itimeOrder)
+      select case (itimeOrder)
+      case (0)
+        rprojHier%ctimeProjection = 0
+      case (1)
+        rprojHier%ctimeProjection = 1
+      case (2)
+        rprojHier%ctimeProjection = 3
+      case default
+        rprojHier%ctimeProjection = 1
+      end select
       
-      ! If our special 1-step scheme is activated, reduce iorder to 1 in order
+      ! If our special 1-step scheme is activated, reduce the order to 1 in order
       ! to activate the corresponding prol/rest.
       if (rprojHier%p_rtimeCoarseDiscr%itag .eq. 1) then
-        rprojHier%itimeOrder = 1
+        rprojHier%ctimeProjection = 2
       end if
       
     end if
@@ -184,73 +226,133 @@ contains
     allocate (rprojHier%p_RinterpolationMatPrimal(max(1,rspaceTimeHierarchy%nlevels-1)))
     allocate (rprojHier%p_RinterpolationMatDual(max(1,rspaceTimeHierarchy%nlevels-1)))
     
-    do i=1,rspaceTimeHierarchy%nlevels-1
-      if (rprojHier%itimeOrder .ne. 4) then
-        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-            rprojHier%p_RprolongationMatPrimal(i))
-            
-        !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
-        !    .true., 0, "matrixp."//trim(sys_siL(i,10)), "(E20.10)")
-        
-        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-            rprojHier%p_RprolongationMatDual(i))
-
-        !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
-        !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
-            
-        ! The restriction matrices are given as their transpose...
-        !
-        ! WARNING!!!
-        ! The primal restriction matrix is the transpose of the dual prolongation matrix!
-        ! The dual restriction matrix is the transpose of the primal prolongation matrix!
-        ! This is because the primal RHS is located at the timesteps of the dual
-        ! solution (between the primal timesteps) and vice versa!!!
-        call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
-            rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
-            
-        call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
-            rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
-      else
-        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,1,&
-            rprojHier%p_RprolongationMatPrimal(i))
-            
-        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,3,&
-            rprojHier%p_RprolongationMatDual(i))
-
-
-        call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,2,&
-            rprojHier%p_RrestrictionMatDual(i))
-            
-        call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,4,&
-            rprojHier%p_RrestrictionMatPrimal(i))
-            
-        call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatPrimal(i))
-        call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatDual(i))
-      end if
-          
-      ! The restriction matrices have to be divided by 2 as they are
-      ! finite difference restrictions, not finite element restrictions!
-      call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatPrimal(i),0.5_DP)
-      call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatDual(i),0.5_DP)
+    nullify(rprojHier%p_RembedMatPrimalInDualT)
+    nullify(rprojHier%p_RembedMatDualInPrimalT)
+    select case (rprojHier%ctimeProjection)
+    case (3)
+      allocate (rprojHier%p_RembedMatPrimalInDualT(max(1,rspaceTimeHierarchy%nlevels)))
+      allocate (rprojHier%p_RembedMatDualInPrimalT(max(1,rspaceTimeHierarchy%nlevels)))
+    end select
+    
+    do i=1,rspaceTimeHierarchy%nlevels
+      ! The restriction matrices are given as their transpose of the prolongation
+      ! matrices.
+      !
+      ! WARNING!!!
+      ! The primal restriction matrix is the transpose of the dual prolongation matrix!
+      ! The dual restriction matrix is the transpose of the primal prolongation matrix!
+      ! This is because the primal RHS is located at the timesteps of the dual
+      ! solution (between the primal timesteps) and vice versa!!!
+      select case (rprojHier%ctimeProjection)
+      case (0:2,4)
       
-!      call lsyssc_getbase_double (rprojHier%p_RrestrictionMatPrimal(i),p_Da)
-!      call lsyssc_getbase_Kcol (rprojHier%p_RrestrictionMatPrimal(i),p_Kcol)
-!      call lsyssc_getbase_Kld (rprojHier%p_RrestrictionMatPrimal(i),p_Kld)
-!      p_Da(1) = 2.0_DP*p_Da(1)
-!      p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA) = 2.0_DP*p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA)
+        if (i .lt. rspaceTimeHierarchy%nlevels) then
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+              rprojHier%p_RprolongationMatPrimal(i))
+              
+          !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
+          !    .true., 0, "matrixp."//trim(sys_siL(i,10)), "(E20.10)")
+          
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+              rprojHier%p_RprolongationMatDual(i))
 
-      ! Finally, calculate the interpolation matrices.
-      call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-          rprojHier%p_RinterpolationMatPrimal(i))
+          !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
+          !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
+              
+          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
+              rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+              
+          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
+              rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+        end if
 
-      !call matio_writeMatrixHR (rprojHier%p_RinterpolationMatPrimal(i), "pmat",&
-      !    .true., 0, "imatrixp."//trim(sys_siL(i,10)), "(E20.10)")
+      case (3)
+        ! Same as in the other case, but this needs additional embedding matrices.
+        
+        if (i .lt. rspaceTimeHierarchy%nlevels) then
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+              rprojHier%p_RprolongationMatPrimal(i))
+              
+          !call matio_writeMatrixHR (rprojHier%p_RprolongationMatPrimal(i), "pmat",&
+          !    .true., 0, "matrixp."//trim(sys_siL(i,10)), "(E20.10)")
+          
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+              rprojHier%p_RprolongationMatDual(i))
 
-      call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%itimeOrder,&
-          rprojHier%p_RinterpolationMatDual(i))
+          !call matio_writeMatrixHR (rprojHier%p_RprolongationMatDual(i), "dmat",&
+          !    .true., 0, "matrixd."//trim(sys_siL(i,10)), "(E20.10)")
+              
+          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatPrimal(i),&
+              rprojHier%p_RrestrictionMatDual(i),LSYSSC_TR_ALL)
+              
+          call lsyssc_transposeMatrix (rprojHier%p_RprolongationMatDual(i),&
+              rprojHier%p_RrestrictionMatPrimal(i),LSYSSC_TR_ALL)
+        end if
+            
+        ! Get an additional embedding matrix
+        call sptipr_getEmbedMatPrimalToDual (rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            rprojHier%p_RembedMatPrimalInDualT(i),0)
 
-      !call matio_writeMatrixHR (rprojHier%p_RinterpolationMatDual(i), "pmat",&
-      !    .true., 0, "imatrixd."//trim(sys_siL(i,10)), "(E20.10)")
+        call sptipr_getEmbedMatDualToPrimal (rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            rprojHier%p_RembedMatDualInPrimalT(i),0)
+
+        call lsyssc_transposeMatrixInSitu(rprojHier%p_RembedMatPrimalInDualT(i))
+        call lsyssc_transposeMatrixInSitu(rprojHier%p_RembedMatDualInPrimalT(i))
+            
+        ! The reverse is its transpose.
+!        call lsyssc_transposeMatrix (rprojHier%p_RembedMatPrimalInDualT(i),&
+!            rprojHier%p_RembedMatDualInPrimalT(i),LSYSSC_TR_ALL)
+            
+      case (5)
+        ! NOT COMPLETELY IMPLEMENTED.
+        ! Uses some different settings for the time interpolation matrices...
+
+        if (i .lt. rspaceTimeHierarchy%nlevels) then
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,1,&
+              rprojHier%p_RprolongationMatPrimal(i))
+              
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,3,&
+              rprojHier%p_RprolongationMatDual(i))
+
+
+          call sptipr_getProlMatrixPrimal(rspaceTimeHierarchy,i,2,&
+              rprojHier%p_RrestrictionMatDual(i))
+              
+          call sptipr_getProlMatrixDual(rspaceTimeHierarchy,i,4,&
+              rprojHier%p_RrestrictionMatPrimal(i))
+              
+          call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatPrimal(i))
+          call lsyssc_transposeMatrixInSitu(rprojHier%p_RrestrictionMatDual(i))
+        end if
+      end select
+          
+      if (i .lt. rspaceTimeHierarchy%nlevels) then
+
+        ! The restriction matrices have to be divided by 2 as they are
+        ! finite difference restrictions, not finite element restrictions!
+        call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatPrimal(i),0.5_DP)
+        call lsyssc_scaleMatrix (rprojHier%p_RrestrictionMatDual(i),0.5_DP)
+        
+  !      call lsyssc_getbase_double (rprojHier%p_RrestrictionMatPrimal(i),p_Da)
+  !      call lsyssc_getbase_Kcol (rprojHier%p_RrestrictionMatPrimal(i),p_Kcol)
+  !      call lsyssc_getbase_Kld (rprojHier%p_RrestrictionMatPrimal(i),p_Kld)
+  !      p_Da(1) = 2.0_DP*p_Da(1)
+  !      p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA) = 2.0_DP*p_Da(rprojHier%p_RrestrictionMatPrimal(i)%NA)
+
+        ! Finally, calculate the interpolation matrices.
+        call sptipr_getInterpMatrixPrimal(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            rprojHier%p_RinterpolationMatPrimal(i))
+
+        !call matio_writeMatrixHR (rprojHier%p_RinterpolationMatPrimal(i), "pmat",&
+        !    .true., 0, "imatrixp."//trim(sys_siL(i,10)), "(E20.10)")
+
+        call sptipr_getInterpMatrixDual(rspaceTimeHierarchy,i,rprojHier%ctimeProjection,&
+            rprojHier%p_RinterpolationMatDual(i))
+
+        !call matio_writeMatrixHR (rprojHier%p_RinterpolationMatDual(i), "pmat",&
+        !    .true., 0, "imatrixd."//trim(sys_siL(i,10)), "(E20.10)")
+        
+      end if
     end do
 
   end subroutine
@@ -284,7 +386,18 @@ contains
       call lsyssc_releaseMatrix(rprojHier%p_RrestrictionMatDual(i))
       call lsyssc_releaseMatrix(rprojHier%p_RinterpolationMatPrimal(i))
       call lsyssc_releaseMatrix(rprojHier%p_RinterpolationMatDual(i))
+      if (associated(rprojHier%p_RembedMatDualInPrimalT)) then
+        call lsyssc_releaseMatrix(rprojHier%p_RembedMatDualInPrimalT(i))
+      end if
+      if (associated(rprojHier%p_RembedMatPrimalInDualT)) then
+        call lsyssc_releaseMatrix(rprojHier%p_RembedMatPrimalInDualT(i))
+      end if
     end do
+
+    if (associated(rprojHier%p_RembedMatPrimalInDualT)) then
+      deallocate (rprojHier%p_RembedMatPrimalInDualT)
+      deallocate (rprojHier%p_RembedMatDualInPrimalT)
+    end if
 
     deallocate (rprojHier%p_RprolongationMatPrimal)
     deallocate (rprojHier%p_RprolongationMatDual)
@@ -299,7 +412,7 @@ contains
     nullify(rprojHier%p_rtimeCoarseDiscr)
     
     ! Set itimeOrder=0 -> structure not initialised anymore.
-    rprojHier%itimeOrder = 0
+    rprojHier%ctimeProjection = -1
 
   end subroutine
   
@@ -307,7 +420,7 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+  subroutine sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
   ! Creates a prolongation matrix for the primal space between time-level 
@@ -321,8 +434,8 @@ contains
   ! Id of the coarse level
   integer, intent(in) :: ilevel
   
-  ! Order of the prolongation.
-  integer, intent(in) :: iorder
+  ! Type of prolongation.
+  integer, intent(in) :: ctimeProjection
 !</input>
 
 !<output>
@@ -357,7 +470,7 @@ contains
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
         
     ! Now depending on the order, create the matrix.
-    select case (iorder)
+    select case (ctimeProjection)
     
     case (0)
       ! Constant prolongation. Just shift the value from
@@ -392,7 +505,7 @@ contains
         p_Da(3+2*(icol-1)) = 1.0_DP
       end do
 
-    case (1,2)
+    case (1,2,3)
       ! Simplest case.
       ! For simplicity, we take the lineaer interpolation, which is also
       ! 2nd order. In contrast to case 2, this matrix has a reduced
@@ -455,7 +568,7 @@ contains
         p_Da(-1+3*icol+2) = 1.0_DP
       end do
 
-    case (3)
+    case (4)
       ! Piecewise quadratic interpolation at the beginning/end.
       ! Piecewise cubic interpolation in the inner.
 
@@ -521,7 +634,7 @@ contains
 
       p_Kld(ndoffine+1) = rprolMatrix%NA+1
       
-    case (4)
+    case (5)
       ! Piecewise linear with larger stencil and interpolation to the
       ! points in time.
       call lsyssc_createEmptyMatrix9 (rprolMatrix,ndofFine,(ndofFine-5)*3+1+2+3+2+2,ndofCoarse)
@@ -634,7 +747,7 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getProlMatrixDual (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+  subroutine sptipr_getProlMatrixDual (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
   ! Creates a prolongation matrix for the dual space between time-level 
@@ -648,8 +761,8 @@ contains
   ! Id of the coarse level
   integer, intent(in) :: ilevel
   
-  ! Order of the prolongation.
-  integer, intent(in) :: iorder
+  ! Type of the prolongation.
+  integer, intent(in) :: ctimeProjection
 !</input>
 
 !<output>
@@ -683,9 +796,9 @@ contains
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofFine,ndofCoarse)
         
     ! Now depending on the order, create the matrix.
-    select case (iorder)
+    select case (ctimeProjection)
 
-    case (2)
+    case (2,3)
       ! Slightly harder case.
       ! Because the dual solution is aligned between the primal,
       ! the prolongation stencil looks different.
@@ -779,10 +892,10 @@ contains
       
       ! Set up the first two rows.
       p_Da(1) = 1.0_DP
-      p_Da(2) = dtheta-0.5_DP          ! 0.0_DP
-      p_Da(3) = 2.0_DP-1.5_DP*dtheta   ! 1.25_DP
-      p_Da(4) = -0.5_DP+0.5_DP*dtheta  ! -0.25_DP
-      
+      p_Da(2) = 0.0_DP
+      p_Da(3) = 1.0_DP+0.5_DP*dtheta  ! 1.25_DP
+      p_Da(4) = -0.5_DP*dtheta        ! -0.25_DP
+
       p_Kcol(1) = 1
       p_Kcol(2) = 1
       p_Kcol(3) = 2
@@ -795,8 +908,8 @@ contains
         p_Kcol(5+4*(icol-2)+2) = icol
         p_Kcol(5+4*(icol-2)+3) = icol+1
 
-        p_Da(5+4*(icol-2)+0) = 1.0_DP - 0.5_DP*dtheta ! 0.75_DP
-        p_Da(5+4*(icol-2)+1) = 0.5_DP*dtheta          ! 0.25_DP
+        p_Da(5+4*(icol-2)+0) = 0.5_DP + 0.5_DP*dtheta ! 0.75_DP
+        p_Da(5+4*(icol-2)+1) = 0.5_DP - 0.5_DP*dtheta ! 0.25_DP
         p_Da(5+4*(icol-2)+2) = 0.5_DP*dtheta          ! 0.25_DP
         p_Da(5+4*(icol-2)+3) = 1.0_DP - 0.5_DP*dtheta ! 0.75_DP
       end do
@@ -806,13 +919,13 @@ contains
       p_Kcol(5+4*(ndofCoarse-2)+1) = ndofCoarse
 
       p_Da(5+4*(ndofCoarse-2)) = -0.5_DP+0.5_DP*dtheta  ! -0.25_DP
-      p_Da(5+4*(ndofCoarse-2)+1) = 2.0_DP-1.5_DP*dtheta ! 1.25_DP
+      p_Da(5+4*(ndofCoarse-2)+1) = 1.5_DP-0.5_DP*dtheta ! 1.25_DP
       
-    case (4)
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,4,rprolMatrix)
+    case (5)
+      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,5,rprolMatrix)
 
     case default
-      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+      call sptipr_getProlMatrixPrimal (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
 
     end select
             
@@ -822,7 +935,8 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+  subroutine sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,&
+      ctimeProjection,rprolMatrix)
   
 !<description>
   ! Creates a interpolation matrix for the primal space between time-level 
@@ -836,8 +950,8 @@ contains
   ! Id of the coarse level
   integer, intent(in) :: ilevel
   
-  ! Order of the prolongation.
-  integer, intent(in) :: iorder
+  ! Type of the projection
+  integer, intent(in) :: ctimeProjection
 !</input>
 
 !<output>
@@ -870,8 +984,8 @@ contains
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
         
     ! Now depending on the order, create the matrix.
-    select case (iorder)
-    case (0,1,2,3)
+    select case (ctimeProjection)
+    case (0,1,2,3,4)
       ! The interpolation is just taking the values in the points in time.
       !
       ! Timestep: 
@@ -927,7 +1041,7 @@ contains
 
 !<subroutine>
 
-  subroutine sptipr_getInterpMatrixDual (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+  subroutine sptipr_getInterpMatrixDual (rspaceTimeHierarchy,ilevel,ctimeProjection,rprolMatrix)
   
 !<description>
   ! Creates a prolongation matrix for the dual space between time-level 
@@ -941,8 +1055,8 @@ contains
   ! Id of the coarse level
   integer, intent(in) :: ilevel
   
-  ! Order of the prolongation.
-  integer, intent(in) :: iorder
+  ! Type of the projection.
+  integer, intent(in) :: ctimeProjection
 !</input>
 
 !<output>
@@ -976,9 +1090,9 @@ contains
     call lsyssc_createEmptyMatrixStub (rprolMatrix,LSYSSC_MATRIX9,ndofCoarse,ndofFine)
         
     ! Now depending on the order, create the matrix.
-    select case (iorder)
+    select case (ctimeProjection)
 
-    case (2)
+    case (2,3)
       ! Slightly harder case.
       ! Because the dual solution is aligned between the primal,
       ! the interpolation stencil looks different.
@@ -1072,10 +1186,252 @@ contains
 
     case default
       ! Default case, standard handling. Take the matrix from the primal.
-      call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,iorder,rprolMatrix)
+      call sptipr_getInterpMatrixPrimal (rspaceTimeHierarchy,ilevel,&
+          ctimeProjection,rprolMatrix)
 
     end select
             
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_getEmbedMatPrimalToDual (&
+      rspaceTimeHierarchy,ilevel,ctimeProjection,rmatrix,itype)
+  
+!<description>
+  ! Creates an embedding matrix that embeds the primal solution in the dual space.
+!</description>
+
+!<input>
+  ! Underlying space-time hierarchy.
+  type(t_spacetimeHierarchy), intent(in) :: rspaceTimeHierarchy
+  
+  ! Id of the coarse level
+  integer, intent(in) :: ilevel
+  
+  ! Type of the prolongation.
+  integer, intent(in) :: ctimeProjection
+  
+  ! Type of the embedding matrix. Depends on the projection type.
+  ! ctimeProjection = 3:
+  !   itype = 0: standard linear embedding matrix.
+  !   itype = 1: quadratic embedding matrix.
+  integer, intent(in) :: itype
+!</input>
+
+!<output>
+  ! Embedding matrix
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscrFine
+    integer :: ndofFine
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal
+    real(DP), dimension(:), pointer :: p_Da
+    integer :: irow,icol
+    real(DP) :: dtheta
+    
+    integer, dimension(3) :: Kcol
+    real(DP), dimension(3) :: Da
+
+    ! Get the time levels of the two levels where we have to interpolate
+    ! inbetween. The number of timesteps gives us the size of the matrix.
+    call sth_getLevel (rspaceTimeHierarchy,ilevel,p_rtimeDiscr=p_rtimeDiscrFine)
+
+    ! At first, create an empty matrix.
+    ! #rows = #time dofs of the fine level.
+    ! #columns = #time dofs of the coarse level.
+    ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
+        
+    ! Now depending on the order, create the matrix.
+    select case (ctimeProjection)
+
+    case (3)
+      select case (itype)
+      case (0)
+        ! The embedding matrix for the primal space is just taking the average of
+        ! the points in time in the interval plus a constant interpolation at the beginning.
+        !
+        !                             y0                      y1                      y2
+        !                            xi0                     xi1                     xi2
+        !                             X-----------|-----------X-----------|-----------X
+        !                  <-1--|           |-1/2> <1/2-|           |-1/2> <1/2-|
+        !                 |                       |                       |
+        !                 V                       V                       V
+        !                 X-----------|-----------X-----------|-----------X-----------|
+        !               y-1/2                   y1/2                     y3/2
+        !               xi-1/2                  xi1/2                    yi3/2        
+        !
+        ! The matrix looks like this (for Crank-Nicolson):
+        !
+        !   1
+        !       1/2 1/2
+        !               1/2 1/2
+        !   ...
+        ! The idea is that we take a linear interpolation between
+        ! the time nodes to get the value in the time midpoint.
+
+        dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
+        
+        call lsyssc_createEmptyMatrix9 (rmatrix,ndofFine,2*(ndofFine-1)+1)
+        
+        Kcol(1) = 1
+        Da(1) = 1.0_DP
+        call lsyssc_setRowMatrix9 (rmatrix,1,1,Kcol,Da)
+        
+        Da(1:2) = (/1.0_DP-dtheta,dtheta/)
+        do icol = 2,ndoffine
+          Kcol(1:2) = (/icol-1,icol/)
+          call lsyssc_setRowMatrix9 (rmatrix,icol,2,Kcol,Da)
+        end do
+        ! Calculate Kdiagonal
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KDiag', &
+            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
+        call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+        call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
+        
+      case (1)
+        ! Quadratic embedding matrix. Only for CN at the moment!!!
+        call lsyssc_createEmptyMatrix9 (rmatrix,ndofFine,3*(ndofFine-1)+1)
+        
+        Kcol(1) = 1
+        Da(1) = 1.0_DP
+        call lsyssc_setRowMatrix9 (rmatrix,1,1,Kcol,Da)
+        
+        Kcol(1:3) = (/1,2,3/)
+        Da(1:3) = (/0.375_DP,0.75_DP,-0.125_DP/)
+        call lsyssc_setRowMatrix9 (rmatrix,2,3,Kcol,Da)
+
+        Da(1:3) = (/-0.125_DP,0.75_DP,0.375_DP/)
+        do icol = 3,ndoffine
+          Kcol(1:3) = (/icol-2,icol-1,icol/)
+          call lsyssc_setRowMatrix9 (rmatrix,icol,3,Kcol,Da)
+        end do
+        
+        ! Calculate Kdiagonal
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        call storage_new ('sptipr_getProlMatrixPrimal', 'KDiag', &
+            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
+        call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+        call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
+                    
+      end select
+
+    case default
+      call lsyssc_releaseMatrix (rmatrix)
+
+    end select
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_getEmbedMatDualToPrimal (&
+      rspaceTimeHierarchy,ilevel,ctimeProjection,rmatrix,itype)
+  
+!<description>
+  ! Creates an embedding matrix that embeds the dual solution in the primal space.
+!</description>
+
+!<input>
+  ! Underlying space-time hierarchy.
+  type(t_spacetimeHierarchy), intent(in) :: rspaceTimeHierarchy
+  
+  ! Id of the coarse level
+  integer, intent(in) :: ilevel
+  
+  ! Type of the prolongation.
+  integer, intent(in) :: ctimeProjection
+  
+  ! Type of the embedding matrix. Depends on the projection type.
+  ! ctimeProjection = 3:
+  !   itype = 0: standard linear embedding matrix.
+  !   itype = 1: quadratic embedding matrix.
+  integer, intent(in) :: itype
+!</input>
+
+!<output>
+  ! Embedding matrix
+  type(t_matrixScalar), intent(out) :: rmatrix
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscrFine
+    integer :: ndofFine
+    integer, dimension(:), pointer :: p_Kld, p_Kcol, p_Kdiagonal
+    integer :: irow,icol
+    real(DP) :: dtheta
+    
+    integer, dimension(3) :: Kcol
+    real(DP), dimension(3) :: Da
+
+    ! Get the time levels of the two levels where we have to interpolate
+    ! inbetween. The number of timesteps gives us the size of the matrix.
+    call sth_getLevel (rspaceTimeHierarchy,ilevel,p_rtimeDiscr=p_rtimeDiscrFine)
+
+    ! At first, create an empty matrix.
+    ! #rows = #time dofs of the fine level.
+    ! #columns = #time dofs of the coarse level.
+    ndofFine = tdiscr_igetNDofGlob(p_rtimeDiscrFine)
+        
+    ! Now depending on the order, create the matrix.
+    select case (ctimeProjection)
+
+    case (3)
+      select case (itype)
+      case (0)
+        dtheta = rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)%dtheta
+        
+        call lsyssc_createEmptyMatrix9 (rmatrix,ndofFine,2*(ndofFine-1))
+        
+        ! Constant in the first row
+        Kcol(1) = 1
+        Da(1) = 1.0_DP
+        call lsyssc_setRowMatrix9 (rmatrix,1,1,Kcol,Da)
+        
+        ! Mean value in all intermediate rows
+        Da(1:2) = (/dtheta,1.0_DP-dtheta/)
+        do icol = 2,ndoffine-1
+          Kcol(1:2) = (/icol,icol+1/)
+          call lsyssc_setRowMatrix9 (rmatrix,icol,2,Kcol,Da)
+        end do
+
+        ! Constant in the last row
+        Kcol(1) = 1
+        Da(1) = 1.0_DP
+        call lsyssc_setRowMatrix9 (rmatrix,ndoffine,1,Kcol,Da)
+        
+        ! Calculate Kdiagonal
+        call lsyssc_getbase_Kcol (rmatrix,p_Kcol)
+        call lsyssc_getbase_Kld (rmatrix,p_Kld)
+        call storage_new ('sptipr_getEmbedMatDualToPrimal', 'KDiag', &
+            ndofFine, ST_INT, rmatrix%h_Kdiagonal,ST_NEWBLOCK_ZERO)
+        call lsyssc_getbase_Kdiagonal (rmatrix,p_Kdiagonal)
+        call lsyssc_rebuildKdiagonal (p_Kcol, p_Kld, p_Kdiagonal, ndofFine)
+        
+      case (1)
+
+        call output_line ("Not implemented.")
+        call sys_halt()                    
+      end select
+
+    case default
+      call lsyssc_releaseMatrix (rmatrix)
+
+    end select
+    
   end subroutine
 
   ! ***************************************************************************
@@ -1195,14 +1551,14 @@ contains
     call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
-    select case (rprojHier%itimeOrder)
+    select case (rprojHier%ctimeProjection)
     case (0)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
-    case (2)
+    case (2,3)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,3)
-    case (3)
+    case (4)
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,4)
     case default
       call sptivec_createAccessPool (rfineVector%p_rspaceDiscr,raccessPool,10)
@@ -1389,8 +1745,523 @@ contains
 
 !<subroutine>
 
+  subroutine sptipr_performEmbedding (rprojHier,ilevel,bdualToPrimal,rsrcVector, &
+      rdestVector,rtempVector)
+  
+!<description>
+  ! Embeds a solution vector in another space.
+  ! Primal vectors are interpolated from the time-primal space to the 
+  ! time-dual space and dual vectors are interpolated from the time-dual space
+  ! to the time primal space.
+  ! If bdualToPrimal=.true., the embedding is the other way around.
+!</description>
+
+!<input>
+  ! A space/time interlevel projection structure that configures the 
+  ! prolongation/restriction in space/time.
+  type(t_sptiProjHierarchy), intent(IN) :: rprojHier
+
+  ! Level corresponding to the solution vectors.
+  integer, intent(in) :: ilevel
+
+  ! Source vector to be projected.
+  type(t_spacetimeVector), intent(INOUT) :: rsrcVector
+  
+  ! Type of embedding.
+  ! =true: For primal vectors: interpolate from primal to dual time space.
+  !        For dual vectors: interpolate from dual to primal time space.
+  ! =false: For primal vectors: interpolate from dual to primal time space.
+  !         For dual vectors: interpolate from primal to dual time space.
+  logical, intent(in) :: bdualToPrimal
+!</input>
+
+!<inputoutput>
+  ! Temporary space-vector, specifying the discretisation and vector shape.
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
+!</inputoutput>
+
+!<output>
+  ! Destination vector that receives the projected solution.
+  type(t_spacetimeVector), intent(INOUT) :: rdestVector
+!</output>
+
+!</subroutine>
+
+    ! We have to multiply with the embedding matrices.
+    ! The primal vectors have to be multiplied with E^T, the dual with E^-T.
+    ! If bdualToPrimal=true, the primal have to be multiplied with E^T and
+    ! the dual with E.
+
+    if (.not. bdualToPrimal) then
+      call sptipr_timeMatVec (&
+          rprojHier%p_RembedMatPrimalInDualT(ilevel),&
+          rprojHier%p_RembedMatDualInPrimalT(ilevel),3,&
+          rprojHier%p_rphysics,rsrcVector,rdestVector,1.0_DP,0.0_DP,rtempVector)
+    else
+      call sptipr_timeMatVec (&
+          rprojHier%p_RembedMatDualInPrimalT(ilevel),&
+          rprojHier%p_RembedMatPrimalInDualT(ilevel),3,&
+          rprojHier%p_rphysics,rsrcVector,rdestVector,1.0_DP,0.0_DP,rtempVector)
+    end if
+
+!    call sptivec_copyVector (rsrcVector,rdestVector)
+!
+!    if (.not. bdualToPrimal) then
+!      call sptipr_timeMatVec (&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),1,&
+!          rprojHier%p_rphysics,rsrcVector,rdestVector,1.0_DP,0.0_DP,rtempVector)
+!      call sptipr_timeBackwardSolve (&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),2,&
+!          rprojHier%p_rphysics,rdestVector,rtempVector)
+!    else
+!      call sptipr_timeMatVec (&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),2,&
+!          rprojHier%p_rphysics,rsrcVector,rdestVector,1.0_DP,0.0_DP,rtempVector)
+!      call sptipr_timeBackwardSolve (&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),&
+!          rprojHier%p_RembedMatDualInPrimalT(ilevel),1,&
+!          rprojHier%p_rphysics,rdestVector,rtempVector)
+!    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_timeMatVec (rmatrixPrim,rmatrixDual,cprimdual,rphysics,rx,ry,dcx,dcy,rtempVector)
+  
+!<description>
+  ! Performs a matrix-vector multiplication in time with a time-weighting
+  ! matrix. rmatrix defines a format-9 matrix containing time-weights.
+  ! The routine computes ry = dcx*A*rx + dcy*ry in time.
+  ! rmatrixPrimal is used for the primal space, rmatrixDual for the dual space.
+!</description>
+
+!<input>
+  ! Matrix with weights in time for the primal space.
+  type(t_matrixScalar), intent(in) :: rmatrixPrim
+
+  ! Matrix with weights in time for the dual space.
+  type(t_matrixScalar), intent(in) :: rmatrixDual
+  
+  ! Underlying physics of the vectors
+  type(t_physics), intent(in) :: rphysics
+
+  ! Determins whether multiply the primal and/or dual part.
+  ! =1: Multiply the primal part.
+  ! =2: Multiply the dual part.
+  ! =3: Multiply the both, primal and dual part.
+  integer, intent(in) :: cprimdual
+
+  ! Source vector rx
+  type(t_spacetimeVector), intent(INOUT) :: rx
+  
+  ! Weight for rx
+  real(DP), intent(in) :: dcx
+  
+  ! Weight for ry.
+  real(DP), intent(in) :: dcy
+!</input>
+
+!<inputoutput>
+  ! Temporary vector.
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
+!</inputoutput>
+
+!<output>
+  ! rhs and destination vector.
+  type(t_spacetimeVector), intent(INOUT) :: ry
+!</output>
+
+!</subroutine>
+
+    ! Local variables
+    type(t_spaceTimeVectorAccess) :: raccessPool
+    type(t_vectorBlock), pointer :: p_rx
+    integer :: irow, icol
+    real(DP), dimension(:), pointer :: p_DaPrim,p_DaDual,p_DdataDest,p_DdataSrc
+    integer, dimension(:), pointer :: p_KcolPrim, p_KldPrim, p_KcolDual, p_KldDual
+    real(DP) :: dscalePrim, dscaleDual
+
+    ! DEBUG!!!
+    !call sptivec_setConstant(rfineVector,1.0_DP)
+
+    ! We have to multiply with the embedding matrices.
+    ! The primal vectors have to be multiplied with E, the dual with E^T.
+    ! If bdualToPrimal=true, the primal have to be multiplied with E^T and
+    ! the dual with E.
+
+    ! Get the matrix data arrays.
+    call lsyssc_getbase_double (rmatrixPrim,p_DaPrim)
+    call lsyssc_getbase_double (rmatrixDual,p_DaDual)
+
+    call lsyssc_getbase_Kcol (rmatrixPrim,p_KcolPrim)
+    call lsyssc_getbase_Kld (rmatrixPrim,p_KldPrim)
+
+    call lsyssc_getbase_Kcol (rmatrixDual,p_KcolDual)
+    call lsyssc_getbase_Kld (rmatrixDual,p_KldDual)
+
+    ! Allocate temp memory
+    call sptivec_createAccessPool (rx,raccessPool,&
+        2*max(p_KldPrim(3)-p_KldPrim(2),p_KldDual(3)-p_KldDual(3)))
+    
+    dscalePrim = rmatrixPrim%dscaleFactor
+    dscaleDual = rmatrixDual%dscaleFactor
+    
+    ! Scale the destination.
+    call sptivec_scaleVector (ry,dcy)
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rtempVector,p_DdataDest)
+    
+    ! Apply the multiplication.
+    ! The rows in the matrix correspond to the time fine mesh, the columns
+    ! to the time coarse mesh.
+    do irow = 1,rmatrixPrim%NEQ
+    
+      ! Get the destination
+      call sptivec_getTimestepData(ry,irow,rtempVector)
+      
+      select case (rphysics%cequation)
+      case (0,2)
+        ! Heat equation
+
+        if (iand(cprimdual,1) .ne. 0) then
+          ! Primal space: y,xi
+          do icol = p_KldPrim(irow),p_KldPrim(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Now, rx is the time vector at timestep icol. Weighted multiplication
+            ! into rtempVecFine for y and xi.
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(1),rtempVector%RvectorBlock(1),&
+                dscalePrim*p_DaPrim(icol)*dcx,1.0_DP)
+                
+          end do
+        end if
+
+        if (iand(cprimdual,2) .ne. 0) then        
+          ! Dual space: lambda/p
+          do icol = p_KldDual(irow),p_KldDual(irow+1)-1
+          
+            ! Try to get the vector from the vector pool. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Now, rx is the time vector at timestep icol. Weighted multiplication
+            ! into rtempVecFine for y and xi.
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(2),rtempVector%RvectorBlock(2),&
+                dscaleDual*p_DaDual(icol)*dcx,1.0_DP)
+                
+          end do
+        end if
+        
+      case (1)
+        ! Stokes equation
+
+        if (iand(cprimdual,1) .ne. 0) then
+          ! Primal space: y,xi
+          do icol = p_KldPrim(irow),p_KldPrim(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataDest)
+            
+            ! Now, rx is the time vector at timestep icol. Weighted multiplication
+            ! into rtempVecFine for y and xi.
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(1),rtempVector%RvectorBlock(1),&
+                dscalePrim*p_DaPrim(icol)*dcx,1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(2),rtempVector%RvectorBlock(2),&
+                dscalePrim*p_DaPrim(icol)*dcx,1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(6),rtempVector%RvectorBlock(6),&
+                dscalePrim*p_DaPrim(icol)* dcx,1.0_DP)
+                
+          end do
+        end if
+        
+        if (iand(cprimdual,2) .ne. 0) then
+          ! Dual space: lambda/p
+          do icol = p_KldDual(irow),p_KldDual(irow+1)-1
+          
+            ! Try to get the vector from the vector pool. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataDest)
+            
+            ! Now, rx is the time vector at timestep icol. Weighted multiplication
+            ! into rtempVecFine for y and xi.
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(4),rtempVector%RvectorBlock(4),&
+                dscaleDual*p_DaDual(icol)*dcx,1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(5),rtempVector%RvectorBlock(5),&
+                dscaleDual*p_DaDual(icol)*dcx,1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(3),rtempVector%RvectorBlock(3),&
+                dscaleDual*p_DaDual(icol)*dcx,1.0_DP)
+                
+          end do
+        end if
+
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
+      end select
+      
+      ! Vector finished.
+      call sptivec_setTimestepData (ry, irow, rtempVector)
+
+    end do
+    
+    ! Release the buffer.
+    call sptivec_releaseAccessPool(raccessPool)
+    
+    ! DEBUG!!!
+    !call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
+    !    rtempVecCoarse)
+    !call sys_halt()
+        
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptipr_timeBackwardSolve (rmatrixPrim,rmatrixDual,cprimdual,rphysics,ry,rtempVector)
+  
+!<description>
+  ! Performs a backward solve to get $ry(new) = A^{-1} ry$.
+  ! Only elements on the upper diagonal of the matrix are respected.
+!</description>
+
+!<input>
+  ! Matrix with weights in time for the primal space.
+  type(t_matrixScalar), intent(in) :: rmatrixPrim
+
+  ! Matrix with weights in time for the dual space.
+  type(t_matrixScalar), intent(in) :: rmatrixDual
+  
+  ! Underlying physics of the vectors
+  type(t_physics), intent(in) :: rphysics
+  
+  ! Determins whether to solve for the primal and/or dual part.
+  ! =1: Solve for primal part.
+  ! =2: Solve for dual part.
+  ! =3: Solve for both, primal and dual part.
+  integer, intent(in) :: cprimdual
+!</input>
+
+!<inputoutput>
+  ! Temporary vector.
+  type(t_vectorBlock), intent(INOUT) :: rtempVector
+!</inputoutput>
+
+!<output>
+  ! Source and destination vector.
+  type(t_spacetimeVector), intent(INOUT) :: ry
+!</output>
+
+!</subroutine>
+
+    ! Local variables
+    type(t_spaceTimeVectorAccess) :: raccessPool
+    type(t_vectorBlock), pointer :: p_rx
+    integer :: irow, icol
+    real(DP), dimension(:), pointer :: p_DaPrim,p_DaDual,p_DdataDest,p_DdataSrc
+    integer, dimension(:), pointer :: p_KcolPrim, p_KldPrim, p_KcolDual, p_KldDual
+    integer, dimension(:), pointer :: p_KdiagonalPrim, p_KdiagonalDual
+    real(DP) :: dscalePrim, dscaleDual
+
+    ! DEBUG!!!
+    !call sptivec_setConstant(rfineVector,1.0_DP)
+
+    ! We have to multiply with the embedding matrices.
+    ! The primal vectors have to be multiplied with E, the dual with E^T.
+    ! If bdualToPrimal=true, the primal have to be multiplied with E^T and
+    ! the dual with E.
+
+    ! Get the matrix data arrays.
+    call lsyssc_getbase_double (rmatrixPrim,p_DaPrim)
+    call lsyssc_getbase_double (rmatrixDual,p_DaDual)
+
+    call lsyssc_getbase_Kcol (rmatrixPrim,p_KcolPrim)
+    call lsyssc_getbase_Kld (rmatrixPrim,p_KldPrim)
+    call lsyssc_getbase_Kdiagonal (rmatrixPrim,p_KdiagonalPrim)
+
+    call lsyssc_getbase_Kcol (rmatrixDual,p_KcolDual)
+    call lsyssc_getbase_Kld (rmatrixDual,p_KldDual)
+    call lsyssc_getbase_Kdiagonal (rmatrixDual,p_KdiagonalDual)
+
+    ! Allocate temp memory
+    call sptivec_createAccessPool (ry,raccessPool,&
+        2*max(p_KldPrim(3)-p_KldPrim(2),p_KldDual(3)-p_KldDual(3)))
+    
+    dscalePrim = rmatrixPrim%dscaleFactor
+    dscaleDual = rmatrixDual%dscaleFactor
+    
+    ! DEBUG!!!
+    call lsysbl_getbase_double (rtempVector,p_DdataDest)
+    
+    ! Apply the multiplication.
+    ! The rows in the matrix correspond to the time fine mesh, the columns
+    ! to the time coarse mesh.
+    do irow = rmatrixPrim%NEQ,1,-1
+    
+      ! Get the source/destination
+      call sptivec_getTimestepData(ry,irow,rtempVector)
+      
+      select case (rphysics%cequation)
+      case (0,2)
+        ! Heat equation
+
+        if (iand(cprimdual,1) .ne. 0) then
+          ! Primal space: y,xi
+          do icol = p_KdiagonalPrim(irow)+1,p_KldPrim(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Subtract
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(1),rtempVector%RvectorBlock(1),&
+                -dscalePrim*p_DaPrim(icol),1.0_DP)
+                
+          end do
+          
+          ! Divide by the diagonal.
+          icol = p_KdiagonalPrim(irow)
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(1),1.0_DP/(dscalePrim*p_DaPrim(icol)))
+        end if
+        
+        if (iand(cprimdual,2) .ne. 0) then
+          ! Dual space: lambda/p
+          do icol = p_KdiagonalDual(irow)+1,p_KldDual(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Subtract
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(2),rtempVector%RvectorBlock(2),&
+                -dscaleDual*p_DaDual(icol),1.0_DP)
+                
+          end do
+          
+          ! Divide by the diagonal.
+          icol = p_KdiagonalDual(irow)
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(2),1.0_DP/(dscaleDual*p_DaDual(icol)))
+        end if
+        
+      case (1)
+        ! Stokes equation
+
+        if (iand(cprimdual,1) .ne. 0) then
+          ! Primal space: y,xi
+          do icol = p_KdiagonalPrim(irow)+1,p_KldPrim(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolPrim(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Subtract
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(1),rtempVector%RvectorBlock(1),&
+                -dscalePrim*p_DaPrim(icol),1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(2),rtempVector%RvectorBlock(2),&
+                -dscalePrim*p_DaPrim(icol),1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(6),rtempVector%RvectorBlock(6),&
+                -dscalePrim*p_DaPrim(icol),1.0_DP)
+                
+          end do
+          
+          ! Divide by the diagonal.
+          icol = p_KdiagonalPrim(irow)
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(1),1.0_DP/(dscalePrim*p_DaPrim(icol)))
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(2),1.0_DP/(dscalePrim*p_DaPrim(icol)))
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(6),1.0_DP/(dscalePrim*p_DaPrim(icol)))
+        end if
+        
+        if (iand(cprimdual,2) .ne. 0) then
+
+          ! Dual space: lambda/p
+          do icol = p_KdiagonalDual(irow)+1,p_KldDual(irow+1)-1
+          
+            ! Get the fine grid vector using the vector pool as buffer. Saves time.
+            call sptivec_getVectorFromPool(raccessPool,p_KcolDual(icol),p_rx)
+            
+            call lsysbl_getbase_double (p_rx,p_DdataSrc)
+            
+            ! Subtract
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(4),rtempVector%RvectorBlock(4),&
+                -dscaleDual*p_DaDual(icol),1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(5),rtempVector%RvectorBlock(5),&
+                -dscaleDual*p_DaDual(icol),1.0_DP)
+            call lsyssc_vectorLinearComb(&
+                p_rx%RvectorBlock(3),rtempVector%RvectorBlock(3),&
+                -dscaleDual*p_DaDual(icol),1.0_DP)
+                
+          end do
+          
+          ! Divide by the diagonal.
+          icol = p_KdiagonalDual(irow)
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(4),1.0_DP/(dscaleDual*p_DaDual(icol)))
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(5),1.0_DP/(dscaleDual*p_DaDual(icol)))
+          call lsyssc_scaleVector(rtempVector%RvectorBlock(3),1.0_DP/(dscaleDual*p_DaDual(icol)))
+        end if
+
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
+      end select
+      
+      ! Vector finished.
+      call sptivec_setTimestepData (ry, irow, rtempVector)
+      call sptivec_invalidateVecInPool (raccessPool,irow)
+
+    end do
+    
+    ! Release the buffer.
+    call sptivec_releaseAccessPool(raccessPool)
+    
+    ! DEBUG!!!
+    !call sptivec_saveToFileSequence (rcoarseVector,"(""./ns/coarse.txt."",I5.5)",.true.,&
+    !    rtempVecCoarse)
+    !call sys_halt()
+        
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
   subroutine sptipr_performRestriction (rprojHier,ilevelfine,rcoarseVector, &
-      rfineVector,rtempVecCoarse,rtempVecFine)
+      rfineVector,rtempVecCoarse,rtempVecFine,&
+      rtempVecSpaceTimeCoarse,rtempVecSpaceTimeFine)
   
 !<description>
   ! Performs a restriction for a given space/time vector (i.e. a projection
@@ -1422,6 +2293,14 @@ contains
   ! Temporary space-vector, specifying the discretisation and vector shape
   ! on the fine grid.
   type(t_vectorBlock), intent(INOUT) :: rtempVecFine
+
+  ! Temporary space-time-vector, specifying the discretisation and vector shape
+  ! on the coarse grid.
+  type(t_spacetimeVector), intent(INOUT) :: rtempVecSpaceTimeCoarse
+
+  ! Temporary space--timevector, specifying the discretisation and vector shape
+  ! on the fine grid.
+  type(t_spacetimeVector), intent(INOUT) :: rtempVecSpaceTimeFine
 !</inputoutput>
 
 !<output>
@@ -1455,14 +2334,14 @@ contains
     call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
-    select case (rprojHier%itimeOrder)
+    select case (rprojHier%ctimeProjection)
     case (0)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2)
+    case (2,3)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
-    case (3)
+    case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
     case default
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
@@ -1494,6 +2373,14 @@ contains
     
     ! DEBUG!!!
     call lsysbl_getbase_double (rtempVecFine,p_DdataFine)
+    
+    select case (rprojHier%ctimeProjection)
+    case (3)
+      ! Apply the embedding since the space of the vector has to be corrected.
+      call sptivec_copyVector (rfineVector,rtempVecSpaceTimeFine)
+      call sptipr_performEmbedding (rprojHier,ilevelFine,.false.,rtempVecSpaceTimeFine, &
+          rfineVector,rtempVecFine)
+    end select
     
     ! Apply the multiplication.
     ! The rows in the matrix correspond to the time fine mesh, the columns
@@ -1589,6 +2476,14 @@ contains
           rtempVecCoarse,rtempVecFineScalar,ispacelevelcoarse,ispacelevelfine)
 
     end do
+
+    select case (rprojHier%ctimeProjection)
+    case (3)
+      ! Apply the reverse embedding.
+      call sptivec_copyVector (rcoarseVector,rtempVecSpaceTimeCoarse)
+      call sptipr_performEmbedding (rprojHier,ilevelFine-1,.true.,rtempVecSpaceTimeCoarse, &
+          rcoarseVector,rtempVecCoarse)
+    end select
     
     ! Release the buffer.
     call sptivec_releaseAccessPool(raccessPool)
@@ -1713,14 +2608,14 @@ contains
     call lsysbl_createScalarFromVec (rtempVecFine,rtempVecFineScalar)
     
     ! Allocate temp memory
-    select case (rprojHier%itimeOrder)
+    select case (rprojHier%ctimeProjection)
     case (0)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
     case (1)
       call sptivec_createAccessPool (rfineVector,raccessPool,3)
-    case (2)
+    case (2,3)
       call sptivec_createAccessPool (rfineVector,raccessPool,7)
-    case (3)
+    case (4)
       call sptivec_createAccessPool (rfineVector,raccessPool,10)
     case default
       call sptivec_createAccessPool (rfineVector,raccessPool,10)

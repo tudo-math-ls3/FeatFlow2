@@ -126,27 +126,51 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
           
           case (2)
             ! 2.) -> BC in spacetimebc.f90 beachten!
-            Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case (3)
             ! 3.) -> BC in spacetimebc.f90 beachten!
-            Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case (4)
             ! 4.) -> BC in spacetimebc.f90 beachten!
-            Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case (5)
             ! 5.) -> BC in spacetimebc.f90 beachten!
-            Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case (6)
             ! 6.) -> BC in spacetimebc.f90 beachten!
-            Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case default
             call output_line ("Problem not supported.")
@@ -164,27 +188,51 @@ contains
           case (0)
           case (1)
             ! 1.)
-            Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
             
           case (2)
             ! 2.) 
-            Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
 
           case (3)
             ! 3.) 
-            Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
             
           case (4)
             ! 4.) 
-            Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
             
           case (5)
             ! 5.) 
-            Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
             
           case (6)
             ! 6.) 
-            Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
             
           case default
             call output_line ("Problem not supported.")

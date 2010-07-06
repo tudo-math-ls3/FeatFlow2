@@ -695,27 +695,51 @@ contains
         case (0)
         case (1)
           ! 1.)
-          Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
         
         case (2)
           ! 2.)
-          Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
 
         case (3)
           ! 3.)
-          Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
 
         case (4)
           ! 4.)
-          Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
 
         case (5)
           ! 5.)
-          Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
 
         case (6)
           ! 6.)
-          Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
 
         case default
           call output_line ("Problem not supported.")
@@ -744,33 +768,63 @@ contains
       case (0)
       case (1)
         ! 1.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ1(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ1(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
       
       case (2)  
         ! 2.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ2(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ2(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
 
       case (3)  
         ! 3.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ3(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ3(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
               
       case (4)
         ! 4.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ4(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
 
       case (5)
         ! 5.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ5(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ5(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
 
       case (6)
         ! 6.)
-        Dcoefficients(1,:,:) = &
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ6(Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
             - (fct_heatZ6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
 
       case default
         call output_line ("Problem not supported.")
