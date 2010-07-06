@@ -1,17 +1,74 @@
+########
 [OUTPUT]
-SOUTPUTfILE = ""
+########
 
+soutputfile = ""
+
+#############
 [PARAMTRIANG]
+#############
+
 sboundary = "./data/area51_nonstoptcontrol/QUAD.prm"
 smesh = "./data/area51_nonstoptcontrol/QUAD.tri"
 
+#########
 [PHYSICS]
+#########
+
 # 0 = 2D heat equation
 # 1 = 2D Stokes
 # 2 = 1D heat equation
 cequation = $PHYSICS_CEQUATION
 
-# creferenceProblem = 4
+# Type of reference problem. Depending on cequation.
+# creferenceproblem = 0: no chosen reference problem.
+#
+# cequation = 0/2: (1D/2D heat equation)
+#
+#   creferenceproblem = 1:
+#      y = t^2   x1 
+#
+#   creferenceproblem = 2:
+#      y = t^2 (1-t)^2   x1 
+#      l = a t (1-t) x1
+#
+#   creferenceproblem = 3:
+#      y = t^2 (1-t)^2   x1 
+#      l = a t (1-t)^2   x1
+#
+#   creferenceproblem = 4:
+#      y = t^2 (1-t)^2   x1 
+#
+#   creferenceproblem = 5:
+#      y = t   x1 
+#      l = (1-t) x1
+#
+#   creferenceproblem = 6:
+#      y = t^2   x1 
+#      l = (1-t)^2 x1
+#
+# cequation = 1: (2D Stokes equation)
+#
+#   creferenceproblem = 1:
+#      y = t^2  ( x1 , -x2 , 0)
+#
+#   creferenceproblem = 2:
+#      y = t^2 (1-t)^3  ( x2(1-x2) , 0 , 0 )
+#
+#   creferenceproblem = 3:
+#      y = t^2 (x1^2 x2 , -x1 x2^2 , 0)
+#
+#   creferenceproblem = 4:
+#      y = t^2 (1-t)^2  (x1^3 x2^2 , -x1^2 x2^3 , 0)
+#
+#   creferenceproblem = 5:
+#      y = t  ( x2(1-x2) , 0 , 0 )
+#   No coupling between primal and dual!
+#   EXAMPLE DOES NOT WORK, NOT DIVERGENCE FREE WHEN BEING TIME DEPENDENT!
+#
+#   creferenceproblem = 6:
+#      y = t ( x2(1-x2) , 0 , 0 )
+#      lambda = (1-t) ( x2(1-x2) , 0 , 0 )
 creferenceProblem = $PHYSICS_CREFERENCEPROBLEM
 
 dviscosity = 1.0
@@ -25,42 +82,119 @@ dcoupleTermCond = 1.0
 iwriteUCD = $POSTPROC_IWRITEUCD
 icalcerror = 1
 
+##########################
 [SPACETIME-DISCRETISATION]
+##########################
+
+# Type of FE space.
+# cfespace: -1=automatic.
+# =1: 1st order (Q1, Q1~/Q0)
+# =2: 2nd order (Q2, Q2/QP1)
 cfespace = -1
+
 nspacelevels = 1
 ntimelevels = 2
 nminlevelspace = 4
+nminminleveltime = 1
 nmaxminleveltime = 9
 dtheta = $SPACETIMEDISCRETISATION_DTHETA
 
+# Type of the theta scheme.
+# =0: Standard theta scheme for both, primal and dual.
+# =1: modified theta scheme, dual solutions located
+#     inbetween primal solutions in time.
+ithetaschemetype = 1
+
+########################
 [SPACETIME-LINEARSOLVER]
-csolverType = -1    ! -1=automatic
+########################
+
+csolverType = -1    # -1=automatic
 nsmoothingSteps = 4
 nmaxiterations = 1000
+
+# Type of smoother.
+# =0: Block-Jacobi
+# =1: Block-FBGS, half coupled (forward-backward solver)
+# =2: Block-FBGS, fully coupled
+
 ismoother = $SPACETIMELINEARSOLVER_ISMOOTHER
+
+# Type of coarse grid solver.
+# =0: Block-Jacobi
+# =1: Block-FBGS, half coupled (forward-backward solver)
+# =2: Block-FBGS, fully coupled (forward-backward optimiser)
 icoarsegridsolver = $SPACETIMELINEARSOLVER_ICOARSEGRIDSOLVER
+
+# Type of projection in time.
+# -1: automatic
+# =0: constant prolongation/restriction
+# =1: linear prolongation/restriction. primal+dual solutions located
+#     at the endpoints of the time interval.
+# =2: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. No time negotiation, so
+#     the restriction uses a constant interpolation of the primal
+#     space to synchronise in time with the dual space.
+# =3: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. Full linear restriction
+#     with interpolation in time.
+# =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
+#     extrapolation at the time endpoints. Solutions located at the
+#     time endpoints. (not completely implemented)
+# =5: Piecewise linear with larger stencil. Solutions located at the
+#     time endpoints. (not completely implemented)
 iorderTimeProlRest = -1
 depsrel = 1E-10
 depsabs = 1E-17
 
-ddamping = 1.0
-drelax = 1.0
-ifullcouplingFBGS2 = 1
+# ONLY MULTIGRID: Specifies the type of the adaptive coarse grid correction used.
+# =0: deactivated.
+# =1: adaptive coarse grid correction by energy minimisation.
+iadcgcorr = 0
 
+# Damping of the coarse grid correction
 ddampingCoarseGridCorrection = $SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION
 
+dadcgcorrMin = -10.0
+dadcgcorrMax = 10.0
+
+# For 1-level solvers:
+
+ddamping = 1.0
+drelax = 1.0
+
+# Use full (forward+backward) coupling in FBGS2.
+# =0: Use only one-way coupling to previous or next timestep
+# =1: Use two-way coupling to previous and next timestep
+ifullcouplingFBGS2 = 1
+
+############################
 [SPACETIME-COARSEGRIDSOLVER]
+############################
+
 ioutputlevel = $SPACETIMECOARSEGRIDSOLVER_IOUTPUTLEVEL
 depsrel = 1E-10
 depsabs = 1E-17
 
 ddamping = 0.5
 drelax = 1.0
+
+# Use full (forward+backward) coupling in FBGS2.
+# =0: Use only one-way coupling to previous or next timestep
+# =1: Use two-way coupling to previous and next timestep
+
 ifullcouplingFBGS2 = $SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2
 
+####################
 [SPACETIME-SMOOTHER]
+####################
+
 ioutputlevel = $SPACETIMESMOOTHER_IOUTPUTLEVEL
 
 ddamping = $SPACETIMESMOOTHER_DDAMPING
 drelax = 1.0
+
+# Use full (forward+backward) coupling in FBGS2.
+# =0: Use only one-way coupling to previous or next timestep
+# =1: Use two-way coupling to previous and next timestep
 ifullcouplingFBGS2 = $SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2
