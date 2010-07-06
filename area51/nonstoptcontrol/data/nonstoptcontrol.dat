@@ -18,7 +18,7 @@ smesh = "./pre/QUAD.tri"
 # 0 = 2D heat equation
 # 1 = 2D Stokes
 # 2 = 1D heat equation
-cequation = 2
+cequation = 0
 
 # Type of reference problem. Depending on cequation.
 # creferenceproblem = 0: no chosen reference problem.
@@ -70,11 +70,11 @@ cequation = 2
 #      y = t ( x2(1-x2) , 0 , 0 )
 #      lambda = (1-t) ( x2(1-x2) , 0 , 0 )
 
-creferenceProblem = 5
+creferenceProblem = 4
 
 dviscosity = 1.0
 doptControlAlpha = 1.0
-doptControlGamma = 0.0
+doptControlGamma = 1000.0
 dcouplePrimalToDual = 1.0
 dcoupleDualToPrimal = 1.0
 dcoupleTermCond = 1.0
@@ -95,10 +95,17 @@ icalcerror = 1
 cfespace = -1
 
 nspacelevels = 1
-ntimelevels = 1
+ntimelevels = 2
 nminlevelspace = 2
+nminminleveltime = 1
 nmaxminleveltime = 7
-dtheta = 0.5
+dtheta = 1.0
+
+# Type of the theta scheme.
+# =0: Standard theta scheme for both, primal and dual.
+# =1: modified theta scheme, dual solutions located
+#     inbetween primal solutions in time.
+ithetaschemetype = 1
 
 ########################
 [SPACETIME-LINEARSOLVER]
@@ -113,7 +120,7 @@ nmaxiterations = 1000
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
 
-ismoother = 1
+ismoother = 0
 
 # Type of coarse grid solver.
 # =0: Block-Jacobi
@@ -127,7 +134,7 @@ icoarsegridsolver = 2
 # =0: constant prolongation/restriction
 # =1: linear prolongation/restriction. primal+dual solutions located
 #     at the endpoints of the time interval.
-# =2: linear prolonggation/restriction, primal+dual solutions located
+# =2: linear prolongation/restriction, primal+dual solutions located
 #     according to the 1-step theta scheme. No time negotiation, so
 #     the restriction uses a constant interpolation of the primal
 #     space to synchronise in time with the dual space.
@@ -140,7 +147,7 @@ icoarsegridsolver = 2
 # =5: Piecewise linear with larger stencil. Solutions located at the
 #     time endpoints. (not completely implemented)
 
-itypeProjection = 2
+itypeProjection = -1
 
 depsrel = 1E-10
 depsabs = 1E-17
@@ -192,8 +199,8 @@ ifullcouplingFBGS2 = 1
 
 ioutputlevel = 0
 
-ddamping = 0.7
-drelax = 0.8
+ddamping = 0.5
+drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS2.
 # =0: Use only one-way coupling to previous or next timestep

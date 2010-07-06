@@ -584,7 +584,7 @@ contains
     type(t_maindata) :: rparams
     type(t_collection) :: rcollection
     integer :: nspacelevels,ntimelevels,nminlevelspace,nminleveltime,ilev,ispacelev,ntstepscoarse
-    integer :: nmaxminleveltime,csolverStatus
+    integer :: nmaxminleveltime,csolverStatus,nminminleveltime
     real(DP) :: dtheta
     type(t_spaceTimeVector) :: rrhs, rsolution, rtemp
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
@@ -594,6 +594,7 @@ contains
     type(t_triangulation) :: rtria1D
     integer :: iwriteUCD, cfespace, icalcError
     character(LEN=SYS_STRLEN) :: smesh, sboundary
+    integer :: ithetaschemetype
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
@@ -605,8 +606,12 @@ contains
         "nminlevelspace", nminlevelspace)
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "nmaxminleveltime", nmaxminleveltime)
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "nminminleveltime", nminminleveltime)
     call parlst_getvalue_double (rparlist, "SPACETIME-DISCRETISATION", &
         "dtheta", dtheta)
+    call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
+        "ithetaschemetype", ithetaschemetype)
         
     call parlst_getvalue_string (rparlist, "PARAMTRIANG", &
         "sboundary", sboundary,bdequote=.true.)    
@@ -645,7 +650,7 @@ contains
       case (2)
 
         ! 1D mesh
-        call tria_createRawTria1D(rtria1D, 0.0_DP, 1.0_DP, 1+2**(nminlevelspace-1))
+        call tria_createRawTria1D(rtria1D, 0.0_DP, 1.0_DP, 2**(nminlevelspace-1))
         call tria_initStandardMeshFromRaw (rtria1D)
         call mshh_initHierarchy (rparams%rmeshHierarchy,rtria1D,0,nspacelevels,&
             cdupFlag=TR_SHARE_NONE)
@@ -670,6 +675,9 @@ contains
 
       ! Time coarse mesh and time hierarchy
       call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
+      ! The ithetaschemetype flag is saved as tag.
+      rparams%rtimecoarse%itag = ithetaschemetype
+
       call tmsh_createHierarchy (rparams%rtimecoarse,rparams%rtimeHierarchy,&
           0,ntimelevels)
       

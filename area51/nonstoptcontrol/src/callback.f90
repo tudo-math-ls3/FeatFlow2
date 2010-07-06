@@ -664,11 +664,12 @@ contains
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
-    integer :: icomponent,creferenceProblem
+    integer :: icomponent,creferenceProblem,ithetaschemetype
     real(DP) :: dtime,dalpha,dtstep,dgamma,dtheta
     
     icomponent = rcollection%IquickAccess(1)
     creferenceProblem = rcollection%IquickAccess(2)
+    ithetaschemetype = rcollection%IquickAccess(3)
     dtime = rcollection%DquickAccess(1)
     dtstep = rcollection%DquickAccess(2)
     dalpha = rcollection%DquickAccess(3)
@@ -831,17 +832,29 @@ contains
         call sys_halt()
       end select
       
-      ! Dual solution lives in the interval midpoints.
-      ! Dual RHS lives in the endpoints of the interval!
-      ! dtime = 1.0 is ok!
-      if (dtime .eq. 1.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
-      end if
+      if (ithetaschemetype .eq. 1) then
+        ! Dual solution lives in the interval midpoints.
+        ! Dual RHS lives in the endpoints of the interval!
+        ! dtime = 1.0 is ok!
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+        end if
 
-      if (dtime .eq. 0.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        end if
+      else
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+        end if
+
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = 0.0_DP
+        end if
       end if
     case default
       ! Should not happen
@@ -870,11 +883,12 @@ contains
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
-    integer :: icomponent,creferenceProblem
+    integer :: icomponent,creferenceProblem,ithetaschemetype
     real(DP) :: dtime,dalpha,dtstep,dtheta,dgamma
     
     icomponent = rcollection%IquickAccess(1)
     creferenceProblem = rcollection%IquickAccess(2)
+    ithetaschemetype = rcollection%IquickAccess(3)
     dtime = rcollection%DquickAccess(1)
     dtstep = rcollection%DquickAccess(2)
     dalpha = rcollection%DquickAccess(3)
@@ -966,14 +980,26 @@ contains
         call sys_halt()
       end select
 
-      if (dtime .eq. 1.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
-      end if
+      if (ithetaschemetype .eq. 1) then
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+        end if
 
-      if (dtime .eq. 0.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        end if
+      else
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + 1.0_DP*dgamma/dtstep)
+        end if
+
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = 0.0_DP
+        end if
       end if
 
     case (5)
@@ -1015,14 +1041,26 @@ contains
         call sys_halt()
       end select
 
-      if (dtime .eq. 1.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
-      end if
+      if (ithetaschemetype .eq. 1) then
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+        end if
 
-      if (dtime .eq. 0.0_DP) then
-        !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-        Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+        end if
+      else
+        if (dtime .eq. 1.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+        end if
+
+        if (dtime .eq. 0.0_DP) then
+          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+          Dcoefficients(1,:,:) = 0.0_DP
+        end if
       end if
 
     case default

@@ -530,10 +530,13 @@ contains
       
       ! CN -> Dual is at different time!
       call tdiscr_getTimestep(rvector%p_rtimeDiscr,istep-1,dtimePrimal,dtstep)
-      if (istep .eq. 1) then
-        dtimeDual = dtimePrimal
-      else
-        dtimeDual = dtimePrimal - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+      dtimeDual = dtimePrimal
+
+      ! Modified time scheme?
+      if (rvector%p_rtimeDiscr%itag .eq. 1) then
+        if (istep .ne. 1) then
+          dtimeDual = dtimePrimal - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
+        end if
       end if
       
       select case (rphysics%cequation)

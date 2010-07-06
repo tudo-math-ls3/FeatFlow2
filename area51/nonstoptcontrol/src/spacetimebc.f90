@@ -66,7 +66,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine spop_getPrimalDualTime (rtimeDiscr,istep,dprimalTime,ddualTime)
+  subroutine spop_getPrimalDualTime (rtimeDiscr,istep,dtimePrimal,dtimeDual)
 
   ! Calculates the primal/dual time corresponding to timestep istep.
   
@@ -77,10 +77,10 @@ contains
   integer, intent(in) :: istep
 
   ! Corresponding time in the primal solution
-  real(DP), intent(out) :: dprimalTime
+  real(DP), intent(out) :: dtimePrimal
 
   ! Corresponding time in the dual solution
-  real(DP), intent(out) :: ddualTime
+  real(DP), intent(out) :: dtimeDual
       
     ! local variables
     real(DP) :: dtimeend,dtstep,dtimestart
@@ -90,13 +90,14 @@ contains
       call tdiscr_getTimestep(rtimediscr,istep-1,dtimeend,dtstep,dtimestart)
       
       ! The primal is always the endpoint
-      dprimalTime = dtimeend
+      dtimePrimal = dtimeend
+      dtimeDual = dtimeend
       
-      ! The dual is shifted by dtheta -- except for in the beginning.
-      if (istep .eq. 1) then
-        ddualTime = dtimeEnd
-      else
-        ddualTime = dtimeend*rtimeDiscr%dtheta + dtimestart*(1.0_DP-rtimeDiscr%dtheta)
+      if (rtimediscr%itag .eq. 1) then
+        ! The dual is shifted by dtheta -- except for in the beginning.
+        if (istep .ne. 1) then
+          dtimeDual = dtimeend*rtimeDiscr%dtheta + dtimestart*(1.0_DP-rtimeDiscr%dtheta)
+        end if
       end if
       
     end select
@@ -347,35 +348,35 @@ contains
   type(t_discreteBC), intent(inout) :: rdiscreteBC
 
     ! local variables  
-    real(DP) :: dprimalTime,ddualTime
+    real(DP) :: dtimePrimal,dtimeDual
 
-    call spop_getPrimalDualTime (rbc%p_rtimeDiscr,istep,dprimalTime,ddualTime)
+    call spop_getPrimalDualTime (rbc%p_rtimeDiscr,istep,dtimePrimal,dtimeDual)
 
     select case (rbc%p_rphysics%cequation)
     case (0,2)
       ! Heat equation
       select case (ctype)
       case (SPOP_DEFECT,SPOP_SOLUTION)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 2, rdiscreteBC)
       case (SPOP_RHS)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 2, rdiscreteBC)
       end select
     
     case (1)
       ! Stokes equation
       select case (ctype)
       case (SPOP_DEFECT,SPOP_SOLUTION)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 2, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 4, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 5, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 5, rdiscreteBC)
       case (SPOP_RHS)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, ddualTime, 2, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 4, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dprimalTime, 5, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimeDual, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 5, rdiscreteBC)
       end select
 
     end select

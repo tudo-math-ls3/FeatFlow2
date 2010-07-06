@@ -37,7 +37,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine strhs_assembleSpaceRHS (rphysics,dtime,dtstep,dtheta,icomponent,rrhs)
+  subroutine strhs_assembleSpaceRHS (rphysics,dtime,dtstep,ithetaschemetype,dtheta,icomponent,rrhs)
   
   ! Assembles one component of the RHS at a special point in time.
 
@@ -49,6 +49,9 @@ contains
   
   ! Timestep
   real(DP), intent(in) :: dtstep
+
+  ! type of the theta scheme
+  integer, intent(in) :: ithetaschemetype
 
   ! Theta scheme identifier
   real(DP), intent(in) :: dtheta
@@ -67,6 +70,7 @@ contains
     ! DquickAccess(1) = current time
     rcollection%IquickAccess(1) = icomponent
     rcollection%IquickAccess(2) = rphysics%creferenceProblem
+    rcollection%IquickAccess(3) = ithetaschemetype
     rcollection%DquickAccess(1) = dtime
     rcollection%DquickAccess(2) = dtstep
     rcollection%DquickAccess(3) = rphysics%doptControlAlpha
@@ -147,27 +151,34 @@ contains
         ! Get the time of the primal and dual equation
         call tdiscr_getTimestep(rrhs%p_rtimeDiscr,istep-1,&
             dtimeend,dtstep,dtimestart)
-            
-        ! Dual rhs lives in the endpoints of the time interval.
-        ! Primal equation lives 'inbetween'.
-        dtimeprimal = dtheta*dtimeend + (1-dtheta)*dtimestart
-        dtimedual = dtimeend
+        
+        if (rrhs%p_rtimeDiscr%itag .eq. 1) then
+          ! Dual rhs lives in the endpoints of the time interval.
+          ! Primal equation lives 'inbetween'.
+          dtimeprimal = dtheta*dtimeend + (1-dtheta)*dtimestart
+          dtimedual = dtimeend
+        else
+          dtimeprimal = dtimeend
+          dtimedual = dtimeend
+        end if
     
         call lsysbl_clearVector (rrhsSpace)
     
         select case (rphysics%cequation)
         case (0,2)
           ! Heat equation, one primal and one dual component.
-          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,dtheta,1,&
-              rrhsSpace%RvectorBlock(1))
+          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,1,rrhsSpace%RvectorBlock(1))
 
-          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,dtheta,2,&
-              rrhsSpace%RvectorBlock(2))
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,2,rrhsSpace%RvectorBlock(2))
               
-          if (istep .eq. 1) then
-            ! Scale the RHS according to the timestep scheme.
-            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
-                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+          if (rrhs%p_rtimeDiscr%itag .eq. 1) then
+            if (istep .eq. 1) then
+              ! Scale the RHS according to the timestep scheme.
+              call lsyssc_scaleVector (rrhsSpace%RvectorBlock(2),&
+                  1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+            end if
           end if
 
           ! DEBUG!!!
@@ -175,24 +186,26 @@ contains
         
         case (1)
           ! Stokes equation.
-          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,dtheta,1,&
-              rrhsSpace%RvectorBlock(1))
+          call strhs_assembleSpaceRHS (rphysics,dtimeprimal,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,1,rrhsSpace%RvectorBlock(1))
 
-          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,dtheta,2,&
-              rrhsSpace%RvectorBlock(2))
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,2,rrhsSpace%RvectorBlock(2))
 
-          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,dtheta,4,&
-              rrhsSpace%RvectorBlock(4))
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,4,rrhsSpace%RvectorBlock(4))
 
-          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,dtheta,5,&
-              rrhsSpace%RvectorBlock(5))
+          call strhs_assembleSpaceRHS (rphysics,dtimedual,dtstep,&
+              rrhs%p_rtimeDiscr%itag,dtheta,5,rrhsSpace%RvectorBlock(5))
 
-          if (istep .eq. 1) then
-            ! Scale the RHS according to the timestep scheme.
-            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
-                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
-            call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
-                1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+          if (rrhs%p_rtimeDiscr%itag .eq. 1) then
+            if (istep .eq. 1) then
+              ! Scale the RHS according to the timestep scheme.
+              call lsyssc_scaleVector (rrhsSpace%RvectorBlock(4),&
+                  1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+              call lsyssc_scaleVector (rrhsSpace%RvectorBlock(5),&
+                  1.0_DP-rrhs%p_rtimeDiscr%dtheta)
+            end if
           end if
 
         case default
