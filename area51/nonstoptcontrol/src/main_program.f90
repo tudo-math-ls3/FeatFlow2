@@ -627,7 +627,7 @@ contains
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "cfespace", cfespace, -1)
 
-    do nminleveltime = 1,nmaxminleveltime
+    do nminleveltime = nminminleveltime,nmaxminleveltime
 
       call output_separator (OU_SEP_MINUS)
       call output_line ("Level "//trim(sys_siL(nminleveltime+ntimelevels-1,10)))
