@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="9.10" ProjectIdGuid="{766450C9-5F0F-4692-AEA5-D8D1A18A24E3}">
+	<Platforms>
+		<Platform Name="Win32"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" CommandArguments="#data\cc2d.dat" WorkingDirectory="$(ProjectDir)\..">
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" StandardWarnings="standardWarningsF95" WarnDeclarations="true" WarnUnusedVariables="true" WarnIgnoreLOC="true" WarnTruncateSource="true" WarnInterfaces="true" InitLocalVarToNAN="true" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" Traceback="true" BoundsCheck="true" UninitializedVariablesCheck="true" ArgTempCreatedCheck="true" RuntimeLibrary="rtSingleThreadedDebug" CompileOnly="true"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OUTDIR)/winheatcond.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateDebugInformation="true" ProgramDatabaseFile="$(OUTDIR)/winheatcond.pdb" SubSystem="subSystemConsole"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFPreLinkEventTool"/></Configuration>
+		<Configuration Name="Release|Win32" DeleteExtensionsOnClean="*.obj;*.mod;*.pdb;*.asm;*.map;*.dyn;*.dpi;*.tmp;*.log;*.ilk;*.exe;$(TargetPath)" WorkingDirectory="$(ProjectDir)\..">
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true" HeaderFileName="$(InputName).h" TypeLibraryName="$(IntDir)/$(InputName).tlb"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFFortranCompilerTool" SwitchesHaveChanged="true" SuppressStartupBanner="true" InlineFunctionExpansion="expandAnySuitable" AdditionalIncludeDirectories="$(ProjectDir)/../src/geometry;$(ProjectDir)/../src/gridadapt;$(ProjectDir)/../src/triangulation;$(ProjectDir)/../src/parametrization;$(ProjectDir)/../src/discr_linear;$(ProjectDir)/../src/solvers;$(ProjectDir)/../include;$(ProjectDir)/../src/stationary;$(ProjectDir)/../src/nonstationary;$(ProjectDir)/../src/misc;$(ProjectDir)/../src/discr_nonlinear;$(ProjectDir)/../src/optimization;$(ProjectDir)/../../../libraries/kernel/winlibkernel/$(OUTDIR)" CallingConvention="callConventionCRef" ModulePath="$(INTDIR)/" ObjectFile="$(INTDIR)/" RuntimeChecks="rtChecksNone" CompileOnly="true"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFLinkerTool" SwitchesHaveChanged="true" MustRebuild="true" OutputFile="$(OUTDIR)/winheatcond.exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" AdditionalLibraryDirectories="$(ProjectDir)\.." SubSystem="subSystemConsole"/>
+				<Tool Name="VFResourceCompilerTool" ResourceOutputFileName="$(IntDir)/$(InputName).res"/>
+				<Tool Name="VFPreLinkEventTool"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<Filter Name="f90">
+		<File RelativePath="..\src\chemotaxis.f90"/>
+		<File RelativePath="..\src\chemotaxis_callback.f90"/>
+		<File RelativePath="..\src\chemotaxis_pattern_FCT.f90"/></Filter></Filter>
+		<Filter Name="Header Files" Filter="fi;fd"/>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		<File RelativePath="..\data\chemotaxis.dat"/>
+		<File RelativePath="toAdd.txt"/>
+		<File RelativePath="usefulCode.txt"/></Filter></Files>
+	<Globals/></VisualStudioProject>

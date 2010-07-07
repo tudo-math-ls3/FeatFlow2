@@ -1,0 +1,1 @@
+This is a (defect-correction TVD) fundament version for our blow-up in chemotaxis in 2D case. 07.07.2010

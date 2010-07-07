@@ -1,0 +1,6 @@
+grep Rel_chemo_diff $1 | awk '{print $3}' > m_file1/chemoRel_$1
+grep Rel_cells_diff $1 | awk '{print $3}' > m_file1/cellsRel_$1
+grep Diff_L2_chemo $1 | awk '{print $3}' > m_file1/chemoDiff_$1
+grep Diff_L2_cells $1 | awk '{print $3}' > m_file1/cellsDiff_$1
+grep Diff_H1_chemo $1 | awk '{print $3}' > m_file1/chemoGrad_$1
+grep Diff_H1_cells $1 | awk '{print $3}' > m_file1/cellsGrad_$1
