@@ -1,0 +1,1 @@
+This is a 3D-fundament (defect-corrected TVD) version for our blow-up for chemotaxis model, 3D case. 07.07.2010

@@ -1,0 +1,200 @@
+# This is the data file for the scalar convection-diffusion-reaction
+# equation of the problem CODIRE.
+#
+#----------------------------------------------------------------------------
+# General section
+
+[GENERAL]
+
+# Level where to solve. >= NLMIN !
+# In the case of 3D_blow-up, we actually refine NLMAX-1 times.
+# E.g. setting NLMAX = 4 actually leads to a 3 times refinement.
+# Since we calculate on an already once refined mesh, e.g. our 
+# initial mesh looks like this
+#                                  _________
+#                                 /___/____/  |
+#                                |       |       | /|
+#                                |____|____|/ |
+#                                |       |       |  |
+#                                |____|____|_/
+#
+#
+
+# Determines the level of informatio output
+# REMARK : This does not influence the ouput which is piped into some files
+# =0 no additional output is printed to the screen
+# =1 infos at the simulation end are printed
+# =2 infos about some norms are additionally printed out
+# =3 sophisticated infos are printed to the screen (Iteration status ect.)
+INFO_LEVEL = 3
+
+# we eventually reach the refinement level 3 if we set NLMAX=3.
+NLMAX = 5
+# Output level. 
+# =2 export the last solution vectors only
+# =1 export data to gmv files
+# =0 no gmv files
+OUTPUT = 3
+ISTEP_GMV = 2
+
+# Here you can add an additionally prefix to the gmv-files
+# If ALLOW_PREFIX = 1, we expect a prefix
+# If ALLOW_PREFIX = 0, we don't expect a prefix
+ALLOW_PREFIX = 1
+GMV_PREFIX = blowup_
+
+# gmv output folder. this is just needed by chemotaxiscoupld2
+# 0 and nonzero integers alternate the output folder
+# =0 outputfolder ~/gmvcpld/
+# =1 outputfolder ~/gmvcpld2/
+# =3 outputfolder ~/gmv_blowup/
+GMVFOLDER = 0
+
+# If we want to use an exising gmv-file for the IC
+# = 0 we use IC determined by the callback routines (as usual)
+# = 1 we use a gmv-file for IC. This gmv-file must be called
+# 'solution.gmv' and has to be in the data folder as well
+IRESUME = 0
+ISTARTIT = 0
+
+# Setting the initial solution vectors
+# =1 referred to as u_0 = u_reference
+# =0 referred to u_0 to be constant. The const value is set in COEFFICIENTS
+INITSOL = 1
+
+# Whether or not using l2_projection to obtain the ICs or interpolation
+L2PROJ = 1
+
+# Whether or not checking neg. solution values 
+# If =1 as soon as we compute neg. values the sim stops
+checkneg = 0
+
+# Threshold for neg. values
+# Should be set properly to 
+negthres = -0.001
+
+# Tolerance for the defect correction abort criterium
+defectTol = 0.00001
+
+# This determines the filename where to store the steady-state stats
+# !!! The filename is limited to 30 characters !!!
+# default = 'steady_state'
+################################
+#stat_output = bu_2_2_10_1_l4_dt0_1
+stat_output = delete
+#----------------------------------------------------------------------------
+# The 'equation' section configures the different constants in the equation.
+#
+# The equation reads as follows:
+#
+#       d/dt u = D_1 * Laplace u - CHI*grad *(u * grad c) + f 
+#       d/dt c = D_2 * Laplace c - ALPHA*u*c + BETA*u + g
+#
+#       the params a_,b_ refer to the initial condition to u and c
+#       this is only used for the nontest Chemotaxis Pb
+#       e.g.  u_0 = a*dexp(-b*((x-0.5_DP)*(x-0.5_DP)+(y-0.5_DP)*(y-0.5_DP)))
+#               c_0 = a*dexp(-b*((x)*(x)+(y)*(y)))
+
+[COEFFICIENTS]
+
+n=1
+gamma=1
+
+# PHI is beta for this test-set-up
+# e.g. PHI couples the PDE system
+PHI=1.0
+
+r=1.0
+w=1.0
+sigma = 1.0
+chi = 10.0
+d_1 = 1.0
+alpha = 1.0
+beta = 1.0
+d_2 = 1.0
+
+# The following coefficients are only used for the nontest Chemotaxis Pb
+a_cells = 1000.0
+a_chemo = 500.0
+b_cells = 100.0
+b_chemo = 50.0
+
+# The following parameter is used to initialize the cell-concentration to a given mass
+# For the IC ball set-up, the ICs are as followed
+#       u_0 = m , in a ball B_r(0) with origin in zero
+#       u_0 = 0 , sonst
+#       c_0 = 0 , everywhere
+mass = 10
+# we could also configure the constant mass inside the ball e.g. u_0(x)=m_0 for x \in B_r(0)
+# If m_0 = 0, then we set-up u_0 indirect via the mass entry, e.g. m_0 = mass * 3/32 *1/\pi
+# If m_0 /= 0 , then we use m_0 for determine u_0
+m_0 = 2.98415518
+#2.98415518
+# This determines the radius for the former defined IC
+radius = 2.0
+
+# The following stands for the initial sol vector c_0. One expect this vector to approach
+# the stat. Limes-sol c_num ~ c_analy = 1. The sol vector u_0 is automaticly set to 
+# u_0 = 2.0 = u_analy . Else please specify.
+c_0  =  0.0
+ u_0  = 0.0
+
+# The following belongs to the chemotaxiscoupldRHS.f90:
+# If we want to start with the initial reference fct, we're free to 
+# set the scaling params, in order to set
+# e.g. u_0 = SCALE_U * x*(x-1)*y*(y-1)
+SCALE_C = 1.0
+SCALE_U = 2.0
+#----------------------------------------------------------------------------
+# This section configures the time stepping of the heat conduction equation
+
+[TIMESTEPPING]
+
+# Maximum number of time steps.
+# Time iteration stops if #iterations >= niterations or time >= dtimemax.
+ntimesteps = 100
+
+# If != 0 the sim will run at this amount of steps neglecting loop ctrl , e.g. error ctrl
+steps = 0
+
+# Time step size.
+dtstep = 0.1
+
+# Start time
+starttime = 0.0
+
+# maximum iterations for defect correction
+# used for chemotaxis_cherkur_bilf_nonlin
+maxiterationdef = 200
+
+[ERROR]
+
+# the error threshold for steady state
+tol = 0.000001
+
+[NORM]
+
+# Here we choose which norm should be used for the errorcontrol
+# We refer to the definitions in the LIN_ALG kernel. There we find...
+#  ! Sum of the absolute values of entries
+#  integer, parameter, public :: LINALG_NORMSUM    = -1
+#
+# ! Euclidian vector norm: (vector,vector)
+# integer, parameter, public :: LINALG_NORMEUCLID = 0
+#
+#  ! $l_1$-norm: 1/NEQ * sum(abs(entries))
+#  integer, parameter, public :: LINALG_NORML1     = 1
+#
+#  ! $l_2$-norm: 1/sqrt(NEQ) * (vector,vector)
+#  integer, parameter, public :: LINALG_NORML2     = 2
+#
+#  ! max-norm
+#  integer, parameter, public :: LINALG_NORMMAX    = 3
+
+controlnorm = 3
+
+[TEST]
+
+# For this test-set-up, convecRelaxation is the alpha in the PDE
+# e.g. it's the chemosensitivity
+convecRelaxation = 1.0

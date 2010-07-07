@@ -1,0 +1,9 @@
+#!/bin/sh
+#
+# This small shell script is used to create a default makefile
+# for the application.
+#
+
+../../bin/configure \
+	--appname=bio_app \
+	$@
