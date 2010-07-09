@@ -3886,15 +3886,11 @@ subroutine eulerlagrange_step(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
     select case(icouplingpart)
     case(1)
         ! Subroutine to compute the movement of the particles
-        call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+        call eulerlagrange_moveparticlesoneway(rparlist,p_rproblemLevel,rsolution,rParticles)
     
     case(2)
         ! Subroutine to compute the movement of the particles
-        call eulerlagrange_moveparticlestwoway2(rparlist,p_rproblemLevel,rsolution,rParticles)
-   
-    case(-1)
-        ! Subroutine to compute the movement of the particles
-        call eulerlagrange_moveparticles(rparlist,p_rproblemLevel,rsolution,rParticles)
+        call eulerlagrange_moveparticlestwoway(rparlist,p_rproblemLevel,rsolution,rParticles)
 
     case default
             call output_line('Invalid coupling mode!', &

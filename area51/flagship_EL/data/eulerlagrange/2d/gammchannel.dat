@@ -45,7 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 1000
+nPart = 1
 
 
 #-------------------------------------------------------------------------------
@@ -121,10 +121,10 @@ particlediammax = 1e-6
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
-velopartx = 1e0  #205.709277e0
+velopartx = 205.709277e0
 
 # velocity in y-direction in m/s
-veloparty = 0e0
+veloparty = 0e0 
                
 
 #-------------------------------------------------------------------------------
@@ -132,10 +132,10 @@ veloparty = 0e0
 #-------------------------------------------------------------------------------
 
 # scalar for the velocity in x-direction
-velogasx = 1e0  #205.709277e0
+velogasx = 205.709277e0
 
 # scalar for the velocity in y-direction
-velogasy = 1e0
+velogasy = 205.709277e0
 
 # scalar for density of the gas phase
 rho_gas= 1.5e0 
@@ -207,15 +207,13 @@ c_v_part = 1380
 # 2 position, velocity, diameter, mass, density and temperatur of the particles
 ipartoutput = 2
 
-
 #-------------------------------------------------------------------------------
 # choice coupling mode (one-way or two-way coupling)
 #-------------------------------------------------------------------------------
 
 # 1 	one-way coupling (particles have no influence on the gas phase)
 # 2 	two-way coupling
-# -1	compute paricle movement at a steady state gas solution
-icouplingpart = 2
+icouplingpart = 1
 
 #-------------------------------------------------------------------------------
 # choice solution algorithmn for the particle phase
