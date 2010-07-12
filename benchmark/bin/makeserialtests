@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Compiles a set of tests into one single script file.
+# Call:
+#    makeserialtests scriptfile target1 [target2] [target3] [...]
+#
+# Example:
+#    makeserialtests run_cc2d CC2D_001 CC2D_002 CC2D_003
+#
+# -> creates one script file "run_cc2d" that serially executes the tests 
+# CC2D_001, CC2D_002 and CC2D_003.
+
+    if [ -z "$1" ]; then
+      echo "$0: No target script file name specified. Nothing done."
+      echo "$0:  Call:"
+      echo "$0:     makeserialtests scriptfile target1 [target2] [target3] [...]"
+      exit
+    fi
+
+    if [ -z "$2" ]; then
+      echo "$0: No test ID specified. Nothing done."
+      echo "$0:  Call:"
+      echo "$0:     makeserialtests scriptfile target1 [target2] [target3] [...]"
+      exit
+    fi
+
+    SCRIPTFILENAME=$1
+    shift
+      
+    rm -rf tmp.txt  
+    for testid in $*
+    do
+      echo $testid >> tmp.fbconf
+    done
+    
+    make tmp SCRIPT=$SCRIPTFILENAME
