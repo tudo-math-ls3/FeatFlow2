@@ -27,7 +27,7 @@
     SCRIPTFILENAME=$1
     shift
       
-    rm -rf tmp.txt  
+    rm -rf tmp.fbconf  
     for testid in $*
     do
       echo $testid >> tmp.fbconf
