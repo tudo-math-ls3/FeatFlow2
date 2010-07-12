@@ -697,6 +697,23 @@ contains
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               end if
+              
+            else if (ithetaschemetype .eq. 3) then
+              if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+                call lsyssc_matrixLinearComb (&
+                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+                    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
+                    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
+              else
+                ! Standard weights.
+                call lsyssc_matrixLinearComb (&
+                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    dcouplePrimalToDual*(-dtheta),&
+                    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
+                    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
+              end if
+            
             else
               if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
                 call lsyssc_matrixLinearComb (&
@@ -741,6 +758,16 @@ contains
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               end if
             end if
+            
+            if (ithetaschemetype .eq. 3) then
+              ! Standard weights.
+              call lsyssc_matrixLinearComb (&
+                  rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                  dcouplePrimalToDual*(-(1.0_DP-dtheta)),&
+                  rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
+                  rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
+            end if
+            
 
             ! Coupling of the primal to the dual
             !call lsyssc_matrixLinearComb (&

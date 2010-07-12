@@ -48,8 +48,11 @@ module spacetimelinsol
   ! Defect correction
   integer, parameter :: STLS_TYPE_DEFCORR    = 4
   
+  ! BiCGStab 
+  integer, parameter :: STLS_TYPE_BICGSTAB   = 5
+
   ! Two-grid
-  integer, parameter :: STLS_TYPE_MULTIGRID  = 5
+  integer, parameter :: STLS_TYPE_MULTIGRID  = 6
 
   ! Linear solver structure.
   type t_spacetimelinsol
@@ -119,6 +122,15 @@ module spacetimelinsol
     real(DP) :: dadcgcorrMin = 0.5_DP
     real(DP) :: dadcgcorrMax = 2.0_DP
     
+    ! Determins the number of iterations after which the
+    ! algorithm is reinitialised (if it supports reinitialisation).
+    ! =0: deactivate.
+    integer :: niteReinit = 0
+    
+    ! ONLY BICGSTAB: If set to TRUE, BiCGStab measures the real residuum for
+    ! determining the stopping criterion.
+    logical :: bstopOnRealResiduum = .false.
+    
     ! System matrix if used as 1-level solver.
     type(t_spaceTimeMatrix), pointer :: p_rmatrix => null()
     
@@ -165,6 +177,9 @@ module spacetimelinsol
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors3 => null()
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors4 => null()
     type(t_spacetimeVector), dimension(:), pointer :: p_Rvectors5 => null()
+    
+    ! Temporary vectors to use during the solution process
+    type(t_spaceTimeVector), dimension(:), pointer :: p_RtempVectors => null()
     
     ! type of the linear solver in space if used.
     ! =LINSOL_ALG_UNDEFINED: not used.
@@ -385,7 +400,7 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    integer :: ispaceLevel,ilev
+    integer :: ispaceLevel,ilev,i
   
     if (rsolver%csolverType .eq. STLS_TYPE_NONE) then
       call sys_halt()
@@ -425,6 +440,20 @@ contains
       call sptivec_initVector (rsolver%rspaceTimeTemp1,p_rtimeDiscr,p_rspaceDiscr)
       call sptivec_initVector (rsolver%rspaceTimeTemp2,p_rtimeDiscr,p_rspaceDiscr)
       
+      if (associated(rsolver%p_rpreconditioner)) then
+        call stls_initData(rsolver%p_rpreconditioner)
+      end if
+    
+    case (STLS_TYPE_BICGSTAB)
+
+      ! Allocate temp vectors
+      call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp1)
+
+      allocate (rsolver%p_rtempVectors(7))
+      do i=1,7
+        call sptivec_initVector (rsolver%p_rtempVectors(i),p_rtimeDiscr,p_rspaceDiscr)
+      end do
+
       if (associated(rsolver%p_rpreconditioner)) then
         call stls_initData(rsolver%p_rpreconditioner)
       end if
@@ -536,7 +565,7 @@ contains
   type(t_spacetimelinsol), intent(inout) :: rsolver
   
     ! local variables
-    integer :: ilev
+    integer :: ilev,i
   
     ! Solver dependent cleanup
     select case (rsolver%csolverType)
@@ -570,6 +599,19 @@ contains
         call stls_doneData(rsolver%p_rpreconditioner)
       end if
     
+    case (STLS_TYPE_BICGSTAB)
+
+      do i=1,7
+        call sptivec_releaseVector (rsolver%p_rtempVectors(i))
+      end do
+      deallocate (rsolver%p_rtempVectors)
+    
+      call lsysbl_releaseVector (rsolver%rspaceTemp1)
+    
+      if (associated(rsolver%p_rpreconditioner)) then
+        call stls_doneData(rsolver%p_rpreconditioner)
+      end if
+
     case (STLS_TYPE_MULTIGRID)
     
       if (associated(rsolver%p_rcoarseGridSolver)) then
@@ -649,6 +691,8 @@ contains
     select case (rsolver%csolverType)
     case (STLS_TYPE_DEFCORR)
       call stls_precondDefCorr (rsolver, rd)
+    case (STLS_TYPE_BICGSTAB)
+      call stls_precondBiCGStab (rsolver, rd)
     case (STLS_TYPE_JACOBI)
       call stls_precondBlockJacobi (rsolver, rd)
     case (STLS_TYPE_FBGS)
@@ -827,6 +871,547 @@ contains
     ! Put the (weighted) solution into rd as returm value
     call sptivec_vectorLinearComb (rsolver%rspaceTimeTemp1,rd,rsolver%domega,0.0_DP)
   
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stls_initBiCGStab (rsolver,rspaceTimeHierarchy,ilevel,rpreconditioner)
+  
+  ! Initialise a defect correction solver.
+  
+  ! Solver structure to be initialised
+  type(t_spacetimelinsol), intent(out) :: rsolver
+  
+  ! Underlying space-time hierarchy
+  type(t_spacetimeHierarchy), intent(in), target :: rspaceTimeHierarchy
+  
+  ! Level of the solver  in the space-time hierarchy
+  integer, intent(in) :: ilevel
+  
+  ! OPTIONAL: Solver structure of a preconditioner
+  type(t_spacetimelinsol), intent(in), target, optional :: rpreconditioner
+
+    ! Basic initialisation
+    call stls_init(rsolver,STLS_TYPE_BICGSTAB,rspaceTimeHierarchy,&
+        ilevel,.false.,.false.,rpreconditioner)
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  recursive subroutine stls_precondBiCGStab (rsolver, rd)
+  
+  ! General preconditioning to a defect vector rd
+  
+  ! Solver structure
+  type(t_spacetimelinsol), intent(inout) :: rsolver
+  
+  ! Defect vector to apply preconditioning to.
+  type(t_spaceTimeVector), intent(inout) :: rd
+  
+  ! local variables
+  real(DP) :: dalpha,dbeta,domega0,domega1,domega2,dresreal
+  real(DP) :: drho1,drho0,dresscale,dresunprec
+  integer :: ite
+  logical :: bstopOnRealResiduum
+  real(DP) :: dresInit, dresCurrent, drho, dresLast, dresFinal
+
+  ! The system matrix
+  type(t_spaceTimeMatrix), pointer :: p_rmatrix
+  
+  ! Minimum number of iterations, print-sequence for residuals
+  integer :: nminIterations
+  
+  ! Whether to filter/prcondition
+  logical bprec
+  
+  ! Pointers to temporary vectors - named for easier access
+  type(t_spaceTimeVector), pointer :: p_DR,p_DR0,p_DP,p_DPA,p_DSA,p_rx,p_rres
+  type(t_spacetimelinsol), pointer :: p_rpreconditioner
+  
+    ! Solve the system!
+  
+    ! Status reset
+    rsolver%csolverStatus = 0
+    
+    ! Getch some information
+    p_rmatrix => rsolver%p_rmatrix
+    bstopOnRealResiduum = rsolver%bstopOnRealResiduum
+
+    ! Check the parameters
+    if (rd%NEQtime .eq. 0) then
+    
+      ! Parameters wrong
+      rsolver%csolverStatus = 2
+      return
+    end if
+
+    ! Minimum number of iterations
+ 
+    nminIterations = max(rsolver%nminIterations,0)
+      
+    ! Use preconditioning? Filtering?
+
+    bprec = associated(rsolver%p_rpreconditioner)
+    
+    ! Set pointers to the temporary vectors
+    p_DR   => rsolver%p_RtempVectors(1)
+    p_DR0  => rsolver%p_RtempVectors(2)
+    p_DP   => rsolver%p_RtempVectors(3)
+    p_DPA  => rsolver%p_RtempVectors(4)
+    p_DSA  => rsolver%p_RtempVectors(5)
+    p_rx   => rsolver%p_RtempVectors(6)
+    
+    p_rres => rsolver%p_RtempVectors(7)
+    
+    if (bprec) then
+      p_rpreconditioner => rsolver%p_rpreconditioner
+    end if
+    
+    ! rd is our RHS. p_rx points to a new vector which will be our
+    ! iteration vector. At the end of this routine, we replace
+    ! rd by p_rx.
+    ! Clear our iteration vector p_rx.
+    call sptivec_clearVector (p_rx)
+      
+    ! Initialize used vectors with zero
+      
+    call sptivec_clearVector(p_DP)
+    call sptivec_clearVector(p_DPA)
+    
+    ! Initialise the iteration vector with zero.
+
+    ! Initialization
+
+    drho0  = 1.0_DP
+    dalpha = 1.0_DP
+    domega0 = 1.0_DP
+
+    ! Copy our RHS rd to p_DR. As the iteration vector is 0, this
+    ! is also our initial defect.
+
+    call sptivec_copyVector(rd,p_DR)
+    
+    ! Filter the defect for boundary conditions in space and time.
+    call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DR)
+
+    ! Get the norm of the residuum.
+    !
+    ! If we measure the real residuum, remember the current residuum
+    ! in p_rres.
+    if (bstopOnRealResiduum) then
+      call sptivec_copyVector(rd,p_rres)
+      dresCurrent = sptivec_vectorNorm (p_rres,LINALG_NORML2)
+    else
+      dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+    end if
+    
+    if (.not.((dresCurrent .ge. 1E-99_DP) .and. &
+              (dresCurrent .le. 1E99_DP))) dresCurrent = 0.0_DP
+
+    if (bprec) then
+      ! Perform preconditioning with the assigned preconditioning
+      ! solver structure.
+      call stls_precondDefect (p_rpreconditioner,p_DR)
+      
+      if (.not. bstopOnRealResiduum) then
+        ! We scale the absolute stopping criterion by the difference
+        ! between the preconditioned and unpreconditioned defect --
+        ! to encounter the difference in the residuals.
+        ! This is of course an approximation to 
+        dresunprec = dresCurrent
+        dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+        
+        if (rsolver%ioutputLevel .ge. 2) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES(unscaled)!! = '//&
+              trim(sys_sdEL(dresCurrent,15)) )
+        end if
+        
+        if (.not.((dresCurrent .ge. 1E-99_DP) .and. &
+                  (dresCurrent .le. 1E99_DP))) dresCurrent = 1.0_DP
+        dresscale = dresunprec / dresCurrent
+      else
+      
+        if (rsolver%ioutputLevel .ge. 3) then
+          dresreal = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES(precond)!! = '//&
+              trim(sys_sdEL(dresreal,15)) )
+        end if
+
+        dresscale = 1.0_DP
+        
+      end if
+    else
+      dresscale = 1.0_DP
+    end if
+    
+    ! Initialize starting residuum
+      
+    dresInit = dresCurrent
+    dresLast = 0.0_DP
+    dresFinal = dresCurrent
+
+    ! Check if out initial defect is zero. This may happen if the filtering
+    ! routine filters "everything out"!
+    ! In that case we can directly stop our computation.
+
+    if ( dresInit .lt. SYS_EPSREAL ) then
+     
+      ! final defect is 0, as initialised in the output variable above
+
+      call sptivec_clearVector(p_rx)
+      ite = 0
+      dresFinal = dresCurrent
+          
+    else
+
+      if (rsolver%ioutputLevel .ge. 2) then
+        if (bprec .and. .not. bstopOnRealResiduum) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(dresInit*dresscale,15)) )
+              
+          if (rsolver%ioutputLevel .ge. 3) then
+          
+            ! Compute the real residual.
+            call sptivec_copyVector (rd,p_rres)
+            call stmv_matvec (rsolver%p_rmatrix, &
+                p_rx, p_rres, -1.0_DP, 1.0_DP)
+            call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_rres)
+            dresreal = sptivec_vectorNorm (p_rres,LINALG_NORML2)
+            
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(real)!! = '//&
+                trim(sys_sdEL(dresreal,15)) )
+            
+          end if
+        else
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(0,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(dresInit,15)) )
+              
+        end if
+      end if
+
+      call sptivec_copyVector(p_DR,p_DR0)
+
+      ! Perform at most nmaxIterations loops to get a new vector
+
+      do ite = 1,rsolver%nmaxIterations
+      
+        if (rsolver%niteReinit .gt. 0) then
+          if ((ite .gt. 1) .and. (mod(ite,rsolver%niteReinit) .eq. 1)) then
+            if (rsolver%ioutputLevel .ge. 2) then
+              call output_line ('Space-Time-BiCGStab: Reinitialisation.')
+            end if
+
+            ! Reinitialisation. Reompute the residual and reset dr/dp.
+            call sptivec_copyVector (rd,p_DR)
+            
+            call stmv_matvec (rsolver%p_rmatrix, &
+                p_rx, p_DR, -1.0_DP, 1.0_DP)
+            
+            ! Filter the defect for boundary conditions in space and time.
+            call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DR)
+            
+            if (bprec) then
+              ! Perform preconditioning with the assigned preconditioning
+              ! solver structure.
+              call stls_precondDefect (p_rpreconditioner,p_DR)
+            end if
+            
+            call sptivec_copyVector(p_DR,p_DR0)
+
+            call sptivec_clearVector(p_DP)
+            call sptivec_clearVector(p_DPA)
+            
+            drho0  = 1.0_DP
+            dalpha = 1.0_DP
+            domega0 = 1.0_DP
+            
+          end if
+        end if
+
+        drho1 = sptivec_scalarProduct (p_DR0,p_DR) 
+
+        if (drho0*domega0 .eq. 0.0_DP) then
+          ! Should not happen
+          if (rsolver%ioutputLevel .ge. 2) then
+            call output_line ('Space-Time-BiCGStab: Iteration prematurely stopped! '//&
+                 'Correction vector is zero!')
+          end if
+
+          ! Some tuning for the output, then cancel.
+
+          rsolver%csolverStatus = -1
+          exit
+          
+        end if
+
+        dbeta=(drho1*dalpha)/(drho0*domega0)
+        drho0 = drho1
+
+        call sptivec_vectorLinearComb (p_DR ,p_DP,1.0_DP,dbeta)
+        call sptivec_vectorLinearComb (p_DPA ,p_DP,-dbeta*domega0,1.0_DP)
+
+        ! Filter the defect for boundary conditions in space and time.
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DP)
+
+        call stmv_matvec (rsolver%p_rmatrix, &
+            p_DP, p_DPA, 1.0_DP, 0.0_DP)
+    
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DPA)
+    
+        if (bprec) then
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          call stls_precondDefect (p_rpreconditioner,p_DPA)
+        end if
+
+        dalpha = sptivec_scalarProduct (p_DR0,p_DPA)
+        
+        if (dalpha .eq. 0.0_DP) then
+          ! We are below machine exactness - we can't do anything more...
+          ! May happen with very small problems with very few unknowns!
+          if (rsolver%ioutputLevel .ge. 2) then
+            call output_line ('Space-Time-BiCGStab: Convergence failed, ALPHA=0!')
+            rsolver%csolverStatus = -2
+            exit
+          end if
+        end if
+        
+        dalpha = drho1/dalpha
+
+        call sptivec_vectorLinearComb (p_DPA,p_DR,-dalpha,1.0_DP)
+
+        call stmv_matvec (rsolver%p_rmatrix, &
+            p_DR,p_DSA, 1.0_DP, 0.0_DP)
+                
+        ! Filter the defect for boundary conditions in space and time.
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DSA)
+
+        if (bprec) then
+          ! Perform preconditioning with the assigned preconditioning
+          ! solver structure.
+          call stls_precondDefect (p_rpreconditioner,p_DSA)
+        end if
+        
+        domega1 = sptivec_scalarProduct (p_DSA,p_DR)
+        domega2 = sptivec_scalarProduct (p_DSA,p_DSA)
+        
+        if (domega1 .eq. 0.0_DP) then
+          domega0 = 0.0_DP
+        else
+          if (domega2 .eq. 0.0_DP) then
+            if (rsolver%ioutputLevel .ge. 2) then
+              call output_line ('Space-Time-BiCGStab: Convergence failed: omega=0!')
+              rsolver%csolverStatus = -2
+              exit
+            end if
+          end if
+          domega0 = domega1/domega2
+        end if
+
+        call sptivec_vectorLinearComb (p_DP ,p_rx,dalpha,1.0_DP)
+        call sptivec_vectorLinearComb (p_DR ,p_rx,domega0,1.0_DP)
+        
+        call sptivec_vectorLinearComb (p_DSA,p_DR,-domega0,1.0_DP)
+
+        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_DSA)
+
+        ! Get the norm of the new (final?) residuum
+        if (bstopOnRealResiduum) then
+          ! Calculate the real residuum.
+          call sptivec_copyVector (rd,p_rres)
+          call stmv_matvec (rsolver%p_rmatrix, &
+              p_rx, p_rres, -1.0_DP, 1.0_DP)
+          call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_rres)
+          dresCurrent = sptivec_vectorNorm (p_rres,LINALG_NORML2)
+        else
+          ! Take the preconditioned residuum
+          dresCurrent = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+        end if
+     
+        dresLast = dresFinal
+        dresFinal = dresCurrent
+
+        if (ite .ge. rsolver%nminiterations+1) then
+          ! Check the stopping criterion.
+          select case (rsolver%iresCheck)
+          case (1)
+            if ((dresCurrent .lt. rsolver%depsAbs) .or. &
+                (dresCurrent .lt. rsolver%depsRel*dresInit)) then
+              exit
+            end if
+          case (2)
+            if ((dresCurrent .lt. rsolver%depsAbs) .and. &
+                (dresCurrent .lt. rsolver%depsRel*dresInit)) then
+              exit
+            end if
+          end select
+          if ( (abs(dresCurrent-dresLast) .lt. rsolver%depsRelDiff*dresLast) .or. &
+              (abs(dresCurrent-dresLast) .lt. rsolver%depsAbsDiff) ) then
+            exit
+          end if
+        end if
+        
+        if ((.not. (dresCurrent .lt. rsolver%ddivAbs)) .or. &
+            (.not. (dresCurrent .lt. rsolver%ddivRel*dresInit))) then
+          if (rsolver%ioutputlevel .ge. 1) then
+            call output_lbrk()
+            call output_line("Space-Time-BiCGStab: Divergence detected! Iteration stopped.");
+          end if
+          rsolver%csolverStatus = 2
+          exit
+        end if
+
+        ! print out the current residuum
+
+        if (rsolver%ioutputLevel .ge. 2) then
+          if (bprec .and. .not. bstopOnRealResiduum) then
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+                trim(sys_sdEL(dresFinal*dresscale,15)) )
+
+            if (rsolver%ioutputLevel .ge. 3) then
+            
+              ! Compute the real residual.
+              call sptivec_copyVector (rd,p_rres)
+              call stmv_matvec (rsolver%p_rmatrix, &
+                  p_rx, p_rres, -1.0_DP, 1.0_DP)
+              call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_rres)
+              dresreal = sptivec_vectorNorm (p_rres,LINALG_NORML2)
+              
+              call output_line ('Space-Time-BiCGStab: Iteration '// &
+                  trim(sys_siL(ITE,10))//',  !!RES(real)!! = '//&
+                  trim(sys_sdEL(dresreal,15)) )
+              
+            end if
+
+          else
+            if (bstopOnRealResiduum .and. rsolver%ioutputLevel .ge. 3) then
+              dresreal = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+              call output_line ('Space-Time-BiCGStab: Iteration '// &
+                  trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
+                  trim(sys_sdEL(dresreal,15)) )
+            end if                
+
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+                trim(sys_sdEL(dresFinal,15)) )
+          end if
+        end if
+
+      end do
+
+      ! Set ITE to NIT to prevent printing of "NIT+1" of the loop was
+      ! completed
+
+      if (ite .gt. rsolver%nmaxIterations) &
+        ite = rsolver%nmaxIterations
+
+      ! Finish - either with an error or if converged.
+      ! Print the last residuum.
+
+      if ((rsolver%ioutputLevel .ge. 2) .and. &
+          (ite .ge. 1) .and. (ITE .lt. rsolver%nmaxIterations) .and. &
+          (rsolver%csolverStatus .ge. 0)) then
+          
+        if (bprec .and. .not. bstopOnRealResiduum) then
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES(scaled)!! = '//&
+              trim(sys_sdEL(dresFinal*dresscale,15)) )
+
+          if (rsolver%ioutputLevel .ge. 3) then
+          
+            ! Compute the real residual.
+            call sptivec_copyVector (rd,p_rres)
+            call stmv_matvec (rsolver%p_rmatrix, &
+                p_rx, p_rres, -1.0_DP, 1.0_DP)
+            call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, p_rres)
+            dresreal = sptivec_vectorNorm (p_rres,LINALG_NORML2)
+            
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(real)!! = '//&
+                trim(sys_sdEL(dresreal,15)) )
+            
+          end if
+
+        else
+          if (bstopOnRealResiduum .and. rsolver%ioutputLevel .ge. 3) then
+            dresreal = sptivec_vectorNorm (p_DR,LINALG_NORML2)
+            call output_line ('Space-Time-BiCGStab: Iteration '// &
+                trim(sys_siL(ITE,10))//',  !!RES(precond)!! = '//&
+                trim(sys_sdEL(dresreal,15)) )
+          end if                
+
+          call output_line ('Space-Time-BiCGStab: Iteration '// &
+              trim(sys_siL(ITE,10))//',  !!RES!! = '//&
+              trim(sys_sdEL(dresFinal,15)) )
+        end if
+      end if
+
+    end if
+
+    ! Overwrite our previous RHS by the new correction vector p_rx.
+    ! This completes the preconditioning.
+    call sptivec_copyVector (p_rx,rd)
+    call sptivec_scaleVector (rd,rsolver%domega)
+      
+    ! Don't calculate anything if the final residuum is out of bounds -
+    ! would result in NaN's,...
+      
+    if (dresFinal .lt. 1E99_DP) then
+    
+      ! If the initial defect was zero, the solver immediately
+      ! exits - and so the final residuum is zero and we performed
+      ! no steps; so the resulting convergence rate stays zero.
+      ! In the other case the convergence rate computes as
+      ! (final defect/initial defect) ** 1/nit :
+
+      drho = 0.0_DP
+      if ((dresFinal .gt. SYS_EPSREAL) .and. (ite .gt. 0)) then
+        drho = (dresFinal / dresInit) ** &
+               (1.0_DP/real(ite,DP))
+      end if
+
+      if (rsolver%ioutputLevel .ge. 2) then
+        call output_lbrk()
+        call output_line ('Space-Time-BiCGStab statistics:')
+        call output_lbrk()
+        call output_line ('Iterations              : '//&
+             trim(sys_siL(ite,10)) )
+        call output_line ('!!INITIAL RES!!         : '//&
+             trim(sys_sdEL(dresInit,15)) )
+        call output_line ('!!RES!!                 : '//&
+             trim(sys_sdEL(dresFinal,15)) )
+        if (dresInit .gt. SYS_EPSREAL) then     
+          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+            trim(sys_sdEL(dresFinal / dresInit,15)) )
+        else
+          call output_line ('!!RES!!/!!INITIAL RES!! : '//&
+               trim(sys_sdEL(0.0_DP,15)) )
+        end if
+        call output_lbrk ()
+        call output_line ('Rate of convergence     : '//&
+             trim(sys_sdEL(drho,15)) )
+
+      end if
+
+      if (rsolver%ioutputLevel .eq. 1) then
+        call output_line (&
+              'Space-Time-BiCGStab: Iterations/Rate of convergence: '//&
+              trim(sys_siL(ite,10))//' /'//&
+              trim(sys_sdEL(drho,15)) )
+      end if
+      
+    else
+      ! DEF=Infinity; RHO=Infinity, set to 1
+      drho = 1.0_DP
+    end if  
+
   end subroutine
 
   ! ***************************************************************************

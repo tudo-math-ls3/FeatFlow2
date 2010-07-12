@@ -74,7 +74,7 @@ creferenceProblem = 4
 
 dviscosity = 1.0
 doptControlAlpha = 1.0
-doptControlGamma = 1000.0
+doptControlGamma = 0.0
 dcouplePrimalToDual = 1.0
 dcoupleDualToPrimal = 1.0
 dcoupleTermCond = 1.0
@@ -119,6 +119,9 @@ nmaxiterations = 1000
 # =0: Block-Jacobi
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
+# =3: BiCGStab with Block-Jacobi
+# =4: BiCGStab with Block-FBGS, half coupled
+# =5: BiCGStab with Block-FBGS, fully coupled
 
 ismoother = 0
 
@@ -127,7 +130,7 @@ ismoother = 0
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled (forward-backward optimiser)
 
-icoarsegridsolver = 2
+icoarsegridsolver = 0
 
 # Type of projection in time.
 # -1: automatic

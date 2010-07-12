@@ -832,30 +832,30 @@ contains
         call sys_halt()
       end select
       
-      if (ithetaschemetype .eq. 1) then
-        ! Dual solution lives in the interval midpoints.
-        ! Dual RHS lives in the endpoints of the interval!
-        ! dtime = 1.0 is ok!
-        if (dtime .eq. 1.0_DP) then
-          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
-        end if
-
-        if (dtime .eq. 0.0_DP) then
-          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
-        end if
-      else
-        if (dtime .eq. 1.0_DP) then
-          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
-        end if
-
-        if (dtime .eq. 0.0_DP) then
-          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
-          Dcoefficients(1,:,:) = 0.0_DP
-        end if
-      end if
+!      if (ithetaschemetype .eq. 1) then
+!        ! Dual solution lives in the interval midpoints.
+!        ! Dual RHS lives in the endpoints of the interval!
+!        ! dtime = 1.0 is ok!
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (dtheta + dtheta*dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP-dtheta)
+!        end if
+!      else
+!        if (dtime .eq. 1.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = Dcoefficients(1,:,:) * (1.0_DP + dgamma/dtstep)
+!        end if
+!
+!        if (dtime .eq. 0.0_DP) then
+!          !Dcoefficients(1,:,:) = (-2.0_DP*Dpoints(1,:,:)/dtstep)
+!          Dcoefficients(1,:,:) = 0.0_DP
+!        end if
+!      end if
     case default
       ! Should not happen
       call sys_halt()

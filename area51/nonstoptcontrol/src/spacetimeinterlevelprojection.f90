@@ -182,7 +182,7 @@ contains
 !</output>
 
 !</subroutine>
-    integer :: i,itimeOrder
+    integer :: i,itimeOrder,ithetaschemetype
 
     ! Remember the physics; necessary so we know how and what to project
     rprojHier%p_rphysics => rphysics
@@ -192,6 +192,8 @@ contains
     rprojHier%p_rprojHierarchySpace => rprojHierarchySpace
     rprojHier%p_rtimeCoarseDiscr => rspaceTimeHierarchy%p_rtimeHierarchy%p_RtimeLevels(1)
     
+    ithetaschemetype = rprojHier%p_rtimeCoarseDiscr%itag
+        
     ! Set ctimeProjection
     rprojHier%ctimeProjection = -1
     if (present(ctimeProjection)) rprojHier%ctimeProjection = ctimeProjection
@@ -212,7 +214,7 @@ contains
       
       ! If our special 1-step scheme is activated, reduce the order to 1 in order
       ! to activate the corresponding prol/rest.
-      if (rprojHier%p_rtimeCoarseDiscr%itag .eq. 1) then
+      if (ithetaschemetype .eq. 1) then
         rprojHier%ctimeProjection = 2
       end if
       

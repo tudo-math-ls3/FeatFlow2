@@ -84,6 +84,9 @@ contains
       
     ! local variables
     real(DP) :: dtimeend,dtstep,dtimestart
+    integer :: ithetaschemetype
+    
+    ithetaschemetype = rtimediscr%itag
       
     select case (rtimeDiscr%ctype)
     case (TDISCR_ONESTEPTHETA)
@@ -93,7 +96,7 @@ contains
       dtimePrimal = dtimeend
       dtimeDual = dtimeend
       
-      if (rtimediscr%itag .eq. 1) then
+      if (ithetaschemetype .eq. 1) then
         ! The dual is shifted by dtheta -- except for in the beginning.
         if (istep .ne. 1) then
           dtimeDual = dtimeend*rtimeDiscr%dtheta + dtimestart*(1.0_DP-rtimeDiscr%dtheta)

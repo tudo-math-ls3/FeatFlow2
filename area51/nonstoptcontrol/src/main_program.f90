@@ -441,6 +441,12 @@ contains
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
         
+          rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+          
+          call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+
         else if (ismoother .eq. 1) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
@@ -448,21 +454,63 @@ contains
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
           !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
         
+          rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+          
+          call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
-        end if
-        
-        rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
-        
-        call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
-            rsolver%p_RsmootherPrecond(ilev))
-        call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
-        rsolver%p_Rsmoothers(ilev)%ioutputlevel = ioutputlevel
+          rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+          
+          call stls_initDefCorr (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
 
+        else if (ismoother .eq. 3) then
+        
+          call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        
+          rsolver%p_RsmootherPrecond(ilev)%domega = drelax
+          
+          call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+          !rsolver%p_Rsmoothers(ilev)%niteReinit = 5
+          rsolver%p_Rsmoothers(ilev)%domega = ddamping
+
+        else if (ismoother .eq. 4) then
+        
+          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+        
+          rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+          
+          call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+
+        else if (ismoother .eq. 5) then
+        
+          call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+        
+          rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
+          
+          call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
+              rsolver%p_RsmootherPrecond(ilev))
+          call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
+
+        end if
+
+        rsolver%p_Rsmoothers(ilev)%ioutputlevel = ioutputlevel
+        
         !call stls_initDefCorr (rsolver%p_Rpreconditioners(ilev),rparams%rspacetimeHierarchy,ilev,&
         !    rsolver%p_RsmootherPrecond(ilev))
         !rsolver%p_Rpreconditioners(ilev)%nmaxIterations = 50
@@ -675,6 +723,7 @@ contains
 
       ! Time coarse mesh and time hierarchy
       call tdiscr_initOneStepTheta (rparams%rtimecoarse, 0.0_DP, 1.0_DP, ntstepscoarse, dtheta)
+      
       ! The ithetaschemetype flag is saved as tag.
       rparams%rtimecoarse%itag = ithetaschemetype
 

@@ -517,11 +517,13 @@ contains
     real(DP), dimension(6) :: DerrorTotal
     type(t_collection) :: rcollection
     real(DP) :: dtimePrimal,dtimeDual,dtstep
-    integer :: i
+    integer :: i, ithetaschemetype
 
     call lsysbl_createVectorblock (rvector%p_rspaceDiscr,rspaceVec)
 
     p_rtria => rspaceVec%p_rblockDiscr%p_rtriangulation
+    
+    ithetaschemetype = rvector%p_rtimeDiscr%itag
 
     DerrorTotal(:) = 0.0_DP
     Derrors(:) = 0.0_DP
@@ -533,7 +535,7 @@ contains
       dtimeDual = dtimePrimal
 
       ! Modified time scheme?
-      if (rvector%p_rtimeDiscr%itag .eq. 1) then
+      if (ithetaschemetype .eq. 1) then
         if (istep .ne. 1) then
           dtimeDual = dtimePrimal - (1.0_DP-rvector%p_rtimeDiscr%dtheta)*dtstep
         end if
