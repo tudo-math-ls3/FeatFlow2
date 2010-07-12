@@ -210,3 +210,7 @@ drelax = 1.0
 # =1: Use two-way coupling to previous and next timestep
 
 ifullcouplingFBGS2 = 1
+
+# Reinitialisation counter for BiCGStab
+# =0: deactivate
+niteReinit = 0

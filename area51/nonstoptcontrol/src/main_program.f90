@@ -306,7 +306,7 @@ contains
 
     ! local variables
     integer :: csolverType
-    integer :: iadcgcorr
+    integer :: iadcgcorr,niteReinit
     real(DP) :: dadcgcorrMin,dadcgcorrMax
     integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
@@ -431,6 +431,8 @@ contains
           "ifullcouplingFBGS2", ifullcouplingFBGS2)
       call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
           "ioutputlevel", ioutputlevel)
+      call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
+          "niteReinit", niteReinit)
       
       allocate (rsolver%p_RsmootherPrecond(nlevels))
       allocate (rsolver%p_Rsmoothers(nlevels))
@@ -482,7 +484,7 @@ contains
           call stls_initBiCGStab (rsolver%p_Rsmoothers(ilev),rparams%rspacetimeHierarchy,ilev,&
               rsolver%p_RsmootherPrecond(ilev))
           call stls_convertToSmoother (rsolver%p_Rsmoothers(ilev),nsmoothingSteps)
-          !rsolver%p_Rsmoothers(ilev)%niteReinit = 5
+          rsolver%p_Rsmoothers(ilev)%niteReinit = niteReinit
           rsolver%p_Rsmoothers(ilev)%domega = ddamping
 
         else if (ismoother .eq. 4) then
