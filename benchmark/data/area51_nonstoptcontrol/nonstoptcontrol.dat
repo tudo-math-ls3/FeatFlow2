@@ -94,7 +94,7 @@ cfespace = -1
 
 nspacelevels = 1
 ntimelevels = 2
-nminlevelspace = 4
+nminlevelspace = 2
 nminminleveltime = 1
 nmaxminleveltime = 9
 dtheta = $SPACETIMEDISCRETISATION_DTHETA
@@ -110,13 +110,16 @@ ithetaschemetype = 1
 ########################
 
 csolverType = -1    # -1=automatic
-nsmoothingSteps = 4
+nsmoothingSteps = $SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS
 nmaxiterations = 1000
 
 # Type of smoother.
 # =0: Block-Jacobi
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
+# =3: BiCGStab with Block-Jacobi
+# =4: BiCGStab with Block-FBGS, half coupled
+# =5: BiCGStab with Block-FBGS, fully coupled
 
 ismoother = $SPACETIMELINEARSOLVER_ISMOOTHER
 
@@ -198,4 +201,8 @@ drelax = 1.0
 # Use full (forward+backward) coupling in FBGS2.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
-ifullcouplingFBGS2 = $SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2
+
+ifullcouplingFBGS2 = 1
+# Reinitialisation counter for BiCGStab
+# =0: deactivate
+niteReinit = 0

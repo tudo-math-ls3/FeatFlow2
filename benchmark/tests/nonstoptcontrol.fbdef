@@ -17,6 +17,7 @@ POSTPROC_IWRITEUCD = 0
 SPACETIMELINEARSOLVER_ISMOOTHER = 0
 SPACETIMELINEARSOLVER_ICOARSEGRIDSOLVER = 0
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS = 4
 SPACETIMECOARSEGRIDSOLVER_IOUTPUTLEVEL = 0
 SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2 = 1
 SPACETIMESMOOTHER_IOUTPUTLEVEL = 2
@@ -51,6 +52,7 @@ PHYSICS_CREFERENCEPROBLEM = 4
 PHYSICS_DOPTCONTROLALPHA = 1.0
 PHYSICS_DOPTCONTROLGAMMA = 0.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 0
+SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS = 4
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
 SPACETIMEDISCRETISATION_DTHETA = 1.0
@@ -1618,6 +1620,763 @@ SPACETIMESMOOTHER_DDAMPING = 0.9
 
 
 
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS = 2
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G0_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G0_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.01, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G0_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 0.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.001, g=0
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G0_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 1.0
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A1G1000_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.1
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A2G1000_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.01, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.01
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A3G1000_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# Two-grid with coarse grid correction, a=0.001, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_TG_BICGJAC1
+descr    = Opt-Control-Benchmark. 
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+CEQUATION = 0
+PHYSICS_CREFERENCEPROBLEM = 4
+PHYSICS_DOPTCONTROLALPHA = 0.001
+PHYSICS_DOPTCONTROLGAMMA = 1000.0
+SPACETIMESMOOTHER_DDAMPING = 1.0
+SPACETIMEDISCRETISATION_DTHETA = 1.0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 3
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(Jacobi)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_SG_BICGJAC1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_TG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 4
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSim)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_SG_BICGFBS1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_TG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 1
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_SG_BICGSOR1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# Two-grid with coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_TG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+SPACETIMESMOOTHER_IFULLCOUPLINGFBGS2 = 0
+
+SPACETIMELINEARSOLVER_ISMOOTHER = 5
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
+
+#============================================================
+# Heat equation, BiCGStab(FBSOR)-Smoother.
+# One grid, no coarse grid correction, a=0.1, g=1000
+#
+testid   = NONSTOPTC_IE_HEAT2D_A4G1000_SG_BICGSOR2_1
+datfile  = ./data/area51_nonstoptcontrol/nonstoptcontrol.dat
+mglevels = 1
+SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 0.0
+
+
+
+
 # ===========================
 # ===== Stokes equation =====
 # ===========================
@@ -1636,6 +2395,7 @@ PHYSICS_CREFERENCEPROBLEM = 2
 PHYSICS_DOPTCONTROLALPHA = 1.0
 PHYSICS_DOPTCONTROLGAMMA = 0.0
 SPACETIMELINEARSOLVER_ISMOOTHER = 0
+SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS = 4
 SPACETIMESMOOTHER_DDAMPING = 0.3
 SPACETIMELINEARSOLVER_DDAMPINGCOARSEGRIDCORRECTION = 1.0
 
