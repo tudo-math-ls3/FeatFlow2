@@ -929,6 +929,11 @@ ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-goto.*),yes)
 include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
+ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-mkl.*),yes)
+# Use Goto BLAS
+include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
 
 
 ################################# CoreSolo 32 bit ###############################
