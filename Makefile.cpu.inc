@@ -930,8 +930,14 @@ include $(TEMPLATESDIR)/gotoblas-generic.mk
 endif
 
 ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-mkl.*),yes)
-# Use Goto BLAS
+# Use MKL BLAS
 include $(TEMPLATESDIR)/mkl-generic.mk
+endif
+
+ifeq ($(call match,$(ID),pc64-coreduo-linux-.*-mklwoody.*),yes)
+# Use special BKL blas on Woodcrest cluster of the RRZE Erlangen
+LIBS := $(LIBS) $(MKL_LIB)
+TOKEN5 := 1
 endif
 
 
