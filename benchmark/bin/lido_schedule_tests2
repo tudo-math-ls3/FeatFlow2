@@ -1,0 +1,273 @@
+#!/bin/sh
+
+# 'fb_' stands for 'FEAST benchmark'.
+# Variables are written in capital letters if used globally.
+
+
+# Initialisations.
+#
+# Parameters defined here may be overwritten by parameters.
+
+# File name prefix for jobfile files. 
+# Parameter --prefix or -p
+JOBFILEPREFIX="testjob"
+
+# Create scripts but do not submit the scripts to the queuing system.
+# Parameter --noschedule or --no-schedule.
+NOSCHEDULE=0
+
+# EMail address.
+# Parameter --email or -m.
+EMAILADDRESS=
+
+# Whether to send an email or not. Is set to 1 id an email address is
+# specified as parameter.
+DOSENDMAIL=0
+
+# Whether to allocate complete nodes or not.
+# Parameter --completenodes.
+# =0: Jobs are submitted in a per-task basis. Multiple tasks may
+#     share one node. Only as many cores as we have tasks are allocated.
+# =1: Jobs are submitted in a per-node basis, CORESPERNODE tasks per node.
+#     All cores on a node are allocated. If CORESPERNODE < available cores
+#     per node, some cores stay idle.
+FORCE_COMPLETE_NODES=1    
+
+# Overwrite the LOG directory or create a backup.
+# Parameter --overwrite-log-directory or -o
+OVERWRITE_LOG_DIRECTORY=
+
+# Wallclock-limit. 
+# Parmeter --wallclocklimit or -w
+WALLCLOCKLIMIT="00:40:00"
+
+# Number of cores per node to use.
+# =-1: Use all available cores.
+CORESPERNODE=-1
+
+# Job identifier of a job which must be completed before running the
+# new job / set of jobs.
+# Parameter --afterjob or -a
+AFTERJOB=""
+
+# Defines whether the jobs are serial or parallel jobs.
+# For serial jobs, up to CORESPERNODE jobs are scheduled onto one node
+# bypassing the PBS system.
+SERIALJOBS=0
+
+# Type of queue to be selected.
+# =-1: automatic
+QTYPE=-1
+
+# Queue to be selected.
+# ="": Automatic
+QNAME=
+
+# ==================================================================
+# Global status variables
+
+# Gnu make command
+GNUMAKE=
+
+MODULESLOADED=
+
+# Prefix for script filename
+BENCHMARKRUNSCRIPT=runtests
+
+# List of all tasks planned in parallel
+ALLTESTS=
+
+# Number of nodes to reserve in PBS.
+NODES=
+
+# Number of cores actually used per node.
+# ="": Not specified.
+USEDCORES=
+
+# Number of cores to reserve per node.
+# ="": Not specified.
+CORES=
+
+# Number of tasks that are planned in parallel for one job.
+NTASKS=
+
+# The underlying queueing system.
+# Supported strings:
+#   PBSQUEUED = general PBS queueing system
+#   LIDO      = LiDo system
+QUEUEINGSYSTEM=LIDO
+
+# The MPI environment used for the creation of scripts.
+# The following strings are supported:
+#   not-needed-as-feat2-is-serial-only = no MPI system used
+#   MPICH    = MPICH system
+#   OpenMPI  = OpenMPI system
+#   LAMMPI   = LAM/MPI system
+#   MVAPICH  = MVAPICH system
+MPIENVIRONMENT=
+
+# Settings of the MPI environment that have to be added to the
+# scripts. These depend on the used cluster system.
+MPIENVSETTING=
+
+# ==================================================================
+# IMPORTANT
+# ==================================================================
+# It is assumed this script is called from a FEAT2 directory.
+# This assumption is not only made here, but also later as the
+# Makefile in a fbenchmark2 directory (whatever its actual name is)
+# is needed to create a 'runtests' script. The library function
+# fb_ensureCorrectWorkingDir even checks whether that's the case.
+
+
+# ==================================================
+# = Load library with functions needed for         =
+# = every scheduling script (NEC, LiDO, JUMP etc.) =
+# ================================================== 
+. include/lib_for_xxx_schedule_tests2 || exit 1
+
+# Definition of all queues in the system.
+# Format:
+#    ( [Queue-name] [wallclock] [cores per node] [node-type]} )
+#
+# [Queue-name]     = name of the queue.
+# [wallclock]      = max. allowed wallclock time in format "hh:mm:ss"
+# [cores per node] = number of cores per allocated node
+# [queuetype]      = type of the queue.
+#                    =0: ethernet
+#                    =1: infiniband
+
+declare -a queue001=( short_eth      00:30:00 2 0)
+declare -a queue002=( med_eth        08:00:00 2 0)
+declare -a queue003=( long_eth       48:00:00 2 0)
+declare -a queue004=( ultralong_eth 640:00:00 2 0)
+
+# List of all queues in the system
+
+allqueues=(queue001 queue002 queue003 queue004)
+
+# Message of the queueing system that is thrown if a queue is full
+
+MSGQUEUEFULL="Maximum number of jobs already in queue"
+
+
+# ==================================================
+# FUNCTION: Determine MPI environment and queueing system
+#           for the LiDo system
+#
+# This function sets the variables "QUEUEINGSYSTEM", "MPIENVIRONMENT" and
+# "MPIENVSETTING" according to the currently loaded module files
+# and active queue.
+# ==================================================
+
+fb_getMPIenvironment ()
+{
+  # Settings tuned for TU Dortmund Lido cluster:
+
+  QUEUEINGSYSTEM=LIDO
+  MPIENVIRONMENT=
+  MPIENVSETTING=
+  
+  if test -n "$LOADEDMODULES"
+    then
+  	  # Here enters hard-coded knowledge about maximum walltimes
+  	  # of queues of LiDO (the server could be queries dynamically
+  	  # for maximum walltimes, but this way it is easier.)
+  	  case ":$LOADEDMODULES" in
+  	      *:mpich/ge/*)
+  	  	echo "$0: Using MPICH."
+  	  	MPIENVIRONMENT=MPICH
+  	  	pbsOptionQueue=`fb_determineQueue "${nodes}" "${WALLCLOCKLIMIT}" "_eth"`
+  	  	;;
+  	      *:open-mpi/ib/*|*:openmpi/ib/*)
+  	  	echo "$0: Using OpenMPI."
+  	  	MPIENVIRONMENT=OpenMPI
+  	  	MPIENVSETTING="OMPI_MCA_btl=openib,self,sm; export OMPI_MCA_btl"
+  	  	;;
+  	      *:open-mpi/ge/*|*:openmpi/ge/*)
+  	  	echo "$0: Using OpenMPI."
+  	  	MPIENVIRONMENT=OpenMPI
+  	  	MPIENVSETTING="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
+  	  	;;
+  	      *:lam/*)
+  	  	echo "$0: Using LAM/MPI."
+  	  	MPIENVIRONMENT=LAMMPI
+  	  	MPIENVSETTING="OMPI_MCA_btl=tcp,self,sm; export OMPI_MCA_btl"
+  	  	;;
+  	      *:mvapich/*)
+  	  	echo "$0: Using MVAPICH."
+  	  	MPIENVIRONMENT=MVAPICH
+  	  	;;
+  	      # No way found yet to identify from the list of loaded modules whether 
+  	      # the quad nodes should be used. So, this switch is missing here.
+      
+  	      # Catch-all-else case
+  	      *)
+  	  	# No MPI module loaded
+  	  	echo "$0: No MPI required."
+  	  	MPIENVIRONMENT=not-needed-as-feat2-is-serial-only
+  	  	;;
+  	  esac  
+  	fi 
+}
+
+# ================================================
+# = Here is where to script really gets executed =
+# ================================================
+
+# Read the argiments from the command line.
+# This also initialises the ALLTESTS variable!
+
+fb_readargs "$@"
+
+# Ensure the correct working directory. Stop if that is not the case.
+
+fb_ensureCorrectWorkingDir
+
+# Check if the current username allows a mapping to an email address --
+# if no email address is spefified already.
+
+fb_setMailSender
+
+# Figure out how to call GNUmake
+
+fb_findGNUMake
+
+# Determine MPI and queueing environment
+
+fb_getMPIenvironment
+
+# Select queue where to enqueue the jobs
+
+fb_choosequeue "$WALLCLOCKLIMIT" "$QTYPE" "$QNAME"
+
+if test "$queuename" = "none"
+  then
+    echo $0": Error. No valid queue found for the job(s)!"
+    exit 1100
+  fi
+
+# Create all jobfiles according to $ALLTESTS
+
+fb_createBenchmarkJobfiles
+
+# Postprocessing. Print what worked and what not.
+
+fb_postprocess $successfulTests "$testIDsWithErrors"
+
+# Probably collect to parallel jobscripts
+
+if test "$SERIALJOBS" = "1"
+  then
+    # Collect the jobs into chunks
+    fb_collectToParallelJobfiles $USEDCORES
+  fi
+
+# Finally, sumbit the created jobs
+
+if test "$NOSCHEDULE" != "1"
+  then
+    # Submit the jobs
+    echo $0": Submitting jobs..."
+    fb_submitJobfiles "$SERIALJOBS" "MSGQUEUEFULL"
+  fi

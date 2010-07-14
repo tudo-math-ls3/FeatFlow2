@@ -1,0 +1,1167 @@
+# -*- mode: sh -*-
+
+# ================================================
+# = library with functions needed for every      =
+# = scheduling script (for NEC, LiDO, JUMP etc.) =
+# = The scripts reside in 'bin' and are called   =
+# = xxx_schedule_tests                           =
+# ================================================
+
+
+# ==================================================
+# FUNCTION: reinterpret wallclock time to seconds
+#
+# Call:  fb_choosequeue hh:mm:ss
+#
+# Return: Sets the variable "wcseconds" to the number of
+#   seconds corresponding to the given time.
+# ==================================================
+
+fb_getwallclockseconds()
+{
+  wcseconds=`echo $1 | awk -F: '{print $1*3600+$2*60+$3}'`
+}
+
+# ==================================================
+# FUNCTION: Switches to a specific queue
+#
+# Call:  fb_setqueue [index]
+#
+# Here, index=1..n defines the id of a queue.
+# the function sets the following variables:
+#   "queuename"        = name of the queue.
+#   "queuewallclock"   = max. allowed wallclock time in sec.
+#   "queuecores"       = cores per node in that queue
+#   "queuetype"        = type id of the queue.
+# If [index] = -1, the current queue is deselected;
+# all variables are filled with "".
+# ==================================================
+
+fb_setqueue_index()
+{
+  if test "$1" -eq "-1"
+    then
+      queueid=none
+      queuename=none
+      queuewallclock=0
+      queuecores=0
+      queuetype=-1
+    else
+      queueid=${allqueues[$1]}
+      queuename=`eval echo \\${$queueid[0]}`
+      queuewallclock=`eval echo \\${$queueid[1]} | awk -F: '{print $1*3600+$2*60+$3}'`
+      queuecores=`eval echo \\${$queueid[2]}`
+      queuetype=`eval echo \\${$queueid[3]}`
+    fi
+}
+
+# ==================================================
+# FUNCTION: Chooses a queue.
+#
+# Switches to a queue that matches the parameters.
+#
+# Call:  fb_choosequeue [wallclock] [type] [id]
+#
+# The parameters are defined as follows:
+#
+#   [wallclock]   = wallclock time, the queues must provide
+#   [type]        = type specifier of the queue or =-1 if an
+#                   arbitrary queue may be chosen.
+#   [id]          = id of the queue. If "" is specified here,
+#                   the queue is chosen automatically,
+#                   otherwise the routine selects that queue.
+# ==================================================
+
+fb_choosequeue()
+{
+  # Set the global variable "wcseconds" to the number of seconds
+  # the task needs.
+  fb_getwallclockseconds $1
+  
+  # loop through all available queues.
+  for qindex in `seq ${#allqueues[@]}`
+    do
+      qindex0=`expr $qindex - 1`
+      # Switch to that queue
+      fb_setqueue_index $qindex0
+      
+      if test "$3" != ""
+        then
+          # The queue name nust match.
+          if test "$3" != "${allqueues[$qindex0]}"
+            then
+              # not yet found
+              continue
+            fi
+          
+          # Found
+          return
+        else
+          # Ensure that the ID matches.
+          # If not, skip that queue.
+          if test "$2" != "-1"
+            then
+              if test "$2" != "$queuetype"
+                then
+                  continue
+                fi
+            fi
+            
+          # Ok, now the wallclock time must match.
+          if test $wcseconds -gt $queuewallclock
+            then
+              continue
+            fi
+        fi
+        
+      # Now we found an appropriate queue. Exit immediately.
+      return
+    done
+    
+    # If the loop finishes, no appropriate queue was found.
+    # Delete the current queue.
+    fb_setqueue_index -1
+}
+
+# ==================================================
+# FUNCTION: Determine number of nodes.
+#
+# Calculates the number of nodes necessary for all tasks
+# if supplying them to the current queue.
+#
+# Call:  fb_determineNodes [ntasks]
+#
+# where
+#  
+#    [ntasks] = number of tasks to be computed.
+#
+# Return: Sets the following variables:
+#
+#    NODES     = number of nodes necessary for the tasks.
+#    CORES     = number of cores per node to allocate for the tasks
+#    USEDCORES = number of cores that are actually used.
+#
+# ==================================================
+
+fb_determineNodes()
+{
+  taskcount="$1"
+  if test "$FORCE_COMPLETE_NODES" -eq "1"
+    then
+      # We always allocate complete nodes, up to $CORESPERNODE cores
+      # per node.
+      #
+      # Number of cores per node we are allowed to allocate?
+      USEDCORES=$CORESPERNODE
+      if test "$USEDCORES" -eq "-1"
+        then
+          # Initialise by total number of cores in that queue
+          USEDCORES=$queuecores
+        fi
+      
+      if test $USEDCORES -gt $queuecores
+        then
+          # Reduce to the max. number of cores.
+          USEDCORES=$queuecores
+        fi
+    
+      # Number of nodes to allocate?
+      NODES=`expr $taskcount + $USEDCORES - 1`
+      NODES=`expr $NODES / $USEDCORES`
+      
+      # Set the number of cores per node to the maximum, we completely
+      # allocate the node.
+      CORES=$queuecores
+      
+    else
+    
+      # Allocate as many nodes as we have tasks. On each node, reserve
+      # only one core.
+      NODES=$1
+      
+      # Set USEDCORES and CORES to empty strings to indicate that
+      # we allocate on a per-task basis.
+      USEDCORES=
+      CORES=
+    
+    fi
+}
+
+
+# ==================================================
+# FUNCTION: Print help screen.
+#
+# Prints information how to call the script to the terminal.
+# ==================================================
+
+fb_usage() {
+    # Determine the script that includes this code piece
+    case "$0" in
+    *lido_*)
+        system="LiDO"
+        ;;
+    *nec_*)    
+        system="NEC SX-8"
+        ;;
+    *woody_*)    
+        system="Woodcrest"
+        ;;
+    *)
+        system="unknown system (please update include/lib_for_schedule_tests)"
+        ;;
+    esac
+
+    cat <<EOF
+Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-w wallclock limit] [-a jobid] <TEST ID | test suite> [<TEST ID | test suite>]
+
+$0 provides a convenient way to schedule one 
+or more FEAST benchmark tests (identified by test ID, given directly 
+or in a *.fbconf file) on $system. The script creates a 
+job file for every test ID, takes care of including instructions to 
+load the very same modules at run time as are currently loaded and 
+submits the job file to the scheduler.
+
+  --afterjob <jobid>, -a <jobid>
+      Optional parameter. If specified, the new job(s) is/are executed
+      after the job <jobid> is finished. This allows sequential execution
+      of jobs that are manually added to the queue system.
+  --email <email address>, -m <email address>
+      Optional parameter that allows to specify an email address where
+      a notification email is sent after completition of the job.
+      Default: $EMAILADDRESS
+  --help, -h
+      prints this usage statement
+  --overwrite-log-directory, -o
+      In case a benchmark test ID's log directory does already exist, don't
+      rename it to save its content, but re-use it. Potentially overwrites
+      previously calculated data.
+  --prefix <jobfile prefix>, -p <jobfile prefix>
+      Optional prefix for job files. In particular used by nightly
+      regression test to identify jobs compiled with different compilers.
+      Based on this prefix, it can be automatically detected from 'qsub'
+      output when all benchmark jobs (using the same compiler) are finished.
+      Default: $JOBFILEPREFIX
+  --wallclocklimit <wallclock time>, -w <wallclock time>
+      Optional parameter that allows to specify the maximum allowed
+      wallclock time the job may use; the cluster environment usually
+      kills the job if it takes longer. The format is "hours:min:sec",
+      e.g. "00:40:00".
+      Default: $WALLCLOCKLIMIT
+  --corespernode <cores>, -c <cores>
+      Allows to define how many cores should be allocated on the cluster per
+      compute node. If not being set, the standard behaviour is to allocate all
+      cores of a node to prevent a node from being shared by multiple
+      tasks. This is necessary e.g. for correct timings, to avoid getting memory
+      eaten away by others or malicious threaded concurrent jobs.  Manually
+      specifying e.g. a 1 here allows to share one compute node for multiple
+      tasks if e.g. the execution time is not important.
+      Default: $CORESPERNODE
+  --noschedule, --no-schedule
+      Creates a job script but does not schedule the job. Used for
+      debugging purposes.
+  --serialjobs
+      Manually schedule multiple jobs onto one node, bypassing the queuing
+      system. May be used for serial jobs on cluster systems that do not
+      support allocation of less than one node per job.
+  --queuetype <type>, -qt <type>
+      Defines the type of the queue where the job(s) is/are submitted to.
+      The default setting automatically selects a queue. The different
+      queue types are system dependent and defined on top of "$0".
+      Default: $QTYPE
+  --queue <id>, -q <id>
+      Enforces a specific queue to be used. If not specified, the queue
+      is chosen automatically. The different queues have an ID in the form
+      "queueXXX" and are defined on top of "$0".
+      If a queue is manually selected with this parameter, the wallclock
+      time and queuetype is not checked against the queue specification!
+      Default: "$QNAME"
+  TEST ID
+      a valid identifier for a FEAST benchmark test, defined in one of
+      the *.fbdef files stored in directory benchmark/tests.
+  test suite
+      a *.fbconf file containing valid identifiers for FEAST benchmark tests
+
+
+Example:
+  # Perform quicktests
+  $0 quicktests.fbconf
+
+  # Perform singletests and additionally test SCARC005
+  $0 singletests.fbconf SCARC005
+
+  # Perform singletests and additionally test SCARC005, jobfiles are named "fb-intel.*"
+  $0 -p fb-intel singletests.fbconf SCARC005
+
+EOF
+   exit
+}
+
+
+# ==================================================
+# FUNCTION: evaluate command line options
+#
+# Reads command line parameters and evaluates them.
+# Modifies the global variables to match the settings.
+# Puts all tests to execute to the command line variable "ALLTESTS".
+# ==================================================
+fb_readargs() {
+    while test -n "$*"
+    do
+      case "$1" in
+      --afterjob|-a*)  # job after completition of another job
+          AFTERJOB="$2"
+          shift
+          shift
+          ;;
+
+      --email|-m*)  # email address
+          EMAILADDRESS="$2"
+          DOSENDMAIL=1
+          shift
+          shift
+          ;;
+
+      --help|-h*)    # help screen
+          fb_usage
+          exit
+          ;;
+
+      --noschedule|--no-schedule) # only create jobfile, don't submit to queue
+          NOSCHEDULE=1
+          shift
+          ;;
+
+      --overwrite-log-director*|-o) # don't rename existing log directories
+          OVERWRITE_LOG_DIRECTORY=1
+          shift
+          ;;
+
+      --prefix|-p*)  # jobfile prefix
+          JOBFILEPREFIX="$2"
+          shift
+          shift
+          ;;
+
+      --serialjobs)  # jobs are serial jobs using less than one node per job
+          SERIALJOBS=1
+          shift
+          ;;
+
+      --wallclocklimit|-w*)  # wallclock time address
+          WALLCLOCKLIMIT="$2"
+          echo "$0: Using wallclocklimit $WALLCLOCKLIMIT"
+          shift
+          shift
+          ;;
+
+      --corespernode|-c*)  # Number of cores per node to use
+          CORESPERNODE="$2"
+          echo "$0: Using at most $CORESPERNODE cores per node"
+          shift
+          shift
+          ;;
+
+      --queuetype|-qt*)  # Type of queue
+          QTYPE="$2"
+          echo "$0: Submitting to queues of type $QTYPE"
+          shift
+          shift
+          ;;
+
+      --queue|-q*)  # Id of the queue
+          QNAME="$2"
+          echo "$0: Submitting to queue $QNAME = "`eval echo \\${$QNAME[0]}`
+          shift
+          shift
+          ;;
+
+      -*)
+          echo "$0: Invalid flag -- '$1'\n"
+          fb_usage
+          exit
+          ;;
+
+      *)
+          # Determine whether it is a file. If not, it is
+          # considered a test ID.
+          if [ -f "$1" ]; then
+          # Store all test IDs in one variable
+          ALLTESTS=`echo $ALLTESTS; sed -e 's/#.*//' $1`
+          else
+          ALLTESTS=`echo $ALLTESTS $1`
+          fi
+          shift
+          ;;
+      esac
+    done
+
+    # empty list of test IDs
+    if [ -z "$ALLTESTS" ]; then
+    echo "$0: No benchmark test IDs specified. Nothing done."
+    echo "For help invoke '$0 --help'."
+    exit
+    fi
+}
+
+
+# ==================================================
+# FUNCTION: Ensure this script is called from correct working directory
+#
+# If not, the script is stopped.
+# ==================================================
+
+fb_ensureCorrectWorkingDir() {
+    # Ensure we are in benchmark folder
+    lastdir=`/bin/pwd | sed 's/^.*\/\([^\/]*\)$/\1/'`
+    case "$lastdir" in
+    benchmark*)
+        # Everything's fine.
+        ;;
+    *)
+        # Throw error
+        cat <<EOF 1>&2
+$0: Error: Script must be called from directory Featflow2/benchmark
+$0: as the GNUmakefile in this directory is needed.
+EOF
+        exit 1001
+        ;;
+    esac
+}
+
+# ==================================================
+# FUNCTION: Delete files from previous invocations of this script
+# ==================================================
+
+fb_cleanUpPreviousRun() {
+    echo $0": Clearing batch files, log and output files ..."
+    LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
+    \rm -rf ${LOG_BASE_DIRECTORY} ${JOBFILEPREFIX}.*.sh
+}
+
+# ==================================================
+# FUNCTION: Determine valid email address.
+#
+# If no email address is specified, this routine specifies the default
+# behaviour for emails. The local identity is checked for a list of
+# usernames, and depending on this, the variables EMAILADDRESS and
+# DOSENDMAIL are initialised.
+#
+# Users may specify their own default behaviour here!
+# ==================================================
+
+fb_setMailSender() {
+  if test "$EMAILADDRESS" != ""
+    then
+      # EMail already specified. Return.
+      return
+    fi
+    
+    # Check the environment variable $user agains a number
+    # of usernames. Users may spefify their default
+    # mail behaviour here!
+    case "$USER" in
+    cbecker|featflow|xambeck)
+        EMAILADDRESS=christian.becker@math.tu-dortmund.de
+        DOSENDMAIL=0
+        ;;
+
+    buijssen|xamsbuij)
+        EMAILADDRESS=sven.buijssen@math.tu-dortmund.de
+        DOSENDMAIL=1
+        ;;
+
+    goeddeke)
+        EMAILADDRESS=goeddeke@math.tu-dortmund.de
+        DOSENDMAIL=1
+        ;;
+
+    wobker)
+        EMAILADDRESS=hilmar.wobker@math.tu-dortmund.de
+        DOSENDMAIL=1
+        ;;
+
+    mkoester)
+        EMAILADDRESS=michael.koester@mathematik.tu-dortmund.de
+        DOSENDMAIL=1
+        ;;
+
+    *)
+        if test "$EMAILADDRESS" = ""
+        then
+          EMAILADDRESS=unknown.user@mathematik.tu-dortmund.de
+          DOSENDMAIL=0
+          cat <<EOF 1>&2
+$0: Warning: Unknown user $USER.
+$0: Cannot determine the email address.
+$0: Please update function fb_setMailSender.
+$0: Using dummy email address: $EMAILADDRESS
+$0: No mail is send!
+EOF
+        else
+          cat <<EOF 1>&2
+$0: Warning: Unknown user $USER.
+$0: Please update function fb_setMailSender.
+$0: Using email address: "$EMAILADDRESS"
+EOF
+          DOSENDMAIL=1
+        fi
+      ;;
+    esac
+}
+
+# ==================================================
+# FUNCTION: Find out how to call GNU make and set '$GNUMAKE' accordingly
+#
+# Sets the global variable GNUMAKE to how to call make.
+# ==================================================
+
+fb_findGNUMake() {
+    echo $0": Trying to find GNU make... "
+    GNUMAKE=""
+    for MAKE in make gmake
+    do
+        # Check whether program exists
+    stdoutput=`which $MAKE > /dev/null 2>&1`;
+
+    # If program exists, check whether its GNU make
+    if [ $? -eq 0 ]; then
+        stdoutput=`$MAKE --version > /dev/null 2>&1`
+        if [ $? -eq 0 ]; then
+        echo $0": <$MAKE> seems to be GNU make. Using it."
+        GNUMAKE=$MAKE
+        break
+        fi
+    fi
+    done
+    if [ -z "$GNUMAKE" ]; then
+    cat <<EOF 1>&2
+$0: Error: No GNU make found. Script aborted.
+EOF
+    exit 1003
+    fi
+}
+
+# ==================================================
+# FUNCTION: Remember module settings
+#
+# Creates all necessary instructions to be able to use exactly
+# these modules later on again (i.e. make 'module' command
+# available, tell 'module' where to find these modulefiles and
+# finally the modules to load).
+#
+# Determins the current module settings and ECHOes
+# commands that load exactly these modules.
+#
+# Returns:
+#   A set of commands that load the currently loaded modules.
+# ==================================================
+
+fb_addModuleInstructions() {
+    if [ -n "$MODULESHOME" ]; then
+    # 'runtests' is a sh shell script. A jobfile must be a sh shell script 
+    # as well, hence.
+    echo ". $MODULESHOME/init/bash"
+    else
+    cat <<EOF 1>&2
+$0: Error: \$MODULESHOME not set. Job files cannot be created.
+EOF
+    exit 1004
+    fi
+
+    if [ -n "$MODULEPATH" ]; then
+    # Expand any environment variables inside $MODULEPATH by
+    # 'eval echo', 'module use' needs space separated directories.
+    echo "module use "`eval echo $MODULEPATH | sed 's/:/ /g'`
+    else
+    cat <<EOF 1>&2
+$0: Error: \$MODULEPATH not set. Job files cannot be created.
+EOF
+    exit 1005
+    fi
+
+    if [ -n "$LOADEDMODULES" ]; then
+    # Only load 3 modules at once.
+    # Modules Enviroment 3.2.x randomly crashes when trying to
+    # load/unload more at the same time.
+    echo $LOADEDMODULES | sed 's/:/ /g' | xargs -n 3 echo "module load"
+    else
+    cat <<EOF 1>&2
+$0: Error: \$LOADEDMODULES not set. Job files cannot be created.
+EOF
+    exit 1006
+    fi
+}
+
+
+# ==================================================
+# FUNCTION: Create script for one test.
+#
+# Creates the core instructions for a jobfile 
+# for a given test ID. If successful, this function
+# creates a shell script "runtest" that contains all
+# the execution commands for the job.
+#
+# Call:
+#    fb_createRuntestsScript [jobid]
+#
+# Return:
+#    =0: Script "runtest" successfully created.
+#    =1: Error during creation of the script.
+#
+# Invokes GNU-make to create the script.
+# ==================================================
+
+fb_createRuntestsScript() {
+    benchmarktest="$1"  # IN
+
+    # Create a unique temporary file
+    # (Unfortunately 'mktemp' does not support suffixes.
+    #  So, get a temporary name, append the suffix ".fbconf", check whether
+    #  such a file already exists. If so, remove the temporary file created
+    #  by mktemp (the one without the suffix), create a new one and repeat 
+    #  the test.)
+    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+    trap "rm -f ${tmpfile}; exit 1" 2 3 9
+    while test -e ${tmpfile}.fbconf; do
+    rm -f ${tmpfile}
+    tmpfile="`mktemp feast.benchmark.schedulefile.XXXXX`";
+    done
+    rm -f ${tmpfile}
+    tmpfile="${tmpfile}.fbconf";
+
+    # Hardwired variant of temporary file
+    #    tmpfile="tempfile.for.schedulingsystem.fbconf"
+
+
+    # Check whether GNUmakefile is available (i.e. whether configure has been run)
+    if [ ! -s GNUmakefile ]; then
+    cat <<EOF 1>&2
+$0: Error: File 'GNUmakefile' not found. Please run './configure' first.
+EOF
+    exit 1007
+    fi
+
+    # Create a 'runtests' script which serves as base for the jobfile.
+    # It's save to call 'make' as we checked for being in benchmark folder
+    echo "$benchmarktest" > $tmpfile
+    if [ $? -ne 0 ]; then
+    cat <<EOF 1>&2
+$0: Error: Creating temporary file failed. Script cancelled.
+EOF
+    exit 1008
+    fi
+
+    $GNUMAKE `echo $tmpfile | sed 's/.fbconf$//'`
+    # Purposely do not check for errors!
+    # Typically, an error is reported if the test ID is unknown or the
+    # according test is configured not to be run on the current host. COPROC
+    # tests e.g. are part of 'dailytests.fbconf' and 'alltests.fbconf', but
+    # should only be run on a supported host. LiDO does not support everything.
+    # Checking error codes here would means that this script is aborted
+    # as soon as the loop over the test IDs in e.g. 'dailytests.fbconf'
+    # reaches the first unsupported test ID. That's not intended.
+    # We set a return code, though, to prevent that incomplete or empty
+    # jobfiles are submitted to the PBS scheduler.
+    if [ $? -ne 0 ]; then
+    returncode=1
+    else
+    returncode=0
+    fi
+    rm $tmpfile
+    trap - 2 3 9;
+    return $returncode;
+}
+
+
+# ==================================================
+# FUNCTION: Determine number of tasks.
+#
+# Analyses a jobfile and returns the number of tasks that will be
+# generated by that job. Each task corresponds to one core on the
+# cluster that has to be allocated.
+#
+# Call:
+#    fb_getNTASKS [jobid]
+#
+# where
+#
+#    [jobid] = name of the job
+#
+# Returns: 
+#
+#   The global variable "NTASKS" is set to the number of tasks
+#   that are required by that job.
+# ==================================================
+
+fb_getNTASKS()
+{
+  # Id of the job
+  jobid=$1
+  
+  # Feat2 is plain serial. No need to query the grid file and determine
+  # the number of parallel blocks required. Neither do we need to respect
+  # a hardcoded number of processes, given by an environment variable.
+  NTASKS=1
+}
+
+# ==================================================
+# FUNCTION: Create PBS jobfile header
+#
+# Creates the header for the PBS system,
+# evaluating the global variables. The currently selected
+# queue is used as destination for the PBS task.
+#
+# Call:
+#    fb_createPBSHeaderFile [logfile]
+#
+# where
+#    [logfile]  = path+filename of a logfile for the PBS output
+# ==================================================
+fb_createPBSHeader()
+{
+  logfile=$1
+  echo "#!/bin/sh"
+  echo "#PBS -q $queuename"
+  echo "#PBS -o $logfile"
+  echo "#PBS -j oe"
+  echo "#PBS -l walltime=$WALLCLOCKLIMIT"
+  echo "#PBS -M $EMAILADDRESS"
+  
+  # Optional arguments
+  if test "$DOSENDMAIL" = "1"
+    then
+      echo "#PBS -m bae"
+    fi
+  
+  if test "$USEDCORES" = ""
+    then
+      # Scheduling on a per-task basis.
+      echo "#PBS -l nodes=$NODES"
+    else
+      # Allocate complete nodes
+      echo "#PBS -l nodes=$NODES:ppn=${CORES}"
+    fi
+  
+  if test "$AFTERJOB" != ""
+    then
+      echo "#PBS -W depend=afterok:$AFTERJOB"
+    fi
+}
+
+# ==================================================
+# FUNCTION: Create a job-file based on the settings in the global variables.
+#
+# Call:
+#    fb_createBenchmarkJobfile [testid] [filename]
+#
+# where
+#
+#   [testid]    = id of the test
+#   [filename]  = name of the output file
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+#
+# Return:
+#   =0: job-file created
+#   =1: underlying execution (runtests) script could not be created.
+#   =2: Number of tasks could not be determined.
+# ==================================================
+
+fb_createBenchmarkJobfile()
+{
+    benchmarktest="$1"  # IN
+    file="$2"           # IN
+    
+    # Step 1: Create the basic RUNTESTS script that contains the
+    # commands for executing the test.
+    
+    fb_createRuntestsScript "$benchmarktest"
+    if test $? -ne 0
+      then
+	      return 1
+      fi
+    
+    # Step 2: Figure out how many tasks the current job executes
+    # in parallel. Set env. variable NTASKS appropriately.
+    # Figure out how to distribute the tasks to the nodes.
+
+    fb_getNTASKS
+    if test $? -ne 0
+      then
+	      return 2
+      fi
+
+    fb_determineNodes $NTASKS
+      
+    # Step 3: Determine the PBS header and create the basic file.
+    
+    LOG_BASE_DIRECTORY=`$GNUMAKE --no-print-directory print-base-log-dir`
+    LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
+    fb_createPBSHeader $LOG_FILE > $file
+    
+    # Step 4: Add environment settings of the MPI envoronment etc.
+    
+    echo "$MPIENVSETTING" >> $file
+    echo >> $file
+    fb_addModuleInstructions >> $file
+    echo >> $file
+    
+    # Add the content of our runtests script to the jobfile, but
+    # * omit the first lines (i.e. the shebang, leading comments)
+    # * set execution mode to PBSQUEUED
+    # * set MPI environment to use
+    #         s|^LOGDIR=[ ]*\.|LOGDIR=$sedLogDir|i;
+    #         s|^EXECMODE=PARALLEL|EXECMODE=$sedExecMode|i; \
+    sed -e \
+	"1,2d; \
+	 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$QUEUEINGSYSTEM|i; \
+	 s|^MPIENV=[ ]*$|MPIENV=$MPIENVIRONMENT|i;" $BENCHMARKRUNSCRIPT \
+	>> $file
+
+    # Make jobfile executable
+    chmod 750 $file
+
+    echo $0": Jobfile <$file> created."
+}
+
+# ==================================================
+# FUNCTION: Determine jobfile filename
+#
+# Based on the test-id, this routine creates a unique name
+# of a script file for a job.
+#
+# Call:
+#    fb_getJobfileName [testid] [parexec]
+#
+# with
+#
+#    [testid]  = id of the test
+#    [parexec] = 0, if the script is a single script for one test
+#                1, if the script is a parallel script that internally calls
+#                   other scripts in parallel
+#
+# Return:
+#   [JOBFILE]   = name of the jobfile
+# ==================================================
+
+fb_getJobfileName()
+{
+  parexec=$2
+  if test "$parexec" = "1"
+    then
+      JOBFILE="$JOBFILEPREFIX.$testid.parallel.sh"
+    else
+      JOBFILE="$JOBFILEPREFIX.$testid.sh"
+    fi
+}
+
+# ==================================================
+# FUNCTION: Create all job-files based on the settings in the global variables.
+#
+# Call:
+#    fb_createBenchmarkJobfile
+#
+# The routine evaluates $ALLTESTS to figure out all jobs.
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+#
+# Return:
+#   [successfulTests]   = number of successfully created tests
+#   [testIDsWithErrors] = list of all test ID's that could not be created
+# ==================================================
+
+fb_createBenchmarkJobfiles()
+{
+  successfulTests=0
+  testIDsWithErrors=""
+  for testid in $ALLTESTS
+    do
+      fb_getJobfileName $testid 0
+      echo $0": Creating jobfile for <$testid>."
+      fb_createBenchmarkJobfile "$testid" "$JOBFILE"
+      if test $? -eq 0
+        then
+   	      successfulTests=`expr $successfulTests + 1`
+        else
+          echo $0": An error occurred creating the jobfile. Submit cancelled."
+          testIDsWithErrors="$testIDsWithErrors $testid"
+        fi
+    done
+}
+
+# ==================================================
+# FUNCTION: Determins the PBS output.
+#
+# Parses the file [jobfile] to find the 1st occurrence
+# of "#PBS -o". Returns the filename that is specified
+# there as output.
+#
+# Call:
+#    fb_readLogPath [jobfile]
+#
+# Returns:
+#    [LOG_FILE] = Name of the output file or "" if not found.
+# ==================================================
+
+fb_readLogPath()
+{
+  # Get the 1st line containing the PBS command using grep
+  # Cut off the line start.
+  LOG_FILE=`grep "#PBS -o " $1 | head -1 | cut -c9-`
+}
+
+# ==================================================
+# FUNCTION: Collect multiple jobfiles into parallel ones
+#
+# Call:
+#    fb_collectToParallelJobfiles [blocksize]
+#
+# This function divides all tests in $ALLTESTS into
+# chunks with size [blocksize], i.e. it collects [blocksize]
+# benchmark scripts into one file which can be called
+# on one node. This file executes the original [blocksize]
+# scripts in parallel and stops execution if all these
+# jobs are finished.
+# ==================================================
+
+fb_collectToParallelJobfiles()
+{
+  icounter=1
+  iblocksize=$1
+  
+  echo $0": Collecting jobfiles to parallel jobfiles."
+  
+  if test "$ALLTESTS" = ""
+    then
+      # Nothing to do.
+      return
+    fi
+  
+  for testid in $ALLTESTS
+    do
+      # Get the filename of the script corresponding to the test id.
+      # It is written to $JOBFILE.
+      fb_getJobfileName $testid 0
+      
+      testjobfile=$JOBFILE
+
+      # Get the LOG-Path from the corresponding script.
+      fb_readLogPath $testjobfile
+      
+      if test $icounter -eq 1
+        then
+          # Create a new file.
+          #
+          # Get the filename
+          fb_getJobfileName $testid 1
+          file=$JOBFILE
+          
+          echo $0": Creating parallel jobfile <$file>."
+          
+          # Write a header, but use a different output file.
+          PAR_LOG_FILE=$LOG_FILE.parexec
+          fb_createPBSHeader $PAR_LOG_FILE > $file          
+          
+        else
+          # Delete a parallel jobfile, it must not exist.
+          # We only keep the parallel jobfiles of the "1st" job in the block.
+          fb_getJobfileName $testid 1
+          rm -f $JOBFILE
+        fi
+        
+      # Attach a call to the job to the jobfile.
+      # Redirect the output to the log file of that job.
+      echo $0": Adding jobfile <$testjobfile>"
+      echo "./$testjobfile >& $LOG_FILE &" >> $file
+        
+      if test $icounter -eq $iblocksize
+        then
+          # Write a footer that waits for the jobs. Reset the counter
+          echo "wait" >> $file
+          echo $0": Parallel jobfile <$file> created."
+          icounter=1
+        else
+          # Increase the counter
+          icounter=`expr $icounter + 1`
+        fi
+    done
+    
+    if test $icounter -ne 1
+      then
+        # Write a footer that waits for the jobs.
+        echo "wait" >> $file
+        echo $0": Parallel jobfile <$file> created."
+      fi
+}
+
+# ==================================================
+# FUNCTION: Create log directory if necessary
+#
+# Call:
+#    fb_createLogDir [logdir]
+#
+# not used at the moment...
+# ==================================================
+
+fb_createLogDir() {
+    directory="$1"  # IN
+
+    if [ -r $directory ]; then
+    echo $0": Log directory exists."
+    else
+    echo $0": Creating log directory."
+    mkdir $directory
+    fi
+}
+
+# ==================================================
+# FUNCTION: Try hard to submit a jobfile
+#
+# Tries to submit a job file to the queueing system of the cluster.
+#
+# Call:
+#    fb_submitJobfile [jobfile] [maxjobsmessage]
+#
+# where
+#    [jobfile]        = name of the jobfile to submit
+#    [maxjobsmessage] = Output of qsub if the queue is full
+#
+# During the call of "qsub", the screen output is checked
+# against [maxjobsmessage]. If that message appears, the
+# queue is assumed to be full.
+# ==================================================
+
+fb_submitJobfile() {
+    jobfile="$1"           # IN
+    maxjobsmessage="$2"    # IN
+
+    success=0
+    # time to wait (in seconds) between subsequent qstat calls
+    sleeptime=60
+    # how many cycles to wait till for all jobs to finish
+    maxwaitcycles=512
+    iteration=1
+    while test $success -eq 0 -a $iteration -le $maxwaitcycles; do
+    output="`qsub $jobfile 2>&1`"
+    returncode=$?
+    if [ $returncode -eq 0 ]; then
+        echo $output
+        success=1
+
+    # Catch case "invalid credential" aka error code 171. Just
+    # re-submit in this case.
+    elif [ $returncode -eq 171 ]; then
+        echo $output
+        # Wait and try again
+        iteration=`expr $iteration + 1`
+        echo $0": Waiting 1 second, then retrying submission..."
+        sleep 1
+
+    # Catch case "Maximum number of jobs already in queue".
+    # Currently, the message seems not related one to one to
+    # a particular return code of the qsub command.
+    # So, check for the screen message itself.
+    elif [ -n "`echo \"$output\" | grep \"$maxjobsmessage\"`" ]; then
+        echo $output
+        echo "(error code: $returncode)"
+        # Wait and try again
+        iteration=`expr $iteration + 1`
+        echo $0": Waiting $sleeptime seconds, then retrying submission..."
+        sleep $sleeptime
+
+    # All other errors: end script
+    else
+        echo $output
+        cat <<EOF 1>&2
+$0: Error while submitting jobfile <$jobfile>:
+$0: qsub returned error code $returncode.
+EOF
+        exit 1010
+    fi
+    done
+}
+
+# ==================================================
+# FUNCTION: Try hard to submit a jobfile
+#
+# Sumbit all jobfiles.
+#
+# Call:
+#    fb_submitJobfiles [parexec] [maxjobsmessage]
+#
+# where
+#    [parexec]        = 0, if the script should submit one job per test-id
+#                       1, If the script should enqueue 'parallel' scripts
+#                          which collect the execution of multiple serial jobs
+#    [maxjobsmessage] = Output of qsub if the queue is full
+#
+# During the call of "qsub", the screen output is checked
+# against [maxjobsmessage]. If that message appears, the
+# queue is assumed to be full.
+# ==================================================
+
+fb_submitJobfiles()
+{
+  parexec=$1
+  maxjobsmessage="$2"
+  # Loop over all jobs, submit them if they exist.
+  for testid in $ALLTESTS
+    do
+      # Get the filename.
+      fb_getJobfileName $testid $parexec
+      
+      # If the file exists (does not have to be for 'parallel' jobfiles
+      # that merge a couple of serial tests), submit the job.
+      if test -e $JOBFILE
+        then
+          fb_submitJobfile $JOBFILE $maxjobsmessage
+        fi
+    done
+}
+
+
+# ==================================================
+# Function: Print a nicely formatted list of all test IDs that had errors
+#
+# Call:
+#    fb_postprocess [successfulTests] [testIDsWithErrors]
+#
+# with
+#
+#    [successfulTests]   = number of tests successfully subitted.
+#    [testIDsWithErrors] = list of test ID's which had errors, 
+#                          separated by spaces.
+# ==================================================
+
+fb_postprocess() {
+    successful="$1"    # IN
+    errors="$2"  # IN
+
+    # empty list of test IDs
+    if [ -z "$ALLTESTS" ]; then
+    echo "$0: No benchmark test IDs specified. Nothing done."
+    echo "For help invoke '$0 --help'."
+    exit
+    fi
+    # include/create_script.pl reported only errors
+    if [ "$successful" -eq "0" ]; then
+    cat <<EOF 1>&2
+$0: Not a single jobfile could be created as no valid test ID was given.
+
+EOF
+    exit 1011
+    fi
+    # Some tests had errors
+    if [ -n "$errors" ]; then
+    cat <<EOF 1>&2
+$0: The following test IDs had errors:
+EOF
+    echo $errors | tr ' ' '\n' | cat 1>&2
+    fi
+}
