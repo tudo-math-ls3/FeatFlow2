@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # This shell script is used to prepare the FEAT2 regression benchmark
-# application 'flagship' for compilation. It is simply a wrapper for
+# application for compilation. It is simply a wrapper for
 # calling the FEAT2 configure script, but sets some standard flags
 # that are tedious to add always manually.
 #
@@ -50,8 +50,16 @@ LC_ALL=C
 SCRIPTPATH=`dirname $0`
 cd ${SCRIPTPATH}
 
-# Specify object directory prefix.
-BASEDIR_OBJFILES=${HOME}/nobackup/feat2obj
+# Specify object directory prefix. Try to use a path without quota restrictions.
+# If that one does not exist, put the object files to the main package
+# directory.
+NOQUOTADIR=${HOME}/nobackup
+if test -e $NOQUOTADIR
+  then
+    BASEDIR_OBJFILES=${NOQUOTADIR}/feat2obj
+  else
+    BASEDIR_OBJFILES=`cd ../..;pwd`/feat2obj
+  fi
 
 # To support multiple working copies of FEAT2 which all store their
 # object files beneath ${BASEDIR_OBJFILES}, but which should not interfere
