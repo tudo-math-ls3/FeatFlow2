@@ -966,7 +966,12 @@ fb_collectToParallelJobfiles()
           
           # Write a header, but use a different output file.
           PAR_LOG_FILE=$LOG_FILE.parexec
-          fb_createPBSHeader $PAR_LOG_FILE > $file          
+          fb_createPBSHeader $PAR_LOG_FILE > $file        
+          
+          # Write a command that switches to the current working directory.
+          echo >> $file
+          echo "cd `/bin/pwd`" >> $file
+          echo >> $file
           
         else
           # Delete a parallel jobfile, it must not exist.
@@ -979,11 +984,15 @@ fb_collectToParallelJobfiles()
       # Redirect the output to the log file of that job.
       echo $0": Adding jobfile <$testjobfile>"
       echo "./$testjobfile >& $LOG_FILE &" >> $file
-        
+
       if test $icounter -eq $iblocksize
         then
           # Write a footer that waits for the jobs. Reset the counter
           echo "wait" >> $file
+
+          # Make jobfile executable
+          chmod 750 $file
+        
           echo $0": Parallel jobfile <$file> created."
           icounter=1
         else
@@ -996,6 +1005,10 @@ fb_collectToParallelJobfiles()
       then
         # Write a footer that waits for the jobs.
         echo "wait" >> $file
+
+        # Make jobfile executable
+        chmod 750 $file
+
         echo $0": Parallel jobfile <$file> created."
       fi
 }
