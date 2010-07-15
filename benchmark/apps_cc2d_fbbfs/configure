@@ -58,7 +58,7 @@ if test -e $NOQUOTADIR
   then
     BASEDIR_OBJFILES=${NOQUOTADIR}/feat2obj
   else
-    BASEDIR_OBJFILES=`cd ../..;pwd`/feat2obj
+    BASEDIR_OBJFILES=`cd ../.. && pwd || echo`/feat2obj
   fi
 
 # To support multiple working copies of FEAT2 which all store their
