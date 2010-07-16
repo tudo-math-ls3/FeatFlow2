@@ -5244,7 +5244,6 @@ contains
     real(DP) :: particlediam, particlediammin, particlediammax
     real(DP) :: parttemp, parttempmin, parttempmax
     integer :: idensitypart, idiampart, itemppart, istartpos
-
          
     ! Constants for Runge-Kutta
     real(DP), dimension(2) :: rk_k1, rk_k2, rk_k3, rk_k4
@@ -5257,8 +5256,7 @@ contains
     
     ! Forces for particle movement
     real(DP), dimension(2) :: F_G, F_D, F_ges, F_VM, F_B, F_M, F_S
-
-    
+   
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
     real(DP) :: velogasx, velogasy
@@ -5281,8 +5279,6 @@ contains
     type(t_pgm) :: rpgm
     real(DP), dimension(:), pointer :: p_Ddata
     character(LEN=SYS_STRLEN) :: ssolutionname
-
-    real(DP) :: c_pi
 
     character(LEN=SYS_STRLEN) :: sselectforce, cforce
     integer :: nselectforce, iselectforce, isubstring
@@ -5321,7 +5317,6 @@ contains
     call lsyssc_getbase_double(rvector1, p_Ddata1)
     call lsyssc_getbase_double(rvector2, p_Ddata2)
     call lsyssc_getbase_double(rvector3, p_Ddata3)
-
 
     ! Loop over the particles
     do iPart = 1, rParticles%nPart
@@ -6383,9 +6378,9 @@ contains
 
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
 
 
         case(1)
@@ -6395,9 +6390,9 @@ contains
 		  
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
         
         case(2)
          call random_number(random3)
@@ -6443,7 +6438,7 @@ contains
         
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
-          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
           rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
           rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)
           
@@ -6542,9 +6537,7 @@ contains
         rParticles%p_element(iPart)= 1
         rParticles%p_bdy_time(iPart)= 0.0_dp
 
- 
- 
-         ! Set particle mass
+        ! Set particle mass
         rParticles%p_mass(iPart)= &
                rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**2 * 3.14159265358_dp /4.0_dp)
 
@@ -6587,7 +6580,8 @@ contains
 
 !<subroutine>
 
-  subroutine eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,Dcurrpos,Dbarycoords,rParticles,currentElement,iPart)
+  subroutine eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,Dcurrpos,&
+                Dbarycoords,rParticles,currentElement,iPart)
 
 !<description>
     ! This subroutine gets the velocity of the gas in a position.
@@ -6746,39 +6740,53 @@ contains
 
         currentElement= rParticles%p_element(iPart)
 
-        ! Loop over the vertices of the element
-        SearchVertex2: do Vert = 1, 3												
+        ! Store coordinates of cornervertices
+        Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+        Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-            !Current vertex
-            nVertex = p_IverticesAtElement(Vert, currentElement)
+        ! Check if the particle is in the element
+        call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
 
-            ! Loop over the element containing to the vertex
-            SearchElement2: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
-    							
-                if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
-                exit SearchElement2
-                end if
+        ! Check for particle-wall-collisions
+        if (binside == .false.) then
 
-                currentElement = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
+            ! Loop over the vertices of the element
+            SearchVertex2: do Vert = 1, 3												
 
-                ! Store coordinates of cornervertices
-                Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
-                Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
-                Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
-                Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
-                Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
-                Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+                !Current vertex
+                nVertex = p_IverticesAtElement(Vert, currentElement)
 
-                ! Check if the particle is in the element
-                call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
+                ! Loop over the element containing to the vertex
+                SearchElement2: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+        							
+                    if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
+                    exit SearchElement2
+                    end if
 
-                ! If the particle is in the element, then exit loop
-                if (binside==.true.) exit SearchVertex2
+                    currentElement = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
 
-            end do SearchElement2
+                    ! Store coordinates of cornervertices
+                    Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+                    Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+                    Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+                    Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+                    Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+                    Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-        end do SearchVertex2
+                    ! Check if the particle is in the element
+                    call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
 
+                    ! If the particle is in the element, then exit loop
+                    if (binside==.true.) exit SearchVertex2
+
+                end do SearchElement2
+
+            end do SearchVertex2
+        end if
         if (binside==.true.) rParticles%p_element(iPart)=currentElement
 
         ! Store coordinates of cornervertices
@@ -6794,6 +6802,7 @@ contains
 
         ! Check for particle-wall-collisions
         if (binside == .false.) then
+        !pause
             call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)     
         end if
      

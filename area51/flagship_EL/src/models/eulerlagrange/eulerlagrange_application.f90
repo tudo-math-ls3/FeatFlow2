@@ -3568,9 +3568,9 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)+(partymax - partymin)*0.001_dp
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)+(partymax - partymin)*0.001_dp
 
 
         case(1)
@@ -3585,9 +3585,9 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 		  
           ! Set startingpositions of the particle
           rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)+(partymax - partymin)*0.001_dp
           rParticles%p_xpos_old(iPart)= partxmin + random1*(partxmax - partxmin)
-          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)
+          rParticles%p_ypos_old(iPart)= partymin + random2*(partymax - partymin)+(partymax - partymin)*0.001_dp
         
         case(2)
         
@@ -3611,7 +3611,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 	    
 		    ! Get point in the array
             rParticles%p_xpos(iPart)= partxmin + random1*(partxmax - partxmin)
-            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)
+            rParticles%p_ypos(iPart)= partymin + random2*(partymax - partymin)+(partymax - partymin)*0.001_dp
 
             ix = 1+(rpgm%width-1)*(rParticles%p_xpos(iPart)-xmin)/(xmax-xmin)
             if (ix .lt. 1 .or. ix .gt. rpgm%width) cycle
