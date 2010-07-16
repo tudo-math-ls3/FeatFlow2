@@ -45,8 +45,7 @@ algorithm = transient_primal
 # number of particles
 #-------------------------------------------------------------------------------
 
-nPart = 1
-
+nPart = 1000
 
 #-------------------------------------------------------------------------------
 # searchalgorithm for the particle
@@ -157,7 +156,7 @@ boundbehav = 0
 gravityx = 0
 
 # gravity in y-direction (normally -9.81)
-gravityy = 0 #-9.81
+gravityy = -9.81
 
 
 #-------------------------------------------------------------------------------
@@ -212,20 +211,31 @@ ipartoutput = 2
 #-------------------------------------------------------------------------------
 
 # 1 	one-way coupling (particles have no influence on the gas phase)
-# 2 	two-way coupling
+# 2 	two-way coupling (!!!TODO!!!)
 icouplingpart = 1
 
 #-------------------------------------------------------------------------------
 # choice solution algorithmn for the particle phase
 #-------------------------------------------------------------------------------
 
-# 1 	explicit Euler method (first order)
-# 2 	improved Euler method (second order)
-# 3	classic Runge-Kutta (fourth order)
-isolutionpart = 3
+# 1 	Runge-Kutta first order / explicit Euler method (interfacial forces)
+# 2 	Runge-Kutta second order / improved Euler or Heuns' method (interfacial forces)
+# 3	Runge-Kutta fourth order / classic Runge-Kutta (interfacial forces)
+# -1 	Runge-Kutta first order / explicit Euler method (particle tracing)
+# -2 	Runge-Kutta second order / improved Euler method (particle tracing)
+# -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
+isolutionpart = 1
 
 #-------------------------------------------------------------------------------
-# domain with triangle or rectangles
+# select forces for the particle movement
+# (dragforce (most important one), gravity, virtualmassforce (TODO), 
+#  bassetforce (TODO), magnusforce (TODO), saffmanforce (TODO))
+#-------------------------------------------------------------------------------
+sselectforce(1) =
+ dragforce
+
+#-------------------------------------------------------------------------------
+# domain with triangle or rectangles (!!!TODO!!!)
 #-------------------------------------------------------------------------------
 
 # 1 	triangles
@@ -234,7 +244,7 @@ isolutionpart = 3
 idomtype = 1
 
 
-
+################################################################################
 ################################################################################
 
 # type of mass matrix

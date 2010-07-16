@@ -5256,7 +5256,8 @@ contains
     real(DP), dimension(2) :: p1_i1, p2_i1, p3_i1
     
     ! Forces for particle movement
-    real(DP), dimension(2) :: F_G, F_D, F_ges
+    real(DP), dimension(2) :: F_G, F_D, F_ges, F_VM, F_B, F_M, F_S
+
     
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
@@ -5281,8 +5282,19 @@ contains
     real(DP), dimension(:), pointer :: p_Ddata
     character(LEN=SYS_STRLEN) :: ssolutionname
 
+    real(DP) :: c_pi
+
+    character(LEN=SYS_STRLEN) :: sselectforce, cforce
+    integer :: nselectforce, iselectforce, isubstring
+
+    c_pi= 3.14159265358979323846264338327950288_dp
+
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
+ 
+    ! Get froces for the particle movement
+    call parlst_getvalue_string(rparlist,&
+        'Eulerlagrange', 'sselectforce', sselectforce)
  
     ! Get vertices of the elements
     call storage_getbase_int2D(&
@@ -5313,10 +5325,10 @@ contains
 
     ! Loop over the particles
     do iPart = 1, rParticles%nPart
-   
-  	! Store old data
-	!rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
-	!rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
+ 
+   	! Store old data
+	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
+	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
 	rParticles%p_xvelo_old(iPart)=	   rParticles%p_xvelo(iPart)
 	rParticles%p_yvelo_old(iPart)=	   rParticles%p_yvelo(iPart)
 	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
@@ -5361,18 +5373,28 @@ contains
     call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,Dcurrpos,Dbarycoords,&
             rParticles,currentElement,iPart)
 
+    F_D = 0.0_dp
+    F_G = 0.0_dp
+    F_VM = 0.0_dp 
+    F_B = 0.0_dp
+    F_M = 0.0_dp
+    F_S = 0.0_dp
+
     ! Set temperature of the particles
     select case(isolutionpart)
     case (1)  
         !*******************************************************************
-        ! explicit Euler method
+        ! explicit Euler method (interfacial forces)
         ! x_i+1 = x_i + \Delta t v_i
         !*******************************************************************
+
+        ! Get number of interfacial forces
+        nselectforce = max(1,&
+        parlst_querysubstrings(rparlist,'Eulerlagrange', 'sselectforce'))
 
         ! Calculate the relative velocity
         Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))**2.0_dp)
-
 
         ! Calculate particle Reynoldsnumber
         !
@@ -5381,7 +5403,6 @@ contains
         !
         Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
-
         ! Calculate the drag force coefficient
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
@@ -5389,21 +5410,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
+
+
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
@@ -5416,7 +5476,7 @@ contains
                              
     case (2)
         !*******************************************************************
-        ! improved Euler method
+        ! improved Euler method (interfacial forces)
         ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
         !*******************************************************************
                 
@@ -5440,21 +5500,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
+
+
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
@@ -5506,7 +5605,6 @@ contains
         !
         Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
-
         ! Calculate the drag force coefficient
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
@@ -5514,22 +5612,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v1_i1(1)-rk_k1(1))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v1_i1(2)-rk_k1(2))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
+
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
 
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
@@ -5547,7 +5683,7 @@ contains
           
     case (3)
         !*******************************************************************
-        ! classic Runge-Kutta algorithmn
+        ! classic Runge-Kutta algorithmn (interfacial forces)
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
         !*******************************************************************
           
@@ -5571,21 +5707,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
+
+
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
@@ -5645,22 +5820,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v1_i1(1)-rk_k1(1))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v1_i1(2)-rk_k1(2))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
+
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
 
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
@@ -5710,7 +5923,6 @@ contains
         !
         Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
-
         ! Calculate the drag force coefficient
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
@@ -5718,22 +5930,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v2_i1(1)-rk_k2(1))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v2_i1(2)-rk_k2(2))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
+
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
 
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rk_k3(1)=  rk_k2(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
@@ -5769,12 +6019,10 @@ contains
         v3_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
-
  
          ! Calculate the relative velocity
         Velo_rel= sqrt((rk_k3(1)-v3_i1(1))**2.0_dp +&
                        (rk_k3(2)-v3_i1(2))**2.0_dp)
-
 
         ! Calculate particle Reynoldsnumber
         !
@@ -5783,7 +6031,6 @@ contains
         !
         Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
-
         ! Calculate the drag force coefficient
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
@@ -5791,22 +6038,60 @@ contains
 	        C_W= 24.0_dp/Re_p
         end if
 
-        if (Velo_rel.ge.500) pause
+        ! Loop over all forces
+        do iselectforce = 1, nselectforce
 
-        ! Compute the dragforce
-        F_D(1)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v3_i1(1)-rk_k3(1))/8.0_dp
-        F_D(2)= C_W*3.14*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                (v3_i1(2)-rk_k3(2))/8.0_dp
+            ! Get name of the force
+            call parlst_getvalue_string(rparlist, 'Eulerlagrange',&
+            'sselectforce', cforce, isubstring=iselectforce)
+
+            if (trim(cforce) .eq. 'dragforce') then
+
+                ! Compute the dragforce
+                F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
+                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+
+            elseif (trim(cforce) .eq. 'gravity') then
+
+                ! Compute the gravity
+                F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
+                F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+
+            elseif (trim(cforce) .eq. 'virtualmassforce') then
+
+                ! Compute the virtualmass force
+                F_VM(1)= 0.0_dp
+                F_VM(2)= 0.0_dp
+
+            elseif (trim(cforce) .eq. 'bassetforce') then
+            
+                ! Compute the Basset force
+                F_B(1)= 0.0_dp
+                F_B(2)= 0.0_dp
 
 
-        ! Compute the gravity
-        F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
-        F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
+            elseif (trim(cforce) .eq. 'magnusforce') then
+
+                ! Compute the Magnus force
+                F_M(1)= 0.0_dp
+                F_M(2)= 0.0_dp
+           
+
+            elseif (trim(cforce) .eq. 'saffmanforce') then
+
+                ! Compute the Saffman force
+                F_S(1)= 0.0_dp
+                F_S(2)= 0.0_dp
+                      
+            end if
+
+        end do ! Loop over all forces
 
         ! Set force
-        F_ges(1)= F_D(1) + F_G(1)
-        F_ges(2)= F_D(2) + F_G(2)
+        F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
+        F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
         ! Compute new velocity of the particles
         rk_k4(1)=  rk_k3(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
@@ -5821,7 +6106,201 @@ contains
         ! Set direction of the velocita of the particle
         rParticles%p_xvelo(iPart)= rk_k4(1)*velogasx
         rParticles%p_yvelo(iPart)= rk_k4(2)*velogasy
+        
+    case (-1)  
+        !*******************************************************************
+        ! explicit Euler method (particle tracing)
+        ! x_i+1 = x_i + \Delta t v_i
+        !*******************************************************************
 
+        ! Set the velocity of the particles
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
+        
+        ! Compute the new position
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)
+
+                             
+    case (-2)
+        !*******************************************************************
+        ! improved Euler method (particle tracing)
+        ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
+        !*******************************************************************
+                
+        ! Set new velocity of the particles
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
+                        
+        ! Compute the new position
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rParticles%p_xvelo(iPart)
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rParticles%p_yvelo(iPart)
+ 
+        ! Get element an barycentric coordinates for the position p1
+        call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p1_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! Velocity at the new position
+        v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+          
+        ! Compute the new position with both velocities
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* &
+            (rParticles%p_xvelo(iPart) + v1_i1(1))/2.0_dp
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* &
+            (rParticles%p_yvelo(iPart) + v1_i1(2))/2.0_dp
+            
+        ! Set the new velocity
+        rParticles%p_xvelo(iPart)=v1_i1(1)
+        rParticles%p_yvelo(iPart)=v1_i1(2)
+          
+    case (-3)
+        !*******************************************************************
+        ! classic Runge-Kutta algorithmn (particle tracing)
+        ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
+        !*******************************************************************
+          
+        ! Set new velocity of the particles
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
+                
+        ! Set the first constant for Runge-Kutta
+        rk_k1(1)= rParticles%p_xvelo(iPart)
+        rk_k1(2)= rParticles%p_yvelo(iPart)
+        
+        ! Compute the first position p1
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/2.0_dp
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/2.0_dp
+ 
+        ! Get element an barycentric coordinates for the position p1
+        call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p1_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! first velocity
+        v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+   
+        ! Set the first first velocity of the particles
+        rk_k2(1)=  v1_i1(1)
+        rk_k2(2)=  v1_i1(2)
+        
+        ! Compute the second position p2
+        p2_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k2(1)/2.0_dp
+        p2_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k2(2)/2.0_dp
+        
+        ! Get element an barycentric coordinates for the position p2
+        call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p2_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+ 
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! second velocity
+        v2_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v2_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+ 
+        ! Set the new velocity of the particles
+        rk_k3(1)=  v2_i1(1)
+        rk_k3(2)=  v2_i1(2)
+        
+        ! Compute the third position p3
+        p3_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k3(1)
+        p3_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k3(2)
+        
+        ! Get element an barycentric coordinates for the position p3
+        call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p3_i1,Dbarycoords,&
+            rParticles,currentElement,iPart)
+
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
+        uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
+        rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
+
+        ! Velocity and density of the gas in the second corner (in mathematically positive sense)
+        ux2_part= p_Ddata1(p_IverticesAtElement(2,currentElement))
+        uy2_part= p_Ddata2(p_IverticesAtElement(2,currentElement))
+        rho_gas(2)= p_Ddata3(p_IverticesAtElement(2,currentElement))
+
+        ! Velocity and density of the gas in the third corner (in mathematically positive sense)
+        ux3_part= p_Ddata1(p_IverticesAtElement(3,currentElement))
+        uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
+        rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
+
+        ! third velocity
+        v3_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
+					Dbarycoords(2) * ux2_part / rho_gas(2) + &
+					Dbarycoords(3) * ux3_part / rho_gas(3)
+        v3_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
+					Dbarycoords(2) * uy2_part / rho_gas(2) + &
+					Dbarycoords(3) * uy3_part / rho_gas(3)
+
+        ! Set the new velocity of the particles
+        rk_k4(1)=  v3_i1(1)
+        rk_k4(2)=  v3_i1(2)
+ 
+        ! Set new particle-position
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
+                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
+                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+
+        ! Set direction of the velocita of the particle
+        rParticles%p_xvelo(iPart)= rk_k4(1)
+        rParticles%p_yvelo(iPart)= rk_k4(2)
 
     case default
       call output_line('Invalid solution type!', &
@@ -6266,6 +6745,41 @@ contains
         call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
         currentElement= rParticles%p_element(iPart)
+
+        ! Loop over the vertices of the element
+        SearchVertex2: do Vert = 1, 3												
+
+            !Current vertex
+            nVertex = p_IverticesAtElement(Vert, currentElement)
+
+            ! Loop over the element containing to the vertex
+            SearchElement2: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
+    							
+                if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
+                exit SearchElement2
+                end if
+
+                currentElement = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
+
+                ! Store coordinates of cornervertices
+                Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+                Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+                Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+                Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+                Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+                Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+
+                ! Check if the particle is in the element
+                call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
+
+                ! If the particle is in the element, then exit loop
+                if (binside==.true.) exit SearchVertex2
+
+            end do SearchElement2
+
+        end do SearchVertex2
+
+        if (binside==.true.) rParticles%p_element(iPart)=currentElement
 
         ! Store coordinates of cornervertices
         Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
