@@ -94,7 +94,7 @@ cfespace = -1
 
 nspacelevels = 1
 ntimelevels = 2
-nminlevelspace = 2
+nminlevelspace = $SPACETIMEDISCRETISATION_NMINLEVELSPACE
 nminminleveltime = 1
 nmaxminleveltime = 9
 dtheta = $SPACETIMEDISCRETISATION_DTHETA
