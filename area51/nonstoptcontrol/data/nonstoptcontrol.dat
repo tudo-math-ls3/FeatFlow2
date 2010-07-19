@@ -129,6 +129,9 @@ ismoother = 0
 # =0: Block-Jacobi
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled (forward-backward optimiser)
+# =3: BiCGStab with Block-Jacobi
+# =4: BiCGStab with Block-FBGS, half coupled (forward-backward solver)
+# =5: BiCGStab with Block-FBGS, fully coupled (forward-backward optimiser)
 
 icoarsegridsolver = 0
 

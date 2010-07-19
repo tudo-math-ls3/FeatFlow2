@@ -397,20 +397,67 @@ contains
           "ioutputlevel", ioutputlevel)
       
       if (icoarsegridsolver .eq. 0) then
+
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
       else if (icoarsegridsolver .eq. 1) then
+
         call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
-      else 
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
+      else if (icoarsegridsolver .eq. 2) then
+
         call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
+      else if (icoarsegridsolver .eq. 3) then
+
+        call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initBiCGStab (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
+      else if (icoarsegridsolver .eq. 4) then
+
+        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initBiCGStab (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
+      else if (icoarsegridsolver .eq. 5) then
+
+        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+
+        rsolver%rcoarsePreconditioner%domega = ddamping
+        
+        call stls_initBiCGStab (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
+            rsolver%rcoarsePreconditioner)
+
       end if
       
-      rsolver%rcoarsePreconditioner%domega = ddamping
-      
-      call stls_initDefCorr (rsolver%rcoarseGridSolver,rparams%rspacetimeHierarchy,1,&
-          rsolver%rcoarsePreconditioner)
       rsolver%rcoarseGridSolver%ioutputLevel = ioutputlevel
       ! rsolver%rcoarseGridSolver%domega = 0.7_DP
       rsolver%rcoarseGridSolver%domega = ddampingCoarseGridCorrection
