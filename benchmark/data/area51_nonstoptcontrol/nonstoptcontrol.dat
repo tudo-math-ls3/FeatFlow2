@@ -96,7 +96,7 @@ nspacelevels = 1
 ntimelevels = 2
 nminlevelspace = $SPACETIMEDISCRETISATION_NMINLEVELSPACE
 nminminleveltime = 1
-nmaxminleveltime = 9
+nmaxminleveltime = $SPACETIMEDISCRETISATION_NMAXMINLEVELTIME
 dtheta = $SPACETIMEDISCRETISATION_DTHETA
 
 # Type of the theta scheme.
