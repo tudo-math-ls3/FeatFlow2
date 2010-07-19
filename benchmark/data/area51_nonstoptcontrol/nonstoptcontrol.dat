@@ -180,7 +180,7 @@ ioutputlevel = $SPACETIMECOARSEGRIDSOLVER_IOUTPUTLEVEL
 depsrel = 1E-10
 depsabs = 1E-17
 
-ddamping = 0.5
+ddamping = $SPACETIMECOARSEGRIDSOLVER_DDAMPING
 drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS2.
