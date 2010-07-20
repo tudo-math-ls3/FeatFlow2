@@ -23,7 +23,7 @@ OVERWRITE_LOG_DIRECTORY=
 WALLCLOCKLIMIT="00:40:00"
 
 case "`hostname -f`" in
-    *.lidocluster.hp)
+    *.lidocluster.hp|lido*.itmc.tu-dortmund.de)
 	# Torque on LiDO-2 is configured to believe every node has
 	# only four cores. Despite it having 8. But using 8 cores
 	# would give a serious performance penalty (memory wall) given
@@ -37,6 +37,12 @@ case "`hostname -f`" in
 	CORESPERQUADNODE=4;
 	ultralong_queue="neternal_eth"
 	;;
+    *)
+       cat <<EOF 1>&2
+$0: Error: Command 'hostname' returned an unhandled string. Script cancelled.
+EOF
+       exit 19
+       ;;
 esac
 AFTERJOB=""
 
