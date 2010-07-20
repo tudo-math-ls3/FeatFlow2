@@ -212,7 +212,7 @@ fb_usage() {
     esac
 
     cat <<EOF
-Usage: $0 [-h] [-p jobfile prefix] [-m email address] [-w wallclock limit] [-a jobid] <TEST ID | test suite> [<TEST ID | test suite>]
+Usage: $0 [parameters] <TEST ID | test suite> [<TEST ID | test suite>]
 
 $0 provides a convenient way to schedule one 
 or more FEAST benchmark tests (identified by test ID, given directly 
@@ -257,9 +257,12 @@ submits the job file to the scheduler.
       tasks if e.g. the execution time is not important.
       Default: $CORESPERNODE
   --noschedule, --no-schedule
-      Creates a job script but does not schedule the job. Used for
+      Creates a job script(s) but does not schedule the job. Used for
       debugging purposes.
-  --serialjobs
+  --noscheduleonerr, --no-schedule-on-err
+      Creates a job script(s) but does not schedule the job if there is any
+      error. Used for debugging purposes.
+  --collectjobs
       Manually schedule multiple jobs onto one node, bypassing the queuing
       system. May be used for serial jobs on cluster systems that do not
       support allocation of less than one node per job.
@@ -275,6 +278,10 @@ submits the job file to the scheduler.
       If a queue is manually selected with this parameter, the wallclock
       time and queuetype is not checked against the queue specification!
       Default: "$QNAME"
+  --jobs <count>, -j <count>
+      Allows up to <count> makefile jobs to be run in parallel.
+      Each makefile job creates a script of one test. Can be used to speed up
+      the creation of multiple scripts in parallel.
   TEST ID
       a valid identifier for a FEAST benchmark test, defined in one of
       the *.fbdef files stored in directory benchmark/tests.
@@ -308,22 +315,27 @@ fb_readargs() {
     while test -n "$*"
     do
       case "$1" in
-      --afterjob|-a*)  # job after completition of another job
+      --afterjob|-a)  # job after completition of another job
           AFTERJOB="$2"
           shift
           shift
           ;;
 
-      --email|-m*)  # email address
+      --email|-m)  # email address
           EMAILADDRESS="$2"
           DOSENDMAIL=1
           shift
           shift
           ;;
 
-      --help|-h*)    # help screen
+      --help|-h)    # help screen
           fb_usage
           exit
+          ;;
+
+      --noscheduleonerr|--no-schedule-on-err) # only create jobfile, don't submit to queue
+          NOSCHEDULE=1
+          shift
           ;;
 
       --noschedule|--no-schedule) # only create jobfile, don't submit to queue
@@ -336,41 +348,49 @@ fb_readargs() {
           shift
           ;;
 
-      --prefix|-p*)  # jobfile prefix
+      --prefix|-p)  # jobfile prefix
           JOBFILEPREFIX="$2"
           shift
           shift
           ;;
 
-      --serialjobs)  # jobs are serial jobs using less than one node per job
-          SERIALJOBS=1
+      --collectjobs)  # jobs are serial jobs using less than one node per job
+          COLLECTJOBS=1
+          echo "$0: Collecting jobs to fill the nodes"
           shift
           ;;
 
-      --wallclocklimit|-w*)  # wallclock time address
+      --wallclocklimit|-w)  # wallclock time address
           WALLCLOCKLIMIT="$2"
           echo "$0: Using wallclocklimit $WALLCLOCKLIMIT"
           shift
           shift
           ;;
 
-      --corespernode|-c*)  # Number of cores per node to use
+      --corespernode|-c)  # Number of cores per node to use
           CORESPERNODE="$2"
           echo "$0: Using at most $CORESPERNODE cores per node"
           shift
           shift
           ;;
 
-      --queuetype|-qt*)  # Type of queue
+      --queuetype|-qt)  # Type of queue
           QTYPE="$2"
           echo "$0: Submitting to queues of type $QTYPE"
           shift
           shift
           ;;
 
-      --queue|-q*)  # Id of the queue
+      --queue|-q)  # Id of the queue
           QNAME="$2"
           echo "$0: Submitting to queue $QNAME = "`eval echo \\${$QNAME[0]}`
+          shift
+          shift
+          ;;
+
+      --jobs|-j)  # Number of makefile jobs
+          PARMAKECOUNT="$2"
+          echo "$0: Invoking up to $PARMAKECOUNT parallel makefile jobs"
           shift
           shift
           ;;
@@ -602,7 +622,11 @@ EOF
 # the execution commands for the job.
 #
 # Call:
-#    fb_createRuntestsScript [jobid]
+#    fb_createRuntestsScript [jobid] [scriptname]
+#
+# with
+#    [jobid]      = name of the job
+#    [scriptname] = name of the scriptfile to be generated
 #
 # Return:
 #    =0: Script "runtest" successfully created.
@@ -612,7 +636,8 @@ EOF
 # ==================================================
 
 fb_createRuntestsScript() {
-    benchmarktest="$1"  # IN
+    benchmarktest="$1"
+    scriptname="$2"
 
     # Create a unique temporary file
     # (Unfortunately 'mktemp' does not support suffixes.
@@ -651,7 +676,8 @@ EOF
     exit 1008
     fi
 
-    $GNUMAKE `echo $tmpfile | sed 's/.fbconf$//'`
+    $GNUMAKE SCRIPT=$scriptname `echo $tmpfile | sed 's/.fbconf$//'`
+    
     # Purposely do not check for errors!
     # Typically, an error is reported if the test ID is unknown or the
     # according test is configured not to be run on the current host. COPROC
@@ -778,7 +804,9 @@ fb_createBenchmarkJobfile()
     # Step 1: Create the basic RUNTESTS script that contains the
     # commands for executing the test.
     
-    fb_createRuntestsScript "$benchmarktest"
+    benchscriptname="$BENCHMARKRUNSCRIPT"_"$benchmarktest"_tmp
+
+    fb_createRuntestsScript "$benchmarktest" "$benchscriptname"
     if test $? -ne 0
       then
 	      return 1
@@ -802,11 +830,20 @@ fb_createBenchmarkJobfile()
     LOG_FILE=$PWD/$LOG_BASE_DIRECTORY/output.$benchmarktest
     fb_createPBSHeader $LOG_FILE > $file
     
+    # Write our own header that allows to determine job-specific parameters
+    # later on.
+    echo "#SCHEDULE_TESTS NTASKS $NTASKS" >> $file
+    
     # Step 4: Add environment settings of the MPI envoronment etc.
     
     echo "$MPIENVSETTING" >> $file
     echo >> $file
     fb_addModuleInstructions >> $file
+    
+    # Write a command that switches to the current working directory.
+    echo >> $file
+    echo "cd `/bin/pwd`" >> $file
+
     echo >> $file
     
     # Add the content of our runtests script to the jobfile, but
@@ -818,11 +855,14 @@ fb_createBenchmarkJobfile()
     sed -e \
 	"1,2d; \
 	 s|^QUEUEINGSYSTEM=[ ]*$|QUEUEINGSYSTEM=$QUEUEINGSYSTEM|i; \
-	 s|^MPIENV=[ ]*$|MPIENV=$MPIENVIRONMENT|i;" $BENCHMARKRUNSCRIPT \
+	 s|^MPIENV=[ ]*$|MPIENV=$MPIENVIRONMENT|i;" $benchscriptname \
 	>> $file
 
     # Make jobfile executable
     chmod 750 $file
+    
+    # Remove temp script.
+    rm -f $benchscriptname
 
     echo $0": Jobfile <$file> created."
 }
@@ -859,6 +899,42 @@ fb_getJobfileName()
 }
 
 # ==================================================
+# FUNCTION: Create a job-file based on the settings in the global variables.
+#
+# Call:
+#    fb_createBenchmarkJobfile [testid] [jobfile] [errfile]
+#
+# with
+#
+#    [testid]     = id of the test
+#    [jobfile]    = name of the jobfile to be created.
+#    [errfile]    = name of a file receiving invalid test-id's.
+#
+# If the jobfile cannot be created, the test-id
+# is appended to [errfile].
+#
+# Needs:
+#   - A queue being selected
+#   - The GNU makefile system determined
+#   - The MPI and queueing system being defined
+# ==================================================
+
+fb_createAndTestBenchmarkJobfile()
+{
+  testid=$1
+  jobfile=$2
+  errfile=$3
+  echo $0": Creating jobfile for <$testid>."
+  fb_getJobfileName $testid 0
+  fb_createBenchmarkJobfile "$testid" "$jobfile"
+  if test $? -ne 0
+    then
+      echo $testid >> $errfile
+      echo $0": An error occurred creating the jobfile. Creation cancelled."
+    fi
+}
+
+# ==================================================
 # FUNCTION: Create all job-files based on the settings in the global variables.
 #
 # Call:
@@ -880,23 +956,47 @@ fb_createBenchmarkJobfiles()
 {
   successfulTests=0
   testIDsWithErrors=""
-  for testid in $ALLTESTS
-    do
-      fb_getJobfileName $testid 0
-      echo $0": Creating jobfile for <$testid>."
-      fb_createBenchmarkJobfile "$testid" "$JOBFILE"
-      if test $? -eq 0
-        then
-   	      successfulTests=`expr $successfulTests + 1`
-        else
-          echo $0": An error occurred creating the jobfile. Submit cancelled."
-          testIDsWithErrors="$testIDsWithErrors $testid"
-        fi
-    done
+  erridstmp="fb_createBenchmarkJobfiles_tmp"
+  echo "" > $erridstmp
+  
+  if test $PARMAKECOUNT -le 1
+    then
+      # Only one make at a time
+      for testid in $ALLTESTS
+        do
+          fb_getJobfileName $testid 0
+          fb_createAndTestBenchmarkJobfile "$testid" "$JOBFILE" "$erridstmp"
+        done
+    else
+      # Multiple concurrent make's.
+      imakecount=1
+      for testid in $ALLTESTS
+        do
+          fb_getJobfileName $testid 0
+          fb_createAndTestBenchmarkJobfile "$testid" "$JOBFILE" "$erridstmp" &
+          imakecount=`expr $imakecount + 1`
+          if test $imakecount -ge $PARMAKECOUNT
+            then
+              # Wait for the jobs to be completed.
+              wait
+            fi
+        done
+      # Wait for the jobs to be completed
+      wait     
+    fi
+    
+  # Get the invalid test id's from the file.
+  testIDsWithErrors=`echo $testIDsWithErrors; sed -e 's/#.*//' $erridstmp`
+  rm -f $erridstmp
+  
+  errcount=`echo $testIDsWithErrors | wc -w`
+  totalcount=`echo $ALLTESTS | wc -w`
+  successfulTests=`expr $totalcount - $errcount`
+  echo $totalcount $errcount $successfulTests
 }
 
 # ==================================================
-# FUNCTION: Determins the PBS output.
+# FUNCTION: Reads the PBS output path
 #
 # Parses the file [jobfile] to find the 1st occurrence
 # of "#PBS -o". Returns the filename that is specified
@@ -917,6 +1017,27 @@ fb_readLogPath()
 }
 
 # ==================================================
+# FUNCTION: Reads the number of tasks for that job.
+#
+# Parses the file [jobfile] to find the 1st occurrence
+# of "#SCHEDULE_TESTS NTASKS". Returns the number of 
+# tasks that is specified there.
+#
+# Call:
+#    fb_readNTasks [jobfile]
+#
+# Returns:
+#    [NTASKS] = Number of tasks.
+# ==================================================
+
+fb_readNTasks()
+{
+  # Get the 1st line containing the PBS command using grep
+  # Cut off the line start.
+  NTASKS=`grep "#SCHEDULE_TESTS NTASKS" $1 | head -1 | cut -c24-`
+}
+
+# ==================================================
 # FUNCTION: Collect multiple jobfiles into parallel ones
 #
 # Call:
@@ -932,7 +1053,6 @@ fb_readLogPath()
 
 fb_collectToParallelJobfiles()
 {
-  icounter=1
   iblocksize=$1
   
   echo $0": Collecting jobfiles to parallel jobfiles."
@@ -942,6 +1062,9 @@ fb_collectToParallelJobfiles()
       # Nothing to do.
       return
     fi
+  
+  # Count the number of tasks on the current node.
+  icounter=0
   
   for testid in $ALLTESTS
     do
@@ -954,12 +1077,42 @@ fb_collectToParallelJobfiles()
       # Get the LOG-Path from the corresponding script.
       fb_readLogPath $testjobfile
       
-      if test $icounter -eq 1
+      # Get the name of a corresponding parallel logfile.
+      fb_getJobfileName $testid 1
+      
+      if test $icounter -ne 0
+        then
+          # Delete a parallel jobfile, it must not exist.
+          # We only keep the parallel jobfiles of the "1st" job in the block.
+          rm -f $JOBFILE
+
+          # Read the number of tasks in that jobfile.
+          fb_readNTasks $testjobfile
+          
+          # If we already have at least one task on that node, check if we
+          # can put another one there.
+          if test `expr $icounter + $NTASKS` -gt $iblocksize
+            then
+              # Node full, take the next one.
+              
+              # Write a footer that waits for the jobs. Reset the counter
+              echo "wait" >> $file
+    
+              # Make jobfile executable
+              chmod 750 $file
+            
+              echo $0": Parallel jobfile <$file> created."
+              
+              # Reset the counter, the new file + header is then written below.
+              icounter=0
+            fi
+        fi
+
+      if test $icounter -eq 0
         then
           # Create a new file.
           #
           # Get the filename
-          fb_getJobfileName $testid 1
           file=$JOBFILE
           
           echo $0": Creating parallel jobfile <$file>."
@@ -973,11 +1126,8 @@ fb_collectToParallelJobfiles()
           echo "cd `/bin/pwd`" >> $file
           echo >> $file
           
-        else
-          # Delete a parallel jobfile, it must not exist.
-          # We only keep the parallel jobfiles of the "1st" job in the block.
-          fb_getJobfileName $testid 1
-          rm -f $JOBFILE
+          # Read the number of tasks in that jobfile.
+          fb_readNTasks $testjobfile
         fi
         
       # Attach a call to the job to the jobfile.
@@ -985,32 +1135,18 @@ fb_collectToParallelJobfiles()
       echo $0": Adding jobfile <$testjobfile>"
       echo "./$testjobfile >& $LOG_FILE &" >> $file
 
-      if test $icounter -eq $iblocksize
-        then
-          # Write a footer that waits for the jobs. Reset the counter
-          echo "wait" >> $file
+      # Increase the counter
+      icounter=`expr $icounter + $NTASKS`
 
-          # Make jobfile executable
-          chmod 750 $file
-        
-          echo $0": Parallel jobfile <$file> created."
-          icounter=1
-        else
-          # Increase the counter
-          icounter=`expr $icounter + 1`
-        fi
     done
     
-    if test $icounter -ne 1
-      then
-        # Write a footer that waits for the jobs.
-        echo "wait" >> $file
+    # Write a footer that waits for the jobs.
+    echo "wait" >> $file
 
-        # Make jobfile executable
-        chmod 750 $file
+    # Make jobfile executable
+    chmod 750 $file
 
-        echo $0": Parallel jobfile <$file> created."
-      fi
+    echo $0": Parallel jobfile <$file> created."
 }
 
 # ==================================================
@@ -1150,6 +1286,9 @@ fb_submitJobfiles()
 #    [successfulTests]   = number of tests successfully subitted.
 #    [testIDsWithErrors] = list of test ID's which had errors, 
 #                          separated by spaces.
+#
+# If there is an error and NOSCHEDULEONERR=1,
+# the variable NOSCHEDULE is set to 1 to prevent scheduling.
 # ==================================================
 
 fb_postprocess() {
@@ -1164,17 +1303,25 @@ fb_postprocess() {
     fi
     # include/create_script.pl reported only errors
     if [ "$successful" -eq "0" ]; then
-    cat <<EOF 1>&2
+      if test $NOSCHEDULEONERR -eq 1
+        then
+          NOSCHEDULE=1
+        fi
+      cat <<EOF 1>&2
 $0: Not a single jobfile could be created as no valid test ID was given.
 
 EOF
-    exit 1011
+      exit 1011
     fi
     # Some tests had errors
     if [ -n "$errors" ]; then
-    cat <<EOF 1>&2
+      if test $NOSCHEDULEONERR -eq 1
+        then
+          NOSCHEDULE=1
+        fi
+      cat <<EOF 1>&2
 $0: The following test IDs had errors:
 EOF
-    echo $errors | tr ' ' '\n' | cat 1>&2
+      echo $errors | tr ' ' '\n' | cat 1>&2
     fi
 }

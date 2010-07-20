@@ -16,6 +16,11 @@ JOBFILEPREFIX="testjob"
 # Parameter --noschedule or --no-schedule.
 NOSCHEDULE=0
 
+# Create scripts but do not submit the scripts to the queuing system
+# if there is an error. If there is an error, NOSCHEDULE will be set to 1.
+# Parameter --noscheduleonerr or --no-schedule-on-err.
+NOSCHEDULEONERR=0
+
 # EMail address.
 # Parameter --email or -m.
 EMAILADDRESS=
@@ -50,10 +55,10 @@ CORESPERNODE=-1
 # Parameter --afterjob or -a
 AFTERJOB=""
 
-# Defines whether the jobs are serial or parallel jobs.
+# Defines if multiple jobs should be collected to one node.
 # For serial jobs, up to CORESPERNODE jobs are scheduled onto one node
 # bypassing the PBS system.
-SERIALJOBS=0
+COLLECTJOBS=0
 
 # Type of queue to be selected.
 # =-1: automatic
@@ -109,6 +114,10 @@ MPIENVIRONMENT=
 # Settings of the MPI environment that have to be added to the
 # scripts. These depend on the used cluster system.
 MPIENVSETTING=
+
+# Number of parallel make files to execute.
+# Default=1 make job.
+PARMAKECOUNT=1
 
 # ==================================================================
 # IMPORTANT
@@ -211,7 +220,7 @@ fb_postprocess $successfulTests "$testIDsWithErrors"
 
 # Probably collect to parallel jobscripts
 
-if test "$SERIALJOBS" = "1"
+if test "$COLLECTJOBS" = "1"
   then
     # Collect the jobs into chunks
     fb_collectToParallelJobfiles $USEDCORES
@@ -223,5 +232,5 @@ if test "$NOSCHEDULE" != "1"
   then
     # Submit the jobs
     echo $0": Submitting jobs..."
-    fb_submitJobfiles "$SERIALJOBS" "MSGQUEUEFULL"
+    fb_submitJobfiles "$COLLECTJOBS" "MSGQUEUEFULL"
   fi
