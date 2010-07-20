@@ -223,7 +223,8 @@ fb_postprocess $successfulTests "$testIDsWithErrors"
 if test "$COLLECTJOBS" = "1"
   then
     # Collect the jobs into chunks
-    fb_collectToParallelJobfiles $USEDCORES
+    fb_getCoresPerNode $CORESPERNODE
+    fb_collectToParallelJobfiles $CORESPERNODE
   fi
 
 # Finally, sumbit the created jobs

@@ -56,6 +56,34 @@ fb_setqueue_index()
 }
 
 # ==================================================
+# FUNCTION: Determines the number of cores to resetve per node.
+#
+# Call:  fb_setqueue [desiredcores]
+#
+# where
+#
+#    [desiredcores] = number of cores that are desired
+#                     per node. =-1: all cores.
+#
+# Returns:
+#
+#    [CORESPERNODE] = Number of cores to reserve per node.
+# ==================================================
+
+fb_getCoresPerNode()
+{
+  if test "$1" -eq "-1"
+    then
+      CORESPERNODE=$queuecores
+    fi
+
+  if test "$CORESPERNODE" -gt "$queuecores"
+    then
+      CORESPERNODE=$queuecores
+    fi
+}
+
+# ==================================================
 # FUNCTION: Chooses a queue.
 #
 # Switches to a queue that matches the parameters.
@@ -1042,6 +1070,12 @@ fb_readNTasks()
 # Call:
 #    fb_collectToParallelJobfiles [blocksize]
 #
+# with
+#
+#    [blocksize] = number of tasks per parallel jobfile.
+#                  If set to "", one jobfile is created
+#                  for every job.
+#
 # This function divides all tests in $ALLTESTS into
 # chunks with size [blocksize], i.e. it collects [blocksize]
 # benchmark scripts into one file which can be called
@@ -1053,6 +1087,10 @@ fb_readNTasks()
 fb_collectToParallelJobfiles()
 {
   iblocksize=$1
+  if test "$iblocksize" = "" 
+    then
+      iblocksize=1
+    fi
   
   echo $0": Collecting jobfiles to parallel jobfiles."
   
@@ -1072,70 +1110,75 @@ fb_collectToParallelJobfiles()
       fb_getJobfileName $testid 0
       
       testjobfile=$JOBFILE
-
-      # Get the LOG-Path from the corresponding script.
-      fb_readLogPath $testjobfile
       
-      # Get the name of a corresponding parallel logfile.
-      fb_getJobfileName $testid 1
-      
-      if test $icounter -ne 0
+      if test -e $testjobfile
         then
-          # Delete a parallel jobfile, it must not exist.
-          # We only keep the parallel jobfiles of the "1st" job in the block.
-          rm -f $JOBFILE
 
-          # Read the number of tasks in that jobfile.
-          fb_readNTasks $testjobfile
+          # Get the LOG-Path from the corresponding script.
+          fb_readLogPath $testjobfile
           
-          # If we already have at least one task on that node, check if we
-          # can put another one there.
-          if test `expr $icounter + $NTASKS` -gt $iblocksize
+          # Get the name of a corresponding parallel logfile.
+          fb_getJobfileName $testid 1
+          
+          if test $icounter -ne 0
             then
-              # Node full, take the next one.
-              
-              # Write a footer that waits for the jobs. Reset the counter
-              echo "wait" >> $file
+              # Delete a parallel jobfile, it must not exist.
+              # We only keep the parallel jobfiles of the "1st" job in the block.
+              rm -f $JOBFILE
     
-              # Make jobfile executable
-              chmod 750 $file
-            
-              echo $0": Parallel jobfile <$file> created."
+              # Read the number of tasks in that jobfile.
+              fb_readNTasks $testjobfile
               
-              # Reset the counter, the new file + header is then written below.
-              icounter=0
-            fi
-        fi
-
-      if test $icounter -eq 0
-        then
-          # Create a new file.
-          #
-          # Get the filename
-          file=$JOBFILE
-          
-          echo $0": Creating parallel jobfile <$file>."
-          
-          # Write a header, but use a different output file.
-          PAR_LOG_FILE=$LOG_FILE.parexec
-          fb_createPBSHeader $PAR_LOG_FILE > $file        
-          
-          # Write a command that switches to the current working directory.
-          echo >> $file
-          echo "cd `/bin/pwd`" >> $file
-          echo >> $file
-          
-          # Read the number of tasks in that jobfile.
-          fb_readNTasks $testjobfile
-        fi
+              # If we already have at least one task on that node, check if we
+              # can put another one there.
+              if test `expr $icounter + $NTASKS` -gt $iblocksize
+                then
+                  # Node full, take the next one.
+                  
+                  # Write a footer that waits for the jobs. Reset the counter
+                  echo "wait" >> $file
         
-      # Attach a call to the job to the jobfile.
-      # Redirect the output to the log file of that job.
-      echo $0": Adding jobfile <$testjobfile>"
-      echo "./$testjobfile >& $LOG_FILE &" >> $file
-
-      # Increase the counter
-      icounter=`expr $icounter + $NTASKS`
+                  # Make jobfile executable
+                  chmod 750 $file
+                
+                  echo $0": Parallel jobfile <$file> created."
+                  
+                  # Reset the counter, the new file + header is then written below.
+                  icounter=0
+                fi
+            fi
+    
+          if test $icounter -eq 0
+            then
+              # Create a new file.
+              #
+              # Get the filename
+              file=$JOBFILE
+              
+              echo $0": Creating parallel jobfile <$file>."
+              
+              # Write a header, but use a different output file.
+              PAR_LOG_FILE=$LOG_FILE.parexec
+              fb_createPBSHeader $PAR_LOG_FILE > $file        
+              
+              # Write a command that switches to the current working directory.
+              echo >> $file
+              echo "cd `/bin/pwd`" >> $file
+              echo >> $file
+              
+              # Read the number of tasks in that jobfile.
+              fb_readNTasks $testjobfile
+            fi
+            
+          # Attach a call to the job to the jobfile.
+          # Redirect the output to the log file of that job.
+          echo $0": Adding jobfile <$testjobfile>"
+          echo "./$testjobfile >& $LOG_FILE &" >> $file
+    
+          # Increase the counter
+          icounter=`expr $icounter + $NTASKS`
+          
+        fi # File exists
 
     done
     
