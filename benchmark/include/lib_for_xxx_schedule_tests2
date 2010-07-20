@@ -992,7 +992,6 @@ fb_createBenchmarkJobfiles()
   errcount=`echo $testIDsWithErrors | wc -w`
   totalcount=`echo $ALLTESTS | wc -w`
   successfulTests=`expr $totalcount - $errcount`
-  echo $totalcount $errcount $successfulTests
 }
 
 # ==================================================
