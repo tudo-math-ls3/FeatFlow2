@@ -138,8 +138,8 @@
 !#     -> Closes the output channel(s).
 !# </code>
 !#
-!# Logging benchmark data \\
-!# ---------------------- \\
+!# Logging benchmark data
+!# ----------------------
 !# The output library furthermore supports the (semi-)automatic output of
 !# deterministic data to a so callen 'benchmark log file'. This is typically
 !# used to write out data to a specific file which is compared to reference
