@@ -997,7 +997,7 @@ fb_createBenchmarkJobfiles()
         done
     else
       # Multiple concurrent make's.
-      imakecount=1
+      imakecount=0
       for testid in $ALLTESTS
         do
           fb_getJobfileName $testid 0
@@ -1007,6 +1007,7 @@ fb_createBenchmarkJobfiles()
             then
               # Wait for the jobs to be completed.
               wait
+              imakecount=0
             fi
         done
       # Wait for the jobs to be completed
