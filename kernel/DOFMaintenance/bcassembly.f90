@@ -61,18 +61,18 @@
 !# 12.) bcasm_newDirichletBConFBD
 !#      -> Discretises dirichlet boundary conditions on a 2D fictitious boundary domain
 !#
-!# 14.) bcasm_getVertInBCregion
+!# 14.) bcasm_getVertInBdRegion
 !#      -> Determine the vertices in a boundary region
 !#
-!# 14.) bcasm_getEdgesInBCregion
+!# 14.) bcasm_getEdgesInBdRegion
 !#      -> Determine the edges in a boundary region
 !#
-!# 14.) bcasm_getElementsInBCregion
+!# 14.) bcasm_getElementsInBdRegion
 !#      -> Determine the elements in a boundary region
 !#
 !# Some internal routines:
 !#
-!# 1.) bcasm_getElementsInBCregion
+!# 1.) bcasm_getElementsInBdRegion
 !#     Determines elements, edges and vertices in a boundary region
 !#
 !# 2.) bcasm_releaseDirichlet
@@ -211,18 +211,22 @@ module bcassembly
   public :: bcasm_clearDiscreteFBC
   public :: bcasm_releaseDiscreteFBC
   public :: bcasm_newDirichletBConFBD
-  public :: bcasm_getVertInBCregion
-  public :: bcasm_getEdgesInBCregion
-  public :: bcasm_getElementsInBCregion
+  public :: bcasm_getVertInBdRegion
+  public :: bcasm_getEdgesInBdRegion
+  public :: bcasm_getElementsInBdRegion
   public :: bcasm_releaseDirichlet
   public :: bcasm_releasePressureDrop
   public :: bcasm_releaseSlip
-  
-  interface bcasm_getEdgesInBCregion
-    module procedure bcasm_getEdgesInBCregionOld
-    module procedure bcasm_getEdgesInBCregionNew
-  end interface
 
+  public :: bcasm_getVertInBCregion  ! Deprecated
+  public :: bcasm_getEdgesInBCregion ! Deprecated
+
+  ! Deprecated interface, routine was renamed!
+  public :: bcasm_getElementsInBCregion
+  interface bcasm_getElementsInBCregion
+    module procedure bcasm_getElementsInBdRegion
+  end interface
+  
 contains
 
 ! *****************************************************************************
@@ -835,11 +839,11 @@ contains
 !<subroutine>
 
   subroutine bcasm_getVertInBCregion (rtriangulation,rboundary,rregion, &
-                                      IminIndex,ImaxIndex,icount)
+      IminIndex,ImaxIndex,icount)
   
 !<description>
   ! DEPRECATED! Not used anymore, since multiply connected boundary regions
-  ! must be supported. Use bcasm_getElementsInBCregion!
+  ! must be supported. Use bcasm_getElementsInBdRegion!
   !
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
@@ -1023,12 +1027,12 @@ contains
   
 !<subroutine>
 
-  subroutine bcasm_getEdgesInBCregionOld (rtriangulation,rboundary,rregion, &
+  subroutine bcasm_getEdgesInBCregion (rtriangulation,rboundary,rregion, &
       IminIndex,ImaxIndex,icount)
   
 !<description>
   ! DEPRECATED! Not used anymore, since multiply connected boundary regions
-  ! must be supported. Use bcasm_getElementsInBCregion!
+  ! must be supported. Use bcasm_getElementsInBdRegion!
   !
   ! This routine receives a boundary region rregion describing a part on the
   ! boundary. According to the triangulation, this boundary region contains
@@ -1212,7 +1216,72 @@ contains
   
 !<subroutine>
 
-  subroutine bcasm_getEdgesInBCregionNew(rtriangulation,rboundaryRegion, ncount, Iedges, Itemp)
+  subroutine bcasm_getVertInBdRegion(rtriangulation,rboundaryRegion, &
+      ncount, Ivertices, Itemp)
+  
+!<description>
+  ! Calculates the vertices in a boundary region.
+!</description>
+
+!<input>
+  ! The triangulation structure.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! A boundary region structure describing a part of a boundary
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+
+  ! Temporary array. Must be large enough to hold all vertices in the region.
+  ! Must be specified if Iedges is present!
+  integer, dimension(:), intent(inout), optional :: Itemp
+!</input>
+
+!<output>
+  ! Number of vertices in the region.
+  ! If Iedges is not present: Estimated number of vertices in the boundary region;
+  ! the number is larger or equal than the actual numer of vertices in the region.
+  integer, intent(out) :: ncount
+  
+  ! A list of edges in the region. The array must be large enough to hold
+  ! all vertices in the region. 
+  ! If not specified, the routine only calculates ncount, the number
+  ! of edges on the boundary.
+  integer, dimension(:), intent(out), optional :: Ivertices 
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IverticesAtElement
+    integer :: i
+    
+    if (present(Ivertices) .and. .not. present (Itemp)) then
+      call output_line ('Itemp not specified!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getVertInBdRegion')
+      call sys_halt()
+    end if
+    
+    ! Get ncount
+    call bcasm_getElementsInBdRegion (rtriangulation,rboundaryRegion, ncount, &
+        Ivertices,IvtLocal=Itemp)
+
+    ! Calculate the edge numbers.
+    if (present(Ivertices)) then
+    
+      call storage_getbase_int2d(rtriangulation%h_IverticesAtElement,p_IverticesAtElement)
+    
+      do i=1,ncount
+        Ivertices(i) = p_IverticesAtElement(Itemp(i),Ivertices(i))
+      end do
+      
+    end if
+
+  end subroutine
+
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine bcasm_getEdgesInBdRegion(rtriangulation,rboundaryRegion, ncount, Iedges, Itemp)
   
 !<description>
   ! Calculates the edges in a boundary region.
@@ -1226,16 +1295,19 @@ contains
   type(t_boundaryRegion), intent(in) :: rboundaryRegion
 
   ! Temporary array. Must be large enough to hold all edges in the region.
-  ! Must be sopecified if Iedges is present!
+  ! Must be specified if Iedges is present!
   integer, dimension(:), intent(inout), optional :: Itemp
 !</input>
 
 !<output>
   ! Number of edges in the region.
+  ! If Iedges is not present: Estimated number of edges in the boundary region;
+  ! the number is larger or equal than the actual numer of edges in the region.
   integer, intent(out) :: ncount
   
   ! A list of edges in the region. The array must be large enough to hold
-  ! all edges. If not specified, the routine only calculates ncount, the number
+  ! all edges in the region. 
+  ! If not specified, the routine only calculates ncount, the number
   ! of edges on the boundary.
   integer, dimension(:), intent(out), optional :: Iedges
 !</output>
@@ -1248,12 +1320,12 @@ contains
     
     if (present(Iedges) .and. .not. present (Itemp)) then
       call output_line ('Itemp not specified!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getEdgesInBCregion')
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getEdgesInBdRegion')
       call sys_halt()
     end if
     
     ! Get ncount
-    call bcasm_getElementsInBCregion (rtriangulation,rboundaryRegion, ncount, &
+    call bcasm_getElementsInBdRegion (rtriangulation,rboundaryRegion, ncount, &
         Iedges,IedgeLocal=Itemp)
 
     ! Calculate the edge numbers.
@@ -1273,7 +1345,7 @@ contains
   
 !<subroutine>
 
-  subroutine bcasm_getElementsInBCregion (rtriangulation,rregion, ncount, &
+  subroutine bcasm_getElementsInBdRegion (rtriangulation,rregion, ncount, &
                                           IelList,IelListIdx,IvtLocal,IedgeLocal)
   
 !<description>
@@ -1427,7 +1499,7 @@ contains
           
           ! Oops, the triangulation is destroyed!
           call output_line ('Local vertex number not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBCregion')
+              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
           call sys_halt()
           
         end if
@@ -1448,7 +1520,7 @@ contains
           
           ! Oops, the triangulation is destroyed!
           call output_line ('Local edge number not found!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBCregion')
+              OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getElementsInBdRegion')
           call sys_halt()
         end if
         
@@ -1637,7 +1709,7 @@ contains
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundaryIdx(p_rtriangulation%NVBD))
     
-    call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegion, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IelementsAtBoundaryIdx, &
         IverticesAtBoundaryIdx,IedgesAtBoundaryIdx)
                                    
@@ -2506,7 +2578,7 @@ contains
     allocate(IverticesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     
-    call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegion, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
     
     ! Cancel if the set is empty!
@@ -2542,7 +2614,7 @@ contains
     rboundaryRegionClosed%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
     
     ! Then collect all DOF`s inside of that like above.
-    call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegionClosed, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegionClosed, &
         icount, IelementsAtBoundary, IvtLocal=IverticesAtBoundaryIdx)
                                    
     ! Allocate an array for all the DOF`s
@@ -2732,7 +2804,7 @@ contains
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     
-    call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegion, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IedgeLocal=IedgesAtBoundaryIdx)
                                    
     ! Cancel if the set is empty!
@@ -2990,7 +3062,7 @@ contains
     allocate(IedgesAtBoundaryIdx(p_rtriangulation%NVBD))
     allocate(IelementsAtBoundary(p_rtriangulation%NVBD))
     
-    call bcasm_getElementsInBCregion (p_rtriangulation,rboundaryRegion, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rboundaryRegion, &
         icount, IelementsAtBoundary, IedgeLocal=IedgesAtBoundaryIdx)
                                    
     ! Cancel if the set is empty!

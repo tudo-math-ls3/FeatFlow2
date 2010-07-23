@@ -1441,10 +1441,10 @@ contains
 
     ! In a very first step, figure out how many elements we have
     ! in our boundary region.
-    call bcasm_getElementsInBCregion (p_rtriangulation,rregion, nelementsInRegion)
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rregion, nelementsInRegion)
     allocate(IelementsInRegion(nelementsInRegion))
     allocate(IedgesLocal(nelementsInRegion))
-    call bcasm_getElementsInBCregion (p_rtriangulation,rregion, nelementsInRegion, &
+    call bcasm_getElementsInBdRegion (p_rtriangulation,rregion, nelementsInRegion, &
         IelementsInRegion,IedgeLocal=IedgesLocal)
 
     ! A set of elements, currently under consideration
