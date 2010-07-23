@@ -265,6 +265,7 @@ module eulerlagrange_callback2d
   public :: eulerlagrange_getbarycoordelm
   public :: eulerlagrange_calcvolpart
   public :: eulerlagrange_calcvelopart
+  public :: eulerlagrange_partwallcollision
 
   type , public :: t_Particles
       !number of particles
@@ -5365,8 +5366,8 @@ contains
     Dcurrpos(1) = rParticles%p_xpos(iPart)
     Dcurrpos(2) = rParticles%p_ypos(iPart)
 
-    call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,Dcurrpos,Dbarycoords,&
-            rParticles,currentElement,iPart)
+!    call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,Dcurrpos,Dbarycoords,&
+!            rParticles,currentElement,iPart)
 
     F_D = 0.0_dp
     F_G = 0.0_dp
@@ -6212,14 +6213,10 @@ contains
         v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
-   
-        ! Set the first first velocity of the particles
-        rk_k2(1)=  v1_i1(1)
-        rk_k2(2)=  v1_i1(2)
-        
+    
         ! Compute the second position p2
-        p2_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k2(1)/2.0_dp
-        p2_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k2(2)/2.0_dp
+        p2_i1(1)= rParticles%p_xpos(iPart) + dt*v1_i1(1)/2.0_dp
+        p2_i1(2)= rParticles%p_ypos(iPart) + dt*v1_i1(2)/2.0_dp
         
         ! Get element an barycentric coordinates for the position p2
         call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p2_i1,Dbarycoords,&
@@ -6247,14 +6244,10 @@ contains
         v2_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
- 
-        ! Set the new velocity of the particles
-        rk_k3(1)=  v2_i1(1)
-        rk_k3(2)=  v2_i1(2)
         
         ! Compute the third position p3
-        p3_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k3(1)
-        p3_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k3(2)
+        p3_i1(1)= rParticles%p_xpos(iPart) + dt*v2_i1(1)
+        p3_i1(2)= rParticles%p_ypos(iPart) + dt*v2_i1(2)
         
         ! Get element an barycentric coordinates for the position p3
         call eulerlagrange_getbarycoordelm(rparlist,p_rproblemLevel,p3_i1,Dbarycoords,&
@@ -6282,20 +6275,16 @@ contains
         v3_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
-
-        ! Set the new velocity of the particles
-        rk_k4(1)=  v3_i1(1)
-        rk_k4(2)=  v3_i1(2)
  
         ! Set new particle-position
-        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
-                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
-        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
-                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+        rParticles%p_xpos(iPart)= rParticles%p_xpos(iPart) + &
+                dt*(rk_k1(1) + 2.0_dp * v1_i1(1) + 2.0_dp * v2_i1(1) + v3_i1(1))/6.0_dp
+        rParticles%p_ypos(iPart)= rParticles%p_ypos(iPart) + &
+                dt*(rk_k1(2) + 2.0_dp * v1_i1(2) + 2.0_dp * v2_i1(2) + v3_i1(2))/6.0_dp
 
         ! Set direction of the velocita of the particle
-        rParticles%p_xvelo(iPart)= rk_k4(1)
-        rParticles%p_yvelo(iPart)= rk_k4(2)
+        rParticles%p_xvelo(iPart)= v3_i1(1)
+        rParticles%p_yvelo(iPart)= v3_i1(2)
 
     case default
       call output_line('Invalid solution type!', &
@@ -6563,8 +6552,7 @@ contains
      
    	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
 	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
-
-            
+          
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
     if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
     if (rParticles%p_ypos(iPart) .le. minval(p_DvertexCoords(2,:))) rParticles%p_ypos(iPart) = minval(p_DvertexCoords(2,:))
@@ -6654,6 +6642,12 @@ contains
     integer :: ivt, Vert, Elm, nVertex   
     logical :: binside
 
+    ! Variables for the raytracingsearch
+    integer :: iresult,ilastElement,ilastEdge,itemax
+
+    ! Set maximum of iterations for the raytracing method
+    itemax = 100000
+    
     ! Set pointer to triangulation
     p_rtriangulation => p_rproblemLevel%rtriangulation
   
@@ -6720,9 +6714,10 @@ contains
             end do SearchElement
 
         end do SearchVertex
+    end if
         
-    end if 
     if (binside==.true.) then
+    
         ! Store coordinates of cornervertices
         Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
         Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
@@ -6734,80 +6729,96 @@ contains
         ! Get barycentric coordinates for the current position    
         call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
                 Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
- 
+    
      else
-        call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
+        ! Reset the current element
         currentElement= rParticles%p_element(iPart)
 
-        ! Store coordinates of cornervertices
-        Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
-        Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
-        Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
-        Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
-        Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
-        Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+        ! Start search algorithmn to find the right element
+        call tsrch_getElem_raytrace2D(Dcurrpos,p_rtriangulation,&
+                currentElement,iresult,ilastElement,ilastEdge,itemax)
+        
+        ! iresult
+        ! =1 : The element was found successfully.
+        ! =0 : The raytracing search broke down inside of the domain. 
+        ! =-1: The search broke down because the domain was left.
+        ! =-2: The maximum number of iterations was exceeded
 
-        ! Check if the particle is in the element
-        call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
+        ! ilastElement: Last analysed element.
+        ! If iresult= 1: ilastElement = iel
+        ! If iresult= 0: Number of the last analysed element before the search
+        !                was stopped.
+        ! If iresult=-1: Number of the element through which the
+        !                domain was left. 
+        ! If iresult=-2: Number of the last element in the raytracing search
 
-        ! Check for particle-wall-collisions
-        if (binside == .false.) then
+        ! ilastEdge: Number of the last analysed edge. Range 1..NMT.
+        ! If iresult= 1: ilastEdge=0
+        ! If iresult= 0: Number of the last analysed edge before the search
+        !                was stopped.
+        ! If iresult=-1: Number of the edge through which the domain was left. 
+        ! If iresult=-2: Number of the last edge 
+  
+        if (iresult ==  1) then
+            ! Store coordinates of cornervertices
+            Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+            Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+            Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+            Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+            Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+            Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
 
-            ! Loop over the vertices of the element
-            SearchVertex2: do Vert = 1, 3												
+            ! Get barycentric coordinates for the current position    
+            call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
+                    Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
 
-                !Current vertex
-                nVertex = p_IverticesAtElement(Vert, currentElement)
-
-                ! Loop over the element containing to the vertex
-                SearchElement2: do Elm = 1, (p_IelementsAtVertexIdx(nVertex+1)-p_IelementsAtVertexIdx(nVertex))		
-        							
-                    if (p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1) == 0) then
-                    exit SearchElement2
-                    end if
-
-                    currentElement = p_IelementsAtVertex(p_IelementsAtVertexIdx(nVertex)+Elm-1)
-
-                    ! Store coordinates of cornervertices
-                    Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
-                    Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
-                    Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
-                    Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
-                    Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
-                    Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
-
-                    ! Check if the particle is in the element
-                    call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
-
-                    ! If the particle is in the element, then exit loop
-                    if (binside==.true.) exit SearchVertex2
-
-                end do SearchElement2
-
-            end do SearchVertex2
-        end if
-        if (binside==.true.) rParticles%p_element(iPart)=currentElement
-
-        ! Store coordinates of cornervertices
-        Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
-        Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
-        Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
-        Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
-        Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
-        Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
-
-        ! Check if the particle is in the element
-        call gaux_isInElement_tri2D(Dcurrpos(1),Dcurrpos(2),Dvert_coord,binside)
-
-        ! Check for particle-wall-collisions
-        if (binside == .false.) then
-        !pause
+        elseif (iresult == 0) then
+        
+            ! If the element has not been found use brute force method to find the particle
+            call tsrch_getElem_BruteForce(Dcurrpos, p_rtriangulation, currentElement)
+      
+        elseif (iresult == -1) then
+        
+            ! If the particle has left the domain search for particle-wall-collisions
             call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)     
-        end if
+
+        end if !iresult
      
-     end if
-                 
+        ! If element hasn't found use brute force method
+        if (currentElement== 0) then  
+            
+            ! Reset the starting element
+            currentElement = rParticles%p_element(iPart)
+            
+            ! Search element with brute force method
+            call tsrch_getElem_BruteForce(Dcurrpos, p_rtriangulation, currentElement)
+            
+        end if
+            
+        ! If element wasn't found after brute force method check for particle wall collisions
+        if (currentElement== 0) then 
+        
+            ! If the particle has left the domain search for particle-wall-collisions
+            call eulerlagrange_partwallcollision(rparlist,p_rproblemLevel,rParticles,iPart)     
+            
+        end if
+        
+        ! Store coordinates of cornervertices
+        Dvert_coord(1,1)= p_DvertexCoords(1,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(1,2)= p_DvertexCoords(1,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(1,3)= p_DvertexCoords(1,p_IverticesAtElement(3,currentElement))
+        Dvert_coord(2,1)= p_DvertexCoords(2,p_IverticesAtElement(1,currentElement))
+        Dvert_coord(2,2)= p_DvertexCoords(2,p_IverticesAtElement(2,currentElement))
+        Dvert_coord(2,3)= p_DvertexCoords(2,p_IverticesAtElement(3,currentElement))
+
+        ! Get barycentric coordinates for the current position    
+        call gaux_getBarycentricCoords_tri2D(Dvert_coord,Dcurrpos(1),Dcurrpos(2),&
+                Dbarycoords(1),Dbarycoords(2),Dbarycoords(3))
+    
+   end if ! Particle is still in element
+
+                    
   end subroutine eulerlagrange_getbarycoordelm
 
 

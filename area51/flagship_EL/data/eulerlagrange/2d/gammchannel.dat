@@ -228,8 +228,12 @@ isolutionpart = -1
 
 #-------------------------------------------------------------------------------
 # select forces for the particle movement
-# (dragforce (most important one), gravity, virtualmassforce (TODO), 
-#  bassetforce (TODO), magnusforce (TODO), saffmanforce (TODO))
+# dragforce (most important one)
+# gravity
+# virtualmassforce (TODO)
+# bassetforce (TODO) 
+# magnusforce (TODO)
+# saffmanforce (TODO)
 #-------------------------------------------------------------------------------
 sselectforce(1) =
  dragforce
