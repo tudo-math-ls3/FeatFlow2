@@ -217,6 +217,11 @@ module bcassembly
   public :: bcasm_releaseDirichlet
   public :: bcasm_releasePressureDrop
   public :: bcasm_releaseSlip
+  
+  interface bcasm_getEdgesInBCregion
+    module procedure bcasm_getEdgesInBCregionOld
+    module procedure bcasm_getEdgesInBCregionNew
+  end interface
 
 contains
 
@@ -1018,8 +1023,8 @@ contains
   
 !<subroutine>
 
-  subroutine bcasm_getEdgesInBCregion (rtriangulation,rboundary,rregion, &
-                                      IminIndex,ImaxIndex,icount)
+  subroutine bcasm_getEdgesInBCregionOld (rtriangulation,rboundary,rregion, &
+      IminIndex,ImaxIndex,icount)
   
 !<description>
   ! DEPRECATED! Not used anymore, since multiply connected boundary regions
@@ -1203,6 +1208,67 @@ contains
 
   end subroutine
     
+  ! ***************************************************************************
+  
+!<subroutine>
+
+  subroutine bcasm_getEdgesInBCregionNew(rtriangulation,rboundaryRegion, ncount, Iedges, Itemp)
+  
+!<description>
+  ! Calculates the edges in a boundary region.
+!</description>
+
+!<input>
+  ! The triangulation structure.
+  type(t_triangulation), intent(in) :: rtriangulation
+  
+  ! A boundary region structure describing a part of a boundary
+  type(t_boundaryRegion), intent(in) :: rboundaryRegion
+
+  ! Temporary array. Must be large enough to hold all edges in the region.
+  ! Must be sopecified if Iedges is present!
+  integer, dimension(:), intent(inout), optional :: Itemp
+!</input>
+
+!<output>
+  ! Number of edges in the region.
+  integer, intent(out) :: ncount
+  
+  ! A list of edges in the region. The array must be large enough to hold
+  ! all edges. If not specified, the routine only calculates ncount, the number
+  ! of edges on the boundary.
+  integer, dimension(:), intent(out), optional :: Iedges
+!</output>
+
+!</subroutine>
+
+    ! local variables
+    integer, dimension(:,:), pointer :: p_IedgesAtElement
+    integer :: i
+    
+    if (present(Iedges) .and. .not. present (Itemp)) then
+      call output_line ('Itemp not specified!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'bcasm_getEdgesInBCregion')
+      call sys_halt()
+    end if
+    
+    ! Get ncount
+    call bcasm_getElementsInBCregion (rtriangulation,rboundaryRegion, ncount, &
+        Iedges,IedgeLocal=Itemp)
+
+    ! Calculate the edge numbers.
+    if (present(Iedges)) then
+    
+      call storage_getbase_int2d(rtriangulation%h_IedgesAtElement,p_IedgesAtElement)
+    
+      do i=1,ncount
+        Iedges(i) = p_IedgesAtElement(Itemp(i),Iedges(i))
+      end do
+      
+    end if
+
+  end subroutine
+  
   ! ***************************************************************************
   
 !<subroutine>
