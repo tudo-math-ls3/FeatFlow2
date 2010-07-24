@@ -707,14 +707,14 @@ contains
     
     if (associated(rsolver%p_RspaceMatrices)) then
       ! Release matrices
-      do ilev = 1,rsolver%ilevel
+      do ilev = 1,size(rsolver%p_RspaceMatrices)
         call lsysbl_releaseMatrix(rsolver%p_RspaceMatrices(ilev))
       end do
     end if
 
     if (associated(rsolver%p_RspaceVectors)) then
       ! Release matrices
-      do ilev = 1,rsolver%ilevel
+      do ilev = 1,size(rsolver%p_RspaceVectors)
         call lsysbl_releaseVector(rsolver%p_RspaceVectors(ilev))
       end do
     end if
@@ -2177,13 +2177,9 @@ contains
   
     ! local variables
     real(DP) :: dfactor
-    integer :: ite,nite,ispacelevel,itimeLevel
+    integer :: ite,nite,ispacelevel,itimeLevel,ispacelevelcoarse
     real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresLast
     real(DP), dimension(3) :: DlastResiduals
-  
-    ! Get the space and time level corresponding to the space-etime level.
-    call sth_getLevel(rsolver%p_rspaceTimeHierarchy,ilevel,&
-        ispaceLevel=ispaceLevel,itimeLevel=itimeLevel)
   
     ! Are we on the level of the coarse grid solver?
     if (ilevel .eq. rsolver%p_rcoarsegridsolver%ilevel) then
@@ -2198,6 +2194,15 @@ contains
       ! p_Rvectors1 = solution
       ! p_Rvectors2 = rhs
       ! p_Rvectors3 = temp vector
+      
+      
+      ! Get the space and time level corresponding to the space-etime level.
+      call sth_getLevel(rsolver%p_rspaceTimeHierarchy,ilevel,&
+          ispaceLevel=ispaceLevel,itimeLevel=itimeLevel)
+    
+      ! and of the coarse grid level
+      call sth_getLevel(rsolver%p_rspaceTimeHierarchy,ilevel-1,&
+          ispaceLevel=ispaceLevelcoarse)
       
       ! Clear the solution vector p_Rvectors1.
       call sptivec_clearVector (rsolver%p_Rvectors1(ilevel))
@@ -2323,7 +2328,7 @@ contains
         ! Restriction.
         call sptipr_performRestriction (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors2(ilevel-1),rsolver%p_Rvectors3(ilevel),&
-            rsolver%p_RspaceVectors(ispaceLevel-1),rsolver%p_RspaceVectors(ispaceLevel),&
+            rsolver%p_RspaceVectors(ispaceLevelcoarse),rsolver%p_RspaceVectors(ispaceLevel),&
             rsolver%p_Rvectors4(ilevel-1),rsolver%p_Rvectors4(ilevel))
         
         ! Boundary conditions.
@@ -2335,7 +2340,7 @@ contains
         ! Prolongation
         call sptipr_performProlongation (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors1(ilevel-1),rsolver%p_Rvectors3(ilevel),&
-            rsolver%p_RspaceVectors(ispaceLevel-1),rsolver%p_RspaceVectors(ispaceLevel))
+            rsolver%p_RspaceVectors(ispaceLevelcoarse),rsolver%p_RspaceVectors(ispaceLevel))
         
         ! Boundary conditions.
         call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
