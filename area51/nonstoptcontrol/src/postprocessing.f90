@@ -739,9 +739,14 @@ contains
     integer, dimension(:), allocatable :: Cnorms
     type(t_vectorBlock) :: rspacetemp
     real(DP), dimension(:), pointer :: p_Dy
+    type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
+    
+    ! Get the discretiosation in space.
+    call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,&
+        p_rfeSpaceLevel=p_rfeSpaceLevel)
     
     ! create a temp vector
-    call lsysbl_createVectorBlock (rmatrix%p_rspaceDiscr,rspacetemp)
+    call lsysbl_createVectorBlock (p_rfeSpaceLevel%p_rdiscretisation,rspacetemp)
     
     ! DEBUG!!!
     call lsysbl_getbase_double (rspacetemp,p_Dy)

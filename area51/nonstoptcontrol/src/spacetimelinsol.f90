@@ -199,13 +199,29 @@ module spacetimelinsol
     type(t_sptiProjHierarchy), pointer :: p_rspaceTimeProjection => null()
     
   end type
+  
+!<constantblock description="Type of preconditioner in space">
+
+  ! No preconditioning; Used for UMFPACK solvers e.g. 
+  ! which do not use preconditioning.
+  integer, parameter, public :: STLS_PC_NONE = -1
+
+  ! Jacobi preconditioning
+  integer, parameter, public :: STLS_PC_JACOBI = 0
+
+  ! General VANKA preconditioner
+  integer, parameter, public :: STLS_PC_VANKA = 0
+  
+!</constantblock>
+  
 
 contains
 
   ! ***************************************************************************
 
   subroutine stls_init (rsolver,csolverType,rspaceTimeHierarchy,ilevel,&
-      ballocTempMatrices,ballocTempVectors,rpreconditioner,cspaceSolverType,RmatVecTempl)
+      ballocTempMatrices,ballocTempVectors,rpreconditioner,&
+      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
   
   ! Basic initialisation of a solver node.
   
@@ -237,12 +253,17 @@ contains
   ! =LINSOL_ALG_UMFPACK4: UMFPACK-4
   integer, intent(in), optional :: cspaceSolverType
   
+  ! Type identifier for all preconditioners in space.
+  integer, intent(in), optional :: cspacePreconditioner
+  
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
   type(t_matvecTemplates), dimension(:), target, optional :: RmatVecTempl
   
     ! local variables
     integer :: ispacelevel,ilev
+    type(t_linsolMG2LevelInfo), pointer :: p_rlevelInfo
+    type(t_linsolNode), pointer :: p_rpreconditioner
   
     rsolver%csolverType = csolverType
     rsolver%ilevel = ilevel
@@ -264,7 +285,7 @@ contains
     if (present(cspaceSolverType) .or. ballocTempMatrices) then
     
       ! Allocate matrices for the space solver
-      allocate(rsolver%p_RspaceMatrices(ilevel))
+      allocate(rsolver%p_RspaceMatrices(rspaceTimeHierarchy%p_rfeHierarchy%nlevels))
 
       call sth_getLevel (rspaceTimeHierarchy,ilevel,ispaceLevel=ispaceLevel)
       
@@ -273,11 +294,36 @@ contains
       select case (cspaceSolverType)
       case (LINSOL_ALG_UMFPACK4) 
         call linsol_initUMFPACK4 (rsolver%p_rspaceSolver)
+        !rsolver%p_rspaceSolver%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
+        
+      case (LINSOL_ALG_MULTIGRID2)
+        select case (cspacePreconditioner)
+        case (STLS_PC_JACOBI)
+          ! Defect correction loops + Jacobi smoothing everywhere.
+          call linsol_initMultigrid2 (rsolver%p_rspaceSolver,ispaceLevel)
+          do ilev =1,ispaceLevel
+            call linsol_getMultigrid2Level (rsolver%p_rspaceSolver,ilev,p_rlevelInfo)
+            if (ilev .eq. 1) then
+              call linsol_initJacobi (p_rpreconditioner)
+              call linsol_initDefCorr (p_rlevelInfo%p_rcoarseGridSolver,p_rpreconditioner)
+              p_rlevelInfo%p_rcoarseGridSolver%depsRel = 1E-10_DP
+            else
+              call linsol_initJacobi (p_rpreconditioner)
+              call linsol_initDefCorr (p_rlevelInfo%p_rpostsmoother,p_rpreconditioner)
+              call linsol_convertToSmoother (p_rlevelInfo%p_rpostsmoother,4,0.7_DP)
+            end if
+          end do
+        
+        case default
+          call output_line ("Unknown preconditioner in stls_init")
+          call sys_halt()
+        end select
+        
       end select
         
       ! Prepare boundary conditions
-      allocate(rsolver%p_RdiscreteBC(ilevel))
-      do ilev = 1,ilevel
+      allocate(rsolver%p_RdiscreteBC(ispaceLevel))
+      do ilev = 1,ispaceLevel
         call bcasm_initDiscreteBC(rsolver%p_RdiscreteBC(ilev))
       end do
       
@@ -400,7 +446,7 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    integer :: ispaceLevel,ilev,i
+    integer :: ilev,i
   
     if (rsolver%csolverType .eq. STLS_TYPE_NONE) then
       call sys_halt()
@@ -514,14 +560,13 @@ contains
     
     ! Temp matrices.
     if (associated(rsolver%p_RspaceMatrices)) then
-      do ilev = 1,rsolver%ilevel
+      do ilev = 1,rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%nlevels
         
-        call sth_getLevel (rsolver%p_rspaceTimeHierarchy,ilev,&
-            p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
+        p_rfeSpaceLevel => rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
         
         call stmv_allocSubmatrix (rsolver%p_rmatrix%cmatrixType,&
-            rsolver%p_rmatrix%p_rphysics,rsolver%p_RmatVecTempl(ispaceLevel),&
+            rsolver%p_rmatrix%p_rphysics,rsolver%p_RmatVecTempl(ilev),&
             rsolver%p_RspaceMatrices(ilev),rsolver%p_RdiscreteBC(ilev))
             
       end do
@@ -530,10 +575,9 @@ contains
     
     ! Temp vectors
     if (associated(rsolver%p_RspaceVectors)) then
-      do ilev = 1,rsolver%ilevel
+      do ilev = 1,rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%nlevels
         
-        call sth_getLevel (rsolver%p_rspaceTimeHierarchy,ilev,&
-            p_rfeSpaceLevel,p_rtimeDiscr,ispaceLevel)
+        p_rfeSpaceLevel => rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
         
         call lsysbl_createVecBlockByDiscr (p_rspaceDiscr,rsolver%p_RspaceVectors(ilev),.false.)
@@ -546,7 +590,8 @@ contains
     if (associated(rsolver%p_rspaceSolver)) then
       
       select case (rsolver%p_rspaceSolver%calgorithm)
-      case (LINSOL_ALG_UMFPACK4)
+      case (LINSOL_ALG_UMFPACK4,&
+            LINSOL_ALG_MULTIGRID2)
         ! Attach the temp matrices to the linear solver.
         call linsol_setMatrices (rsolver%p_rspaceSolver,rsolver%p_RspaceMatrices)
       end select
@@ -1417,7 +1462,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockJacobi (rsolver,rspaceTimeHierarchy,ilevel,domega,&
-      cspaceSolverType,RmatVecTempl)
+      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
   
   ! Initialise a block Jacobi correction solver.
   
@@ -1438,13 +1483,17 @@ contains
   ! =0: UMFPACK
   integer, intent(in) :: cspaceSolverType
 
+  ! Type identifier for all preconditioners in space.
+  integer, intent(in) :: cspacePreconditioner
+
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
   type(t_matvecTemplates), dimension(:), intent(in), target :: RmatVecTempl
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_JACOBI,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,cspaceSolverType=cspaceSolverType,&
+        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
         
     rsolver%domega = domega
   
@@ -1463,7 +1512,7 @@ contains
   type(t_spaceTimeVector), intent(inout) :: rd
 
     ! local variables
-    integer :: istep, ierror
+    integer :: istep, ierror, ispaceLevel, ilev
     real(DP), dimension(:), pointer :: p_Ddata
     
     ! Initialise the linear solver.
@@ -1475,6 +1524,9 @@ contains
     end if
 
     call lsysbl_getbase_double (rsolver%rspaceTemp1,p_Ddata)
+    
+    ! Get the space level
+    call sth_getLevel(rsolver%p_rspaceTimeHierarchy,rsolver%ilevel,ispaceLevel=ispaceLevel)
 
     ! We loop through the timesteps and apply the spatial solver in each timestep.
     do istep = 1,rd%NEQtime
@@ -1482,14 +1534,16 @@ contains
       ! Load the timestep.
       call sptivec_getTimestepData(rd,istep,rsolver%rspaceTemp1)
       
-      ! Assemble diagonal submatrix of that timestep.
-      call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
-          rsolver%p_RspaceMatrices(rsolver%ilevel))
-          
-      ! Apply the boundary conditions to the matrix
-      call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-          rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
-          rsolver%p_RdiscreteBC(rsolver%ilevel))
+      do ilev = 1,ispaceLevel
+        ! Assemble diagonal submatrix of that timestep on all levels
+        call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+            rsolver%p_RspaceMatrices(ilev))
+            
+        ! Apply the boundary conditions to the matrix
+        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+            ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
+            rsolver%p_RdiscreteBC(ilev))
+      end do
       
       !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), "matrix",&
       !    .true., 0, "matrix.txt", "(E10.3)")
@@ -1518,7 +1572,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockFBGS (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
-      cspaceSolverType,RmatVecTempl)
+      cspaceSolverType,cspacePreconditioner,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the decoupled solution.
   
@@ -1534,10 +1588,13 @@ contains
   ! Relaxation parameter
   real(DP), intent(in) :: drelax
 
-  ! OPTIONAL: Identifier for a linear solver in space that might be used
+  ! Identifier for a linear solver in space that might be used
   ! for preconditioning.
   ! =0: UMFPACK
   integer, intent(in) :: cspaceSolverType
+
+  ! Type identifier for all preconditioners in space.
+  integer, intent(in) :: cspacePreconditioner
 
   ! OPTINAL: Spatial matrix templates. Necessary if a matrix-based
   ! preconditioner in space is used.
@@ -1545,7 +1602,8 @@ contains
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_FBGS,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,cspaceSolverType=cspaceSolverType,&
+        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
         
     rsolver%drelax = drelax
   
@@ -1564,9 +1622,12 @@ contains
   type(t_spaceTimeVector), intent(inout) :: rd
 
     ! local variables
-    integer :: istep, ierror,jstep,i
+    integer :: istep, ierror,jstep,i,ispaceLevel,ilev
     real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Ddata
     
+    ! Get the space level
+    call sth_getLevel(rsolver%p_rspaceTimeHierarchy,rsolver%ilevel,ispaceLevel=ispaceLevel)
+
     ! Initialise the linear solver.
     call linsol_initStructure(rsolver%p_rspaceSolver,ierror)
     if (ierror .ne. 0) then
@@ -1597,27 +1658,29 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep-1, &
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(rsolver%ilevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
+              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(rsolver%ilevel))
 
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
         
-        ! Subtract the diagonal, set up the preconditioner matrix
+        ! Subtract the diagonal, set up the preconditioner matrix on all space levels
         
-        ! Assemble diagonal submatrix of that timestep.
-        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel))
-            
-        ! Apply the boundary conditions to the matrix
-        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
-            rsolver%p_RdiscreteBC(rsolver%ilevel))
+        do ilev = 1,ispaceLevel
+          ! Assemble diagonal submatrix of that timestep on all levels
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+              rsolver%p_RspaceMatrices(ilev))
+              
+          ! Apply the boundary conditions to the matrix
+          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+              ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
+              rsolver%p_RdiscreteBC(ilev))
+        end do
 
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
@@ -1665,25 +1728,29 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
               rsolver%p_RspaceMatrices(rsolver%ilevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
               rsolver%p_RdiscreteBC(rsolver%ilevel))
 
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
         
-        ! Assemble diagonal submatrix of that timestep.
-        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel))
-            
-        ! Apply the boundary conditions to the matrix
-        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
-            rsolver%p_RdiscreteBC(rsolver%ilevel))
+        ! Subtract the diagonal, set up the preconditioner matrix on all space levels
+        
+        do ilev = 1,ispaceLevel
+          ! Assemble diagonal submatrix of that timestep on all levels
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+              rsolver%p_RspaceMatrices(ilev))
+              
+          ! Apply the boundary conditions to the matrix
+          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+              ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
+              rsolver%p_RdiscreteBC(ilev))
+        end do
         
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
@@ -1725,7 +1792,7 @@ contains
   ! ***************************************************************************
 
   subroutine stls_initBlockFBGS2 (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
-      cspaceSolverType,icoupling,RmatVecTempl)
+      cspaceSolverType,cspacePreconditioner,icoupling,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the coupled solution.
   
@@ -1741,10 +1808,13 @@ contains
   ! Relaxation parameter
   real(DP), intent(in) :: drelax
 
-  ! OPTIONAL: Identifier for a linear solver in space that might be used
+  ! Identifier for a linear solver in space that might be used
   ! for preconditioning.
   ! =0: UMFPACK
   integer, intent(in) :: cspaceSolverType
+  
+  ! Type identifier for all preconditioners in space.
+  integer, intent(in) :: cspacePreconditioner
   
   ! Specifies the coupling in the algorithm.
   ! =0: standard GS coupling.
@@ -1757,7 +1827,8 @@ contains
 
     ! Basic initialisation
     call stls_init(rsolver,STLS_TYPE_FBGS2,rspaceTimeHierarchy,ilevel,&
-        .false.,.false.,cspaceSolverType=cspaceSolverType,RmatVecTempl=RmatVecTempl)
+        .false.,.false.,cspaceSolverType=cspaceSolverType,&
+        cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
         
     rsolver%drelax = drelax
     
@@ -1778,9 +1849,12 @@ contains
   type(t_spaceTimeVector), intent(inout) :: rd
 
     ! local variables
-    integer :: istep, ierror,jstep
+    integer :: istep, ierror,jstep,ispaceLevel,ilev
     real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Ddata
     
+    ! Get the space level
+    call sth_getLevel(rsolver%p_rspaceTimeHierarchy,rsolver%ilevel,ispaceLevel=ispaceLevel)
+
     ! Initialise the linear solver.
     call linsol_initStructure(rsolver%p_rspaceSolver,ierror)
     if (ierror .ne. 0) then
@@ -1811,11 +1885,11 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep-1, &
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(rsolver%ilevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
+              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(rsolver%ilevel))
 
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
@@ -1827,27 +1901,29 @@ contains
 !          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
 !          
 !          ! Subtract the primal.
-!          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+!          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
 !              rsolver%p_RspaceMatrices(rsolver%ilevel))
 !
 !          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-!              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+!              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
 !              rsolver%p_RdiscreteBC(rsolver%ilevel))
 !
 !          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
 !              rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
 !        end if
         
-        ! Subtract the diagonal, set up the preconditioner matrix
+        ! Subtract the diagonal, set up the preconditioner matrix on all levels
         
-        ! Assemble diagonal submatrix of that timestep.
-        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel))
-            
-        ! Apply the boundary conditions to the matrix
-        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
-            rsolver%p_RdiscreteBC(rsolver%ilevel))
+        do ilev = 1,ispaceLevel
+          ! Assemble diagonal submatrix of that timestep on all levels
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+              rsolver%p_RspaceMatrices(ilev))
+              
+          ! Apply the boundary conditions to the matrix
+          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+              ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
+              rsolver%p_RdiscreteBC(ilev))
+        end do
 
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
@@ -1889,11 +1965,11 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep-1, &
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(rsolver%ilevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
+              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(rsolver%ilevel))
 
           call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
@@ -1906,11 +1982,11 @@ contains
             call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
             
             ! Subtract the primal.
-            call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep+1, &
+            call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
                 rsolver%p_RspaceMatrices(rsolver%ilevel))
 
             call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-                rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
+                ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
                 rsolver%p_RdiscreteBC(rsolver%ilevel))
 
             call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
@@ -1918,15 +1994,17 @@ contains
           end if
         end if
         
-        ! Assemble diagonal submatrix of that timestep.
-        call stmv_getSubmatrix (rsolver%p_rmatrix, istep, istep, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel))
-            
-        ! Apply the boundary conditions to the matrix
-        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-            rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep, &
-            rsolver%p_RdiscreteBC(rsolver%ilevel))
-        
+        do ilev = 1,ispaceLevel
+          ! Assemble diagonal submatrix of that timestep on all levels
+          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+              rsolver%p_RspaceMatrices(ilev))
+              
+          ! Apply the boundary conditions to the matrix
+          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+              ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
+              rsolver%p_RdiscreteBC(ilev))
+        end do
+
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
         

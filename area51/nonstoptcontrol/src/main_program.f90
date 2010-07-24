@@ -312,6 +312,7 @@ contains
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel,depsabs
+    integer :: cspaceSolver, cspacePreconditioner
     
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "csolverType", csolverType)
@@ -351,7 +352,32 @@ contains
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "dadcgcorrMax", dadcgcorrMax,2.0_DP)
     
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "csolverType", cspaceSolver)
+    call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
+        "cpreconditioner", cspacePreconditioner)
+    
     rsolver%csolverType = csolverType
+    
+    ! Rematch some variables to solver constanrs
+    select case (cspaceSolver)
+    case (0)
+      cspaceSolver = LINSOL_ALG_UMFPACK4
+    case (1)
+      cspaceSolver = LINSOL_ALG_MULTIGRID2
+    end select
+
+    select case (cspacePreconditioner)
+    case (0)
+      select case (rparams%rphysics%cequation)
+      case (0,2)
+        ! Jacobi
+        cspacePreconditioner = 0
+      case (1)
+        ! VANKA
+        cspacePreconditioner = 1
+      end select
+    end select
     
     select case (rsolver%csolverType)
     case (0)
@@ -359,7 +385,7 @@ contains
 
       ! Create the solver.
       call stls_initBlockJacobi (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+          nlevels,1.0_DP,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
       
@@ -371,7 +397,7 @@ contains
 
       ! Create the solver.
       call stls_initBlockFBGS2 (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
-          nlevels,drelax,LINSOL_ALG_UMFPACK4,0,rparams%p_RmatvecTempl)
+          nlevels,drelax,cspaceSolver,cspacePreconditioner,0,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
           
@@ -399,7 +425,7 @@ contains
       if (icoarsegridsolver .eq. 0) then
 
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,1.0_DP,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -409,7 +435,7 @@ contains
       else if (icoarsegridsolver .eq. 1) then
 
         call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -419,7 +445,7 @@ contains
       else if (icoarsegridsolver .eq. 2) then
 
         call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -429,7 +455,7 @@ contains
       else if (icoarsegridsolver .eq. 3) then
 
         call stls_initBlockJacobi (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,1.0_DP,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -439,7 +465,7 @@ contains
       else if (icoarsegridsolver .eq. 4) then
 
         call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+            1,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -449,7 +475,7 @@ contains
       else if (icoarsegridsolver .eq. 5) then
 
         call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -488,7 +514,7 @@ contains
         if (ismoother .eq. 0) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,1.0_DP,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
           
@@ -499,7 +525,7 @@ contains
         else if (ismoother .eq. 1) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
           !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
         
@@ -512,7 +538,7 @@ contains
         else if (ismoother .eq. 2) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
@@ -524,7 +550,7 @@ contains
         else if (ismoother .eq. 3) then
         
           call stls_initBlockJacobi (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,1.0_DP,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,1.0_DP,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = drelax
           
@@ -537,7 +563,7 @@ contains
         else if (ismoother .eq. 4) then
         
           call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,LINSOL_ALG_UMFPACK4,rparams%p_RmatvecTempl)
+              ilev,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
           
@@ -548,7 +574,7 @@ contains
         else if (ismoother .eq. 5) then
         
           call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,LINSOL_ALG_UMFPACK4,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
           
@@ -680,7 +706,7 @@ contains
     ! Local variables
     type(t_maindata) :: rparams
     type(t_collection) :: rcollection
-    integer :: nspacelevels,ntimelevels,nminlevelspace,nminleveltime,ilev,ispacelev,ntstepscoarse
+    integer :: nspacelevels,ntimelevels,nminlevelspace,nminleveltime,ilev,ntstepscoarse
     integer :: nmaxminleveltime,csolverStatus,nminminleveltime
     real(DP) :: dtheta
     type(t_spaceTimeVector) :: rrhs, rsolution, rtemp
@@ -792,17 +818,13 @@ contains
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
       
-        call sth_getLevel (rparams%rspacetimeHierarchy,ilev,&
-          p_rfeSpaceLevel,p_rtimeDiscr,ispacelev)
-        p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
-        
         ! Boundary conditions
-        call spop_createBC(p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
+        call spop_createBC(ilev,rparams%rspacetimeHierarchy,rparams%rphysics,&
             rparams%p_RspaceTimeBC(ilev))
 
         ! Matrix
-        call stmv_createMatrix (0,p_rspaceDiscr,p_rtimeDiscr,rparams%rphysics,&
-            rparams%p_RspaceTimeBC(ilev),rparams%p_RmatvecTempl(ispacelev),p_Rmatrices(ilev))
+        call stmv_createMatrix (0,ilev,rparams%rspacetimeHierarchy,rparams%rphysics,&
+            rparams%p_RspaceTimeBC(ilev),rparams%p_RmatvecTempl,p_Rmatrices(ilev))
 
       end do
       

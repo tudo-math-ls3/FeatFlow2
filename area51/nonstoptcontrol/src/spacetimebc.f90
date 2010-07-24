@@ -32,6 +32,9 @@ module spacetimebc
   use boundary
   
   use analyticprojection
+  
+  use spacetimehierarchy
+  use fespacehierarchy
 
   use physics
   
@@ -51,11 +54,11 @@ module spacetimebc
   ! Encapsules the boundary conditions in space and time.
   type t_spacetimeBC
   
-    ! Underlying space discretisation
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    ! Level of the matrix in the space-time hierarchy
+    integer :: ilevel
     
-    ! Underlying time discretisation
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+    ! Underlying space-time hierarchy
+    type(t_spacetimeHierarchy), pointer :: p_rspaceTimeHierarchy
     
     ! Physics of the problem.
     type(t_physics), pointer :: p_rphysics
@@ -109,15 +112,15 @@ contains
 
   ! ***************************************************************************
 
-  subroutine spop_createBC (rspaceDiscr,rtimeDiscr,rphysics,rbc)
+  subroutine spop_createBC (ilevel,rspaceTimeHierarchy,rphysics,rbc)
 
   ! Initialises space-time boundary conditions
   
-  ! Underlying spatial discretisation structure
-  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
-
-  ! Underlying time discretisation structure
-  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+  ! Level in the space-time hierarchy
+  integer, intent(in) :: ilevel
+  
+  ! Underlying space-time hierarchy
+  type(t_spaceTimeHierarchy), intent(in), target :: rspaceTimeHierarchy
 
   ! Physics of the problem
   type(t_physics), intent(in), target :: rphysics
@@ -126,8 +129,8 @@ contains
   type(t_spacetimeBC), intent(out) :: rbc
     
     rbc%p_rphysics => rphysics
-    rbc%p_rspaceDiscr => rspaceDiscr
-    rbc%p_rtimeDiscr => rtimeDiscr
+    rbc%p_rspaceTimeHierarchy => rspaceTimeHierarchy
+    rbc%ilevel = ilevel
     
   end subroutine
 
@@ -141,14 +144,13 @@ contains
   type(t_spacetimeBC), intent(inout) :: rbc
     
     nullify(rbc%p_rphysics)
-    nullify(rbc%p_rspaceDiscr)
-    nullify(rbc%p_rtimeDiscr)
+    nullify(rbc%p_rspaceTimeHierarchy)
   
   end subroutine
   
   ! ***************************************************************************
 
-  subroutine spop_assembleSpaceBCtime (rbc, dtime, icomponent, rdiscreteBC)
+  subroutine spop_assembleSpaceBCtime (rbc,ispaceLevel,dtime, icomponent, rdiscreteBC)
 
   ! Assemble the boundary conditions at a specific time.
   
@@ -156,6 +158,10 @@ contains
   
   ! Boundary condition structure 
   type(t_spacetimeBC), intent(in) :: rbc
+  
+  ! Level in space, corresponding to rdiscreteBC.
+  ! =0: Use the standard level in rbc.
+  integer, intent(in) :: ispaceLevel
   
   ! Time where to evaluate the boundary conditions.
   real(DP), intent(in) :: dtime
@@ -169,17 +175,25 @@ contains
   type(t_discreteBC), intent(inout) :: rdiscreteBC
   
     ! local variables
-    integer :: ibc, isegment
+    integer :: ibc, isegment, ilev
     type(t_boundaryRegion) :: rregion
     type(t_collection) :: rcollection
+    type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
+    
+    ! Get the space-level
+    ilev = ispaceLevel
+    if (ilev .eq. 0) then
+      call sth_getLevel(rbc%p_rspaceTimeHierarchy,rbc%ilevel,ispaceLevel=ilev)
+    end if
+    p_rfeSpaceLevel => rbc%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
   
     select case (rbc%p_rphysics%cequation)
     case (0)
       ! 2D Heat equation
-      do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
-        do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc)
+      do ibc = 1,boundary_igetNBoundComp(p_rfeSpaceLevel%p_rdiscretisation%p_rboundary)
+        do isegment = 1,boundary_igetNsegments(p_rfeSpaceLevel%p_rdiscretisation%p_rboundary,ibc)
           ! Get the segment and create Dirichlet BC's there.
-          call boundary_createRegion (rbc%p_rspaceDiscr%p_rboundary, ibc, isegment, &
+          call boundary_createRegion (p_rfeSpaceLevel%p_rdiscretisation%p_rboundary, ibc, isegment, &
               rregion)
                              
           ! IQuickAccess(1) is the number of the primal equation. Here we only have one!
@@ -191,20 +205,20 @@ contains
           rcollection%DquickAccess(1) = dtime
           rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
           rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
-          call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
+          call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
       end do
 
     case (1)
       ! Stokes equation
-      do ibc = 1,boundary_igetNBoundComp(rbc%p_rspaceDiscr%p_rboundary)
+      do ibc = 1,boundary_igetNBoundComp(p_rfeSpaceLevel%p_rdiscretisation%p_rboundary)
       
         ! Last segment is Neumann!
-        do isegment = 1,boundary_igetNsegments(rbc%p_rspaceDiscr%p_rboundary,ibc)
+        do isegment = 1,boundary_igetNsegments(p_rfeSpaceLevel%p_rdiscretisation%p_rboundary,ibc)
           if (isegment .ne. 2) then
             ! Get the segment and create Dirichlet BC's there.
-            call boundary_createRegion (rbc%p_rspaceDiscr%p_rboundary, ibc, isegment, &
+            call boundary_createRegion (p_rfeSpaceLevel%p_rdiscretisation%p_rboundary, ibc, isegment, &
                 rregion)
             rregion%iproperties = BDR_PROP_WITHSTART+BDR_PROP_WITHEND
                                
@@ -217,7 +231,7 @@ contains
             rcollection%DquickAccess(1) = dtime
             rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
             rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
-            call bcasm_newDirichletBConRealBd (rbc%p_rspaceDiscr, &
+            call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
                 icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
           end if
         end do
@@ -232,12 +246,12 @@ contains
       case (1)
         ! 1.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda1 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda1 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -246,12 +260,12 @@ contains
       case (2)
         ! 2.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda2 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha),  &
               fct_heatLambda2 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -260,12 +274,12 @@ contains
       case (3)
         ! 3.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda3 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda3 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -274,12 +288,12 @@ contains
       case (4)
         ! 4.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda4 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda4 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -288,12 +302,12 @@ contains
       case (5)
         ! 5.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda5 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda5 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -302,12 +316,12 @@ contains
       case (6)
         ! 6.)
         if (icomponent .eq. 1) then
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatY6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatY6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 1)
         else
-          call bcasm_newDirichletBC_1D(rbc%p_rspaceDiscr, rdiscreteBC, &
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
@@ -329,7 +343,7 @@ contains
   
   ! ***************************************************************************
 
-  subroutine spop_assembleSpaceBC (rbc, istep, ctype, rdiscreteBC)
+  subroutine spop_assembleSpaceBC (rbc, ispaceLevel, istep, ctype, rdiscreteBC)
 
   ! Assemble the boundary conditions at a specific timestep for all components.
   
@@ -338,6 +352,10 @@ contains
   ! Boundary condition structure.
   ! Should be clean before calling this routine.
   type(t_spacetimeBC), intent(in) :: rbc
+  
+  ! Level in space, corresponding to rdiscreteBC.
+  ! =0: Use the standard level in rbc.
+  integer, intent(in) :: ispaceLevel
   
   ! Timestep number
   integer, intent(in) :: istep
@@ -352,34 +370,38 @@ contains
 
     ! local variables  
     real(DP) :: dtimePrimal,dtimeDual
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
 
-    call spop_getPrimalDualTime (rbc%p_rtimeDiscr,istep,dtimePrimal,dtimeDual)
+    ! Get the space-level
+    call sth_getLevel(rbc%p_rspaceTimeHierarchy,rbc%ilevel,p_rtimeDiscr=p_rtimeDiscr)
+
+    call spop_getPrimalDualTime (p_rtimeDiscr,istep,dtimePrimal,dtimeDual)
 
     select case (rbc%p_rphysics%cequation)
     case (0,2)
       ! Heat equation
       select case (ctype)
       case (SPOP_DEFECT,SPOP_SOLUTION)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 2, rdiscreteBC)
       case (SPOP_RHS)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 2, rdiscreteBC)
       end select
     
     case (1)
       ! Stokes equation
       select case (ctype)
       case (SPOP_DEFECT,SPOP_SOLUTION)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 2, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 4, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 5, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 5, rdiscreteBC)
       case (SPOP_RHS)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 1, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimeDual, 2, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 4, rdiscreteBC)
-        call spop_assembleSpaceBCtime (rbc, dtimePrimal, 5, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 1, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimeDual, 2, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 4, rdiscreteBC)
+        call spop_assembleSpaceBCtime (rbc, ispaceLevel, dtimePrimal, 5, rdiscreteBC)
       end select
 
     end select
@@ -407,13 +429,15 @@ contains
     integer :: istep
     type(t_discreteBC) :: rdiscreteBC
     type(t_vectorblock) :: rtempVec
+    type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     real(DP), dimension(:), pointer :: p_Ddata
     
     ! Init the BC structure
     call bcasm_initDiscreteBC(rdiscreteBC)
     
     ! Temp vector
-    call lsysbl_createVectorBlock (rbc%p_rspaceDiscr,rtempVec,.false.)
+    call sth_getLevel(rbc%p_rspaceTimeHierarchy,rbc%ilevel,p_rfeSpaceLevel=p_rfeSpaceLevel)
+    call lsysbl_createVectorBlock (p_rfeSpaceLevel%p_rdiscretisation,rtempVec,.false.)
     call lsysbl_getbase_double(rtempVec,p_Ddata)
     
     ! Loop through the timesteps.
@@ -421,7 +445,7 @@ contains
      
       ! Assemble the BC's. Be careful with the dime discretisation!
       call bcasm_clearDiscreteBC (rdiscreteBC)
-      call spop_assembleSpaceBC (rbc, istep, ctype, rdiscreteBC)
+      call spop_assembleSpaceBC (rbc, 0, istep, ctype, rdiscreteBC)
       
       ! Implement.
       call sptivec_getTimestepData (rvector, istep, rtempVec)

@@ -33,6 +33,9 @@ module spacetimematvec
   use physics
   use spacetimebc
   
+  use fespacehierarchy
+  use spacetimehierarchy
+  
   implicit none
 
   ! Encapsules a space-time matrix
@@ -42,15 +45,15 @@ module spacetimematvec
     ! =0: standard matrix.
     ! =1: matrix of the Frechet-deerivative of the operator.
     integer :: cmatrixType
+    
+    ! Level of the matrix in the space-time hierarchy
+    integer :: ilevel
+    
+    ! Underlying space-time hierarchy
+    type(t_spacetimeHierarchy), pointer :: p_rspaceTimeHierarchy
   
-    ! Underlying space discretisation
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
-    
-    ! Underlying time discretisation
-    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    
     ! Template matrices for this space-time level
-    type(t_matvecTemplates), pointer :: p_rmatVecTempl
+    type(t_matvecTemplates), dimension(:), pointer :: p_rmatVecTempl
     
     ! Physics of the problem.
     type(t_physics), pointer :: p_rphysics
@@ -65,7 +68,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stmv_createMatrix (cmatrixType,rspaceDiscr,rtimeDiscr,rphysics,&
+  subroutine stmv_createMatrix (cmatrixType,ilevel,rspaceTimeHierarchy,rphysics,&
       rboundaryCond,rmatVecTempl,rmatrix)
 
   ! Creates a space-time matrix.
@@ -74,12 +77,12 @@ contains
   ! =0: standard matrix.
   ! =1: matrix of the Frechet-deerivative of the operator.
   integer, intent(in) :: cmatrixType
-  
-  ! Underlying spatial discretisation structure
-  type(t_blockDiscretisation), intent(in), target :: rspaceDiscr
 
-  ! Underlying time discretisation structure
-  type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
+  ! Level of the matrix in the space-time hierarchy
+  integer, intent(in) :: ilevel
+  
+  ! Underlying space-time hierarchy
+  type(t_spacetimeHierarchy), intent(in), target :: rspaceTimeHierarchy
 
   ! Physics of the problem
   type(t_physics), intent(in), target :: rphysics
@@ -87,16 +90,16 @@ contains
   ! Boundary condition structure.
   type(t_spacetimeBC), intent(in), target :: rboundaryCond
   
-  ! Template matrices in space.
-  type(t_matvecTemplates), intent(in), target :: rmatVecTempl
+  ! Array of template matrices in space for all space-levels.
+  type(t_matvecTemplates), dimension(:), intent(in), target :: rmatVecTempl
   
   ! Space-time matrix to be created.
   type(t_spaceTimeMatrix), intent(out) :: rmatrix
     
     rmatrix%cmatrixType = cmatrixType
     rmatrix%p_rphysics => rphysics
-    rmatrix%p_rspaceDiscr => rspaceDiscr
-    rmatrix%p_rtimeDiscr => rtimeDiscr
+    rmatrix%ilevel = ilevel
+    rmatrix%p_rspaceTimeHierarchy => rspaceTimeHierarchy
     rmatrix%p_rboundaryCond => rboundaryCond
     rmatrix%p_rmatVecTempl => rmatVecTempl
     
@@ -113,8 +116,8 @@ contains
     
     rmatrix%cmatrixType = 0
     nullify(rmatrix%p_rphysics)
-    nullify(rmatrix%p_rspaceDiscr)
-    nullify(rmatrix%p_rtimeDiscr)
+    nullify(rmatrix%p_rspaceTimeHierarchy)
+    nullify(rmatrix%p_rmatVecTempl)
     nullify(rmatrix%p_rboundaryCond)
     
   end subroutine
@@ -142,17 +145,22 @@ contains
   real(DP), intent(in) :: cy
   
     ! local variables
-    integer :: istep
+    integer :: istep,ispaceLevel
     type(t_vectorBlock) :: rtempVecY,rtempVecX1,rtempVecX2,rtempVecX3
     type(t_matrixBlock) :: rsubmatrix
     real(DP) :: dnormy
     real(DP), dimension(:), pointer :: p_Dx1, p_Dx2, p_Dx3, p_Dy
+    type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
+    
+    ! Level in space of the space-time matrix
+    call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,&
+        p_rfeSpaceLevel=p_rfeSpaceLevel,ispaceLevel=ispaceLevel)
     
     ! Allocate a temp vectors and matrices
-    call lsysbl_createVectorBlock(rmatrix%p_rspaceDiscr,rtempVecX1)
-    call lsysbl_createVectorBlock(rmatrix%p_rspaceDiscr,rtempVecX2)
-    call lsysbl_createVectorBlock(rmatrix%p_rspaceDiscr,rtempVecX3)
-    call lsysbl_createVectorBlock(rmatrix%p_rspaceDiscr,rtempVecY)
+    call lsysbl_createVectorBlock(p_rfeSpaceLevel%p_rdiscretisation,rtempVecX1)
+    call lsysbl_createVectorBlock(p_rfeSpaceLevel%p_rdiscretisation,rtempVecX2)
+    call lsysbl_createVectorBlock(p_rfeSpaceLevel%p_rdiscretisation,rtempVecX3)
+    call lsysbl_createVectorBlock(p_rfeSpaceLevel%p_rdiscretisation,rtempVecY)
     
     call lsysbl_getbase_double (rtempVecX1,p_Dx1)
     call lsysbl_getbase_double (rtempVecX2,p_Dx2)
@@ -160,7 +168,7 @@ contains
     call lsysbl_getbase_double (rtempVecY,p_Dy)
     
     call stmv_allocSubmatrix (rmatrix%cmatrixType,rmatrix%p_rphysics,&
-        rmatrix%p_rmatVecTempl,rsubmatrix)
+        rmatrix%p_rmatVecTempl(ispaceLevel),rsubmatrix)
     
     ! Loop over all timesteps
     do istep=1,rx%NEQtime
@@ -176,13 +184,13 @@ contains
       if (istep .gt. 1) then
         ! Left subdiagonal
         call sptivec_getTimestepData(rx,istep-1,rtempVecX1)
-        call stmv_getSubmatrix (rmatrix, istep, istep-1, rsubmatrix)
+        call stmv_getSubmatrix (rmatrix, ispaceLevel, istep, istep-1, rsubmatrix)
         call lsysbl_blockMatVec (rsubmatrix,rtempVecX1,rtempVecY,cx,1.0_DP)
       end if
       
       ! Diagonal
       call sptivec_getTimestepData(rx,istep,rtempVecX2)
-      call stmv_getSubmatrix (rmatrix, istep, istep, rsubmatrix)
+      call stmv_getSubmatrix (rmatrix, ispaceLevel, istep, istep, rsubmatrix)
       call lsysbl_blockMatVec (rsubmatrix,rtempVecX2,rtempVecY,cx,1.0_DP)
       
       !call matio_writeBlockMatrixHR (rsubmatrix, "matrix",&
@@ -191,7 +199,7 @@ contains
       if (istep .lt. rx%NEQtime) then
         ! Right subdiagonal
         call sptivec_getTimestepData(rx,istep+1,rtempVecX3)
-        call stmv_getSubmatrix (rmatrix, istep, istep+1, rsubmatrix)
+        call stmv_getSubmatrix (rmatrix, ispaceLevel, istep, istep+1, rsubmatrix)
         call lsysbl_blockMatVec (rsubmatrix,rtempVecX3,rtempVecY,cx,1.0_DP)
       end if
       
@@ -215,7 +223,7 @@ contains
   subroutine stmv_allocSubmatrix (cmatrixType,rphysics,&
       rmatVecTempl,rsubmatrix,rdiscreteBC)
 
-  ! Creates a space-time matrix.
+  ! Creates a space matrix.
   
   ! Type of the matrix.
   ! =0: standard matrix.
@@ -385,12 +393,16 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stmv_getSubmatrix (rmatrix, irow, icol, rsubmatrix)
+  subroutine stmv_getSubmatrix (rmatrix, ispaceLevel, irow, icol, rsubmatrix)
   
   ! Assembles a sub-blockmatrix of the global matrix at position (irow,icol)
   
   ! Underlying space-time matrix
   type(t_spaceTimeMatrix), intent(in) :: rmatrix
+  
+  ! Level in space, corresponding to rsubmatrix.
+  ! =0: Use the default level of the space-time matrix.
+  integer, intent(in) :: ispaceLevel
   
   ! Row and column
   integer, intent(in) :: irow, icol
@@ -401,26 +413,35 @@ contains
     ! local variables
     real(DP) :: dtheta, dtstep, dalpha, dgamma
     real(DP) :: dcoupleDualToPrimal,dcouplePrimalToDual,dcoupleTermCond
-    integer :: ithetaschemetype
+    integer :: ithetaschemetype, ilev
+    type(t_timeDiscretisation), pointer :: p_rtimeDiscr
+  
+    ! Get the level in space
+    ilev = ispaceLevel
+    if (ilev .eq. 0) then
+      call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,ispaceLevel=ilev)
+    end if
   
     ! Clear the destination matrix.
     rsubMatrix%RmatrixBlock(:,:)%dscaleFactor = 1.0_DP
     call lsysbl_clearMatrix(rsubmatrix)
+    
+    call sth_getLevel(rmatrix%p_rspaceTimeHierarchy,rmatrix%ilevel,p_rtimeDiscr=p_rtimeDiscr)
   
     ! Matrix depends on the physics, on the time discretisation
     ! and on the matrix type (Frechet-derivative or direct operator)!
-    select case (rmatrix%p_rtimeDiscr%ctype)
+    select case (p_rtimeDiscr%ctype)
     
     case (TDISCR_ONESTEPTHETA)
     
-      dtheta = rmatrix%p_rtimeDiscr%dtheta
-      dtstep = rmatrix%p_rtimeDiscr%dtstep
+      dtheta = p_rtimeDiscr%dtheta
+      dtstep = p_rtimeDiscr%dtstep
       dalpha = rmatrix%p_rphysics%doptControlAlpha
       dgamma = rmatrix%p_rphysics%doptControlGamma
       dcoupleDualToPrimal = rmatrix%p_rphysics%dcoupleDualToPrimal
       dcouplePrimalToDual = rmatrix%p_rphysics%dcouplePrimalToDual
       dcoupleTermCond = rmatrix%p_rphysics%dcoupleTermCond
-      ithetaschemetype = rmatrix%p_rtimeDiscr%itag
+      ithetaschemetype = p_rtimeDiscr%itag
     
       ! Standard 1-step theta scheme.
       select case (rmatrix%p_rphysics%cequation)
@@ -443,14 +464,14 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, &
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, &
 !                (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
@@ -460,19 +481,19 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
 !                rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
 !                
@@ -485,19 +506,19 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the dual to the primal
 !            !call lsyssc_matrixLinearComb (&
-!            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP-dtheta)*dcouplePrimalToDual,&
+!            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP-dtheta)*dcouplePrimalToDual,&
 !            !    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
 !            !    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
 !          end if
@@ -515,19 +536,19 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            !call lsyssc_matrixLinearComb (&
-!            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+!            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
 !            !    rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
 !            !    rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
 !          end if
@@ -539,19 +560,19 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the dual to the primal
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
 !                rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
 !
@@ -561,19 +582,19 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
 !                
@@ -592,20 +613,20 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             if (irow .gt. 1) then
               if (ithetaschemetype .eq. 2) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(0.25_DP/dalpha),&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(0.25_DP/dalpha),&
                     rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               end if
@@ -613,7 +634,7 @@ contains
 
             ! Coupling of the primal to the dual
             !call lsyssc_matrixLinearComb (&
-            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
             !    rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
             !    rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
           end if
@@ -625,13 +646,13 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
@@ -640,12 +661,12 @@ contains
             if (irow .gt. 1) then
               if (ithetaschemetype .eq. 2) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(0.5_DP/dalpha),&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(0.5_DP/dalpha),&
                     rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               else
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
                     rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               end if
@@ -657,13 +678,13 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
@@ -673,58 +694,58 @@ contains
             if (ithetaschemetype .eq. 1) then
               if (irow .eq. 1) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP-dtheta),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
-              else if (irow .eq. rmatrix%p_rtimeDiscr%nintervals) then
+              else if (irow .eq. p_rtimeDiscr%nintervals) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP+(1.0_DP-dtheta)*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
-              else if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+              else if (irow .eq. p_rtimeDiscr%nintervals+1) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dtheta*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               else
                 ! Standard weights.
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     dcouplePrimalToDual*(-1.0_DP),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               end if
               
             else if (ithetaschemetype .eq. 3) then
-              if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+              if (irow .eq. p_rtimeDiscr%nintervals+1) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               else
                 ! Standard weights.
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     dcouplePrimalToDual*(-dtheta),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               end if
             
             else
-              if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+              if (irow .eq. p_rtimeDiscr%nintervals+1) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
               else
                 ! Standard weights.
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     dcouplePrimalToDual*(-1.0_DP),&
                     rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
@@ -740,20 +761,20 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
             if (irow .gt. 1) then
               if (ithetaschemetype .eq. 2) then
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(0.25_DP/dalpha),&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(0.25_DP/dalpha),&
                     rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
               end if
@@ -762,7 +783,7 @@ contains
             if (ithetaschemetype .eq. 3) then
               ! Standard weights.
               call lsyssc_matrixLinearComb (&
-                  rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                   dcouplePrimalToDual*(-(1.0_DP-dtheta)),&
                   rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
                   rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
@@ -771,7 +792,7 @@ contains
 
             ! Coupling of the primal to the dual
             !call lsyssc_matrixLinearComb (&
-            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
+            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
             !    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
             !    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
           end if
@@ -800,46 +821,46 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, &
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, &
 !                (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, &
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, &
 !                (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! B/D
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,3),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,3),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,3),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,3),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,2),.false.,.false.,.true.,.true.)
 !
@@ -849,55 +870,55 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
 !                rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (dtheta-1.0_DP)*dcouplePrimalToDual,&
 !                rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
 !                
 !            ! B/D
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,6),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,6),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,6),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,6),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,5),.false.,.false.,.true.,.true.)
 !
@@ -910,29 +931,29 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            !call lsyssc_matrixLinearComb (&
-!            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP-dtheta)*dcouplePrimalToDual,&
+!            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP-dtheta)*dcouplePrimalToDual,&
 !            !    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
 !            !    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
 !          end if
@@ -950,29 +971,29 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !                
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            !call lsyssc_matrixLinearComb (&
-!            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+!            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
 !            !    rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
 !            !    rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
 !          
@@ -985,55 +1006,55 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the dual to the primal
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
 !                rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
 !                rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
 !
 !            ! B/D
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,3),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(1,3),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,3),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(2,3),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(3,2),.false.,.false.,.true.,.true.)
 !
@@ -1043,55 +1064,55 @@ contains
 !            
 !            ! Laplace
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !                
 !            ! Mass
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
 !                rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 !
 !            ! Coupling of the primal to the dual
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
 !                rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dgamma/dtstep),&
 !                rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
 !                
 !            ! B/D
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,6),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(4,6),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,6),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(5,6),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,4),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,4),.false.,.false.,.true.,.true.)
 !
 !            call lsyssc_matrixLinearComb (&
-!                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+!                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,5),1.0_DP,&
 !                rsubMatrix%RmatrixBlock(6,5),.false.,.false.,.true.,.true.)
 !                
@@ -1110,29 +1131,29 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
             ! Coupling of the primal to the dual
             !call lsyssc_matrixLinearComb (&
-            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
+            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP-dtheta)/dalpha,&
             !    rsubMatrix%RmatrixBlock(1,2),1.0_DP,&
             !    rsubMatrix%RmatrixBlock(1,2),.false.,.false.,.true.,.true.)
           end if
@@ -1144,23 +1165,23 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
                 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(1,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(2,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,2),.false.,.false.,.true.,.true.)
 
@@ -1169,34 +1190,34 @@ contains
             
             if (irow .gt. 1) then
               call lsyssc_matrixLinearComb (&
-                  rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
                   rsubMatrix%RmatrixBlock(1,4),1.0_DP,&
                   rsubMatrix%RmatrixBlock(1,4),.false.,.false.,.true.,.true.)
 
               call lsyssc_matrixLinearComb (&
-                  rmatrix%p_rmatVecTempl%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
+                  rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, dcoupleDualToPrimal*(1.0_DP/dalpha),&
                   rsubMatrix%RmatrixBlock(2,5),1.0_DP,&
                   rsubMatrix%RmatrixBlock(2,5),.false.,.false.,.true.,.true.)
             end if
 
             ! B/D
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,3),1.0_DP,&
                 rsubMatrix%RmatrixBlock(1,3),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,3),1.0_DP,&
                 rsubMatrix%RmatrixBlock(2,3),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(3,1),1.0_DP,&
                 rsubMatrix%RmatrixBlock(3,1),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(3,2),1.0_DP,&
                 rsubMatrix%RmatrixBlock(3,2),.false.,.false.,.true.,.true.)
 
@@ -1206,23 +1227,23 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, (rmatrix%p_rphysics%dviscosity*dtheta),&
                 rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, (1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, (1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 
@@ -1232,69 +1253,69 @@ contains
               if (irow .eq. 1) then
                 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP-dtheta),&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP-dtheta),&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
               
-              else if (irow .eq. rmatrix%p_rtimeDiscr%nintervals) then
+              else if (irow .eq. p_rtimeDiscr%nintervals) then
                 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP+(1.0_DP-dtheta)*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(1.0_DP+(1.0_DP-dtheta)*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
               
-              else if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+              else if (irow .eq. p_rtimeDiscr%nintervals+1) then
               
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dtheta*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond*dtheta+dtheta*dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                     
               else             
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
               end if
               
             else
               
-              if (irow .eq. rmatrix%p_rtimeDiscr%nintervals+1) then
+              if (irow .eq. p_rtimeDiscr%nintervals+1) then
               
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, &
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, &
                     -dcouplePrimalToDual*(dcoupleTermCond+dgamma/dtstep),&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
@@ -1302,12 +1323,12 @@ contains
               else             
               
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
                     rsubMatrix%RmatrixBlock(4,1),1.0_DP,&
                     rsubMatrix%RmatrixBlock(4,1),.false.,.false.,.true.,.true.)
 
                 call lsyssc_matrixLinearComb (&
-                    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual,&
+                    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual,&
                     rsubMatrix%RmatrixBlock(5,2),1.0_DP,&
                     rsubMatrix%RmatrixBlock(5,2),.false.,.false.,.true.,.true.)
                     
@@ -1316,22 +1337,22 @@ contains
                 
             ! B/D
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixB1, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixB1, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,6),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,6),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixB2, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixB2, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,6),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,6),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixD1, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixD1, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(6,4),1.0_DP,&
                 rsubMatrix%RmatrixBlock(6,4),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixD2, 1.0_DP,&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixD2, 1.0_DP,&
                 rsubMatrix%RmatrixBlock(6,5),1.0_DP,&
                 rsubMatrix%RmatrixBlock(6,5),.false.,.false.,.true.,.true.)
 
@@ -1344,29 +1365,29 @@ contains
             
             ! Laplace
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixLaplaceA11, rmatrix%p_rphysics%dviscosity*(1.0_DP-dtheta),&
                 rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
                 
             ! Mass
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(4,4),1.0_DP,&
                 rsubMatrix%RmatrixBlock(4,4),.false.,.false.,.true.,.true.)
 
             call lsyssc_matrixLinearComb (&
-                rmatrix%p_rmatVecTempl%rmatrixMassA11, -(1.0_DP/dtstep),&
+                rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -(1.0_DP/dtstep),&
                 rsubMatrix%RmatrixBlock(5,5),1.0_DP,&
                 rsubMatrix%RmatrixBlock(5,5),.false.,.false.,.true.,.true.)
 
             ! Coupling of the primal to the dual
             !call lsyssc_matrixLinearComb (&
-            !    rmatrix%p_rmatVecTempl%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
+            !    rmatrix%p_rmatVecTempl(ilev)%rmatrixMassA11, -dcouplePrimalToDual*(1.0_DP-dtheta),&
             !    rsubMatrix%RmatrixBlock(2,1),1.0_DP,&
             !    rsubMatrix%RmatrixBlock(2,1),.false.,.false.,.true.,.true.)
           end if
@@ -1401,12 +1422,16 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stmv_implementDefBCSubmatrix (rboundaryCond, rsubmatrix, irow, icol, rdiscreteBC)
+  subroutine stmv_implementDefBCSubmatrix (rboundaryCond, ispaceLevel, rsubmatrix, irow, icol, rdiscreteBC)
   
   ! Implements boundary conditions into a submatrix of the global matrix.
   
   ! Boundary conditions.
   type(t_spacetimeBC), intent(in), target :: rboundaryCond
+
+  ! Space-level corresponding to rsubmatrix.
+  ! =0: Use the space level of the current space-time level in rboundaryCond.
+  integer, intent(in) :: ispaceLevel
 
   ! Spatial submatrix of the global space-time matrix
   type(t_matrixBlock), intent(inout) :: rsubmatrix
@@ -1419,7 +1444,7 @@ contains
   type(t_discreteBC), intent(inout) :: rdiscreteBC
   
     call bcasm_clearDiscreteBC (rdiscreteBC)
-    call spop_assembleSpaceBC (rboundaryCond, irow, SPOP_DEFECT, rdiscreteBC)
+    call spop_assembleSpaceBC (rboundaryCond, ispaceLevel, irow, SPOP_DEFECT, rdiscreteBC)
     call matfil_discreteBC (rsubmatrix,rdiscreteBC)
 
   end subroutine

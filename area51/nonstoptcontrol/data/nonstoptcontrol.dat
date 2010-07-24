@@ -92,9 +92,9 @@ icalcerror = 1
 # =1: 1st order (Q1, Q1~/Q0)
 # =2: 2nd order (Q2, Q2/QP1)
 
-cfespace = -1
+cfespace = 1
 
-nspacelevels = 1
+nspacelevels = 2
 ntimelevels = 2
 nminlevelspace = 2
 nminminleveltime = 1
@@ -186,11 +186,11 @@ ifullcouplingFBGS2 = 1
 [SPACETIME-COARSEGRIDSOLVER]
 ############################
 
-ioutputlevel = 0
+ioutputlevel = 2
 depsrel = 1E-10
 depsabs = 1E-17
 
-ddamping = 0.5
+ddamping = 0.9
 drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS2.
@@ -203,9 +203,9 @@ ifullcouplingFBGS2 = 1
 [SPACETIME-SMOOTHER]
 ####################
 
-ioutputlevel = 0
+ioutputlevel = 2
 
-ddamping = 0.5
+ddamping = 0.9
 drelax = 1.0
 
 # Use full (forward+backward) coupling in FBGS2.
@@ -217,3 +217,16 @@ ifullcouplingFBGS2 = 1
 # Reinitialisation counter for BiCGStab
 # =0: deactivate
 niteReinit = 0
+
+####################
+[SPACE-LINEARSOLVER]
+####################
+
+# Type of the solver in space.
+# =0: UMFPACK
+# =1: Multigrid
+csolverType = 1
+
+# Type of smoother/coarse grid solver.
+# =0: Defect correction + Jacobi/VANKA preconditioning
+cpreconditioner = 0
