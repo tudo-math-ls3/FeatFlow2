@@ -92,7 +92,7 @@ icalcerror = 1
 # =2: 2nd order (Q2, Q2/QP1)
 cfespace = -1
 
-nspacelevels = 1
+nspacelevels = $SPACETIMEDISCRETISATION_NSPACELEVELS
 ntimelevels = 2
 nminlevelspace = $SPACETIMEDISCRETISATION_NMINLEVELSPACE
 nminminleveltime = 1
@@ -206,3 +206,16 @@ ifullcouplingFBGS2 = 1
 # Reinitialisation counter for BiCGStab
 # =0: deactivate
 niteReinit = 0
+
+####################
+[SPACE-LINEARSOLVER]
+####################
+
+# Type of the solver in space.
+# =0: UMFPACK
+# =1: Multigrid
+csolverType = 0
+
+# Type of smoother/coarse grid solver.
+# =0: Defect correction + Jacobi/VANKA preconditioning
+cpreconditioner = 0
