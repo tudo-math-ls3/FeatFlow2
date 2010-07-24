@@ -909,7 +909,7 @@ fb_createBenchmarkJobfile()
 #
 #    [testid]  = id of the test
 #    [parexec] = 0, if the script is a single script for one test
-#                1, if the script is a parallel script that internally calls
+#              <>0, if the script is a parallel script that internally calls
 #                   other scripts in parallel
 #
 # Return:
