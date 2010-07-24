@@ -283,12 +283,13 @@ contains
     end if
     
     if (present(cspaceSolverType) .or. ballocTempMatrices) then
-    
-      ! Allocate matrices for the space solver
-      allocate(rsolver%p_RspaceMatrices(rspaceTimeHierarchy%p_rfeHierarchy%nlevels))
 
+      ! Get the space level associated to the space-time level    
       call sth_getLevel (rspaceTimeHierarchy,ilevel,ispaceLevel=ispaceLevel)
       
+      ! Allocate matrices for the space solver
+      allocate(rsolver%p_RspaceMatrices(ispaceLevel))
+
       ! Initialise the solver in space.
       rsolver%cspaceSolverType = cspaceSolverType
       select case (cspaceSolverType)
@@ -449,14 +450,15 @@ contains
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     type(t_timeDiscretisation), pointer :: p_rtimeDiscr
-    integer :: ilev,i
+    integer :: ilev,i,ispaceLevel
   
     if (rsolver%csolverType .eq. STLS_TYPE_NONE) then
       call sys_halt()
     end if
   
     call sth_getLevel (rsolver%p_rspaceTimeHierarchy,&
-        rsolver%ilevel,p_rfeSpaceLevel=p_rfeSpaceLevel,p_rtimeDiscr=p_rtimeDiscr)
+        rsolver%ilevel,p_rfeSpaceLevel=p_rfeSpaceLevel,p_rtimeDiscr=p_rtimeDiscr,&
+        ispaceLevel=ispaceLevel)
     p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
   
     ! Some initialisation, based on the solver type.
@@ -563,7 +565,7 @@ contains
     
     ! Temp matrices.
     if (associated(rsolver%p_RspaceMatrices)) then
-      do ilev = 1,rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%nlevels
+      do ilev = 1,ispaceLevel
         
         p_rfeSpaceLevel => rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
@@ -578,7 +580,7 @@ contains
     
     ! Temp vectors
     if (associated(rsolver%p_RspaceVectors)) then
-      do ilev = 1,rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%nlevels
+      do ilev = 1,ispaceLevel
         
         p_rfeSpaceLevel => rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation

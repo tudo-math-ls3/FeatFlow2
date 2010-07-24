@@ -813,7 +813,7 @@ contains
       call sth_initHierarchy (rparams%rspacetimeHierarchy,&
           rparams%rfeHierarchy,rparams%rtimeHierarchy)
       call sth_defineHierarchyByCoarsening (rparams%rspacetimeHierarchy,&
-          nspacelevels,nspacelevels,1,ntimelevels)
+          1,nspacelevels,1,ntimelevels)
       
       ! Boundary conditions on all levels.
       allocate (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels))
@@ -896,7 +896,8 @@ contains
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
       call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,icalcError .ne. 0)
-      call output_line ("Wallclock time for solver: "//stat_sgetTime_byTimer(rtimerSolver))
+      call output_line ("CPU time for solver:       "//trim(sys_sdL(rtimerSolver%delapsedCPU, 2)))
+      call output_line ("Wallclock time for solver: "//trim(sys_sdL(rtimerSolver%delapsedReal, 2)))
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
         call stmv_releaseMatrix(p_Rmatrices(ilev))
