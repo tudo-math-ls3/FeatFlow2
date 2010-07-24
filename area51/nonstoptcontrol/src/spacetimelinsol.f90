@@ -331,8 +331,11 @@ contains
   
     if (ballocTempVectors) then
     
-      ! Allocate matrices for the space solver
-      allocate(rsolver%p_RspaceVectors(ilevel))
+      ! Get the space level of the space-time level
+      call sth_getLevel (rspaceTimeHierarchy,ilevel,ispaceLevel=ispaceLevel)
+    
+      ! Allocate space vectors for the space solver
+      allocate(rsolver%p_RspaceVectors(ispaceLevel))
 
     end if
   
@@ -2171,12 +2174,16 @@ contains
   
   ! Current level
   integer, intent(in) :: ilevel
-  real(DP) :: dfactor
   
     ! local variables
-    integer :: ite,nite
+    real(DP) :: dfactor
+    integer :: ite,nite,ispacelevel,itimeLevel
     real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresLast
     real(DP), dimension(3) :: DlastResiduals
+  
+    ! Get the space and time level corresponding to the space-etime level.
+    call sth_getLevel(rsolver%p_rspaceTimeHierarchy,ilevel,&
+        ispaceLevel=ispaceLevel,itimeLevel=itimeLevel)
   
     ! Are we on the level of the coarse grid solver?
     if (ilevel .eq. rsolver%p_rcoarsegridsolver%ilevel) then
@@ -2316,7 +2323,7 @@ contains
         ! Restriction.
         call sptipr_performRestriction (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors2(ilevel-1),rsolver%p_Rvectors3(ilevel),&
-            rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel),&
+            rsolver%p_RspaceVectors(ispaceLevel-1),rsolver%p_RspaceVectors(ispaceLevel),&
             rsolver%p_Rvectors4(ilevel-1),rsolver%p_Rvectors4(ilevel))
         
         ! Boundary conditions.
@@ -2328,7 +2335,7 @@ contains
         ! Prolongation
         call sptipr_performProlongation (rsolver%p_rspaceTimeProjection,ilevel,&
             rsolver%p_Rvectors1(ilevel-1),rsolver%p_Rvectors3(ilevel),&
-            rsolver%p_RspaceVectors(ilevel-1),rsolver%p_RspaceVectors(ilevel))
+            rsolver%p_RspaceVectors(ispaceLevel-1),rsolver%p_RspaceVectors(ispaceLevel))
         
         ! Boundary conditions.
         call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))

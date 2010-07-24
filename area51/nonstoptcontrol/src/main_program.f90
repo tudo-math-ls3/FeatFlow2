@@ -65,6 +65,8 @@ module main_program
   use externalstorage
   use paramlist
   
+  use statistics
+  
   use meshhierarchy
   use fespacehierarchy
   use timescalehierarchy
@@ -718,9 +720,11 @@ contains
     integer :: iwriteUCD, cfespace, icalcError
     character(LEN=SYS_STRLEN) :: smesh, sboundary
     integer :: ithetaschemetype
+    type(t_timer) :: rtimerSolver
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
+    ! Initialise statistics
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
         "nspacelevels", nspacelevels)
     call parlst_getvalue_int (rparlist, "SPACETIME-DISCRETISATION", &
@@ -871,7 +875,12 @@ contains
       
       ! Solve
       call stls_initData (rlinearSolver%rsolver)
+      
+      call stat_clearTimer (rtimerSolver)
+      call stat_startTimer (rtimerSolver)
       call stls_solveAdaptively (rlinearSolver%rsolver,rsolution,rrhs,rtemp)
+      call stat_stopTimer (rtimerSolver)
+      
       csolverStatus = rlinearSolver%rsolver%csolverStatus
       call stls_doneData (rlinearSolver%rsolver)
       
@@ -887,6 +896,7 @@ contains
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
       call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,icalcError .ne. 0)
+      call output_line ("Wallclock time for solver: "//stat_sgetTime_byTimer(rtimerSolver))
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
         call stmv_releaseMatrix(p_Rmatrices(ilev))
