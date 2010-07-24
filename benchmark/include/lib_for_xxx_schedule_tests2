@@ -1328,7 +1328,7 @@ EOF
 #
 # where
 #    [parexec]        = 0, if the script should submit one job per test-id
-#                       1, If the script should enqueue 'parallel' scripts
+#                     > 0, If the script should enqueue 'parallel' scripts
 #                          which collect the execution of multiple serial jobs
 #    [maxjobsmessage] = Output of qsub if the queue is full
 #
@@ -1339,7 +1339,13 @@ EOF
 
 fb_submitJobfiles()
 {
-  parexec=$1
+  # Set parexec=1 if multiple jobs are collected in 'parallel' scripts.
+  if test "$1" -eq "0"
+    then
+      parexec=0
+    else
+      parexec=1
+    fi
   maxjobsmessage="$2"
   # Loop over all jobs, submit them if they exist.
   for testid in $ALLTESTS
