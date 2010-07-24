@@ -290,8 +290,8 @@ submits the job file to the scheduler.
   --noscheduleonerr, --no-schedule-on-err
       Creates a job script(s) but does not schedule the job if there is any
       error. Used for debugging purposes.
-  --collectjobs
-      Manually schedule multiple jobs onto one node, bypassing the queuing
+  --collectjobs <count>
+      Manually schedule <count> jobs onto one node, bypassing the queuing
       system. May be used for serial jobs on cluster systems that do not
       support allocation of less than one node per job.
   --queuetype <type>, -qt <type>
@@ -361,8 +361,8 @@ fb_readargs() {
           exit
           ;;
 
-      --noscheduleonerr|--no-schedule-on-err) # only create jobfile, don't submit to queue
-          NOSCHEDULE=1
+      --noscheduleonerr|--no-schedule-on-err) # only create jobfile if everything works fine
+          NOSCHEDULEONERR=1
           shift
           ;;
 
@@ -383,8 +383,9 @@ fb_readargs() {
           ;;
 
       --collectjobs)  # jobs are serial jobs using less than one node per job
-          COLLECTJOBS=1
-          echo "$0: Collecting jobs to fill the nodes"
+          COLLECTJOBS="$2"
+          echo "$0: Collecting up to $COLLECTJOBS jobs to fill the nodes"
+          shift
           shift
           ;;
 

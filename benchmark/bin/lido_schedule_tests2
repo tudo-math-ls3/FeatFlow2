@@ -56,8 +56,8 @@ CORESPERNODE=-1
 AFTERJOB=""
 
 # Defines if multiple jobs should be collected to one node.
-# For serial jobs, up to CORESPERNODE jobs are scheduled onto one node
-# bypassing the PBS system.
+# For serial jobs, up to COLLECTJOBS jobs are scheduled onto one node
+# bypassing the PBS system. =0: deactivated.
 COLLECTJOBS=0
 
 # Type of queue to be selected.
@@ -266,11 +266,10 @@ fb_postprocess $successfulTests "$testIDsWithErrors"
 
 # Probably collect to parallel jobscripts
 
-if test "$COLLECTJOBS" = "1"
+if test "$COLLECTJOBS" != "0"
   then
     # Collect the jobs into chunks
-    fb_getCoresPerNode $CORESPERNODE
-    fb_collectToParallelJobfiles $CORESPERNODE
+    fb_collectToParallelJobfiles $COLLECTJOBS
   fi
 
 # Finally, sumbit the created jobs
