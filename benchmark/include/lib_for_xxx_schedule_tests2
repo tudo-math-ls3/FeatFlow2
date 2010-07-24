@@ -918,12 +918,11 @@ fb_createBenchmarkJobfile()
 
 fb_getJobfileName()
 {
-  parexec=$2
-  if test "$parexec" = "1"
+  if test "$2" = "1"
     then
-      JOBFILE="$JOBFILEPREFIX.$testid.parallel.sh"
+      JOBFILE="$JOBFILEPREFIX.$1.parallel.sh"
     else
-      JOBFILE="$JOBFILEPREFIX.$testid.sh"
+      JOBFILE="$JOBFILEPREFIX.$1.sh"
     fi
 }
 
@@ -1067,6 +1066,87 @@ fb_readNTasks()
 }
 
 # ==================================================
+# FUNCTION: Creates a parallel jobfile from a number of tasks
+#
+# Call:
+#    fb_createParallelJobfile [ntasks] [task-ids]
+#
+# with
+#
+#    [ntasks]   = Total number of tasks, summed up over all id's
+#    [task-ids] = List of all task-id's that should enter
+#                 the jobfile.
+#
+# ==================================================
+
+fb_createParallelJobfile()
+{
+  # Get the name of a corresponding parallel jobfile.
+  fb_getJobfileName "$2" 1
+  
+  # Get the filename
+  file=$JOBFILE
+  
+  echo $0": Creating parallel jobfile <$file>."
+
+  # Get the name of a corresponding first serial jobfile.
+  fb_getJobfileName "$2" 0
+  
+  # Get the LOG-Path from the corresponding first script.
+  fb_readLogPath "$JOBFILE"
+
+  # Get the number of nodes/cores; we need that for the pbs header.
+  fb_determineNodes "$1"
+
+  # Write a header, but use a different output file.
+  PAR_LOG_FILE=$LOG_FILE.parexec
+  fb_createPBSHeader $PAR_LOG_FILE > $file        
+  
+  # Write a command that switches to the current working directory.
+  echo >> $file
+  echo "cd `/bin/pwd`" >> $file
+  echo >> $file
+  
+  # Shift the parameter list to the ID list.
+  shift
+  
+  # Now write start commands for all id's into the script.
+  while test "$#" != "0"
+    do
+      # Get the name of a corresponding first serial jobfile.
+      fb_getJobfileName "$1" 0
+    
+      # Get the LOG-Path from the serial script.
+      fb_readLogPath "$JOBFILE"
+    
+      # Attach a call to the job to the jobfile.
+      # Redirect the output to the log file of that job.
+      echo $0": Adding jobfile <$JOBFILE>"
+      echo "./$JOBFILE >& $LOG_FILE &" >> $file
+      
+      # Next parameter
+      shift
+      
+      if test "$#" != "0"
+        then
+          # Make sure that there is not another parallel jobfile
+          # based on another ID in our list.
+          
+          fb_getJobfileName "$1" 1
+          rm -f $JOBFILE
+        fi
+    done
+
+  # Write a footer that waits for the jobs. Reset the counter
+  echo "wait" >> $file
+
+  # Make jobfile executable
+  chmod 750 $file
+
+  echo $0": Parallel jobfile <$file> created."
+}
+
+# ==================================================
 # FUNCTION: Collect multiple jobfiles into parallel ones
 #
 # Call:
@@ -1104,6 +1184,7 @@ fb_collectToParallelJobfiles()
   
   # Count the number of tasks on the current node.
   icounter=0
+  localjoblist=""
   
   for testid in $ALLTESTS
     do
@@ -1112,85 +1193,41 @@ fb_collectToParallelJobfiles()
       fb_getJobfileName $testid 0
       
       testjobfile=$JOBFILE
-      
+
       if test -e $testjobfile
         then
-
-          # Get the LOG-Path from the corresponding script.
-          fb_readLogPath $testjobfile
+          # File exists, has to be processed.
           
-          # Get the name of a corresponding parallel logfile.
-          fb_getJobfileName $testid 1
+          # Read the number of tasks in that jobfile.
+          fb_readNTasks $testjobfile
           
-          if test $icounter -ne 0
+          # If this is not the first file in the row, test if these
+          # tasks fit onto our node.
+          if test "$localjoblist" != ""
             then
-              # Delete a parallel jobfile, it must not exist.
-              # We only keep the parallel jobfiles of the "1st" job in the block.
-              rm -f $JOBFILE
-    
-              # Read the number of tasks in that jobfile.
-              fb_readNTasks $testjobfile
-              
-              # If we already have at least one task on that node, check if we
-              # can put another one there.
               if test `expr $icounter + $NTASKS` -gt $iblocksize
                 then
-                  # Node full, take the next one.
+                  # No, there are too many tasks. First write out the parallel
+                  # task for the previous ones and put that task into
+                  # a new job.
+
+                  fb_createParallelJobfile $icounter $localjoblist
                   
-                  # Write a footer that waits for the jobs. Reset the counter
-                  echo "wait" >> $file
-        
-                  # Make jobfile executable
-                  chmod 750 $file
-                
-                  echo $0": Parallel jobfile <$file> created."
-                  
-                  # Reset the counter, the new file + header is then written below.
-                  icounter=0
+                  # Reset the counter
+                  counter=0
                 fi
             fi
-    
-          if test $icounter -eq 0
-            then
-              # Create a new file.
-              #
-              # Get the filename
-              file=$JOBFILE
-              
-              echo $0": Creating parallel jobfile <$file>."
-              
-              # Write a header, but use a different output file.
-              PAR_LOG_FILE=$LOG_FILE.parexec
-              fb_createPBSHeader $PAR_LOG_FILE > $file        
-              
-              # Write a command that switches to the current working directory.
-              echo >> $file
-              echo "cd `/bin/pwd`" >> $file
-              echo >> $file
-              
-              # Read the number of tasks in that jobfile.
-              fb_readNTasks $testjobfile
-            fi
-            
-          # Attach a call to the job to the jobfile.
-          # Redirect the output to the log file of that job.
-          echo $0": Adding jobfile <$testjobfile>"
-          echo "./$testjobfile >& $LOG_FILE &" >> $file
-    
-          # Increase the counter
-          icounter=`expr $icounter + $NTASKS`
-          
-        fi # File exists
 
+          # A new job...
+          localjoblist="$localjoblist $testid"
+          icounter=`expr $icounter + $NTASKS`
+        fi
+          
     done
     
-    # Write a footer that waits for the jobs.
-    echo "wait" >> $file
-
-    # Make jobfile executable
-    chmod 750 $file
-
-    echo $0": Parallel jobfile <$file> created."
+    # Write the final jobfile
+    fb_createParallelJobfile $icounter $localjoblist
+    
 }
 
 # ==================================================
