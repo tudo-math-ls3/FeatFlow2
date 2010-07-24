@@ -918,7 +918,7 @@ fb_createBenchmarkJobfile()
 
 fb_getJobfileName()
 {
-  if test "$2" = "1"
+  if test "$2" != "0"
     then
       JOBFILE="$JOBFILEPREFIX.$1.parallel.sh"
     else
