@@ -1215,6 +1215,7 @@ fb_collectToParallelJobfiles()
                   
                   # Reset the counter
                   counter=0
+                  localjoblist=""
                 fi
             fi
 
