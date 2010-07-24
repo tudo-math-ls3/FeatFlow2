@@ -92,7 +92,7 @@ CFLAGSF77LIBS := -DUSE_COMPILER_INTEL $(CFLAGSF77LIBS) -O3 \
 		 -pad
 CFLAGSF77     := $(CFLAGSF77LIBS) $(CFLAGSF77)
 CFLAGSF90     := -DHAS_INTRINSIC_FLUSH $(CFLAGSF90) $(CFLAGSF77LIBS) \
-		 -module $(OBJDIR) -align records
+		 -module $(OBJDIR) -align records -assume buffered_io
 CFLAGSC       := -DUSE_COMPILER_INTEL $(CFLAGSC) -O3 -unroll -ip -fp-model precise
 CFLAGSCXX     := $(CFLAGSC) $(CFLAGSCXX)
 LDFLAGS       := $(LDFLAGS) 

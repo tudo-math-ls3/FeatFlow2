@@ -11,7 +11,7 @@ COMPILERNAME = PGI
 F77       = pgf77
 F90       = pgf95
 CC        = pgcc
-CXX	  = pgCC
+CXX	      = pgCC
 LD        = pgf95
 
 # If preprocessor switch -DENABLE_SERIAL_BUILD does not occur in compiler flags,
@@ -21,7 +21,7 @@ ifeq ($(strip $(MPIWRAPPERS)), YES)
 F77       = mpif77
 F90       = mpif90
 CC        = mpicc
-CXX	  = mpiCC
+CXX	      = mpiCC
 LD        = mpif90
 endif
 endif
@@ -117,6 +117,11 @@ endif
 # enable workarounds for PGI 7.0 compiler
 ifneq (,$(findstring pgf95 7.0-,$(PGIVERSION)))
 CFLAGSF90     := -DUSE_COMPILER_PGI_7_0 $(CFLAGSF90)
+endif
+
+# enable workarounds for PGI 7.2 compiler
+ifneq (,$(findstring pgf95 7.2-,$(PGIVERSION)))
+CFLAGSF90     := -DUSE_COMPILER_PGI_7_2 $(CFLAGSF90)
 endif
 
 
