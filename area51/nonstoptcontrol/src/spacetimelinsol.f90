@@ -355,7 +355,7 @@ contains
     rsolver%cspaceSolverType = -1
     if (associated(rsolver%p_RdiscreteBC)) then
       ! Release boundary conditions
-      do ilev = 1,rsolver%ilevel
+      do ilev = 1,size(rsolver%p_RdiscreteBC)
         call bcasm_releaseDiscreteBC(rsolver%p_RdiscreteBC(ilev))
       end do
       deallocate(rsolver%p_RdiscreteBC)
@@ -1548,7 +1548,7 @@ contains
             rsolver%p_RdiscreteBC(ilev))
       end do
       
-      !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), "matrix",&
+      !call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), "matrix",&
       !    .true., 0, "matrix.txt", "(E10.3)")
 
       ! Apply the space solver
@@ -1662,13 +1662,13 @@ contains
           
           ! Subtract the primal.
           call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel))
+              rsolver%p_RspaceMatrices(ispaceLevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
-              rsolver%p_RdiscreteBC(rsolver%ilevel))
+              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
+              rsolver%p_RdiscreteBC(ispaceLevel))
 
-          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
         
@@ -1688,7 +1688,7 @@ contains
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
         
-        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Remove the primal part from the matrix
@@ -1700,7 +1700,7 @@ contains
           call output_line ("Spatial system cannot be factorised in timestep "//&
               trim(sys_siL(istep,10)))
               
-          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
               "matrix", .true., 0, "matrix.txt", "(E10.3)") 
               
           call sys_halt()
@@ -1732,13 +1732,13 @@ contains
           
           ! Subtract the primal.
           call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel))
+              rsolver%p_RspaceMatrices(ispaceLevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
-              rsolver%p_RdiscreteBC(rsolver%ilevel))
+              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
+              rsolver%p_RdiscreteBC(ispaceLevel))
 
-          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
         
@@ -1758,11 +1758,11 @@ contains
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
         
-        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Remove the dual part from the matrix
-        !call stmv_reduceDiagToPrimal (rsolver%p_RspaceMatrices(rsolver%ilevel))
+        !call stmv_reduceDiagToPrimal (rsolver%p_RspaceMatrices(ispaceLevel))
         
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
@@ -1889,13 +1889,13 @@ contains
           
           ! Subtract the primal.
           call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel))
+              rsolver%p_RspaceMatrices(ispaceLevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
-              rsolver%p_RdiscreteBC(rsolver%ilevel))
+              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
+              rsolver%p_RdiscreteBC(ispaceLevel))
 
-          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
 
@@ -1905,13 +1905,13 @@ contains
 !          
 !          ! Subtract the primal.
 !          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
-!              rsolver%p_RspaceMatrices(rsolver%ilevel))
+!              rsolver%p_RspaceMatrices(ispaceLevel))
 !
 !          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-!              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
-!              rsolver%p_RdiscreteBC(rsolver%ilevel))
+!              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
+!              rsolver%p_RdiscreteBC(ispaceLevel))
 !
-!          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+!          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
 !              rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
 !        end if
         
@@ -1931,7 +1931,7 @@ contains
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
         
-        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Apply the space solver
@@ -1940,7 +1940,7 @@ contains
           call output_line ("Spatial system cannot be factorised in timestep "//&
               trim(sys_siL(istep,10)))
               
-          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call matio_writeBlockMatrixHR (rsolver%p_RspaceMatrices(ispaceLevel), &
               "matrix", .true., 0, "matrix.txt", "(E10.3)") 
               
           call sys_halt()
@@ -1969,13 +1969,13 @@ contains
           
           ! Subtract the primal.
           call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
-              rsolver%p_RspaceMatrices(rsolver%ilevel))
+              rsolver%p_RspaceMatrices(ispaceLevel))
 
           call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-              ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep-1, &
-              rsolver%p_RdiscreteBC(rsolver%ilevel))
+              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
+              rsolver%p_RdiscreteBC(ispaceLevel))
 
-          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+          call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
               rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         end if
 
@@ -1986,13 +1986,13 @@ contains
             
             ! Subtract the primal.
             call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
-                rsolver%p_RspaceMatrices(rsolver%ilevel))
+                rsolver%p_RspaceMatrices(ispaceLevel))
 
             call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
-                ispaceLevel,rsolver%p_RspaceMatrices(rsolver%ilevel), istep, istep+1, &
-                rsolver%p_RdiscreteBC(rsolver%ilevel))
+                ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
+                rsolver%p_RdiscreteBC(ispaceLevel))
 
-            call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+            call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
                 rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
           end if
         end if
@@ -2011,7 +2011,7 @@ contains
         ! Subtract the diagonal.
         call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep,rsolver%rspaceTemp2)
         
-        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(rsolver%ilevel), &
+        call lsysbl_blockMatVec (rsolver%p_RspaceMatrices(ispaceLevel), &
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Apply the space solver
