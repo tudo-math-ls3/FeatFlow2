@@ -1214,7 +1214,7 @@ fb_collectToParallelJobfiles()
                   fb_createParallelJobfile $icounter $localjoblist
                   
                   # Reset the counter
-                  counter=0
+                  icounter=0
                   localjoblist=""
                 fi
             fi
