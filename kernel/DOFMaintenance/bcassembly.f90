@@ -349,7 +349,9 @@ contains
     call bcasm_clearDiscreteBC(rdiscreteBC)
     
     ! Release memory
-    deallocate(rdiscreteBC%p_RdiscBCList)
+    if (associated(rdiscreteBC%p_RdiscBCList)) then
+      deallocate(rdiscreteBC%p_RdiscBCList)
+    end if
     rdiscreteBC%inumEntriesUsed = 0
     rdiscreteBC%inumEntriesAlloc = 0
 
