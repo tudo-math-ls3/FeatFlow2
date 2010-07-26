@@ -151,6 +151,11 @@ itypeProjection = -1
 depsrel = 1E-10
 depsabs = 1E-17
 
+# ONLY MULTIGRID: Type of Cycle.
+# =0: F-cycle, =1: V-cycle, =2: W-cycle
+
+icycle = $SPACETIMELINEARSOLVER_ICYCLE
+
 # ONLY MULTIGRID: Specifies the type of the adaptive coarse grid correction used.
 # =0: deactivated.
 # =1: adaptive coarse grid correction by energy minimisation.
