@@ -2635,7 +2635,7 @@ contains
     ! Bind roseenAccess to the nonlinearity
     if (associated(rsolverNode%rmatrix%p_rsolution)) then
       call sptivec_bindPoolToVec(rsolverNode%rmatrix%p_rsolution,&
-          rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
+          rsolverNode%p_rsubnodeBlockJacobi%roseenAccess)
     end if
 
     ! Set the nonlinearity-vectors to temp vectors until we need them.
