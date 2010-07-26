@@ -78,6 +78,34 @@
 !#
 !# 20.) sptivec_setSubvectorConstant
 !#      -> Sets a subvector to a constant value
+!#
+!# 21.) sptivec_createAccessPool
+!#      -> Creates a vector pool that buffers vectors from a space-time vector
+!#         in memory.
+!#
+!# 22.) sptivec_releaseAccessPool
+!#      -> Releases a vector access pool
+!#
+!# 23.) sptivec_bindPoolToVec
+!#      -> Binds a vector pool to a space-time vector
+!#
+!# 24.) sptivec_getVectorFromPool
+!#      -> Obtain a pointer to a buffer holding spatial data from the
+!#         space-time vector
+!#
+!# 25.) sptivec_getFreeBufferFromPool
+!#      -> Get an empty buffer
+!#
+!# 26.) sptivec_invalidateVecInPool
+!#      -> Throws away buffered data of a space vector in the pool and
+!#         triggers it to be re-read.
+!#
+!# 27.) sptivec_commitVecInPool
+!#      -> Writes a vector from the pool back to the actual vector.
+!#
+!# 28.) sptivec_bindDiscreteBCtoBuffer
+!#      -> Binds discrete boundary conditions to a pool
+!#
 !# </purpose>
 !##############################################################################
 
@@ -94,10 +122,11 @@ module spacetimevectors
   use linearsystemblock
   use collection
   use vectorio
+  use discretebc
+  use discretefbc
   
   use timediscretisation
   use mprimitives
-  use vectorio
 
   implicit none
 
@@ -133,6 +162,9 @@ module spacetimevectors
   public :: sptivec_getVectorFromPool
   public :: sptivec_getFreeBufferFromPool
   public :: sptivec_invalidateVecInPool
+  public :: sptivec_commitVecInPool
+  public :: sptivec_bindPoolToVec
+  public :: sptivec_bindDiscreteBCtoBuffer
 
 !<types>
 
@@ -203,6 +235,9 @@ module spacetimevectors
   
     ! Reference an the associated space-time vector.
     type(t_spaceTimeVector), pointer :: p_rspaceTimeVector
+    
+    ! Associated space-discretisation
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
     
     ! A pool of space vectors buffered from the space-time vector.
     type(t_vectorBlock), dimension(:), pointer :: p_RvectorPool
@@ -1938,6 +1973,8 @@ contains
     ! Remember the associated space-time vector.
     raccessPool%p_rspaceTimeVector => rx
     
+    raccessPool%p_rspaceDiscr => rx%p_rspaceDiscr
+    
     ! Allocate the buffer.
     allocate(raccessPool%p_RvectorPool(isize))
     do i=1,size(raccessPool%p_RvectorPool)
@@ -1987,6 +2024,8 @@ contains
     ! Remember the associated space-time vector.
     nullify(raccessPool%p_rspaceTimeVector)
     
+    raccessPool%p_rspaceDiscr => rspaceDiscr
+    
     ! Allocate the buffer.
     allocate(raccessPool%p_RvectorPool(isize))
     do i=1,size(raccessPool%p_RvectorPool)
@@ -2024,6 +2063,7 @@ contains
 
     ! Clean up.
     nullify(raccessPool%p_rspaceTimeVector)
+    nullify(raccessPool%p_rspaceDiscr)
     
     do i=1,size(raccessPool%p_RvectorPool)
       call lsysbl_releaseVector (raccessPool%p_RvectorPool(i))
@@ -2032,6 +2072,52 @@ contains
     deallocate(raccessPool%p_RvectorPool)
     deallocate(raccessPool%p_IvectorIndex)
     
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_bindPoolToVec (rx,raccessPool)
+
+!<description>
+  ! Binds the access pool to a different space-time vector without changing
+  ! the number of associated buffer-vectors.
+  ! If the space discretisation of erx is different to the space discretisation
+  ! of the vector pool, memory is reallocated.
+!</desctiprion>
+
+!<input>
+  ! Vector to be buffered.
+  type(t_spacetimeVector), intent(in), target :: rx
+!</input>
+
+!<output>
+  ! Access-pool structure to be created.
+  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+!</output>
+
+!</subroutine>
+
+    integer :: i
+    
+    ! Check if the discretisations match. If not, throw away and recreate.
+    if (.not. associated(rx%p_rspaceDiscr,raccessPool%p_rspaceDiscr)) then
+      i = size(raccessPool%p_RvectorPool)
+      call sptivec_releaseAccessPool(raccessPool)
+      call sptivec_createAccessPool(rx,raccessPool,i)
+    else
+      ! Change the pointer, invalidate, that is it.
+    
+      ! Remember the associated space-time vector.
+      raccessPool%p_rspaceTimeVector => rx
+    
+      ! In the beginning, no vectors are read in.
+      raccessPool%p_IvectorIndex(:) = 0
+      
+      raccessPool%inextFreeVector = 1
+    end if
+
   end subroutine
 
   ! ***************************************************************************
@@ -2105,8 +2191,8 @@ contains
   subroutine sptivec_invalidateVecInPool (raccessPool,iindex)
 
 !<description>
-  ! Flushes the data of vector iindex in raccessPool and forces this
-  ! vector to be reloaded the next time it is requested.
+  ! Declares the data of vector iindex in raccessPool as invalid and forces 
+  ! this vector to be reloaded the next time it is requested.
 !</desctiprion>
 
 !<inputoutput>
@@ -2128,6 +2214,51 @@ contains
         raccessPool%p_IvectorIndex(i) = 0
       end if
     end do
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_commitVecInPool (raccessPool,iindex)
+
+!<description>
+  ! Flushes the data of vector iindex in raccessPool, i.e. writes the vector
+  ! data back to an associated space-time vector. If there is no space-time
+  ! vector associated or the vector is not buffered anymore, an error is thrown.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index of the vector to be flushed.
+  integer, intent(in) :: iindex
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+    
+    if (.not. associated(raccessPool%p_rspaceTimeVector)) then
+      call output_line('No space-time vector associated!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+      call sys_halt()
+    end if
+  
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+        ! Found. Has to be written to the source.
+        call sptivec_setTimestepData (raccessPool%p_rspaceTimeVector, iindex, &
+            raccessPool%p_RvectorPool(i))
+        return
+      end if
+    end do
+  
+    call output_line('Vector destroyed, cannot be written!',&
+        OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
+    call sys_halt()
     
   end subroutine
 
@@ -2165,6 +2296,48 @@ contains
     ! We use the buffer as a ring buffer.
     raccessPool%inextFreeVector = &
         mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_bindDiscreteBCtoBuffer (raccessPool,rdiscreteBC,rdiscreteFBC)
+
+!<description>
+  ! Binds discrete boundary conditions to all buffers.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! OPTIONAL: Structure with discrete boundary conditions to be bound to
+  ! all vectors in the buffer.
+  type(t_discreteBC), target, optional :: rdiscreteBC
+  
+  ! OPTIONAL: Structure with discrete fictitious boundary conditions to be bound to
+  ! all vectors in the buffer.
+  type(t_discreteFBC), target, optional :: rdiscreteFBC
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+   
+    ! Binf the discrete BC's to all vectors in the buffer.
+    if (present(rdiscreteBC)) then
+      do i=1,size(raccessPool%p_IvectorIndex)
+        call lsysbl_assignDiscreteBC (raccessPool%p_RvectorPool(i),rdiscreteBC)
+      end do
+    end if
+
+    if (present(rdiscreteFBC)) then
+      do i=1,size(raccessPool%p_IvectorIndex)
+        call lsysbl_assignDiscreteFBC (raccessPool%p_RvectorPool(i),rdiscreteFBC)
+      end do
+    end if
     
   end subroutine
 

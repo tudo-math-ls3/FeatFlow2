@@ -570,6 +570,10 @@ contains
       
         ! Print some statistical output
         if (rnlstSolver%ioutputLevel .ge. 1) then
+          call stat_sampleTimer(rnlstsolver%rtimerNonlinear,delapsedReal)
+          call output_line ("Time for non-c.grid solving : "//&
+              sys_sdL(delapsedReal-&
+                      rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeCoarseGridSolver%delapsedReal,10))
           call output_line ("Time for smoothing          : "//&
               sys_sdL(rnlstsolver%p_rmgSolver%p_rsubnodeMultigrid%rtimeSmoothing%delapsedReal,10))
           call output_line ("Time for coarse grid solving: "//&

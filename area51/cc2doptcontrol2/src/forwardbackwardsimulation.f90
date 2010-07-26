@@ -3279,8 +3279,7 @@ contains
     integer :: iiterate,NEQtime
     logical :: blocalsuccess
     real(dp) :: dtimePrimal,dtimeDual,dweightold,dweightnew,dtstep
-    type(t_vectorBlock), target :: roseensol1, roseensol2, roseensol3
-    type(t_vectorBlock) :: rprevsol, rcurrentsol, rprevrhs, rcurrentrhs, rrhs
+    type(t_vectorBlock) :: rrhs
     type(t_vectorBlock) :: rdefect
     type(t_vectorBlock) :: rdefectPrimal,rdefectDual
     type(t_staticSpaceAsmTemplates), pointer :: p_rspaceAsmTempl 
@@ -3300,6 +3299,11 @@ contains
     type(t_timer) :: rtimerNonlinearSolver,rtimerMatrixAssembly
     type(t_timer) :: rtimerTotal,rtimerPostProc,rtimerDefectCalc
     
+    ! Vector pool for quick access
+    type(t_spaceTimeVectorAccess) :: rsolAccess, roseenAccess, rrhsAccess
+    type(t_vectorBlock), pointer :: p_rprevsol, p_rcurrentsol, p_rprevrhs, p_rcurrentrhs
+    type(t_vectorBlock), pointer :: p_roseensol1, p_roseensol2, p_roseensol3
+    
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Dsol,p_Drhs,p_Doseen1,p_Doseen2,p_Doseen3
     real(dp), dimension(:), pointer :: p_Dactrhs
@@ -3316,30 +3320,23 @@ contains
     rsimsolver%p_rboundaryConditions => rboundaryConditions
     rsimSolver%rpreconditioner%p_rboundaryConditions => rboundaryConditions
     
-    ! Create some temp vectors
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rprevsol)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rcurrentsol)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,roseensol1)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,roseensol2)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,roseensol3)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rprevrhs)
-    call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rcurrentrhs)
-
+    ! Create vector pools for the space-time vectors to have quicker access.
+    call sptivec_createAccessPool(rrhsvector,rrhsAccess,4)
+    call sptivec_createAccessPool(rsolvector,rsolAccess,4)
+    if (present(roseenSolution)) then
+      call sptivec_createAccessPool(roseenSolution,roseenAccess,4)
+    end if
+    
     call lsysbl_createVectorBlock(rsimsolver%rdiscrData%p_rdiscrPrimalDual,rdefect)
     
-    ! Create a nonlinear-data structure that specifies the evaluation point
-    ! of nonlinear matrices. the evaluation point is given by the three vectors
-    ! roseensolX.
-    call smva_initNonlinearData (rnonlinearData,roseensol1,roseensol2,roseensol3)
-    
     ! DEBUG!!!
-    call lsysbl_getbase_double (roseensol1,p_Doseen1)
-    call lsysbl_getbase_double (roseensol2,p_Doseen2)
-    call lsysbl_getbase_double (roseensol3,p_Doseen3)
-    call lsysbl_getbase_double (rcurrentsol,p_Dsol)
-    call lsysbl_getbase_double (rcurrentrhs,p_Drhs)
-    call lsysbl_getbase_double (rprevrhs,p_DprevRhs)
-    call lsysbl_getbase_double (rprevsol,p_DprevSol)
+!    call lsysbl_getbase_double (roseensol1,p_Doseen1)
+!    call lsysbl_getbase_double (roseensol2,p_Doseen2)
+!    call lsysbl_getbase_double (roseensol3,p_Doseen3)
+!    call lsysbl_getbase_double (rcurrentsol,p_Dsol)
+!    call lsysbl_getbase_double (rcurrentrhs,p_Drhs)
+!    call lsysbl_getbase_double (rprevrhs,p_DprevRhs)
+!    call lsysbl_getbase_double (rprevsol,p_DprevSol)
     
     ! Create a temp matrix.
     
@@ -3362,26 +3359,14 @@ contains
     call lsysbl_assignDiscreteFBC (rdefectPrimal,&
         rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
 
-    call lsysbl_assignDiscreteBC (rcurrentsol,&
-        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
-    call lsysbl_assignDiscreteFBC (rcurrentsol,&
+    call sptivec_bindDiscreteBCtoBuffer(rsolAccess,&
+        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel),&
         rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
 
-    call lsysbl_assignDiscreteBC (rprevsol,&
-        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
-    call lsysbl_assignDiscreteFBC (rprevsol,&
-        rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
-        
-    call lsysbl_assignDiscreteBC (rcurrentrhs,&
-        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
-    call lsysbl_assignDiscreteFBC (rcurrentrhs,&
+    call sptivec_bindDiscreteBCtoBuffer (rrhsAccess,&
+        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel),&
         rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
 
-    call lsysbl_assignDiscreteBC (rprevrhs,&
-        rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
-    call lsysbl_assignDiscreteFBC (rprevrhs,&
-        rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
-    
     ! Prepare the postprocessing
     call fbsim_initpostprocessing (rsimsolver%rpostprocessing,&
         rsimsolver%rpreconditioner%cspace,rsimsolver%p_rboundaryConditions,&
@@ -3435,21 +3420,9 @@ contains
       call fbsim_updateDiscreteBCprec (rsimsolver%p_rsettings%rglobalData,&
           rsimsolver%rpreconditioner,dtimePrimal,dtimeDual)
       
-      ! Initial condition is given. Read it.
-      call sptivec_getTimestepData (rrhsvector, ifirstinterval, rcurrentrhs)
-      call sptivec_getTimestepData (rsolvector, ifirstinterval, rcurrentsol)
-      call vecfil_discreteBCsol(rcurrentsol)
-      
-      ! The "Oseen" solutions coincide with the current solution.
-      ! The "next" Oseen solution is always zero as we do not have
-      ! a "next" solution in a pure forward simulation.
-      call lsysbl_clearVector (roseensol1)
-      call lsysbl_copyVector (rcurrentsol,roseensol2)
-      call lsysbl_clearVector (roseensol3)
-
       ! Initial postprocessing
       call stat_startTimer (rtimerPostProc)
-      call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,ifirstinterval,&
+      call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,ifirstinterval,&
           dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
       call stat_stopTimer (rtimerPostProc)
           
@@ -3478,22 +3451,28 @@ contains
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
           
-          ! Solution.
-          call lsysbl_copyVector (rcurrentsol,rprevsol)
-          call lsysbl_copyVector (rcurrentsol,roseensol1)
-          call sptivec_getTimestepData (rsolvector, iiterate, rcurrentsol)
-          call vecfil_discreteBCsol(rcurrentsol)
-          call lsysbl_copyVector (rcurrentsol,roseensol2)
+          ! Get the solution from the access pool.
+          call sptivec_getVectorFromPool(rsolAccess, iiterate-1, p_rprevsol)
+          call sptivec_getVectorFromPool(rsolAccess, iiterate, p_rcurrentsol)
+          call vecfil_discreteBCsol(p_rcurrentsol)
+          p_roseensol1 => p_rprevsol
+          p_roseensol2 => p_rcurrentsol
+          p_roseensol3 => p_rcurrentsol
+
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
 
           ! RHS.
-          call lsysbl_copyVector (rcurrentrhs,rprevrhs)
-          call sptivec_getTimestepData (rrhsvector, iiterate, rcurrentrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
         
           ! Calculate the RHS according to the timestep scheme.
           call tdiscr_getTimestepWeights(p_rspaceTimeMatrix%rdiscrData%p_rtimeDiscr,&
               iiterate-1,dweightold,dweightnew)
-          call lsysbl_copyVector (rcurrentrhs,rrhs)
-          call lsysbl_vectorLinearComb (rprevrhs,rrhs,dweightold,dweightnew)
+          call lsysbl_copyVector (p_rcurrentrhs,rrhs)
+          call lsysbl_vectorLinearComb (p_rprevrhs,rrhs,dweightold,dweightnew)
 
           !! If we are not in the first step...
           ! ... subtract the offdiagonal, corresponding to the previous timestep.
@@ -3502,16 +3481,32 @@ contains
           call stlin_setupMatrixWeights (p_rspaceTimeMatrix,&
               iiterate,-1,rnonlinearSpatialMatrix)
           
-          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,rrhs,1.0_DP)
+          call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,rrhs,1.0_DP)
         else
-          call lsysbl_copyVector (rcurrentrhs,rrhs)
+          ! Initial condition is given. Read it.
+          call sptivec_getVectorFromPool(rrhsAccess,ifirstinterval, p_rcurrentrhs)
+          call sptivec_getVectorFromPool(rsolAccess,ifirstinterval, p_rcurrentsol)
+          call vecfil_discreteBCsol(p_rcurrentsol)
+          
+          ! All oseen solutions point to the current solution vector.
+          p_roseensol1 => p_rcurrentsol
+          p_roseensol2 => p_rcurrentsol
+          p_roseensol3 => p_rcurrentsol
+
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+
+          ! Current RHS
+          call lsysbl_copyVector (p_rcurrentrhs,rrhs)
         end if
         call stat_stopTimer(rtimerDefectCalc)
         
         ! Filter the current RHS in rdefect as well as the solution vector
         ! to implement boundary conditions.
         call vecfil_discreteBCrhs(rrhs)
-        call vecfil_discreteBCsol(rcurrentsol)
+        call vecfil_discreteBCsol(p_rcurrentsol)
 
         ! Start with ite=0, the 0th iteration; this represents the start point
         ite = 0
@@ -3519,7 +3514,7 @@ contains
         ! Create the initial nonlinear defect
         call stat_startTimer(rtimerDefectCalc)
         call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
-            iiterate,rsimsolver%rdiscrData,rnonlinearData,rcurrentsol,rrhs,rdefect)
+            iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect)
         call stat_stopTimer(rtimerDefectCalc)
 
         ! Implement the boundary conditions        
@@ -3527,7 +3522,7 @@ contains
 
         ! Initial check for convergence/divergence        
         call fbsim_resNormCheck (rsimSolver%rnonlinearIteration,&
-            ite,rcurrentsol,rcurrentrhs,rdefect,bconvergence,bdivergence)
+            ite,p_rcurrentsol,p_rcurrentrhs,rdefect,bconvergence,bdivergence)
 
         ! Perform at least nminIterations iterations
         if (ite .lt. rsimSolver%rnonlinearIteration%nminIterations) bconvergence = .false.
@@ -3677,14 +3672,12 @@ contains
             
               ! Combine to get the new solution vector.
               call lsyssc_vectorLinearComb(&
-                  rdefectPrimal%RvectorBlock(1),rcurrentsol%RvectorBlock(1),1.0_DP,1.0_DP)
+                  rdefectPrimal%RvectorBlock(1),p_rcurrentsol%RvectorBlock(1),1.0_DP,1.0_DP)
               call lsyssc_vectorLinearComb(&
-                  rdefectPrimal%RvectorBlock(2),rcurrentsol%RvectorBlock(2),1.0_DP,1.0_DP)
+                  rdefectPrimal%RvectorBlock(2),p_rcurrentsol%RvectorBlock(2),1.0_DP,1.0_DP)
               call lsyssc_vectorLinearComb(&
-                  rdefectPrimal%RvectorBlock(3),rcurrentsol%RvectorBlock(3),1.0_DP,1.0_DP)
+                  rdefectPrimal%RvectorBlock(3),p_rcurrentsol%RvectorBlock(3),1.0_DP,1.0_DP)
                   
-              ! This is also the new Oseen solution
-              call lsysbl_copyVector (rcurrentsol,roseenSol2)
             else
               exit
             end if
@@ -3698,7 +3691,7 @@ contains
             ! Create the new nonlinear defect
             call stat_startTimer(rtimerDefectCalc)
             call fbsim_getNonlinearDefect (rsimSolver%rpreconditioner%cspace,p_rspaceTimeMatrix,&
-                iiterate,rsimsolver%rdiscrData,rnonlinearData,rcurrentsol,rrhs,rdefect)
+                iiterate,rsimsolver%rdiscrData,rnonlinearData,p_rcurrentsol,rrhs,rdefect)
             call stat_stopTimer(rtimerDefectCalc)
 
             ! Implement the boundary conditions        
@@ -3706,7 +3699,7 @@ contains
 
             ! Check for convergence/divergence        
             call fbsim_resNormCheck (rsimSolver%rnonlinearIteration,&
-                ite,rcurrentsol,rcurrentrhs,rdefect,bconvergence,bdivergence)
+                ite,p_rcurrentsol,p_rcurrentrhs,rdefect,bconvergence,bdivergence)
           
             ! Perform at least nminIterations iterations
             if (ite .lt. rsimSolver%rnonlinearIteration%nminIterations) bconvergence = .false.
@@ -3742,11 +3735,13 @@ contains
 
         if (blocalsuccess) then
           ! Save the solution.
-          call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
+          ! Write the solution back from the pool into the space-time vector.
+          ! p_rcurrentsol is connected to the pool vector with index iiterate.
+          call sptivec_commitVecInPool (rsolAccess,iiterate)
 
           ! Postprocessing
           call stat_startTimer (rtimerPostProc)
-          call fbsim_postprocessing (rsimSolver%rpostprocessing,rcurrentsol,iiterate,&
+          call fbsim_postprocessing (rsimSolver%rpostprocessing,p_rcurrentsol,iiterate,&
               dtimePrimal,dtimeDual,rsimsolver%p_rsettings)
           call stat_stopTimer (rtimerPostProc)
         else  
@@ -3768,13 +3763,6 @@ contains
           rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
       call lsysbl_assignDiscreteFBC (rdefectPrimal,&
           rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
-      
-      ! Initial condition is given.
-      call sptivec_getTimestepData (rrhsvector, ifirstinterval, rcurrentrhs)
-      call sptivec_getTimestepData (rsolvector, ifirstinterval, rcurrentsol)
-      call lsysbl_clearVector (roseensol1)
-      call sptivec_getTimestepData (roseenSolution, ifirstinterval, roseensol2)
-      call sptivec_getTimestepData (roseenSolution, ifirstinterval+1, roseensol3)
       
       ! Loop through the timesteps.
       do iiterate = ifirstinterval,NEQtime
@@ -3800,28 +3788,32 @@ contains
         call stat_startTimer(rtimerDefectCalc)
         if (iiterate .gt. ifirstinterval) then
 
-          ! Initialise the previous and current timestep. 
-          ! Solution.
-          call lsysbl_copyVector (rcurrentsol,rprevsol)
-          call sptivec_getTimestepData (rsolvector, iiterate, rcurrentsol)
+          ! Get the solution from the access pool.
+          call sptivec_getVectorFromPool(rsolAccess, iiterate-1, p_rprevsol)
+          call sptivec_getVectorFromPool(rsolAccess, iiterate, p_rcurrentsol)
 
           ! RHS.
-          call lsysbl_copyVector (rcurrentrhs,rprevrhs)
-          call sptivec_getTimestepData (rrhsvector, iiterate, rcurrentrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate-1, p_rprevrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
           
           ! Get the Oseen solutions for the assembly of the nonlinearity -- 
           ! if there is any.
-          call lsysbl_copyVector (roseensol2,roseensol1)
-          call lsysbl_copyVector (roseensol3,roseensol2)
+          call sptivec_getVectorFromPool(roseenAccess, iiterate-1, p_roseensol1)
+          call sptivec_getVectorFromPool(roseenAccess, iiterate, p_roseensol2)
           if (iiterate .lt. NEQtime) then
-            call sptivec_getTimestepData (roseenSolution, iiterate+1, roseensol3)
+            call sptivec_getVectorFromPool(roseenAccess, iiterate+1, p_roseensol3)
           end if
-        
+          
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
           ! incorporated to our RHS, so we do not have to take care of
           ! any timestepping weights concerning the RHS!
-          call lsysbl_copyVector (rcurrentrhs,rdefect)
+          call lsysbl_copyVector (p_rcurrentrhs,rdefect)
         
           ! ... subtract the offdiagonal, corresponding to the previous timestep.
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -3831,13 +3823,26 @@ contains
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
           
-          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
+          call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,&
               rdefect,1.0_DP)
             
         else
         
+          ! Initial condition is given.
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
+          call sptivec_getVectorFromPool(rsolAccess, iiterate, p_rcurrentsol)
+
+          call sptivec_getVectorFromPool(roseenAccess, iiterate, p_roseensol2)
+          call sptivec_getVectorFromPool(roseenAccess, iiterate+1, p_roseensol3)
+          p_roseensol1 => p_roseensol2 ! dummy
+          
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+          
           ! There is no previous timestep. Load the RHS into the defect vector
-          call lsysbl_copyVector (rcurrentrhs,rdefect)
+          call lsysbl_copyVector (p_rcurrentrhs,rdefect)
 
         end if
 
@@ -3849,7 +3854,7 @@ contains
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
         
-        call smva_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
+        call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
           rdefect,1.0_DP)
 
         ! Implement the boundary conditions        
@@ -3884,12 +3889,16 @@ contains
         if (blocalsuccess) then
           ! Combine to get the new solution vector.
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(1),rcurrentsol%RvectorBlock(1),domega,1.0_DP)
+              rdefectPrimal%RvectorBlock(1),p_rcurrentsol%RvectorBlock(1),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(2),rcurrentsol%RvectorBlock(2),domega,1.0_DP)
+              rdefectPrimal%RvectorBlock(2),p_rcurrentsol%RvectorBlock(2),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectPrimal%RvectorBlock(3),rcurrentsol%RvectorBlock(3),domega,1.0_DP)
-          call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
+              rdefectPrimal%RvectorBlock(3),p_rcurrentsol%RvectorBlock(3),domega,1.0_DP)
+
+          ! Write the solution back from the pool into the space-time vector.
+          ! p_rcurrentsol is connected to the pool vector with index iiterate.
+          call sptivec_commitVecInPool (rsolAccess,iiterate)
+
         else
           !exit
         end if
@@ -3906,13 +3915,6 @@ contains
           rsimSolver%rpreconditioner%p_RdiscreteBC(rsimSolver%ilevel))
       call lsysbl_assignDiscreteFBC (rdefectDual,&
           rsimSolver%rpreconditioner%p_RdiscreteFBC(rsimSolver%ilevel))
-
-      ! Terminal condition is given.
-      call sptivec_getTimestepData (rrhsvector, NEQtime, rcurrentrhs)
-      call sptivec_getTimestepData (rsolvector, NEQtime, rcurrentsol)
-      call sptivec_getTimestepData (roseenSolution, NEQtime-1, roseensol1)
-      call sptivec_getTimestepData (roseenSolution, NEQtime, roseensol2)
-      call lsysbl_clearVector (roseensol3)
 
       do iiterate = NEQtime,ifirstinterval,-1
       
@@ -3939,26 +3941,31 @@ contains
 
           ! Initialise the previous and current timestep. 
           ! Solution.
-          call lsysbl_copyVector (rcurrentsol,rprevsol)
-          call sptivec_getTimestepData (rsolvector, iiterate, rcurrentsol)
+          call sptivec_getVectorFromPool(rsolAccess, iiterate+1, p_rprevsol)
+          call sptivec_getVectorFromPool(rsolAccess, iiterate, p_rcurrentsol)
 
           ! RHS.
-          call lsysbl_copyVector (rcurrentrhs,rprevrhs)
-          call sptivec_getTimestepData (rrhsvector, iiterate, rcurrentrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate+1, p_rprevrhs)
+          call sptivec_getVectorFromPool(rrhsAccess, iiterate, p_rcurrentrhs)
           
           ! Get the Oseen solutions for the assembly of the nonlinearity -- 
           ! if there is any.
-          call lsysbl_copyVector (roseensol2,roseensol3)
-          call lsysbl_copyVector (roseensol1,roseensol2)
+          call sptivec_getVectorFromPool(roseenAccess, iiterate+1, p_roseensol3)
+          call sptivec_getVectorFromPool(roseenAccess, iiterate, p_roseensol2)
           if (iiterate .gt. ifirstinterval) then
-            call sptivec_getTimestepData (roseenSolution, iiterate-1, roseensol1)
+            call sptivec_getVectorFromPool(roseenAccess, iiterate-1, p_roseensol1)
           end if
-          
+
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+
           ! Calculate the defect. For that purpose, start with the
           ! defect. Remember that the time stepping scheme is already
           ! incorporated to our RHS, so we do not have to take care of
           ! any timestepping weights concerning the RHS!
-          call lsysbl_copyVector (rcurrentrhs,rdefect)
+          call lsysbl_copyVector (p_rcurrentrhs,rdefect)
 
           ! ... subtract the offdiagonal, corresponding to the next timestep.
           call smva_initNonlinMatrix (rnonlinearSpatialMatrix,&
@@ -3968,13 +3975,26 @@ contains
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
           call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
           
-          call smva_assembleDefect (rnonlinearSpatialMatrix,rprevsol,&
+          call smva_assembleDefect (rnonlinearSpatialMatrix,p_rprevsol,&
               rdefect,1.0_DP)
             
         else
             
+          ! Terminal condition is given.
+          call sptivec_getVectorFromPool(rrhsAccess, NEQtime, p_rcurrentrhs)
+          call sptivec_getVectorFromPool(rsolAccess, NEQtime, p_rcurrentsol)
+
+          call sptivec_getVectorFromPool(roseenAccess, NEQtime, p_roseensol2)
+          call sptivec_getVectorFromPool(roseenAccess, NEQtime-1, p_roseensol1)
+          p_roseensol3 => p_roseensol2 ! dummy
+
+          ! Create a nonlinear-data structure that specifies the evaluation point
+          ! of nonlinear matrices. the evaluation point is given by the three vectors
+          ! roseensolX.
+          call smva_initNonlinearData (rnonlinearData,p_roseensol1,p_roseensol2,p_roseensol3)
+
           ! There is next timestep. Load the RHS into the defect vector
-          call lsysbl_copyVector (rcurrentrhs,rdefect)
+          call lsysbl_copyVector (p_rcurrentrhs,rdefect)
 
         end if
 
@@ -3986,7 +4006,7 @@ contains
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,1)
         call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
         
-        call smva_assembleDefect (rnonlinearSpatialMatrix,rcurrentsol,&
+        call smva_assembleDefect (rnonlinearSpatialMatrix,p_rcurrentsol,&
             rdefect,1.0_DP)
         call stat_stopTimer(rtimerDefectCalc)
         
@@ -4021,12 +4041,15 @@ contains
         if (blocalsuccess) then
           ! Combine to get the new solution vector.
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(1),rcurrentsol%RvectorBlock(4),domega,1.0_DP)
+              rdefectDual%RvectorBlock(1),p_rcurrentsol%RvectorBlock(4),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(2),rcurrentsol%RvectorBlock(5),domega,1.0_DP)
+              rdefectDual%RvectorBlock(2),p_rcurrentsol%RvectorBlock(5),domega,1.0_DP)
           call lsyssc_vectorLinearComb(&
-              rdefectDual%RvectorBlock(3),rcurrentsol%RvectorBlock(6),domega,1.0_DP)
-          call sptivec_setTimestepData (rsolvector, iiterate, rcurrentsol)
+              rdefectDual%RvectorBlock(3),p_rcurrentsol%RvectorBlock(6),domega,1.0_DP)
+
+          ! Write the solution back from the pool into the space-time vector.
+          ! p_rcurrentsol is connected to the pool vector with index iiterate.
+          call sptivec_commitVecInPool (rsolAccess,iiterate)
         else
           !exit
         end if
@@ -4058,13 +4081,12 @@ contains
     
     ! Release the temp vectors
     call lsysbl_releaseVector (rdefect)
-    call lsysbl_releaseVector (rcurrentrhs)
-    call lsysbl_releaseVector (rprevrhs)
-    call lsysbl_releaseVector (roseensol3)
-    call lsysbl_releaseVector (roseensol2)
-    call lsysbl_releaseVector (roseensol1)
-    call lsysbl_releaseVector (rcurrentsol)
-    call lsysbl_releaseVector (rprevsol)
+
+    if (present(roseenSolution)) then
+      call sptivec_releaseAccessPool(roseenAccess)
+    end if
+    call sptivec_releaseAccessPool(rsolAccess)
+    call sptivec_releaseAccessPool(rrhsAccess)
 
   end subroutine
 

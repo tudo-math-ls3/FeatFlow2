@@ -348,6 +348,10 @@ contains
 
     call output_line ("Preconditioner statistics:")
     call output_lbrk()
+    call output_line ("Total time for non-c.grid solving  = "//&
+        sys_sdL(rsolver%rtimerNonlinear%delapsedReal - &
+                rsolver%rtimeCoarseGridSolver%delapsedReal - &
+                rsolver%rtimePostprocessing%delapsedReal,10))
     call output_line ("Total time for smoothing           = "//&
         sys_sdL(rsolver%rtimeSmoothing%delapsedReal,10))
     call output_line ("Total time for coarse grid solving = "//&
