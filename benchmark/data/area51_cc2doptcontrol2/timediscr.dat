@@ -50,14 +50,25 @@ dtimeStepTheta = 1.0
 
 # ----------------------------------------------------------------------
 
-# Order of the prolongation/restriction in time to use for
-# multilevel-based algorithms
-# =-1: automatic, depending on the time step scheme.
+# Type of projection in time.
+# -1: automatic
 # =0: constant prolongation/restriction
-# =1: 1st order (bilinear)
-# =2: 2nd order
+# =1: linear prolongation/restriction. primal+dual solutions located
+#     at the endpoints of the time interval.
+# =2: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. No time negotiation, so
+#     the restriction uses a constant interpolation of the primal
+#     space to synchronise in time with the dual space.
+# =3: linear prolongation/restriction, primal+dual solutions located
+#     according to the 1-step theta scheme. Full linear restriction
+#     with interpolation in time.
+# =4: Piecewise cubic interpolation in the inner. Piecewise quadratic
+#     extrapolation at the time endpoints. Solutions located at the
+#     time endpoints. (not completely implemented)
+# =5: Piecewise linear with larger stencil. Solutions located at the
+#     time endpoints. (not completely implemented)
 
-iorderTimeProlRest = -1
+ctypeProjection = -1
 
 
 # ========================================================================
