@@ -2480,7 +2480,7 @@ contains
     
     ! Create an access pool for quick access to nonlinearities
     call sptivec_createAccessPool(rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
-        rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,3)
+        rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,3)
 
   end subroutine
   
