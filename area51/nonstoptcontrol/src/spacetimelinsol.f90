@@ -29,6 +29,8 @@ module spacetimelinsol
   
   use postprocessing
   
+  use statistics
+  
   implicit none
 
   ! Linear space-time solver tyes
@@ -53,6 +55,12 @@ module spacetimelinsol
 
   ! Two-grid
   integer, parameter :: STLS_TYPE_MULTIGRID  = 6
+
+  ! Matrix pointer
+  type t_spacetimeMatrixPointer
+    ! Pointer to a matrix
+    type(t_spaceTimeMatrix), pointer :: p_rmatrix
+  end type
 
   ! Linear solver structure.
   type t_spacetimelinsol
@@ -154,7 +162,14 @@ module spacetimelinsol
     type(t_spacetimelinsol), pointer :: p_rcoarsegridsolver => null()
     
     ! ONLY MULTIGRID: System matrices if used as multigrid solver.
-    type(t_spaceTimeMatrix), dimension(:), pointer :: p_rmatrices => null()
+    type(t_spacetimeMatrixPointer), dimension(:), pointer :: p_rmatrices => null()
+    
+    ! ----------
+    ! Statistics
+    ! ----------
+    
+    ! Sums up the total time of the solver. Is reset in initData!
+    type(t_timer) :: rtotalTime
     
     ! ------------------------------------
     ! Parameters maintaines by each solver
@@ -433,6 +448,9 @@ contains
         end do
       end if
 
+      ! Remember the matrix
+      rsolver%p_Rmatrices(ilevel)%p_rmatrix => rmatrix
+
     end if
   
   end subroutine
@@ -602,6 +620,9 @@ contains
       end select
       
     end if
+    
+    ! Reset the total solver time
+    call stat_clearTimer (rsolver%rtotalTime)
 
   end subroutine
 
@@ -737,6 +758,9 @@ contains
   
     ! By default, the solver worked.
     rsolver%csolverStatus = 0
+    
+    ! Compute the time for solving
+    call stat_startTimer(rsolver%rtotalTime)
 
     select case (rsolver%csolverType)
     case (STLS_TYPE_DEFCORR)
@@ -752,6 +776,8 @@ contains
     case (STLS_TYPE_MULTIGRID)
       call stls_precondMultigrid (rsolver, rd)
     end select
+    
+    call stat_stopTimer(rsolver%rtotalTime)
   
   end subroutine
 
@@ -2277,16 +2303,16 @@ contains
         end if
 
 !        ! RHS      
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors2(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors2(ilevel))
 !        print *,"RHS"
 !        read (*,*)
 
 !        ! Temp. defect
 !        call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-!        call stmv_matvec (rsolver%p_rmatrix, &
+!        call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !            rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-!        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
 !        call stpp_printDefectSubnormsDirect(rsolver%p_Rvectors3(ilevel))
 !        print *,"current defect"
 !        read (*,*)
@@ -2301,31 +2327,31 @@ contains
 
 !        ! Temp. defect
 !        call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-!        call stmv_matvec (rsolver%p_rmatrix, &
+!        call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !            rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-!        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
 !        call stpp_printDefectSubnormsDirect(rsolver%p_Rvectors3(ilevel))
 !        print *,"current defect after sm."
 !        read (*,*)
             
 !        ! DEBUG: Real solution.
 !        call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-!        call stmv_matvec (rsolver%p_rmatrix, &
+!        call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !            rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-!        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+!        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
 !        call stls_precondDefect (rsolver%p_Rpreconditioners(ilevel),rsolver%p_Rvectors3(ilevel))
 !        print *,"real sol."
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
 !        read (*,*)
 
         ! Build the defect into the temp vector.
         call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-        call stmv_matvec (rsolver%p_rmatrix, &
+        call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
             rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
         
-        !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+        !call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
 
         ! Restriction.
         call sptipr_performRestriction (rsolver%p_rspaceTimeProjection,ilevel,&
@@ -2334,7 +2360,7 @@ contains
             rsolver%p_Rvectors4(ilevel-1),rsolver%p_Rvectors4(ilevel))
         
         ! Boundary conditions.
-        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors2(ilevel))
+        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors2(ilevel))
 
         ! Solve on the lower level
         call stls_precondMultigridInternal (rsolver, ilevel-1)
@@ -2345,10 +2371,10 @@ contains
             rsolver%p_RspaceVectors(ispaceLevelcoarse),rsolver%p_RspaceVectors(ispaceLevel))
         
         ! Boundary conditions.
-        call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+        call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
         
 !        print *,"cgr sol."
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
 !        read (*,*) 
         dfactor = 1.0_DP
 !        if (sstring .eq. "y") then
@@ -2358,7 +2384,7 @@ contains
         select case (rsolver%iadcgcorr)
         case (1)
           ! Get the factor by energy minimisatino.
-          call stls_mgCalcCgCorrFactorEnergy(rsolver%p_rmatrix,&
+          call stls_mgCalcCgCorrFactorEnergy(rsolver%p_Rmatrices(ilevel)%p_rmatrix,&
               rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel),&
               rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors4(ilevel),dfactor)
 
@@ -2371,7 +2397,7 @@ contains
 
         case (2)
           ! Get the factor by energy minimisatino.
-          call stls_mgCalcCgCorrFactorDef(rsolver%p_rmatrix,&
+          call stls_mgCalcCgCorrFactorDef(rsolver%p_Rmatrices(ilevel)%p_rmatrix,&
               rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel),&
               rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors4(ilevel),&
               rsolver%p_Rvectors5(ilevel),dfactor)
@@ -2389,21 +2415,21 @@ contains
         call sptivec_vectorLinearComb (rsolver%p_Rvectors3(ilevel),&
             rsolver%p_Rvectors1(ilevel),dfactor,1.0_DP)
 
-        !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
+        !call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
 
 !          call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-!          call stmv_matvec (rsolver%p_rmatrix, &
+!          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-!          call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+!          call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
 !
-!        call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
+!        call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors3(ilevel))
         
 !        if (ilevel .eq. rsolver%ilevel) then
 !          call output_line ("Defect before smoothing:")
 !          call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-!          call stmv_matvec (rsolver%p_rmatrix, &
+!          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
 !              rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-!          call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+!          call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
 !          
 !          call stpp_printDefectSubnormsDirect (rsolver%p_Rvectors3(ilevel))
 !          
@@ -2418,14 +2444,15 @@ contains
           end if
         end if
         
-        !call stpp_postproc (rsolver%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
+        !call stpp_postproc (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rphysics,rsolver%p_Rvectors1(ilevel))
 
         ! New defect on the max. level for residuum checks.
         if (ilevel .eq. rsolver%ilevel) then
           call sptivec_copyVector (rsolver%p_Rvectors2(ilevel),rsolver%p_Rvectors3(ilevel))
-          call stmv_matvec (rsolver%p_rmatrix, &
+          call stmv_matvec (rsolver%p_Rmatrices(ilevel)%p_rmatrix, &
               rsolver%p_Rvectors1(ilevel),rsolver%p_Rvectors3(ilevel), -1.0_DP, 1.0_DP)
-          call spop_applyBC (rsolver%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
+          call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, &
+              SPOP_DEFECT, rsolver%p_Rvectors3(ilevel))
           
 !          call output_line ("Defect after smoothing:")
 !          call stpp_printDefectSubnormsDirect (rsolver%p_Rvectors3(ilevel))

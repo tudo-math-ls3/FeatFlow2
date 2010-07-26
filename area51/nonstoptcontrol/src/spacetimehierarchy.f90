@@ -23,6 +23,9 @@
 !#
 !# 4.) sth_getLevel
 !#     -> Returns pointers to the space and time level of a space-time level.
+!#
+!# 5.) sth_printHierStatistics
+!#     -> Print statistics about the hierarchy.
 !# </purpose>
 !##############################################################################
 

@@ -720,7 +720,6 @@ contains
     integer :: iwriteUCD, cfespace, icalcError
     character(LEN=SYS_STRLEN) :: smesh, sboundary
     integer :: ithetaschemetype
-    type(t_timer) :: rtimerSolver
     
     type(t_linearSpaceTimeSolver) :: rlinearSolver
     
@@ -814,6 +813,29 @@ contains
           rparams%rfeHierarchy,rparams%rtimeHierarchy)
       call sth_defineHierarchyByCoarsening (rparams%rspacetimeHierarchy,&
           1,nspacelevels,1,ntimelevels)
+          
+      ! Print statistics.
+      call output_lbrk()
+      call output_line ("Mesh hierarchy")
+      call output_line ("--------------")
+      call mshh_printHierStatistics (rparams%rmeshHierarchy)
+      
+      call output_lbrk()
+      call output_line ("Space hierarchy")
+      call output_line ("---------------")
+      call fesph_printHierStatistics (rparams%rfeHierarchy)
+
+      call output_lbrk()
+      call output_line ("Time hierarchy")
+      call output_line ("--------------")
+      call tmsh_printHierStatistics (rparams%rtimeHierarchy)
+
+      call output_lbrk()
+      call output_line ("Space-time hierarchy")
+      call output_line ("--------------------")
+      call sth_printHierStatistics(rparams%rspacetimeHierarchy)
+      
+      call output_lbrk()
       
       ! Boundary conditions on all levels.
       allocate (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels))
@@ -876,10 +898,7 @@ contains
       ! Solve
       call stls_initData (rlinearSolver%rsolver)
       
-      call stat_clearTimer (rtimerSolver)
-      call stat_startTimer (rtimerSolver)
       call stls_solveAdaptively (rlinearSolver%rsolver,rsolution,rrhs,rtemp)
-      call stat_stopTimer (rtimerSolver)
       
       csolverStatus = rlinearSolver%rsolver%csolverStatus
       call stls_doneData (rlinearSolver%rsolver)
@@ -896,8 +915,26 @@ contains
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
       call stpp_postproc (rparams%rphysics,rsolution,iwriteUCD .ne. 0,icalcError .ne. 0)
-      call output_line ("CPU time for solver:       "//trim(sys_sdL(rtimerSolver%delapsedCPU, 2)))
-      call output_line ("Wallclock time for solver: "//trim(sys_sdL(rtimerSolver%delapsedReal, 2)))
+      call output_line ("CPU time for complete solver:               "//&
+          trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedCPU, 2)))
+      call output_line ("Wallclock time for complete solver:         "//&
+          trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedReal, 2)))
+
+      select case (rlinearSolver%csolverType)
+      case (1)
+        ! MG has a coarse grid solver; display its time.
+        call output_line ("CPU time for coarse grid solver:            "//&
+            trim(sys_sdL(rlinearSolver%rcoarseGridSolver%rtotalTime%delapsedCPU, 2)))
+        call output_line ("Wallclock time for coarse grid solver:      "//&
+            trim(sys_sdL(rlinearSolver%rcoarseGridSolver%rtotalTime%delapsedReal, 2)))
+
+        call output_line ("CPU time for non-coarse grid solving:       "//&
+            trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedCPU- &
+                         rlinearSolver%rcoarseGridSolver%rtotalTime%delapsedCPU, 2)))
+        call output_line ("Wallclock time for non-coarse grid solving: "//&
+            trim(sys_sdL(rlinearSolver%rsolver%rtotalTime%delapsedReal- &
+                         rlinearSolver%rcoarseGridSolver%rtotalTime%delapsedReal, 2)))
+      end select
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
         call stmv_releaseMatrix(p_Rmatrices(ilev))
