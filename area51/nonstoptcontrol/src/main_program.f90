@@ -308,7 +308,7 @@ contains
 
     ! local variables
     integer :: csolverType
-    integer :: iadcgcorr,niteReinit
+    integer :: iadcgcorr,niteReinit, icycle
     real(DP) :: dadcgcorrMin,dadcgcorrMax
     integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations
     integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
@@ -332,6 +332,8 @@ contains
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "nmaxiterations", nmaxiterations)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
+        "icycle", icycle)
+    call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "ismoother", ismoother)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "icoarsegridsolver", icoarsegridsolver)
@@ -353,7 +355,7 @@ contains
         "dadcgcorrMin", dadcgcorrMin,0.5_DP)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "dadcgcorrMax", dadcgcorrMax,2.0_DP)
-    
+        
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
         "csolverType", cspaceSolver)
     call parlst_getvalue_int (rparlist, "SPACE-LINEARSOLVER", &
@@ -622,6 +624,7 @@ contains
       rsolver%rsolver%iadcgcorr = iadcgcorr
       rsolver%rsolver%dadcgcorrMin = dadcgcorrMin
       rsolver%rsolver%dadcgcorrMax = dadcgcorrMax
+      rsolver%rsolver%icycle = icycle
           
     end select
       

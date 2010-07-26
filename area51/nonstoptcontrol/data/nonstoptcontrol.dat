@@ -94,7 +94,7 @@ icalcerror = 1
 
 cfespace = 1
 
-nspacelevels = 2
+nspacelevels = 3
 ntimelevels = 2
 nminlevelspace = 2
 nminminleveltime = 1
@@ -115,7 +115,7 @@ csolverType = -1    # -1=automatic
 nsmoothingSteps = 4
 nmaxiterations = 1000
 
-# Type of smoother.
+# ONLY MULTIGRID: Type of smoother.
 # =0: Block-Jacobi
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
@@ -125,7 +125,7 @@ nmaxiterations = 1000
 
 ismoother = 0
 
-# Type of coarse grid solver.
+# ONLY MULTIGRID: Type of coarse grid solver.
 # =0: Block-Jacobi
 # =1: Block-FBGS, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled (forward-backward optimiser)
@@ -135,7 +135,7 @@ ismoother = 0
 
 icoarsegridsolver = 0
 
-# Type of projection in time.
+# ONLY MULTIGRID: Type of projection in time.
 # -1: automatic
 # =0: constant prolongation/restriction
 # =1: linear prolongation/restriction. primal+dual solutions located
@@ -157,6 +157,11 @@ itypeProjection = -1
 
 depsrel = 1E-10
 depsabs = 1E-17
+
+# ONLY MULTIGRID: Type of Cycle.
+# =0: F-cycle, =1: V-cycle, =2: W-cycle
+
+icycle = 1
 
 # ONLY MULTIGRID: Specifies the type of the adaptive coarse grid correction used.
 # =0: deactivated.

@@ -107,6 +107,10 @@ module spacetimelinsol
     ! Number of levels
     integer :: nlevels = 1
     
+    ! Type of cycle.
+    ! =0: F-cycle, =1: V-cycle, =2: W-cycle
+    integer :: icycle = 1
+    
     ! Minimum/Maximum number of steps
     integer :: nminIterations = 1
     integer :: nmaxIterations = 1000
@@ -2182,7 +2186,7 @@ contains
 
     ! We forward the call to the actual multigrid solver which works
     ! recursively...
-    call stls_precondMultigridInternal (rsolver, rsolver%ilevel)
+    call stls_precondMultigridInternal (rsolver, rsolver%ilevel, 0)
 
     ! Put the (weighted) solution into rd as returm value
     call sptivec_vectorLinearComb (rsolver%p_Rvectors1(rsolver%ilevel),rd,&
@@ -2192,7 +2196,7 @@ contains
 
   ! ***************************************************************************
 
-  recursive subroutine stls_precondMultigridInternal (rsolver, ilevel)
+  recursive subroutine stls_precondMultigridInternal (rsolver, ilevel, niteFixed)
   
   ! General preconditioning to a defect vector in rsolver%p_Rvectors2.
   ! Result written into rsolver%p_Rvectors1.
@@ -2203,9 +2207,14 @@ contains
   ! Current level
   integer, intent(in) :: ilevel
   
+  ! Fixed number of iterations.
+  ! =0: use stopping criteria from the solver structure.
+  integer, intent(in) :: niteFixed
+  
     ! local variables
     real(DP) :: dfactor
     integer :: ite,nite,ispacelevel,itimeLevel,ispacelevelcoarse
+    integer :: nitecoarse
     real(DP) :: dresInit, dresCurrent, drho, drhoAsymp, dresLast
     real(DP), dimension(3) :: DlastResiduals
   
@@ -2235,26 +2244,28 @@ contains
       ! Clear the solution vector p_Rvectors1.
       call sptivec_clearVector (rsolver%p_Rvectors1(ilevel))
 
-      ! Max. number of iterations.
-      nite = rsolver%nmaxiterations+1
-      
-      ! If we are on a lower level, do as many iterations as prescribed by the cycle
-      ! Otherwise, calculate the initial residuum for residuum checks.
-      if (ilevel .lt. rsolver%ilevel) then
-        ! Currently only V-cycle...
-        nite = 1
+      if (niteFixed .eq. 0) then
+        ! Max. number of iterations.
+        nite = rsolver%nmaxiterations+1
+        
+        ! If we are on a lower level, do as many iterations as prescribed by the cycle
+        ! Otherwise, calculate the initial residuum for residuum checks.
+        if (ilevel .eq. rsolver%ilevel) then
+          ! Initial residuum.
+          dresInit = sptivec_vectorNorm (rsolver%p_Rvectors2(ilevel),LINALG_NORML2)
+          dresCurrent = dresInit
+          DlastResiduals (:) = dresInit
+        end if
       else
-        ! Initial residuum.
-        dresInit = sptivec_vectorNorm (rsolver%p_Rvectors2(ilevel),LINALG_NORML2)
-        dresCurrent = dresInit
-        DlastResiduals (:) = dresInit
+        ! Number of iterations fixed.
+        nite = niteFixed
       end if
       
       dresLast = 0.0_DP
       
       do ite = 1,nite
       
-        if (ilevel .eq. rsolver%ilevel) then
+        if (niteFixed .eq. 0) then
           
           ! Stopping criterion check on the max. level.
         
@@ -2362,8 +2373,27 @@ contains
         ! Boundary conditions.
         call spop_applyBC (rsolver%p_rmatrices(ilevel)%p_rmatrix%p_rboundaryCond, SPOP_DEFECT, rsolver%p_Rvectors2(ilevel))
 
-        ! Solve on the lower level
-        call stls_precondMultigridInternal (rsolver, ilevel-1)
+        ! Solve on the lower level.
+        ! The number of coarse grid iterations depends on the cycle...
+        select case (rsolver%icycle)
+          case (0)
+            ! F-cycle. The number of coarse grid iterations has to be calculated
+            ! from the current iteration. 
+            if (niteFixed .eq. 0) then
+              niteCoarse = 2
+            else
+              ! 1st iteration: W-cycle. 2nc iteration: V-cycle.
+              niteCoarse = niteFixed - ite + 1
+            end if
+            
+          case (1,2)
+            ! V/W cycle.
+            ! The icycle identifier specifies the number of coarse 
+            ! grid iterations.
+            niteCoarse = rsolver%icycle
+            
+        end select
+        call stls_precondMultigridInternal (rsolver, ilevel-1, niteCoarse)
         
         ! Prolongation
         call sptipr_performProlongation (rsolver%p_rspaceTimeProjection,ilevel,&
@@ -2467,7 +2497,7 @@ contains
         
       end do
       
-      if (ilevel .eq. rsolver%ilevel) then
+      if (niteFixed .eq. 0) then
         ! Convergence rate
         if (ite .gt. 0) then
           if (dresInit .eq. 0.0_DP) then
