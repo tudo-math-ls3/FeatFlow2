@@ -29,6 +29,9 @@
 !# 6.) init_getSpaceDiscrSettings
 !#     -> Reads space discretisation settings from the DAT file.
 !#
+!# 7.) init_initDiscreteAnalytFlow
+!#     -> Creates a analytical-flow structure that resembles a discrete flow.
+!#
 !# Auxiliary routines:
 !#
 !# </purpose>
@@ -208,7 +211,7 @@ contains
       call output_lbrk()
       call output_line ("Initialising space discretisation hierarchy.")
     end if
-    call init_initSpaceDiscrHier (rparlist,rsettingsSpaceDiscr,&
+    call init_initSpaceDiscrHier (rparlist,rsettingsSolver%rphysicsPrimal,rsettingsSpaceDiscr,&
         rsettingsSolver%rboundary,rsettingsSolver%rmeshHierarchy,&
         rsettingsSolver,ioutputLevel)
         
@@ -245,10 +248,12 @@ contains
     end if
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimal,&
         rsettingsSolver%rtimeCoarse,rsettingsSolver%rspaceTimeHierPrimal,&
-        rsettingsSolver%rprjHierSpacePrimal,rparlist,rsettings%ssectionTimeDiscretisation)
+        rsettingsSolver%rprjHierSpacePrimal,rsettingsSolver%rphysicsPrimal,&
+        rparlist,rsettings%ssectionTimeDiscretisation)
     call init_initSpaceTimePrjHierarchy (rsettingsSolver%rprjHierSpaceTimePrimalDual,&
         rsettingsSolver%rtimeCoarse,rsettingsSolver%rspaceTimeHierPrimalDual,&
-        rsettingsSolver%rprjHierSpacePrimalDual,rparlist,rsettings%ssectionTimeDiscretisation)
+        rsettingsSolver%rprjHierSpacePrimalDual,rsettingsSolver%rphysicsPrimal,&
+        rparlist,rsettings%ssectionTimeDiscretisation)
         
     ! Init+Allocate memory for the matrices on all levels and create all 
     ! static matrices.
@@ -292,7 +297,7 @@ contains
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "ssectionBoundaryConditions",sstr2,bdequote=.true.)
     call init_initBoundaryConditions (rparlist,sstr,sstr2,&
-        rsettingsSolver%roptcBDC)
+        rsettingsSolver%rphysicsPrimal,rsettingsSolver%roptcBDC)
 
     ! Initialise the physics parameter that describe the 
     ! physical equation
@@ -317,11 +322,16 @@ contains
       call output_lbrk()
       call output_line ("Initialising target flow.")
     end if
-    call init_initOptControlTargetFlow (rparlist,rsettings%ssectionOptControl,&
-        rsettingsSpaceDiscr,&
-        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-        rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
-        rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
+    
+    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      call init_initOptControlTargetFlow2D (rparlist,rsettings%ssectionOptControl,&
+          rsettingsSpaceDiscr,&
+          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+          rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
+          rsettingsSolver%rboundary,rsettingsSolver%rsettingsOptControl)
+    end select
 
     ! Initialise the initial condition and RHS.
     if (ioutputLevel .ge. 1) then
@@ -330,10 +340,14 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "sinitialCondition",sstr,bdequote=.true.)
-    call init_initFlow (rparlist,sstr,rsettingsSolver%rinitialCondition,&
-        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-        rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
-        isuccess)
+    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      call init_initFlow2D (rparlist,sstr,rsettingsSolver%rinitialCondition,&
+          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+          rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+          isuccess)
+    end select
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
@@ -346,10 +360,14 @@ contains
     end if
     call parlst_getvalue_string (rparlist,rsettings%ssectionOptControl,&
         "srhs",sstr,bdequote=.true.)
-    call init_initFlow (rparlist,sstr,rrhs,&
-        rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
-        rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
-        isuccess)
+    select case (rsettingsSolver%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      call init_initFlow2D (rparlist,sstr,rrhs,&
+          rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
+          rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
+          isuccess)
+    end select
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
@@ -502,7 +520,7 @@ contains
 
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rparlist,ssection,&
-        'iequation',rphysics%iequation,0)
+        'iequation',rphysics%cequation,0)
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
     call parlst_getvalue_int (rparlist,ssection,&
@@ -514,7 +532,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initBoundaryConditions (rparlist,ssectionExpr,ssectionBDC,roptcBDC)
+  subroutine init_initBoundaryConditions (rparlist,ssectionExpr,ssectionBDC,rphysics,roptcBDC)
   
 !<description>
   ! Basic initialisation of the boundary condition structure.
@@ -529,6 +547,9 @@ contains
   
   ! Section in the parameter list defining the boundary conditions
   character(len=*), intent(in) :: ssectionBDC
+  
+  ! Physics of the problem
+  type(t_settings_physics), intent(in), target :: rphysics
 !</input>
   
 !<output>
@@ -541,6 +562,7 @@ contains
     ! Save a pointer to the parameter list and the name of the sections
     ! containing the BDC's.
     roptcBDC%p_rparamListBDC => rparlist
+    roptcBDC%p_rphysics => rphysics
     roptcBDC%ssectionBdExpressions = ssectionExpr 
     roptcBDC%ssectionBdConditions = ssectionBDC   
 
@@ -727,8 +749,9 @@ contains
           dtimeInit, dtimeMax, niterations, dtimeStepTheta)
           
       ! Default time stepping.
-      ! itag=0/1 decides upon whether the new or old 1-step method is used.
-      rdiscrTime%itag = 0
+      ! itag=0: old 1-step scheme.
+      ! itag=1: new 1-step scheme, dual solutions inbetween primal solutions.
+      rdiscrTime%itag = 1
     case (1)
       ! FS-Theta scheme.
       call tdiscr_initFSTheta (rdiscrTime, dtimeInit, dtimeMax, niterations)
@@ -740,7 +763,7 @@ contains
           
       ! Old time stepping.
       ! itag=0/1 decides upon whether the new or old 1-step method is used.
-      rdiscrTime%itag = 1
+      rdiscrTime%itag = 0
 
     case (3)
       ! dG(0)
@@ -961,7 +984,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initSpaceDiscrHier (rparlist,rsettingsSpaceDiscr,rboundary,&
+  subroutine init_initSpaceDiscrHier (rparlist,rphysics,rsettingsSpaceDiscr,rboundary,&
       rmeshHierarchy,rsettings,ioutputLevel)
 
 !<description>
@@ -972,6 +995,9 @@ contains
 !<input>
   ! Parameter list
   type(t_parlist), intent(in) :: rparlist
+  
+  ! Physics of the problem
+  type(t_settings_physics), intent(in) :: rphysics
   
   ! Structure with space discretisation settings
   type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
@@ -1000,67 +1026,73 @@ contains
     integer :: i,j,k
     integer(I32) :: celement
     
-    ! Read the parameters that define the underlying discretisation.
-    ! We use fget1LevelDiscretisation to create the basic spaces.
-    ! This routines expects the rcollection%IquickAccess array to be initialised
-    ! as follows:
-    !   rcollection%IquickAccess(1) = ieltype
-    !   rcollection%IquickAccess(2) = nequations (=3:primal space. =6: primal+dual space)
-    !   rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC or icubA
-    !   rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC or icubB
-    !   rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC or icubF
-    !
-    ! Get parameters about the discretisation from the parameter list
-    rcollection%IquickAccess(3) = rsettingsSpaceDiscr%icubStokes
-    rcollection%IquickAccess(4) = rsettingsSpaceDiscr%icubB
-    rcollection%IquickAccess(5) = rsettingsSpaceDiscr%icubF
+    select case (rphysics%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      
+      ! Read the parameters that define the underlying discretisation.
+      ! We use fget1LevelDiscretisation to create the basic spaces.
+      ! This routines expects the rcollection%IquickAccess array to be initialised
+      ! as follows:
+      !   rcollection%IquickAccess(1) = ieltype
+      !   rcollection%IquickAccess(2) = nequations (=3:primal space. =6: primal+dual space)
+      !   rcollection%IquickAccess(3) = SPDISC_CUB_AUTOMATIC or icubA
+      !   rcollection%IquickAccess(4) = SPDISC_CUB_AUTOMATIC or icubB
+      !   rcollection%IquickAccess(5) = SPDISC_CUB_AUTOMATIC or icubF
+      !
+      ! Get parameters about the discretisation from the parameter list
+      rcollection%IquickAccess(3) = rsettingsSpaceDiscr%icubStokes
+      rcollection%IquickAccess(4) = rsettingsSpaceDiscr%icubB
+      rcollection%IquickAccess(5) = rsettingsSpaceDiscr%icubF
 
-    ! We want primal+dual space.
-    rcollection%IquickAccess(2) = 6
-    
-    ! Element type
-    rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
+      ! We want primal+dual space.
+      rcollection%IquickAccess(2) = 6
+      
+      ! Element type
+      rcollection%IquickAccess(1) = rsettingsSpaceDiscr%ielementType
 
-    ! Create an FE space hierarchy based on the existing mesh hierarchy.
-    call fesph_createHierarchy (rsettings%rfeHierPrimalDual,&
-        rmeshHierarchy%nlevels,rmeshHierarchy,&
-        fget1LevelDiscretisation,rcollection,rboundary)
-        
-    ! Extract the data of the primal space (Block 1..3) and create a new FE 
-    ! space hierarchy based on that.
-    call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
-        rsettings%rfeHierPrimal,1,3)
-        
-    ! Extract the data of the primal velocity space (Block 1..2) and
-    ! create a new FE space hierarchy for mass matrices
-    call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
-        rsettings%rfeHierMass,1,3)
-
-    ! Which cubature rule to use for mass matrices?
-    icubM = rsettingsSpaceDiscr%icubMass
-    
-    ! Set the cubature rule in the mass matrix discretisation structure.
-    if (icubM .ne. SPDISC_CUB_AUTOMATIC) then
-      do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
-        do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
-          rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)%&
-              RelementDistr(:)%ccubTypeBilForm = icubM
-        end do
-      end do
-    else
-      do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
-        do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
-          do k=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
-              RspatialDiscr(j)%RelementDistr)
-            celement = rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
-                RspatialDiscr(j)%RelementDistr(k)%celement
+      ! Create an FE space hierarchy based on the existing mesh hierarchy.
+      call fesph_createHierarchy (rsettings%rfeHierPrimalDual,&
+          rmeshHierarchy%nlevels,rmeshHierarchy,&
+          fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
           
+      ! Extract the data of the primal space (Block 1..3) and create a new FE 
+      ! space hierarchy based on that.
+      call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
+          rsettings%rfeHierPrimal,1,3)
+          
+      ! Extract the data of the primal velocity space (Block 1..2) and
+      ! create a new FE space hierarchy for mass matrices
+      call fesph_deriveFeHierarchy (rsettings%rfeHierPrimalDual,&
+          rsettings%rfeHierMass,1,3)
+
+      ! Which cubature rule to use for mass matrices?
+      icubM = rsettingsSpaceDiscr%icubMass
+      
+      ! Set the cubature rule in the mass matrix discretisation structure.
+      if (icubM .ne. SPDISC_CUB_AUTOMATIC) then
+        do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
+          do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
             rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)%&
-                RelementDistr(:)%ccubTypeBilForm = spdiscr_getStdCubature(celement)
+                RelementDistr(:)%ccubTypeBilForm = icubM
           end do
         end do
-      end do
-    end if
+      else
+        do i=1,size(rsettings%rfeHierMass%p_rfeSpaces)
+          do j=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr)
+            do k=1,size(rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
+                RspatialDiscr(j)%RelementDistr)
+              celement = rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%&
+                  RspatialDiscr(j)%RelementDistr(k)%celement
+            
+              rsettings%rfeHierMass%p_rfeSpaces(i)%p_rdiscretisation%RspatialDiscr(j)%&
+                  RelementDistr(:)%ccubTypeBilForm = spdiscr_getStdCubature(celement)
+            end do
+          end do
+        end do
+      end if
+      
+    end select
     
     if (ioutputLevel .ge. 2) then
       ! Print statistics about the discretisation
@@ -1239,7 +1271,7 @@ contains
 !<subroutine>
 
   subroutine init_initSpaceTimePrjHierarchy (rprjHierarchy,rtimeDisr,rhierarchy,&
-      rprojHierarchySpace,rparlist,ssection)
+      rprojHierarchySpace,rphysics,rparlist,ssection)
   
 !<description>
   ! Creates projection hierarchies for the interlevel projection in space.
@@ -1254,6 +1286,9 @@ contains
   
   ! Projection hierarchy in space
   type(t_interlevelProjectionHier), intent(in), target :: rprojHierarchySpace
+  
+  ! Underlying physics
+  type(t_settings_physics), intent(in) :: rphysics
   
   ! Parameter list with parameters about the projection.
   type(t_parlist), intent(in) :: rparlist
@@ -1270,14 +1305,14 @@ contains
 !</subroutine>
 
     ! local variables
-    integer :: iorderTimeProlRest
+    integer :: ctypeProjection
 
     ! Type of prolongation/restriction in time
     call parlst_getvalue_int (rparlist, ssection, &
-        'iorderTimeProlRest', iorderTimeProlRest, -1)
+        'ctypeProjection', ctypeProjection, -1)
         
     call sptipr_initProjection (rprjHierarchy,rhierarchy,&
-        rprojHierarchySpace,iorderTimeProlRest)
+        rprojHierarchySpace,rphysics,ctypeProjection)
     
   end subroutine
 
@@ -1343,7 +1378,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initOptControlTargetFlow (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
+  subroutine init_initOptControlTargetFlow2D (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
       rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
   
 !<description>
@@ -1393,7 +1428,7 @@ contains
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
         'stargetFlow',stargetFlow,bdequote=.true.)
-    call init_initFlow (rparlist,stargetFlow,roptcontrol%rtargetFlow,&
+    call init_initFlow2D (rparlist,stargetFlow,roptcontrol%rtargetFlow,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
@@ -1430,7 +1465,7 @@ contains
 
 !<subroutine>
 
-  recursive subroutine init_initDiscreteAnalytFlow (ielementType,rboundary,&
+  recursive subroutine init_initDiscreteAnalytFlow2D (ielementType,rboundary,&
       smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
       ilevel,rflow)
   
@@ -1500,7 +1535,7 @@ contains
         ! Create the basic analytic solution: Mesh, discretisation structure,...
         call ansol_init (rflow,ilevel,&
             rtriaCoarse,1,rcollection%IquickAccess(1),&
-            fget1LevelDiscretisation,rcollection,rboundary)
+            fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
       else
       
         ! Ok, here we can hope to reuse existing data structures.
@@ -1527,7 +1562,7 @@ contains
           ! new levels are generated.
           call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
-              rcollection%IquickAccess(1),fget1LevelDiscretisation,rcollection)
+              rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
         else
         
@@ -1543,7 +1578,7 @@ contains
           ! new levels are generated.
           call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
-              rcollection%IquickAccess(1),fget1LevelDiscretisation,rcollection)
+              rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
         end if
         
@@ -1570,7 +1605,7 @@ contains
       ! because the mesh has to be refined up to that.
       call ansol_init (rflow,ilevel,&
           NDIM2D,smesh,rcollection%IquickAccess(1),&
-          fget1LevelDiscretisation,rcollection,rboundary)
+          fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
     
     end if
 
@@ -1580,7 +1615,7 @@ contains
 
 !<subroutine>
 
-  subroutine init_initFlow (rparlist,ssectionFlow,rflow,&
+  subroutine init_initFlow2D (rparlist,ssectionFlow,rflow,&
       rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
       isuccess)
   
@@ -1723,7 +1758,7 @@ contains
     end select
     
     ! Create an analytical flow that resembles a discrete flow.
-    call init_initDiscreteAnalytFlow (ielementType,rboundary,&
+    call init_initDiscreteAnalytFlow2D (ielementType,rboundary,&
         smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
         ilevel,rflow)  
         
@@ -2671,119 +2706,129 @@ contains
     call imnat_getL2PrjMatrix(rsettings%rspaceAsmHierarchy%p_RasmTemplList(ispaceLevel),&
         CCSPACE_PRIMAL,rvector%p_rspaceDiscr,rmassMatrix)
 
-    ! What to do?
-    select case (ctypeStartVector)
-    case (0)
-      ! Initialise with zero.
-      call sptivec_clearVector(rvector)
+    select case (rsettings%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
       
-      ! Put the initial condition to the first timestep.
-      call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
-          rvectorSpace,1,3,rmassMatrix)
-          
-      call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+      ! What to do?
+      select case (ctypeStartVector)
+      case (-1)
+        ! Initialise with zero.
+        call sptivec_clearVector(rvector)
+        
+        ! Put the initial condition to the first timestep.
+        call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
+            rvectorSpace,1,3,rmassMatrix)
+            
+        call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+        
+      case (0)
+        ! Initialise with zero.
+        call sptivec_clearVector(rvector)
+        
+      case (1)
+        ! Get the initial condition
+        call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
+            rvectorSpace,1,3,rmassMatrix)
+            
+        ! Propagate to all timesteps
+        do i=1,rvector%neqTime
+          call sptivec_setTimestepData (rvector, i, rvectorSpace)
+        end do
+        
+      case (2)
+        ! Read the analytic solution.
+        call init_initFlow2D (rparlist,sstartVector,rlocalsolution,&
+            rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+        if (isuccess .eq. 1) then
+          call output_line ('Flow created by simulation not yet supported!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+          call sys_halt()
+        end if
+        
+        ! Project it down to all timesteps.
+        do i=1,rvector%neqTime
+          call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
+          call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,1,3,rmassMatrix)
+          call sptivec_setTimestepData (rvector, i, rvectorSpace)
+        end do
+        
+        ! Release the analytic flow again.
+        call ansol_done(rlocalsolution)
       
-    case (1)
-      ! Get the initial condition
-      call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
-          rvectorSpace,1,3,rmassMatrix)
-          
-      ! Propagate to all timesteps
-      do i=1,rvector%neqTime
-        call sptivec_setTimestepData (rvector, i, rvectorSpace)
-      end do
+      case (3)
+        ! Initialise with zero.
+        call sptivec_clearVector(rvector)
+        
+        ! Put the initial solution to the first timestep.
+        call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
+            rvectorSpace,1,3,rmassMatrix)
+            
+        call sptivec_setTimestepData (rvector, 1, rvectorSpace)
+        
+        ! Initialise a flow solver that simulates the flow to calculate the
+        ! start vector.
+        call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
+            1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
+            
+        ! Create a nonlinear space-time matrix that resembles the current
+        ! forward equation.
+        call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
+            rdiscrData)
+        call stlin_initSpaceTimeMatrix (&
+            rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
+            rsettings%rglobalData,rsettings%rdebugFlags)
+        call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
+        
+        ! Get the boundary conditions
+        call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
+            sstartVectorBoundaryConditions,rsettings%rphysicsPrimal,rboudaryConditions)
+        
+        ! Get settings about postprocessing
+        if (sstartVectorPostprocessing .ne. "") then
+          call init_initForwardSimPostproc (rparlist,&
+              sstartVectorPostprocessing,rsimsolver%rpostprocessing)
+        end if
+        
+        ! Simulate...
+        call fbsim_simulate (rsimsolver, rvector, rrhs, &
+            rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
+            
+        ! Clean up
+        call fbsim_done (rsimsolver)
+        call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
       
-    case (2)
-      ! Read the analytic solution.
-      call init_initFlow (rparlist,sstartVector,rlocalsolution,&
-          rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-          rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
-      if (isuccess .eq. 1) then
-        call output_line ('Flow created by simulation not yet supported!', &
-            OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
-        call sys_halt()
-      end if
-      
-      ! Project it down to all timesteps.
-      do i=1,rvector%neqTime
-        call tdiscr_getTimestep(rvector%p_rtimeDiscr,i-1,dtime)
-        call ansol_prjToVector (rlocalsolution,dtime,rvectorSpace,1,3,rmassMatrix)
-        call sptivec_setTimestepData (rvector, i, rvectorSpace)
-      end do
-      
-      ! Release the analytic flow again.
-      call ansol_done(rlocalsolution)
-    
-    case (3)
-      ! Initialise with zero.
-      call sptivec_clearVector(rvector)
-      
-      ! Put the initial solution to the first timestep.
-      call ansol_prjToVector (rinitialCondition,rinitialCondition%rtimeDiscr%dtimeInit,&
-          rvectorSpace,1,3,rmassMatrix)
-          
-      call sptivec_setTimestepData (rvector, 1, rvectorSpace)
-      
-      ! Initialise a flow solver that simulates the flow to calculate the
-      ! start vector.
-      call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
-          1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)
-          
-      ! Create a nonlinear space-time matrix that resembles the current
-      ! forward equation.
-      call nlstslv_initStdDiscrData (rsettings,rsettings%rspaceTimeHierPrimalDual%nlevels,&
-          rdiscrData)
-      call stlin_initSpaceTimeMatrix (&
-          rspaceTimeMatrix,MATT_OPTCONTROL,rdiscrData,rvector,&
-          rsettings%rglobalData,rsettings%rdebugFlags)
-      call fbsim_setMatrix (rsimsolver,rspaceTimeMatrix)
-      
-      ! Get the boundary conditions
-      call init_initBoundaryConditions (rparlist,SEC_SBDEXPRESSIONS,&
-          sstartVectorBoundaryConditions,rboudaryConditions)
-      
-      ! Get settings about postprocessing
-      if (sstartVectorPostprocessing .ne. "") then
-        call init_initForwardSimPostproc (rparlist,&
-            sstartVectorPostprocessing,rsimsolver%rpostprocessing)
-      end if
-      
-      ! Simulate...
-      call fbsim_simulate (rsimsolver, rvector, rrhs, &
-          rboudaryConditions,1, rvector%p_rtimeDiscr%nintervals,rvector,1.0_DP,bsuccess)
-          
-      ! Clean up
-      call fbsim_done (rsimsolver)
-      call stlin_releaseSpaceTimeMatrix(rspaceTimeMatrix)
-    
-      ! Probably print some statistical data
-      if (ioutputLevel .ge. 1) then
-        call output_lbrk ()
-        call output_line ("Total time for forward simulation:      "//&
-            trim(sys_sdL(rsimsolver%dtimeTotal,10)))
+        ! Probably print some statistical data
+        if (ioutputLevel .ge. 1) then
+          call output_lbrk ()
+          call output_line ("Total time for forward simulation:      "//&
+              trim(sys_sdL(rsimsolver%dtimeTotal,10)))
 
-        call output_line ("Total time for nonlinear solver:        "//&
-          trim(sys_sdL(rsimsolver%dtimeNonlinearSolver,10)))
-          
-        call output_line ("Total time for defect calculation:      "//&
-          trim(sys_sdL(rsimsolver%dtimeDefectCalculation,10)))
+          call output_line ("Total time for nonlinear solver:        "//&
+            trim(sys_sdL(rsimsolver%dtimeNonlinearSolver,10)))
+            
+          call output_line ("Total time for defect calculation:      "//&
+            trim(sys_sdL(rsimsolver%dtimeDefectCalculation,10)))
 
-        call output_line ("Total time for matrix assembly:         "//&
-          trim(sys_sdL(rsimsolver%dtimeMatrixAssembly,10)))
-          
-        call output_line ("Total time for linear solver:           "//&
-          trim(sys_sdL(rsimsolver%dtimeLinearSolver,10)))
-          
-        call output_line ("Total time for postprocessing:          "//&
-          trim(sys_sdL(rsimsolver%dtimePostprocessing,10)))
-          
-        call output_line ("Total #iterations nonlinear solver:     "//&
-          trim(sys_siL(rsimsolver%nnonlinearIterations,10)))
-          
-        call output_line ("Total #iterations linear solver:        "//&
-          trim(sys_siL(rsimsolver%nlinearIterations,10)))
-      end if
-    
+          call output_line ("Total time for matrix assembly:         "//&
+            trim(sys_sdL(rsimsolver%dtimeMatrixAssembly,10)))
+            
+          call output_line ("Total time for linear solver:           "//&
+            trim(sys_sdL(rsimsolver%dtimeLinearSolver,10)))
+            
+          call output_line ("Total time for postprocessing:          "//&
+            trim(sys_sdL(rsimsolver%dtimePostprocessing,10)))
+            
+          call output_line ("Total #iterations nonlinear solver:     "//&
+            trim(sys_siL(rsimsolver%nnonlinearIterations,10)))
+            
+          call output_line ("Total #iterations linear solver:        "//&
+            trim(sys_siL(rsimsolver%nlinearIterations,10)))
+        end if
+      
+      end select
+      
     end select
     
     ! Implement the Dirichlet boundary conditions.
@@ -2835,7 +2880,7 @@ contains
   type(t_timeDiscretisation), intent(in), target :: rtimeDiscr
   
   ! Global settings structure.
-  type(t_settings_optflow), intent(in) :: rsettings
+  type(t_settings_optflow), intent(in), target :: rsettings
 !</input>
 
 !<output>
@@ -2850,7 +2895,7 @@ contains
     integer :: isuccess
 
     ! Basic initialisation of the postprocessing structure
-    call optcpp_initpostprocessing (rpostproc,CCSPACE_PRIMALDUAL,&
+    call optcpp_initpostprocessing (rpostproc,rsettings%rphysicsPrimal,CCSPACE_PRIMALDUAL,&
         rboundaryConditions,rtimeDiscr,rspaceDiscr,rspaceDiscrPrimal)
         
     ! Read remaining parameters from the DAT file.
@@ -2941,12 +2986,20 @@ contains
         rpostproc%icalcError = 0
     
     if (rpostproc%icalcError .ne. 0) then
-      ! Initialise the reference solution
-      call init_initFlow (rparlist,sstr,rpostproc%ranalyticRefFunction,&
-          rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
-          rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+    
+      isuccess = 1
+      select case (rsettings%rphysicsPrimal%cequation)
+      case (0,1)
+        ! Stokes, Navier-Stokes, 2D
+    
+        ! Initialise the reference solution
+        call init_initFlow2D (rparlist,sstr,rpostproc%ranalyticRefFunction,&
+            rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
+            rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
+      end select
+      
       if (isuccess .eq. 1) then
-        call output_line ("Flow created by simulation not yet supported!", &
+        call output_line ("Reference solution could not be calculated!", &
             OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlTargetFlow")
         call sys_halt()
       end if
@@ -3008,8 +3061,8 @@ contains
 !</subroutine>
 
     ! CAll the assembly routine to do that task.
-    call trhsevl_assembleRHS (rsettings%rglobalData, rrhs, rrhsDiscrete, &
-        rsettings%rsettingsOptControl)
+    call trhsevl_assembleRHS (rsettings%rglobalData, rsettings%rphysicsPrimal, &
+        rrhs, rrhsDiscrete, rsettings%rsettingsOptControl)
 
   end subroutine
 
@@ -3049,81 +3102,88 @@ contains
     type(t_spatialMatrixNonlinearData), target :: rnonlinearity
     real(dp), dimension(:), pointer :: p_DdataB,p_DdataX
     type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+
+  !    ! If the following constant is set from 1.0 to 0.0, the primal system is
+  !    ! decoupled from the dual system!
+  !    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
+  !    
+  !    ! If the following constant is set from 1.0 to 0.0, the dual system is
+  !    ! decoupled from the primal system!
+  !    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
+  !    
+  !    ! If the following parameter is set from 1.0 to 0.0, the time coupling
+  !    ! is disabled, resulting in a stationary simulation in every timestep.
+  !    real(DP), parameter :: dtimeCoupling = 1.0_DP
+
+      real(DP) :: dprimalDualCoupling,ddualPrimalCoupling,dtimeCoupling
+      
     
-!    ! If the following constant is set from 1.0 to 0.0, the primal system is
-!    ! decoupled from the dual system!
-!    real(DP), parameter :: dprimalDualCoupling = 1.0_DP
-!    
-!    ! If the following constant is set from 1.0 to 0.0, the dual system is
-!    ! decoupled from the primal system!
-!    real(DP), parameter :: ddualPrimalCoupling = 1.0_DP
-!    
-!    ! If the following parameter is set from 1.0 to 0.0, the time coupling
-!    ! is disabled, resulting in a stationary simulation in every timestep.
-!    real(DP), parameter :: dtimeCoupling = 1.0_DP
+    select case (rsettings%rphysicsPrimal%cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
 
-    real(DP) :: dprimalDualCoupling,ddualPrimalCoupling,dtimeCoupling
-    
-    dprimalDualCoupling = rsettings%rdebugFlags%dprimalDualCoupling
-    ddualPrimalCoupling = rsettings%rdebugFlags%ddualPrimalCoupling
-    dtimeCoupling = rsettings%rdebugFlags%dtimeCoupling
-    dtheta = rtimediscr%dtheta
-    
-    ! Create two temp vectors representing the first timestep.
-    p_rspaceDiscr => rx%p_rblockDiscr
-        
-    ! DEBUG!!!
-    call lsysbl_getbase_double (rb,p_DdataB)
-    call lsysbl_getbase_double (rx,p_DdataX)
+      dprimalDualCoupling = rsettings%rdebugFlags%dprimalDualCoupling
+      ddualPrimalCoupling = rsettings%rdebugFlags%ddualPrimalCoupling
+      dtimeCoupling = rsettings%rdebugFlags%dtimeCoupling
+      dtheta = rtimediscr%dtheta
+      
+      ! Create two temp vectors representing the first timestep.
+      p_rspaceDiscr => rx%p_rblockDiscr
+          
+      ! DEBUG!!!
+      call lsysbl_getbase_double (rb,p_DdataB)
+      call lsysbl_getbase_double (rx,p_DdataX)
 
-    ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
-    ! of the spatial matrix.
-    rnonlinearity%p_rvector1 => rx
-    rnonlinearity%p_rvector2 => rx
-    rnonlinearity%p_rvector3 => rx
+      ! Form a t_spatialMatrixNonlinearData structure that encapsules the nonlinearity
+      ! of the spatial matrix.
+      rnonlinearity%p_rvector1 => rx
+      rnonlinearity%p_rvector2 => rx
+      rnonlinearity%p_rvector3 => rx
 
-    ! The initial condition is implemented as:
-    !
-    !   (M/dt + A) y_0  =  b_0 := (M/dt + A) y^0
-    !
-    ! i.e. we take the solution vector of the 0th timestep. multiply it by the
-    ! (Navier--)Stokes equation and what we receive is the RHS for the
-    ! terminal condition. We only have to take care of bondary conditions.
+      ! The initial condition is implemented as:
+      !
+      !   (M/dt + A) y_0  =  b_0 := (M/dt + A) y^0
+      !
+      ! i.e. we take the solution vector of the 0th timestep. multiply it by the
+      ! (Navier--)Stokes equation and what we receive is the RHS for the
+      ! terminal condition. We only have to take care of bondary conditions.
 
-    call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
-    call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
-    
-    rnonlinearSpatialMatrix%iprimalSol = 2
+      call smva_getDiscrData (rsettings,rsettings%rfeHierPrimalDual%nlevels,rmatrixDiscr)
+      call smva_initNonlinMatrix (rnonlinearSpatialMatrix,rmatrixDiscr,rnonlinearity)
+      
+      rnonlinearSpatialMatrix%iprimalSol = 2
 
-    ! Disable the submatrices for the dual solution and the coupling.
-    ! We only want to generate the RHS for the primal solution.
-    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
-    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
-    call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
+      ! Disable the submatrices for the dual solution and the coupling.
+      ! We only want to generate the RHS for the primal solution.
+      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,1)
+      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,1,2)
+      call stlin_disableSubmatrix (rnonlinearSpatialMatrix,2,2)
 
-    ! Set up the matrix weights the matrix in the 0th timestep.
-    ! We set up only the stuff for the primal equation; for setting up
-    ! the RHS, there is no dual equation and also no coupling between the
-    ! primal and dual solutions.
-    bconvectionExplicit = rsettings%rsettingsOptControl%iconvectionExplicit .ne. 0
+      ! Set up the matrix weights the matrix in the 0th timestep.
+      ! We set up only the stuff for the primal equation; for setting up
+      ! the RHS, there is no dual equation and also no coupling between the
+      ! primal and dual solutions.
+      bconvectionExplicit = rsettings%rsettingsOptControl%iconvectionExplicit .ne. 0
 
-    call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
-    rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
-    rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
-    
-    if (.not. bconvectionExplicit) then
-      rnonlinearSpatialMatrix%Dgamma(1,1) = dtheta*real(1-rsettings%rphysicsPrimal%iequation,DP)
-    end if
+      call tdiscr_getTimestep(rtimediscr,1,dtstep=dtstep)
+      rnonlinearSpatialMatrix%Dalpha(1,1) = dtimeCoupling * 1.0_DP/dtstep
+      rnonlinearSpatialMatrix%Dtheta(1,1) = dtheta
+      
+      if (.not. bconvectionExplicit) then
+        rnonlinearSpatialMatrix%Dgamma(1,1) = dtheta*real(1-rsettings%rphysicsPrimal%cequation,DP)
+      end if
 
-    rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
-    rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
-        
-    ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1.
-    ! Clear the primal RHS for that purpose.
-    call lsyssc_clearVector(rb%RvectorBlock(1))
-    call lsyssc_clearVector(rb%RvectorBlock(2))
-    call lsyssc_clearVector(rb%RvectorBlock(3))
-    call smva_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
+      rnonlinearSpatialMatrix%Deta(1,1) = 1.0_DP
+      rnonlinearSpatialMatrix%Dtau(1,1) = 1.0_DP
+          
+      ! Create by substraction: rd = 0*rd - (- A11 x1) = A11 x1.
+      ! Clear the primal RHS for that purpose.
+      call lsyssc_clearVector(rb%RvectorBlock(1))
+      call lsyssc_clearVector(rb%RvectorBlock(2))
+      call lsyssc_clearVector(rb%RvectorBlock(3))
+      call smva_assembleDefect (rnonlinearSpatialMatrix,rx,rb,-1.0_DP)
+      
+    end select
     
   end subroutine
 

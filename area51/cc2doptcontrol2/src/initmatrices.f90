@@ -902,7 +902,7 @@ contains
 !      ! Now we can start to initialise the discretisation. At first, set up
 !      ! a block discretisation structure that specifies the blocks in the
 !      ! solution vector.
-!      call spdsc_get1LevelDiscretisation (&
+!      call spdsc_get1LevelDiscrNavSt2D (&
 !          rproblem%rboundary,p_rtriangulation,nequations,&
 !          rproblem%RlevelInfo(i)%rdiscretisation,rparlist=rproblem%rparamList)
 !

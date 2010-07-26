@@ -5853,10 +5853,11 @@ contains
             1.0_DP,0.0_DP,SPTID_FILTER_NONE)
         
         ! Filter the defect for boundary conditions in space and time.
-        !call tbc_implementInitCondDefect (&
-        !    p_DPA,p_rsubnode%rtempVectorSpace)
-        !call tbc_implementBCdefect (rsolverNode%p_roptcBDC,&
-        !    p_DPA,rsolverNode%p_rsettings%rglobalData,p_rsubnode%rtempVectorSpace)
+        !das hier aktivieren!
+        call tbc_implementInitCondDefect (&
+            p_DPA,p_rsubnode%rtempVectorSpace)
+        call tbc_implementBCdefect (rsolverNode%p_roptcBDC,&
+            p_DPA,rsolverNode%p_rsettings%rglobalData,p_rsubnode%rtempVectorSpace)
 
         if (bprec) then
           ! Perform preconditioning with the assigned preconditioning

@@ -127,7 +127,7 @@ contains
     ! Which type of problem to discretise? (Stokes, Navier-Stokes,...)
     call parlst_getvalue_int (rproblem%rparamList,'CC-PHYSICSPRIMAL',&
                               'iEquation',i1,0)
-    rproblem%rphysicsPrimal%iequation = i1
+    rproblem%rphysicsPrimal%cequation = i1
 
     ! Type of subproblem (gradient tensor, deformation tensor,...)
     call parlst_getvalue_int (rproblem%rparamList,'CC-PHYSICSPRIMAL',&

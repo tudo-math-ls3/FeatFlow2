@@ -24,25 +24,18 @@
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientMatrixSc.inc'
 !#
-!# 2.) user_coeff_RHS_x
-!#     -> Returns analytical values for the right hand side of the X-velocity
-!#        equation.
+!# 2.) user_coeff_RHS
+!#     -> Returns analytical values for the right hand side 
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 3.) user_coeff_RHS_y
-!#     -> Returns analytical values for the right hand side of the Y-velocity
-!#        equation.
+!# 3.) user_coeff_Target
+!#     -> Returns analytical values for the desired target flow 
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) user_coeff_TARGET_x
-!#     -> Returns analytical values for the desired flow field in X-direction.
-!#     -> Corresponds to the interface defined in the file
-!#        'intf_coefficientVectorSc.inc'
-!#
-!# 5.) user_coeff_TARGET_y
-!#     -> Returns analytical values for the desired flow field in Y-direction.
+!# 4.) user_coeff_Flow
+!#     -> Returns analytical values for the desired flow 
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
@@ -106,6 +99,8 @@ module user_callback
   use analyticsolution
   use spacetimevectors
   
+  use user_flows
+  
   implicit none
   
   private
@@ -113,17 +108,22 @@ module user_callback
   public :: user_initGlobalData
   public :: user_doneGlobalData
   public :: user_initCollectForAssembly
+  public :: user_initCollectForVecAssembly
   public :: user_doneCollectForAssembly
   public :: user_coeff_Stokes
   public :: user_coeff_Pressure
-  public :: user_coeff_RHSprimal_x
-  public :: user_coeff_RHSprimal_y
-  public :: user_coeff_RHSdual_x
-  public :: user_coeff_RHSdual_y
-  public :: user_coeff_TARGET_x
-  public :: user_coeff_TARGET_y
-  public :: user_ffunction_TargetX
-  public :: user_ffunction_TargetY
+  public :: user_coeff_RHS
+  public :: user_fct_Target
+  public :: user_coeff_Target
+  public :: user_coeff_Flow
+!  public :: user_coeff_RHSprimal_x
+!  public :: user_coeff_RHSprimal_y
+!  public :: user_coeff_RHSdual_x
+!  public :: user_coeff_RHSdual_y
+!  public :: user_coeff_TARGET_x
+!  public :: user_coeff_TARGET_y
+!  public :: user_ffunction_TargetX
+!  public :: user_ffunction_TargetY
   public :: user_getBoundaryValues
   public :: user_getBoundaryValuesFBC_2D
 
@@ -160,6 +160,7 @@ contains
     rglobalData%p_rsettingsOptControl => rsettings%rsettingsOptControl
     rglobalData%p_rrhs => rrhs
     rglobalData%p_rtargetFlow => rsettings%rsettingsOptControl%rtargetFlow
+    rglobalData%p_rphysics => rsettings%rphysicsPrimal
     
   end subroutine
   
@@ -229,6 +230,71 @@ contains
     rcollection%Dquickaccess(1) = dtime
     rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
+    rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
+
+  end subroutine
+  
+! ***************************************************************************
+
+!<subroutine>
+
+  subroutine user_initCollectForVecAssembly (rglobalData,iid,icomponent,dtime,rcollection)
+  
+!<description>
+  ! This subroutine is an auxiliary subroutine called by the framework
+  ! and has usually not to be changed by the user.
+  !
+  ! The subroutine prepares the collection rcollection to be passed to callback
+  ! routines for assembling boundary conditions or RHS vectors. It is
+  ! called directly prior to the assembly to store problem-specific information
+  ! in the quick-access arrays of the collection.
+  !
+  ! The routine is called prior to the assembly of a vector.
+  ! ivectype defines the type of vector which is to be assembled
+  ! while icomponent defines its component. The routine has to respect the current
+  ! physics setting in order to choose the correct function which is to be
+  ! assembled!
+!</description>
+
+!<input>
+  ! Global Id of the flow.
+  integer, intent(in) :: iid
+  
+  ! Component to be assembled.
+  integer, intent(in) :: icomponent
+
+  ! Current simulation time.
+  real(dp), intent(in) :: dtime
+!</input>
+
+!<inputoutput>
+  ! Global data.
+  type(t_globalData), intent(inout) :: rglobalData
+
+  ! Collection structure which is passed to the callback routines.
+  type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+
+!</subroutine>
+
+    real(DP) :: dreltime
+
+    ! Save the simulation time as well as the minimum and maximum time 
+    ! to the quick-access array of the collection,
+    ! so it can be accessed in the callback routines!
+    !
+    ! IquickAccess(1) = equation type
+    ! IquickAccess(2) = component to assemble
+    ! IquickAccess(3) = type of the flow
+    ! IquickAccess(4) = id of the flow
+    
+    rcollection%IquickAccess(1) = rglobalData%p_rphysics%cequation
+    rcollection%IquickAccess(2) = icomponent
+    rcollection%IquickAccess(3) = iid
+    rcollection%Dquickaccess(1) = dtime
+    rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
+    rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
+    rcollection%Dquickaccess(4) = rglobalData%p_rsettingsOptControl%dalphaC
 
   end subroutine
   
@@ -435,7 +501,7 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_RHSprimal_x (rdiscretisation,rform, &
+  subroutine user_coeff_RHS (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -448,8 +514,7 @@ contains
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form of the
-    ! X-velocity part of the right hand side vector.
+    ! the coefficients in front of the terms of the linear form.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -504,40 +569,77 @@ contains
     
   !</subroutine>
   
-    real(DP) :: dtime
-    integer :: ierror,iid
+    real(DP) :: dtime,dalpha
+    integer :: ierror,iid,cequation,icomponent
     real(DP), dimension(:,:), allocatable :: DvaluesAct
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
+      cequation = rcollection%Iquickaccess(1)
+      icomponent = rcollection%Iquickaccess(2)
+      iid = rcollection%Iquickaccess(3)
       dtime = rcollection%Dquickaccess(1)
-      iid = rcollection%Iquickaccess(1)
+      dalpha = rcollection%Dquickaccess(4)
     else
-      dtime = 0.0_DP
+      cequation = -1
       iid = 0
+      icomponent = 0
+      dtime = 0.0_DP
+      dalpha = 1.0_DP
     end if
-
+    
     ! Evaluate the RHS if possible.
     allocate(DvaluesAct(npointsPerElement,nelements))
-
-    select case (iid)
-    case (0)
-      ! Analytically given. =0.
-      Dcoefficients(:,:,:) = 0.0_DP
-      
-      ! Other cases may be defined here.
-      !Dcoefficients(1,:,:) = Dpoints(1,:,:)
-      !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-      !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
-      !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
-      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(-Dpoints(1,:,:))
-      
-      ! Without coupling:
-      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
-      !Dcoefficients (1,:,:) = Dpoints(1,:,:)
-    end select
     
+    select case (cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      
+      select case (icomponent)
+      case (1)
+        ! primal X-velocity
+        
+        select case (iid)
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (2)
+        ! primal Y-velocity
+
+        select case (iid)
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (4)
+        ! dual X-velocity
+        select case (iid)
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (5)
+        ! dual Y-velocity
+        select case (iid)
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+        
+      end select
+
+    end select
+
+    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)
     deallocate(DvaluesAct)
 
   end subroutine
@@ -546,111 +648,133 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_RHSprimal_y (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
+  subroutine user_fct_Target (cderivative, rdiscretisation, &
+                                   nelements, npointsPerElement, Dpoints, &
+                                   IdofsTest, rdomainIntSubset, &
+                                   Dvalues, rcollection)
     
+    use fsystem
     use basicgeometry
     use triangulation
-    use collection
     use scalarpde
     use domainintegration
+    use spatialdiscretisation
+    use collection
     
   !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form of the
-    ! Y-velocity part of the right hand side vector.
+    ! This subroutine is called during the calculation of errors. It computes
+    ! an analytically given target flow in a couple of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
     ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! simultaneously for all these points.
   !</description>
     
   !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
   !</input>
   
   !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>
-
-    real(DP) :: dtime
-    integer :: ierror,iid
+  
+    real(DP) :: dtime,dalpha
+    integer :: ierror,iid,cequation,icomponent
     real(DP), dimension(:,:), allocatable :: DvaluesAct
     
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
+      cequation = rcollection%Iquickaccess(1)
+      icomponent = rcollection%Iquickaccess(2)
+      iid = rcollection%Iquickaccess(3)
       dtime = rcollection%Dquickaccess(1)
-      iid = rcollection%Iquickaccess(1)
+      dalpha = rcollection%Dquickaccess(4)
     else
-      dtime = 0.0_DP
+      cequation = -1
       iid = 0
+      icomponent = 0
+      dtime = 0.0_DP
+      dalpha = 1.0_DP
     end if
-
-    ! Evaluate the RHS if possible.
-    allocate(DvaluesAct(npointsPerElement,nelements))
     
-    ! Evaluate using iid.
-    select case (iid)
-    case (0)
-      ! Analytically given. =0.
-      Dcoefficients(:,:,:) = 0.0_DP
+    select case (cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
       
-      ! Other cases may be defined here.
-      !Dcoefficients(1,:,:) = -Dpoints(2,:,:)
-      !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
-      !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
-      !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
-      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(Dpoints(2,:,:))
-      
-      ! Without coupling:
-      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
-      !Dcoefficients (1,:,:) = -Dpoints(2,:,:)
+      select case (icomponent)
+      case (1)
+        ! target X-velocity
+        
+        select case (iid)
+        case (4)
+          Dvalues(:,:) = fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+        case default
+          ! Analytically given. =0.
+          Dvalues(:,:) = 0.0_DP
+          
+        end select
+
+      case (2)
+        ! target Y-velocity
+
+        select case (iid)
+        case (4)
+          Dvalues(:,:) = fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          Dvalues(:,:) = 0.0_DP
+          
+        end select
+
+      end select
+
     end select
-    
-    deallocate(DvaluesAct)
 
   end subroutine
 
@@ -658,169 +782,7 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_RHSdual_x (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form of the
-    ! X-velocity part of the right hand side vector.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-  
-    ! Return the coefficients for the dual RHS.
-    ! These are normally =0.
-    !
-    ! The coefficients of the target flow will be added somewhere else!
-    Dcoefficients(:,:,:) = 0.0_DP
-      
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine user_coeff_RHSdual_y (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
-    
-    use basicgeometry
-    use triangulation
-    use collection
-    use scalarpde
-    use domainintegration
-    
-  !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form of the
-    ! Y-velocity part of the right hand side vector.
-    !
-    ! The routine accepts a set of elements and a set of points on these
-    ! elements (cubature points) in real coordinates.
-    ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
-  !</description>
-    
-  !<input>
-    ! The discretisation structure that defines the basic shape of the
-    ! triangulation with references to the underlying triangulation,
-    ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
-    
-    ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
-    
-    ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
-    
-    ! This is an array of all points on all the elements where coefficients
-    ! are needed.
-    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
-
-    ! This is a t_domainIntSubset structure specifying more detailed information
-    ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-    ! Optional: A collection structure to provide additional 
-    ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
-    
-  !</input>
-  
-  !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
-  !</output>
-    
-  !</subroutine>
-
-    ! Return the coefficients for the dual RHS.
-    ! These are normally =0.
-    !
-    ! The coefficients of the target flow will be added somewhere else!
-    Dcoefficients(:,:,:) = 0.0_DP
-
-  end subroutine
-
-  ! ***************************************************************************
-
-!<subroutine>
-
-  subroutine user_coeff_TARGET_x (rdiscretisation,rform, &
+  subroutine user_coeff_Target (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
                   IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
@@ -890,33 +852,66 @@ contains
     
   !</subroutine>
   
-    real(DP) :: dtime
+    real(DP) :: dtime,dalpha
+    integer :: ierror,iid,cequation,icomponent
     real(DP), dimension(:,:), allocatable :: DvaluesAct
-  
+    
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
+      cequation = rcollection%Iquickaccess(1)
+      icomponent = rcollection%Iquickaccess(2)
+      iid = rcollection%Iquickaccess(3)
       dtime = rcollection%Dquickaccess(1)
+      dalpha = rcollection%Dquickaccess(4)
     else
+      cequation = -1
+      iid = 0
+      icomponent = 0
       dtime = 0.0_DP
+      dalpha = 1.0_DP
     end if
-
-    Dcoefficients(:,:,:) = 0.0_DP
-
-    ! Call user_ffunction_TargetX to calculate the analytic function. Store the results
-    ! in  Dcoefficients(1,:,:).
+    
+    ! Evaluate the RHS if possible.
     allocate(DvaluesAct(npointsPerElement,nelements))
     
-    call user_ffunction_TargetX (DER_FUNC,rdiscretisation, &
-        nelements,npointsPerElement,Dpoints, &
-        IdofsTest,rdomainIntSubset,&
-        DvaluesAct,rcollection)
-    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)               
-               
-    deallocate(DvaluesAct)
+    select case (cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      
+      select case (icomponent)
+      case (1)
+        ! target X-velocity
+        
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesZ4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
 
-    ! Without coupling:
-    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(Dpoints(1,:,:))
+      case (2)
+        ! target Y-velocity
+
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesZ4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      end select
+
+    end select
+
+    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)
+    deallocate(DvaluesAct)
 
   end subroutine
 
@@ -924,9 +919,9 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_TARGET_y (rdiscretisation,rform, &
+  subroutine user_coeff_Flow (rdiscretisation,rform, &
                   nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset,&
+                  IdofsTest,rdomainIntSubset, &
                   Dcoefficients,rcollection)
     
     use basicgeometry
@@ -937,9 +932,9 @@ contains
     
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
-    ! the coefficients in front of the terms of the linear form of the
-    ! target X-velocity, i.e. the desired flow field z, which enters the dual
-    ! equation.
+    ! the values of an analytically given flow in a set of points.
+    ! The routine is usually used for comparing a solution to a reference
+    ! solution during the postprocessing.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
@@ -994,272 +989,947 @@ contains
     
   !</subroutine>
   
-    real(DP) :: dtime
+    real(DP) :: dtime,dalpha
+    integer :: ierror,iid,cequation,icomponent
     real(DP), dimension(:,:), allocatable :: DvaluesAct
-  
+    
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
     if (present(rcollection)) then
+      cequation = rcollection%Iquickaccess(1)
+      icomponent = rcollection%Iquickaccess(2)
+      iid = rcollection%Iquickaccess(3)
       dtime = rcollection%Dquickaccess(1)
+      dalpha = rcollection%Dquickaccess(4)
     else
+      cequation = -1
+      iid = 0
+      icomponent = 0
       dtime = 0.0_DP
+      dalpha = 1.0_DP
     end if
-
-    Dcoefficients(:,:,:) = 0.0_DP
-
-    ! Call user_ffunction_TargetX to calculate the analytic function. Store the results
-    ! in  Dcoefficients(1,:,:).
+    
+    ! Evaluate the RHS if possible.
     allocate(DvaluesAct(npointsPerElement,nelements))
     
-    call user_ffunction_TargetY (DER_FUNC,rdiscretisation, &
-        nelements,npointsPerElement,Dpoints, &
-        IdofsTest,rdomainIntSubset,&
-        DvaluesAct,rcollection)
-    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)               
-               
+    select case (cequation)
+    case (0,1)
+      ! Stokes, Navier-Stokes, 2D
+      
+      select case (icomponent)
+      case (1)
+        ! primal X-velocity
+        
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesY4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (2)
+        ! primal Y-velocity
+
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesY4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (3)
+        ! primal pressure
+
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesP4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (4)
+        ! dual X-velocity
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (5)
+        ! dual Y-velocity
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesLambda4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+
+      case (6)
+        ! dual pressure
+        select case (iid)
+        case (4)
+          DvaluesAct(:,:) = fct_stokesXi4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+        case default
+          ! Analytically given. =0.
+          DvaluesAct(:,:) = 0.0_DP
+          
+        end select
+        
+      end select
+
+    end select
+
+    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)
     deallocate(DvaluesAct)
 
-    ! Without coupling:
-    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(-Dpoints(2,:,:))
-               
   end subroutine
 
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine user_ffunction_TargetX (cderivative,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Dvalues,rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
-  
-!<description>
-  ! This routine calculates the X-contribution of the target function $z$
-  ! in the optimal control problem.
-  !
-  ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
-  ! According to the terms in the linear form, the routine has to compute
-  ! simultaneously for all these points.
-!</description>
-  
-!<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-  ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
-  
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-  ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
-  
-!</input>
-
-!<output>
-  ! This array has to receive the values of the (analytical) function
-  ! in all the points specified in Dpoints, or the appropriate derivative
-  ! of the function, respectively, according to cderivative.
-  !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(out) :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    real(DP) :: dtime,dtimeMax
-    integer :: ieltype,ierror,iid
-    
-    ! DEBUG!!!
-    ! real(DP), dimension(:), pointer :: p_Ddata
-
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
-      dtimeMax = rcollection%Dquickaccess(3)
-      iid = rcollection%Iquickaccess(2)
-    else
-      dtime = 0.0_DP
-      dtimeMax = 0.0_DP
-    end if
-    
-    ! Evaluate using iid.
-    select case (iid)
-    case (0)    
-
-      ! Analytically given target flow
-  
-      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
-      !Dvalues(:,:) = Dvalues(:,:)*dtime
-      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
-      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * Dpoints(1,:,:)
-      Dvalues(:,:) = & ! 1._DP/50._DP * Dpoints(1,:,:) + &
-                    (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
-      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
-      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * Dpoints(1,:,:)
-      !Dvalues(:,:) = 0.0_DP
-      !IF (dtime .gt. 10._DP) THEN
-      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
-      !END IF
-      Dvalues(:,:) = Dpoints(1,:,:)
-      
-      !Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) * dtime
-      !Dvalues (:,:) = 2.0_DP/3.0_DP
-      Dvalues (:,:) = 0.3_DP * 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
-      
-    case default
-      Dvalues(:,:) = 0.0_DP
-    end select
-  
-  end subroutine
-
-  ! ***************************************************************************
-  
-!<subroutine>
-
-  subroutine user_ffunction_TargetY (cderivative,rdiscretisation, &
-                nelements,npointsPerElement,Dpoints, &
-                IdofsTest,rdomainIntSubset,&
-                Dvalues,rcollection)
-  
-  use basicgeometry
-  use triangulation
-  use collection
-  use scalarpde
-  use domainintegration
-  
-!<description>
-  ! This routine calculates the Y-contribution of the target function $z$
-  ! in the optimal control problem.
-  !
-  ! The routine accepts a set of elements and a set of points on these
-  ! elements (cubature points) in in real coordinates.
-  ! According to the terms in the linear form, the routine has to compute
-  ! simultaneously for all these points.
-!</description>
-  
-!<input>
-  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
-  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
-  ! The result must be written to the Dvalue-array below.
-  integer, intent(IN)                                         :: cderivative
-
-  ! The discretisation structure that defines the basic shape of the
-  ! triangulation with references to the underlying triangulation,
-  ! analytic boundary boundary description etc.
-  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-  
-  ! Number of elements, where the coefficients must be computed.
-  integer, intent(IN)                                         :: nelements
-  
-  ! Number of points per element, where the coefficients must be computed
-  integer, intent(IN)                                         :: npointsPerElement
-  
-  ! This is an array of all points on all the elements where coefficients
-  ! are needed.
-  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
-  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
-
-  ! An array accepting the DOF's on all elements trial in the trial space.
-  ! DIMENSION(\#local DOF's in trial space,Number of elements)
-  integer, dimension(:,:), intent(IN) :: IdofsTest
-
-  ! This is a t_domainIntSubset structure specifying more detailed information
-  ! about the element set that is currently being integrated.
-  ! It's usually used in more complex situations (e.g. nonlinear matrices).
-  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
-
-  ! Optional: A collection structure to provide additional 
-  ! information to the coefficient routine. 
-  type(t_collection), intent(INOUT), optional      :: rcollection
-  
-!</input>
-
-!<output>
-  ! This array has to receive the values of the (analytical) function
-  ! in all the points specified in Dpoints, or the appropriate derivative
-  ! of the function, respectively, according to cderivative.
-  !   DIMENSION(npointsPerElement,nelements)
-  real(DP), dimension(:,:), intent(out) :: Dvalues
-!</output>
-  
-!</subroutine>
-
-    real(DP) :: dtime,dtimeMax
-    integer :: ieltype,ierror,iid
-    
-    ! DEBUG!!!
-    ! real(DP), dimension(:), pointer :: p_Ddata
-
-    ! In a nonstationary simulation, one can get the simulation time
-    ! with the quick-access array of the collection.
-    if (present(rcollection)) then
-      dtime = rcollection%Dquickaccess(1)
-      dtimeMax = rcollection%Dquickaccess(3)
-      iid = rcollection%Iquickaccess(2)
-    else
-      dtime = 0.0_DP
-      dtimeMax = 0.0_DP
-    end if
-    
-    ! Evaluate using iid.
-    select case (iid)
-    case (0)    
-      ! Analytically given target flow
-  
-      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
-      !Dvalues(:,:) = Dvalues(:,:)*dtime
-      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * (-Dpoints(2,:,:))
-      Dvalues(:,:) = & !1._DP/50._DP * (-Dpoints(2,:,:)) + &
-                    (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
-      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * (-Dpoints(2,:,:))
-      !Dvalues(:,:) = 0.0_DP
-      !IF (dtime .gt. 10._DP) THEN
-      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
-      !END IF
-      Dvalues(:,:) = (-Dpoints(2,:,:))
-      
-      Dvalues(:,:) = 0.0_DP
-      
-    case default
-      Dvalues(:,:) = 0.0_DP
-    end select
-
-  end subroutine
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_RHSprimal_x (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset, &
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! X-velocity part of the right hand side vector.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!  
+!    real(DP) :: dtime
+!    integer :: ierror,iid
+!    real(DP), dimension(:,:), allocatable :: DvaluesAct
+!    
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!      iid = rcollection%Iquickaccess(1)
+!    else
+!      dtime = 0.0_DP
+!      iid = 0
+!    end if
+!
+!    ! Evaluate the RHS if possible.
+!    allocate(DvaluesAct(npointsPerElement,nelements))
+!
+!    select case (iid)
+!    case (0)
+!      ! Analytically given. =0.
+!      Dcoefficients(:,:,:) = 0.0_DP
+!      
+!      ! Other cases may be defined here.
+!      !Dcoefficients(1,:,:) = Dpoints(1,:,:)
+!      !Dcoefficients(1,:,:) = -18.0*sin(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+!      !                     *sin(3.0*SYS_PI*Dpoints(2,:,:)) &
+!      !                     + .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
+!      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(-Dpoints(1,:,:))
+!      
+!      ! Without coupling:
+!      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(Dpoints(1,:,:))
+!      !Dcoefficients (1,:,:) = Dpoints(1,:,:)
+!    end select
+!    
+!    deallocate(DvaluesAct)
+!
+!  end subroutine
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_RHSprimal_y (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset, &
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! Y-velocity part of the right hand side vector.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!
+!    real(DP) :: dtime
+!    integer :: ierror,iid
+!    real(DP), dimension(:,:), allocatable :: DvaluesAct
+!    
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!      iid = rcollection%Iquickaccess(1)
+!    else
+!      dtime = 0.0_DP
+!      iid = 0
+!    end if
+!
+!    ! Evaluate the RHS if possible.
+!    allocate(DvaluesAct(npointsPerElement,nelements))
+!    
+!    ! Evaluate using iid.
+!    select case (iid)
+!    case (0)
+!      ! Analytically given. =0.
+!      Dcoefficients(:,:,:) = 0.0_DP
+!      
+!      ! Other cases may be defined here.
+!      !Dcoefficients(1,:,:) = -Dpoints(2,:,:)
+!      !Dcoefficients(1,:,:) = -18.0*cos(3.0*SYS_PI*Dpoints(1,:,:))*SYS_PI**2 &
+!      !                     *cos(3.0*SYS_PI*Dpoints(2,:,:)) &
+!      !                     - .5*SYS_PI*cos(.5*SYS_PI*(Dpoints(1,:,:)-Dpoints(2,:,:)))
+!      !Dcoefficients (1,:,:) = -(1./10.0_DP)*(Dpoints(2,:,:))
+!      
+!      ! Without coupling:
+!      !Dcoefficients (1,:,:) = (1/5.0_DP - dtime/50.0_DP)*(-Dpoints(2,:,:))
+!      !Dcoefficients (1,:,:) = -Dpoints(2,:,:)
+!    end select
+!    
+!    deallocate(DvaluesAct)
+!
+!  end subroutine
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_RHSdual_x (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset, &
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! X-velocity part of the right hand side vector.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!  
+!    ! Return the coefficients for the dual RHS.
+!    ! These are normally =0.
+!    !
+!    ! The coefficients of the target flow will be added somewhere else!
+!    Dcoefficients(:,:,:) = 0.0_DP
+!      
+!  end subroutine
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_RHSdual_y (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset, &
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! Y-velocity part of the right hand side vector.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!
+!    ! Return the coefficients for the dual RHS.
+!    ! These are normally =0.
+!    !
+!    ! The coefficients of the target flow will be added somewhere else!
+!    Dcoefficients(:,:,:) = 0.0_DP
+!
+!  end subroutine
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_TARGET_x (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset, &
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! target X-velocity, i.e. the desired flow field z, which enters the dual
+!    ! equation.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!  
+!    real(DP) :: dtime
+!    real(DP), dimension(:,:), allocatable :: DvaluesAct
+!  
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!    else
+!      dtime = 0.0_DP
+!    end if
+!
+!    Dcoefficients(:,:,:) = 0.0_DP
+!
+!    ! Call user_ffunction_TargetX to calculate the analytic function. Store the results
+!    ! in  Dcoefficients(1,:,:).
+!    allocate(DvaluesAct(npointsPerElement,nelements))
+!    
+!    call user_ffunction_TargetX (DER_FUNC,rdiscretisation, &
+!        nelements,npointsPerElement,Dpoints, &
+!        IdofsTest,rdomainIntSubset,&
+!        DvaluesAct,rcollection)
+!    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)               
+!               
+!    deallocate(DvaluesAct)
+!
+!    ! Without coupling:
+!    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(Dpoints(1,:,:))
+!
+!  end subroutine
+!
+!  ! ***************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine user_coeff_TARGET_y (rdiscretisation,rform, &
+!                  nelements,npointsPerElement,Dpoints, &
+!                  IdofsTest,rdomainIntSubset,&
+!                  Dcoefficients,rcollection)
+!    
+!    use basicgeometry
+!    use triangulation
+!    use collection
+!    use scalarpde
+!    use domainintegration
+!    
+!  !<description>
+!    ! This subroutine is called during the vector assembly. It has to compute
+!    ! the coefficients in front of the terms of the linear form of the
+!    ! target X-velocity, i.e. the desired flow field z, which enters the dual
+!    ! equation.
+!    !
+!    ! The routine accepts a set of elements and a set of points on these
+!    ! elements (cubature points) in real coordinates.
+!    ! According to the terms in the linear form, the routine has to compute
+!    ! simultaneously for all these points and all the terms in the linear form
+!    ! the corresponding coefficients in front of the terms.
+!  !</description>
+!    
+!  !<input>
+!    ! The discretisation structure that defines the basic shape of the
+!    ! triangulation with references to the underlying triangulation,
+!    ! analytic boundary boundary description etc.
+!    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!    
+!    ! The linear form which is currently to be evaluated:
+!    type(t_linearForm), intent(IN)                              :: rform
+!    
+!    ! Number of elements, where the coefficients must be computed.
+!    integer, intent(IN)                                         :: nelements
+!    
+!    ! Number of points per element, where the coefficients must be computed
+!    integer, intent(IN)                                         :: npointsPerElement
+!    
+!    ! This is an array of all points on all the elements where coefficients
+!    ! are needed.
+!    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!    ! DIMENSION(dimension,npointsPerElement,nelements)
+!    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!    ! An array accepting the DOF's on all elements trial in the trial space.
+!    ! DIMENSION(\#local DOF's in test space,nelements)
+!    integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!    ! This is a t_domainIntSubset structure specifying more detailed information
+!    ! about the element set that is currently being integrated.
+!    ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!    ! Optional: A collection structure to provide additional 
+!    ! information to the coefficient routine. 
+!    type(t_collection), intent(INOUT), optional      :: rcollection
+!    
+!  !</input>
+!  
+!  !<output>
+!    ! A list of all coefficients in front of all terms in the linear form -
+!    ! for all given points on all given elements.
+!    !   DIMENSION(itermCount,npointsPerElement,nelements)
+!    ! with itermCount the number of terms in the linear form.
+!    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+!  !</output>
+!    
+!  !</subroutine>
+!  
+!    real(DP) :: dtime
+!    real(DP), dimension(:,:), allocatable :: DvaluesAct
+!  
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!    else
+!      dtime = 0.0_DP
+!    end if
+!
+!    Dcoefficients(:,:,:) = 0.0_DP
+!
+!    ! Call user_ffunction_TargetX to calculate the analytic function. Store the results
+!    ! in  Dcoefficients(1,:,:).
+!    allocate(DvaluesAct(npointsPerElement,nelements))
+!    
+!    call user_ffunction_TargetY (DER_FUNC,rdiscretisation, &
+!        nelements,npointsPerElement,Dpoints, &
+!        IdofsTest,rdomainIntSubset,&
+!        DvaluesAct,rcollection)
+!    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)               
+!               
+!    deallocate(DvaluesAct)
+!
+!    ! Without coupling:
+!    !Dcoefficients (1,:,:) = - (1/5.0_DP - (10.-dtime)/50.0_DP)*(-Dpoints(2,:,:))
+!               
+!  end subroutine
+!
+!  ! ***************************************************************************
+!  
+!!<subroutine>
+!
+!  subroutine user_ffunction_TargetX (cderivative,rdiscretisation, &
+!                nelements,npointsPerElement,Dpoints, &
+!                IdofsTest,rdomainIntSubset,&
+!                Dvalues,rcollection)
+!  
+!  use basicgeometry
+!  use triangulation
+!  use collection
+!  use scalarpde
+!  use domainintegration
+!  
+!!<description>
+!  ! This routine calculates the X-contribution of the target function $z$
+!  ! in the optimal control problem.
+!  !
+!  ! The routine accepts a set of elements and a set of points on these
+!  ! elements (cubature points) in in real coordinates.
+!  ! According to the terms in the linear form, the routine has to compute
+!  ! simultaneously for all these points.
+!!</description>
+!  
+!!<input>
+!  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+!  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+!  ! The result must be written to the Dvalue-array below.
+!  integer, intent(IN)                                         :: cderivative
+!
+!  ! The discretisation structure that defines the basic shape of the
+!  ! triangulation with references to the underlying triangulation,
+!  ! analytic boundary boundary description etc.
+!  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!  
+!  ! Number of elements, where the coefficients must be computed.
+!  integer, intent(IN)                                         :: nelements
+!  
+!  ! Number of points per element, where the coefficients must be computed
+!  integer, intent(IN)                                         :: npointsPerElement
+!  
+!  ! This is an array of all points on all the elements where coefficients
+!  ! are needed.
+!  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+!  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!  ! An array accepting the DOF's on all elements trial in the trial space.
+!  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+!  integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!  ! This is a t_domainIntSubset structure specifying more detailed information
+!  ! about the element set that is currently being integrated.
+!  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!  ! Optional: A collection structure to provide additional 
+!  ! information to the coefficient routine. 
+!  type(t_collection), intent(INOUT), optional      :: rcollection
+!  
+!!</input>
+!
+!!<output>
+!  ! This array has to receive the values of the (analytical) function
+!  ! in all the points specified in Dpoints, or the appropriate derivative
+!  ! of the function, respectively, according to cderivative.
+!  !   DIMENSION(npointsPerElement,nelements)
+!  real(DP), dimension(:,:), intent(out) :: Dvalues
+!!</output>
+!  
+!!</subroutine>
+!
+!    real(DP) :: dtime,dtimeMax
+!    integer :: ieltype,ierror,iid
+!    
+!    ! DEBUG!!!
+!    ! real(DP), dimension(:), pointer :: p_Ddata
+!
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!      dtimeMax = rcollection%Dquickaccess(3)
+!      iid = rcollection%Iquickaccess(2)
+!    else
+!      dtime = 0.0_DP
+!      dtimeMax = 0.0_DP
+!    end if
+!    
+!    ! Evaluate using iid.
+!    select case (iid)
+!    case (0)    
+!
+!      ! Analytically given target flow
+!  
+!      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+!      !Dvalues(:,:) = Dvalues(:,:)*dtime
+!      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
+!      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * Dpoints(1,:,:)
+!      Dvalues(:,:) = & ! 1._DP/50._DP * Dpoints(1,:,:) + &
+!                    (-(dtime**2)/100._DP + dtime/5._DP) * Dpoints(1,:,:)
+!      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
+!      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * Dpoints(1,:,:)
+!      !Dvalues(:,:) = 0.0_DP
+!      !IF (dtime .gt. 10._DP) THEN
+!      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * Dpoints(1,:,:)
+!      !END IF
+!      Dvalues(:,:) = Dpoints(1,:,:)
+!      
+!      !Dvalues (:,:) = 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) * dtime
+!      !Dvalues (:,:) = 2.0_DP/3.0_DP
+!      Dvalues (:,:) = 0.3_DP * 4.0_DP * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+!      
+!    case default
+!      Dvalues(:,:) = 0.0_DP
+!    end select
+!  
+!  end subroutine
+!
+!  ! ***************************************************************************
+!  
+!!<subroutine>
+!
+!  subroutine user_ffunction_TargetY (cderivative,rdiscretisation, &
+!                nelements,npointsPerElement,Dpoints, &
+!                IdofsTest,rdomainIntSubset,&
+!                Dvalues,rcollection)
+!  
+!  use basicgeometry
+!  use triangulation
+!  use collection
+!  use scalarpde
+!  use domainintegration
+!  
+!!<description>
+!  ! This routine calculates the Y-contribution of the target function $z$
+!  ! in the optimal control problem.
+!  !
+!  ! The routine accepts a set of elements and a set of points on these
+!  ! elements (cubature points) in in real coordinates.
+!  ! According to the terms in the linear form, the routine has to compute
+!  ! simultaneously for all these points.
+!!</description>
+!  
+!!<input>
+!  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+!  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+!  ! The result must be written to the Dvalue-array below.
+!  integer, intent(IN)                                         :: cderivative
+!
+!  ! The discretisation structure that defines the basic shape of the
+!  ! triangulation with references to the underlying triangulation,
+!  ! analytic boundary boundary description etc.
+!  type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
+!  
+!  ! Number of elements, where the coefficients must be computed.
+!  integer, intent(IN)                                         :: nelements
+!  
+!  ! Number of points per element, where the coefficients must be computed
+!  integer, intent(IN)                                         :: npointsPerElement
+!  
+!  ! This is an array of all points on all the elements where coefficients
+!  ! are needed.
+!  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+!  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+!  real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+!
+!  ! An array accepting the DOF's on all elements trial in the trial space.
+!  ! DIMENSION(\#local DOF's in trial space,Number of elements)
+!  integer, dimension(:,:), intent(IN) :: IdofsTest
+!
+!  ! This is a t_domainIntSubset structure specifying more detailed information
+!  ! about the element set that is currently being integrated.
+!  ! It's usually used in more complex situations (e.g. nonlinear matrices).
+!  type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+!
+!  ! Optional: A collection structure to provide additional 
+!  ! information to the coefficient routine. 
+!  type(t_collection), intent(INOUT), optional      :: rcollection
+!  
+!!</input>
+!
+!!<output>
+!  ! This array has to receive the values of the (analytical) function
+!  ! in all the points specified in Dpoints, or the appropriate derivative
+!  ! of the function, respectively, according to cderivative.
+!  !   DIMENSION(npointsPerElement,nelements)
+!  real(DP), dimension(:,:), intent(out) :: Dvalues
+!!</output>
+!  
+!!</subroutine>
+!
+!    real(DP) :: dtime,dtimeMax
+!    integer :: ieltype,ierror,iid
+!    
+!    ! DEBUG!!!
+!    ! real(DP), dimension(:), pointer :: p_Ddata
+!
+!    ! In a nonstationary simulation, one can get the simulation time
+!    ! with the quick-access array of the collection.
+!    if (present(rcollection)) then
+!      dtime = rcollection%Dquickaccess(1)
+!      dtimeMax = rcollection%Dquickaccess(3)
+!      iid = rcollection%Iquickaccess(2)
+!    else
+!      dtime = 0.0_DP
+!      dtimeMax = 0.0_DP
+!    end if
+!    
+!    ! Evaluate using iid.
+!    select case (iid)
+!    case (0)    
+!      ! Analytically given target flow
+!  
+!      !Dvalues(:,:) = Dvalues(:,:)*dtime/dtimeMax
+!      !Dvalues(:,:) = Dvalues(:,:)*dtime
+!      !Dvalues(:,:) = (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
+!      !Dvalues(:,:) = ((10._DP-dtime)/50._DP - 1._DP/5._DP) * (-Dpoints(2,:,:))
+!      Dvalues(:,:) = & !1._DP/50._DP * (-Dpoints(2,:,:)) + &
+!                    (-(dtime**2)/100._DP + dtime/5._DP) * (-Dpoints(2,:,:))
+!      !Dvalues(:,:) = ( ((10._DP-dtime)/50._DP - 1._DP/5._DP) + &
+!      !                 (-(dtime**2)/100._DP + dtime/5._DP)) * (-Dpoints(2,:,:))
+!      !Dvalues(:,:) = 0.0_DP
+!      !IF (dtime .gt. 10._DP) THEN
+!      !  Dvalues(:,:) = (-(10._DP**2)/100._DP + 10._DP/5._DP) * (-Dpoints(2,:,:))
+!      !END IF
+!      Dvalues(:,:) = (-Dpoints(2,:,:))
+!      
+!      Dvalues(:,:) = 0.0_DP
+!      
+!    case default
+!      Dvalues(:,:) = 0.0_DP
+!    end select
+!
+!  end subroutine
 
   ! ***************************************************************************
   ! Values on the real boundary.
@@ -1290,6 +1960,8 @@ contains
 !<input>
   ! Name of the expression to be evaluated. This name is configured in the
   ! DAT file for the boundary conditions.
+  ! If this is ="", the analytic function is defined by the tags
+  ! in the collection.
   character(LEN=*), intent(IN) :: sexpressionName
   
   ! Solution component that is currently being processed. 
@@ -1320,21 +1992,55 @@ contains
   
 !</subroutine>
 
-    ! REAL(DP) :: dtime
-    ! REAL(DP) :: dx,dy
-    !
-    ! To get the X/Y-coordinates of the boundary point, use:
-    !
-    ! CALL boundary_getCoords(rdiscretisation%p_rboundary, &
-    !     rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
-    !
+    real(DP) :: dtime,dalpha
+    integer :: ierror,iid,cequation
+    real(DP), dimension(:,:), allocatable :: DvaluesAct
+    real(DP) :: dx,dy
+    
     ! In a nonstationary simulation, one can get the simulation time
     ! with the quick-access array of the collection.
-    !
-    ! dtime = 0.0_DP
-    ! IF (PRESENT(rcollection)) dtime = rcollection%Dquickaccess(1)
+    if (present(rcollection)) then
+      cequation = rcollection%Iquickaccess(1)
+      iid = rcollection%Iquickaccess(3)
+      dtime = rcollection%Dquickaccess(1)
+      dalpha = rcollection%Dquickaccess(4)
+    else
+      cequation = -1
+      iid = 0
+      dtime = 0.0_DP
+      dalpha = 1.0_DP
+    end if
 
-    dvalue = 0.0_DP
+    if (sexpressionName .ne. "") then
+    
+      ! Value defined by expression name.
+      ! Currently only =0.
+      dvalue = 0.0_DP
+      
+    else
+      
+      ! Value defined by reference flow, identified by iid.
+      call boundary_getCoords(rdiscretisation%p_rboundary, &
+          rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
+
+      select case (cequation)
+      case (0,1)
+        select case (iid)
+        case (4)
+          select case (icomponent)
+          case (1)
+            dvalue = fct_stokesY4_x (dx,dy,dtime,dalpha)
+          case (2)
+            dvalue = fct_stokesY4_y (dx,dy,dtime,dalpha)
+          case (4)
+            dvalue = fct_stokesLambda4_x (dx,dy,dtime,dalpha)
+          case (5)
+            dvalue = fct_stokesLambda4_y (dx,dy,dtime,dalpha)
+          end select
+        end select
+      end select
+
+    end if
 
   end subroutine
 

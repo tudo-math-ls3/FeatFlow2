@@ -1214,6 +1214,7 @@ contains
       
         ! This is the UMFPACK solver. Very easy to initialise. No parameters at all.
         call linsol_initUMFPACK4 (p_rsolverNode)
+        !p_rsolverNode%p_rsubnodeUmfpack4%imatrixDebugOutput = 1
       
       case (1)
       

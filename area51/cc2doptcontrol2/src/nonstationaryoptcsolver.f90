@@ -196,7 +196,7 @@ contains
     call output_line ('Reading target flow...')
 
     ! Read the target flow -- stationary or nonstationary
-    call cc_initTargetFlow (rproblem,&
+    call cc_initTargetFlowNavSt2D (rproblem,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeInit,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%dtimeMax,&
         RspaceTimeDiscr(TIMENLMAX)%rtimeDiscr%nintervals)

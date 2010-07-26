@@ -56,7 +56,7 @@ module optcanalysis
   
   private
   
-  public :: optcana_stationaryFunctional
+  !public :: optcana_stationaryFunctional
   public :: optcana_nonstatFunctional
   public :: optcana_analyticalError
   
@@ -99,120 +99,120 @@ contains
 
   end subroutine
 
+!!******************************************************************************
+!
+!!<subroutine>
+!
+!  subroutine optcana_stationaryFunctional (rglobalData,rsolution,rreference,dalpha,Derror)
+!
+!!<description>
+!  ! This function calculates the value of the functional which is to be
+!  ! minimised in the stationary optimal control problem.
+!  ! The functional is defined as
+!  !   $$ J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2 $$
+!  ! over a spatial domain $\Omega$.
+!  !
+!  ! For this purpose, the routine evaluates the user-defined callback functions 
+!  ! user_ffunction_TargetX and user_ffunction_TargetY. The collection must be initialised
+!  ! for postprocessing before calling his routine!
+!!</description>
+!  
+!!<input>
+!  ! Global settings for callback routines.
+!  type(t_globalData), intent(inout), target :: rglobalData
+!
+!  ! Solution vector to compute the norm/error from.
+!  type(t_vectorBlock), intent(IN) :: rsolution
+!  
+!  ! Analytic solution defining the reference function z.
+!  type(t_anSolution), intent(inout) :: rreference
+!
+!  ! Regularisation parameter $\alpha$.
+!  real(DP), intent(IN) :: dalpha
+!!</input>
+!
+!!<output>
+!  ! Returns information about the error.
+!  ! Derror(1) = ||y-z||_{L^2}.
+!  ! Derror(2) = ||u||.
+!  ! Derror(3) = J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2.
+!  ! Norm of the error functional.
+!  real(DP), dimension(:), intent(OUT) :: Derror
+!!</output>
+!  
+!!</subroutine>
+!    
+!    ! local variables
+!    real(DP),dimension(2) :: Derr
+!    type(t_collection) :: rcollection
+!    
+!    ! Initialise the collection for the assembly process with callback routines.
+!    ! This stores the simulation time in the collection and sets the
+!    ! current subvector z for the callback routines.
+!    call collct_init(rcollection)
+!
+!    ! Perform error analysis to calculate and add 1/2||y-z||_{L^2}.
+!    if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+!      
+!      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
+!      call user_initCollectForAssembly (rglobalData,0.0_DP,rcollection)
+!
+!      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+!                        user_ffunction_TargetX,rcollection)
+!
+!      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+!                        user_ffunction_TargetY,rcollection)
+!          
+!      call user_doneCollectForAssembly (rglobalData,rcollection)
+!      
+!    else
+!    
+!      ! Use our standard implementation to evaluate the functional.
+!      call ansol_prepareEval (rreference,rcollection,"SOL",0.0_DP)
+!
+!      ! X-velocity
+!      rcollection%IquickAccess(1) = 1
+!      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+!          optcana_evalFunction,rcollection)
+!
+!      ! Y-velocity
+!      rcollection%IquickAccess(1) = 2
+!      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+!          optcana_evalFunction,rcollection)
+!          
+!      call ansol_doneEval (rcollection,"SOL")
+!      
+!    end if
+!                       
+!    Derror(1) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+!    Derror(2) = 0.0_DP
+!    
+!    ! Calculate \alpha/2||u||^2.
+!    if (dalpha .ne. 0.0_DP) then
+!      call pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
+!
+!      call pperr_scalar (rsolution%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
+!                         
+!      Derror(2) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
+!      
+!      ! Because of u=-lambda/alpha we have:
+!      !    alpha/2 ||u||^2 = alpha/2 ||lambda/alpha||^2 = 1/(2*alpha) ||lambda||^2
+!    end if
+!    
+!    Derror(3) = 0.5_DP * Derror(1)+(0.5_DP/dalpha) * Derror(2)
+!    Derror(1) = sqrt(Derror(1))
+!    Derror(2) = sqrt(Derror(2))
+!    
+!    ! Clean up    
+!    call collct_done(rcollection)
+!    
+!  end subroutine
+
 !******************************************************************************
 
 !<subroutine>
 
-  subroutine optcana_stationaryFunctional (rglobalData,rsolution,rreference,dalpha,Derror)
-
-!<description>
-  ! This function calculates the value of the functional which is to be
-  ! minimised in the stationary optimal control problem.
-  ! The functional is defined as
-  !   $$ J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2 $$
-  ! over a spatial domain $\Omega$.
-  !
-  ! For this purpose, the routine evaluates the user-defined callback functions 
-  ! user_ffunction_TargetX and user_ffunction_TargetY. The collection must be initialised
-  ! for postprocessing before calling his routine!
-!</description>
-  
-!<input>
-  ! Global settings for callback routines.
-  type(t_globalData), intent(inout), target :: rglobalData
-
-  ! Solution vector to compute the norm/error from.
-  type(t_vectorBlock), intent(IN) :: rsolution
-  
-  ! Analytic solution defining the reference function z.
-  type(t_anSolution), intent(inout) :: rreference
-
-  ! Regularisation parameter $\alpha$.
-  real(DP), intent(IN) :: dalpha
-!</input>
-
-!<output>
-  ! Returns information about the error.
-  ! Derror(1) = ||y-z||_{L^2}.
-  ! Derror(2) = ||u||.
-  ! Derror(3) = J(y,u) = 1/2||y-z||_{L^2}^2  + \alpha/2||u||^2.
-  ! Norm of the error functional.
-  real(DP), dimension(:), intent(OUT) :: Derror
-!</output>
-  
-!</subroutine>
-    
-    ! local variables
-    real(DP),dimension(2) :: Derr
-    type(t_collection) :: rcollection
-    
-    ! Initialise the collection for the assembly process with callback routines.
-    ! This stores the simulation time in the collection and sets the
-    ! current subvector z for the callback routines.
-    call collct_init(rcollection)
-
-    ! Perform error analysis to calculate and add 1/2||y-z||_{L^2}.
-    if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
-      
-      ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
-      call user_initCollectForAssembly (rglobalData,0.0_DP,rcollection)
-
-      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-                        user_ffunction_TargetX,rcollection)
-
-      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-                        user_ffunction_TargetY,rcollection)
-          
-      call user_doneCollectForAssembly (rglobalData,rcollection)
-      
-    else
-    
-      ! Use our standard implementation to evaluate the functional.
-      call ansol_prepareEval (rreference,rcollection,"SOL",0.0_DP)
-
-      ! X-velocity
-      rcollection%IquickAccess(1) = 1
-      call pperr_scalar (rsolution%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-          optcana_evalFunction,rcollection)
-
-      ! Y-velocity
-      rcollection%IquickAccess(1) = 2
-      call pperr_scalar (rsolution%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-          optcana_evalFunction,rcollection)
-          
-      call ansol_doneEval (rcollection,"SOL")
-      
-    end if
-                       
-    Derror(1) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
-    Derror(2) = 0.0_DP
-    
-    ! Calculate \alpha/2||u||^2.
-    if (dalpha .ne. 0.0_DP) then
-      call pperr_scalar (rsolution%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
-
-      call pperr_scalar (rsolution%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
-                         
-      Derror(2) = (0.5_DP*(Derr(1)**2+Derr(2)**2))
-      
-      ! Because of u=-lambda/alpha we have:
-      !    alpha/2 ||u||^2 = alpha/2 ||lambda/alpha||^2 = 1/(2*alpha) ||lambda||^2
-    end if
-    
-    Derror(3) = 0.5_DP * Derror(1)+(0.5_DP/dalpha) * Derror(2)
-    Derror(1) = sqrt(Derror(1))
-    Derror(2) = sqrt(Derror(2))
-    
-    ! Clean up    
-    call collct_done(rcollection)
-    
-  end subroutine
-
-!******************************************************************************
-
-!<subroutine>
-
-  subroutine optcana_nonstatFunctional (rglobalData,rconstraints,rsolution,rreference,&
+  subroutine optcana_nonstatFunctional (rglobalData,rphysics,rconstraints,rsolution,rreference,&
       dalpha,dgamma,Derror)
 
 !<description>
@@ -231,6 +231,9 @@ contains
 !</description>
   
 !<input>
+  ! Physics of the problem.
+  type(t_settings_physics) :: rphysics
+
   ! Solution vector to compute the norm/error from.
   type(t_spacetimeVector), intent(IN) :: rsolution
   
@@ -301,73 +304,85 @@ contains
       !CALL sptivec_getTimestepData (rsolution, 1+isubstep, rtempVector)
       call tmevl_evaluate(rsolution,dtime,rtempVector)
 
-      ! Compute:
-      ! Derror(1) = ||y-z||^2_{L^2}.
-      if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+      select case (rphysics%cequation)
+      case (0,1)
+        ! Stokes, Navier-Stokes, 2D
         
-        ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
-        call user_initCollectForAssembly (rglobalData,dtime,rcollection)
+        ! Compute:
+        ! Derror(1) = ||y-z||^2_{L^2}.
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          
+          ! Perform error analysis to calculate and add 1/2||y-z||^2_{L^2}.
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,1,dtime,rcollection)
 
-        call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-            user_ffunction_TargetX,rcollection)
+          call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+              user_fct_Target,rcollection)
 
-        call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-            user_ffunction_TargetY,rcollection)
-            
-        call user_doneCollectForAssembly (rglobalData,rcollection)
-      else
-        ! Use our standard implementation to evaluate the functional.
-        call ansol_prepareEval (rreference,rcollection,"SOL",dtime)
+          call user_doneCollectForAssembly (rglobalData,rcollection)
 
-        ! X-velocity
-        rcollection%IquickAccess(1) = 1
-        call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
-            optcana_evalFunction,rcollection)
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,2,dtime,rcollection)
 
-        ! Y-velocity
-        rcollection%IquickAccess(1) = 2
-        call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
-            optcana_evalFunction,rcollection)
-            
-        call ansol_doneEval (rcollection,"SOL")
-      end if
+          call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+              user_fct_Target,rcollection)
+              
+          call user_doneCollectForAssembly (rglobalData,rcollection)
+        else
+          ! Use our standard implementation to evaluate the functional.
+          call ansol_prepareEval (rreference,rcollection,"SOL",dtime)
 
-      ! We use the summed trapezoidal rule.
-      if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
-        Derror(1) = Derror(1) + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
-      else
-        Derror(1) = Derror(1) + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
-      end if
+          ! X-velocity
+          rcollection%IquickAccess(1) = 1
+          call pperr_scalar (rtempVector%RvectorBlock(1),PPERR_L2ERROR,Derr(1),&
+              optcana_evalFunction,rcollection)
 
-      ! Compute:
-      ! Derror(3) = ||y(T)-z(T)||^2
-      if (isubstep .eq. rsolution%NEQtime) then
-        Derror(3) = 0.5_DP*(Derr(1)**2+Derr(2)**2)
-      end if
-      
-      ! Compute:
-      ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
-      ! For that purpose, scale the lambda part and project it if necessary.
-      call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalpha)
-      call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
-      
-      if (rconstraints%ccontrolConstraints .ne. 0) then
-        call smva_projectControlTimestep (rtempVector%RvectorBlock(4),&
-            rconstraints%dumin1,rconstraints%dumax1)
-        call smva_projectControlTimestep (rtempVector%RvectorBlock(5),&
-            rconstraints%dumin2,rconstraints%dumax2)
-      end if
-      
-      !das hier gibt ein falsches Ergebnis1!
-      call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
-      call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
-            
-      ! We use the summed trapezoidal rule.             
-      if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
-        Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
-      else
-        Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
-      end if
+          ! Y-velocity
+          rcollection%IquickAccess(1) = 2
+          call pperr_scalar (rtempVector%RvectorBlock(2),PPERR_L2ERROR,Derr(2),&
+              optcana_evalFunction,rcollection)
+              
+          call ansol_doneEval (rcollection,"SOL")
+        end if
+
+        ! We use the summed trapezoidal rule.
+        if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
+          Derror(1) = Derror(1) + 0.5_DP*0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        else
+          Derror(1) = Derror(1) + 0.5_DP*(Derr(1)**2 + Derr(2)**2) * dtstep
+        end if
+
+        ! Compute:
+        ! Derror(3) = ||y(T)-z(T)||^2
+        if (isubstep .eq. rsolution%NEQtime) then
+          Derror(3) = 0.5_DP*(Derr(1)**2+Derr(2)**2)
+        end if
+        
+        ! Compute:
+        ! Derror(2) = ||u|| = ||P[min/max](-1/alpha lambda)||^2_{L^2}.
+        ! For that purpose, scale the lambda part and project it if necessary.
+        call lsyssc_scaleVector (rtempVector%RvectorBlock(4),-1.0_DP/dalpha)
+        call lsyssc_scaleVector (rtempVector%RvectorBlock(5),-1.0_DP/dalpha)
+        
+        if (rconstraints%ccontrolConstraints .ne. 0) then
+          call smva_projectControlTimestep (rtempVector%RvectorBlock(4),&
+              rconstraints%dumin1,rconstraints%dumax1)
+          call smva_projectControlTimestep (rtempVector%RvectorBlock(5),&
+              rconstraints%dumin2,rconstraints%dumax2)
+        end if
+        
+        !das hier gibt ein falsches Ergebnis1!
+        call pperr_scalar (rtempVector%RvectorBlock(4),PPERR_L2ERROR,Derr(1))
+        call pperr_scalar (rtempVector%RvectorBlock(5),PPERR_L2ERROR,Derr(2))
+              
+        ! We use the summed trapezoidal rule.             
+        if ((isubstep .eq. 1) .or. (isubstep .eq. rsolution%NEQtime)) then
+          Derror(2) = Derror(2) + 0.05_DP*0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+        else
+          Derror(2) = Derror(2) + 0.5_DP*(Derr(1)**2+Derr(2)**2) * dtstep
+        end if
+        
+      end select
       
     end do
     

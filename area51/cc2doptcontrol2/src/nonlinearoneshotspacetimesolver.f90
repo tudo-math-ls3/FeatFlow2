@@ -460,7 +460,7 @@ contains
 
       ! Value of the functional
       call stat_startTimer (rnlstsolver%rtimePostprocessing)
-      call optcana_nonstatFunctional (rsettings%rglobalData,&
+      call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
           rsettings%rsettingsOptControl%rconstraints,&
           rx,rsettings%rsettingsOptControl%rtargetFlow,&
           rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
@@ -642,7 +642,7 @@ contains
     if (rnlstsolver%ioutputLevel .ge. 1) &
       call output_separator (OU_SEP_MINUS)
     call stat_startTimer (rnlstsolver%rtimePostprocessing)
-    call optcana_nonstatFunctional (rsettings%rglobalData,&
+    call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
         rsettings%rsettingsOptControl%rconstraints,&
         rx,rsettings%rsettingsOptControl%rtargetFlow,&
         rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
@@ -900,7 +900,7 @@ contains
 !        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep
 !        
 !        rnonlinearIterationTmp%dgamma1 = 0.0_DP
-!        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%cequation,DP)
 !        
 !        rnonlinearIterationTmp%deta1 = 0.0_DP
 !        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
@@ -979,7 +979,7 @@ contains
 !        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
 !        rnonlinearIterationTmp%dtheta2 = 0.0_DP
 !        
-!        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%cequation,DP)
 !        rnonlinearIterationTmp%dgamma2 = 0.0_DP
 !        
 !        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
@@ -1090,8 +1090,8 @@ contains
 !        rnonlinearIterationTmp%dtheta1 = rspaceTimeDiscr%dtstep
 !        rnonlinearIterationTmp%dtheta2 = rspaceTimeDiscr%dtstep
 !        
-!        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
-!        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%iequation,DP)
+!        rnonlinearIterationTmp%dgamma1 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%cequation,DP)
+!        rnonlinearIterationTmp%dgamma2 = rspaceTimeDiscr%dtstep * REAL(1-rproblem%cequation,DP)
 !        
 !        rnonlinearIterationTmp%deta1 = rspaceTimeDiscr%dtstep
 !        rnonlinearIterationTmp%deta2 = rspaceTimeDiscr%dtstep
@@ -2215,7 +2215,7 @@ contains
 !    ! preconditioner. This is based on the space time matrix...
 !    
 !    rspaceTimePreconditioner = rspaceTimeMatrix
-!    if ((rproblem%rphysicsPrimal%iequation .eq. 0) .and. &
+!    if ((rproblem%rphysicsPrimal%cequation .eq. 0) .and. &
 !        (ctypePreconditioner .eq. 1)) then
 !      ! ...but may also be the Newton matrix!
 !      rspaceTimePreconditioner%cmatrixType = 1

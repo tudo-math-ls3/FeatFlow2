@@ -144,9 +144,9 @@ module structuresoptc
     real(DP) :: dnu
     
     ! Type of problem.
-    ! =0: Navier-Stokes.
-    ! =1: Stokes.
-    integer :: iequation
+    ! =0: Navier-Stokes 2D.
+    ! =1: Stokes 2D.
+    integer :: cequation
     
     ! Type of subproblem of the main problem. Depending on iequationType.
     ! If iequationType=0 or =1:
@@ -264,6 +264,9 @@ module structuresoptc
 
   ! Type encapsuling the boundary conditions.
   type t_optcBDC
+  
+    ! Physics of the problem
+    type(t_settings_physics), pointer :: p_rphysics => null()
 
     ! Name of the section in rparamList describing the boundary conditions
     character(len=SYS_STRLEN) :: ssectionBdExpressions = ""
@@ -289,6 +292,9 @@ module structuresoptc
     ! Pointer to the coarse time discretisation.
     type(t_timeDiscretisation), pointer :: p_rtimeCoarse => null()
     
+    ! Reference to the physics parameters
+    type(t_settings_physics), pointer :: p_rphysics => null()
+
     ! Reference to the optimal control parameters.
     type(t_settings_optcontrol), pointer :: p_rsettingsOptControl => null()
     

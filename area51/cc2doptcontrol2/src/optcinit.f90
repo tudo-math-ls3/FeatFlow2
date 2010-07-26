@@ -184,7 +184,7 @@ contains
       call ansol_init (roptcontrol%rtargetFlow,ilevelTargetFlow,&
           rproblem%RlevelInfo(iavaillevel)%rdiscretisationPrimal,iavaillevel,&
           ielementTypeTargetFlow,&
-          fget1LevelDiscretisation,rcollection)
+          fget1LevelDiscretisationNavSt2D,rcollection)
     
       ! Read stationary flow from hard disc
       call ansol_configStationaryFile (roptcontrol%rtargetFlow,&
@@ -206,7 +206,7 @@ contains
       call ansol_init (roptcontrol%rtargetFlow,ilevelTargetFlow,&
           rproblem%RlevelInfo(iavaillevel)%rdiscretisationPrimal,iavaillevel,&
           ielementTypeTargetFlow,&
-          fget1LevelDiscretisation,rcollection)
+          fget1LevelDiscretisationNavSt2D,rcollection)
     
       ! Read stationary flow from hard disc
       call ansol_configNonstationaryFile (roptcontrol%rtargetFlow, &
@@ -385,7 +385,7 @@ contains
       rcollection%IquickAccess(2) = NDIM2D+1
       call ansol_init (roptcontrol%rinitialCondition,ilevelInitCond,&
           rproblem%RlevelInfo(iavaillevel)%rdiscretisationPrimal,iavaillevel,&
-          ielementTypeInitCond,fget1LevelDiscretisation,rcollection)
+          ielementTypeInitCond,fget1LevelDiscretisationNavSt2D,rcollection)
     
       ! Read stationary flow from hard disc
       call ansol_configStationaryFile (roptcontrol%rinitialCondition,&

@@ -59,6 +59,9 @@ module structuresoptflow
   type t_optcPostprocessing
 
     ! <!-- Input parameters -->
+    
+    ! Physics of the problem
+    type(t_settings_physics), pointer :: p_rphysics
   
     ! Type of output file to generate from solutions.
     ! 0=disabled

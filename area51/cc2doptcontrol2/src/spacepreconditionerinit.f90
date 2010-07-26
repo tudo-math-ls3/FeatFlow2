@@ -1132,7 +1132,7 @@ contains
             ! do. In the Navier-Stokes case however, we have A12 and A21, so create them!
             ! Furthermore, there is to be a A51 and A42 submatrix allocated for the
             ! reactive coupling mass matrix R!
-            if (rproblem%rphysicsPrimal%iequation .eq. 0) then
+            if (rproblem%rphysicsPrimal%cequation .eq. 0) then
             
               if (p_rmatrixPreconditioner%RmatrixBlock(1,2)%cmatrixFormat &
                   .eq. LSYSSC_MATRIXUNDEFINED) then

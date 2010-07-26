@@ -132,6 +132,7 @@ module spacetimevectors
   public :: sptivec_releaseAccessPool
   public :: sptivec_getVectorFromPool
   public :: sptivec_getFreeBufferFromPool
+  public :: sptivec_invalidateVecInPool
 
 !<types>
 
@@ -2094,6 +2095,39 @@ contains
     ! We use the buffer as a ring buffer.
     raccessPool%inextFreeVector = &
         mod(raccessPool%inextFreeVector,size(raccessPool%p_IvectorIndex))+1
+    
+  end subroutine
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine sptivec_invalidateVecInPool (raccessPool,iindex)
+
+!<description>
+  ! Flushes the data of vector iindex in raccessPool and forces this
+  ! vector to be reloaded the next time it is requested.
+!</desctiprion>
+
+!<inputoutput>
+  ! Access-pool structure to be accessed.
+  type(t_spaceTimeVectorAccess), intent(inout), target :: raccessPool
+  
+  ! Index of the vector to be flushed.
+  integer, intent(in) :: iindex
+!</inputoutput>
+
+!</subroutine>
+
+    integer :: i
+  
+    ! Take a look if we have that vector; if yes, remove it from the list
+    ! of fetched vectors.
+    do i=1,size(raccessPool%p_IvectorIndex)
+      if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
+        raccessPool%p_IvectorIndex(i) = 0
+      end if
+    end do
     
   end subroutine
 
