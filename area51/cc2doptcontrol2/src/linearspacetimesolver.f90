@@ -680,6 +680,9 @@ module linearspacetimesolver
     ! name of the section configuring the spatial solver.
     character(len=SYS_STRLEN) :: ssection
 
+    ! Temp memory for the nonlinearity
+    type(t_spaceTimeVectorAccess) :: roseenAccess
+
   end type
   
 !</typeblock>
@@ -711,6 +714,9 @@ module linearspacetimesolver
     
     ! name of the section configuring the spatial solver.
     character(len=SYS_STRLEN) :: ssection
+    
+    ! Temp memory for the nonlinearity
+    type(t_spaceTimeVectorAccess) :: roseenAccess
 
   end type
   
@@ -2398,7 +2404,7 @@ contains
     
     ! Release the subnode structure
     deallocate(rsolverNode%p_rsubnodeBlockJacobi)
-  
+    
   end subroutine
   
   ! ***************************************************************************
@@ -2472,6 +2478,10 @@ contains
         rsolverNode%p_roptcBDC,rsolverNode%p_rsubnodeBlockJacobi%p_rparlist,&
         rsolverNode%p_rsubnodeBlockJacobi%ssection)
     
+    ! Create an access pool for quick access to nonlinearities
+    call sptivec_createAccessPool(rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+        rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,3)
+
   end subroutine
   
   ! ***************************************************************************
@@ -2553,6 +2563,10 @@ contains
       call fbsim_donePreconditioner(rsolverNode%p_rsubnodeBlockJacobi%rspatialPrecond)
     end if
 
+    if (associated(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess%p_rspaceDiscr)) then
+      call sptivec_releaseAccessPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess)
+    end if
+
   end subroutine
   
   ! ***************************************************************************
@@ -2599,7 +2613,6 @@ contains
     type(t_vectorBlock), pointer :: p_rvector1,p_rvector2,p_rvector3
     type(t_discreteBC), pointer :: p_rdiscreteBC
     type(t_discreteFBC), pointer :: p_rdiscreteFBC
-    type(t_spaceTimeVectorAccess) :: roseenAccess
     
     ! DEBUG!!!
     real(DP), dimension(:), pointer :: p_Dx,p_Dd,p_Dsol
@@ -2619,14 +2632,16 @@ contains
     call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
         rtempVectorD,.true.)
         
+    ! Bind roseenAccess to the nonlinearity
     if (associated(rsolverNode%rmatrix%p_rsolution)) then
-      call sptivec_createAccessPool(rsolverNode%rmatrix%p_rsolution,roseenAccess,3)
-    else
-      ! Dummy
-      p_rvector1 => p_rpreconditioner%p_RtempVec(1,p_rpreconditioner%nlmax)
-      p_rvector2 => p_rpreconditioner%p_RtempVec(2,p_rpreconditioner%nlmax)
-      p_rvector3 => p_rpreconditioner%p_RtempVec(3,p_rpreconditioner%nlmax)
+      call sptivec_bindPoolToVec(rsolverNode%rmatrix%p_rsolution,&
+          rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
     end if
+
+    ! Set the nonlinearity-vectors to temp vectors until we need them.
+    p_rvector1 => p_rpreconditioner%p_RtempVec(1,p_rpreconditioner%nlmax)
+    p_rvector2 => p_rpreconditioner%p_RtempVec(2,p_rpreconditioner%nlmax)
+    p_rvector3 => p_rpreconditioner%p_RtempVec(3,p_rpreconditioner%nlmax)
     
     ! DEBUG!!!
     call lsysbl_getbase_double (rtempVectorD,p_Dd)
@@ -2661,16 +2676,14 @@ contains
       if (associated(rsolverNode%rmatrix%p_rsolution)) then
       
         if (iiterate .gt. 1) then
-          call sptivec_getVectorFromPool(roseenAccess,iiterate-1,p_rvector1)
-          call sptivec_getVectorFromPool(roseenAccess,iiterate,p_rvector2)
-        else
-          call sptivec_getVectorFromPool(roseenAccess,iiterate,p_rvector1)
-          p_rvector2 => p_rvector1
+          call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
+              iiterate-1,p_rvector1)
         end if
+        call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
+            iiterate,p_rvector2) 
         if (iiterate .lt. neqtime) then
-          call sptivec_getVectorFromPool(roseenAccess,iiterate+1,p_rvector3)
-        else
-          p_rvector3 => p_rvector2
+          call sptivec_getVectorFromPool(rsolverNode%p_rsubnodeBlockJacobi%roseenAccess,&
+              iiterate+1,p_rvector3)
         end if
         
       end if
@@ -2705,10 +2718,6 @@ contains
     end do
     
     call lsysbl_releaseVector (rtempVectorD)
-    
-    if (associated(rsolverNode%rmatrix%p_rsolution)) then
-      call sptivec_releaseAccessPool(roseenAccess)
-    end if    
     
   end subroutine
 
@@ -2896,6 +2905,10 @@ contains
         rsolverNode%rmatrix%rdiscrData%p_rtimeDiscr,&
         rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr)
 
+    ! Create an access pool for quick access to nonlinearities
+    call sptivec_createAccessPool(rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
+        rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess,3)
+
   end subroutine
   
   ! ***************************************************************************
@@ -2982,6 +2995,10 @@ contains
       call sptivec_releaseVector (rsolverNode%p_rsubnodeBlockFBSOR%rtempVector)
     end if
 
+    if (associated(rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess%p_rspaceDiscr)) then
+      call sptivec_releaseAccessPool(rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
+    end if
+    
   end subroutine
   
   ! ***************************************************************************
@@ -3059,6 +3076,12 @@ contains
     call lsysbl_createVecBlockByDiscr (rsolverNode%rmatrix%rdiscrData%p_rspaceDiscr,&
         rtempVectorX,.true.)
         
+    ! Bind roseenAccess to the nonlinearity
+    if (associated(rsolverNode%rmatrix%p_rsolution)) then
+      call sptivec_bindPoolToVec(rsolverNode%rmatrix%p_rsolution,&
+          rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
+    end if
+        
     ! rtempVector starts with zero and iterates to the new solution.
     call sptivec_clearVector (p_rx)
         
@@ -3073,11 +3096,21 @@ contains
         
     do i=1,max(rsolverNode%nminIterations,rsolverNode%nmaxIterations)
         
-      call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
-          p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+      if (associated(rsolverNode%rmatrix%p_rsolution)) then
+        call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+            p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
+            rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
 
-      call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
-          p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+        call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+            p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,&
+            rsolverNode%p_rsubnodeBlockFBSOR%roseenAccess)
+      else
+        call forwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+            p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+
+        call backwardBlockSOR (rsolverNode,rsolverNode%rmatrix,p_rx,rd,&
+            p_rpreconditioner,p_rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+      end if
           
       if (rsolverNode%ioutputLevel .ge. 2) then
         ! Print the initial defect
@@ -3194,7 +3227,7 @@ contains
     ! ----------------------------------------------------------------------
     
     subroutine forwardBlockSOR (rsolverNode,rmatrix,rx,rb,&
-        rpreconditioner,rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+        rpreconditioner,rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,roseenAccess)
         
     ! Calculates a new solution using block-SOR with GS-relaxation.
     ! Forward sweep.
@@ -3225,6 +3258,9 @@ contains
 
     ! Solution vector to be updated.
     type(t_spaceTimeVector), intent(inout) :: rx
+    
+    ! OPTIONAL: Access pool for the nonlinearity.
+    type(t_spaceTimeVectorAccess), optional :: roseenAccess
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Dx, p_Dd
@@ -3241,6 +3277,7 @@ contains
       call lsysbl_getbase_double (rtempVectorD,p_Dd)
       
       ! Get three temp vectors where we can save the nonlinearity.
+      ! Put them to temp vectors until we need the pointers...
       p_rvector1 => p_rpreconditioner%p_RtempVec(1,p_rpreconditioner%nlmax)
       p_rvector2 => p_rpreconditioner%p_RtempVec(2,p_rpreconditioner%nlmax)
       p_rvector3 => p_rpreconditioner%p_RtempVec(3,p_rpreconditioner%nlmax)
@@ -3248,9 +3285,6 @@ contains
       ! Number of unknowns in time
       neqtime = tdiscr_igetNDofGlob(rmatrix%rdiscrData%p_rtimeDiscr)
 
-      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-      call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
-      
       ! Get pointers to the BC's.
       p_rdiscreteBC => p_rpreconditioner%p_RdiscreteBC(p_rpreconditioner%nlmax)
       p_rdiscreteFBC => p_rpreconditioner%p_RdiscreteFBC(p_rpreconditioner%nlmax)
@@ -3281,13 +3315,20 @@ contains
               trim(sys_siL(neqtime,10))//"], Time="//&
               trim(sys_sdL(dtimePrimal,10)) )
         end if
-      
-        ! Load the nonlinearity of the 'next' timestep to p_rvector3.    
-        if (associated(rsolverNode%rmatrix%p_rsolution) .and. &
-            (iiterate .lt. neqtime))  then
-          call sptivec_getTimestepData (rsolverNode%rmatrix%p_rsolution, &
-              iiterate+1, p_rvector3)
+
+        ! Load the nonlinearity if present
+        if (present(roseenAccess)) then
+          if (iiterate .gt. 1) then
+            call sptivec_getVectorFromPool(roseenAccess,iiterate-1,p_rvector1)
+          end if
+          call sptivec_getVectorFromPool(roseenAccess,iiterate,p_rvector2)
+          if (iiterate .lt. neqtime) then
+            call sptivec_getVectorFromPool(roseenAccess,iiterate+1,p_rvector3)
+          end if
         end if
+      
+        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
       
         ! Is there a previous timestep?
         if (iiterate .gt. 1) then
@@ -3367,14 +3408,6 @@ contains
         ! Save back the preconditioned defect.
         call sptivec_setTimestepData (rx, iiterate, rtempVectorD)
         
-        ! If we are not at the end, shift the nonlinearities.
-        if (associated(rsolverNode%rmatrix%p_rsolution) .and. &
-            (iiterate .lt. neqtime))  then
-          call lsysbl_copyVector (p_rvector2,p_rvector1)
-          call lsysbl_copyVector (p_rvector3,p_rvector2)
-          ! Load in the next solution in the next loop.
-        end if
-        
         ! rtempVectorX still contains the current, not updated x2. In the next
         ! loop, this will be the "old" x1 for the next timestep.
         !
@@ -3385,7 +3418,7 @@ contains
     end subroutine
   
     subroutine backwardBlockSOR (rsolverNode,rmatrix,rx,rb,&
-        rpreconditioner,rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD)
+        rpreconditioner,rdiscrData,drelaxSOR,drelaxGS,rtempVectorX,rtempVectorD,roseenAccess)
         
     ! Calculates a new solution using block-SOR with GS-relaxation.
     ! Backward sweep.
@@ -3416,6 +3449,9 @@ contains
 
     ! Solution vector to be updated.
     type(t_spaceTimeVector), intent(inout) :: rx
+    
+    ! OPTIONAL: Access pool for the nonlinearity.
+    type(t_spaceTimeVectorAccess), optional :: roseenAccess
 
     ! DEBUG!!!
     real(dp), dimension(:), pointer :: p_Dx, p_Dd
@@ -3433,6 +3469,7 @@ contains
       call lsysbl_getbase_double (rtempVectorD,p_Dd)
       
       ! Get three temp vectors where we can save the nonlinearity.
+      ! Put them to temp vectors until we need the pointers...
       p_rvector1 => p_rpreconditioner%p_RtempVec(1,p_rpreconditioner%nlmax)
       p_rvector2 => p_rpreconditioner%p_RtempVec(2,p_rpreconditioner%nlmax)
       p_rvector3 => p_rpreconditioner%p_RtempVec(3,p_rpreconditioner%nlmax)
@@ -3440,18 +3477,10 @@ contains
       ! Number of unknowns in time
       neqtime = tdiscr_igetNDofGlob(rmatrix%rdiscrData%p_rtimeDiscr)
 
-      ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
-      call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
-      
       ! Get pointers to the BC's.
       p_rdiscreteBC => p_rpreconditioner%p_RdiscreteBC(p_rpreconditioner%nlmax)
       p_rdiscreteFBC => p_rpreconditioner%p_RdiscreteFBC(p_rpreconditioner%nlmax)
       
-      ! Put the 'current' solution to the 'middle' vector.
-      if (associated(rsolverNode%rmatrix%p_rsolution))  then
-        call sptivec_getTimestepData (rsolverNode%rmatrix%p_rsolution, neqtime, p_rvector2)
-      end if
-        
       ! Loop through the substeps. Backwards.
       !
       ! In the loop, we assume rtempVectorX = x3 before the update.
@@ -3474,12 +3503,19 @@ contains
               trim(sys_sdL(dtimePrimal,10)) )
         end if
       
-        ! Load the nonlinearity of the 'previous' timestep to p_rvector1.    
-        if (associated(rsolverNode%rmatrix%p_rsolution) .and. &
-            (iiterate .gt. 1))  then
-          call sptivec_getTimestepData (rsolverNode%rmatrix%p_rsolution, &
-              iiterate-1, p_rvector1)
+        ! Load the nonlinearity if present
+        if (present(roseenAccess)) then
+          if (iiterate .gt. 1) then
+            call sptivec_getVectorFromPool(roseenAccess,iiterate-1,p_rvector1)
+          end if
+          call sptivec_getVectorFromPool(roseenAccess,iiterate,p_rvector2)
+          if (iiterate .lt. neqtime) then
+            call sptivec_getVectorFromPool(roseenAccess,iiterate+1,p_rvector3)
+          end if
         end if
+      
+        ! Prepare a nonlinear data structure with the nonlinearity given by p_rvectorX    
+        call smva_initNonlinearData (rnonlinearData,p_rvector1,p_rvector2,p_rvector3)
       
         ! Is there a nect timestep?
         if (iiterate .lt. NEQtime) then
@@ -3552,14 +3588,6 @@ contains
 
         ! Save back the preconditioned defect.
         call sptivec_setTimestepData (rx, iiterate, rtempVectorD)
-        
-        ! If we are not at the end, shift the nonlinearities.
-        if (associated(rsolverNode%rmatrix%p_rsolution) .and. &
-            (iiterate .gt. 1))  then
-          call lsysbl_copyVector (p_rvector2,p_rvector3)
-          call lsysbl_copyVector (p_rvector1,p_rvector2)
-          ! Load in the next solution in the next loop.
-        end if
         
         ! rtempVectorX still contains the current, not updated x2/l2. In the next
         ! loop, this will be the "old" x3 for the next timestep.

@@ -234,21 +234,21 @@ module spacetimevectors
   type t_spaceTimeVectorAccess
   
     ! Reference an the associated space-time vector.
-    type(t_spaceTimeVector), pointer :: p_rspaceTimeVector
+    type(t_spaceTimeVector), pointer :: p_rspaceTimeVector => null()
     
     ! Associated space-discretisation
-    type(t_blockDiscretisation), pointer :: p_rspaceDiscr
+    type(t_blockDiscretisation), pointer :: p_rspaceDiscr => null()
     
     ! A pool of space vectors buffered from the space-time vector.
-    type(t_vectorBlock), dimension(:), pointer :: p_RvectorPool
+    type(t_vectorBlock), dimension(:), pointer :: p_RvectorPool => null()
     
     ! A list of indices that saves for every space-vector from the pool the
     ! associated index in the space-time vector.
-    integer, dimension(:), pointer :: p_IvectorIndex
+    integer, dimension(:), pointer :: p_IvectorIndex => null()
     
     ! Id of the next free vector which is overwritten if the read-method
     ! is called.
-    integer :: inextFreeVector
+    integer :: inextFreeVector = 0
     
   end type
 
@@ -2054,7 +2054,7 @@ contains
 
 !<inputoutput>
   ! Access-pool structure to be released.
-  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+  type(t_spaceTimeVectorAccess), intent(inout) :: raccessPool
 !</inputoutput>
 
 !</subroutine>
@@ -2094,7 +2094,7 @@ contains
 
 !<output>
   ! Access-pool structure to be created.
-  type(t_spaceTimeVectorAccess), intent(out) :: raccessPool
+  type(t_spaceTimeVectorAccess), intent(inout) :: raccessPool
 !</output>
 
 !</subroutine>
