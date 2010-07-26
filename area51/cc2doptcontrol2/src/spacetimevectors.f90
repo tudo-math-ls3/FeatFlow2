@@ -2153,6 +2153,12 @@ contains
 
     integer :: i
   
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+  
     ! Take a look if we already have that vector
     do i=1,size(raccessPool%p_IvectorIndex)
       if (raccessPool%p_IvectorIndex(i) .eq. iindex) then
@@ -2207,6 +2213,12 @@ contains
 
     integer :: i
   
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+
     ! Take a look if we have that vector; if yes, remove it from the list
     ! of fetched vectors.
     do i=1,size(raccessPool%p_IvectorIndex)
@@ -2241,6 +2253,11 @@ contains
 
     integer :: i
     
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
     if (.not. associated(raccessPool%p_rspaceTimeVector)) then
       call output_line('No space-time vector associated!',&
           OU_CLASS_ERROR,OU_MODE_STD,'sptivec_commitVecInPool')
@@ -2286,6 +2303,12 @@ contains
 
 !</subroutine>
    
+    if (iindex .le. 0) then
+      call output_line ("Invalid index!",&
+          OU_CLASS_ERROR,OU_MODE_STD,'sptivec_getVectorFromPool')
+      call sys_halt()
+    end if
+
     ! Here is our read vector
     p_rx => raccessPool%p_RvectorPool(raccessPool%inextFreeVector)
 
