@@ -42,10 +42,10 @@ module spacetimelinsol
   integer, parameter :: STLS_TYPE_JACOBI     = 1
   
   ! FB-GS
-  integer, parameter :: STLS_TYPE_FBGS      = 2
+  integer, parameter :: STLS_TYPE_FBSIM      = 2
 
   ! FB-GS2
-  integer, parameter :: STLS_TYPE_FBGS2     = 3
+  integer, parameter :: STLS_TYPE_FBGS       = 3
   
   ! Defect correction
   integer, parameter :: STLS_TYPE_DEFCORR    = 4
@@ -491,7 +491,7 @@ contains
       ! Allocate temp vectors.
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp1)
     
-    case (STLS_TYPE_FBGS)
+    case (STLS_TYPE_FBSIM)
       
       ! Allocate temp vectors.
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp1)
@@ -499,7 +499,7 @@ contains
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp3)
       call sptivec_initVector (rsolver%rspaceTimeTemp1,p_rtimeDiscr,p_rspaceDiscr)
 
-    case (STLS_TYPE_FBGS2)
+    case (STLS_TYPE_FBGS)
       
       ! Allocate temp vectors.
       call lsysbl_createVectorBlock (p_rspaceDiscr,rsolver%rspaceTemp1)
@@ -650,7 +650,7 @@ contains
       ! Deallocate temp vectors.
       call lsysbl_releaseVector (rsolver%rspaceTemp1)
     
-    case (STLS_TYPE_FBGS)
+    case (STLS_TYPE_FBSIM)
       
       ! Deallocate temp vectors.
       call sptivec_releaseVector (rsolver%rspaceTimeTemp1)
@@ -658,7 +658,7 @@ contains
       call lsysbl_releaseVector (rsolver%rspaceTemp2)
       call lsysbl_releaseVector (rsolver%rspaceTemp1)
 
-    case (STLS_TYPE_FBGS2)
+    case (STLS_TYPE_FBGS)
       
       ! Deallocate temp vectors.
       call sptivec_releaseVector (rsolver%rspaceTimeTemp1)
@@ -773,10 +773,10 @@ contains
       call stls_precondBiCGStab (rsolver, rd)
     case (STLS_TYPE_JACOBI)
       call stls_precondBlockJacobi (rsolver, rd)
+    case (STLS_TYPE_FBSIM)
+      call stls_precondBlockFBSIM (rsolver, rd)
     case (STLS_TYPE_FBGS)
       call stls_precondBlockFBGS (rsolver, rd)
-    case (STLS_TYPE_FBGS2)
-      call stls_precondBlockFBGS2 (rsolver, rd)
     case (STLS_TYPE_MULTIGRID)
       call stls_precondMultigrid (rsolver, rd)
     end select
@@ -1606,7 +1606,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stls_initBlockFBGS (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
+  subroutine stls_initBlockFBSIM (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
       cspaceSolverType,cspacePreconditioner,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the decoupled solution.
@@ -1636,7 +1636,7 @@ contains
   type(t_matvecTemplates), dimension(:), intent(in), target :: RmatVecTempl
 
     ! Basic initialisation
-    call stls_init(rsolver,STLS_TYPE_FBGS,rspaceTimeHierarchy,ilevel,&
+    call stls_init(rsolver,STLS_TYPE_FBSIM,rspaceTimeHierarchy,ilevel,&
         .false.,.false.,cspaceSolverType=cspaceSolverType,&
         cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
         
@@ -1646,7 +1646,7 @@ contains
 
   ! ***************************************************************************
 
-  recursive subroutine stls_precondBlockFBGS (rsolver, rd)
+  recursive subroutine stls_precondBlockFBSIM (rsolver, rd)
   
   ! General preconditioning to a defect vector rd
   
@@ -1724,7 +1724,9 @@ contains
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Remove the primal part from the matrix
-        !call stmv_reduceDiagToDual (rsolver%p_RspaceMatrices(rsolver%ilevel))
+        do ilev = 1,ispaceLevel
+          call stmv_reduceDiagToPrimal (rsolver%p_RspaceMatrices(ilev))
+        end do
         
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
@@ -1794,7 +1796,9 @@ contains
             rsolver%rspaceTemp2, rsolver%rspaceTemp1, -1.0_DP, 1.0_DP)
         
         ! Remove the dual part from the matrix
-        !call stmv_reduceDiagToPrimal (rsolver%p_RspaceMatrices(ispaceLevel))
+        do ilev = 1,ispaceLevel
+          call stmv_reduceDiagToDual (rsolver%p_RspaceMatrices(ilev))
+        end do
         
         ! Apply the space solver
         call linsol_initData(rsolver%p_rspaceSolver,ierror)
@@ -1826,7 +1830,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine stls_initBlockFBGS2 (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
+  subroutine stls_initBlockFBGS (rsolver,rspaceTimeHierarchy,ilevel,drelax,&
       cspaceSolverType,cspacePreconditioner,icoupling,RmatVecTempl)
   
   ! Initialise a block GS correction solver, working on the coupled solution.
@@ -1861,7 +1865,7 @@ contains
   type(t_matvecTemplates), dimension(:), intent(in), target :: RmatVecTempl
 
     ! Basic initialisation
-    call stls_init(rsolver,STLS_TYPE_FBGS2,rspaceTimeHierarchy,ilevel,&
+    call stls_init(rsolver,STLS_TYPE_FBGS,rspaceTimeHierarchy,ilevel,&
         .false.,.false.,cspaceSolverType=cspaceSolverType,&
         cspacePreconditioner=cspacePreconditioner,RmatVecTempl=RmatVecTempl)
         
@@ -1873,7 +1877,7 @@ contains
 
   ! ***************************************************************************
 
-  recursive subroutine stls_precondBlockFBGS2 (rsolver, rd)
+  recursive subroutine stls_precondBlockFBGS (rsolver, rd)
   
   ! General preconditioning to a defect vector rd
   

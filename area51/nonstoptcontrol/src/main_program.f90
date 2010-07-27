@@ -311,7 +311,7 @@ contains
     integer :: iadcgcorr,niteReinit, icycle
     real(DP) :: dadcgcorrMin,dadcgcorrMax
     integer :: ilev,nsmoothingSteps,itypeProjection,nmaxiterations
-    integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS2,ioutputLevel
+    integer :: ismoother,icoarsegridsolver,ifullcouplingFBGS,ioutputLevel
     type(t_feSpaceLevel), pointer :: p_rfeSpaceLevel
     real(DP) ::  ddampingCoarseGridCorrection,ddamping,drelax,depsrel,depsabs
     integer :: cspaceSolver, cspacePreconditioner
@@ -348,7 +348,7 @@ contains
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
         "drelax", drelax)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
-        "ifullcouplingFBGS2", ifullcouplingFBGS2)
+        "ifullcouplingFBGS", ifullcouplingFBGS)
     call parlst_getvalue_int (rparlist, "SPACETIME-LINEARSOLVER", &
         "iadcgcorr", iadcgcorr)
     call parlst_getvalue_double (rparlist, "SPACETIME-LINEARSOLVER", &
@@ -397,10 +397,10 @@ contains
       rsolver%rsolver%nmaxIterations = nmaxiterations
           
     case (2)
-      ! Defect correction with Block FBGS preconditioning
+      ! Defect correction with Block FBSIM preconditioning
 
       ! Create the solver.
-      call stls_initBlockFBGS2 (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
+      call stls_initBlockFBGS (rsolver%rpreconditioner,rparams%rspacetimeHierarchy,&
           nlevels,drelax,cspaceSolver,cspacePreconditioner,0,rparams%p_RmatvecTempl)
       call stls_initDefCorr (rsolver%rsolver,rparams%rspacetimeHierarchy,nlevels,&
           rsolver%rpreconditioner)
@@ -422,7 +422,7 @@ contains
       call parlst_getvalue_double (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "drelax", drelax)
       call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
-          "ifullcouplingFBGS2", ifullcouplingFBGS2)
+          "ifullcouplingFBGS", ifullcouplingFBGS)
       call parlst_getvalue_int (rparlist, "SPACETIME-COARSEGRIDSOLVER", &
           "ioutputlevel", ioutputlevel)
       
@@ -438,7 +438,7 @@ contains
 
       else if (icoarsegridsolver .eq. 1) then
 
-        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+        call stls_initBlockFBSIM (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
@@ -448,8 +448,8 @@ contains
 
       else if (icoarsegridsolver .eq. 2) then
 
-        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -468,7 +468,7 @@ contains
 
       else if (icoarsegridsolver .eq. 4) then
 
-        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+        call stls_initBlockFBSIM (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
             1,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
@@ -478,8 +478,8 @@ contains
 
       else if (icoarsegridsolver .eq. 5) then
 
-        call stls_initBlockFBGS2 (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
-            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+        call stls_initBlockFBGS (rsolver%rcoarsePreconditioner,rparams%rspacetimeHierarchy,&
+            1,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS,rparams%p_RmatvecTempl)
 
         rsolver%rcoarsePreconditioner%domega = ddamping
         
@@ -505,7 +505,7 @@ contains
       call parlst_getvalue_double (rparlist, "SPACETIME-SMOOTHER", &
           "drelax", drelax)
       call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
-          "ifullcouplingFBGS2", ifullcouplingFBGS2)
+          "ifullcouplingFBGS", ifullcouplingFBGS)
       call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
           "ioutputlevel", ioutputlevel)
       call parlst_getvalue_int (rparlist, "SPACETIME-SMOOTHER", &
@@ -528,7 +528,7 @@ contains
 
         else if (ismoother .eq. 1) then
         
-          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+          call stls_initBlockFBSIM (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
           !rsolver%p_RsmootherPrecond(ilev)%domega = 1.0_DP
@@ -541,8 +541,8 @@ contains
 
         else if (ismoother .eq. 2) then
         
-          call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS,rparams%p_RmatvecTempl)
           !rsolver%p_RsmootherPrecond(ilev)%domega = 0.5_DP
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
@@ -566,7 +566,7 @@ contains
 
         else if (ismoother .eq. 4) then
         
-          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+          call stls_initBlockFBSIM (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
               ilev,drelax,cspaceSolver,cspacePreconditioner,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
@@ -577,8 +577,8 @@ contains
 
         else if (ismoother .eq. 5) then
         
-          call stls_initBlockFBGS2 (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
-              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS2,rparams%p_RmatvecTempl)
+          call stls_initBlockFBGS (rsolver%p_RsmootherPrecond(ilev),rparams%rspacetimeHierarchy,&
+              ilev,drelax,cspaceSolver,cspacePreconditioner,ifullcouplingFBGS,rparams%p_RmatvecTempl)
         
           rsolver%p_RsmootherPrecond(ilev)%domega = ddamping
           
@@ -659,7 +659,7 @@ contains
       call stls_done(rsolver%rsolver)
       
     case (2)
-      ! Defect correction with Block FBGS preconditioning
+      ! Defect correction with Block FBSIM preconditioning
 
       ! Release the solver.
       call stls_done(rsolver%rpreconditioner)

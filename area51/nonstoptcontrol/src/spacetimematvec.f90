@@ -346,22 +346,25 @@ contains
   ! Underlying space-time matrix
   type(t_matrixBlock), intent(inout) :: rsubmatrix
   
-    integer :: i,k
+    integer :: i,j,k
   
     ! Decouple.
     k = rsubmatrix%nblocksPerRow
     
-    rsubmatrix%RmatrixBlock(k/2+1:,1:k/2)%dscaleFactor = 0.0_DP
-    rsubmatrix%RmatrixBlock(1:k/2,k/2+1:)%dscaleFactor = 0.0_DP
-    rsubmatrix%RmatrixBlock(k/2+1:,k/2+1:)%dscaleFactor = 0.0_DP
-  
-    ! Initialise the other matrices with identities on the diagonal.
-    do i=rsubmatrix%nblocksPerRow/2+1,rsubmatrix%nblocksPerRow
-      rsubmatrix%RmatrixBlock(i,i)%dscaleFactor = 1.0_DP
-      call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,i))
-      call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+    ! All matrix except the primal diagonal block := 0.
+    ! Dual diagonal block = identity.
+    do i=1,k
+      do j=1,k
+        if (((i .ge. k/2+1) .or. (j .ge. k/2+1)) .and. &
+            lsysbl_isSubmatrixPresent (rsubmatrix,i,j)) then
+          call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,j))
+          if (i .eq. j) then
+            call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+          end if
+        end if
+      end do
     end do
-  
+    
   end subroutine
   
   ! ***************************************************************************
@@ -373,16 +376,73 @@ contains
   ! Underlying space-time matrix
   type(t_matrixBlock), intent(inout) :: rsubmatrix
   
+    integer :: i,j,k
+  
+    ! Decouple.
+    k = rsubmatrix%nblocksPerRow
+    
+    ! All matrix except the dual diagonal block := 0.
+    ! Primal diagonal block = identity.
+    do i=1,k
+      do j=1,k
+        if (((i .le. k/2) .or. (j .le. k/2)) .and. &
+            lsysbl_isSubmatrixPresent (rsubmatrix,i,j)) then
+          call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,j))
+          if (i .eq. j) then
+            call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+          end if
+        end if
+      end do
+    end do
+  
+  end subroutine
+
+  ! ***************************************************************************
+
+  subroutine stmv_initDualIdentity (rsubmatrix)
+  
+  ! Removes the coupling of the dual from the primal.
+  ! Initialises the dual main part by an identity matrix.
+  
+  ! Underlying space-time matrix
+  type(t_matrixBlock), intent(inout) :: rsubmatrix
+  
     integer :: i,k
   
     ! Decouple.
     k = rsubmatrix%nblocksPerRow
     
-    rsubmatrix%RmatrixBlock(k/2+1:,1:k/2)%dscaleFactor = 0.0_DP
-    rsubmatrix%RmatrixBlock(1:k/2,k/2+1:)%dscaleFactor = 0.0_DP
-    rsubmatrix%RmatrixBlock(1:k/2,1:k/2)%dscaleFactor = 0.0_DP
+    ! Switch off all dual matrices.
+    rsubmatrix%RmatrixBlock(k/2+1:,:)%dscaleFactor = 0.0_DP
   
-    ! Initialise the other matrices with identities on the diagonal.
+    ! Switch on only the diagonal matrices. Initialise with identity.
+    do i=rsubmatrix%nblocksPerRow/2+1,rsubmatrix%nblocksPerRow
+      rsubmatrix%RmatrixBlock(i,i)%dscaleFactor = 1.0_DP
+      call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,i))
+      call lsyssc_initialiseIdentityMatrix (rsubmatrix%RmatrixBlock(i,i))
+    end do
+  
+  end subroutine
+  
+  ! ***************************************************************************
+
+  subroutine stmv_initPrimalIdentity (rsubmatrix)
+  
+  ! Removes the coupling of the primal from the dual.
+  ! Initialises the dual main part by an identity matrix.
+  
+  ! Underlying space-time matrix
+  type(t_matrixBlock), intent(inout) :: rsubmatrix
+  
+    integer :: i,k
+  
+    ! Decouple.
+    k = rsubmatrix%nblocksPerRow
+    
+    ! Switch off all dual matrices.
+    rsubmatrix%RmatrixBlock(1:k/2,:)%dscaleFactor = 0.0_DP
+  
+    ! Switch on only the diagonal matrices. Initialise with identity.
     do i=1,rsubmatrix%nblocksPerRow/2
       rsubmatrix%RmatrixBlock(i,i)%dscaleFactor = 1.0_DP
       call lsyssc_clearMatrix (rsubmatrix%RmatrixBlock(i,i))
@@ -390,7 +450,7 @@ contains
     end do
   
   end subroutine
-
+  
   ! ***************************************************************************
 
   subroutine stmv_getSubmatrix (rmatrix, ispaceLevel, irow, icol, rsubmatrix)
