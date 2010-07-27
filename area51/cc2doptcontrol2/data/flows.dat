@@ -5,18 +5,18 @@
 [INITIALCONDITION]
 ##################
 
-# Type of flow.
+# Type of function.
 # =-1: analytically given as callback function
-# =0: zero flow
-# =1: stationary flow as prescribed by a solution vector read in from a file.
-#     The filename is stargetFlow below.
-# =2: The first file of a nonstationary flow as prescribed by a sequence of 
-#     files on the hard disc. stargetFlow is the basic filename target. A number
+# =0: zero function
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: The first file of a nonstationary function as prescribed by a sequence of 
+#     files on the hard disc. stargetFunction is the basic filename target. A number
 #     '.0000','.0001',... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
-# =3: analytically given in expression sflowExpressionX/sflowExpressionY
+# =3: analytically given in expression sexpression(1..ncomponents)
 
 ctype = -1
 
@@ -24,64 +24,70 @@ ctype = -1
 
 iid = 0
 
-# Analytical expression that defines the flow for the X/Y coordinate
-# in case ctype = 3. Valid variables/constants:
+# Number of components
+
+ncomponents = 3
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
 #    X / Y  = coordinate of the point where to evaluate the expression
 #    TIME   = current time
 #    _PI    = The number Pi
 #    _EXP   = The natural number E
 #    _INFTY = infinity
 
-sflowExpressionY1 = ''
-sflowExpressionY2 = ''
-sflowExpressionP = ''
+sexpression(3) =
+  ""
+  ""
+  ""
 
-# Refinement level of the coarse mesh corresponding to the flow vector.
+# Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.
 
 ilevel = 7
 
-# Element type of the flow.
+# Element type of the function.
 # =-1: Use the same element as the discretisation.
 # >=0: Use an alternative element.
 
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# flow. ='': Use the same TRI file as for the computation of the
+# function. ='': Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
 smesh = ''
 
 # If ctype = 1, this is the filename of a file on disc containing
-# the flow. The file must contain a solution at the same spatial
+# the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sflowFile = ''
+sfunctionFile = ''
 
-# Granularity parameter for the filenames of the flow.
+# Granularity parameter for the filenames of the function.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
 
 idelta = 1
 
-# Number of files that describe the flow. If this is set to -1,
+# Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
-# in the finest level. If this is >= 0, the flow consists of nimesteps
+# in the finest level. If this is >= 0, the function consists of nimesteps
 # files with file extension '.00000', '.00001', '.00002',...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
 ntimesteps = 64
 
-# Start time of a nonstationary flow if ctype=2.
+# Start time of a nonstationary function if ctype=2.
 # Default coincides with the start time of the nonstationary simulation.
 
 dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
-# End time of a nonstationary flow if ctype=2.
+# End time of a nonstationary fuinction if ctype=2.
 # Default coincides with the end time of the nonstationary simulation.
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
@@ -93,114 +99,124 @@ dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 [RIGHTHANDSIDE]
 ###############
 
-# Type of flow.
+# Type of function.
 # =-1: analytically given as callback function using iid
-# =0: zero flow
-# =3: analytically given in expression sflowExpressionX/sflowExpressionY
+# =0: zero function
+# =3: analytically given in expression sexpression(1..ncomponents)
 
 ctype = -1
 
-# Id of the flow in case ctype=0.
+# Id of the function in case ctype=0.
 
 iid = 0
 
-# Analytical expression that defines the flow for the X/Y coordinate
-# in case ctype = 3. Valid variables/constants:
+# Number of components
+
+ncomponents = 2
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
 #    X / Y  = coordinate of the point where to evaluate the expression
 #    TIME   = current time
 #    _PI    = The number Pi
 #    _EXP   = The natural number E
 #    _INFTY = infinity
 
-sflowExpressionY1 = ''
-sflowExpressionY2 = ''
-sflowExpressionP = ''
+sexpression(2) =
+  ""
+  ""
 
 # =======================================================================================
-# Section that defines the target flow in the optimal control problem.
+# Section that defines the target function in the optimal control problem.
 
-################
-[OPTCTARGETFLOW]
-################
+####################
+[OPTCTARGETFUNCTION]
+####################
 
-# Type of flow.
+# Type of the function.
 # =-1: analytically given as callback function
-# =0: zero flow
-# =1: stationary flow as prescribed by a solution vector read in from a file.
-#     The filename is stargetFlow below.
-# =2: nonstationary flow as prescribed by a sequence of files on the 
-#     hard disc. stargetFlow is the basic filename target. A number
+# =0: zero function
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: nonstationary function as prescribed by a sequence of files on the 
+#     hard disc. stargetFunction is the basic filename target. A number
 #     '.0000','.0001',... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
-# =3: analytically given in expression sflowExpressionX/sflowExpressionY
+# =3: analytically given in expression sexpression(1..ncomponents)
 # =4: Created by a forward simulation. NOTE: NOT YET SUPPORTED!
 
 ctype = -1
 
-# Id of the flow in case ctype=0.
+# Id of the function in case ctype=0.
 
 iid = 0
 
-# Analytical expression that defines the flow for the X/Y coordinate
-# in case ctype = 3. Valid variables/constants:
+# Number of components
+
+ncomponents = 2
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
 #    X / Y  = coordinate of the point where to evaluate the expression
 #    TIME   = current time
 #    _PI    = The number Pi
 #    _EXP   = The natural number E
 #    _INFTY = infinity
 
-sflowExpressionY1 = ''
-sflowExpressionY2 = ''
-sflowExpressionP = ''
+sexpression(2) =
+  ""
+  ""
 
-# Refinement level of the coarse mesh corresponding to the flow vector.
+# Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.
 
 ilevel = 7
 
-# Element type of the flow.
+# Element type of the function.
 # =-1: Use the same element as the discretisation.
 # >=0: Use an alternative element.
 
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# flow. ='': Use the same TRI file as for the computation of the
+# function. ='': Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
 smesh = ''
 
 # If ctype = 1/2, this is the filename of a file on disc containing
-# the flow. The file must contain a solution at the same spatial
+# the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sflowFile = 'ns/drivencav_stat_lv7/solution7'
+sfunctionFile = 'ns/drivencav_stat_lv7/solution7'
 
-# Granularity parameter for the filenames of the flow if ctype=2.
+# Granularity parameter for the filenames of the function if ctype=2.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
 
 idelta = 1
 
-# If ctype=2/4: Number of files that describe the flow. If this is set to -1,
+# If ctype=2/4: Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
-# in the finest level. If this is >= 0, the flow consists of nimesteps
+# in the finest level. If this is >= 0, the function consists of nimesteps
 # files with file extension '.00000', '.00001', '.00002',...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
 ntimesteps = 64 
 
-# Start time of a nonstationary flow if ctype=2/4.
+# Start time of a nonstationary function if ctype=2/4.
 # Default coincides with the start time of the nonstationary simulation.
 
 dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
-# End time of a nonstationary flow if ctype=2/4.
+# End time of a nonstationary function if ctype=2/4.
 # Default coincides with the end time of the nonstationary simulation.
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
@@ -216,7 +232,7 @@ dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 # NOTE: NOT YET SUPPORTED!
 # dtimeStepTheta = %{TIME-DISCRETISATION.dtimeStepTheta}
 
-# Reference to a section defining the initial condition of the flow
+# Reference to a section defining the initial condition of the function
 # (solution at the start time).
 # NOTE: NOT YET SUPPORTED!
 # ssectionInitSol = INITIALCONDITION
@@ -229,18 +245,18 @@ dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 [INITIALITERATE]
 ################
 
-# Type of flow.
+# Type of the function.
 # =-1: analytically given as callback function
-# =0: zero flow
-# =1: stationary flow as prescribed by a solution vector read in from a file.
-#     The filename is stargetFlow below.
-# =2: The first file of a nonstationary flow as prescribed by a sequence of 
-#     files on the hard disc. stargetFlow is the basic filename target. A number
+# =0: zero function
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: The first file of a nonstationary function as prescribed by a sequence of 
+#     files on the hard disc. stargetFunction is the basic filename target. A number
 #     '.0000','.0001',... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
-# =3: analytically given in expression sflowExpressionX/sflowExpressionY
+# =3: analytically given in expression sexpression(1..ncomponents)
 
 ctype = 0
 
@@ -248,64 +264,73 @@ ctype = 0
 
 iid = 0
 
-# Analytical expression that defines the flow for the X/Y coordinate
-# in case ctype = 3. Valid variables/constants:
+# Number of components
+
+ncomponents = 6
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
 #    X / Y  = coordinate of the point where to evaluate the expression
 #    TIME   = current time
 #    _PI    = The number Pi
 #    _EXP   = The natural number E
 #    _INFTY = infinity
 
-sflowExpressionY1 = ''
-sflowExpressionY2 = ''
-sflowExpressionP = ''
+sexpression(6) =
+  ""
+  ""
+  ""
+  ""
+  ""
+  ""
 
-# Refinement level of the coarse mesh corresponding to the flow vector.
+# Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.
 
 ilevel = 7
 
-# Element type of the flow.
+# Element type of the function.
 # =-1: Use the same element as the discretisation.
 # >=0: Use an alternative element.
 
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# flow. ='': Use the same TRI file as for the computation of the
+# function. ='': Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
 smesh = ''
 
 # If ctype = 1, this is the filename of a file on disc containing
-# the flow. The file must contain a solution at the same spatial
+# the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sflowFile = ''
+sfunctionFile = ''
 
-# Granularity parameter for the filenames of the flow.
+# Granularity parameter for the filenames of the function.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
 
 idelta = 1
 
-# Number of files that describe the flow. If this is set to -1,
+# Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
-# in the finest level. If this is >= 0, the flow consists of nimesteps
+# in the finest level. If this is >= 0, the function consists of nimesteps
 # files with file extension '.00000', '.00001', '.00002',...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
 ntimesteps = 64 
 
-# Start time of a nonstationary flow if ctype=2.
+# Start time of a nonstationary function if ctype=2.
 # Default coincides with the start time of the nonstationary simulation.
 
 dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
-# End time of a nonstationary flow if ctype=2.
+# End time of a nonstationary function if ctype=2.
 # Default coincides with the end time of the nonstationary simulation.
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
@@ -318,86 +343,92 @@ dtimeMax = %{TIME-DISCRETISATION.dtimeMax}
 [REFERENCE-FUNCTION]
 ####################
 
-# Type of flow.
-# =-1: zero flow
+# Type of the function.
+# =-1: zero function
 # =0: analytically given as callback function
-# =1: stationary flow as prescribed by a solution vector read in from a file.
-#     The filename is stargetFlow below.
-# =2: nonstationary flow as prescribed by a sequence of files on the 
-#     hard disc. stargetFlow is the basic filename target. A number
+# =1: stationary function as prescribed by a solution vector read in from a file.
+#     The filename is stargetFunction below.
+# =2: nonstationary function as prescribed by a sequence of files on the 
+#     hard disc. stargetFunction is the basic filename target. A number
 #     '.0000','.0001',... is appended to this to form the filename of the
 #     solution vector in every timestep. There must be exactly as many
 #     files present on the hard disc as prescribed by the 
 #     time discretisation!
-# =3: analytically given in expression sflowExpressionY1/sflowExpressionY2
+# =3: analytically given in expression sexpression(1..ncomponents)
 
 ctype = -1
 
-# Id of the flow in case ctype=0.
+# Id of the function in case ctype=0.
 
 iid = 0
 
-# Analytical expression that defines the flow for the X/Y coordinate
-# in case ctype = 3. Valid variables/constants:
+# Number of components
+
+ncomponents = 6
+
+# Analytical expression that defines the analytical functions for the X/Y 
+# coordinate in case ctype = 3. Must have as many components as prescribed
+# by ncomponents. Valid variables/constants:
 #    X / Y  = coordinate of the point where to evaluate the expression
 #    TIME   = current time
 #    _PI    = The number Pi
 #    _EXP   = The natural number E
 #    _INFTY = infinity
 
-sflowExpressionY1 = ''
-sflowExpressionY2 = ''
-sflowExpressionP = ''
-sflowExpressionL1 = ''
-sflowExpressionL2 = ''
-sflowExpressionXI = ''
+sexpression(6) =
+  ""
+  ""
+  ""
+  ""
+  ""
+  ""
 
-# Refinement level of the coarse mesh corresponding to the flow vector.
+# Refinement level of the coarse mesh corresponding to the function vector.
 # Only valid if ctype =1 or =2.
 
 ilevel = 7
 
-# Element type of the flow.
+# Element type of the function.
 # =-1: Use the same element as the discretisation.
 # >=0: Use an alternative element.
 
 ielementType = -1
 
 # Name and path to the TRI file containing the mesh that corresponds to the
-# flow. ='': Use the same TRI file as for the computation of the
+# function. ='': Use the same TRI file as for the computation of the
 # solution.
 # Only valid if ctype =1 or =2.
 
 smesh = ''
 
 # If ctype = 1, this is the filename of a file on disc containing
-# the flow. The file must contain a solution at the same spatial
+# the function. The file must contain a solution at the same spatial
 # level as prescribed by ilevel.
 
-sflowFile = 'ns/drivencav_stat_lv7/solution7'
+sfunctionFile = 'ns/drivencav_stat_lv7/solution7'
 
-# Granularity parameter for the filenames of the flow.
+# Granularity parameter for the filenames of the function.
 # =1 will read '.00000', '.00001', '.00002', etc.
 # =2 will read '.00000', '.00002', '.00004', etc.
 # =n will read '.00000', '.0000n', etc.
 
 idelta = 1
 
-# Number of files that describe the flow. If this is set to -1,
+# Number of files that describe the function. If this is set to -1,
 # the number of files is automatically determined by the number of timesteps
-# in the finest level. If this is >= 0, the flow consists of nimesteps
+# in the finest level. If this is >= 0, the function consists of nimesteps
 # files with file extension '.00000', '.00001', '.00002',...
 # If there are less files available on the hard disc that specified here,
 # the last solution is duplicated to fill the remaining time steps.
 
 ntimesteps = 64 
 
-# Start time of a nonstationary flow if ctype=2.
+# Start time of a nonstationary function if ctype=2.
 # Default coincides with the start time of the nonstationary simulation.
 
 dstartTime = %{TIME-DISCRETISATION.dtimeInit}
 
-# End time of a nonstationary flow if ctype=2.
+# End time of a nonstationary function if ctype=2.
 # Default coincides with the end time of the nonstationary simulation.
 
 dtimeMax = %{TIME-DISCRETISATION.dtimeMax}

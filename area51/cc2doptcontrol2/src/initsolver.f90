@@ -343,7 +343,7 @@ contains
     select case (rsettingsSolver%rphysicsPrimal%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
-      call init_initFlow2D (rparlist,sstr,rsettingsSolver%rinitialCondition,&
+      call init_initFunction (rparlist,sstr,rsettingsSolver%rinitialCondition,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
           isuccess)
@@ -363,7 +363,7 @@ contains
     select case (rsettingsSolver%rphysicsPrimal%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
-      call init_initFlow2D (rparlist,sstr,rrhs,&
+      call init_initFunction (rparlist,sstr,rrhs,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,rsettingsSolver%rboundary,&
           isuccess)
@@ -1422,13 +1422,13 @@ contains
 !</subroutine>
 
     ! local variables
-    character(len=SYS_STRLEN) :: stargetFlow
+    character(len=SYS_STRLEN) :: stargetFunction
     integer :: isuccess
     
     ! Initialise the target flow.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
-        'stargetFlow',stargetFlow,bdequote=.true.)
-    call init_initFlow2D (rparlist,stargetFlow,roptcontrol%rtargetFlow,&
+        'stargetFunction',stargetFunction,bdequote=.true.)
+    call init_initFunction (rparlist,stargetFunction,roptcontrol%rtargetFlow,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
@@ -1615,14 +1615,14 @@ contains
 
 !<subroutine>
 
-  subroutine init_initFlow2D (rparlist,ssectionFlow,rflow,&
+  subroutine init_initFunction (rparlist,ssection,rfunction,&
       rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,&
-      isuccess)
+      ierror)
   
 !<description>
-  ! Reads in and sets up a flow. ssectionFlow is the name of a section
+  ! Reads in and sets up a function. ssection is the name of a section
   ! containing all parameters that configure the flow. The routine creates
-  ! a structure rflow based on these parameters.
+  ! a structure rfunction based on these parameters.
 !</description>
 
 !<input>
@@ -1630,7 +1630,7 @@ contains
   type(t_parlist), intent(in) :: rparlist
   
   ! Section where the parameters can be found that specify the target flow.
-  character(len=*), intent(in) :: ssectionFlow
+  character(len=*), intent(in) :: ssection
 
   ! Space discretisation settings
   type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
@@ -1652,107 +1652,114 @@ contains
 
 !<output>
   ! Flow structure to create.
-  type(t_anSolution), intent(out) :: rflow
+  type(t_anSolution), intent(out) :: rfunction
   
   ! Success-flag. Returns whether this routine successfully created the flow.
   ! =0: Flow was successfully created.
   ! =1: Flow is defined as forward simulation and was not possible to create.
   !     The caller must invoke init_initFlowBySimulation to create the flow.
-  integer, intent(out) :: isuccess
+  integer, intent(out) :: ierror
   
 !</output>
 
 !</subroutine>
 
     ! local variables
-    integer :: ctype,iid
+    integer :: ctype,iid,i
     real(dp) :: dstartTime,dtimeMax
-    character(len=PARLST_LENLINEBUF), dimension(6) :: Sexpressions
-    character(len=SYS_STRLEN) :: smesh,sflowFile
+    character(len=PARLST_LENLINEBUF), dimension(:), allocatable :: Sexpressions
+    character(len=SYS_STRLEN) :: smesh,sfunctionFile
     integer :: ilevel,ielementType,idelta
-    integer :: ntimesteps
+    integer :: ntimesteps,ncomponents
     type(t_parlstSection), pointer :: p_rsection
     
     ! Is the section available?
-    call parlst_querysection(rparlist, ssectionFlow, p_rsection) 
+    call parlst_querysection(rparlist, ssection, p_rsection) 
     if (.not. associated(p_rsection)) then
-      call output_line ('Flow section does not exist: '//trim(ssectionFlow), &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initFlow')
+      call output_line ("Flow section does not exist: "//trim(ssection), &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initFlow")
       call sys_halt()
     end if
     
     ! Type of the flow?    
-    call parlst_getvalue_int (rparlist,ssectionFlow,'ctype',ctype,-1)
+    call parlst_getvalue_int (rparlist,ssection,"ctype",ctype,-1)
         
     if (ctype .eq. 4) then
       ! Forget it, there are not enough parameters here to create the flow.
       ! This situation is more complicated!
-      isuccess = 1
+      ierror = 1
       return
     end if
+    
+    ! Get the number of components.
+    call parlst_getvalue_int (rparlist,ssection,"ncomponents",ncomponents,0)
+    
+    if (ncomponents .le. 0) then
+      call output_line ("Invalid number of components!", &
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initFlow")
+      call sys_halt()
+    end if
 
-    ! Read some more parameters, we may need them.
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY1',Sexpressions(1),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionY2',Sexpressions(2),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionP',Sexpressions(3),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL1',Sexpressions(4),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionL2',Sexpressions(5),"",bdequote=.true.)
-
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowExpressionXi',Sexpressions(6),"",bdequote=.true.)
+    if (ncomponents .gt. 0) then
+      ! Read the expressions
+      allocate (Sexpressions(ncomponents))
+      
+      do i=1,ncomponents
+        call parlst_getvalue_string (rparlist,ssection,&
+            "sexpression",Sexpressions(i),"",isubstring=i,bdequote=.true.)
+      end do
+      
+    end if
     
     ! Id, level, element type
 
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'iid',iid,0)
+    call parlst_getvalue_int (rparlist,ssection,&
+        "iid",iid,0)
 
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ilevel',ilevel,0)
+    call parlst_getvalue_int (rparlist,ssection,&
+        "ilevel",ilevel,0)
 
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'ielementType',ielementType,-1)
+    call parlst_getvalue_int (rparlist,ssection,&
+        "ielementType",ielementType,-1)
 
     ! Mesh, the flow diles
 
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'smesh',smesh,"",bdequote=.true.)
+    call parlst_getvalue_string (rparlist,ssection,&
+        "smesh",smesh,"",bdequote=.true.)
 
-    call parlst_getvalue_string (rparlist,ssectionFlow,&
-        'sflowFile',sflowFile,"",bdequote=.true.)
+    call parlst_getvalue_string (rparlist,ssection,&
+        "sfunctionFile",sfunctionFile,"",bdequote=.true.)
 
     ! Time discretisation
 
-    call parlst_getvalue_int (rparlist,ssectionFlow,&
-        'idelta',idelta,1)
+    call parlst_getvalue_int (rparlist,ssection,&
+        "idelta",idelta,1)
 
     ! Set it up...
     select case (ctype)
     case (-1)
       ! Analytic flow given by a callback routine
-      call ansol_init(rflow,6,0)
-      rflow%iid = iid
+      call ansol_init(rfunction,ncomponents,0)
+      rfunction%iid = iid
       return
     
     case (0)
       ! Zero flow
-      call ansol_init(rflow,6)
-      rflow%iid = iid
+      call ansol_init(rfunction,ncomponents)
+      rfunction%iid = iid
       return
 
     case (3)
       ! Analytical expression as flow.
-      call ansol_init (rflow,6)
-      call ansol_configExpressions (rflow,Sexpressions)
-      rflow%iid = iid
+      call ansol_init (rfunction,ncomponents)
+      call ansol_configExpressions (rfunction,Sexpressions)
+      rfunction%iid = iid
+      
+      ! Release the text expressions again
+      if (ncomponents .gt. 0) then
+        deallocate(Sexpressions)
+      end if
+      
       return
 
     end select
@@ -1760,9 +1767,9 @@ contains
     ! Create an analytical flow that resembles a discrete flow.
     call init_initDiscreteAnalytFlow2D (ielementType,rboundary,&
         smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
-        ilevel,rflow)  
+        ilevel,rfunction)  
         
-    rflow%iid = iid  
+    rfunction%iid = iid  
     
     ! Finally, set up the flow.
     select case (ctype)
@@ -1770,24 +1777,24 @@ contains
     case (1)
     
       ! Read stationary flow from hard disc
-      call ansol_configStationaryFile (rflow,sflowfile,.true.)
+      call ansol_configStationaryFile (rfunction,sfunctionFile,.true.)
       
     case (2)
     
       ! Read nonstationary flow from hard disc
       
-      call parlst_getvalue_double (rparlist,ssectionFlow,&
-          'dstartTime',dstartTime)
+      call parlst_getvalue_double (rparlist,ssection,&
+          "dstartTime",dstartTime)
 
-      call parlst_getvalue_double (rparlist,ssectionFlow,&
-          'dtimeMax',dtimeMax)
+      call parlst_getvalue_double (rparlist,ssection,&
+          "dtimeMax",dtimeMax)
       
-      call parlst_getvalue_int (rparlist,ssectionFlow,&
-          'ntimesteps',ntimesteps)
+      call parlst_getvalue_int (rparlist,ssection,&
+          "ntimesteps",ntimesteps)
 
-      call ansol_configNonstationaryFile (rflow, &
+      call ansol_configNonstationaryFile (rfunction, &
           dstartTime,dtimeMax,ntimesteps,&
-          "("""//trim(sflowfile)//"."",I5.5)",&
+          "("""//trim(sfunctionFile)//"."",I5.5)",&
           0,idelta,.true.)
           
     end select
@@ -1831,7 +1838,7 @@ contains
 !    type(t_collection) :: rcollection
 !    real(dp) :: dstartTime,dtimeMax,dtimeStepTheta
 !    character(len=SYS_STRLEN) :: ssectionInitCond
-!    character(len=SYS_STRLEN) :: smesh,sflowFile
+!    character(len=SYS_STRLEN) :: smesh,sfunctionFile
 !    integer :: ilevel,ielementType,idelta,ieltype
 !    integer :: ntimesteps,ctimeStepScheme
 !    type(t_anSolution) :: rinitcondflow
@@ -2738,7 +2745,7 @@ contains
         
       case (2)
         ! Read the analytic solution.
-        call init_initFlow2D (rparlist,sstartVector,rlocalsolution,&
+        call init_initFunction (rparlist,sstartVector,rlocalsolution,&
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
             rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
         if (isuccess .eq. 1) then
@@ -2993,7 +3000,7 @@ contains
         ! Stokes, Navier-Stokes, 2D
     
         ! Initialise the reference solution
-        call init_initFlow2D (rparlist,sstr,rpostproc%ranalyticRefFunction,&
+        call init_initFunction (rparlist,sstr,rpostproc%ranalyticRefFunction,&
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
             rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
       end select

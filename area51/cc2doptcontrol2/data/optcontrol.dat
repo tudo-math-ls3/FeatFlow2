@@ -9,7 +9,7 @@ ssectionBoundaryExpressions = BDEXPRESSIONS
 ssectionBoundaryConditions = BDCONDITIONS
 
 # Name of the section that defines the target flow.
-stargetFlow = OPTCTARGETFLOW
+stargetFunction = OPTCTARGETFUNCTION
 
 # Name of the section that defines the initial condition.
 sinitialCondition = INITIALCONDITION

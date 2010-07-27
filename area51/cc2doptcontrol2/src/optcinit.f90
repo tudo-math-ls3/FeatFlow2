@@ -125,7 +125,7 @@ contains
     type(t_collection) :: rcollection
     
     character(len=SYS_STRLEN), dimension(2) :: StargetFlowExpressions
-    character(len=SYS_STRLEN) :: smeshTargetFlow,stargetFlow
+    character(len=SYS_STRLEN) :: smeshTargetFunction,stargetFunction
     integer :: ilevelTargetFlow,ielementTypeTargetFlow,itargetFlowDelta
     integer :: itargetFlowTimesteps
     
@@ -147,10 +147,10 @@ contains
         'ielementTypeTargetFlow',ielementTypeTargetFlow,-1)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'smeshTargetFlow',smeshTargetFlow,"",bdequote=.true.)
+        'smeshTargetFlow',smeshTargetFunction,"",bdequote=.true.)
 
     call parlst_getvalue_string (rproblem%rparamList,'OPTIMALCONTROL',&
-        'stargetFlow',stargetFlow,"",bdequote=.true.)
+        'stargetFunction',stargetFunction,"",bdequote=.true.)
 
     call parlst_getvalue_int (rproblem%rparamList,'OPTIMALCONTROL',&
         'itargetFlowDelta',itargetFlowDelta,1)
@@ -188,7 +188,7 @@ contains
     
       ! Read stationary flow from hard disc
       call ansol_configStationaryFile (roptcontrol%rtargetFlow,&
-          stargetFlow,.true.)
+          stargetFunction,.true.)
       
     case (2,4)
       ! Nonstationary target flow
@@ -211,7 +211,7 @@ contains
       ! Read stationary flow from hard disc
       call ansol_configNonstationaryFile (roptcontrol%rtargetFlow, &
           dstartTime,dendTime,itargetFlowTimesteps,&
-          '('''//trim(stargetFlow)//'.'',I5.5)',&
+          '('''//trim(stargetFunction)//'.'',I5.5)',&
           0,itargetFlowDelta,.true.)
           
     case (5)
