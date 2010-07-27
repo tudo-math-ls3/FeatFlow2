@@ -224,7 +224,7 @@ icouplingpart = 1
 # -1 	Runge-Kutta first order / explicit Euler method (particle tracing)
 # -2 	Runge-Kutta second order / improved Euler method (particle tracing)
 # -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
-isolutionpart = -1
+isolutionpart = 1
 
 #-------------------------------------------------------------------------------
 # select forces for the particle movement
