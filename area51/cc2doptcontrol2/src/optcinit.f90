@@ -162,11 +162,11 @@ contains
     select case (itypeTargetFlow)
     case (-1)
       ! Zero flow
-      call ansol_init(roptcontrol%rtargetFlow)
+      call ansol_init(roptcontrol%rtargetFunction)
     
     case (0)
       ! Analytic flow given by a callback routine
-      call ansol_init(roptcontrol%rtargetFlow,0)
+      call ansol_init(roptcontrol%rtargetFunction,0)
       
     case (1,3)
       ! Stationary targer flow
@@ -181,13 +181,13 @@ contains
       iavaillevel = min(rproblem%NLMAX,ilevelTargetFlow)
       rcollection%IquickAccess(1) = ielementTypeTargetFlow
       rcollection%IquickAccess(2) = NDIM2D+1
-      call ansol_init (roptcontrol%rtargetFlow,ilevelTargetFlow,&
+      call ansol_init (roptcontrol%rtargetFunction,ilevelTargetFlow,&
           rproblem%RlevelInfo(iavaillevel)%rdiscretisationPrimal,iavaillevel,&
           ielementTypeTargetFlow,&
           fget1LevelDiscretisationNavSt2D,rcollection)
     
       ! Read stationary flow from hard disc
-      call ansol_configStationaryFile (roptcontrol%rtargetFlow,&
+      call ansol_configStationaryFile (roptcontrol%rtargetFunction,&
           stargetFunction,.true.)
       
     case (2,4)
@@ -203,21 +203,21 @@ contains
       iavaillevel = min(rproblem%NLMAX,ilevelTargetFlow)
       rcollection%IquickAccess(1) = ielementTypeTargetFlow
       rcollection%IquickAccess(2) = NDIM2D+1
-      call ansol_init (roptcontrol%rtargetFlow,ilevelTargetFlow,&
+      call ansol_init (roptcontrol%rtargetFunction,ilevelTargetFlow,&
           rproblem%RlevelInfo(iavaillevel)%rdiscretisationPrimal,iavaillevel,&
           ielementTypeTargetFlow,&
           fget1LevelDiscretisationNavSt2D,rcollection)
     
       ! Read stationary flow from hard disc
-      call ansol_configNonstationaryFile (roptcontrol%rtargetFlow, &
+      call ansol_configNonstationaryFile (roptcontrol%rtargetFunction, &
           dstartTime,dendTime,itargetFlowTimesteps,&
           '('''//trim(stargetFunction)//'.'',I5.5)',&
           0,itargetFlowDelta,.true.)
           
     case (5)
       ! Analytical expression as target flow.
-      call ansol_init (roptcontrol%rtargetFlow)
-      call ansol_config (roptcontrol%rtargetFlow,StargetFlowExpressions)
+      call ansol_init (roptcontrol%rtargetFunction)
+      call ansol_config (roptcontrol%rtargetFunction,StargetFlowExpressions)
 
     end select
 
@@ -241,7 +241,7 @@ contains
 !</subroutine>
 
     ! Release the target flow.
-    call ansol_done(roptcontrol%rtargetFlow)
+    call ansol_done(roptcontrol%rtargetFunction)
 
   end subroutine
 

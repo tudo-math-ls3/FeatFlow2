@@ -30,11 +30,11 @@
 !#        'intf_coefficientVectorSc.inc'
 !#
 !# 3.) user_coeff_Target
-!#     -> Returns analytical values for the desired target flow 
+!#     -> Returns analytical values for the desired target function
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
-!# 4.) user_coeff_Flow
+!# 4.) user_coeff_Reference
 !#     -> Returns analytical values for the desired flow 
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
@@ -115,7 +115,7 @@ module user_callback
   public :: user_coeff_RHS
   public :: user_fct_Target
   public :: user_coeff_Target
-  public :: user_coeff_Flow
+  public :: user_coeff_Reference
 !  public :: user_coeff_RHSprimal_x
 !  public :: user_coeff_RHSprimal_y
 !  public :: user_coeff_RHSdual_x
@@ -159,7 +159,7 @@ contains
     rglobalData%p_rtimeCoarse => rsettings%rtimeCoarse
     rglobalData%p_rsettingsOptControl => rsettings%rsettingsOptControl
     rglobalData%p_rrhs => rrhs
-    rglobalData%p_rtargetFlow => rsettings%rsettingsOptControl%rtargetFlow
+    rglobalData%p_rtargetFunction => rsettings%rsettingsOptControl%rtargetFunction
     rglobalData%p_rphysics => rsettings%rphysicsPrimal
     
   end subroutine
@@ -185,7 +185,7 @@ contains
     nullify(rglobalData%p_rtimeCoarse)
     nullify(rglobalData%p_rsettingsOptControl)
     nullify(rglobalData%p_rrhs)
-    nullify(rglobalData%p_rtargetFlow)
+    nullify(rglobalData%p_rtargetFunction)
 
   end subroutine
   
@@ -226,7 +226,7 @@ contains
     ! to the quick-access array of the collection,
     ! so it can be accessed in the callback routines!
     rcollection%IquickAccess(1) = rglobalData%p_rrhs%iid
-    rcollection%IquickAccess(2) = rglobalData%p_rsettingsOptControl%rtargetFlow%iid
+    rcollection%IquickAccess(2) = rglobalData%p_rsettingsOptControl%rtargetFunction%iid
     rcollection%Dquickaccess(1) = dtime
     rcollection%Dquickaccess(2) = rglobalData%p_rtimeCoarse%dtimeInit
     rcollection%Dquickaccess(3) = rglobalData%p_rtimeCoarse%dtimeMax
@@ -919,72 +919,75 @@ contains
 
 !<subroutine>
 
-  subroutine user_coeff_Flow (rdiscretisation,rform, &
-                  nelements,npointsPerElement,Dpoints, &
-                  IdofsTest,rdomainIntSubset, &
-                  Dcoefficients,rcollection)
+  subroutine user_coeff_Reference (cderivative, rdiscretisation, &
+                                   nelements, npointsPerElement, Dpoints, &
+                                   IdofsTest, rdomainIntSubset, &
+                                   Dvalues, rcollection)
     
+    use fsystem
     use basicgeometry
     use triangulation
-    use collection
     use scalarpde
     use domainintegration
+    use spatialdiscretisation
+    use collection
     
   !<description>
-    ! This subroutine is called during the vector assembly. It has to compute
-    ! the values of an analytically given flow in a set of points.
-    ! The routine is usually used for comparing a solution to a reference
-    ! solution during the postprocessing.
+    ! This subroutine is called during the calculation of errors. It has to compute
+    ! the values of an analytically given flow in a set of points on a couple
+    ! of elements. These values are compared to those of a computed FE function
+    ! and used to calculate an error.
     !
     ! The routine accepts a set of elements and a set of points on these
     ! elements (cubature points) in real coordinates.
     ! According to the terms in the linear form, the routine has to compute
-    ! simultaneously for all these points and all the terms in the linear form
-    ! the corresponding coefficients in front of the terms.
+    ! simultaneously for all these points.
   !</description>
     
   !<input>
+    ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+    ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+    ! The result must be written to the Dvalue-array below.
+    integer, intent(in) :: cderivative
+  
     ! The discretisation structure that defines the basic shape of the
     ! triangulation with references to the underlying triangulation,
     ! analytic boundary boundary description etc.
-    type(t_spatialDiscretisation), intent(IN)                   :: rdiscretisation
-    
-    ! The linear form which is currently to be evaluated:
-    type(t_linearForm), intent(IN)                              :: rform
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
     
     ! Number of elements, where the coefficients must be computed.
-    integer, intent(IN)                                         :: nelements
+    integer, intent(in) :: nelements
     
     ! Number of points per element, where the coefficients must be computed
-    integer, intent(IN)                                         :: npointsPerElement
+    integer, intent(in) :: npointsPerElement
     
     ! This is an array of all points on all the elements where coefficients
     ! are needed.
+    ! DIMENSION(NDIM2D,npointsPerElement,nelements)
     ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
-    ! DIMENSION(dimension,npointsPerElement,nelements)
-    real(DP), dimension(:,:,:), intent(IN)  :: Dpoints
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
 
-    ! An array accepting the DOF's on all elements trial in the trial space.
-    ! DIMENSION(\#local DOF's in test space,nelements)
-    integer, dimension(:,:), intent(IN) :: IdofsTest
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
 
     ! This is a t_domainIntSubset structure specifying more detailed information
     ! about the element set that is currently being integrated.
-    ! It's usually used in more complex situations (e.g. nonlinear matrices).
-    type(t_domainIntSubset), intent(IN)              :: rdomainIntSubset
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
     ! Optional: A collection structure to provide additional 
     ! information to the coefficient routine. 
-    type(t_collection), intent(INOUT), optional      :: rcollection
+    type(t_collection), intent(inout), optional :: rcollection
     
   !</input>
   
   !<output>
-    ! A list of all coefficients in front of all terms in the linear form -
-    ! for all given points on all given elements.
-    !   DIMENSION(itermCount,npointsPerElement,nelements)
-    ! with itermCount the number of terms in the linear form.
-    real(DP), dimension(:,:,:), intent(OUT)                      :: Dcoefficients
+    ! This array has to receive the values of the (analytical) function
+    ! in all the points specified in Dpoints, or the appropriate derivative
+    ! of the function, respectively, according to cderivative.
+    !   DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(out) :: Dvalues
   !</output>
     
   !</subroutine>
@@ -1009,9 +1012,6 @@ contains
       dalpha = 1.0_DP
     end if
     
-    ! Evaluate the RHS if possible.
-    allocate(DvaluesAct(npointsPerElement,nelements))
-    
     select case (cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
@@ -1022,11 +1022,11 @@ contains
         
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesY4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesY4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
 
@@ -1035,11 +1035,11 @@ contains
 
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesY4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesY4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
 
@@ -1048,11 +1048,11 @@ contains
 
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesP4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesP4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
 
@@ -1060,11 +1060,11 @@ contains
         ! dual X-velocity
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
 
@@ -1072,11 +1072,11 @@ contains
         ! dual Y-velocity
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesLambda4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesLambda4_y(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
 
@@ -1084,20 +1084,17 @@ contains
         ! dual pressure
         select case (iid)
         case (4)
-          DvaluesAct(:,:) = fct_stokesXi4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          Dvalues(:,:) = fct_stokesXi4(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
 
         case default
           ! Analytically given. =0.
-          DvaluesAct(:,:) = 0.0_DP
+          Dvalues(:,:) = 0.0_DP
           
         end select
         
       end select
 
     end select
-
-    Dcoefficients(1,1:npointsPerElement,1:nelements) = DvaluesAct(:,:)
-    deallocate(DvaluesAct)
 
   end subroutine
 

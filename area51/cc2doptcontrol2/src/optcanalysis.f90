@@ -84,11 +84,27 @@ contains
   type(t_collection), intent(INOUT), optional      :: rcollection
   real(DP), dimension(:,:), intent(out) :: Dvalues
   
-  integer :: ierror
+  integer :: ierror,ctype,icomponent
   
-    ! Evaluate
-    call ansol_evaluate (rcollection,"SOL",rcollection%IquickAccess(1),&
-        Dvalues,npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements,ierror)
+    ! Get data
+    icomponent = rcollection%IquickAccess(1)
+    ctype = rcollection%IquickAccess(2)
+  
+    if (ctype .ne. ANSOL_TP_ANALYTICAL) then
+      ! Evaluate the reference using precalculated information in the collection
+      ! from an analytical flow.
+      call ansol_evaluate (rcollection,"SOL",icomponent,&
+          Dvalues,npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements,ierror)
+    else
+      ! This is a flow realised by our callback routines.
+      ! Call them to get the information. Pass the "connected" collection
+      ! which contains postprocessing data.
+      call user_coeff_Reference (cderivative,rdiscretisation, &
+          nelements,npointsPerElement,Dpoints, &
+          IdofsTest,rdomainIntSubset,&
+          Dvalues,rcollection%p_rnextCollection)
+      ierror = 0
+    end if
         
     ! Check that this was ok. If yes, copy the data to the destination.
     if (ierror .ne. 0) then
@@ -482,6 +498,7 @@ contains
     real(DP) :: derrU, derrP, derrLambda, derrXi
     real(DP),dimension(6) :: Derr
     type(t_collection) :: rcollection
+    type(t_collection), target :: ruserCollection
     type(t_vectorBlock) :: rtempVector
     real(dp), dimension(:), pointer :: p_Ddata
     
@@ -530,61 +547,150 @@ contains
       call tmevl_evaluate(rsolution,dtimePrimal,rtempVector)
 
       ! Use our standard implementation to evaluate the error.
-      call ansol_prepareEval (rreference,rcollection,"SOL",dtimePrimal)
+      if (rreference%ctype .ne. ANSOL_TP_ANALYTICAL) then
+        call ansol_prepareEval (rreference,rcollection,"SOL",dtimePrimal)
+      else
+        ! Prepare the user-defined collection for assembly.
+        call collct_init(ruserCollection)
+      end if
+  
+      ! Save the function type to the collection, so the callback knows how
+      ! to evaluate.
+      rcollection%IquickAccess(2) = rreference%ctype
+      
+      ! The user-defined collection is the follower of rcollection.
+      rcollection%p_rnextCollection => ruserCollection
 
       ! Perform error analysis to calculate and add 1/2||y-y0||^2_{L^2},...
       ! Primal velocity, dual pressure
       do i=1,2
         rcollection%IquickAccess(1) = i
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimePrimal,ruserCollection)
+        end if
+
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
       end do
       
       ! Primal pressure only in the 1st timestep.
       if (isubstep .eq. 0) then
         i=3
         rcollection%IquickAccess(1) = i
+        
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimePrimal,ruserCollection)
+        end if
+        
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
       end if
       
       if (isubstep .ne. rsolution%NEQtime) then
         i=6
         rcollection%IquickAccess(1) = i
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimePrimal,ruserCollection)
+        end if
+
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
       end if
           
-      call ansol_doneEval (rcollection,"SOL")
-      
       ! The same for the dual equation.
       ! Dual velocity, primal pressure.
       ! In rtempVector(4..6) is the dual solution at time dtimeDual,
-      ! so we don't have to evaluate the flow again!
+      ! so we don't have to evaluate the function again!
 
-      call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
+      ! If we have a flow in rreference, switch the time for ir.
+      if (rreference%ctype .ne. ANSOL_TP_ANALYTICAL) then
+
+        call ansol_doneEval (rcollection,"SOL")
+        call ansol_prepareEval (rreference,rcollection,"SOL",dtimeDual)
+
+      end if
+
       do i=4,5
         rcollection%IquickAccess(1) = i
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimeDual,ruserCollection)
+        end if
+
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
+            
       end do
       
       if (isubstep .ne. 0) then
         i=3
         rcollection%IquickAccess(1) = i
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimeDual,ruserCollection)
+        end if
+
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
       end if
           
       ! Dual pressure only in the last timestep.
       if (isubstep .eq. rsolution%NEQtime) then
         i=6
         rcollection%IquickAccess(1) = i
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          ! Analytically given data
+          call user_initCollectForVecAssembly (rglobalData,&
+              rreference%iid,i,dtimeDual,ruserCollection)
+        end if
+
         call pperr_scalar (rtempVector%RvectorBlock(i),PPERR_L2ERROR,Derr(i),&
             optcana_evalFunction,rcollection)
+
+        if (rreference%ctype .eq. ANSOL_TP_ANALYTICAL) then
+          call user_doneCollectForAssembly (rglobalData,ruserCollection)
+        end if
       end if
 
-      call ansol_doneEval (rcollection,"SOL")
+      ! Clean up the collection -- either ours or the user-defined one.
+      if (rreference%ctype .ne. ANSOL_TP_ANALYTICAL) then
+        call ansol_doneEval (rcollection,"SOL")
+      else
+        call collct_done (ruserCollection)
+      end if
 
       ! Get the errors in that timestep.
       derrU = sqrt(Derr(1)**2 + Derr(2)**2)

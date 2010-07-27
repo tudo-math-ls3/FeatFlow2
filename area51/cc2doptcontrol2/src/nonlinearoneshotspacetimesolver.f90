@@ -462,7 +462,7 @@ contains
       call stat_startTimer (rnlstsolver%rtimePostprocessing)
       call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
           rsettings%rsettingsOptControl%rconstraints,&
-          rx,rsettings%rsettingsOptControl%rtargetFlow,&
+          rx,rsettings%rsettingsOptControl%rtargetFunction,&
           rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
           Derror)
       if (rnlstsolver%ioutputLevel .ge. 1) then
@@ -648,7 +648,7 @@ contains
     call stat_startTimer (rnlstsolver%rtimePostprocessing)
     call optcana_nonstatFunctional (rsettings%rglobalData,rsettings%rphysicsPrimal,&
         rsettings%rsettingsOptControl%rconstraints,&
-        rx,rsettings%rsettingsOptControl%rtargetFlow,&
+        rx,rsettings%rsettingsOptControl%rtargetFunction,&
         rsettings%rsettingsOptControl%dalphaC,rsettings%rsettingsOptControl%dgammaC,&
         Derror)
     if (rnlstsolver%ioutputLevel .ge. 1) then

@@ -69,7 +69,7 @@ module spatialbcdef
 
 !<constantblock description="The different types of boundary conditions supported by this module">
 
-  ! Automatic, analytical. Defined via analytical reference flow.
+  ! Automatic, analytical. Defined via analytical reference function.
   integer, parameter, public :: BDC_USERDEFID = -3
 
   ! User defined expression, evaluated by calling the callback routine
@@ -1118,7 +1118,7 @@ contains
         ! The id is already specified in the collection.
         
         ! Call the user defined callback routine to evaluate the boudary value.
-        ! No string tag is given which indicates that a reference flow is to be
+        ! No string tag is given which indicates that a reference function is to be
         ! evaluated.
         !
         ! As collection, we pass rcollection%p_rcollection here; this is a pointer

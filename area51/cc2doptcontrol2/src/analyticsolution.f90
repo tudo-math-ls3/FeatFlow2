@@ -20,14 +20,14 @@
 !#     -> Configures a solution to be analytically given
 !#
 !# 4.) ansol_configStationaryFile
-!#     -> Reads a solution from a file, configures the flow to be stationary
+!#     -> Reads a solution from a file, configures the function to be stationary
 !#
 !# 5.) ansol_configNonstationaryFile
-!#     -> Reads a solution from a sequence of files, configures the flow 
+!#     -> Reads a solution from a sequence of files, configures the function 
 !#        to be nonstationary
 !#
 !# 6.) ansol_configNonstatPrecalc
-!#     -> Configures a nonstationary flow based on a precalculated solution
+!#     -> Configures a nonstationary function based on a precalculated solution
 !#
 !# 7.) ansol_prepareEval = 
 !#       ansol_prepareEvalCollection / ansol_prepareEvalDirect
@@ -118,19 +118,19 @@ module analyticsolution
       (/'TIME ','X    ','Y    ','Z    '/)
 !</constantblock>
 
-!<constantblock description="Type of the flow solution">
+!<constantblock description="Type of the function solution">
 
   ! Analytically given as expressions in p_Sexpressions.
   integer, parameter, public :: ANSOL_TP_EXPRESSIONS = -3
   
   ! Analytically given.
-  ! Such a flow cannot be evaluated. The caller must check if the flow type
+  ! Such a function cannot be evaluated. The caller must check if the function type
   ! is ANSOL_TP_ANALYTICAL and may evaluate the solution using t_anSolution%iid
   ! as a hint what to evaluate. The evaluation routines will return immediately
-  ! with an appropriate error flag set in case the flow is tried to be evaluated!
+  ! with an appropriate error flag set in case the function is tried to be evaluated!
   integer, parameter, public :: ANSOL_TP_ANALYTICAL = -2
 
-  ! Zero flow.
+  ! Zero function.
   integer, parameter, public :: ANSOL_TP_ZERO = -1
   
   ! Undefined.
@@ -251,7 +251,7 @@ contains
 !<description>
   ! Initialises a solution as zero solution, used without a mesh.
   !
-  ! The flow is initialised as zero solution by default. This can be
+  ! The function is initialised as zero solution by default. This can be
   ! changed using ansol_configExpressions.
 !</description>
 
@@ -279,7 +279,7 @@ contains
 !<description>
   ! Initialises a solution structure as analytical solution with id iid.
   !
-  ! The flow is initialised as zero solution by default. This can be
+  ! The function is initialised as zero solution by default. This can be
   ! changed using ansol_configAnalytical.
 !</description>
 
@@ -287,7 +287,7 @@ contains
   ! Number of components
   integer, intent(in) :: ncomponents
 
-  ! User defined ID that is attached to the flow.
+  ! User defined ID that is attached to the function.
   integer, intent(in) :: iid
 !</input>
 
@@ -575,12 +575,12 @@ contains
 !<description>
   ! Configures an analytically solution by specifying expressions for the
   ! variables.
-  ! The flow must have been initialised by ansol_init_zero.
+  ! The function must have been initialised by ansol_init_zero.
 !</description>
 
 !<input>
   ! OPTIONAL: List of expressions for all the components in the solution.
-  ! If not present, the flow is set to be a zero flow.
+  ! If not present, the function is set to be a zero function.
   character(len=*), dimension(:), intent(inout), optional :: Sexpressions
 !</input>
 
@@ -633,7 +633,7 @@ contains
       
     else
     
-      ! Zero flow
+      ! Zero function
       rsolution%ctype = ANSOL_TP_ZERO
     
     end if
@@ -648,7 +648,7 @@ contains
 
 !<description>
   ! Configures a stationary solution which is read from a file.
-  ! The flow must have been initialised by ansol_init_file.
+  ! The function must have been initialised by ansol_init_file.
 !</description>
 
 !<input>
@@ -709,7 +709,7 @@ contains
 
 !<description>
   ! Configures a nonstationary solution which is read from a file.
-  ! The flow must have been initialised by ansol_init_file.
+  ! The function must have been initialised by ansol_init_file.
   !
   ! sfilename is a directory/file name pattern in the format of
   ! a FORMAT statement that forms the filename; this pattern must contain
@@ -795,7 +795,7 @@ contains
 !<description>
   ! Configures a nonstationary solution which is taken from a precalculated
   ! space-time solution vector.
-  ! The flow must have been initialised by ansol_init_file.
+  ! The function must have been initialised by ansol_init_file.
 !</description>
 
 !<input>
@@ -908,7 +908,7 @@ contains
       allocate(p_rvector)
       call lsysbl_createVectorBlock(rsolution%rfeSpace%p_rdiscretisation,p_rvector,.false.)
 
-      ! Evaluate the flow at that time.
+      ! Evaluate the function at that time.
       call tmevl_evaluate(rsolution%rnonstationary,dtime,p_rvector)
 
       ! Add a reference to the stationary solution vector to the collection.
@@ -1005,11 +1005,11 @@ contains
   ! Evaluate component idim of a solution in a set of points on a set of 
   ! elements. The solution is given as part of a collection structure
   ! rcollection. sname identifies the name of the solution.
-  ! For nonstationary flows, the solution is given as a snapshot
+  ! For nonstationary functions, the solution is given as a snapshot
   ! of a point in time. The solution must have been added to the collection
   ! using ansol_prepareEvalCollection.
   !
-  ! Note: The routine will not implement any bondary conditions into the flow!
+  ! Note: The routine will not implement any bondary conditions into the function!
 !</description>
 
 !<input>
@@ -1041,10 +1041,10 @@ contains
   real(dp), dimension(:,:), intent(out) :: Dvalues
   
   ! OPTIONAL: Returns whether the evaluation was successfull.
-  ! =0: success. =1: error. =-1: Flow is analytical and cannot be evaluated.
+  ! =0: success. =1: error. =-1: Function is analytical and cannot be evaluated.
   integer, intent(out), optional :: ierror
   
-  ! OPTIONAL: Returns the user defined ID of the flow.
+  ! OPTIONAL: Returns the user defined ID of the function.
   integer, intent(out), optional :: iid
 !</output>
   
@@ -1135,19 +1135,19 @@ contains
       !call sys_halt()
       
     case (ANSOL_TP_ZERO)
-      ! Zero target flow
+      ! Zero target function
       Dvalues(:,:) = 0.0_DP
       
     case(ANSOL_TP_MBSTATIONARYFILE,ANSOL_TP_MBSTATIONARY,&
           ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
-      ! Stationary/nonstationary flow, specified by a block vector.
+      ! Stationary/nonstationary function, specified by a block vector.
       !
       ! For every point, find the element of an element nearby the point.
       ! The evaluation routine uses this as hint to speed up the evaluation.
       allocate(DpointsAct(NDIM2D,npoints*nelements))
       allocate(DvaluesAct(npoints*nelements))
 
-      ! Get the flow
+      ! Get the function
       p_rvector => collct_getvalue_vec (rcollection, trim(sname)//"_VEC")
       
       if (present(Ielements)) then
@@ -1200,7 +1200,7 @@ contains
       deallocate(DvaluesAct)
       
     case default
-      call output_line('Flow not valid!',&
+      call output_line('Function not valid!',&
           OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
       call sys_halt()
     end select
@@ -1238,7 +1238,7 @@ contains
       call lsysbl_createVectorBlock(rsolution%rfeSpace%p_rdiscretisation,&
           rsolution%rstationary)
 
-      ! Evaluate the flow at the specific time.
+      ! Evaluate the function at the specific time.
       ! Write the result to our temp vector.
       call tmevl_evaluate(rsolution%rnonstationary,dtime,rsolution%rstationary)
       
@@ -1290,13 +1290,13 @@ contains
   ! Evaluate component idim of a solution in a set of points on a set of 
   ! elements. The solution is given as part of a collection structure
   ! rcollection. sname identifies the name of the solution.
-  ! For nonstationary flows, the solution is given as a snapshot
+  ! For nonstationary functions, the solution is given as a snapshot
   ! of a point in time. 
   !
   ! Before calling this routine, the evaluation must have been prepared
   ! with ansol_prepareEvalDirect!
   !
-  ! Note: The routine will not implement any bondary conditions into the flow!
+  ! Note: The routine will not implement any bondary conditions into the function!
 !</description>
 
 !<input>
@@ -1325,10 +1325,10 @@ contains
   real(dp), dimension(:,:), intent(out) :: Dvalues
 
   ! OPTIONAL: Returns whether the evaluation was successfull.
-  ! =0: success. =1: error. =-1: Flow is analytical and cannot be evaluated.
+  ! =0: success. =1: error. =-1: Function is analytical and cannot be evaluated.
   integer, intent(out), optional :: ierror
   
-  ! OPTIONAL: Returns the user defined ID of the flow.
+  ! OPTIONAL: Returns the user defined ID of the function.
   integer, intent(out), optional :: iid
 !</output>
   
@@ -1405,12 +1405,12 @@ contains
       !call sys_halt()
       
     case (ANSOL_TP_ZERO)
-      ! Zero target flow
+      ! Zero target function
       Dvalues(:,:) = 0.0_DP
       
     case(ANSOL_TP_MBSTATIONARYFILE,ANSOL_TP_MBSTATIONARY,&
           ANSOL_TP_MBNONSTATIONARYFILE,ANSOL_TP_MBNONSTATIONARY)
-      ! Stationary/nonstationary flow, specified by a block vector.
+      ! Stationary/nonstationary function, specified by a block vector.
       !
       ! For every point, find the element of an element nearby the point.
       ! The evaluation routine uses this as hint to speed up the evaluation.
@@ -1493,7 +1493,7 @@ contains
       deallocate(DvaluesAct)
       
     case default
-      call output_line('Flow not valid!',&
+      call output_line('Function not valid!',&
           OU_CLASS_ERROR, OU_MODE_STD,'ansol_evaluateByCollection')
       call sys_halt()
     end select

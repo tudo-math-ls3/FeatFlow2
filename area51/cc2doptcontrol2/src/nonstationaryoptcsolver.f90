@@ -193,7 +193,7 @@ contains
       end if
     end if
 
-    call output_line ('Reading target flow...')
+    call output_line ('Reading target fuinction...')
 
     ! Read the target flow -- stationary or nonstationary
     call cc_initTargetFlowNavSt2D (rproblem,&

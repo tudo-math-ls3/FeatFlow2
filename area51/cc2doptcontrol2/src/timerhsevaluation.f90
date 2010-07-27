@@ -910,12 +910,12 @@ contains
         
       end if
       
-      if (roptimalControl%rtargetFlow%ctype .eq. ANSOL_TP_ANALYTICAL) then
+      if (roptimalControl%rtargetFunction%ctype .eq. ANSOL_TP_ANALYTICAL) then
       
         ! Dual RHS, target flow
 
         call user_initCollectForVecAssembly (rglobalData,&
-            roptimalControl%rtargetFlow%iid,1,dtimeDual,rcollection)
+            roptimalControl%rtargetFunction%iid,1,dtimeDual,rcollection)
                                     
         ! The RHS terms for the dual equation are calculated using
         ! the desired 'target' flow field plus the coefficients of the
@@ -929,7 +929,7 @@ contains
         call user_doneCollectForAssembly (rglobalData,rcollection)
 
         call user_initCollectForVecAssembly (rglobalData,&
-            roptimalControl%rtargetFlow%iid,2,dtimeDual,rcollection)
+            roptimalControl%rtargetFunction%iid,2,dtimeDual,rcollection)
         
         ! And the Y-velocity part:
         call linf_buildVectorScalar (&
@@ -941,7 +941,7 @@ contains
       else
                         
         ! Evaluate the target function using the analytical definition.
-        call ansol_prepareEval (roptimalControl%rtargetFlow,rcollection,"RHS",dtimeDual)
+        call ansol_prepareEval (roptimalControl%rtargetFunction,rcollection,"RHS",dtimeDual)
         
         ! Discretise the X-velocity part:
         rcollection%IquickAccess(1) = 1

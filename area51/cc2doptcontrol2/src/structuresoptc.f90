@@ -117,8 +117,8 @@ module structuresoptc
     !<!-- TARGET FLOW -->
     !<!-- ----------- -->
 
-    ! Analytic solution defining the target flow
-    type(t_anSolution) :: rtargetFlow
+    ! Analytic solution defining the target function
+    type(t_anSolution) :: rtargetFunction
     
     !<!-- ----------- -->
     !<!-- CONSTRAINTS -->
@@ -301,8 +301,8 @@ module structuresoptc
     ! Pointer to the right hand side.
     type(t_anSolution), pointer :: p_rrhs => null()
 
-    ! Pointer to the target flow.
-    type(t_anSolution), pointer :: p_rtargetFlow => null()
+    ! Pointer to the target function.
+    type(t_anSolution), pointer :: p_rtargetFunction => null()
   end type
 
 !</typeblock>

@@ -29,8 +29,9 @@
 !# 6.) init_getSpaceDiscrSettings
 !#     -> Reads space discretisation settings from the DAT file.
 !#
-!# 7.) init_initDiscreteAnalytFlow
-!#     -> Creates a analytical-flow structure that resembles a discrete flow.
+!# 7.) init_initDiscreteAnalytFunction
+!#     -> Creates a analytical-function structure that resembles a discrete 
+!#        function.
 !#
 !# Auxiliary routines:
 !#
@@ -320,7 +321,7 @@ contains
 
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
-      call output_line ("Initialising target flow.")
+      call output_line ("Initialising target function.")
     end if
     
     select case (rsettingsSolver%rphysicsPrimal%cequation)
@@ -1425,10 +1426,10 @@ contains
     character(len=SYS_STRLEN) :: stargetFunction
     integer :: isuccess
     
-    ! Initialise the target flow.
+    ! Initialise the target function.
     call parlst_getvalue_string (rparlist,ssectionOptC,&
         'stargetFunction',stargetFunction,bdequote=.true.)
-    call init_initFunction (rparlist,stargetFunction,roptcontrol%rtargetFlow,&
+    call init_initFunction (rparlist,stargetFunction,roptcontrol%rtargetFunction,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
     if (isuccess .eq. 1) then
       call output_line ('Flow created by simulation not yet supported!', &
@@ -1456,8 +1457,8 @@ contains
 
 !</subroutine>
 
-    ! Release the target flow.
-    call ansol_done(roptcontrol%rtargetFlow)
+    ! Release the target function.
+    call ansol_done(roptcontrol%rtargetFunction)
 
   end subroutine
   
@@ -1465,9 +1466,9 @@ contains
 
 !<subroutine>
 
-  recursive subroutine init_initDiscreteAnalytFlow2D (ielementType,rboundary,&
+  recursive subroutine init_initDiscreteAnalytFunction2D (ielementType,rboundary,&
       smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
-      ilevel,rflow)
+      ilevel,rfunction)
   
 !<description>
   ! Creates a analytical-flow structure that resembles a discrete flow.
@@ -1504,7 +1505,7 @@ contains
 
 !<output>
   ! Flow structure to create.
-  type(t_anSolution), intent(out) :: rflow
+  type(t_anSolution), intent(out) :: rfunction
 !</output>
 
 !</subroutine>
@@ -1533,7 +1534,7 @@ contains
         end if
         
         ! Create the basic analytic solution: Mesh, discretisation structure,...
-        call ansol_init (rflow,ilevel,&
+        call ansol_init (rfunction,ilevel,&
             rtriaCoarse,1,rcollection%IquickAccess(1),&
             fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
       else
@@ -1560,7 +1561,7 @@ contains
           
           ! And now create the basic flow. Only in case ilevel>NLMAX,
           ! new levels are generated.
-          call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
+          call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
@@ -1576,7 +1577,7 @@ contains
           
           ! And now create the basic flow. Only in case ilevel>NLMAX,
           ! new levels are generated.
-          call ansol_init (rflow,ilevel-rrefinementSpace%npreref,&
+          call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
               rcollection%IquickAccess(1),fget1LevelDiscretisationNavSt2D,rcollection)
           
@@ -1603,7 +1604,7 @@ contains
       ! Create the basic analytic solution: Mesh, discretisation structure,...
       ! As we pass the mesh file here, we also pass the original ilevel
       ! because the mesh has to be refined up to that.
-      call ansol_init (rflow,ilevel,&
+      call ansol_init (rfunction,ilevel,&
           NDIM2D,smesh,rcollection%IquickAccess(1),&
           fget1LevelDiscretisationNavSt2D,rcollection,rboundary)
     
@@ -1657,7 +1658,7 @@ contains
   ! Success-flag. Returns whether this routine successfully created the flow.
   ! =0: Flow was successfully created.
   ! =1: Flow is defined as forward simulation and was not possible to create.
-  !     The caller must invoke init_initFlowBySimulation to create the flow.
+  !     The caller must invoke init_initFunctionBySimulation to create the flow.
   integer, intent(out) :: ierror
   
 !</output>
@@ -1677,12 +1678,14 @@ contains
     call parlst_querysection(rparlist, ssection, p_rsection) 
     if (.not. associated(p_rsection)) then
       call output_line ("Flow section does not exist: "//trim(ssection), &
-          OU_CLASS_ERROR,OU_MODE_STD,"init_initFlow")
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initFunction")
       call sys_halt()
     end if
     
     ! Type of the flow?    
     call parlst_getvalue_int (rparlist,ssection,"ctype",ctype,-1)
+        
+    ierror = 0
         
     if (ctype .eq. 4) then
       ! Forget it, there are not enough parameters here to create the flow.
@@ -1696,7 +1699,7 @@ contains
     
     if (ncomponents .le. 0) then
       call output_line ("Invalid number of components!", &
-          OU_CLASS_ERROR,OU_MODE_STD,"init_initFlow")
+          OU_CLASS_ERROR,OU_MODE_STD,"init_initFunction")
       call sys_halt()
     end if
 
@@ -1722,7 +1725,7 @@ contains
     call parlst_getvalue_int (rparlist,ssection,&
         "ielementType",ielementType,-1)
 
-    ! Mesh, the flow diles
+    ! Mesh, the function defining files
 
     call parlst_getvalue_string (rparlist,ssection,&
         "smesh",smesh,"",bdequote=.true.)
@@ -1738,19 +1741,19 @@ contains
     ! Set it up...
     select case (ctype)
     case (-1)
-      ! Analytic flow given by a callback routine
+      ! Analytic function given by a callback routine
       call ansol_init(rfunction,ncomponents,0)
       rfunction%iid = iid
       return
     
     case (0)
-      ! Zero flow
+      ! Zero functino
       call ansol_init(rfunction,ncomponents)
       rfunction%iid = iid
       return
 
     case (3)
-      ! Analytical expression as flow.
+      ! Analytical expression as function.
       call ansol_init (rfunction,ncomponents)
       call ansol_configExpressions (rfunction,Sexpressions)
       rfunction%iid = iid
@@ -1765,23 +1768,23 @@ contains
     end select
     
     ! Create an analytical flow that resembles a discrete flow.
-    call init_initDiscreteAnalytFlow2D (ielementType,rboundary,&
+    call init_initDiscreteAnalytFunction2D (ielementType,rboundary,&
         smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
         ilevel,rfunction)  
         
     rfunction%iid = iid  
     
-    ! Finally, set up the flow.
+    ! Finally, set up the function.
     select case (ctype)
       
     case (1)
     
-      ! Read stationary flow from hard disc
+      ! Read stationary function from hard disc
       call ansol_configStationaryFile (rfunction,sfunctionFile,.true.)
       
     case (2)
     
-      ! Read nonstationary flow from hard disc
+      ! Read nonstationary function from hard disc
       
       call parlst_getvalue_double (rparlist,ssection,&
           "dstartTime",dstartTime)
@@ -1805,7 +1808,7 @@ contains
 !
 !!<subroutine>
 !
-!  recursive subroutine init_initFlowBySimulation (rparlist,ssectionFlow,rflow,&
+!  recursive subroutine init_initFunctionBySimulation (rparlist,ssectionFlow,rflow,&
 !      rsettingsSpaceDiscr,rsettingsSolver)
 !  
 !!<description>
@@ -1882,20 +1885,20 @@ contains
 !        'dtimeStepTheta',dtimeStepTheta)
 !
 !    ! Prepare the flow
-!    call init_initDiscreteAnalytFlow (ielementType,rboundary,&
+!    call init_initDiscreteAnalytFunction (ielementType,rboundary,&
 !        smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,&
 !        rsettingsSolver%rfeHierPrimal,ilevel,rflow)
 !
 !    rflow%iid = iid
 !    
 !    ! What is with the initial condition?  
-!    call init_initFlow (rparlist,ssectionInitSol,rinitcondflow,&
+!    call init_initFunction (rparlist,ssectionInitSol,rinitcondflow,&
 !        rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rsettingsSolver%rfeHierPrimal,
 !        rboundary,isuccess)
 !    
 !    if (isuccess .eq. 1) then
 !      ! Oops, that one must be calculated by simulation.
-!      call init_initFlowBySimulation (rparlist,ssectionInitSol,rinitcondflow,&
+!      call init_initFunctionBySimulation (rparlist,ssectionInitSol,rinitcondflow,&
 !          rsettingsSpaceDiscr,rsettingsSolver)
 !    end if
 !    
@@ -2749,8 +2752,8 @@ contains
             rsettings%rtriaCoarse,rsettings%rrefinementSpace,&
             rsettingsSpaceDiscr,rsettings%rfeHierPrimal,rsettings%rboundary,isuccess)
         if (isuccess .eq. 1) then
-          call output_line ('Flow created by simulation not yet supported!', &
-              OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+          call output_line ('Function created by simulation not yet supported!', &
+              OU_CLASS_ERROR,OU_MODE_STD,'init_initStartVector')
           call sys_halt()
         end if
         
@@ -3007,7 +3010,7 @@ contains
       
       if (isuccess .eq. 1) then
         call output_line ("Reference solution could not be calculated!", &
-            OU_CLASS_ERROR,OU_MODE_STD,"init_initOptControlTargetFlow")
+            OU_CLASS_ERROR,OU_MODE_STD,"init_initPostprocessing")
         call sys_halt()
       end if
     end if
@@ -3053,7 +3056,7 @@ contains
 !</description>
   
 !<input>
-  ! All settings of the optimal control flow solver.
+  ! All settings of the optimal control solver.
   type(t_settings_optflow), intent(inout), target :: rsettings
 
   ! Analytic solution defining the RHS of the equation.
@@ -3084,7 +3087,7 @@ contains
 !</description>
 
 !<input>
-  ! All settings of the optimal control flow solver.
+  ! All settings of the optimal control solver.
   type(t_settings_optflow), intent(in), target :: rsettings
   
   ! Structure defining the time discretisation
@@ -3206,7 +3209,7 @@ contains
 !</description>
 
 !<input>
-  ! All settings of the optimal control flow solver.
+  ! All settings of the optimal control solver.
   type(t_settings_optflow), intent(in), target :: rsettings
   
   ! Space time solution vector.
