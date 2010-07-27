@@ -2548,7 +2548,7 @@ contains
   subroutine init_getParamsPrec_sgrprec (rparlist,ssection,rparams)
   
 !<description>
-  ! Reads parameters that configure the linear space-time coarse grid 
+  ! Reads parameters that configure the linear space-time single grid 
   ! preconditioner.
   !
   ! Note: This method does not read parameters of linear subsolvers
@@ -2580,7 +2580,7 @@ contains
         'nminIterations', rparams%nminIterations, 1)
 
     call parlst_getvalue_int (rparlist, ssection, &
-        'nmaxIterations', rparams%nmaxIterations, 100)
+        'nmaxIterations', rparams%nmaxIterations, 1)
 
     call parlst_getvalue_double (rparlist, ssection, &
         'depsRel', rparams%depsRel, 1E-5_DP)
