@@ -117,20 +117,20 @@ nmaxiterations = 1000
 
 # ONLY MULTIGRID: Type of smoother.
 # =0: Block-Jacobi
-# =1: Block-FBGS, half coupled (forward-backward solver)
+# =1: Block-FBSIM, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
 # =3: BiCGStab with Block-Jacobi
-# =4: BiCGStab with Block-FBGS, half coupled
+# =4: BiCGStab with Block-FBSIM, half coupled
 # =5: BiCGStab with Block-FBGS, fully coupled
 
 ismoother = 0
 
 # ONLY MULTIGRID: Type of coarse grid solver.
 # =0: Block-Jacobi
-# =1: Block-FBGS, half coupled (forward-backward solver)
+# =1: Block-FBSIM, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled (forward-backward optimiser)
 # =3: BiCGStab with Block-Jacobi
-# =4: BiCGStab with Block-FBGS, half coupled (forward-backward solver)
+# =4: BiCGStab with Block-FBSIM, half coupled (forward-backward solver)
 # =5: BiCGStab with Block-FBGS, fully coupled (forward-backward optimiser)
 
 icoarsegridsolver = 0
@@ -181,11 +181,11 @@ dadcgcorrMax = 10.0
 ddamping = 0.9
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
-ifullcouplingFBGS2 = 1
+ifullcouplingFBGS = 1
 
 ############################
 [SPACETIME-COARSEGRIDSOLVER]
@@ -198,11 +198,11 @@ depsabs = 1E-17
 ddamping = 0.9
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
-ifullcouplingFBGS2 = 1
+ifullcouplingFBGS = 1
 
 ####################
 [SPACETIME-SMOOTHER]
@@ -213,11 +213,11 @@ ioutputlevel = 2
 ddamping = 0.9
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
-ifullcouplingFBGS2 = 1
+ifullcouplingFBGS = 1
 
 # Reinitialisation counter for BiCGStab
 # =0: deactivate
