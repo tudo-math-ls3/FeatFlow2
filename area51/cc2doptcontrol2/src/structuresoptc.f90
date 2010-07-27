@@ -113,9 +113,9 @@ module structuresoptc
     !     of Baerwolff and Hinze!)
     integer :: iconvectionExplicit = 0
 
-    !<!-- ----------- -->
-    !<!-- TARGET FLOW -->
-    !<!-- ----------- -->
+    !<!-- --------------- -->
+    !<!-- TARGET FUNCTION -->
+    !<!-- --------------- -->
 
     ! Analytic solution defining the target function
     type(t_anSolution) :: rtargetFunction

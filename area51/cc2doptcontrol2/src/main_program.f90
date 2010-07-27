@@ -17,7 +17,7 @@
 !#
 !# on a 2D domain for a 2D function $y=(y_1,y_2)$, a pressure $p$,
 !# a dual velocity $\lambda$ and a dual pressure $\xi$. $u$ is the control
-!# and $z$ a desired flow field.
+!# and $z$ a desired target function field.
 !#
 !# The routine splits up the tasks of reading the domain, creating 
 !# triangulations, discretisation, solving, postprocessing and creanup into

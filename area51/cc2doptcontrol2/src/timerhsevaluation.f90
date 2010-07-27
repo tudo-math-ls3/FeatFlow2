@@ -912,13 +912,13 @@ contains
       
       if (roptimalControl%rtargetFunction%ctype .eq. ANSOL_TP_ANALYTICAL) then
       
-        ! Dual RHS, target flow
+        ! Dual RHS, target function
 
         call user_initCollectForVecAssembly (rglobalData,&
             roptimalControl%rtargetFunction%iid,1,dtimeDual,rcollection)
                                     
         ! The RHS terms for the dual equation are calculated using
-        ! the desired 'target' flow field plus the coefficients of the
+        ! the desired 'target' function plus the coefficients of the
         ! dual RHS -- which are normally zero.
         !
         ! Discretise the X-velocity part:

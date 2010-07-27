@@ -311,7 +311,7 @@ contains
     call init_initPhysics (rparlist,rsettingsSolver%rphysicsPrimal,sstr)
 
     ! Ok, now we can initialise the Optimal-Control settings, read in the
-    ! target flow etc.
+    ! target function etc.
     if (ioutputLevel .ge. 1) then
       call output_lbrk()
       call output_line ("Initialising optimal control parameters.")
@@ -327,7 +327,7 @@ contains
     select case (rsettingsSolver%rphysicsPrimal%cequation)
     case (0,1)
       ! Stokes, Navier-Stokes, 2D
-      call init_initOptControlTargetFlow2D (rparlist,rsettings%ssectionOptControl,&
+      call init_initOptControlTargetFunc2D (rparlist,rsettings%ssectionOptControl,&
           rsettingsSpaceDiscr,&
           rsettingsSolver%rtriaCoarse,rsettingsSolver%rrefinementSpace,&
           rsettingsSolver%rfeHierPrimal,rsettingsSolver%rtimeHierarchy,&
@@ -350,7 +350,7 @@ contains
           isuccess)
     end select
     if (isuccess .eq. 1) then
-      call output_line ('Flow created by simulation not yet supported!', &
+      call output_line ('Functions created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
       call sys_halt()
     end if
@@ -370,7 +370,7 @@ contains
           isuccess)
     end select
     if (isuccess .eq. 1) then
-      call output_line ('Flow created by simulation not yet supported!', &
+      call output_line ('Functions created by simulation not yet supported!', &
           OU_CLASS_ERROR,OU_MODE_STD,'init_initStandardSolver')
       call sys_halt()
     end if
@@ -470,7 +470,7 @@ contains
     ! Release the initial condition / RHS
     call ansol_done(rsettings%rinitialCondition)
 
-    ! Release optimal control parameters: Target flow,...
+    ! Release optimal control parameters: Target function,...
     call init_doneOptControl (rsettings%rsettingsOptControl)
     
     ! Release all discretisation hierarchies.
@@ -1379,11 +1379,11 @@ contains
 
 !<subroutine>
 
-  subroutine init_initOptControlTargetFlow2D (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
+  subroutine init_initOptControlTargetFunc2D (rparlist,ssectionOptC,rsettingsSpaceDiscr,&
       rtriaCoarse,rrefinementSpace,rfeHierPrimal,rtimeHierarchy,rboundary,roptcontrol)
   
 !<description>
-  ! Initialises the target flow for the optimal control problem
+  ! Initialises the target function for the optimal control problem
   ! based on the parameters in the DAT file.
 !</description>
 
@@ -1407,8 +1407,8 @@ contains
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
-  ! If the element of the target flow matches the one of the primary
-  ! flow, this hierarchy is used to save memory.
+  ! If the element of the target function matches the one of the primary
+  ! function, this hierarchy is used to save memory.
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
   
   ! Underlying hierarchy of the time discretisation
@@ -1432,8 +1432,8 @@ contains
     call init_initFunction (rparlist,stargetFunction,roptcontrol%rtargetFunction,&
         rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,rboundary,isuccess)
     if (isuccess .eq. 1) then
-      call output_line ('Flow created by simulation not yet supported!', &
-          OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFlow')
+      call output_line ('Function created by simulation not yet supported!', &
+          OU_CLASS_ERROR,OU_MODE_STD,'init_initOptControlTargetFunc2D')
       call sys_halt()
     end if
 
@@ -1466,12 +1466,12 @@ contains
 
 !<subroutine>
 
-  recursive subroutine init_initDiscreteAnalytFunction2D (ielementType,rboundary,&
+  recursive subroutine init_initDiscreteAnalytFunc2D (ielementType,rboundary,&
       smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
       ilevel,rfunction)
   
 !<description>
-  ! Creates a analytical-flow structure that resembles a discrete flow.
+  ! Creates a analytical-function structure that resembles a discrete function.
 !</description>
 
 !<input>
@@ -1495,16 +1495,16 @@ contains
   type(t_settings_discr), intent(in) :: rsettingsSpaceDiscr
 
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
-  ! If the element of the target flow matches the one of the primary
-  ! flow, this hierarchy is used to save memory.
+  ! If the element of the target function matches the one of the primary
+  ! function, this hierarchy is used to save memory.
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
   
-  ! Refinement level, the analytical flow should resemble.
+  ! Refinement level, the analytical function should resemble.
   integer, intent(in) :: ilevel
 !</input>
 
 !<output>
-  ! Flow structure to create.
+  ! Function structure to create.
   type(t_anSolution), intent(out) :: rfunction
 !</output>
 
@@ -1559,7 +1559,7 @@ contains
           ! Get the maximum available level in rfeHierPrimal
           iavaillevel = min(rfeHierPrimal%nlevels,ilevel-rrefinementSpace%npreref)
           
-          ! And now create the basic flow. Only in case ilevel>NLMAX,
+          ! And now create the basic function. Only in case ilevel>NLMAX,
           ! new levels are generated.
           call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%p_rfeSpaces(iavaillevel)%p_rdiscretisation,iavaillevel,&
@@ -1575,7 +1575,7 @@ contains
           ! Get the maximum available level in rfeHierPrimal
           iavaillevel = min(rfeHierPrimal%nlevels,ilevel-rrefinementSpace%npreref)
           
-          ! And now create the basic flow. Only in case ilevel>NLMAX,
+          ! And now create the basic function. Only in case ilevel>NLMAX,
           ! new levels are generated.
           call ansol_init (rfunction,ilevel-rrefinementSpace%npreref,&
               rfeHierPrimal%rmeshHierarchy%p_Rtriangulations(iavaillevel),iavaillevel,&
@@ -1622,7 +1622,7 @@ contains
   
 !<description>
   ! Reads in and sets up a function. ssection is the name of a section
-  ! containing all parameters that configure the flow. The routine creates
+  ! containing all parameters that configure the function. The routine creates
   ! a structure rfunction based on these parameters.
 !</description>
 
@@ -1630,7 +1630,7 @@ contains
   ! Parameter list
   type(t_parlist), intent(in) :: rparlist
   
-  ! Section where the parameters can be found that specify the target flow.
+  ! Section where the parameters can be found that specify the target function.
   character(len=*), intent(in) :: ssection
 
   ! Space discretisation settings
@@ -1643,8 +1643,8 @@ contains
   type(t_settings_refinement), intent(in) :: rrefinementSpace
 
   ! A hierarchy of space levels for velocity+pressure (primal/dual space).
-  ! If the element of the target flow matches the one of the primary
-  ! flow, this hierarchy is used to save memory.
+  ! If the element of the target function matches the one of the primary
+  ! function, this hierarchy is used to save memory.
   type(t_feHierarchy), intent(in) :: rfeHierPrimal
 
   ! Definition of the domain.
@@ -1652,13 +1652,13 @@ contains
 !</input>
 
 !<output>
-  ! Flow structure to create.
+  ! Function structure to create.
   type(t_anSolution), intent(out) :: rfunction
   
-  ! Success-flag. Returns whether this routine successfully created the flow.
-  ! =0: Flow was successfully created.
-  ! =1: Flow is defined as forward simulation and was not possible to create.
-  !     The caller must invoke init_initFunctionBySimulation to create the flow.
+  ! Success-flag. Returns whether this routine successfully created the function.
+  ! =0: Function was successfully created.
+  ! =1: Function is defined as forward simulation and was not possible to create.
+  !     The caller must invoke init_initFunctionBySimulation to create the function.
   integer, intent(out) :: ierror
   
 !</output>
@@ -1677,18 +1677,18 @@ contains
     ! Is the section available?
     call parlst_querysection(rparlist, ssection, p_rsection) 
     if (.not. associated(p_rsection)) then
-      call output_line ("Flow section does not exist: "//trim(ssection), &
+      call output_line ("Section does not exist: "//trim(ssection), &
           OU_CLASS_ERROR,OU_MODE_STD,"init_initFunction")
       call sys_halt()
     end if
     
-    ! Type of the flow?    
+    ! Type of the function?    
     call parlst_getvalue_int (rparlist,ssection,"ctype",ctype,-1)
         
     ierror = 0
         
     if (ctype .eq. 4) then
-      ! Forget it, there are not enough parameters here to create the flow.
+      ! Forget it, there are not enough parameters here to create the function.
       ! This situation is more complicated!
       ierror = 1
       return
@@ -1767,8 +1767,8 @@ contains
 
     end select
     
-    ! Create an analytical flow that resembles a discrete flow.
-    call init_initDiscreteAnalytFunction2D (ielementType,rboundary,&
+    ! Create an analytical function that resembles a discrete function.
+    call init_initDiscreteAnalytFunc2D (ielementType,rboundary,&
         smesh,rtriaCoarse,rrefinementSpace,rsettingsSpaceDiscr,rfeHierPrimal,&
         ilevel,rfunction)  
         
@@ -2764,7 +2764,7 @@ contains
           call sptivec_setTimestepData (rvector, i, rvectorSpace)
         end do
         
-        ! Release the analytic flow again.
+        ! Release the analytic function.
         call ansol_done(rlocalsolution)
       
       case (3)
@@ -2777,7 +2777,7 @@ contains
             
         call sptivec_setTimestepData (rvector, 1, rvectorSpace)
         
-        ! Initialise a flow solver that simulates the flow to calculate the
+        ! Initialise a forward simulation solver that simulates the function to calculate the
         ! start vector.
         call fbsim_init (rsettings, rparlist, sstartVectorSolver, &
             1, rsettings%rfeHierPrimalDual%nlevels, FBSIM_SOLVER_NLFORWARD, rsimsolver)

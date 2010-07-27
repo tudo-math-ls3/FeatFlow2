@@ -17,7 +17,7 @@
 !#
 !# on a 2D domain for a 2D function $y=(y_1,y_2)$, a pressure $p$,
 !# a dual velocity $\lambda$ and a dual pressure $\xi$. $u$ is the control
-!# and $z$ a desired flow field.
+!# and $z$ a desired function.
 !#
 !# on a 2D domain for a 2D velocity function $y=(y_1,y_2)$, a pressure $p$,
 !# a 2D dual velocity $\lambda=(\lambda_1,\lambda_2)$ and a dual pressure

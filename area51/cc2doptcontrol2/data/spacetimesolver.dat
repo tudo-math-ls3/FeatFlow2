@@ -162,7 +162,7 @@ dalphamax = 1.0
 # =8: Defect correction with UMFPACK preconditioning
 # =9: Forward-Backward preconditioner
 # =10: Defect correction with Forward-Backward preconditioner
-# =11: BiCGStab with Block Forward-Backward flow solver preconditioning
+# =11: BiCGStab with Block Forward-Backward solver preconditioning
 cspaceTimeSmoother = 1 
 
 # Damping parameter
@@ -240,10 +240,10 @@ ifbSORPartialUpdate=0
 # =0: Iterative Defect correction with Block Jacobi ([PRECOND].drelax)
 # =1: Iterative Defect correction with Block SOR([PRECOND].drelax)
 # =2: Iterative BiCGStab with Block Jacobi preconditioner
-# =3: Iterative BiCGStab with Block Forward-Backward SOR
+# =3: Iterative BiCGStab with Block Forward-Backward Gauss-Seidel
 # =5: Iterative CG
 # =6: direct (UMFPACK Gauss elimination)
-# =7: Pure block FBSOR solver
+# =7: Pure block FBGS solver
 # =8: Defect correction with UMFPACK preconditioning
 # =10: Defect correction with with a simple Forward-Backward preconditioner
 # =11: BiCGStab with a simple Forward-Backward preconditioner

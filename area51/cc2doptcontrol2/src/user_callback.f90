@@ -35,7 +35,7 @@
 !#        'intf_coefficientVectorSc.inc'
 !#
 !# 4.) user_coeff_Reference
-!#     -> Returns analytical values for the desired flow 
+!#     -> Returns analytical values for the desired reference function
 !#     -> Corresponds to the interface defined in the file
 !#        'intf_coefficientVectorSc.inc'
 !#
@@ -285,8 +285,8 @@ contains
     !
     ! IquickAccess(1) = equation type
     ! IquickAccess(2) = component to assemble
-    ! IquickAccess(3) = type of the flow
-    ! IquickAccess(4) = id of the flow
+    ! IquickAccess(3) = type of the function
+    ! IquickAccess(4) = id of the function
     
     rcollection%IquickAccess(1) = rglobalData%p_rphysics%cequation
     rcollection%IquickAccess(2) = icomponent
@@ -663,7 +663,7 @@ contains
     
   !<description>
     ! This subroutine is called during the calculation of errors. It computes
-    ! an analytically given target flow in a couple of points on a couple
+    ! an analytically given target function in a couple of points on a couple
     ! of elements. These values are compared to those of a computed FE function
     ! and used to calculate an error.
     !
@@ -796,7 +796,7 @@ contains
   !<description>
     ! This subroutine is called during the vector assembly. It has to compute
     ! the coefficients in front of the terms of the linear form of the
-    ! target X-velocity, i.e. the desired flow field z, which enters the dual
+    ! target X-velocity, i.e. the desired function z, which enters the dual
     ! equation.
     !
     ! The routine accepts a set of elements and a set of points on these
@@ -934,7 +934,7 @@ contains
     
   !<description>
     ! This subroutine is called during the calculation of errors. It has to compute
-    ! the values of an analytically given flow in a set of points on a couple
+    ! the values of an analytically given function in a set of points on a couple
     ! of elements. These values are compared to those of a computed FE function
     ! and used to calculate an error.
     !
@@ -2016,7 +2016,7 @@ contains
       
     else
       
-      ! Value defined by reference flow, identified by iid.
+      ! Value defined by reference function, identified by iid.
       call boundary_getCoords(rdiscretisation%p_rboundary, &
           rboundaryRegion%iboundCompIdx, dwhere, dx, dy)
 
