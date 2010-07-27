@@ -78,7 +78,7 @@ module nonlinearoneshotspacetimesolver
   use spacetimelinearsystem
   use forwardbackwardsimulation
   use spacetimeinterlevelprojection
-  use linearspacetimesolver
+  use spacetimelinearsolver
   use optcanalysis
   use timeboundaryconditions
     

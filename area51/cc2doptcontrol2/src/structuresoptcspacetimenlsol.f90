@@ -41,7 +41,7 @@ module structuresoptcspacetimenlsol
   use structuresspacetimelinsol
   use structuresoptflow
   use spacetimelinearsystem
-  use linearspacetimesolver
+  use spacetimelinearsolver
   
   implicit none
   

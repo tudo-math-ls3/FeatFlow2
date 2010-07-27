@@ -39,7 +39,7 @@ module structuresspacetimelinsol
   use collection
   
   use structuresoptflow
-  use linearspacetimesolver
+  use spacetimelinearsolver
 
   implicit none
   
