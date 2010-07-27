@@ -92,11 +92,11 @@ contains
   
     if (ctype .ne. ANSOL_TP_ANALYTICAL) then
       ! Evaluate the reference using precalculated information in the collection
-      ! from an analytical flow.
+      ! from an analytical function.
       call ansol_evaluate (rcollection,"SOL",icomponent,&
           Dvalues,npointsPerElement,nelements,Dpoints,rdomainIntSubset%p_Ielements,ierror)
     else
-      ! This is a flow realised by our callback routines.
+      ! This is a function realised by our callback routines.
       ! Call them to get the information. Pass the "connected" collection
       ! which contains postprocessing data.
       call user_coeff_Reference (cderivative,rdiscretisation, &
@@ -622,7 +622,7 @@ contains
       ! In rtempVector(4..6) is the dual solution at time dtimeDual,
       ! so we don't have to evaluate the function again!
 
-      ! If we have a flow in rreference, switch the time for ir.
+      ! If we have a function in rreference, switch the time for ir.
       if (rreference%ctype .ne. ANSOL_TP_ANALYTICAL) then
 
         call ansol_doneEval (rcollection,"SOL")
