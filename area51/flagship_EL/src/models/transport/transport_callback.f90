@@ -216,7 +216,7 @@ contains
     ! REMARK: The order in which the operations are performed is
     ! essential. This is due to the fact that the calculation of the
     ! residual/rhs requires the discrete transport operator to be
-    ! initialized which is assembled in the calculation of the
+    ! initialised which is assembled in the calculation of the
     ! preconditioner. To prevent the re-assembly of the
     ! preconditioner twice, we remove the specifier
     ! NLSOL_OPSPEC_CALCPRECOND if the residual/rhs vector is built.
@@ -417,9 +417,9 @@ contains
     !
     ! The diffusion operator is symmetric so that it is the same for
     ! the primal and the dual problem. If no diffusion is present,
-    ! i.e. $D \equiv 0$, then the transport operator is initialized by
+    ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
-    ! then we may also initialize some stabilization structure.
+    ! then we may also initialize some stabilisation structure.
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.
@@ -469,7 +469,7 @@ contains
 
         case (AFCSTAB_SYMMETRIC)
           ! Satisfy discrete maximum principle
-          ! and assemble stabilization structure
+          ! and assemble stabilisation structure
           call gfsc_buildDiffusionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_S),&
               rproblemLevel%Rafcstab(diffusionAFC), .true., .true.,&
@@ -566,7 +566,7 @@ contains
         ! is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixPrimal)) then
 
-          ! Check if stabilization should be applied
+          ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
             bbuildStabilisation = .false.
@@ -636,7 +636,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -662,7 +662,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -711,7 +711,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
@@ -720,7 +720,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -751,7 +751,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
@@ -760,7 +760,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -791,7 +791,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
@@ -800,7 +800,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -826,7 +826,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
@@ -835,7 +835,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -866,7 +866,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
@@ -875,7 +875,7 @@ contains
 
         case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -912,7 +912,7 @@ contains
         ! is used if present; otherwise an error is thrown
         if (present(fcb_calcMatrixDual)) then
 
-          ! Check if stabilization should be applied
+          ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           case (AFCSTAB_GALERKIN, AFCSTAB_UPWIND)
             bbuildStabilisation = .false.
@@ -982,7 +982,7 @@ contains
 
         case (AFCSTAB_GALERKIN)
 
-          ! Apply standard Galerkin discretization
+          ! Apply standard Galerkin discretisation
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionOperator(&
@@ -1008,7 +1008,7 @@ contains
 
           case default
 
-          ! Apply low-order discretization
+          ! Apply low-order discretisation
           bbuildStabilisation = AFCSTAB_UPWIND .ne.&
               rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation
 
@@ -1274,9 +1274,9 @@ contains
     !
     ! The diffusion operator is symmetric so that it is the same for
     ! the primal and the dual problem. If no diffusion is present,
-    ! i.e. $D \equiv 0$, then the transport operator is initialized by
+    ! i.e. $D \equiv 0$, then the transport operator is initialised by
     ! zeros. If there is anisotropic diffusion, i.e. $D=D({\bf x},t)$,
-    ! then we may also initialize some stabilization structure.
+    ! then we may also initialize some stabilisation structure.
     !
     ! The bilinear form for the diffusion operator consists of the
     ! volume integral (see above) only.
@@ -1349,7 +1349,7 @@ contains
 
     if (convectionAFC > 0) then
 
-      ! Check if stabilization should be applied
+      ! Check if stabilisation should be applied
       bbuildStabilisation = (AFCSTAB_GALERKIN .ne.&
           rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
 
@@ -2923,7 +2923,7 @@ contains
     ! of velocity/ diffusion.
     !###########################################################################
 
-    ! Check if the preconditioner has to be initialized
+    ! Check if the preconditioner has to be initialised
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
@@ -3142,7 +3142,7 @@ contains
     ! of velocity/ diffusion.
     !###########################################################################
 
-    ! Check if the preconditioner has to be initialized
+    ! Check if the preconditioner has to be initialised
     if (iand(rproblemLevel%iproblemSpec,&
              PROBLEV_MSPEC_INITIALIZE) .ne. 0) then
       call transp_calcPrecondThetaScheme(rproblemLevel, rtimestep,&
@@ -4167,9 +4167,10 @@ contains
     integer :: convectionAFC,lumpedMassMatrix,consistentMassMatrix
     integer :: imassantidiffusiontype
 
-    ! Get parameters from parameter list
+    ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
+    ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'convectionAFC', convectionAFC)
@@ -4190,6 +4191,9 @@ contains
         rcollection%SquickAccess(1),&
         'imassantidiffusiontype', imassantidiffusiontype)
 
+    !---------------------------------------------------------------------------
+    ! Linearised FEM-FCT algorithm
+    !---------------------------------------------------------------------------
 
     ! Initialize dummy timestep
     rtimestepAux%dStep = 1.0_DP
@@ -4225,7 +4229,7 @@ contains
           rtimestepAux%dStep, 1.0_DP, .true.)
     end if
 
-    ! Apply linearised FEM-FCT algorithm
+    ! Apply linearised FEM-FCT correction
     call gfsc_buildConvVectorFCT(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rproblemLevel%Rafcstab(convectionAFC),&

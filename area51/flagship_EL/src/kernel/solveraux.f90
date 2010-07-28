@@ -670,19 +670,19 @@ module solveraux
     ! Cotrol structure for UMFPACK4; contains parameters for the solver
     real(DP), dimension(20) :: Dcontrol
 
-    ! Handle for symbolic factorization
+    ! Handle for symbolic factorisation
     ! This is not a FEAT-Handle!
     integer(I32) :: isymbolic = 0
 
-    ! Array of handles for symbolic factorization
+    ! Array of handles for symbolic factorisation
     ! These are no FEAT-Handles!
     integer(I32), dimension(:), pointer :: IsymbolicBlock => null()
 
-    ! Handle for numeric factorization
+    ! Handle for numeric factorisation
     ! This is not a FEAT-Handle!
     integer(I32) :: inumeric = 0
 
-    ! Array of handles for numeric factorization
+    ! Array of handles for numeric factorisation
     ! These are no FEAT-Handles!
     integer(I32), dimension(:), pointer :: InumericBlock => null()
 
@@ -802,16 +802,16 @@ module solveraux
     ! Handle to array [1..NA] of doubles.
     integer :: h_Ddata = ST_NOHANDLE
 
-    ! Parameter 1 returned by SPLIB for factorized matrix
+    ! Parameter 1 returned by SPLIB for factorised matrix
     integer :: lu = 0
 
-    ! Parameter 2 returned by SPLIB for factorized matrix
+    ! Parameter 2 returned by SPLIB for factorised matrix
     integer :: jlu = 0
 
-    ! Parameter 3 returned by SPLIB for factorized matrix
+    ! Parameter 3 returned by SPLIB for factorised matrix
     integer :: ilup = 0
 
-    ! INPUT: tolerance for ILU-factorization
+    ! INPUT: tolerance for ILU-factorisation
     real(DP) :: depsILU = 0.0_DP
 
     ! INPUT: ILU decomposition of the system matrix
@@ -965,7 +965,7 @@ contains
       ! nonlinear algebraic system on all multigrid levels from NLMIN up to NLMAX.
       ! Note that it suffices to have one nonlinear coarse grid solver for all
       ! multigrid levels since the nonlinear solver has no matrices and all
-      ! temporal vectors are resized in the nonlinear solver routines.
+      ! temporal vectors are resised in the nonlinear solver routines.
       allocate(rsolver%p_solverMultigrid%p_solverCoarsegrid)
 
       ! Get type of solver and create solver structure recursively:
@@ -1494,7 +1494,7 @@ contains
         ! ~~~~~~~~~~~~~~~~~~~~~~~~~
 
         ! Create linear smoother recursively. Note that we create an array of solvers
-        ! for each level. Each level is created and initialized individually.
+        ! for each level. Each level is created and initialised individually.
         if (rsolver%nlmin .lt. rsolver%nlmax) then
           allocate(rsolver%p_smoother(rsolver%nlmin+1:rsolver%nlmax))
           do i = rsolver%nlmin+1, rsolver%nlmax
@@ -3639,7 +3639,7 @@ contains
       ! local varialbles
       integer :: i
 
-      ! Initialization
+      ! Initialisation
       nlmin = huge(1)
 
       ! Do we have a generic solver subnode?
@@ -3717,7 +3717,7 @@ contains
       ! local variables
       integer :: i
 
-      ! Initialization
+      ! Initialisation
       nlmax = 0
 
       ! Do we have a generic solver subnode?
@@ -4622,9 +4622,9 @@ contains
     !
     ! 2.) If the internal structures exist and if, e.g., matrices are
     !     attached, then the temporal vectors, etc. are created
-    !     /resized to the correct dimensions. Consequently, the
+    !     /resised to the correct dimensions. Consequently, the
     !     subroutione should be called whenever the structure of the
-    !     problem, e.g., triangulation, discretization, changes and
+    !     problem, e.g., triangulation, discretisation, changes and
     !     requires some modifications of the solver structure.
 !</description>
 
@@ -4714,7 +4714,7 @@ contains
             ! Allocate subarray(NLMIN:3*NLMAX-2*NLMIN) for temporal vectors
             allocate(p_solverMultigrid%RtempVectors(nlmin:3*nlmax-2*nlmin))
           end if
-          ! The initialization of temporal arrays will be done in the
+          ! The initialisation of temporal arrays will be done in the
           ! nonlinear multigrid solver itself since no matrices are
           ! available for nonlinear solvers.
 
@@ -5255,7 +5255,7 @@ contains
           call solver_initUMFPACK(rsolver%p_solverUMFPACK)
         end if
 
-        ! Initialize ILU factorization
+        ! Initialize ILU factorisation
         if (associated(rsolver%p_solverILU)) then
           call solver_initILU(rsolver%p_solverILU)
         end if
@@ -6055,14 +6055,14 @@ contains
 
           if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7) then
 
-            ! Perform (M)ILU(0) factorization for matrix format 7
+            ! Perform (M)ILU(0) factorisation for matrix format 7
             call do_mat7MILU0(p_Ddata, p_Kcol, p_Kld,&
                               rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
                               abs(rsolver%domega), rsolver%depsILU)
 
           else
 
-            ! Perform (M)ILU(0) factorization for matrix format 9
+            ! Perform (M)ILU(0) factorisation for matrix format 9
             call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
 
             call do_mat9MILU0(p_Ddata, p_Kcol, p_Kld, p_Kdiagonal,&
@@ -6103,14 +6103,14 @@ contains
 
             if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
 
-              ! Perform (M)ILU(0) factorization for matrix format 7
+              ! Perform (M)ILU(0) factorisation for matrix format 7
               call do_mat7MILU0(p_Ddata, p_Kcol, p_Kld,&
                                 rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
                                 abs(rsolver%domega), rsolver%depsILU)
 
             else
 
-              ! Perform (M)ILU(0) factorization for matrix format 9
+              ! Perform (M)ILU(0) factorisation for matrix format 9
               call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
               call do_mat9MILU0(p_Ddata, p_Kcol, p_Kld, p_Kdiagonal,&
                                 rmatrix%NEQ, rmatrix%NVAR, abs(rsolver%ifill),&
@@ -6141,14 +6141,14 @@ contains
 
             if (rmatrix%cmatrixFormat .eq. LSYSSC_MATRIX7INTL) then
 
-              ! Perform BILU(0) factorization for matrix format 7
+              ! Perform BILU(0) factorisation for matrix format 7
               call lsyssc_getbase_Kld (rmatrix, p_Kld)
               call do_mat79Intl1BILU0(p_DA, p_Ddata, p_Kld,&
                                       rmatrix%NEQ, rmatrix%NVAR)
 
             else
 
-              ! Perform BILU(0) factorization for matrix format 9
+              ! Perform BILU(0) factorisation for matrix format 9
               call lsyssc_getbase_Kdiagonal(rmatrix, p_Kdiagonal)
               call do_mat79Intl1BILU0(p_DA, p_Ddata, p_Kdiagonal,&
                                       rmatrix%NEQ, rmatrix%NVAR)
@@ -6178,7 +6178,7 @@ contains
           call lsyssc_getbase_Kld(rmatrix, p_Kld)
           call lsyssc_getbase_Kcol(rmatrix, p_Kcol)
 
-          ! Perform (M)ILU(s), s>0 factorization for matrix format 7/9
+          ! Perform (M)ILU(s), s>0 factorisation for matrix format 7/9
           call do_mat79MILUs(p_DA, p_Kcol, p_Kld,&
                              rmatrix%NEQ, rmatrix%NA, rsolver%ifill,&
                              abs(rsolver%domega), rsolver%lu, rsolver%jlu,&
@@ -6814,7 +6814,7 @@ contains
     call lsyssc_getbase_double(rmatrixScalar, p_Da)
 
 
-    ! Perform symbolical factorization
+    ! Perform symbolical factorisation
     if (rsolver%isymbolic .ne. 0) call UMF4FSYM(rsolver%isymbolic)
     call UMF4SYM(rmatrixScalar%NEQ, rmatrixScalar%NCOLS,&
                  p_Kld, p_Kcol, p_Da, rsolver%isymbolic,&
@@ -6845,7 +6845,7 @@ contains
     end select
 
 
-    ! Perform numerical factorization
+    ! Perform numerical factorisation
     if (rsolver%inumeric .ne. 0) call UMF4FNUM(rsolver%inumeric)
     call UMF4NUM(p_Kld, p_Kcol, p_Da, rsolver%isymbolic,&
                  rsolver%inumeric, rsolver%Dcontrol, Dinfo)

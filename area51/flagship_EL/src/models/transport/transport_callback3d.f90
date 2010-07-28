@@ -120,7 +120,7 @@ contains
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
@@ -160,7 +160,7 @@ contains
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
@@ -200,7 +200,7 @@ contains
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices
@@ -240,7 +240,7 @@ contains
     ! solution vector
     real(DP), intent(in) :: u_i, u_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij, C_ji
 
     ! nodal indices

@@ -17,30 +17,30 @@
 !#        without assembling the symmetric boundary contribution
 !#
 !# 3.) euler_calcFluxScalarDiss2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
 !# 4.) euler_calcFluxScalarDissDiSp2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities based on
 !#        dimensional splitting approach
 !#
 !# 5.) euler_calcFluxTensorDiss2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
 !# 6.) euler_calcFluxTensorDissDiSp2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities based on
 !#        dimensional splitting approach
 !#
 !# 7.) euler_calcFluxRusanov2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion based on
 !#        dimensional splitting approach
 !#
 !# 8.) euler_calcFluxRusanovDiSp2d
-!#     -> Computes inviscid fluxes for low-order discretization
+!#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
 !# 9.) euler_calcMatrixDiagonalDiag2d
@@ -56,27 +56,27 @@
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
 !# 13.) euler_calcMatrixScalarDissDiag2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
 !# 14.) euler_calcMatrixScalarDiss2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
 !# 15.) euler_calcMatrixTensorDissDiag2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
 !# 16.) euler_calcMatrixTensorDiss2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
 !# 17.) euler_calcMatrixRusanovDiag2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov artificial viscosities
 !#
 !# 18.) euler_calcMatrixRusanov2d
-!#      -> Computes local matrices for low-order discretization
+!#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
 !# 19.) euler_calcCharacteristics2d
@@ -167,7 +167,7 @@
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
 !# 41.) euler_limitEdgewiseVelocity2D
-!#      -> Performs synchronized flux correction for the velocity in 2D
+!#      -> Performs synchronised flux correction for the velocity in 2D
 !#
 !# </purpose>
 !##############################################################################
@@ -246,14 +246,14 @@ contains
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
-    ! Galerkin discretization in 2D.
+    ! Galerkin discretisation in 2D.
 !</description>
 
 !<input>
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -376,7 +376,7 @@ contains
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
-    ! discretization in 2D. The symmetric boundary contributions
+    ! discretisation in 2D. The symmetric boundary contributions
     ! are neglected and incorporated in the antidiffusive flux.
     ! Hence, this is simply the standard Galerkin flux for the
     ! skew-symmetric internal contributions.
@@ -386,7 +386,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -458,7 +458,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -594,7 +594,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -728,7 +728,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -897,7 +897,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -1098,7 +1098,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -1231,7 +1231,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficient
@@ -1362,7 +1362,7 @@ contains
     ! local solution at node I
     real(DP), dimension(:), intent(in) :: U_i
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ii
 
     ! scaling parameter
@@ -1407,7 +1407,7 @@ contains
     ! local solution at node I
     real(DP), dimension(:), intent(in) :: U_i
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ii
 
     ! scaling parameter
@@ -1469,7 +1469,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -1524,7 +1524,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -1616,7 +1616,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -1700,7 +1700,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -1827,7 +1827,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -1982,7 +1982,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -2157,7 +2157,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -2232,7 +2232,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U_i,U_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling parameter
@@ -2378,7 +2378,7 @@ contains
     ! Check if weighting coefficient is zero
     if (anorm .gt. SYS_EPSREAL) then
 
-      ! Compute normalized weighting coefficient
+      ! Compute normalised weighting coefficient
       a1  = Dweight(1)/anorm
       a2  = Dweight(2)/anorm
 
@@ -2501,7 +2501,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients
@@ -2568,7 +2568,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients
@@ -2672,7 +2672,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients

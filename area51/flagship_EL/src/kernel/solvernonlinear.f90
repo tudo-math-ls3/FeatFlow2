@@ -317,7 +317,7 @@ contains
       end if
     end if
 
-    ! Initialization
+    ! Initialisation
     rsolver%dinitialDefect = 0.0_DP
     rsolver%dinitialRHS    = 0.0_DP
 
@@ -332,7 +332,7 @@ contains
         call output_lbrk()
       end if
 
-      ! Initialization
+      ! Initialisation
       rsolver%dfinalDefect = 0.0_DP
 
       ! Inner solution loop
@@ -943,7 +943,7 @@ contains
 
 
     !---------------------------------------------------------------------------
-    ! Initialization
+    ! Initialisation
     !---------------------------------------------------------------------------
 
     select case(p_rsolver%iprecond)
@@ -1469,7 +1469,7 @@ contains
     integer :: ibacktrackingsteps
 
 
-    ! Initialization
+    ! Initialisation
     redfac  = 1.0_DP
     istatus = 0
     call lsysbl_copyVector(rsolution, rsolutionFailsave)
@@ -1581,7 +1581,7 @@ contains
     ! value of R(transposed)*(linear model)
     real(DP), intent(in) :: drtlm
 
-    ! net reduction factor of globalization
+    ! net reduction factor of globalisation
     real(DP), intent(in) :: redfac
 
      ! number of current iteration
@@ -1765,7 +1765,7 @@ contains
     real(DP), dimension(2) :: Dy
     real(DP) :: c1
 
-    ! Initialization
+    ! Initialisation
     stagnate=.false.
 
     select case(iiterations)

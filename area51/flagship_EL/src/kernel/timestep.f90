@@ -39,7 +39,9 @@
 !#        solution for the time interval dTime..dTime+dStep.
 !#
 !# 7.) tstep_performRKStep = tstep_performRKStepScalar /
-!#                           tstep_performRKStepBlock
+!#                           tstep_performRKStepScalarCpl /
+!#                           tstep_performRKStepBlock /
+!#                           tstep_performRKStepBlockCpl /
 !#     -> Performs one step of an explicit Runge-Kutta scheme to compute the
 !#        solution for the time interval dTime..dTime+dStep
 !#
@@ -102,6 +104,8 @@ module timestep
   interface tstep_performRKStep
     module procedure tstep_performRKStepScalar
     module procedure tstep_performRKStepBlock
+    module procedure tstep_performRKStepScalarCpl
+    module procedure tstep_performRKStepBlockCpl
   end interface
 
   interface tstep_performPseudoStepping
@@ -995,7 +999,7 @@ contains
     ! unstable. It is therefore highly recommended to use an explicit
     ! Runge-Kutta scheme instead.
     !
-    ! In contrast to routine tstep_performThetaStepBlock this routine
+    ! In contrast to routine tstep_performThetaStepScalar this routine
     ! is applicable to a sequence of coupled problems which are
     ! solved repeatedly until convergence.
     !
@@ -1342,9 +1346,10 @@ contains
       rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
-    ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
-    ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
-    ! Note that this subroutine serves as wrapper for scalar solution vectors only.
+    ! This subroutine performs one step by means of an explicit
+    ! Runge-Kutta scheme to advance the solution from time level $t^n$
+    ! to time level $t^{n+1}$. Note that this subroutine serves as
+    ! wrapper for scalar solution vectors only.
 !</description>
 
 !<input>
@@ -1410,10 +1415,11 @@ contains
       rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
 
 !<description>
-    ! This subroutine performs one step by means of an explicit Runge-Kutta scheme
-    ! to advance the solution from time level $t^n$ to time level $t^{n+1}$.
-    ! In particular, the two step version suggested by Richtmyer and Morton is
-    ! implemented so that no artificial diffusion needs to be constructed.
+    ! This subroutine performs one step by means of an explicit
+    ! Runge-Kutta scheme to advance the solution from time level $t^n$
+    ! to time level $t^{n+1}$.  In particular, the two step version
+    ! suggested by Richtmyer and Morton is implemented so that no
+    ! artificial diffusion needs to be constructed.
 !</description>
 
 !<input>
@@ -1441,7 +1447,6 @@ contains
     type(t_collection), intent(inout) :: rcollection
 !</inputoutput>
 !</subroutine>
-
 
     ! local variables
     type(t_solver), pointer :: p_rsolver
@@ -1690,6 +1695,158 @@ contains
       end if
     end do timeadapt
   end subroutine tstep_performRKStepBlock
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_performRKStepScalarCpl(rproblemLevel, rtimestep,&
+      rsolver, rsolution, fcb_nlsolverCallback, rcollection, rsource)
+
+!<description>
+    ! This subroutine performs one step by means of an explicit
+    ! Runge-Kutta scheme to advance the solution from time level $t^n$
+    ! to time level $t^{n+1}$.  Note that this subroutine serves as
+    ! wrapper for scalar solution vectors only.
+    !
+    ! In contrast to routine tstep_performRKStepScalar this routine
+    ! is applicable to a sequence of coupled problems which are
+    ! solved repeatedly until convergence.
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_solvercallback.inc'
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorScalar), dimension(:), intent(in), optional :: rsource
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout) :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(inout) :: rsolver
+
+    ! solution vector
+    type(t_vectorScalar), dimension(:), intent(inout) :: rsolution
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_vectorBlock), dimension(:), allocatable :: rsolutionBlock
+    type(t_vectorBlock), dimension(:), allocatable :: rsourceBlock
+    integer :: i
+
+    if (present(rsource)) then
+
+      ! Allocate temporal memory
+      allocate(rsolutionBlock(size(rsolution)))
+      allocate(rsourceBlock(size(rsource)))
+
+      do i = 1, size(rsolution)
+        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      end do
+
+      do i = 1, size(rsource)
+        call lsysbl_createVecFromScalar(rsource(i), rsourceBlock(i))
+      end do
+
+      call tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection,&
+          rsourceBlock)
+
+      do i = 1, size(rsolution)
+        call lsysbl_releaseVector(rsolutionBlock(i))
+      end do
+
+      do i = 1, size(rsource)
+        call lsysbl_releaseVector(rsourceBlock(i))
+      end do
+
+      ! Release temporal memory
+      deallocate(rsolutionBlock)
+      deallocate(rsourceBlock)
+
+    else
+
+      ! Allocate temporal memory
+      allocate(rsolutionBlock(size(rsolution)))
+
+      do i = 1, size(rsolution)
+        call lsysbl_createVecFromScalar(rsolution(i), rsolutionBlock(i))
+      end do
+
+      call tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+          rsolver, rsolutionBlock, fcb_nlsolverCallback, rcollection)
+
+      do i = 1, size(rsolution)
+        call lsysbl_releaseVector(rsolutionBlock(i))
+      end do
+
+      ! Release temporal memory
+      deallocate(rsolutionBlock)
+
+    end if
+    
+  end subroutine tstep_performRKStepScalarCpl
+
+! *****************************************************************************
+
+!<subroutine>
+
+  subroutine tstep_performRKStepBlockCpl(rproblemLevel, rtimestep,&
+      rsolver, rsolution,  fcb_nlsolverCallback, rcollection, rsource)
+
+!<description>
+    ! This subroutine performs one step by means of an explicit
+    ! Runge-Kutta scheme to advance the solution from time level $t^n$
+    ! to time level $t^{n+1}$.  In particular, the two step version
+    ! suggested by Richtmyer and Morton is implemented so that no
+    ! artificial diffusion needs to be constructed.
+    !
+    ! In contrast to routine tstep_performRKStepBlock this routine
+    ! is applicable to a sequence of coupled problems which are
+    ! solved repeatedly until convergence.
+!</description>
+
+!<input>
+    ! Callback routines
+    include 'intf_solvercallback.inc'
+
+    ! OPTIONAL: constant right-hand side vector
+    type(t_vectorBlock), dimension(:), intent(in), optional :: rsource
+!</input>
+
+!<inputoutput>
+    ! problem level structure
+    type(t_problemLevel), intent(inout) :: rproblemLevel
+
+    ! time-stepping structure
+    type(t_timestep), intent(inout), target :: rtimestep
+
+    ! solver structure
+    type(t_solver), intent(inout), target :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), dimension(:), intent(inout) :: rsolution
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>  
+
+    print *, "Subroutine tstep_performRKStepBlockCpl is not implemented"
+    stop
+
+  end subroutine tstep_performRKStepBlockCpl
 
   ! *****************************************************************************
 
@@ -2029,7 +2186,7 @@ contains
       rtimestep%drelChange = dChange
 
       ! Check if solver did not converge, that is, the convergence rate equals
-      ! unity or the normalized changes exceed maximum tolerance
+      ! unity or the normalised changes exceed maximum tolerance
       breject = (dChange .gt. p_rpidController%dmaxRel) .or.&
                 (rsolver%istatus .eq. SV_DIVERGED)
 

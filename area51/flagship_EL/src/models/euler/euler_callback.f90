@@ -52,10 +52,10 @@
 !#        limited by the FCT algorithm and applies them to the residual
 !#
 !# 10.) euler_limitEdgewiseVelocity
-!#      -> Performs synchronized flux correction for the velocity
+!#      -> Performs synchronised flux correction for the velocity
 !#
 !# 11.) euler_limitEdgewiseMomentum
-!#      -> Performs synchronized flux correction for the momentum
+!#      -> Performs synchronised flux correction for the momentum
 !#
 !# 12.) euler_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
@@ -1017,7 +1017,7 @@ contains
         ! Compute scaling parameter
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
-        ! What type if stabilization is applied?
+        ! What type if stabilisation is applied?
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
         case (AFCSTAB_GALERKIN)
@@ -1467,7 +1467,7 @@ contains
     ! Compute scaling parameter
     dscale = rtimestep%theta*rtimestep%dStep
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
     case (AFCSTAB_GALERKIN)
@@ -1695,7 +1695,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-------------------------------------------------------------------------
-      ! Compute the low-order residual + FEM-TVD stabilization
+      ! Compute the low-order residual + FEM-TVD stabilisation
       !
       !   $$ res = res + dt*theta*L(U^{(m)})*U^{(m)} + F(U^{(m)}) $$
       !-------------------------------------------------------------------------
@@ -1736,7 +1736,7 @@ contains
     !   $$ res = res + f^*(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
@@ -2109,7 +2109,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-----------------------------------------------------------------------
-      ! Compute the low-order right-hand side + FEM-TVD stabilization
+      ! Compute the low-order right-hand side + FEM-TVD stabilisation
       !
       !   $$ rhs = M*U+weight*(1-theta)*dt*L(U)*U + F(U) $$
       !-----------------------------------------------------------------------
@@ -2139,7 +2139,7 @@ contains
       end select
 
     case DEFAULT
-      call output_line('Invalid type of stabilization!',&
+      call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsRungeKuttaScheme')
       call sys_halt()
     end select
@@ -2290,25 +2290,21 @@ contains
     ! local variables
     type(t_timestep) :: rtimestepAux
     type(t_vectorBlock), pointer :: p_rpredictor
-    type(t_vectorBlock) :: rlowBound, rupBound
-    type(t_vectorScalar) :: rbeta, rvectorScalar
     type(t_parlist), pointer :: p_rparlist
-    real(DP), dimension(:), pointer :: p_ML, p_Dalpha, p_Dbeta, p_Dflux
-    real(DP), dimension(:), pointer :: p_Ddata, p_DlowBound, p_DupBound
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    character(len=SYS_STRLEN) :: sfailsafevariable
-    integer :: inviscidAFC, lumpedMassMatrix, isystemFormat
-    integer :: ifailsafe, nfailsafe, ivariable, nvariable
+    character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
+    integer :: inviscidAFC,lumpedMassMatrix
+    integer :: nfailsafe,ivariable,nvariable
 
-    ! Get parameters from parameter list
+    ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
-    ! Get more parameter from parameter list
+    ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
 
     ! Do we have to apply linearised FEM-FCT?
+    if (inviscidAFC .le. 0) return
     if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
         .ne. AFCSTAB_FEMFCT_LINEARISED) return
 
@@ -2319,42 +2315,6 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'nfailsafe', nfailsafe)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'isystemformat', isystemFormat)
-    
-    !---------------------------------------------------------------------------
-    ! Prepare failsafe flux correction
-    !---------------------------------------------------------------------------
-    if (nfailsafe .gt. 0) then
- 
-      ! Get number of failsafe variables
-      nvariable = max(1,&
-          parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(1), 'sfailsafevariable'))
-      
-      ! Create block vectors for the upper and lower bounds
-      call lsysbl_createVectorBlock(rlowBound,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
-      call lsysbl_createVectorBlock(rupBound,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
-      
-      ! Initialise lower bounds from low-order solution
-      do ivariable = 1, nvariable
-        
-        ! Get variable declaration string
-        call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(1), 'sfailsafevariable',&
-            sfailsafevariable, isubstring=ivariable)
-        
-        ! Get variable data from low-order solution
-        call euler_getVariable(rsolution, trim(sfailsafevariable),&
-            rlowBound%RvectorBlock(ivariable))
-      end do
-      
-      ! Copy lower bounds to upper bounds
-      call lsysbl_copyVector(rlowBound, rupBound)
-    end if
     
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
@@ -2380,105 +2340,53 @@ contains
     call euler_calcFluxFCT(rproblemLevel, p_rpredictor,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
     
-    ! Apply FEM-FCT correction
-    call euler_calcCorrectionFCT(rproblemLevel,&
-        rsolution, rtimestep%dStep, .false.,&
-        AFCSTAB_FCTALGO_STANDARD+&
-        AFCSTAB_FCTALGO_SCALEBYMASS,&
-        rsolution, rcollection)
-    
     !---------------------------------------------------------------------------
-    ! Perform failsafe flux correction
+    ! Perform failsafe flux correction (if required)
     !---------------------------------------------------------------------------
+
     if (nfailsafe .gt. 0) then
+
+      ! Get number of failsafe variables
+      nvariable = max(1,&
+          parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'sfailsafevariable'))
+
+      ! Allocate character array that stores all failsafe variable names
+      allocate(SfailsafeVariables(nvariable))
       
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(&
-          rproblemLevel%Rafcstab(inviscidAFC), p_IverticesAtEdge)
-      
-      ! Compute upper and lower bounds from low-order solution
+      ! Initialize character array with failsafe variable names
       do ivariable = 1, nvariable
-        
-        ! Make a copy of the scalar subvector
-        call lsyssc_copyVector(rlowBound%RvectorBlock(ivariable), rvectorScalar)
-
-        ! Set pointers
-        call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
-        call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
-        call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-        
-        ! Compute bounds for variable
-        call computeBounds(p_IverticesAtEdge, p_Ddata, p_DlowBound, p_DupBound)
-      end do
-      
-      ! Make a copy of the flux corrected predictor
-      call lsysbl_copyVector(rsolution, p_rpredictor)
-      
-      ! Initialise the edgewise correction factors
-      call lsyssc_createVector(rbeta,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEDGE, .true.)
-      
-      ! Set pointers
-      call lsyssc_getbase_double(rbeta, p_Dbeta)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_Dalpha)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorFlux, p_Dflux)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-
-      ! Failsafe steps
-      do ifailsafe = 1, nfailsafe
-
-        ! Loop over failsafe variables
-        do ivariable = 1, nvariable
-          
-          ! Get variable declaration string
-          call parlst_getvalue_string(p_rparlist,&
-              rcollection%SquickAccess(1), 'sfailsafevariable',&
-              sfailsafevariable, isubstring=ivariable)
-          
-          ! Get variable data flux corrected solution
-          call euler_getVariable(rsolution, trim(sfailsafevariable), rvectorScalar)
-          
-          ! Set pointers
-          call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
-          call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
-          call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-          
-          ! Compute failsafe correction factors
-          call computeFailsafe(p_IverticesAtEdge,&
-              rtimestep%dStep*real(ifailsafe, DP)/real(nfailsafe, DP),&
-              p_Ddata, p_DlowBound, p_DupBound, 1e-8_DP, p_Dbeta)
-        end do
-        
-        ! Restore flux correction solution
-        call lsysbl_copyVector(p_rpredictor, rsolution)
-        call lsysbl_getbase_double(rsolution, p_Ddata)
-        
-        ! Apply correction factors to solution vector
-        if (isystemFormat .eq. SYSTEM_INTERLEAVEFORMAT) then
-          call applyFailsafeInterleaveFormat(p_IverticesAtEdge,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
-              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-        else
-          call applyFailsafeBlockFormat(p_IverticesAtEdge,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
-              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-        end if
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'sfailsafevariable',&
+            Sfailsafevariables(ivariable), isubstring=ivariable)
       end do
 
-      ! Release temporal vector
-      call lsysbl_releaseVector(rlowBound)
-      call lsysbl_releaseVector(rupBound)
-      call lsyssc_releaseVector(rbeta)
-      call lsyssc_releaseVector(rvectorScalar)
+      ! Compute FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolution, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          rsolution, rcollection)
+      
+      ! Apply failsafe flux correction
+      call afcstab_failsafeLimiting(&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+          euler_getVariable, rsolution, p_rpredictor)
+
+      ! Deallocate temporal memory
+      deallocate(SfailsafeVariables)
+
+    else
+      
+      ! Apply linearised FEM-FCT correction
+      call euler_calcCorrectionFCT(rproblemLevel,&
+          rsolution, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolution, rcollection)
     end if
-    
 
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
@@ -2494,141 +2402,6 @@ contains
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
           rtimestep%dTime, euler_calcBoundaryvalues3d)
     end select
-
-  contains
-    
-    ! Here are some internal working routines 
-    
-    !**************************************************************
-    ! Compute the upper and lower bounds
-    
-    subroutine computeBounds(IverticesAtEdge,&
-        Dx, DlowBound, DupBound)
-
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: Dx
-      
-      real(DP), dimension(:), intent(inout) :: DlowBound, DupBound
-
-      ! local variables
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        DlowBound(i) = min(DlowBound(i), Dx(j))
-        DlowBound(j) = min(DlowBound(j), Dx(i))
-        DupBound(i)  = max(DupBound(i),  Dx(j))
-        DupBound(j)  = max(DupBound(j),  Dx(i))
-      end do
-
-    end subroutine computeBounds
-
-    !**************************************************************
-    ! Compute the failsafe correction factors
-    
-    subroutine computeFailsafe(IverticesAtEdge,&
-        dscale, Dx, DlowBound, DupBound, dtolerance, Dbeta)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: Dx, Dlowbound, DupBound
-      real(DP), intent(in) :: dscale, dtolerance
-      
-      real(DP), dimension(:), intent(inout) :: Dbeta
-      
-      ! local variables
-      integer :: iedge,i,j
-      
-      ! Loop over all edges
-      !$omp parallel do private(i,j)
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        if ((Dx(i) .lt. DlowBound(i)-dtolerance) .or.&
-            (Dx(j) .lt. DlowBound(j)-dtolerance) .or.&
-            (Dx(i) .gt. DupBound(i)+dtolerance) .or.&
-            (Dx(j) .gt. DupBound(j)+dtolerance)) Dbeta(iedge) = dscale
-      end do
-      !$omp end parallel do
-
-    end subroutine computeFailsafe
-
-    !**************************************************************
-    ! Apply the failsafe correction factors
-    ! The data vecto is stored in interleave format
-
-    subroutine applyFailsafeInterleaveFormat(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-      integer, intent(in) :: NEDGE, NEQ, NVAR
-      
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dx
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-
-        ! Remove flux from solution
-        Dx(:,i) = Dx(:,i) - F_ij/ML(i)
-        Dx(:,j) = Dx(:,j) + F_ij/ML(j)
-      end do
-      
-    end subroutine applyFailsafeInterleaveFormat
-
-    !**************************************************************
-    ! Apply the failsafe correction factors
-    ! The data vecto is stored in interleave format
-
-    subroutine applyFailsafeBlockFormat(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-      integer, intent(in) :: NEDGE, NEQ, NVAR
-      
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dx
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-
-        ! Remove flux from solution
-        Dx(i,:) = Dx(i,:) - F_ij/ML(i)
-        Dx(j,:) = Dx(j,:) + F_ij/ML(j)
-      end do
-      
-    end subroutine applyFailsafeBlockFormat
 
   end subroutine euler_calcLinearisedFCT
 
@@ -2898,7 +2671,8 @@ contains
 !<subroutine>
 
   subroutine euler_calcCorrectionFCT(rproblemLevel, rsolution, &
-      dscale, bclear, ioperationSpec, rresidual, rcollection, rafcstab)
+      dscale, bclear, ioperationSpec, rresidual, rcollection,&
+      rafcstab, slimitingvariableName)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2924,6 +2698,10 @@ contains
     ! combination of different AFCSTAB_FCT_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Parameter name of limiting variables in parameter list
+    ! If not present, then the default string 'slimitingvariable' is used
+    character(len=*), intent(in), optional :: slimitingvariableName
 !</input>
 
 !<inputoutput>
@@ -2964,12 +2742,16 @@ contains
           'inviscidAFC', inviscidAFC)
       p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
     end if
-
+    
     ! Get number of limiting variables
-    nvariable = max(1,&
-        parlst_querysubstrings(p_rparlist,&
-        rcollection%SquickAccess(1), 'slimitingvariable'))
-
+    if (present(slimitingvariableName)) then
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), slimitingvariableName))
+    else
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'slimitingvariable'))
+    end if
+    
     ! Copy operation specifier and disable the correction step
     ! if sequential/multiplicative flux correction is performed
     if (nvariable .gt. 1) then
@@ -2981,11 +2763,17 @@ contains
     ! Loop over items in the list of variables that should
     ! be limited sequentially, i.e., in multiplicative way
     do ivariable = 1, nvariable
-
+      
       ! Get variable declaration string
-      call parlst_getvalue_string(p_rparlist,&
-          rcollection%SquickAccess(1), 'slimitingvariable',&
-          slimitingvariable, isubstring=ivariable)
+      if (present(slimitingvariableName)) then
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), slimitingvariableName,&
+            slimitingvariable, isubstring=ivariable)
+      else
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'slimitingvariable',&
+            slimitingvariable, isubstring=ivariable)
+      end if
 
       ! Get number of variables to be limited simultaneously
       nvartransformed = euler_getNVARtransformed(rproblemLevel, slimitingvariable)
@@ -3234,7 +3022,7 @@ contains
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the velocity vector in synchronized fashion.
+    ! for the velocity vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.
@@ -3388,7 +3176,7 @@ contains
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the momentum vector in synchronized fashion.
+    ! for the momentum vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.
@@ -3815,7 +3603,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients

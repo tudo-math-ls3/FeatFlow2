@@ -128,7 +128,7 @@ module problem
   ! Problem level requires update
   integer(I32), parameter, public :: PROBLEV_MSPEC_UPDATE           = 2**0
 
-  ! Problem level requires initialization
+  ! Problem level requires initialisation
   integer(I32), parameter, public :: PROBLEV_MSPEC_INITIALIZE       = 2**1
 
 !</constantblock>
@@ -197,7 +197,7 @@ module problem
 
   type t_problem
 
-    ! Boundary parametrization
+    ! Boundary parametrisation
     type(t_boundary) :: rboundary
 
     ! Pointer to the previous problem instance
@@ -237,7 +237,7 @@ module problem
     ! Triangulation structure
     type(t_triangulation) :: rtriangulation
 
-    ! Array of discretization structure
+    ! Array of discretisation structure
     type(t_blockDiscretisation), dimension(:), pointer :: Rdiscretisation => null()
 
     ! Array of AFC stabilisations
@@ -476,7 +476,7 @@ contains
     ! local variables
     type(t_problemLevel), pointer :: p_rproblemLevel
 
-    ! Initialization
+    ! Initialisation
     p_rproblemLevel => rproblem%p_rproblemLevelMax
 
     ! Loop over all problem levels and destroy them
@@ -792,7 +792,7 @@ contains
 
       call output_lbrk()
 
-      ! Initialization
+      ! Initialisation
       p_rproblemLevel => rproblem%p_rproblemLevelMax
 
       ! Loop over all problem levels
@@ -853,7 +853,7 @@ contains
     ! Release triangulation structure
     call tria_done(rproblemLevel%rtriangulation)
 
-    ! Release discretization structures
+    ! Release discretisation structures
     if (associated(rproblemLevel%Rdiscretisation)) then
       do i = lbound(rproblemLevel%Rdiscretisation,1),&
              ubound(rproblemLevel%Rdiscretisation,1)
@@ -898,7 +898,7 @@ contains
       deallocate(rproblemLevel%RvectorBlock)
     end if
 
-    ! Release stabilization structure
+    ! Release stabilisation structure
     if (associated(rproblemLevel%Rafcstab)) then
       do i = lbound(rproblemLevel%Rafcstab,1),&
              ubound(rproblemLevel%Rafcstab,1)

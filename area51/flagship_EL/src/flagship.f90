@@ -23,18 +23,15 @@
 !#     by the routines from the iluk.f90 module.
 !#
 !# 2.) Prelimiting does not work for FEM-FCT algorithms except for the
-!#     linearized version. We still need to think about how to assemble
+!#     linearised version. We still need to think about how to assemble
 !#     the fluxes for prelimiting.
 !#
 !# 3.) FEM-FCT algorithms for Euler model are not working except for the
-!#     linearized version.
+!#     linearised version.
 !#
 !# 4.) Jacobian matrix for the semi-implicit FEM-FCT algorithm has to be
 !#     fixed (it was based on the fluxes but now it has to be based on the
 !#     edgewise correciton factors).
-!#
-!# 5.) Modify Z-pinch application so that it uses the new implementation
-!#     of the linearized FCT algorithm with failsafe strategy.
 !#
 !# </purpose>
 !##############################################################################
@@ -78,7 +75,7 @@ program flagship
 
   ! Initialize the output system
   call date_and_time(sdate, stime)
-  call output_init('./log/flagship_'//sdate//'_'//stime(1:4)//'.log')
+  call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
@@ -137,25 +134,24 @@ program flagship
   call output_separator(OU_SEP_MINUS)
 
 
-  ! Call application module
+  ! Switch to application module
   if (trim(application) .eq. 'transport') then
-    call transp_app(rparlist)
+    call transp_app(rparlist, 'transport')
 
   elseif (trim(application) .eq. 'euler') then
-    call euler_app(rparlist)
+    call euler_app(rparlist, 'euler')
 
   elseif (trim(application) .eq. 'zpinch') then
-    call zpinch_app(rparlist)
+    call zpinch_app(rparlist, 'zpinch')
 
   elseif (trim(application) .eq. 'eulerlagrange') then
     call eulerlagrange_app(rparlist)
 
   else
-
     call output_line('Invalid application name!',&
-                     OU_CLASS_WARNING,OU_MODE_STD,'flagship')
+        OU_CLASS_WARNING,OU_MODE_STD,'flagship')
     call sys_halt()
-
+    
   end if
 
   ! Release parameter list
