@@ -74,7 +74,7 @@ program flagship
 
   ! Initialize the output system
   call date_and_time(sdate, stime)
-  call output_init('./log/flagship_'//sdate//'_'//stime(1:10)//'.log')
+  call output_init('./log/flagship_'//sdate//'_'//stime(1:4)//'.log')
 
   ! Initialize storage subsystem
   call storage_init(500, 100)
