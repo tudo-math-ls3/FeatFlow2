@@ -50,16 +50,15 @@ nPart = 1000
 #-------------------------------------------------------------------------------
 # searchalgorithm for the particle
 #-------------------------------------------------------------------------------
-
 # bruteforce	Brute force method
 # raytrace2D	Raytracing method in 2D
 # midpoint		Find element with the nearest midpoint
+#-------------------------------------------------------------------------------
 search = midpoint
 
 #-------------------------------------------------------------------------------
 # startingposition of the particles
 #-------------------------------------------------------------------------------
-
 # 0 random startingposition 
 #	xmin = minval(p_DvertexCoords(1,:))
 #	xmax = 0.2*maxval(p_DvertexCoords(1,:))
@@ -68,6 +67,7 @@ search = midpoint
 # 1 individual startingposition
 # 2 initialize the starting position by the data of a graymap image
 # 3 uniformly distributed over the domain
+#-------------------------------------------------------------------------------
 startpos = 3
 
 # PGM-file for startingpositions
@@ -83,40 +83,42 @@ ymin = 1.5e-3
 ymax = 9.0e-2
 
 #-------------------------------------------------------------------------------
-# density and diameter of the particle
+# density of the particle
 #-------------------------------------------------------------------------------
-
 # 0 all particles have the same density (particledensity) 
 # 1 random density of the particles (0 to particledensity)
 # 2 random density of the particles (particledensitymin to particledensitymax)
+#-------------------------------------------------------------------------------
 idensitypart = 0
 
-# particle mass in kg/m^3
+# particle density in kg/m^3
 particledensity = 4000
 
-# particle mass minimum in kg/m^3
-particledensitymin = 0.15
-# particle mass maximum in kg/m^3
-particledensitymax = 0.39
+# particle density minimum in kg/m^3
+particledensitymin = 4000
+# particle density maximum in kg/m^3
+particledensitymax = 4000
 
 #-------------------------------------------------------------------------------
-
+# diameter of the particle
+#-------------------------------------------------------------------------------
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
 # 2 random diameter of the particles (particlediammin to particlediammax)
+#-------------------------------------------------------------------------------
 idiampart = 0
 
 # particle-diameter
 particlediam = 1e-6
 
-# particle diameter minimum in meter
+# particle diameter minimum in m
 particlediammin = 1e-8
-# particle diameter maximum in meter
+# particle diameter maximum in m
 particlediammax = 1e-6
 
 
 #-------------------------------------------------------------------------------
-# velocity of the particles (particles have the same velocity)
+# initial velocity of the particles (particles have the same velocity)
 #-------------------------------------------------------------------------------
 
 # velocity in x-direction in m/s
@@ -125,6 +127,17 @@ velopartx = 205.709277e0
 # velocity in y-direction in m/s
 veloparty = 0e0 
                
+
+#-------------------------------------------------------------------------------
+# scaling for the domain (to handle very small domains)
+#-------------------------------------------------------------------------------
+
+# scalar in x-direction
+domscalex = 205.709277e0
+
+# scalar in y-direction
+domscaley = 205.709277e0
+
 
 #-------------------------------------------------------------------------------
 # scalars for the gas phase (from .indat file)
@@ -138,13 +151,14 @@ velogasy = 205.709277e0
 
 # scalar for density of the gas phase
 rho_gas= 1.5e0 
-                                     
+    
+                                 
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
 #-------------------------------------------------------------------------------
-
-# 0 = ideal wall collision
-# 1 = slip condition
+# 0 ideal wall collision
+# 1 slip condition
+#-------------------------------------------------------------------------------
 boundbehav = 0
 
 
@@ -160,12 +174,12 @@ gravityy = -9.81
 
 
 #-------------------------------------------------------------------------------
-# temperature
+# temperature of the particles
 #-------------------------------------------------------------------------------
-
 # 0 all particles have the same temperature 
 # 1 random temperature of the particles (0 to parttemp)
 # 2 random temperature of the particles (parttempmin to parttempmax)
+#-------------------------------------------------------------------------------
 itemppart = 0
 
 # temperature of the particles in Kelvin
@@ -200,34 +214,35 @@ c_v_part = 1380
 #-------------------------------------------------------------------------------
 # output particle phase (additional to the data of the output file of the gasphase)
 #-------------------------------------------------------------------------------
-
 # 0 no output
 # 1 only particle positions
 # 2 position, velocity, diameter, mass, density and temperatur of the particles
+#-------------------------------------------------------------------------------
 ipartoutput = 2
 
 #-------------------------------------------------------------------------------
 # choice coupling mode (one-way or two-way coupling)
 #-------------------------------------------------------------------------------
-
 # 1 	one-way coupling (particles have no influence on the gas phase)
 # 2 	two-way coupling (!!!TODO!!!)
+#-------------------------------------------------------------------------------
 icouplingpart = 1
 
 #-------------------------------------------------------------------------------
 # choice solution algorithmn for the particle phase
 #-------------------------------------------------------------------------------
-
 # 1 	Runge-Kutta first order / explicit Euler method (interfacial forces)
 # 2 	Runge-Kutta second order / improved Euler or Heuns' method (interfacial forces)
 # 3	Runge-Kutta fourth order / classic Runge-Kutta (interfacial forces)
 # -1 	Runge-Kutta first order / explicit Euler method (particle tracing)
 # -2 	Runge-Kutta second order / improved Euler method (particle tracing)
 # -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
+#-------------------------------------------------------------------------------
 isolutionpart = 1
 
 #-------------------------------------------------------------------------------
-# select forces for the particle movement
+# select interfacial forces for the particle movement
+#-------------------------------------------------------------------------------
 # dragforce (most important one)
 # gravity
 # virtualmassforce (TODO)
@@ -241,10 +256,10 @@ sselectforce(1) =
 #-------------------------------------------------------------------------------
 # domain with triangle or rectangles (!!!TODO!!!)
 #-------------------------------------------------------------------------------
-
 # 1 	triangles
 # 2 	rectangles
 # 3 	both
+#-------------------------------------------------------------------------------
 idomtype = 1
 
 
