@@ -3139,35 +3139,6 @@ contains
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
         
-!!$        ! Loop over all edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Get node numbers and matrix positions
-!!$          i  = IverticesAtEdge(1, iedge)
-!!$          j  = IverticesAtEdge(2, iedge)
-!!$          
-!!$          ! Compute transformed velocity fluxes
-!!$          call fcb_calcFluxTransformation_sim(&
-!!$              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
-!!$          
-!!$          ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-!!$          
-!!$          ! Compute edgewise correction factors
-!!$          R_ij = min(R_ij, R_ji)
-!!$          
-!!$          ! Compute velocity average
-!!$          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
-!!$                        Dx(2:NVARtransformed+1,j)/Dx(1,j))
-!!$          
-!!$          ! Compute correction factor
-!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-!!$          
-!!$          ! Compute multiplicative correction factor
-!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
-!!$        end do
-
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
         !-----------------------------------------------------------------------
@@ -3242,35 +3213,6 @@ contains
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
         
-!!$        ! Loop over all edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Get node numbers and matrix positions
-!!$          i  = IverticesAtEdge(1, iedge)
-!!$          j  = IverticesAtEdge(2, iedge)
-!!$          
-!!$          ! Compute transformed velocity fluxes
-!!$          call fcb_calcFluxTransformation_sim(&
-!!$              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
-!!$          
-!!$          ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-!!$          
-!!$          ! Compute edgewise correction factors
-!!$          R_ij = min(R_ij, R_ji)
-!!$          
-!!$          ! Compute velocity average
-!!$          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
-!!$                        Dx(j,2:NVARtransformed+1)/Dx(j,1))
-!!$          
-!!$          ! Compute correction factor
-!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-!!$          
-!!$          ! Compute multiplicative correction factor
-!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
-!!$        end do
-
       else
         
         call output_line('Invalid system format!',&
@@ -3433,35 +3375,6 @@ contains
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
 
-!!$        ! Loop over all edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Get node numbers and matrix positions
-!!$          i  = IverticesAtEdge(1, iedge)
-!!$          j  = IverticesAtEdge(2, iedge)
-!!$          
-!!$          ! Compute transformed velocity fluxes
-!!$          call fcb_calcFluxTransformation_sim(&
-!!$              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
-!!$          
-!!$          ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-!!$          
-!!$          ! Compute edgewise correction factors
-!!$          R_ij = min(R_ij, R_ji)
-!!$          
-!!$          ! Compute momentum average
-!!$          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
-!!$                        Dx(2:NVARtransformed+1,j))
-!!$          
-!!$          ! Compute correction factor
-!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-!!$          
-!!$          ! Compute multiplicative correction factor
-!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
-!!$        end do
-
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
         !-----------------------------------------------------------------------
@@ -3535,35 +3448,6 @@ contains
         ! Deallocate temporal memory
         deallocate(DdataAtEdge)
         deallocate(DtransformedFluxesAtEdge)
-
-!!$        ! Loop over all edges
-!!$        do iedge = 1, NEDGE
-!!$          
-!!$          ! Get node numbers and matrix positions
-!!$          i  = IverticesAtEdge(1, iedge)
-!!$          j  = IverticesAtEdge(2, iedge)
-!!$          
-!!$          ! Compute transformed velocity fluxes
-!!$          call fcb_calcFluxTransformation_sim(&
-!!$              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
-!!$          
-!!$          ! Compute nodal correction factors
-!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-!!$          
-!!$          ! Compute edgewise correction factors
-!!$          R_ij = min(R_ij, R_ji)
-!!$          
-!!$          ! Compute momentum average
-!!$          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
-!!$                        Dx(j,2:NVARtransformed+1))
-!!$          
-!!$          ! Compute correction factor
-!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-!!$          
-!!$          ! Compute multiplicative correction factor
-!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
-!!$        end do
 
       else
 

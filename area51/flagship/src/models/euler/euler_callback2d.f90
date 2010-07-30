@@ -166,9 +166,6 @@
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
-!# 41.) euler_limitEdgewiseVelocity2D
-!#      -> Performs synchronised flux correction for the velocity in 2D
-!#
 !# </purpose>
 !##############################################################################
 
