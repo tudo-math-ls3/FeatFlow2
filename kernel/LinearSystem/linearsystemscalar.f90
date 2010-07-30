@@ -3730,18 +3730,18 @@ contains
     !**************************************************************
     ! Format 7 and Format 9 multiplication
     ! double precision matrix,
-    ! double precision vectors
+    ! double precision vectors (may be interleaved)
     
     subroutine lsyssc_LAX79doubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(in)                  :: rmatrix
-    type(t_vectorScalar), intent(in)                  :: rx
-    real(DP), intent(in)                              :: cx
-    real(DP), intent(in)                              :: cy
-    type(t_vectorScalar), intent(inout)               :: ry
-    integer, intent(in)                  :: NEQ
+    type(t_matrixScalar), intent(in) :: rmatrix
+    type(t_vectorScalar), intent(in) :: rx
+    real(DP), intent(in) :: cx
+    real(DP), intent(in) :: cy
+    type(t_vectorScalar), intent(inout) :: ry
+    integer, intent(in) :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -3749,7 +3749,7 @@ contains
     integer :: ia
     integer :: irow,icol
     integer :: ivar,NVAR
-    real(DP), dimension(:), pointer :: Ddtmp
+    real(DP), dimension(rx%NVAR) :: Ddtmp
     real(DP) :: dtmp
 
       ! Get NVAR - from the vector not from the matrix!
@@ -3770,6 +3770,8 @@ contains
       call lsyssc_getbase_double (ry,p_Dy)
       
       if (NVAR .eq. 1) then
+
+        !--- non-interleaved vectors -------------------------------------------
 
         ! Perform the multiplication
         if(cx .ne. 1.0_DP) then
@@ -3798,7 +3800,7 @@ contains
             end do
             !$omp end parallel do
         
-          else
+          else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared)
             do irow = 1, NEQ
@@ -3812,7 +3814,7 @@ contains
             
           end if
           
-        else
+        else   ! arbitrary cx value
           
           if(cy .eq. 0.0_DP) then
             
@@ -3838,7 +3840,7 @@ contains
             end do
             !$omp end parallel do
             
-          else
+          else   ! arbitrary cy value
             
             !$omp parallel do private(ia,dtmp) default(shared)
             do irow = 1, NEQ
@@ -3856,8 +3858,7 @@ contains
 
       else   ! NVAR .ne. 1
 
-        ! Allocate temporal array
-        allocate(Ddtmp(NVAR))
+        !--- interleaved vectors -----------------------------------------------
 
         ! Perform the multiplication
         if(cx .ne. 1.0_DP) then
@@ -3894,7 +3895,7 @@ contains
             end do
             !$omp end parallel do
         
-          else
+          else   ! arbitrary cy value
             
             !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
             do irow = 1, NEQ
@@ -3912,7 +3913,7 @@ contains
             
           end if
           
-        else
+        else   ! arbitrary cx value
           
           if(cy .eq. 0.0_DP) then
             
@@ -3946,7 +3947,7 @@ contains
             end do
             !$omp end parallel do
             
-          else
+          else   ! arbitrary cy value
             
             !$omp parallel do private(ia,ivar,Ddtmp) default(shared)
             do irow = 1, NEQ
@@ -3966,9 +3967,6 @@ contains
           
         end if
 
-        ! Deallocate temporal array
-        deallocate(Ddtmp)
-
       end if
    
     end subroutine
@@ -3982,101 +3980,101 @@ contains
     ! REMARK: The calling subroutine must check that both vectors 
     !         Dx and Dy have the same number of variables NVAR !!!
     
-    subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ,NVAR)
-
-    ! The matrix
-    integer, dimension(*), intent(in) :: KCOL
-    integer, dimension(*), intent(in) :: KLD
-    real(DP), dimension(*), intent(in) :: DA
-    
-    ! Size of the vectors
-    integer :: NEQ,NVAR
-
-    ! The vectors
-    real(DP), dimension(NVAR,*), intent(in) :: Dx
-    real(DP), dimension(NVAR,*), intent(inout) :: Dy
-    
-    ! Multiplication factors for the vectors.
-    real(DP) :: cx,cy
-    
-    integer :: ia
-    integer :: irow,icol
-    real(DP) :: dtmp
-
-      ! Perform the multiplication
-      if (cx .ne. 0.0_DP) then
-      
-        if (cy .eq. 0.0_DP) then
-        
-          ! cy = 0. We have simply to make matrix*vector without adding ry.
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to ry.
-          ! Do not multiply with cy, this comes later.
-          !
-          ! What is this complicated IF-THEN structure for?
-          ! Well, to prevent an initialisation of rx with zero in case cy=0!
-       
-          !%OMP parallel do default(shared) private(irow,icol,ia)
-          do irow = 1, NEQ
-            ia   = Kld(irow)
-            icol = Kcol(ia)
-            Dy(:,irow) = Dx(:,icol) * DA(ia)
-          end do
-          !%OMP end parallel do
-
-          ! Now we have an initial ry where we can do a usual MV
-          ! with the rest of the matrix...
-          
-        else 
-        
-          ! cy <> 0. We have to perform matrix*vector + vector.
-          ! What we actually calculate here is:
-          !    ry  =  cx * A * x  +  cy * y
-          !        =  cx * ( A * x  +  cy/cx * y).
-          !
-          ! Scale down y:
-        
-          dtmp = cy/cx
-          if (dtmp .ne. 1.0_DP) then
-            call lalg_scaleVector(Dy(:,1:NEQ),dtmp)
-          end if
-          
-          ! Multiply the first entry in each line of the matrix with the
-          ! corresponding entry in rx and add it to the (scaled) ry.
-          
-          !%OMP parallel do default(shared) private(irow,icol,ia)
-          do irow = 1, NEQ
-            ia   = Kld(irow)
-            icol = Kcol(ia)
-            Dy(:,irow) = Dx(:,icol)*DA(ia) + Dy(:,irow) 
-          end do
-          !%OMP end parallel do
-          
-        endif
-        
-        ! Multiply the rest of rx with the matrix and add it to ry:
-        
-        !%OMP parallel do default(shared) private(irow,icol,ia)
-        do irow = 1, NEQ
-          do ia = Kld(irow)+1,Kld(irow+1)-1
-            icol = Kcol(ia)
-            Dy(:,irow) = Dy(:,irow) + DA(ia)*Dx(:,icol)
-          end do
-        end do
-        !%OMP end parallel do
-        
-        ! Scale by cx, finish.
-        
-        if (cx .ne. 1.0_DP) then
-          call lalg_scaleVector(Dy(:,1:NEQ),cx)
-        end if
-        
-      else 
-        ! cx = 0. The formula is just a scaling of the vector ry!
-        call lalg_scaleVector(Dy(:,1:NEQ),cy)
-      endif
-   
-    end subroutine
+!!$    subroutine lsyssc_qLAX79doubledouble (DA,Kcol,Kld,Dx,Dy,cx,cy,NEQ,NVAR)
+!!$
+!!$    ! The matrix
+!!$    integer, dimension(*), intent(in) :: KCOL
+!!$    integer, dimension(*), intent(in) :: KLD
+!!$    real(DP), dimension(*), intent(in) :: DA
+!!$    
+!!$    ! Size of the vectors
+!!$    integer :: NEQ,NVAR
+!!$
+!!$    ! The vectors
+!!$    real(DP), dimension(NVAR,*), intent(in) :: Dx
+!!$    real(DP), dimension(NVAR,*), intent(inout) :: Dy
+!!$    
+!!$    ! Multiplication factors for the vectors.
+!!$    real(DP) :: cx,cy
+!!$    
+!!$    integer :: ia
+!!$    integer :: irow,icol
+!!$    real(DP) :: dtmp
+!!$
+!!$      ! Perform the multiplication
+!!$      if (cx .ne. 0.0_DP) then
+!!$      
+!!$        if (cy .eq. 0.0_DP) then
+!!$        
+!!$          ! cy = 0. We have simply to make matrix*vector without adding ry.
+!!$          ! Multiply the first entry in each line of the matrix with the
+!!$          ! corresponding entry in rx and add it to ry.
+!!$          ! Do not multiply with cy, this comes later.
+!!$          !
+!!$          ! What is this complicated IF-THEN structure for?
+!!$          ! Well, to prevent an initialisation of rx with zero in case cy=0!
+!!$       
+!!$          !%OMP parallel do default(shared) private(irow,icol,ia)
+!!$          do irow = 1, NEQ
+!!$            ia   = Kld(irow)
+!!$            icol = Kcol(ia)
+!!$            Dy(:,irow) = Dx(:,icol) * DA(ia)
+!!$          end do
+!!$          !%OMP end parallel do
+!!$
+!!$          ! Now we have an initial ry where we can do a usual MV
+!!$          ! with the rest of the matrix...
+!!$          
+!!$        else 
+!!$        
+!!$          ! cy <> 0. We have to perform matrix*vector + vector.
+!!$          ! What we actually calculate here is:
+!!$          !    ry  =  cx * A * x  +  cy * y
+!!$          !        =  cx * ( A * x  +  cy/cx * y).
+!!$          !
+!!$          ! Scale down y:
+!!$        
+!!$          dtmp = cy/cx
+!!$          if (dtmp .ne. 1.0_DP) then
+!!$            call lalg_scaleVector(Dy(:,1:NEQ),dtmp)
+!!$          end if
+!!$          
+!!$          ! Multiply the first entry in each line of the matrix with the
+!!$          ! corresponding entry in rx and add it to the (scaled) ry.
+!!$          
+!!$          !%OMP parallel do default(shared) private(irow,icol,ia)
+!!$          do irow = 1, NEQ
+!!$            ia   = Kld(irow)
+!!$            icol = Kcol(ia)
+!!$            Dy(:,irow) = Dx(:,icol)*DA(ia) + Dy(:,irow) 
+!!$          end do
+!!$          !%OMP end parallel do
+!!$          
+!!$        endif
+!!$        
+!!$        ! Multiply the rest of rx with the matrix and add it to ry:
+!!$        
+!!$        !%OMP parallel do default(shared) private(irow,icol,ia)
+!!$        do irow = 1, NEQ
+!!$          do ia = Kld(irow)+1,Kld(irow+1)-1
+!!$            icol = Kcol(ia)
+!!$            Dy(:,irow) = Dy(:,irow) + DA(ia)*Dx(:,icol)
+!!$          end do
+!!$        end do
+!!$        !%OMP end parallel do
+!!$        
+!!$        ! Scale by cx, finish.
+!!$        
+!!$        if (cx .ne. 1.0_DP) then
+!!$          call lalg_scaleVector(Dy(:,1:NEQ),cx)
+!!$        end if
+!!$        
+!!$      else 
+!!$        ! cx = 0. The formula is just a scaling of the vector ry!
+!!$        call lalg_scaleVector(Dy(:,1:NEQ),cy)
+!!$      endif
+!!$   
+!!$    end subroutine
         
     !**************************************************************
     ! Format 7 and Format 9 full interleaved multiplication
@@ -4087,12 +4085,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(in)                  :: rmatrix
-    type(t_vectorScalar), intent(in)                  :: rx
-    real(DP), intent(in)                              :: cx
-    real(DP), intent(in)                              :: cy
-    type(t_vectorScalar), intent(inout)               :: ry
-    integer, intent(in)                  :: NEQ
+    type(t_matrixScalar), intent(in) :: rmatrix
+    type(t_vectorScalar), intent(in) :: rx
+    real(DP), intent(in) :: cx
+    real(DP), intent(in) :: cy
+    type(t_vectorScalar), intent(inout) :: ry
+    integer, intent(in) :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4132,7 +4130,8 @@ contains
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
-          !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+
+          !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4148,12 +4147,12 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
           
-        else 
+        else ! arbitrary cy value
         
           ! cy <> 0. We have to perform matrix*vector + vector.
           ! What we actually calculate here is:
@@ -4169,7 +4168,8 @@ contains
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
-          !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+          
+          !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4185,12 +4185,13 @@ contains
               p_Dy(NVAR*(irow-1)+ivar) = dtmp + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
-        !%OMP parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
+        
+        !%omp parallel do default(shared) private(irow,icol,ia,ivar,jvar,dtmp)
           do irow=1,NEQ
             do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
@@ -4207,7 +4208,7 @@ contains
               end do
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
         
         ! Scale by cx, finish.
         
@@ -4230,12 +4231,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(in)                  :: rmatrix
-    type(t_vectorScalar), intent(in)                  :: rx
-    real(DP), intent(in)                              :: cx
-    real(DP), intent(in)                              :: cy
-    type(t_vectorScalar), intent(inout)               :: ry
-    integer, intent(in)                  :: NEQ
+    type(t_matrixScalar), intent(in) :: rmatrix
+    type(t_vectorScalar), intent(in) :: rx
+    real(DP), intent(in) :: cx
+    real(DP), intent(in) :: cy
+    type(t_vectorScalar), intent(inout) :: ry
+    integer, intent(in) :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4275,7 +4276,8 @@ contains
           !
           ! What is this complicated IF-THEN structure for?
           ! Well, to prevent an initialisation of rx with zero in case cy=0!
-          !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+          
+          !%omp parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4285,12 +4287,12 @@ contains
                   * p_DA(NVAR*(ia-1)+ivar)
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
 
           ! Now we have an initial ry where we can do a usual MV
           ! with the rest of the matrix...
           
-        else 
+        else   ! arbitrary cy value
         
           ! cy <> 0. We have to perform matrix*vector + vector.
           ! What we actually calculate here is:
@@ -4306,7 +4308,8 @@ contains
           
           ! Multiply the first entry in each line of the matrix with the
           ! corresponding entry in rx and add it to the (scaled) ry.
-          !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+          
+          !%omp parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             ia   = p_Kld(irow)
             icol = p_Kcol(ia)
@@ -4317,12 +4320,13 @@ contains
                   + p_Dy(NVAR*(irow-1)+ivar)
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
           
         endif
         
         ! Multiply the rest of rx with the matrix and add it to ry:
-        !%OMP parallel do default(shared) private(irow,icol,ia,ivar)
+        
+        !%omp parallel do default(shared) private(irow,icol,ia,ivar)
           do irow=1,NEQ
             do ia = p_Kld(irow)+1,p_Kld(irow+1)-1
               icol = p_Kcol(ia)
@@ -4334,7 +4338,7 @@ contains
               end do
             end do
           end do
-          !%OMP end parallel do
+          !%omp end parallel do
            
         ! Scale by cx, finish.
         
@@ -4359,12 +4363,12 @@ contains
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(in)                  :: rmatrix
-    type(t_vectorScalar), intent(in)                  :: rx
-    real(DP), intent(in)                              :: cx
-    real(DP), intent(in)                              :: cy
-    type(t_vectorScalar), intent(inout)               :: ry
-    integer, intent(in)                  :: NEQ
+    type(t_matrixScalar), intent(in) :: rmatrix
+    type(t_vectorScalar), intent(in) :: rx
+    real(DP), intent(in) :: cx
+    real(DP), intent(in) :: cy
+    type(t_vectorScalar), intent(inout) :: ry
+    integer, intent(in) :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     real(DP) :: dtmp
@@ -4388,6 +4392,8 @@ contains
 
       if (NVAR .eq. 1) then
       
+        !--- non-interleaved vectors -------------------------------------------
+
         ! Perform the multiplication
         if (cx .ne. 0.0_DP) then
           
@@ -4400,7 +4406,7 @@ contains
             end do
             !%OMP end parallel do
           
-          else
+          else   ! arbitrary cy value
         
             ! Full multiplication: cx*A*X + cy*Y
             !%OMP parallel do default(shared) private(irow)
@@ -4411,7 +4417,7 @@ contains
         
           end if
         
-        else 
+        else   ! arbitrary cx value
           
           ! cx = 0. The formula is just a scaling of the vector ry!
           call lalg_scaleVector(p_Dy,cy)
@@ -4419,6 +4425,8 @@ contains
         endif
       
       else   ! NVAR .ne. 1
+
+        !--- interleaved vectors -----------------------------------------------
 
         ! Perform the multiplication
         if (cx .ne. 0.0_DP) then
@@ -4434,7 +4442,7 @@ contains
             end do
             !%OMP end parallel do
           
-          else
+          else   ! arbitrary cy value
         
             ! Full multiplication: cx*A*X + cy*Y
             !%OMP parallel do default(shared) private(irow)
@@ -4448,7 +4456,7 @@ contains
         
           end if
         
-        else 
+        else   ! arbitrary cx value
           
           ! cx = 0. The formula is just a scaling of the vector ry!
           call lalg_scaleVector(p_Dy,cy)
@@ -4462,18 +4470,18 @@ contains
     !**************************************************************
     ! Format 7/9 multiplication, transposed matrix
     ! double precision matrix,
-    ! double precision vectors
+    ! double precision vectors (may be interleaved)
     
     subroutine lsyssc_LTX79doubledouble (rmatrix,rx,ry,cx,cy,NEQ)
 
     ! Save arguments as above - given as parameters as some compilers
     ! might have problems with scoping units...
-    type(t_matrixScalar), intent(in)                  :: rmatrix
-    type(t_vectorScalar), intent(in)                  :: rx
-    real(DP), intent(in)                              :: cx
-    real(DP), intent(in)                              :: cy
-    type(t_vectorScalar), intent(inout)               :: ry
-    integer, intent(in)                  :: NEQ
+    type(t_matrixScalar), intent(in) :: rmatrix
+    type(t_vectorScalar), intent(in) :: rx
+    real(DP), intent(in) :: cx
+    real(DP), intent(in) :: cy
+    type(t_vectorScalar), intent(inout) :: ry
+    integer, intent(in) :: NEQ
 
     real(DP), dimension(:), pointer :: p_DA, p_Dx, p_Dy
     integer, dimension(:), pointer :: p_Kld
@@ -4481,9 +4489,9 @@ contains
     integer :: ia
     integer :: irow,icol
     integer :: ivar,NVAR
-    real(DP), dimension(:), pointer :: Ddtmp
+    real(DP), dimension(rx%NVAR) :: Ddtmp
     real(DP) :: dtmp
-
+    
       ! Get NVAR - from the vector not from the matrix!
       NVAR = rx%NVAR
 
@@ -4518,7 +4526,9 @@ contains
       end if
       
       if (NVAR .eq. 1) then
-        
+
+        !--- non-interleaved vectors -------------------------------------------
+
         ! Perform the multiplication.
         if (cx .ne. 1.0_DP) then
           
@@ -4533,7 +4543,7 @@ contains
             
           end do
           
-        else
+        else   ! cx = 1.0
           
           do irow = 1, NEQ
             
@@ -4548,12 +4558,11 @@ contains
 
       else   ! NVAR .ne. 1
         
+        !--- interleaved vectors -----------------------------------------------
+
         ! Perform the multiplication.
         if (cx .ne. 1.0_DP) then
           
-          ! Allocate temporal array
-          allocate(Ddtmp(NVAR))
-
           do irow = 1, NEQ
             
             do ivar = 1, NVAR
@@ -4570,10 +4579,7 @@ contains
             
           end do
 
-          ! Deallocate temporal array
-          deallocate(Ddtmp)
-          
-        else
+        else   ! cx = 1.0
           
           do irow = 1, NEQ
             
