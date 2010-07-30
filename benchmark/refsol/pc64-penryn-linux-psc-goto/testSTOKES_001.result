@@ -172,19 +172,19 @@ Rate of convergence     : 9.266907052645049E-02
 Calculating 2D Stokes-Problem 2 - general VANKA
 -----------------------------------------------
 Multigrid: Iteration 0,  !!RES!! = 3.083687338939604E-02
-Multigrid: Iteration 1,  !!RES!! = 6.248299680865335E-04
-Multigrid: Iteration 2,  !!RES!! = 3.100052046014403E-05
-Multigrid: Iteration 3,  !!RES!! = 1.844662318745847E-06
-Multigrid: Iteration 4,  !!RES!! = 1.173308584158241E-07
+Multigrid: Iteration 1,  !!RES!! = 6.248299680865344E-04
+Multigrid: Iteration 2,  !!RES!! = 3.100052046014331E-05
+Multigrid: Iteration 3,  !!RES!! = 1.844662318746311E-06
+Multigrid: Iteration 4,  !!RES!! = 1.173308584155233E-07
 
 Multigrid statistics:
 
 Iterations              : 4
 !!INITIAL RES!!         : 3.083687338939604E-02
-!!RES!!                 : 1.173308584158241E-07
-!!RES!!/!!INITIAL RES!! : 3.804888288582818E-06
+!!RES!!                 : 1.173308584155233E-07
+!!RES!!/!!INITIAL RES!! : 3.804888288573064E-06
 
-Rate of convergence     : 4.416573655630953E-02
+Rate of convergence     : 4.416573655628123E-02
 []
 
 Calculating 3D Stokes-Problem 0 - simple

@@ -12,7 +12,7 @@ UMFPACK: !!Initial RES!! = 1.198577803441368E-01
 UMFPACK: !!solution!!    = 5.232664176453882E-01 Status = 0
 !!gradient error!! = 9.1657736585E-01
 UMFPACK: !!Initial RES!! = 9.199295443090619E-02
-UMFPACK: !!solution!!    = 5.877810225553339E-01 Status = 0
+UMFPACK: !!solution!!    = 5.877810225553340E-01 Status = 0
 !!gradient error!! = 7.4378460808E-01
 UMFPACK: !!Initial RES!! = 7.732888065719283E-02
 UMFPACK: !!solution!!    = 7.070471207538455E-01 Status = 0
@@ -27,7 +27,7 @@ UMFPACK: !!Initial RES!! = 4.436141502046827E-02
 UMFPACK: !!solution!!    = 8.703557157021864E-01 Status = 0
 !!gradient error!! = 3.0169838578E-01
 UMFPACK: !!Initial RES!! = 4.309680007589013E-02
-UMFPACK: !!solution!!    = 8.573256639308870E-01 Status = 0
+UMFPACK: !!solution!!    = 8.573256639308868E-01 Status = 0
 Min: -1.7928530437E-04
 Max: 2.0000000000E+00
 
