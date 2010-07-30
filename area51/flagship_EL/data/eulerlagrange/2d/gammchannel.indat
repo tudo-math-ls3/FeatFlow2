@@ -28,19 +28,19 @@
 #                                                                              #
 ################################################################################
 
-# Specify the initial solution
-#deffunc: @initsol_rho = 1.5 ; x,y,z,t
-#deffunc: @initsol_vel_x = 1.5*205.709277 ; x,y,z,t
-#effunc: @initsol_vel_y = 0.0 ; x,y,z,t
-#effunc: @initsol_Etot = 101000/0.4+1.5*0.5*(205.709277^2) ; x,y,z,t
-
+# Specify the initial solution (normlized)
 deffunc: @initsol_rho = 1.0 ; x,y,z,t
 deffunc: @initsol_vel_x = 1.0 ; x,y,z,t
 deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 1.59119116656413/0.4+0.5 ; x,y,z,t
 
+# Specify the initial solution (physical)
+#deffunc: @initsol_rho = 1.5 ; x,y,z,t
+#deffunc: @initsol_vel_x = 1.5*205.709277 ; x,y,z,t
+#deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
+#deffunc: @initsol_Etot = 101000/0.4+1.5*0.5*(205.709277^2) ; x,y,z,t
 
-# Specify the boundary conditions
+# Specify the boundary conditions (normalized)
 [boundary_conditions_primal]
 NBCT
 1
@@ -56,6 +56,18 @@ PARAMETERS
 5.0  F  2
 6.0  T  4   1.0  1.0  0.0  1.59119116656413  
 
+
+# Specify the boundary conditions (physical)
+[boundary_conditions_primal_DUMMY]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
 3.0  F  2
 4.0  T  4   1.5  205.709277  0.0  101000.0
 5.0  F  2

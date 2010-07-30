@@ -238,7 +238,7 @@ icouplingpart = 1
 # -2 	Runge-Kutta second order / improved Euler method (particle tracing)
 # -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
 #-------------------------------------------------------------------------------
-isolutionpart = 1
+isolutionpart = -1
 
 #-------------------------------------------------------------------------------
 # select interfacial forces for the particle movement
@@ -311,21 +311,9 @@ isystemPrecond = 2
 #      velocity
 slimitingvariable = density,energy,momentum
 
-# number of failsafe steps
-nfailsafe = 4
-
-# variables for failsafe flux correction
-sfailsafevariable(3) =
-  pressure
-  velocity_x
-  velocity_y
-
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution: pointwise values
-# 2 = PGM image
-# 3 = anayltical initial solution: consistent L2-projection
-# 4 = anayltical initial solution: lumped L2-projection
+# 1 = analytical initial solution
 isolutiontype = 1
 
 # section name of initial solution
@@ -410,9 +398,6 @@ errorestimator = ErrorEstimator
 # 21 = FEM-GP
 istabilisation = 1
 
-# perform prelimiting
-iprelimiting = 1
-
 
 ################################################################################
 [Output]
@@ -455,6 +440,7 @@ sucdvariable(7) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
+# >9 = file output
 ioutputlevel = 4
 
 # type of time-stepping algorithm
@@ -527,6 +513,7 @@ depsSteady = 1e-8
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # minimum multigrid level number
@@ -568,6 +555,7 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -649,6 +637,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
+# >9 = file output
 ioutputlevel = 3
 
 # norm to use for defect checking
@@ -727,6 +716,7 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
+# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -838,7 +828,8 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 99
+# >9 = file output
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -911,7 +902,7 @@ domega = 1.0
 npreadapt = 0
 
 # number of adaptation steps
-nadapt = 0
+nadapt = 10
 
 # time for grid adaptivity
 dtimeadapt = 0.0
@@ -927,7 +918,7 @@ nsubdividemax = 3
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.05
+drefinementTolerance = 0.5
 
 # coarsening tolerance
 dcoarseningTolerance = 0.01
