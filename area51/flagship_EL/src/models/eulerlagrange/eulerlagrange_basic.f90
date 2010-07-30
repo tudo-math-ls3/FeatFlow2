@@ -366,7 +366,7 @@ contains
 
     end if
 
-    ! Attach spatial discretization from first subvector
+    ! Attach spatial discretisation from first subvector
     rvectorScalar%p_rspatialDiscr =>&
         rvectorBlock%RvectorBlock(1)%p_rspatialDiscr
 

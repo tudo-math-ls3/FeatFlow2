@@ -7,19 +7,19 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/eulerlagrange/default.dat'
+  'data/euler/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = eulerlagrange
+application = euler
 
 ################################################################################
-[Eulerlagrange]
+[Euler]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/eulerlagrange/2d/shocktube.indat
+indatfile = data/euler/2d/shocktube.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -32,99 +32,6 @@ ndimension = 2
 
 # solution algorithm
 algorithm = transient_primal
-
-################################################################################ 
-# initialisation for Euler-Lagrange
-################################################################################
-
-#-------------------------------------------------------------------------------
-# number of particles
-#-------------------------------------------------------------------------------
-
-nPart = 4000
-
-
-#-------------------------------------------------------------------------------
-# searchalgorithm for the particle
-#-------------------------------------------------------------------------------
-
-# bruteforce	Brute force method
-# raytrace2D	Raytracing method in 2D
-# midpoint		Find element with the nearest midpoint
-search = midpoint
-
-#-------------------------------------------------------------------------------
-# startingposition of the particles
-#-------------------------------------------------------------------------------
-
-# 0 random startingposition 
-#	xmin = minval(p_DvertexCoords(1,:))
-#	xmax = 0.2*maxval(p_DvertexCoords(1,:))
-#	ymin = minval(p_DvertexCoords(2,:))
-#	ymax = maxval(p_DvertexCoords(2,:))
-# 1 individual startingposition
-# 2 read starting position from file
-# 3 uniformly distributed over the domain
-startpos = 3
-
-# minimum particle-position in x-direction
-xmin = 0
-# maximum particle-position in x-direction
-xmax = 1e-2
-# minimum particle-position in y-direction
-ymin = 0
-# maximum particle-position in y-direction
-ymax = 0
-
-#-------------------------------------------------------------------------------
-# mass and diameter of the particle
-#-------------------------------------------------------------------------------
-
-# particle-mass
-particlemass = 1e-15
-
-# particle-diameter
-particlediam = 1e-9
-
-
-#-------------------------------------------------------------------------------
-# velocity of the particles
-#-------------------------------------------------------------------------------
-
-# velocity in x-direction
-velopartx = 0e0
-
-# velocity in y-direction
-veloparty = 0e0
-
-#-------------------------------------------------------------------------------
-# boundarybehaviour of the particles
-#-------------------------------------------------------------------------------
-
-# 0 = ideal wall collision
-# 1 = slip condition
-boundbehav = 0
-
-
-#-------------------------------------------------------------------------------
-# gravity
-#-------------------------------------------------------------------------------
-
-# gravity in x-direction
-gravityx = 0
-
-# gravity in y-direction (normally -9.81)
-gravityy = 0
-
-
-#-------------------------------------------------------------------------------
-# gasphase
-#-------------------------------------------------------------------------------
-
-# kinematic viscosity of the gas
-gas_nu = 1e-5
-
-################################################################################
 
 #-------------------------------------------------------------------------------
 
@@ -149,14 +56,16 @@ idissipationtype = 2
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 0
+isystemcoupling = 1
 
 # type of preconditioner
 # 0 = Galerkin scheme
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 0
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -194,9 +103,6 @@ sfailsafevariable(3) =
 # 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 3
 
-# number of refinement levels for summed cubature formula
-nsummedcubtype = 2
-
 # section name of initial solution
 ssolutionname(4) = 
   @initsol_rho
@@ -211,6 +117,22 @@ iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
@@ -240,7 +162,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -277,7 +199,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 1
@@ -292,10 +214,10 @@ iprelimiting = 1
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 3
+iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/shocktube
@@ -304,13 +226,11 @@ sucdsolution = out/shocktube
 sucderror = out/shocktube_error
 
 # variables for ucd output
-sucdvariable(6) =
+sucdvariable(4) =
  density
  velocity
  energy
  pressure
- velo_part
- vol_part
 
 
 ################################################################################
@@ -323,7 +243,6 @@ sucdvariable(6) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # type of time-stepping algorithm
@@ -396,7 +315,6 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # minimum multigrid level number
@@ -438,7 +356,6 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -520,7 +437,6 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # norm to use for defect checking
@@ -599,7 +515,6 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -711,7 +626,6 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 2
 
 # norm to use for defect checking

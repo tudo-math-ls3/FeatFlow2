@@ -1784,7 +1784,7 @@ contains
         rcollection%SquickAccess(1) = ssectionName
         
         ! Apply flux correction to solution profile
-        call gfsc_buildConvVectorFCT(p_rlumpedMassMatrix,&
+        call gfsc_buildConvectionVectorFCT(p_rlumpedMassMatrix,&
             rafcstab, rvector, 1._DP, .false.,&
             AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
@@ -2479,10 +2479,10 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dtargetFunc,&
-              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
 
           ! Compute exact error in target functional. Note that the
           ! routine pperr_scalar computes the value $J(0-u_h)$ so that we
@@ -2493,17 +2493,17 @@ contains
 
           ! Compute the exact error of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetError,&
-              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
 
           ! Compute the exact value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, dexactTargetFunc,&
-              ffunctionReference=transp_refFuncBdrInt2D, rcollection&
+              ffunctionReference=transp_refFuncBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
         end if
 
 
@@ -2572,10 +2572,10 @@ contains
 
           ! Compute the approximate value of the quantity of interest
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dtargetFunc = dtargetFunc + daux
@@ -2615,20 +2615,20 @@ contains
 
           ! Compute the exact error of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_errorBdrInt2D, rcollection&
+              ffunctionReference=transp_errorBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dexactTargetError = dexactTargetError + daux
 
           ! Compute the exact value of the quantity of interest at the boundary
           call pperr_scalarBoundary2D(0, CUB_G3_1D, daux,&
-              ffunctionReference=transp_refFuncBdrInt2D, rcollection&
+              ffunctionReference=transp_refFuncBdrInt2D_sim, rcollection&
               =rcollection, rdiscretisation=rsolutionPrimal&
               %RvectorBlock(1)%p_rspatialdiscr, ffunctionWeight&
-              =transp_weightFuncBdrInt2D)
+              =transp_weightFuncBdrInt2D_sim)
 
           ! Add boundary contribution
           dexactTargetFunc = dexactTargetFunc + daux

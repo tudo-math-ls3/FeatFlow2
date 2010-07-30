@@ -44,14 +44,14 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -63,7 +63,7 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 2
+isystemPrecond = 1
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -78,12 +78,27 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(1) = 
+  density
+#  energy
+#  momentum
+
+# number of failsafe steps
+nfailsafe = 0
+
+# variables for failsafe flux correction
+sfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 4
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -103,10 +118,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/square_01x01_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = grids/2d/square_01x01_trias.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -128,7 +143,12 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
@@ -165,7 +185,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
+
+# perform prelimiting
+iprelimiting = 0
 
 
 ################################################################################
@@ -183,10 +206,10 @@ iformatUCD = 1
 dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/radial
+sucdsolution = out/radial_fct_density_TRIA
 
 # file for UCD output of error
-sucderror = out/radial_error
+sucderror = 
 
 # variables for ucd output
 sucdvariable(4) =
@@ -206,7 +229,7 @@ sucdvariable(4) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -225,22 +248,22 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 1e-4
 
 # initial time step size
-dinitialStep = 0.001
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 0.001
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 0.001
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -249,13 +272,13 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.1
+ddecreaseFactor = 1.0
 
 # maximum factor by which time step may change
-dincreaseFactor = 2.0
+dincreaseFactor = 1.0
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.8
+dstepReductionFactor = 1.0
 
 # target tolerace for relative changes
 depsRel = 0.0
@@ -281,10 +304,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 3
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 3
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -400,7 +423,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -413,7 +436,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 20
+nmaxIterations = 50
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -455,7 +478,7 @@ iupdateFrequency = 0
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-10
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -589,7 +612,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -611,7 +634,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -620,7 +643,7 @@ nkrylov = 25
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 0.0
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 0.0
@@ -659,7 +682,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 5
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -668,20 +691,20 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.001
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 5
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 1e-2
+drefinementTolerance = 0.0
 
 # coarsening tolerance
-dcoarseningTolerance = 1e-3
+dcoarseningTolerance = 0.0
 
 
 ################################################################################

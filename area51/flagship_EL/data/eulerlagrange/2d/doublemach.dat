@@ -49,14 +49,14 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -68,7 +68,9 @@ isystemcoupling = 0
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 2
+isystemPrecond = 1
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -83,12 +85,37 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(1) = 
+  none
+
+# number of failsafe steps
+nfailsafe = 3
+
+# variables for failsafe flux correction
+sfailsafevariable(4) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+
+#-------------------------------------------------------------------------------
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
+
+# absolute tolerance for Richardson iteration
+depsAbsSolution = 1e-4
+
+# relative tolerance for Richardson iteration
+depsRelSolution = 1e-3
+
+# maximum number of Richardson iterations
+nmaxIterationsSolution = 100
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -105,6 +132,22 @@ iexactsolutiontype = 0
 # section name of exact solution
 sexactsolutionname =
 
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
+
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
@@ -120,7 +163,7 @@ trifile = grids/2d/rect_4x1.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = -1
+celement = 11
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -134,6 +177,11 @@ imatrixformat = 9
 # 0 = interleave scalar format
 # 1 = block system
 isystemformat = 0
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
@@ -170,7 +218,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 12
+
+# perform prelimiting
+iprelimiting = 0
 
 
 ################################################################################
@@ -185,13 +236,13 @@ istabilisation = 20
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.005
+dstepUCD = 0.0
 
 # file for UCD output of solution
-sucdsolution = out/doublemach
+sucdsolution = out/dmr
 
 # file for UCD output of error
-sucderror = out/doublemach_error
+sucderror = 
 
 # variables for ucd output
 sucdvariable(4) =
@@ -230,22 +281,22 @@ isolNorm = 0
 theta = 0.5
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 10e-4
 
 # initial time step size
-dinitialStep = 1e-5
+dinitialStep = 1e-4
 
 # lower bound for the admissible time step
-dminStep = 1e-5
+dminStep = 1e-4
 
 # upper bound for the admissible time step
-dmaxStep = 0.005
+dmaxStep = 1e-4
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -254,13 +305,13 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.5
+ddecreaseFactor = 1.0
 
 # maximum factor by which time step may change
-dincreaseFactor = 2.0
+dincreaseFactor = 1.0
 
 # reduction factor by which time step is reduced if simulation fails
-dstepReductionFactor = 0.8
+dstepReductionFactor = 1.0
 
 # target tolerace for relative changes
 depsRel = 0.0
@@ -443,7 +494,7 @@ dperturbationStrategy = 1
 # 3 = choice by Brown/Saad
 # 4 = choice by Dembo/Steihaug
 # otherwise, user-defined fixed value
-dforcingStrategy = 1e-4
+dforcingStrategy = 1
 
 # check sufficient decrease condition in globalization
 # 0 = apply Newton increment without globalization
@@ -616,7 +667,7 @@ nmaxIterations = 100
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 11 = UMFPACK4
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 25
@@ -664,7 +715,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 4
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -673,10 +724,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.001
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 4
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

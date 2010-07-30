@@ -47,14 +47,14 @@ imasstype = 2
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of dissipation
 # 0 = no dissipation
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
@@ -83,10 +83,22 @@ isystemPrecond = 2
 #      velocity
 slimitingvariable = density,energy,momentum
 
+# number of failsafe steps
+nfailsafe = 4
+
+# variables for failsafe flux correction
+sfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
+
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -169,6 +181,9 @@ errorestimator = ErrorEstimator
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 20
+
+# perform prelimiting
+iprelimiting = 1
 
 
 ################################################################################

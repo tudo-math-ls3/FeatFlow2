@@ -267,8 +267,10 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatDiagConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -277,8 +279,10 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatDiagConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -320,8 +324,10 @@ contains
               ! Compute the preconditioner in interleaved format
               call transp_calcPrecondThetaScheme(rproblemLevel,&
                   rtimestep, rsolver, rsolution0, rcollection,&
-                  zpinch_calcMatRusConvIntlP2d,&
-                  zpinch_calcMatRusConvIntlD2d,&
+                  zpinch_calcMatDiagConvIntlP2d_sim,&
+                  zpinch_calcMatRusConvIntlP2d_sim,&
+                  zpinch_calcMatDiagConvIntlD2d_sim,&
+                  zpinch_calcMatRusConvIntlD2d_sim,&
                   transp_coeffMatBdrConvectionP2d,&
                   transp_coeffMatBdrConvectionD2d)
 
@@ -330,8 +336,10 @@ contains
               ! Compute the preconditioner in block format
               call transp_calcPrecondThetaScheme(rproblemLevel,&
                   rtimestep, rsolver, rsolution0, rcollection,&
-                  zpinch_calcMatRusConvBlockP2d,&
-                  zpinch_calcMatRusConvBlockD2d,&
+                  zpinch_calcMatDiagConvBlockP2d_sim,&
+                  zpinch_calcMatRusConvBlockP2d_sim,&
+                  zpinch_calcMatDiagConvBlockD2d_sim,&
+                  zpinch_calcMatRusConvBlockD2d_sim,&
                   transp_coeffMatBdrConvectionP2d,&
                   transp_coeffMatBdrConvectionD2d)
 
@@ -367,8 +375,10 @@ contains
             ! Compute the preconditioner in interleaved format
             call transp_calcPrecondThetaScheme(rproblemLevel,&
                 rtimestep, rsolver, rsolution, rcollection,&
-                zpinch_calcMatRusConvIntlP2d,&
-                zpinch_calcMatRusConvIntlD2d,&
+                zpinch_calcMatDiagConvIntlP2d_sim,&
+                zpinch_calcMatRusConvIntlP2d_sim,&
+                zpinch_calcMatDiagConvIntlD2d_sim,&
+                zpinch_calcMatRusConvIntlD2d_sim,&
                 transp_coeffMatBdrConvectionP2d,&
                 transp_coeffMatBdrConvectionD2d)
 
@@ -377,8 +387,10 @@ contains
             ! Compute the preconditioner in block format
             call transp_calcPrecondThetaScheme(rproblemLevel,&
                 rtimestep, rsolver, rsolution, rcollection,&
-                zpinch_calcMatRusConvBlockP2d,&
-                zpinch_calcMatRusConvBlockD2d,&
+                zpinch_calcMatDiagConvBlockP2d_sim,&
+                zpinch_calcMatRusConvBlockP2d_sim,&
+                zpinch_calcMatDiagConvBlockD2d_sim,&
+                zpinch_calcMatRusConvBlockD2d_sim,&
                 transp_coeffMatBdrConvectionP2d,&
                 transp_coeffMatBdrConvectionD2d)
 
@@ -411,8 +423,10 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatDiagConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -421,8 +435,10 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatDiagConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -446,8 +462,8 @@ contains
           ! Compute the Jacobian matrix in interleaved format
           call transp_calcJacobianThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -456,8 +472,8 @@ contains
           ! Compute the Jacobian matrix in block format
           call transp_calcJacobianThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -1171,7 +1187,7 @@ contains
             euler_getVariable, Rsolution(1), p_rpredictorEuler)
 
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1192,7 +1208,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1206,7 +1222,7 @@ contains
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1240,7 +1256,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1260,7 +1276,7 @@ contains
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
       ! Compute linearised FEM-FCT correction (without initialisation)
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1290,7 +1306,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1300,7 +1316,7 @@ contains
     case (3)   ! Transport first, Euler second
       
       ! Compute linearised FEM-FCT correction      
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1341,7 +1357,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1386,7 +1402,7 @@ contains
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1398,7 +1414,7 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Compute linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1422,7 +1438,7 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1741,8 +1757,8 @@ contains
         C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
         ! Calculate diffusion coefficient
-        call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
-            C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
+!!$        call euler_calcMatRusDissMatD2d(u(:,i), u(:,j),&
+!!$            C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
 
         ! Compute solution difference
         Diff = u(:,i)-u(:,j)

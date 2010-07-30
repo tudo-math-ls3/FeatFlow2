@@ -78,10 +78,10 @@ isystemPrecond = 1
 #      density
 #      pressure
 #      velocity
-slimitingvariable(3) = 
+slimitingvariable(1) = 
   density
-  energy
-  momentum
+#  energy
+#  momentum
 
 # number of failsafe steps
 nfailsafe = 0
@@ -98,10 +98,7 @@ sfailsafevariable(3) =
 # 2 = PGM image
 # 3 = anayltical initial solution: consistent L2-projection
 # 4 = anayltical initial solution: lumped L2-projection
-isolutiontype = 3
-
-# number of refinement levels for summed cubature formula
-nsummedcubtype = 2
+isolutiontype = 4
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -121,10 +118,10 @@ sexactsolutionname =
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
-prmfile = grids/2d/square_01x01_quads.prm
+prmfile = grids/2d/square_01x01_trias.prm
 
 # file which contains the triangulation
-trifile = grids/2d/square_01x01_quads.tri
+trifile = grids/2d/square_01x01_trias.tri
 
 # type of finite element space
 #  1 = P1 finite elements
@@ -133,7 +130,7 @@ trifile = grids/2d/square_01x01_quads.tri
 # 12 = Q2 finite elements
 # -1 = mixed P1/Q1 finite elements
 # -2 = mixed P2/Q2 finite elements
-celement = 11
+celement = -1
 
 # convert mesh to triangular mesh?
 iconvToTria = 0
@@ -146,7 +143,12 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
+
+#-------------------------------------------------------------------------------
+
+# Number of refinement steps used for summed cubature rules
+nsumcubRefLinForm = 2
 
 #-------------------------------------------------------------------------------
 
@@ -302,10 +304,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 5
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 5
 
 # type of multigrid cycle
 # 0 = F-cylce

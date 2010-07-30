@@ -4,7 +4,7 @@
 !# ****************************************************************************
 !#
 !# <purpose>
-!# This application solves the time-dependent compressible eulerlagrange equations
+!# This application solves the time-dependent compressible Euler equations
 !#
 !#   $$\frac{\partial U}{\partial t}+\nabla\cdot{\bf F}(U)=0$$
 !#
@@ -21,10 +21,10 @@
 !#
 !# in the two- or three-dimensional domain $\Omega$.
 !#
-!# The spatial discretization is perform by means of the algebraic
+!# The spatial discretisation is perform by means of the algebraic
 !# flux correction (AFC) paradigm by Kuzmin, Moeller and Turek. In
 !# particular, high-resolution finite element schemes of TVD- and
-!# FCT-type are available. For the temporal discretization, the 
+!# FCT-type are available. For the temporal discretisation, the
 !# two-level theta-scheme is employed, whereby $\theta\in(0,1]$.
 !#
 !# Dynamic mesh adaptation is based on the red-green strategy, whereby
@@ -38,7 +38,7 @@
 !# 1.) eulerlagrange_app
 !#     -> The main routine of the application called from the main
 !#        program. The routine gets all required information from the
-!#        parameter list which needs to be initialized and filled in
+!#        parameter list which needs to be initialised and filled in
 !#        the main program. It then works black-box, that is, it
 !#        determines the solution algorithm to be used and performs
 !#        the simulation. The user should only have to modify this
@@ -58,7 +58,7 @@
 !#     -> Initializes the individual problem level based on the
 !#        parameter settings given by the parameter list.
 !#        This routine is called repeatedly by the global
-!#        initialization routine eulerlagrange_initAllProblemLevels.
+!#        initialisation routine eulerlagrange_initAllProblemLevels.
 !#
 !# 5.) eulerlagrange_initAllProblemLevels
 !#     -> Initializes ALL problem levels attached to the global
@@ -82,8 +82,8 @@
 !#      -> Performs h-adaptation for the given triangulation
 !#
 !# 11.) eulerlagrange_solveTransientPrimal
-!#      -> Solves the primal formulation of the time-dependent 
-!#         compressible eulerlagrange equations.
+!#      -> Solves the primal formulation of the time-dependent
+!#         compressible Euler equations.
 !#
 !# 12.) eulerlagrange_init
 !#      -> Initialization for the particles
@@ -171,13 +171,18 @@ module eulerlagrange_application
 
 !<subroutine>
 
-  subroutine eulerlagrange_app(rparlist)
+  subroutine eulerlagrange_app(rparlist, ssectionName)
 
 !<description>
-    ! This is the main application for the compressible eulerlagrange
+    ! This is the main application for the compressible Euler
     ! equations.  It is a so-called driver routine which can be used
-    ! to start a standalone eulerlagrange simulation.
+    ! to start a standalone Euler simulation.
 !</description>
+
+!<input>
+    ! name of the top-most section of the application
+    character(len=*), intent(in) :: ssectionName
+!</input>
 
 !<inputoutput>
     ! parameter list
@@ -298,7 +303,7 @@ module eulerlagrange_application
     ! subroutine has been called, the parameter list remains unchanged
     ! unless the used updates some parameter values interactively.
     call eulerlagrange_parseCmdlArguments(rparlist)
-    call eulerlagrange_adjustParameterlist(rparlist, 'eulerlagrange')
+    call eulerlagrange_adjustParameterlist(rparlist, ssectionName)
 
     ! Initialize global collection structure
     call collct_init(rcollection)
@@ -331,7 +336,7 @@ module eulerlagrange_application
     ! Read in all constants, predefined expressions
     ! and functions from the parameter file
     call parlst_getvalue_string(rparlist,&
-        'eulerlagrange', 'indatfile', sindatfileName)
+        ssectionName, 'indatfile', sindatfileName)
     call fparser_parseFileForKeyword(rfparser,&
         sindatfileName, 'defconst', FPAR_CONSTANT)
     call fparser_parseFileForKeyword(rfparser,&
@@ -343,21 +348,21 @@ module eulerlagrange_application
     call collct_setvalue_pars(rcollection, 'rfparser', rfparser, .true.)
 
     ! Initialize the solver structures
-    call eulerlagrange_initSolvers(rparlist, 'eulerlagrange', rtimestep, rsolver)
+    call eulerlagrange_initSolvers(rparlist, ssectionName, rtimestep, rsolver)
 
     ! Initialize the abstract problem structure
-    call eulerlagrange_initProblem(rparlist, 'eulerlagrange',&
+    call eulerlagrange_initProblem(rparlist, ssectionName,&
         solver_getMinimumMultigridlevel(rsolver),&
         solver_getMaximumMultigridlevel(rsolver), rproblem)
 
     ! Initialize the individual problem levels
-    call eulerlagrange_initAllProblemLevels(rparlist, 'eulerlagrange',&
+    call eulerlagrange_initAllProblemLevels(rparlist, ssectionName,&
         rproblem, rcollection)
 
     ! Prepare internal data arrays of the solver structure
-    call parlst_getvalue_int(rparlist, 'eulerlagrange',&
+    call parlst_getvalue_int(rparlist, ssectionName,&
         'systemMatrix', systemMatrix)
-    call parlst_getvalue_int(rparlist, 'eulerlagrange',&
+    call parlst_getvalue_int(rparlist, ssectionName,&
         'isystemFormat', isystemFormat)
     call flagship_updateSolverMatrix(rproblem%p_rproblemLevelMax,&
         rsolver, systemMatrix, isystemFormat, UPDMAT_ALL)
@@ -380,13 +385,15 @@ module eulerlagrange_application
     if (rtimestep%dfinalTime .gt. rtimestep%dinitialTime) then    
       
       ! Get global configuration from parameter list
-      call parlst_getvalue_string(rparlist, 'eulerlagrange', 'algorithm', algorithm)
-      call parlst_getvalue_int(rparlist, 'eulerlagrange', 'ndimension', ndimension)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'algorithm', algorithm)
+      call parlst_getvalue_int(rparlist,&
+          ssectionName, 'ndimension', ndimension)
+      call parlst_getvalue_string(rparlist,&
+          ssectionName, 'sprimalbdrcondname', sbdrcondName)
       
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call parlst_getvalue_string(rparlist,&
-          'eulerlagrange', 'sprimalbdrcondname', sbdrcondName)
       call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
           '['//trim(sbdrcondName)//']', ndimension)
       
@@ -397,16 +404,16 @@ module eulerlagrange_application
         ! Solve the primal formulation for #
         ! the time-dependent problem
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        call eulerlagrange_solveTransientPrimal(rparlist, 'eulerlagrange',&
+        call eulerlagrange_solveTransientPrimal(rparlist, ssectionName,&
             rbdrCondPrimal, rproblem, rtimestep, rsolver,&
             rsolutionPrimal, rcollection,rParticles)
 
-        call eulerlagrange_outputSolution(rparlist, 'eulerlagrange', rproblem&
+        call eulerlagrange_outputSolution(rparlist, ssectionName, rproblem&
             %p_rproblemLevelMax, rParticles, rsolutionPrimal, dtime=rtimestep&
             %dTime)
  
          ! One way or twoway coupling?
-        call parlst_getvalue_int(rparlist, 'Eulerlagrange', "icouplingpart", icouplingpart)
+        call parlst_getvalue_int(rparlist, ssectionName, "icouplingpart", icouplingpart)
          
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         ! Euler-Lagrange (for steadystate gas solution)
@@ -438,7 +445,7 @@ module eulerlagrange_application
   else
 
       ! Just output the computational mesh and exit
-      call eulerlagrange_outputSolution(rparlist, 'eulerlagrange',&
+      call eulerlagrange_outputSolution(rparlist, ssectionName,&
           rproblem%p_rproblemLevelMax)
 
     end if
@@ -681,7 +688,7 @@ module eulerlagrange_application
 
 !<description>
     ! This subroutine initielizes the individual problem level. It
-    ! generates the discretization, the template matrix and the
+    ! generates the discretisation, the template matrix and the
     ! coefficient matrices as duplicates of the template matrix.
 !</description>
 
@@ -711,6 +718,7 @@ module eulerlagrange_application
     integer :: lumpedMassMatrix,coeffMatrix_CX,coeffMatrix_CY, coeffMatrix_CZ
     integer :: inviscidAFC,discretisation,celement,isystemFormat,isystemCoupling
     integer :: imatrixFormat,ivar,jvar,ivariable,nvariable,nvartransformed
+    integer :: i,j,nsumcubRefBilForm,nsumcubRefLinForm,nsumcubRefEval
 
     ! Retrieve application specific parameters from the collection
     call parlst_getvalue_int(rparlist,&
@@ -741,6 +749,12 @@ module eulerlagrange_application
         ssectionName, 'isystemCoupling', isystemCoupling)
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'celement', celement)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefBilForm', nsumcubRefBilForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefLinForm', nsumcubRefLinForm, 0)
+    call parlst_getvalue_int(rparlist,&
+        ssectionName, 'nsumcubRefEval', nsumcubRefEval, 0)
     
     ! Set pointers to triangulation and boundary structure
     p_rtriangulation  => rproblemLevel%rtriangulation
@@ -749,8 +763,8 @@ module eulerlagrange_application
 
     ! Create discretisation structure
     if (discretisation > 0) then
-      
-      ! Initialize the discretization structure
+
+      ! Initialize the discretisation structure
       p_rdiscretisation => rproblemLevel%Rdiscretisation(discretisation)
       if (p_rdiscretisation%ndimension .eq. 0) then
         select case(isystemFormat)
@@ -880,12 +894,27 @@ module eulerlagrange_application
         end do
       end if
 
+      ! Enforce using summed cubature formula (if any)
+      do i = 1, p_rdiscretisation%ncomponents
+        do j = 1, p_rdiscretisation%RspatialDiscr(i)%inumFESpaces
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeBilForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeBilForm, nsumcubRefBilForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeLinForm =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeLinForm, nsumcubRefLinForm)
+          p_rdiscretisation%RspatialDiscr(i)%RelementDistr(j)%ccubTypeEval =&
+              cub_getSummedCubType(p_rdiscretisation%RspatialDiscr(i)&
+              %RelementDistr(j)%ccubTypeEval, nsumcubRefEval)
+        end do
+      end do
+
     end if
     
 
     ! If the template matrix has no structure data then generate the
     ! finite element matrix sparsity structure based on the spatial
-    ! descretization and store it as the template matrix. Otherwise we
+    ! descretisation and store it as the template matrix. Otherwise we
     ! assume that the template matrix has been generated externally.
     if (.not.lsyssc_hasMatrixStructure(rproblemLevel%Rmatrix(templateMatrix))) then
       call bilf_createMatrixStructure(&
@@ -1176,7 +1205,7 @@ module eulerlagrange_application
 
     end if
 
-    ! Resize stabilization structures if necessary and remove the
+    ! Resize stabilisation structures if necessary and remove the
     ! indicator for the subdiagonal edge structure. If they are
     ! needed, then they are re-generated on-the-fly.
     if (inviscidAFC > 0) then
@@ -1227,7 +1256,7 @@ module eulerlagrange_application
 
 !<description>
     ! This subroutine initializes the all problem levels attached to
-    ! the global problem structure. It generates the discretization,
+    ! the global problem structure. It generates the discretisation,
     ! the template matrix and the coefficient matrices as duplicates
     ! of the template matrix.
 !</description>
@@ -1304,7 +1333,7 @@ module eulerlagrange_application
     ! local variables
     type(t_afcstab) :: rafcstab
     type(t_linearForm) :: rform
-    type(t_vectorBlock) :: rvectorBlock
+    type(t_vectorBlock) :: rvectorBlock, rvectorHigh, rvectorAux
     type(t_matrixScalar), target :: rlumpedMassMatrix, rconsistentMassMatrix
     type(t_matrixScalar), pointer :: p_rlumpedMassMatrix, p_rConsistentMassMatrix
     type(t_spatialDiscretisation), pointer :: p_rspatialDiscr
@@ -1312,17 +1341,20 @@ module eulerlagrange_application
     real(DP), dimension(:,:), pointer :: p_DvertexCoords
     real(DP), dimension(:), pointer :: p_Ddata
     real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP), dimension(:), pointer :: Dnorm0
+    real(DP) :: depsAbsSolution, depsRelSolution, dnorm
+    character(len=SYS_STRLEN), dimension(:), pointer :: SsolutionFailsafeVariables
     character(LEN=SYS_STRLEN) :: ssolutionName
-    integer :: isolutiontype, nexpression, ccubType, nsummedCubType
-    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, i
+    integer :: isolutiontype, nexpression, nsolutionfailsafe
+    integer :: icomp, iblock, ivar, nvar, ieq, neq, ndim, iter
     integer :: lumpedMassMatrix, consistentMassMatrix, systemMatrix
-
+    integer :: nmaxIterationsSolution, ivariable, nvariable
 
     ! Get global configuration from parameter list
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isolutiontype', isolutiontype)
 
-    ! How should the solution be initialized?
+    ! How should the solution be initialised?
     select case(isolutionType)
     case (SOLUTION_ZERO)
       
@@ -1339,7 +1371,7 @@ module eulerlagrange_application
       ! Initialize the nodal values by the data of a graymap image
       !-------------------------------------------------------------------------
 
-      call output_line('Initialization if solution by graymap image is not yet supported!',&
+      call output_line('Initialisation if solution by graymap image is not yet supported!',&
           OU_CLASS_ERROR, OU_MODE_STD, 'eulerlagrange_initSolution')
       call sys_halt()
 
@@ -1386,7 +1418,7 @@ module eulerlagrange_application
         ! Set pointer to data array
         call lsyssc_getbase_double(rvector%RvectorBlock(iblock), p_Ddata)
 
-        ! Initialization for scalar subvector
+        ! Initialisation for scalar subvector
         neq  = rvector%RvectorBlock(iblock)%NEQ
         nvar = rvector%RvectorBlock(iblock)%NVAR
 
@@ -1474,10 +1506,6 @@ module eulerlagrange_application
         p_rlumpedMassMatrix => rlumpedMassMatrix
       end if
       
-      ! Get the number of refinement levels for summed cubature formula
-      call parlst_getvalue_int(rparlist,&
-          ssectionName, 'nsummedcubtype', nsummedCubType)
-      
       ! Set up the linear form
       rform%itermCount = 1
       rform%Idescriptors(1) = DER_FUNC
@@ -1495,13 +1523,6 @@ module eulerlagrange_application
         
         ! Set pointer to spatial discretisation
         p_rspatialDiscr => rvector%RvectorBlock(iblock)%p_rspatialDiscr
-
-        ! Enforce using summed cubature formula to obtain accurate results
-        do i = 1, p_rspatialDiscr%inumFESpaces
-          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getSummedCubType(&
-              p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm, nsummedCubType)
-        end do
         
         ! Scalar vectors in interleaved format have to be treated differently
         if (rvector%RvectorBlock(iblock)%NVAR .eq. 1) then
@@ -1551,26 +1572,71 @@ module eulerlagrange_application
           ! Release temporal block vector
           call lsysbl_releaseVector(rvectorBlock)
         end if
-        
-        ! Compute the lumped L2-projection
-        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
-            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
-        
-        ! Reset cubature formula to standard value
-        do i = 1, p_rspatialDiscr%inumFESpaces
-          p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm =&
-              cub_getStdCubType(p_rspatialDiscr%RelementDistr(i)%ccubTypeLinForm)
-        end do
+
       end do
       
+      ! Store norm of load vector (if required)
+      if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
+        allocate(Dnorm0(rvector%nblocks))
+        do iblock = 1, rvector%nblocks
+          Dnorm0(iblock) = lsyssc_vectorNorm(&
+              rvector%RvectorBlock(iblock), LINALG_NORML2)
+        end do
+      end if
+
+      ! Compute the lumped L2-projection
+      do iblock = 1, rvector%nblocks
+        call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+            rvector%RvectorBlock(iblock), 1.0_DP, rvector%RvectorBlock(iblock))
+      end do
+
       !-------------------------------------------------------------------------
       ! Restore contribution of the consistent mass matrix of the L2-projection
       !-------------------------------------------------------------------------
       if (isolutionType .eq. SOLUTION_ANALYTIC_L2_CONSISTENT) then
-
-        ! Get parameters from parameter list
+        
+        ! Get configuration from parameter list
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsAbsSolution', depsAbsSolution, 1e-6_DP)
+        call parlst_getvalue_double(rparlist,&
+            ssectionName, 'depsRelSolution', depsRelSolution, 1e-4_DP)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'nmaxIterationsSolution', nmaxIterationsSolution, 100)
         call parlst_getvalue_int(rparlist,&
             ssectionName, 'systemMatrix', systemMatrix)
+        call parlst_getvalue_int(rparlist,&
+            ssectionName, 'nsolutionfailsafe', nsolutionfailsafe, 0)
+
+        ! Compute auxiliary vectors for high-order solution and increment
+        call lsysbl_duplicateVector(rvector, rvectorHigh,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_COPY)
+        call lsysbl_duplicateVector(rvector, rvectorAux,&
+            LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+        
+        ! Compute the consistent L2-projection by Richardson iteration
+        do iblock = 1, rvector%nblocks
+          richardson: do iter = 1, nmaxIterationsSolution
+            ! Compute the increment for each scalar subvector
+            call lsyssc_scalarMatVec(p_rconsistentMassMatrix,&
+                rvectorHigh%RvectorBlock(iblock),&
+                rvectorAux%RvectorBlock(iblock), 1.0_DP, 0.0_DP)
+            call lsyssc_invertedDiagMatVec(p_rlumpedMassMatrix,&
+                rvectorAux%RvectorBlock(iblock), 1.0_DP,&
+                rvectorAux%RvectorBlock(iblock))
+            call lsyssc_vectorLinearComb(rvector%RvectorBlock(iblock),&
+                rvectorAux%RvectorBlock(iblock), 1.0_DP, -1.0_DP)
+
+            ! Update the scalar subvector of thesolution
+            call lsyssc_vectorLinearComb(rvectorAux%RvectorBlock(iblock),&
+                rvectorHigh%RvectorBlock(iblock), 1.0_DP, 1.0_DP)
+            
+            ! Check for convergence
+            dnorm = lsyssc_vectorNorm(&
+                rvectorAux%RvectorBlock(iblock), LINALG_NORML2)
+            if ((dnorm .le. depsAbsSolution) .or.&
+                (dnorm .le. depsRelSolution*Dnorm0(iblock))) exit richardson
+          end do richardson
+        end do
         
         ! Initialise stabilisation structure by hand
         rafcstab%iSpec= AFCSTAB_UNDEFINED
@@ -1582,22 +1648,60 @@ module eulerlagrange_application
         ! Compute the raw antidiffusive mass fluxes. Note that we may supply any
         ! callback function for assembling the antidiffusive fluxes since it 
         ! will not be used for assembling antidiffusive mass fluxes !!!
-        call gfsys_buildFluxFCT(&
-            rproblemLevel%Rmatrix(consistentMassMatrix:consistentMassMatrix),&
-            rafcstab, rvector, rvector, eulerlagrange_calcFluxFCTScalarDiss1d,&
-            0.0_DP, 0.0_DP, 1.0_DP, .true.,&
-            rproblemLevel%Rmatrix(consistentMassMatrix))
+        call gfsys_buildFluxFCT((/p_rconsistentMassMatrix/),&
+            rafcstab, rvectorHigh, rvectorHigh, eulerlagrange_calcFluxFCTScalarDiss1d,&
+            0.0_DP, 0.0_DP, 1.0_DP, .true., p_rconsistentMassMatrix)
         
         ! Attach section name to collection structure
         rcollection%SquickAccess(1) = ssectionName
 
-        ! Apply flux correction to solution profile
-        call eulerlagrange_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
-            .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
-            rvector, rcollection, rafcstab)
+        if (nsolutionfailsafe .gt. 0) then
+
+          ! Get number of failsafe variables
+          nvariable = max(1,&
+              parlst_querysubstrings(rparlist,&
+              ssectionName, 'ssolutionfailsafevariable'))
+          
+          ! Allocate character array that stores all failsafe variable names
+          allocate(SsolutionFailsafeVariables(nvariable))
+          
+          ! Initialize character array with failsafe variable names
+          do ivariable = 1, nvariable
+            call parlst_getvalue_string(rparlist,&
+                ssectionName, 'ssolutionfailsafevariable',&
+                SsolutionFailsafevariables(ivariable), isubstring=ivariable)
+          end do
+
+          ! Compute and apply FEM-FCT correction
+          call eulerlagrange_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+              .false., AFCSTAB_FCTALGO_STANDARD-AFCSTAB_FCTALGO_CORRECT,&
+              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+          
+          ! Apply failsafe flux correction
+          call afcstab_failsafeLimiting(rafcstab, p_rlumpedMassMatrix,&
+              SsolutionFailsafeVariables, 1.0_DP,&
+              nsolutionfailsafe, eulerlagrange_getVariable, rvector)
+          
+          ! Deallocate temporal memory
+          deallocate(SsolutionFailsafeVariables)
+
+        else
+          
+          ! Compute and apply FEM-FCT correction
+          call eulerlagrange_calcCorrectionFCT(rproblemLevel, rvector, 1.0_DP,&
+              .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS,&
+              rvector, rcollection, rafcstab, 'ssolutionconstrainvariable')
+        end if
         
         ! Release stabilisation structure
         call afcstab_releaseStabilisation(rafcstab)
+
+        ! Release auxiliary vectors
+        call lsysbl_releaseVector(rvectorHigh)
+        call lsysbl_releaseVector(rvectorAux)
+
+        ! Release temporal memory
+        deallocate(Dnorm0)
       end if
       
       ! Release temporal matrices (if any)
@@ -1682,7 +1786,7 @@ module eulerlagrange_application
     call parlst_getvalue_int(rparlist,&
         ssectionName, 'isystemformat', isystemformat)
     call parlst_getvalue_int(rparlist,&
-        'Eulerlagrange', 'ipartoutput', ipartoutput)
+        ssectionName, 'ipartoutput', ipartoutput)
 
     ! Initialize the UCD exporter
     call flagship_initUCDexport(rproblemLevel, sucdsolution,&
@@ -2620,11 +2724,11 @@ module eulerlagrange_application
     type(t_timer), pointer :: p_rtimerTriangulation
     type(t_timer), pointer :: p_rtimerAssemblyCoeff
 
-    ! section names
+    ! local variables
+    type(t_ucdExport) :: rimport
     character(LEN=SYS_STRLEN) :: sadaptivityName
     character(LEN=SYS_STRLEN) :: soutputName
-
-    ! local variables
+    character(LEN=SYS_STRLEN) :: sucdimport
     real(dp) :: derror, dstepUCD, dtimeUCD, dstepAdapt, dtimeAdapt
     integer :: templateMatrix, systemMatrix, isystemFormat, discretisation
     integer :: isize, ipreadapt, npreadapt, ndimension
@@ -2670,16 +2774,16 @@ module eulerlagrange_application
 
     select case(ndimension)
     case (NDIM1D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep&
-          %dinitialTime, eulerlagrange_calcBoundaryvalues1d)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, eulerlagrange_calcBoundaryvalues1d)
 
     case (NDIM2D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep&
-          %dinitialTime, eulerlagrange_calcBoundaryvalues2d)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, eulerlagrange_calcBoundaryvalues2d)
 
     case (NDIM3D)
-      call bdrf_filterVectorExplicit(rbdrCond, rsolution, rtimestep&
-          %dinitialTime, eulerlagrange_calcBoundaryvalues3d)
+      call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
+          rtimestep%dinitialTime, eulerlagrange_calcBoundaryvalues3d)
     end select
 
     ! Initialize timer for intermediate UCD exporter
@@ -2802,7 +2906,24 @@ module eulerlagrange_application
     else
       
       dstepAdapt = 0.0_DP
+
+    end if
+
+    
+    ! Get name of import file (if any)
+    call parlst_getvalue_string(rparlist,&
+        trim(soutputName), 'sucdimport', sucdimport, '')
+    
+    ! Do we have to read in a precomdputed solution?
+    if (trim(sucdimport) .ne. '') then
+      call ucd_readGMV(sucdimport, rimport, p_rproblemLevel%rtriangulation)
+      call ucd_getSimulationTime(rimport, rtimestep%dinitialTime)
+      call ucd_getSimulationTime(rimport, rtimestep%dTime)
+      call eulerlagrange_setVariables(rimport, rsolution)
+      call ucd_release(rimport)
       
+      ! Set time for solution output
+      dtimeUCD = rtimestep%dinitialTime
     end if
     
     ! Attach the boundary condition
@@ -2945,7 +3066,7 @@ module eulerlagrange_application
 
 
         !-------------------------------------------------------------------------
-        ! Re-generate the discretization and coefficient matrices
+        ! Re-generate the discretisation and coefficient matrices
         !-------------------------------------------------------------------------
         
         ! Start time measurement for generation of the triangulation
@@ -3021,6 +3142,107 @@ module eulerlagrange_application
     
   end subroutine eulerlagrange_solveTransientPrimal
 
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine eulerlagrange_projectSolution(rsourceVector, rdestVector)
+    
+!<description>
+    ! This subroutine performs conservative projection of the given solution
+    ! stored in rsourceVector to another FE-space and stores the result in
+    ! rdestVector. An FCT algorithm is used ensure monotonicity preservation.
+!</description>
+
+!<input>
+    ! Source vector
+    type(t_vectorBlock), intent(inout), target :: rsourceVector
+!</input>
+
+!<inputoutput>
+    ! Destination vector
+    type(t_vectorBlock), intent(inout) :: rdestVector
+!</inputoutput>
+!</subroutine>
+
+    ! local variables
+    type(t_linearForm) :: rform
+    type(t_collection) :: rcollection
+    type(t_matrixScalar) :: rmatrix1,rmatrix2
+    type(t_vectorScalar) :: rvector
+    real(DP), dimension(:), pointer :: p_Ddata
+    real(DP) :: dmass1, dmass2
+    integer :: iblock
+    
+    ! Set up the linear form
+    rform%itermCount = 1
+    rform%Idescriptors(1) = DER_FUNC
+    
+    ! Set up the collection structure
+    call collct_init(rcollection)
+    rcollection%IquickAccess(1) = SYSTEM_BLOCKFORMAT
+    rcollection%p_rvectorQuickAccess1 => rsourceVector
+    
+    ! Assemble the linear form for destination vector
+    do iblock = 1, rdestVector%nblocks
+      
+      ! Create sparsity pattern of mass matrices
+      call bilf_createMatrixStructure(&
+          rsourceVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix1)
+      call bilf_createMatrixStructure(&
+          rdestVector%p_rblockDiscr%RspatialDiscr(1),&
+          LSYSSC_MATRIX9, rmatrix2)
+
+      ! Create mass matrices
+      call stdop_assembleSimpleMatrix(rmatrix1, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      call stdop_assembleSimpleMatrix(rmatrix2, DER_FUNC, DER_FUNC, 1.0_DP, .true.)
+      
+      ! Compute the lumped mass matrices
+      call lsyssc_lumpMatrixScalar(rmatrix1, LSYSSC_LUMP_DIAG)
+      call lsyssc_lumpMatrixScalar(rmatrix2, LSYSSC_LUMP_DIAG)
+
+      ! Set the number of the scalar subvector to the collection structure
+      rcollection%IquickAccess(2) = iblock
+      
+      ! Assemble the linear form for the scalar subvector
+      call linf_buildVectorScalar2(rform, .true.,&
+          rdestVector%RvectorBlock(iblock), eulerlagrange_coeffVectorFE, rcollection)
+
+      ! Compute the lumped L2-projection
+      call lsyssc_invertedDiagMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          1.0_DP, rdestVector%RvectorBlock(iblock))
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rsourceVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix1, rsourceVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass1 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      ! Compute density-mass
+      call lsyssc_duplicateVector(rdestVector%RvectorBlock(iblock), rvector,&
+          LSYSSC_DUP_TEMPLATE, LSYSSC_DUP_EMPTY)
+      call lsyssc_scalarMatVec(rmatrix2, rdestVector%RvectorBlock(iblock),&
+          rvector, 1.0_DP, 0.0_DP)
+      call lsyssc_getbase_double(rvector, p_Ddata)
+      dmass2 = sum(p_Ddata)
+      call lsyssc_releaseVector(rvector)
+      
+      print *, "Density mass", dmass1, dmass2
+      
+      ! Release matrices
+      call lsyssc_releaseMatrix(rmatrix1)
+      call lsyssc_releaseMatrix(rmatrix2)
+
+    end do
+    
+    ! Release the collection structure
+    call collct_done(rcollection)
+
+  end subroutine eulerlagrange_projectSolution
 
   !*****************************************************************************
   ! AUXILIARY ROUTINES

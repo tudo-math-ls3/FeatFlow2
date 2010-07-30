@@ -52,10 +52,10 @@
 !#        limited by the FCT algorithm and applies them to the residual
 !#
 !# 10.) eulerlagrange_limitEdgewiseVelocity
-!#      -> Performs synchronized flux correction for the velocity
+!#      -> Performs synchronised flux correction for the velocity
 !#
 !# 11.) eulerlagrange_limitEdgewiseMomentum
-!#      -> Performs synchronized flux correction for the momentum
+!#      -> Performs synchronised flux correction for the momentum
 !#
 !# 12.) eulerlagrange_coeffVectorFE
 !#      -> Callback routine for the evaluation of linear forms
@@ -64,7 +64,9 @@
 !# 13.) eulerlagrange_coeffVectorAnalytic
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
-
+!#
+!# 14.) eulerlagrange_calcMassFluxFCT
+!#      -> Calculates the antidiffusive mass flux for FCT algorithm
 !#
 !# Frequently asked questions?
 !#
@@ -126,6 +128,7 @@ module eulerlagrange_callback
   public :: eulerlagrange_limitEdgewiseMomentum
   public :: eulerlagrange_coeffVectorFE
   public :: eulerlagrange_coeffVectorAnalytic
+  public :: eulerlagrange_calcMassFluxFCT
 
 contains
 
@@ -402,25 +405,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag1d,&
-              eulerlagrange_calcMatrixGalerkinDiag1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatGalMatD1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag2d,&
-              eulerlagrange_calcMatrixGalerkinDiag2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatGalMatD2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag3d,&
-              eulerlagrange_calcMatrixGalerkinDiag3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatGalMatD3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -438,25 +438,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag1d,&
-              eulerlagrange_calcMatrixScalarDissDiag1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatScDissMatD1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag2d,&
-              eulerlagrange_calcMatrixScalarDissDiag2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatScDissMatD2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag3d,&
-              eulerlagrange_calcMatrixScalarDissDiag3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatScDissMatD3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -474,25 +471,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag1d,&
-              eulerlagrange_calcMatrixTensorDissDiag1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatRoeDissMatD1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag2d,&
-              eulerlagrange_calcMatrixTensorDissDiag2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatRoeDissMatD2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag3d,&
-              eulerlagrange_calcMatrixTensorDissDiag3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatRoeDissMatD3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -510,25 +504,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag1d,&
-              eulerlagrange_calcMatrixRusanovDiag1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD1d_sim, eulerlagrange_calcMatRusDissMatD1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag2d,&
-              eulerlagrange_calcMatrixRusanovDiag2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD2d_sim, eulerlagrange_calcMatRusDissMatD2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonalDiag3d,&
-              eulerlagrange_calcMatrixRusanovDiag3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiagMatD3d_sim, eulerlagrange_calcMatRusDissMatD3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -562,25 +553,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal1d, eulerlagrange_calcMatrixGalerkin1d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatGal1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal2d, eulerlagrange_calcMatrixGalerkin2d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatGal2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal3d, eulerlagrange_calcMatrixGalerkin3d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatGal3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -598,25 +586,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal1d,&
-              eulerlagrange_calcMatrixScalarDiss1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatScDiss1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal2d,&
-              eulerlagrange_calcMatrixScalarDiss2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatScDiss2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal3d,&
-              eulerlagrange_calcMatrixScalarDiss3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatScDiss3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -634,25 +619,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal1d,&
-              eulerlagrange_calcMatrixTensorDiss1d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatRoeDiss1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal2d,&
-              eulerlagrange_calcMatrixTensorDiss2d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatRoeDiss2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal3d,&
-              eulerlagrange_calcMatrixTensorDiss3d, 1.0_DP, .true.,&
-              rproblemLevel%RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatRoeDiss3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -670,25 +652,22 @@ contains
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal1d, eulerlagrange_calcMatrixRusanov1d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag1d_sim, eulerlagrange_calcMatRusDiss1d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM2D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal2d, eulerlagrange_calcMatrixRusanov2d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag2d_sim, eulerlagrange_calcMatRusDiss2d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case (NDIM3D)
           call gfsys_buildDivOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcMatrixDiagonal3d, eulerlagrange_calcMatrixRusanov3d,&
-              1.0_DP, .true., rproblemLevel&
-              %RmatrixBlock(systemMatrix))
+              eulerlagrange_calcMatDiag3d_sim, eulerlagrange_calcMatRusDiss3d_sim,&
+              1.0_DP, .true., rproblemLevel%RmatrixBlock(systemMatrix))
 
         case DEFAULT
           call output_line('Invalid spatial dimension!',&
@@ -1014,7 +993,7 @@ contains
         ! Compute scaling parameter
         dscale = (1.0_DP-rtimestep%theta) * rtimestep%dStep
 
-        ! What type if stabilization is applied?
+        ! What type if stabilisation is applied?
         select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
         case (AFCSTAB_GALERKIN)
@@ -1030,19 +1009,19 @@ contains
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkin1d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGal1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkin2d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGal2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVector(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkin3d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGal3d_sim, dscale, .true., rrhs)
           end select
 
         case (AFCSTAB_UPWIND,&
@@ -1069,19 +1048,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxGalerkin1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxGal1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxGalerkin2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxGal2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxGalerkin3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxGal3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_SCALAR)
@@ -1093,19 +1072,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDiss1d, dscale, .true. , rrhs)
+                  eulerlagrange_calcFluxScDiss1d_sim, dscale, .true. , rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDiss2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxScDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDiss3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxScDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_SCALAR_DSPLIT)
@@ -1118,19 +1097,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDiss1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxScDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDissDiSp2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxScDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxScalarDissDiSp3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxScDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_TENSOR)
@@ -1142,19 +1121,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDiss1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDiss2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDiss3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_TENSOR_DSPLIT)
@@ -1167,19 +1146,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDiss1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDissDiSp2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxTensorDissDiSp3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRoeDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV)
@@ -1191,19 +1170,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanov1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanov2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDiss2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanov3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDiss3d_sim, dscale, .true., rrhs)
             end select
 
           case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1216,19 +1195,19 @@ contains
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanov1d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDiss1d_sim, dscale, .true., rrhs)
 
             case (NDIM2D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanovDiSp2d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDissDiSp2d_sim, dscale, .true., rrhs)
 
             case (NDIM3D)
               call gfsys_buildDivVector(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                   rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                  eulerlagrange_calcFluxRusanovDiSp3d, dscale, .true., rrhs)
+                  eulerlagrange_calcFluxRusDissDiSp3d_sim, dscale, .true., rrhs)
             end select
 
           case DEFAULT
@@ -1250,22 +1229,22 @@ contains
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkinNoBdr1d,&
-                eulerlagrange_calcCharacteristics1d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGalNoBdr1d_sim,&
+                eulerlagrange_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkinNoBdr2d,&
-                eulerlagrange_calcCharacteristics2d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGalNoBdr2d_sim,&
+                eulerlagrange_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-                eulerlagrange_calcFluxGalerkinNoBdr3d,&
-                eulerlagrange_calcCharacteristics3d, dscale, .true., rrhs)
+                eulerlagrange_calcFluxGalNoBdr3d_sim,&
+                eulerlagrange_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
 
         case DEFAULT
@@ -1464,7 +1443,7 @@ contains
     ! Compute scaling parameter
     dscale = rtimestep%theta*rtimestep%dStep
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
 
     case (AFCSTAB_GALERKIN)
@@ -1480,19 +1459,19 @@ contains
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin1d, dscale, .false., rres)
+            eulerlagrange_calcFluxGal1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin2d, dscale, .false., rres)
+            eulerlagrange_calcFluxGal2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin3d, dscale, .false., rres)
+            eulerlagrange_calcFluxGal3d_sim, dscale, .false., rres)
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -1521,19 +1500,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin1d, dscale, .false., rres)
+              eulerlagrange_calcFluxGal1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin2d, dscale, .false., rres)
+              eulerlagrange_calcFluxGal2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin3d, dscale, .false., rres)
+              eulerlagrange_calcFluxGal3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_SCALAR)
@@ -1545,19 +1524,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss1d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss2d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss3d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_SCALAR_DSPLIT)
@@ -1570,19 +1549,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss1d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDissDiSp2d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDissDiSp3d, dscale, .false., rres)
+              eulerlagrange_calcFluxScDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_TENSOR)
@@ -1594,19 +1573,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss1d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss2d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss3d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_TENSOR_DSPLIT)
@@ -1619,19 +1598,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss1d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDissDiSp2d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDissDiSp3d, dscale, .false., rres)
+              eulerlagrange_calcFluxRoeDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV)
@@ -1643,19 +1622,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov1d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov2d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDiss2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov3d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDiss3d_sim, dscale, .false., rres)
         end select
 
       case (DISSIPATION_RUSANOV_DSPLIT)
@@ -1668,19 +1647,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov1d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rres)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanovDiSp2d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDissDiSp2d_sim, dscale, .false., rres)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanovDiSp3d, dscale, .false., rres)
+              eulerlagrange_calcFluxRusDissDiSp3d_sim, dscale, .false., rres)
         end select
 
       case DEFAULT
@@ -1692,7 +1671,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-------------------------------------------------------------------------
-      ! Compute the low-order residual + FEM-TVD stabilization
+      ! Compute the low-order residual + FEM-TVD stabilisation
       !
       !   $$ res = res + dt*theta*L(U^{(m)})*U^{(m)} + F(U^{(m)}) $$
       !-------------------------------------------------------------------------
@@ -1702,22 +1681,22 @@ contains
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr1d,&
-            eulerlagrange_calcCharacteristics1d, dscale, .false., rres)
+            eulerlagrange_calcFluxGalNoBdr1d_sim,&
+            eulerlagrange_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr2d,&
-            eulerlagrange_calcCharacteristics2d, dscale, .false., rres)
+            eulerlagrange_calcFluxGalNoBdr2d_sim,&
+            eulerlagrange_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr3d,&
-            eulerlagrange_calcCharacteristics3d, dscale , .false., rres)
+            eulerlagrange_calcFluxGalNoBdr3d_sim,&
+            eulerlagrange_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
 
     case DEFAULT
@@ -1733,7 +1712,7 @@ contains
     !   $$ res = res + f^*(u^(m),u^n) $$
     !-------------------------------------------------------------------------
 
-    ! What type if stabilization is applied?
+    ! What type if stabilisation is applied?
     select case(rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation)
     case (AFCSTAB_FEMFCT_CLASSICAL,&
           AFCSTAB_FEMFCT_ITERATIVE,&
@@ -1968,19 +1947,19 @@ contains
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin1d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGal1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin2d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGal2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVector(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkin3d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGal3d_sim, dscale, .false., rrhs)
       end select
 
     case (AFCSTAB_UPWIND,&
@@ -2007,19 +1986,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin1d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxGal1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin2d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxGal2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxGalerkin3d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxGal3d_sim, dscale, .false., rrhs)
         end select
 
       case (DISSIPATION_SCALAR)
@@ -2031,19 +2010,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss1d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxScDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss2d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxScDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxScalarDiss3d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxScDiss3d_sim, dscale, .false., rrhs)
 
         end select
 
@@ -2056,19 +2035,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss1d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRoeDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss2d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRoeDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxTensorDiss3d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRoeDiss3d_sim, dscale, .false., rrhs)
 
         end select
 
@@ -2081,19 +2060,19 @@ contains
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov1d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRusDiss1d_sim, dscale, .false., rrhs)
 
         case (NDIM2D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov2d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRusDiss2d_sim, dscale, .false., rrhs)
 
         case (NDIM3D)
           call gfsys_buildDivVector(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
               rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-              eulerlagrange_calcFluxRusanov3d, dscale, .false., rrhs)
+              eulerlagrange_calcFluxRusDiss3d_sim, dscale, .false., rrhs)
 
         end select
 
@@ -2106,7 +2085,7 @@ contains
     case (AFCSTAB_FEMTVD)
 
       !-----------------------------------------------------------------------
-      ! Compute the low-order right-hand side + FEM-TVD stabilization
+      ! Compute the low-order right-hand side + FEM-TVD stabilisation
       !
       !   $$ rhs = M*U+weight*(1-theta)*dt*L(U)*U + F(U) $$
       !-----------------------------------------------------------------------
@@ -2116,27 +2095,27 @@ contains
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr1d,&
-            eulerlagrange_calcCharacteristics1d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGalNoBdr1d_sim,&
+            eulerlagrange_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr2d,&
-            eulerlagrange_calcCharacteristics2d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGalNoBdr2d_sim,&
+            eulerlagrange_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
-            eulerlagrange_calcFluxGalerkinNoBdr3d,&
-            eulerlagrange_calcCharacteristics3d, dscale, .false., rrhs)
+            eulerlagrange_calcFluxGalNoBdr3d_sim,&
+            eulerlagrange_calcCharacteristics3d_sim, dscale, .false., rrhs)
 
       end select
 
     case DEFAULT
-      call output_line('Invalid type of stabilization!',&
+      call output_line('Invalid type of stabilisation!',&
           OU_CLASS_ERROR,OU_MODE_STD,'eulerlagrange_calcRhsRungeKuttaScheme')
       call sys_halt()
     end select
@@ -2287,25 +2266,21 @@ contains
     ! local variables
     type(t_timestep) :: rtimestepAux
     type(t_vectorBlock), pointer :: p_rpredictor
-    type(t_vectorBlock) :: rlowBound, rupBound
-    type(t_vectorScalar) :: rbeta, rvectorScalar
     type(t_parlist), pointer :: p_rparlist
-    real(DP), dimension(:), pointer :: p_ML, p_Dalpha, p_Dbeta, p_Dflux
-    real(DP), dimension(:), pointer :: p_Ddata, p_DlowBound, p_DupBound
-    integer, dimension(:,:), pointer :: p_IverticesAtEdge
-    character(len=SYS_STRLEN) :: sfailsafevariable
-    integer :: inviscidAFC, lumpedMassMatrix, isystemFormat
-    integer :: ifailsafe, nfailsafe, ivariable, nvariable
+    character(len=SYS_STRLEN), dimension(:), pointer :: SfailsafeVariables
+    integer :: inviscidAFC,lumpedMassMatrix
+    integer :: nfailsafe,ivariable,nvariable
 
-    ! Get parameters from parameter list
+    ! Set pointer to parameter list
     p_rparlist => collct_getvalue_parlst(rcollection, 'rparlist')
 
-    ! Get more parameter from parameter list
+    ! Get parameters from parameter list
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'inviscidAFC', inviscidAFC)
 
     ! Do we have to apply linearised FEM-FCT?
+    if (inviscidAFC .le. 0) return
     if (rproblemLevel%Rafcstab(inviscidAFC)%ctypeAFCstabilisation&
         .ne. AFCSTAB_FEMFCT_LINEARISED) return
 
@@ -2316,42 +2291,6 @@ contains
     call parlst_getvalue_int(p_rparlist,&
         rcollection%SquickAccess(1),&
         'nfailsafe', nfailsafe)
-    call parlst_getvalue_int(p_rparlist,&
-        rcollection%SquickAccess(1),&
-        'isystemformat', isystemFormat)
-    
-    !---------------------------------------------------------------------------
-    ! Prepare failsafe flux correction
-    !---------------------------------------------------------------------------
-    if (nfailsafe .gt. 0) then
- 
-      ! Get number of failsafe variables
-      nvariable = max(1,&
-          parlst_querysubstrings(p_rparlist,&
-          rcollection%SquickAccess(1), 'sfailsafevariable'))
-      
-      ! Create block vectors for the upper and lower bounds
-      call lsysbl_createVectorBlock(rlowBound,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
-      call lsysbl_createVectorBlock(rupBound,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEQ, nvariable, .false.)
-      
-      ! Initialise lower bounds from low-order solution
-      do ivariable = 1, nvariable
-        
-        ! Get variable declaration string
-        call parlst_getvalue_string(p_rparlist,&
-            rcollection%SquickAccess(1), 'sfailsafevariable',&
-            sfailsafevariable, isubstring=ivariable)
-        
-        ! Get variable data from low-order solution
-        call eulerlagrange_getVariable(rsolution, trim(sfailsafevariable),&
-            rlowBound%RvectorBlock(ivariable))
-      end do
-      
-      ! Copy lower bounds to upper bounds
-      call lsysbl_copyVector(rlowBound, rupBound)
-    end if
     
     !---------------------------------------------------------------------------
     ! Linearised FEM-FCT algorithm
@@ -2367,7 +2306,7 @@ contains
     ! Compute low-order "right-hand side" without theta parameter
     call eulerlagrange_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
         rsolver, rsolution, p_rpredictor, rcollection, rsource)
-    
+
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
@@ -2377,105 +2316,53 @@ contains
     call eulerlagrange_calcFluxFCT(rproblemLevel, p_rpredictor,&
         rsolution, 0.0_DP, 1.0_DP, 1.0_DP, .true., rcollection)
     
-    ! Apply FEM-FCT correction
-    call eulerlagrange_calcCorrectionFCT(rproblemLevel,&
-        rsolution, rtimestep%dStep, .false.,&
-        AFCSTAB_FCTALGO_STANDARD+&
-        AFCSTAB_FCTALGO_SCALEBYMASS,&
-        rsolution, rcollection)
-    
     !---------------------------------------------------------------------------
-    ! Perform failsafe flux correction
+    ! Perform failsafe flux correction (if required)
     !---------------------------------------------------------------------------
+
     if (nfailsafe .gt. 0) then
+
+      ! Get number of failsafe variables
+      nvariable = max(1,&
+          parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'sfailsafevariable'))
+
+      ! Allocate character array that stores all failsafe variable names
+      allocate(SfailsafeVariables(nvariable))
       
-      ! Set pointers
-      call afcstab_getbase_IverticesAtEdge(&
-          rproblemLevel%Rafcstab(inviscidAFC), p_IverticesAtEdge)
-      
-      ! Compute upper and lower bounds from low-order solution
+      ! Initialize character array with failsafe variable names
       do ivariable = 1, nvariable
-        
-        ! Make a copy of the scalar subvector
-        call lsyssc_copyVector(rlowBound%RvectorBlock(ivariable), rvectorScalar)
-
-        ! Set pointers
-        call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
-        call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
-        call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-        
-        ! Compute bounds for variable
-        call computeBounds(p_IverticesAtEdge, p_Ddata, p_DlowBound, p_DupBound)
-      end do
-      
-      ! Make a copy of the flux corrected predictor
-      call lsysbl_copyVector(rsolution, p_rpredictor)
-      
-      ! Initialise the edgewise correction factors
-      call lsyssc_createVector(rbeta,&
-          rproblemLevel%Rafcstab(inviscidAFC)%NEDGE, .true.)
-      
-      ! Set pointers
-      call lsyssc_getbase_double(rbeta, p_Dbeta)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorAlpha, p_Dalpha)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rafcstab(inviscidAFC)%p_rvectorFlux, p_Dflux)
-      call lsyssc_getbase_double(&
-          rproblemLevel%Rmatrix(lumpedMassMatrix), p_ML)
-
-      ! Failsafe steps
-      do ifailsafe = 1, nfailsafe
-
-        ! Loop over failsafe variables
-        do ivariable = 1, nvariable
-          
-          ! Get variable declaration string
-          call parlst_getvalue_string(p_rparlist,&
-              rcollection%SquickAccess(1), 'sfailsafevariable',&
-              sfailsafevariable, isubstring=ivariable)
-          
-          ! Get variable data flux corrected solution
-          call eulerlagrange_getVariable(rsolution, trim(sfailsafevariable), rvectorScalar)
-          
-          ! Set pointers
-          call lsyssc_getbase_double(rlowBound%RvectorBlock(ivariable), p_DlowBound)
-          call lsyssc_getbase_double(rupBound%RvectorBlock(ivariable), p_DupBound)
-          call lsyssc_getbase_double(rvectorScalar, p_Ddata)
-          
-          ! Compute failsafe correction factors
-          call computeFailsafe(p_IverticesAtEdge,&
-              rtimestep%dStep*real(ifailsafe, DP)/real(nfailsafe, DP),&
-              p_Ddata, p_DlowBound, p_DupBound, 1e-8_DP, p_Dbeta)
-        end do
-        
-        ! Restore flux correction solution
-        call lsysbl_copyVector(p_rpredictor, rsolution)
-        call lsysbl_getbase_double(rsolution, p_Ddata)
-        
-        ! Apply correction factors to solution vector
-        if (isystemFormat .eq. SYSTEM_INTERLEAVEFORMAT) then
-          call applyFailsafeInterleaveFormat(p_IverticesAtEdge,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
-              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-        else
-          call applyFailsafeBlockFormat(p_IverticesAtEdge,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEDGE,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NEQ,&
-              rproblemLevel%Rafcstab(inviscidAFC)%NVAR,&
-              p_ML, p_Dalpha, p_Dbeta, p_Dflux, p_Ddata)
-        end if
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'sfailsafevariable',&
+            Sfailsafevariables(ivariable), isubstring=ivariable)
       end do
 
-      ! Release temporal vector
-      call lsysbl_releaseVector(rlowBound)
-      call lsysbl_releaseVector(rupBound)
-      call lsyssc_releaseVector(rbeta)
-      call lsyssc_releaseVector(rvectorScalar)
+      ! Compute FEM-FCT correction
+      call eulerlagrange_calcCorrectionFCT(rproblemLevel,&
+          rsolution, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD-&
+          AFCSTAB_FCTALGO_CORRECT,&
+          rsolution, rcollection)
+      
+      ! Apply failsafe flux correction
+      call afcstab_failsafeLimiting(&
+          rproblemLevel%Rafcstab(inviscidAFC),&
+          rproblemLevel%Rmatrix(lumpedMassMatrix),&
+          SfailsafeVariables, rtimestep%dStep, nfailsafe,&
+          eulerlagrange_getVariable, rsolution, p_rpredictor)
+
+      ! Deallocate temporal memory
+      deallocate(SfailsafeVariables)
+
+    else
+      
+      ! Apply linearised FEM-FCT correction
+      call eulerlagrange_calcCorrectionFCT(rproblemLevel,&
+          rsolution, rtimestep%dStep, .false.,&
+          AFCSTAB_FCTALGO_STANDARD+&
+          AFCSTAB_FCTALGO_SCALEBYMASS,&
+          rsolution, rcollection)
     end if
-    
 
     ! Impose boundary conditions for the solution vector
     select case(rproblemLevel%rtriangulation%ndim)
@@ -2491,141 +2378,6 @@ contains
       call bdrf_filterVectorExplicit(rbdrCond, rsolution,&
           rtimestep%dTime, eulerlagrange_calcBoundaryvalues3d)
     end select
-
-  contains
-    
-    ! Here are some internal working routines 
-    
-    !**************************************************************
-    ! Compute the upper and lower bounds
-    
-    subroutine computeBounds(IverticesAtEdge,&
-        Dx, DlowBound, DupBound)
-
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: Dx
-      
-      real(DP), dimension(:), intent(inout) :: DlowBound, DupBound
-
-      ! local variables
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        
-        DlowBound(i) = min(DlowBound(i), Dx(j))
-        DlowBound(j) = min(DlowBound(j), Dx(i))
-        DupBound(i)  = max(DupBound(i),  Dx(j))
-        DupBound(j)  = max(DupBound(j),  Dx(i))
-      end do
-
-    end subroutine computeBounds
-
-    !**************************************************************
-    ! Compute the failsafe correction factors
-    
-    subroutine computeFailsafe(IverticesAtEdge,&
-        dscale, Dx, DlowBound, DupBound, dtolerance, Dbeta)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: Dx, Dlowbound, DupBound
-      real(DP), intent(in) :: dscale, dtolerance
-      
-      real(DP), dimension(:), intent(inout) :: Dbeta
-      
-      ! local variables
-      integer :: iedge,i,j
-      
-      ! Loop over all edges
-      !$omp parallel do private(i,j)
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        if ((Dx(i) .lt. DlowBound(i)-dtolerance) .or.&
-            (Dx(j) .lt. DlowBound(j)-dtolerance) .or.&
-            (Dx(i) .gt. DupBound(i)+dtolerance) .or.&
-            (Dx(j) .gt. DupBound(j)+dtolerance)) Dbeta(iedge) = dscale
-      end do
-      !$omp end parallel do
-
-    end subroutine computeFailsafe
-
-    !**************************************************************
-    ! Apply the failsafe correction factors
-    ! The data vecto is stored in interleave format
-
-    subroutine applyFailsafeInterleaveFormat(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-      integer, intent(in) :: NEDGE, NEQ, NVAR
-      
-      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dx
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-
-        ! Remove flux from solution
-        Dx(:,i) = Dx(:,i) - F_ij/ML(i)
-        Dx(:,j) = Dx(:,j) + F_ij/ML(j)
-      end do
-      
-    end subroutine applyFailsafeInterleaveFormat
-
-    !**************************************************************
-    ! Apply the failsafe correction factors
-    ! The data vecto is stored in interleave format
-
-    subroutine applyFailsafeBlockFormat(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, ML, Dalpha, Dbeta, Dflux, Dx)
-      
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      real(DP), dimension(:), intent(in) :: ML, Dalpha, Dbeta
-      real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
-      integer, intent(in) :: NEDGE, NEQ, NVAR
-      
-      real(DP), dimension(NEQ,NVAR), intent(inout) :: Dx
-      
-      ! local variables
-      real(DP), dimension(NVAR) :: F_ij
-      integer :: iedge,i,j
-
-      ! Loop over all edges
-      do iedge = 1, size(IverticesAtEdge,2)
-        
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Compute portion of corrected antidiffusive flux
-        F_ij = Dbeta(iedge) * Dalpha(iedge) * Dflux(:,iedge)
-
-        ! Remove flux from solution
-        Dx(i,:) = Dx(i,:) - F_ij/ML(i)
-        Dx(j,:) = Dx(j,:) + F_ij/ML(j)
-      end do
-      
-    end subroutine applyFailsafeBlockFormat
 
   end subroutine eulerlagrange_calcLinearisedFCT
 
@@ -2895,7 +2647,8 @@ contains
 !<subroutine>
 
   subroutine eulerlagrange_calcCorrectionFCT(rproblemLevel, rsolution, &
-      dscale, bclear, ioperationSpec, rresidual, rcollection, rafcstab)
+      dscale, bclear, ioperationSpec, rresidual, rcollection,&
+      rafcstab, slimitingvariableName)
 
 !<description>
     ! This subroutine calculates the raw antidiffusive fluxes for
@@ -2921,6 +2674,10 @@ contains
     ! combination of different AFCSTAB_FCT_xxxx constants and specifies
     ! which operations need to be performed by this subroutine.
     integer(I32), intent(in) :: ioperationSpec
+
+    ! OPTIONAL: Parameter name of limiting variables in parameter list
+    ! If not present, then the default string 'slimitingvariable' is used
+    character(len=*), intent(in), optional :: slimitingvariableName
 !</input>
 
 !<inputoutput>
@@ -2961,12 +2718,16 @@ contains
           'inviscidAFC', inviscidAFC)
       p_rafcstab => rproblemLevel%Rafcstab(inviscidAFC)
     end if
-
+    
     ! Get number of limiting variables
-    nvariable = max(1,&
-        parlst_querysubstrings(p_rparlist,&
-        rcollection%SquickAccess(1), 'slimitingvariable'))
-
+    if (present(slimitingvariableName)) then
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), slimitingvariableName))
+    else
+      nvariable = max(1, parlst_querysubstrings(p_rparlist,&
+          rcollection%SquickAccess(1), 'slimitingvariable'))
+    end if
+    
     ! Copy operation specifier and disable the correction step
     ! if sequential/multiplicative flux correction is performed
     if (nvariable .gt. 1) then
@@ -2978,11 +2739,17 @@ contains
     ! Loop over items in the list of variables that should
     ! be limited sequentially, i.e., in multiplicative way
     do ivariable = 1, nvariable
-
+      
       ! Get variable declaration string
-      call parlst_getvalue_string(p_rparlist,&
-          rcollection%SquickAccess(1), 'slimitingvariable',&
-          slimitingvariable, isubstring=ivariable)
+      if (present(slimitingvariableName)) then
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), slimitingvariableName,&
+            slimitingvariable, isubstring=ivariable)
+      else
+        call parlst_getvalue_string(p_rparlist,&
+            rcollection%SquickAccess(1), 'slimitingvariable',&
+            slimitingvariable, isubstring=ivariable)
+      end if
 
       ! Get number of variables to be limited simultaneously
       nvartransformed = eulerlagrange_getNVARtransformed(rproblemLevel, slimitingvariable)
@@ -2996,17 +2763,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDensity1d, eulerlagrange_trafoDiffDensity1d)
+              eulerlagrange_trafoFluxDensity1d_sim, eulerlagrange_trafoDiffDensity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDensity2d, eulerlagrange_trafoDiffDensity2d)
+              eulerlagrange_trafoFluxDensity2d_sim, eulerlagrange_trafoDiffDensity2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDensity3d, eulerlagrange_trafoDiffDensity3d)
+              eulerlagrange_trafoFluxDensity3d_sim, eulerlagrange_trafoDiffDensity3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'energy') then
@@ -3017,17 +2784,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxEnergy1d, eulerlagrange_trafoDiffEnergy1d)
+              eulerlagrange_trafoFluxEnergy1d_sim, eulerlagrange_trafoDiffEnergy1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxEnergy2d, eulerlagrange_trafoDiffEnergy2d)
+              eulerlagrange_trafoFluxEnergy2d_sim, eulerlagrange_trafoDiffEnergy2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxEnergy3d, eulerlagrange_trafoDiffEnergy3d)
+              eulerlagrange_trafoFluxEnergy3d_sim, eulerlagrange_trafoDiffEnergy3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'pressure') then
@@ -3038,17 +2805,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxPressure1d, eulerlagrange_trafoDiffPressure1d)
+              eulerlagrange_trafoFluxPressure1d_sim, eulerlagrange_trafoDiffPressure1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxPressure2d, eulerlagrange_trafoDiffPressure2d)
+              eulerlagrange_trafoFluxPressure2d_sim, eulerlagrange_trafoDiffPressure2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxPressure3d, eulerlagrange_trafoDiffPressure3d)
+              eulerlagrange_trafoFluxPressure3d_sim, eulerlagrange_trafoDiffPressure3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'velocity') then
@@ -3059,18 +2826,18 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxVelocity1d, eulerlagrange_trafoDiffVelocity1d)
+              eulerlagrange_trafoFluxVelocity1d_sim, eulerlagrange_trafoDiffVelocity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxVelocity2d, eulerlagrange_trafoDiffVelocity2d,&
+              eulerlagrange_trafoFluxVelocity2d_sim, eulerlagrange_trafoDiffVelocity2d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxVelocity3d, eulerlagrange_trafoDiffVelocity3d,&
+              eulerlagrange_trafoFluxVelocity3d_sim, eulerlagrange_trafoDiffVelocity3d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseVelocity)
         end select
 
@@ -3082,18 +2849,18 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxMomentum1d, eulerlagrange_trafoDiffMomentum1d)
+              eulerlagrange_trafoFluxMomentum1d_sim, eulerlagrange_trafoDiffMomentum1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxMomentum2d, eulerlagrange_trafoDiffMomentum2d,&
+              eulerlagrange_trafoFluxMomentum2d_sim, eulerlagrange_trafoDiffMomentum2d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxMomentum3d, eulerlagrange_trafoDiffMomentum3d,&
+              eulerlagrange_trafoFluxMomentum3d_sim, eulerlagrange_trafoDiffMomentum3d_sim,&
               fcb_limitEdgewise=eulerlagrange_limitEdgewiseMomentum)
         end select
         
@@ -3105,17 +2872,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenEng1d, eulerlagrange_trafoDiffDenEng1d)
+              eulerlagrange_trafoFluxDenEng1d_sim, eulerlagrange_trafoDiffDenEng1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenEng2d, eulerlagrange_trafoDiffDenEng2d)
+              eulerlagrange_trafoFluxDenEng2d_sim, eulerlagrange_trafoDiffDenEng2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenEng3d, eulerlagrange_trafoDiffDenEng3d)
+              eulerlagrange_trafoFluxDenEng3d_sim, eulerlagrange_trafoDiffDenEng3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure') then
@@ -3126,17 +2893,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPre1d, eulerlagrange_trafoDiffDenPre1d)
+              eulerlagrange_trafoFluxDenPre1d_sim, eulerlagrange_trafoDiffDenPre1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPre2d, eulerlagrange_trafoDiffDenPre2d)
+              eulerlagrange_trafoFluxDenPre2d_sim, eulerlagrange_trafoDiffDenPre2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPre3d, eulerlagrange_trafoDiffDenPre3d)
+              eulerlagrange_trafoFluxDenPre3d_sim, eulerlagrange_trafoDiffDenPre3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
@@ -3158,17 +2925,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPreVel1d, eulerlagrange_trafoDiffDenPreVel1d)
+              eulerlagrange_trafoFluxDenPreVel1d_sim, eulerlagrange_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPreVel2d, eulerlagrange_trafoDiffDenPreVel2d)
+              eulerlagrange_trafoFluxDenPreVel2d_sim, eulerlagrange_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              eulerlagrange_trafoFluxDenPreVel3d, eulerlagrange_trafoDiffDenPreVel3d)
+              eulerlagrange_trafoFluxDenPreVel3d_sim, eulerlagrange_trafoDiffDenPreVel3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'none') then
@@ -3227,11 +2994,11 @@ contains
 
   subroutine eulerlagrange_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation, Dflux0, rcollection)
+      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the velocity vector in synchronized fashion.
+    ! for the velocity vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.
@@ -3267,7 +3034,7 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
@@ -3282,10 +3049,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! auxiliary arras
+    real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+    real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+
     ! local variables
-    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
-    integer :: iedge,i,j
+    integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
     if (present(Dflux0)) then
@@ -3300,70 +3071,148 @@ contains
         ! The vector is given in interleave format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-          
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute velocity average
-          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
-                        Dx(2:NVARtransformed+1,j)/Dx(1,j))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+            
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
+                          Dx(2:NVARtransformed+1,j)/Dx(1,j))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
 
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+        
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
         !-----------------------------------------------------------------------
         ! The vector is given in block format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
-          
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
-          
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
-          
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-          
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute velocity average
-          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
-                        Dx(j,2:NVARtransformed+1)/Dx(j,1))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
-        end do
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
+          
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
+          
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
+          
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+          
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
+                          Dx(j,2:NVARtransformed+1)/Dx(j,1))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
+        end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+        
       else
         
         call output_line('Invalid system format!',&
@@ -3381,11 +3230,11 @@ contains
 
   subroutine eulerlagrange_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation, Dflux0, rcollection)
+      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
-    ! for the momentum vector in synchronized fashion.
+    ! for the momentum vector in synchronised fashion.
     ! Note that this subroutine is designed for vectors in
     ! interleave and block format, whereby the concrete format
     ! is determined by means of the variables ndim1 and ndim2.
@@ -3421,7 +3270,7 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
@@ -3436,10 +3285,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! auxiliary arras
+    real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+    real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+    
     ! local variables
-    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
-    integer :: iedge,i,j
+    integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
     if (present(Dflux0)) then
@@ -3454,34 +3307,73 @@ contains
         ! The vector is given in interleave format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-          
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute momentum average
-          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
-                        Dx(2:NVARtransformed+1,j))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+            
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
+                          Dx(2:NVARtransformed+1,j))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
 
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
@@ -3489,34 +3381,73 @@ contains
         ! The vector is goven in block format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute momentum average
-          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
-                        Dx(j,2:NVARtransformed+1))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
+                          Dx(j,2:NVARtransformed+1))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
 
       else
 
@@ -3812,7 +3743,7 @@ contains
     ! local solution at nodes I and J
     real(DP), dimension(:), intent(in) :: U1_i,U1_j,U2_i,U2_j
 
-    ! coefficients from spatial discretization
+    ! coefficients from spatial discretisation
     real(DP), dimension(:), intent(in) :: C_ij,C_ji
 
     ! scaling coefficients

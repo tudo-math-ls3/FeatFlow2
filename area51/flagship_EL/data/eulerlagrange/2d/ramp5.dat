@@ -84,10 +84,22 @@ isystemPrecond = 2
 #      velocity
 slimitingvariable = density,energy,momentum
 
+# number of failsafe steps
+nfailsafe = 4
+
+# variables for failsafe flux correction
+sfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
+
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -170,6 +182,9 @@ errorestimator = ErrorEstimator
 # 20 = FEM-TVD
 # 21 = FEM-GP
 istabilisation = 1
+
+# perform prelimiting
+iprelimiting = 1
 
 
 ################################################################################

@@ -95,8 +95,10 @@ srhsname =
 
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
+# 1 = analytical initial solution: pointwise values
 # 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
 isolutiontype = 1
 
 # section name of initial solution

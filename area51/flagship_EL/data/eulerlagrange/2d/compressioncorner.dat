@@ -8,19 +8,19 @@
 ################################################################################
 
 simportdatafiles(2) =
-  'data/eulerlagrange/default.dat'
+  'data/euler/default.dat'
   'data/solverdefault.dat'
 
 ################################################################################
 
-application = eulerlagrange
+application = euler
 
 ################################################################################
-[Eulerlagrange]
+[Euler]
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/eulerlagrange/2d/compressioncorner.indat
+indatfile = data/euler/2d/compressioncorner.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -32,187 +32,7 @@ sdualbdrcondname = boundary_conditions_dual
 ndimension = 2
 
 # solution algorithm
-algorithm = transient_primal
-
-################################################################################ 
-# initialisation for Euler-Lagrange
-################################################################################
-
-#-------------------------------------------------------------------------------
-# number of particles
-#-------------------------------------------------------------------------------
-
-nPart = 10000
-
-
-#-------------------------------------------------------------------------------
-# searchalgorithm for the particle
-#-------------------------------------------------------------------------------
-
-# bruteforce	Brute force method
-# raytrace2D	Raytracing method in 2D
-# midpoint		Find element with the nearest midpoint
-search = midpoint
-
-#-------------------------------------------------------------------------------
-# startingposition of the particles
-#-------------------------------------------------------------------------------
-
-# 0 random startingposition 
-#	xmin = minval(p_DvertexCoords(1,:))
-#	xmax = 0.2*maxval(p_DvertexCoords(1,:))
-#	ymin = minval(p_DvertexCoords(2,:))
-#	ymax = maxval(p_DvertexCoords(2,:))
-# 1 individual startingposition
-# 2 initialize the starting position by the data of a graymap image
-# 3 uniformly distributed over the domain
-startpos = 3
-
-# PGM-file for startingpositions
-filestartpoints = data/eulerlagrange/2d/tux.pgm
-
-
-# minimum particle-position in x-direction
-xmin = 0
-# maximum particle-position in x-direction
-xmax = 1e-2
-# minimum particle-position in y-direction
-ymin = 0
-# maximum particle-position in y-direction
-ymax = 0
-
-#-------------------------------------------------------------------------------
-# density and diameter of the particle
-#-------------------------------------------------------------------------------
-
-# 0 all particles have the same density (particledensity) 
-# 1 random density of the particles (0 to particledensity)
-# 2 random density of the particles (particledensitymin to particledensitymax)
-idensitypart = 0
-
-# particle mass in kg/m^3
-particledensity = 4000
-
-# particle mass minimum in kg/m^3
-particledensitymin = 0.15
-# particle mass maximum in kg/m^3
-particledensitymax = 0.39
-
-#-------------------------------------------------------------------------------
-
-# 0 all particles have the same diameter 
-# 1 random diameter of the particles (0 to particlediam)
-# 2 random diameter of the particles (particlediammin to particlediammax)
-idiampart = 2
-
-# particle-diameter
-particlediam = 2e-6
-
-# particle diameter minimum in meter
-particlediammin = 1e-8
-# particle diameter maximum in meter
-particlediammax = 1e-6
-
-
-#-------------------------------------------------------------------------------
-# velocity of the particles
-#-------------------------------------------------------------------------------
-
-# velocity in x-direction
-velopartx = 0e0
-
-# velocity in y-direction
-veloparty = 0e0
-
-#-------------------------------------------------------------------------------
-# scalars for the velocity of the gas phase (from .indat file)
-#-------------------------------------------------------------------------------
-
-# velocity in x-direction in m/s
-velogasx = 767.5719291
-
-# velocity in y-direction in m/s
-velogasy = 1e0
-
-#-------------------------------------------------------------------------------
-# boundarybehaviour of the particles
-#-------------------------------------------------------------------------------
-
-# 0 = ideal wall collision
-# 1 = slip condition
-boundbehav = 0
-
-
-#-------------------------------------------------------------------------------
-# gravity
-#-------------------------------------------------------------------------------
-
-# gravity in x-direction
-gravityx = 0
-
-# gravity in y-direction (normally -9.81)
-gravityy = 0 #-9.81
-
-
-#-------------------------------------------------------------------------------
-# temperature
-#-------------------------------------------------------------------------------
-
-# 0 all particles have the same temperature 
-# 1 random temperature of the particles (0 to parttemp)
-# 2 random temperature of the particles (parttempmin to parttempmax)
-itemppart = 0
-
-# temperature of the particles in Kelvin
-parttemp = 277
-
-# particle temperature minimum in Kelvin
-parttempmin = 150
-# particle temperature maximum in Kelvin
-parttempmax = 300
-
-
-#-------------------------------------------------------------------------------
-# gas phase
-#-------------------------------------------------------------------------------
-
-# kinematic viscosity of the gas
-gas_nu = 1e-5
-
-# gas temperature in Kelvin
-temp_gas = 277
-
-#-------------------------------------------------------------------------------
-# specitic heats at konstant volumes (in J / kg * K)
-#-------------------------------------------------------------------------------
-
-# gas phase
-c_v_gas = 718
-
-# particle phase
-c_v_part = 1380
-
-#-------------------------------------------------------------------------------
-# output particle phase (additional to the data of the output file of the gasphase)
-#-------------------------------------------------------------------------------
-
-# 0 no output
-# 1 only particle positions
-# 2 position, velocity, diameter, mass, density and temperatur of the particles
-ipartoutput = 2
-
-
-#-------------------------------------------------------------------------------
-# choice coupling mode (one-way or two-way coupling)
-#-------------------------------------------------------------------------------
-
-# 1 one-way coupling (particles have no influence on the gas phase)
-# 2 two-way coupling
-icouplingpart = 1
-
-
-
-################################################################################
+algorithm = pseudotransient_primal
 
 #-------------------------------------------------------------------------------
 
@@ -232,7 +52,7 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 2
+idissipationtype = 1
 
 # type of system coupling
 # 0 = segregated approach
@@ -261,10 +81,22 @@ isystemPrecond = 2
 #      velocity
 slimitingvariable = density,energy,momentum
 
+# number of failsafe steps
+nfailsafe = 4
+
+# variables for failsafe flux correction
+sfailsafevariable(3) =
+  pressure
+  velocity_x
+  velocity_y
+
 # type of initial solution profile
 # 0 = zero initial solution
-# 1 = analytical initial solution
-isolutiontype = 1
+# 1 = analytical initial solution: pointwise values
+# 2 = PGM image
+# 3 = anayltical initial solution: consistent L2-projection
+# 4 = anayltical initial solution: lumped L2-projection
+isolutiontype = 3
 
 # section name of initial solution
 ssolutionname(4) = 
@@ -346,7 +178,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 20
+
+# perform prelimiting
+iprelimiting = 1
 
 
 ################################################################################
@@ -358,10 +193,10 @@ istabilisation = 1
 # 1 = GMV
 # 2 = AVS
 # 3 = Paraview (VTK)
-iformatUCD = 3
+iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 0.01
+dstepUCD = 1.0
 
 # file for UCD output of solution
 sucdsolution = out/compressioncorner
@@ -370,14 +205,11 @@ sucdsolution = out/compressioncorner
 sucderror = out/compressioncorner_error
 
 # variables for ucd output
-sucdvariable(7) =
+sucdvariable(4) =
  density
  velocity
  energy
  pressure
- velo_part
- vol_part
- vol_partaver
 
 
 ################################################################################
@@ -390,8 +222,7 @@ sucdvariable(7) =
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
-ioutputlevel = 4
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -410,22 +241,22 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 0
+multisteps = 2
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 0.0
 
 # initial time step size
 dinitialStep = 0.001
 
 # lower bound for the admissible time step
-dminStep = 1e-3
+dminStep = 0.001
 
 # upper bound for the admissible time step
-dmaxStep = 1e-3
+dmaxStep = 1.0
 
 # adaptive time stepping algorithm
 iadaptTimestep = 0
@@ -434,10 +265,10 @@ iadaptTimestep = 0
 dadaptTime = 0.0
 
 # minimum factor by which time step may change
-ddecreaseFactor = 0.8
+ddecreaseFactor = 0.75
 
 # maximum factor by which time step may change
-dincreaseFactor = 1.2
+dincreaseFactor = 1.5
 
 # reduction factor by which time step is reduced if simulation fails
 dstepReductionFactor = 0.8
@@ -449,7 +280,7 @@ depsRel = 0.0
 depsAbs = 0.0
 
 # tolerance for steady state convergence
-depsSteady = 1e-8
+depsSteady = 1e-6
 
 
 ################################################################################
@@ -463,14 +294,13 @@ depsSteady = 1e-8
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
-ioutputlevel = 0
+ioutputlevel = 3
 
 # minimum multigrid level number
-nlmin = 4
+nlmin = 3
 
 # maximum multigrid level number
-nlmax = 4
+nlmax = 3
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -505,7 +335,6 @@ ssolvername = NonlinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -587,7 +416,6 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 3
 
 # norm to use for defect checking
@@ -601,7 +429,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 25
+nmaxIterations = 10
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -618,7 +446,7 @@ isolver = 101
 # 1 = NITSOL
 # 2 = SQRT(EPS)
 # otherwise, user-defined value
-dperturbationStrategy = 0
+dperturbationStrategy = 1
 
 # strategy for choosing the forcing term in Newton's method
 # 1 = choice 1 by Eisenstat/Walker
@@ -666,7 +494,6 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
 ioutputlevel = 0
 
 # norm to use for defect checking
@@ -731,7 +558,7 @@ domega = 1
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 1e-4
+depsRel = 1e-2
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -778,15 +605,14 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-# >9 = file output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
 # 1 = L1-norm
 # 2 = L2-norm
 # 3 = MAX-norm
-iresNorm = 1
+iresNorm = 0
 
 # minimum number of linear steps
 nminIterations = 1
@@ -804,13 +630,13 @@ nmaxIterations = 100
 isolver = 7
 
 # dimension of the Krylov subspace for FGMRES method
-nkrylov = 15
+nkrylov = 10
 
 # linear relaxation parameter
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-12
+depsAbs = 1e-14
 
 # relative tolerance for residual
 depsRel = 1e-2
@@ -868,10 +694,10 @@ nsubdividemax = 3
 iadaptationStrategy = 1
 
 # refinement tolerance
-drefinementTolerance = 0.5
+drefinementTolerance = 0.1
 
 # coarsening tolerance
-dcoarseningTolerance = 0.01
+dcoarseningTolerance = 0.05
 
 
 ################################################################################
@@ -894,13 +720,13 @@ ierrorestimator = 7
 igridindicator = 0
 
 # noise filter
-dnoisefilter = 0.05
+dnoisefilter = 0.001
 
 # absolute filter
-dabsfilter = 0.001
+dabsfilter = 0.0001
 
 # number of protection layers
-nprotectLayers = 2
+nprotectLayers = 0
 
 # tolerance for protection layers
 dprotectLayerTolerance = 0.0

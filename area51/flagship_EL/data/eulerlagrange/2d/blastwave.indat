@@ -1,0 +1,45 @@
+# -*- mode: any-ini; -*-
+
+################################################################################
+#                     Input parameters for the FEM-AFC solver                  #
+#                                                                              #
+# Blast wave problem by Woodward and Colella:                                  #
+# The numerical simulation of two-dimensional fluid flow with strong shocks,   #
+# Journal of Computational Physics 54 (1984), pp.115-173                       #
+#                                                                              #
+# Initial conditions:                                                          #
+#  rho1 = 1.0; p1 = 1000.0                                                     #
+#  rho2 = 1.0; p2 = 0.01                                                       #
+#  rho3 = 1.0; p3 = 100.0                                                      #
+#                                                                              #
+# and states 1, 2, and 3 are separated at x=0.1 and x=0.9, respectively.       #
+#                                                                              #
+################################################################################
+
+# Specify the initial solution
+deffunc: @initsol_rho = 1.0 ; x,y,z,t
+deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_Etot = if(x < 0.1, 1000.0, if(x > 0.9, 100.0, 0.01)) ; x,y,z,t
+
+# Specify the boundary conditions
+[boundary_conditions_primal]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+1.0 T  0
+2.0 F  0
+3.0 T  0
+4.0 F  0
+
+PARAMETERS
+0.5 T  2
+1.0 T  2
+2.0 F  2
+3.0 T  2
+4.0 F  2

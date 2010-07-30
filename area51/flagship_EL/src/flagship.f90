@@ -145,7 +145,7 @@ program flagship
     call zpinch_app(rparlist, 'zpinch')
 
   elseif (trim(application) .eq. 'eulerlagrange') then
-    call eulerlagrange_app(rparlist)
+    call eulerlagrange_app(rparlist, 'eulerlagrange')
 
   else
     call output_line('Invalid application name!',&

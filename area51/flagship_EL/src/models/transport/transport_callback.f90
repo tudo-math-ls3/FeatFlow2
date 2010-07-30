@@ -324,7 +324,8 @@ contains
 
   subroutine transp_calcPrecondThetaScheme(rproblemLevel,&
       rtimestep, rsolver, rsolution, rcollection,&
-      fcb_calcMatrixPrimal, fcb_calcMatrixDual,&
+      fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
+      fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim)
 
 !<description>
@@ -342,8 +343,10 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
-    optional :: fcb_calcMatrixPrimal
-    optional :: fcb_calcMatrixDual
+    optional :: fcb_calcMatrixDiagonalPrimal_sim
+    optional :: fcb_calcMatrixPrimal_sim
+    optional :: fcb_calcMatrixDiagonalDual_sim
+    optional :: fcb_calcMatrixDual_sim
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
@@ -367,7 +370,7 @@ contains
     type(t_parlist), pointer :: p_rparlist
     type(t_timer), pointer :: p_rtimer
     character(LEN=SYS_STRLEN) :: smode
-    logical :: bbuildStabilisation, bconservative
+    logical :: bbuildStabilisation
     integer :: systemMatrix, transportMatrix, lumpedMassMatrix, consistentMassMatrix
     integer :: coeffMatrix_CX, coeffMatrix_CY, coeffMatrix_CZ, coeffMatrix_S
     integer :: imasstype, ivelocitytype, idiffusiontype
@@ -537,9 +540,6 @@ contains
         rcollection%SquickAccess(1),&
         'convectionAFC', convectionAFC)
 
-    ! Check if conservative or non-conservative formulation should be applied
-    bconservative = (ivelocitytype .gt. 0)
-
     ! Set velocity vector (if any)
     if (transp_hasVelocityVector(ivelocityType)) then
       call parlst_getvalue_int(p_rparlist,&
@@ -564,7 +564,8 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixPrimal)) then
+        if (present(fcb_calcMatrixPrimal_sim) .and.&
+            present(fcb_calcMatrixDiagonalPrimal_sim)) then
 
           ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
@@ -579,22 +580,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixPrimal, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixPrimal, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixPrimal, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalPrimal_sim, fcb_calcMatrixPrimal_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         else ! callback function not present
@@ -642,22 +646,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionP1d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP1d_sim, transp_calcMatGalConvP1d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionP2d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP2d_sim, transp_calcMatGalConvP2d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionP3d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP3d_sim, transp_calcMatGalConvP3d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         case default
@@ -671,22 +678,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionP1d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP1d_sim, transp_calcMatUpwConvP1d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionP2d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP2d_sim, transp_calcMatUpwConvP2d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionP3d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvP3d_sim, transp_calcMatUpwConvP3d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         end select
@@ -715,8 +725,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatGalSTBurgersP2d, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagSTBurgersP2d_sim, transp_calcMatGalSTBurgersP2d_sim,&
+              1.0_DP, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case default
 
@@ -727,15 +738,16 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatUpwSTBurgersP2d, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagSTBurgersP2d_sim, transp_calcMatUpwSTBurgersP2d_sim,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBurgersP2d,&
+            transp_coeffMatBdrSTBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -755,8 +767,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatGalSTBuckLevP2d, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagSTBuckLevP2d_sim, transp_calcMatGalSTBuckLevP2d_sim,&
+              1.0_DP, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case default
 
@@ -767,15 +780,16 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatUpwSTBuckLevP2d, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagSTBuckLevP2d_sim, transp_calcMatUpwSTBuckLevP2d_sim,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBuckLevP2d,&
+            transp_coeffMatBdrSTBuckLevP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -795,8 +809,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatGalBurgersP1d, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBurgersP1d_sim, transp_calcMatGalBurgersP1d_sim,&
+              1.0_DP, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case default
 
@@ -807,8 +822,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatUpwBurgersP1d, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBurgersP1d_sim, transp_calcMatUpwBurgersP1d_sim,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         end select
 
@@ -830,8 +846,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatGalBurgersP2d, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBurgersP2d_sim, transp_calcMatGalBurgersP2d_sim,&
+              1.0_DP, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case default
 
@@ -842,15 +859,16 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatUpwBurgersP2d, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBurgersP2d_sim, transp_calcMatUpwBurgersP2d_sim,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrBurgersP2d,&
+            transp_coeffMatBdrBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -870,8 +888,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatGalBuckLevP1d, .false., .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBuckLevP1d_sim, transp_calcMatGalBuckLevP1d_sim,&
+              1.0_DP, .false., .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case default
 
@@ -882,8 +901,9 @@ contains
           call gfsc_buildConvectionOperator(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
               rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-              transp_calcMatUpwBuckLevP1d, bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix), bconservative)
+              transp_calcMatDiagBuckLevP1d_sim, transp_calcMatUpwBuckLevP1d_sim,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         end select
 
@@ -910,7 +930,8 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixDual)) then
+        if (present(fcb_calcMatrixDual_sim) .and.&
+            present(fcb_calcMatrixDiagonalDual_sim)) then
 
           ! Check if stabilisation should be applied
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
@@ -925,22 +946,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDual, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDual, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                fcb_calcMatrixDual, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                fcb_calcMatrixDiagonalDual_sim, fcb_calcMatrixDual_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         else ! callback function not present
@@ -988,22 +1012,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionD1d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD1d_sim, transp_calcMatGalConvD1d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionD2d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD2d_sim, transp_calcMatGalConvD2d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatGalConvectionD3d, .false., .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD3d_sim, transp_calcMatGalConvD3d_sim,&
+                1.0_DP, .false., .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
           case default
@@ -1017,22 +1044,25 @@ contains
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionD1d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD1d_sim, transp_calcMatUpwConvD1d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionD2d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD2d_sim, transp_calcMatUpwConvD2d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionOperator(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(convectionAFC), rsolution,&
-                transp_calcMatUpwConvectionD3d, bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix), bconservative)
+                transp_calcMatDiagConvD3d_sim, transp_calcMatUpwConvD3d_sim,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         end select
@@ -1152,7 +1182,7 @@ contains
 
   subroutine transp_calcJacobianThetaScheme(rproblemLevel,&
       rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-      fcb_calcMatrixPrimal, fcb_calcMatrixDual,&
+      fcb_calcMatrixPrimal_sim, fcb_calcMatrixDual_sim,&
       fcb_coeffMatBdrPrimal_sim, fcb_coeffMatBdrDual_sim)
 
 !<description>
@@ -1168,8 +1198,8 @@ contains
 
     ! user-defined callback functions
     include 'intf_transpCalcMatrix.inc'
-    optional :: fcb_calcMatrixPrimal
-    optional :: fcb_calcMatrixDual
+    optional :: fcb_calcMatrixPrimal_sim
+    optional :: fcb_calcMatrixDual_sim
 
     ! user-defined callback functions
     include 'intf_transpCoeffMatBdr.inc'
@@ -1383,29 +1413,29 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixPrimal)) then
+        if (present(fcb_calcMatrixPrimal_sim)) then
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, fcb_calcMatrixPrimal, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixPrimal_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, fcb_calcMatrixPrimal, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixPrimal_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, fcb_calcMatrixPrimal, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixPrimal_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         else ! callback function not present
@@ -1447,23 +1477,23 @@ contains
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatUpwConvectionP1d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvP1d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatUpwConvectionP2d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvP2d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, transp_calcMatUpwConvectionP3d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvP3d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
@@ -1477,14 +1507,14 @@ contains
         ! nonlinear Burgers` equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rsolution, transp_calcMatUpwSTBurgersP2d, hstep,&
-            bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix))
+            rsolution, transp_calcMatUpwSTBurgersP2d_sim, hstep,&
+            1.0_DP, bbuildStabilisation, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBurgersP2d,&
+            transp_coeffMatBdrSTBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1493,14 +1523,14 @@ contains
         ! nonlinear Buckley-Leverett equation in space-time
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rsolution, transp_calcMatUpwSTBuckLevP2d, hstep,&
-            bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix))
+            rsolution, transp_calcMatUpwSTBuckLevP2d_sim, hstep,&
+            1.0_DP, bbuildStabilisation, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBuckLevP2d,&
+            transp_coeffMatBdrSTBuckLevP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1509,9 +1539,9 @@ contains
         ! nonlinear Burgers` equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rsolution, transp_calcMatUpwBurgersP1d, hstep,&
-            bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix))
+            rsolution, transp_calcMatUpwBurgersP1d_sim, hstep,&
+            1.0_DP, bbuildStabilisation, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         ! @TODO: Add weak boundary conditions
 
@@ -1520,14 +1550,14 @@ contains
         ! nonlinear Burgers` equation in 2D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-            rsolution, transp_calcMatUpwBurgersP2d, hstep,&
-            bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix))
+            rsolution, transp_calcMatUpwBurgersP2d_sim, hstep,&
+            1.0_DP, bbuildStabilisation, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrBurgersP2d,&
+            transp_coeffMatBdrBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1536,9 +1566,9 @@ contains
         ! nonlinear Buckley-Leverett equation in 1D
         call gfsc_buildConvectionJacobian(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-            rsolution, transp_calcMatUpwBuckLevP1d, hstep,&
-            bbuildStabilisation, .false.,&
-            rproblemLevel%Rmatrix(transportMatrix))
+            rsolution, transp_calcMatUpwBuckLevP1d_sim, hstep,&
+            1.0_DP, bbuildStabilisation, .false.,&
+            rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         ! @TODO: Add weak boundary conditions
 
@@ -1552,29 +1582,29 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixDual)) then
+        if (present(fcb_calcMatrixDual_sim)) then
 
           select case(rproblemLevel%rtriangulation%ndim)
           case (NDIM1D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, fcb_calcMatrixDual, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixDual_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM2D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, fcb_calcMatrixDual, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixDual_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
           case (NDIM3D)
             call gfsc_buildConvectionJacobian(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                rsolution, fcb_calcMatrixDual, hstep,&
-                bbuildStabilisation, .false.,&
-                rproblemLevel%Rmatrix(transportMatrix))
+                rsolution, fcb_calcMatrixDual_sim, hstep,&
+                1.0_DP, bbuildStabilisation, .false.,&
+                rproblemLevel%Rmatrix(transportMatrix), rcollection)
           end select
 
         else ! callback function not present
@@ -1615,23 +1645,23 @@ contains
         case (NDIM1D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatUpwConvectionD1d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvD1d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case (NDIM2D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatUpwConvectionD2d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvD2d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
 
         case (NDIM3D)
           call gfsc_buildConvectionJacobian(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-              rsolution, transp_calcMatUpwConvectionD3d, hstep,&
-              bbuildStabilisation, .false.,&
-              rproblemLevel%Rmatrix(transportMatrix))
+              rsolution, transp_calcMatUpwConvD3d_sim, hstep,&
+              1.0_DP, bbuildStabilisation, .false.,&
+              rproblemLevel%Rmatrix(transportMatrix), rcollection)
         end select
 
         ! Evaluate bilinear form for boundary integral (if any)
@@ -1771,7 +1801,7 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixPrimal)) then
+        if (present(fcb_calcMatrixPrimal_sim)) then
 
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           case (AFCSTAB_FEMFCT_CLASSICAL,&
@@ -1790,7 +1820,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1799,7 +1829,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1808,7 +1838,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1821,7 +1851,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1829,7 +1859,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1837,7 +1867,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -1850,7 +1880,7 @@ contains
             case (NDIM1D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixPrimal,&
+                  rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1859,7 +1889,7 @@ contains
             case (NDIM2D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixPrimal,&
+                  rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1868,7 +1898,7 @@ contains
             case (NDIM3D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixPrimal,&
+                  rsolution, fcb_calcMatrixPrimal_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1890,7 +1920,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixPrimal,&
+                    rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1900,7 +1930,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixPrimal,&
+                    rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1910,7 +1940,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixPrimal,&
+                    rsolution, rsolution0, fcb_calcMatrixPrimal_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1923,7 +1953,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1932,7 +1962,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -1941,7 +1971,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixPrimal,&
+                    rsolution, fcb_calcMatrixPrimal_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2042,7 +2072,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBurgersP2d,&
+                rsolution, transp_calcMatUpwSTBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2050,7 +2080,7 @@ contains
           else
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBurgersP2d,&
+                rsolution, transp_calcMatUpwSTBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2059,7 +2089,7 @@ contains
         case (AFCSTAB_FEMTVD)
           call gfsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatUpwSTBurgersP2d,&
+              rsolution, transp_calcMatUpwSTBurgersP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2077,7 +2107,7 @@ contains
             call gfsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
-                rsolution, rsolution0, transp_calcMatUpwSTBurgersP2d,&
+                rsolution, rsolution0, transp_calcMatUpwSTBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2085,7 +2115,7 @@ contains
           else
             call gfsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBurgersP2d,&
+                rsolution, transp_calcMatUpwSTBurgersP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2110,7 +2140,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBuckLevP2d,&
+                rsolution, transp_calcMatUpwSTBuckLevP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2118,7 +2148,7 @@ contains
           else
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBuckLevP2d,&
+                rsolution, transp_calcMatUpwSTBuckLevP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2127,7 +2157,7 @@ contains
         case (AFCSTAB_FEMTVD)
           call gfsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatUpwSTBuckLevP2d,&
+              rsolution, transp_calcMatUpwSTBuckLevP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2145,7 +2175,7 @@ contains
             call gfsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
-                rsolution, rsolution0, transp_calcMatUpwSTBuckLevP2d,&
+                rsolution, rsolution0, transp_calcMatUpwSTBuckLevP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2153,7 +2183,7 @@ contains
           else
             call gfsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwSTBuckLevP2d,&
+                rsolution, transp_calcMatUpwSTBuckLevP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2178,7 +2208,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwBurgersP1d,&
+                rsolution, transp_calcMatUpwBurgersP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2186,7 +2216,7 @@ contains
           else
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwBurgersP1d,&
+                rsolution, transp_calcMatUpwBurgersP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2195,7 +2225,7 @@ contains
         case (AFCSTAB_FEMTVD)
           call gfsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatUpwBurgersP1d,&
+              rsolution, transp_calcMatUpwBurgersP1d_sim,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2213,7 +2243,7 @@ contains
             call gfsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
-                rsolution, rsolution0, transp_calcMatUpwBurgersP1d,&
+                rsolution, rsolution0, transp_calcMatUpwBurgersP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2221,7 +2251,7 @@ contains
           else
             call gfsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatUpwBurgersP1d,&
+                rsolution, transp_calcMatUpwBurgersP1d_sim,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2246,7 +2276,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwBurgersP2d,&
+                rsolution, transp_calcMatUpwBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2254,7 +2284,7 @@ contains
           else
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwBurgersP2d,&
+                rsolution, transp_calcMatUpwBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2263,7 +2293,7 @@ contains
         case (AFCSTAB_FEMTVD)
           call gfsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-              rsolution, transp_calcMatUpwBurgersP2d,&
+              rsolution, transp_calcMatUpwBurgersP2d_sim,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2281,14 +2311,14 @@ contains
             call gfsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
-                rsolution, rsolution0, transp_calcMatUpwBurgersP2d,&
+                rsolution, rsolution0, transp_calcMatUpwBurgersP2d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix), bisExtendedSparsity)
           else
             call gfsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                rsolution, transp_calcMatUpwBurgersP2d,&
+                rsolution, transp_calcMatUpwBurgersP2d_sim,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2313,7 +2343,7 @@ contains
           if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatUpwBuckLevP1d,&
+                rsolution, transp_calcMatUpwBuckLevP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2321,7 +2351,7 @@ contains
           else
             call gfsc_buildJacobianFCT(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatUpwBuckLevP1d,&
+                rsolution, transp_calcMatUpwBuckLevP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2330,7 +2360,7 @@ contains
         case (AFCSTAB_FEMTVD)
           call gfsc_buildJacobianTVD(&
               rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-              rsolution, transp_calcMatUpwBuckLevP1d,&
+              rsolution, transp_calcMatUpwBuckLevP1d_sim,&
               rtimestep%dStep, hstep, .false.,&
               rproblemLevel%Rafcstab(convectionAFC),&
               rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2348,7 +2378,7 @@ contains
             call gfsc_buildJacobianGP(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rmatrix(consistentMassMatrix),&
-                rsolution, rsolution0, transp_calcMatUpwBuckLevP1d,&
+                rsolution, rsolution0, transp_calcMatUpwBuckLevP1d_sim,&
                 rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2356,7 +2386,7 @@ contains
           else
             call gfsc_buildJacobianTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                rsolution, transp_calcMatUpwBuckLevP1d,&
+                rsolution, transp_calcMatUpwBuckLevP1d_sim,&
                 rtimestep%dStep, hstep, .false.,&
                 rproblemLevel%Rafcstab(convectionAFC),&
                 rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2378,7 +2408,7 @@ contains
       case default
         ! The user-defined callback function for matrix coefficients
         ! is used if present; otherwise an error is thrown
-        if (present(fcb_calcMatrixDual)) then
+        if (present(fcb_calcMatrixDual_sim)) then
 
           select case(rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation)
           case (AFCSTAB_FEMFCT_CLASSICAL,&
@@ -2396,7 +2426,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2405,7 +2435,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2414,7 +2444,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2427,7 +2457,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2435,7 +2465,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2443,7 +2473,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianFCT(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix))
@@ -2457,7 +2487,7 @@ contains
             case (NDIM1D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                  rsolution, fcb_calcMatrixDual,&
+                  rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2466,7 +2496,7 @@ contains
             case (NDIM2D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                  rsolution, fcb_calcMatrixDual,&
+                  rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2475,7 +2505,7 @@ contains
             case (NDIM3D)
               call gfsc_buildJacobianTVD(&
                   rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                  rsolution, fcb_calcMatrixDual,&
+                  rsolution, fcb_calcMatrixDual_sim,&
                   rtimestep%dStep, hstep, .false.,&
                   rproblemLevel%Rafcstab(convectionAFC),&
                   rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2497,7 +2527,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixDual,&
+                    rsolution, rsolution0, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2507,7 +2537,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixDual,&
+                    rsolution, rsolution0, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2517,7 +2547,7 @@ contains
                 call gfsc_buildJacobianGP(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                     rproblemLevel%Rmatrix(consistentMassMatrix),&
-                    rsolution, rsolution0, fcb_calcMatrixDual,&
+                    rsolution, rsolution0, fcb_calcMatrixDual_sim,&
                     rtimestep%theta, rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2530,7 +2560,7 @@ contains
               case (NDIM1D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2539,7 +2569,7 @@ contains
               case (NDIM2D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2548,7 +2578,7 @@ contains
               case (NDIM3D)
                 call gfsc_buildJacobianTVD(&
                     rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
-                    rsolution, fcb_calcMatrixDual,&
+                    rsolution, fcb_calcMatrixDual_sim,&
                     rtimestep%dStep, hstep, .false.,&
                     rproblemLevel%Rafcstab(convectionAFC),&
                     rproblemLevel%Rmatrix(jacobianMatrix),&
@@ -2799,7 +2829,7 @@ contains
             rtimestep%dStep, 1.0_DP, .true.)
         
         ! Perform flux correction
-        call gfsc_buildConvVectorFCT(&
+        call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             p_rpredictor, dweight, .false.,&
@@ -2807,7 +2837,7 @@ contains
       end if
 
     case (AFCSTAB_FEMTVD)
-      call gfsc_buildConvVectorTVD(&
+      call gfsc_buildConvectionVectorTVD(&
           rsolution, dweight, rrhs,&
           rproblemLevel%Rafcstab(convectionAFC))
 
@@ -2819,13 +2849,13 @@ contains
 
       ! Should we apply consistent mass antidiffusion?
       if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-        call gfsc_buildConvVectorGP(&
+        call gfsc_buildConvectionVectorGP(&
             rproblemLevel%Rmatrix(consistentMassMatrix),&
             rsolution, rsolution0,&
             rtimestep%theta, dweight, rrhs,&
             rproblemLevel%Rafcstab(convectionAFC))
       else
-        call gfsc_buildConvVectorTVD(&
+        call gfsc_buildConvectionVectorTVD(&
             rsolution, dweight, rrhs,&
             rproblemLevel%Rafcstab(convectionAFC))
       end if
@@ -2844,7 +2874,7 @@ contains
     select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
 
     case (AFCSTAB_SYMMETRIC)
-      call gfsc_buildConvVectorSymm(&
+      call gfsc_buildConvectionVectorSymm(&
           rsolution, 1.0_DP, rrhs,&
           rproblemLevel%Rafcstab(diffusionAFC))
     end select
@@ -2976,7 +3006,7 @@ contains
       !-------------------------------------------------------------------------
       ! Compute the constant right-hand side
       !
-      !   $$ rhs = M*u^n+(1-theta)*dt*K(u^n)u^n + b.c.'s $$
+      !   $$ rhs = M*u^n+(1-theta)*dt*K(u^n)u^n + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Do we have some explicit part?
@@ -3044,7 +3074,7 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $$ rhs = "0" + b.c.'s $$
+      !   $$ rhs = "0" + b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Clear right-hand side vector
@@ -3304,7 +3334,7 @@ contains
         end if
 
         ! Perform flux correction
-        call gfsc_buildConvVectorFCT(&
+        call gfsc_buildConvectionVectorFCT(&
             rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC),&
             p_rpredictor, rtimestep%dStep, .false.,&
@@ -3313,37 +3343,15 @@ contains
         ! Subtract corrected antidiffusion from right-hand side
         if (rproblemLevel%Rafcstab(convectionAFC)%ctypeAFCstabilisation&
             .eq. AFCSTAB_FEMFCT_ITERATIVE) then
-          call gfsc_buildConvVectorFCT(&
+          call gfsc_buildConvectionVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix),&
               rproblemLevel%Rafcstab(convectionAFC),&
               p_rpredictor, rtimestep%dStep, .false.,&
               AFCSTAB_FCTALGO_CORRECT, rrhs)
         end if
 
-!!$        ! LEGACY IMPLEMENTATION
-!!$        call parlst_getvalue_int(p_rparlist,&
-!!$            rcollection%SquickAccess(1),&
-!!$            'imassantidiffusiontype', imassantidiffusiontype)
-!!$
-!!$        ! Should we apply consistent mass antidiffusion?
-!!$        if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-!!$          call gfsc_buildConvVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rsolution, rtimestep%theta, rtimestep%dStep,&
-!!$              (ite .eq. 0), rres,&
-!!$              rproblemLevel%Rafcstab(convectionAFC),&
-!!$              rproblemLevel%Rmatrix(consistentMassMatrix))
-!!$        else
-!!$          call gfsc_buildConvVectorFCT(&
-!!$              rproblemLevel%Rmatrix(lumpedMassMatrix),&
-!!$              rsolution, rtimestep%theta, rtimestep%dStep,&
-!!$              (ite .eq. 0), rres,&
-!!$              rproblemLevel%Rafcstab(convectionAFC))
-!!$        end if
-
-
       case (AFCSTAB_FEMTVD)
-        call gfsc_buildConvVectorTVD(&
+        call gfsc_buildConvectionVectorTVD(&
             rsolution, rtimestep%dStep, rres,&
             rproblemLevel%Rafcstab(convectionAFC))
 
@@ -3356,13 +3364,13 @@ contains
 
         ! Should we apply consistent mass antidiffusion?
         if (imassantidiffusiontype .eq. MASS_CONSISTENT) then
-          call gfsc_buildConvVectorGP(&
+          call gfsc_buildConvectionVectorGP(&
               rproblemLevel%Rmatrix(consistentMassMatrix),&
               rsolution, rsolution0,&
               rtimestep%theta, rtimestep%dStep, rres,&
               rproblemLevel%Rafcstab(convectionAFC))
         else
-          call gfsc_buildConvVectorTVD(&
+          call gfsc_buildConvectionVectorTVD(&
               rsolution, rtimestep%dStep, rres,&
               rproblemLevel%Rafcstab(convectionAFC))
         end if
@@ -3386,7 +3394,7 @@ contains
       select case(rproblemLevel%Rafcstab(diffusionAFC)%ctypeAFCstabilisation)
 
       case (AFCSTAB_SYMMETRIC)
-        call gfsc_buildConvVectorSymm(&
+        call gfsc_buildConvectionVectorSymm(&
             rsolution, 1.0_DP, rres,&
             rproblemLevel%Rafcstab(diffusionAFC))
       end select
@@ -3849,14 +3857,14 @@ contains
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrSTBurgersP2d,&
+            dtime, dscale, transp_coeffVecBdrSTBurgersP2d_sim,&
             rvectorScalar, rcollection)
 
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrSTBuckLevP2d,&
+            dtime, dscale, transp_coeffVecBdrSTBuckLevP2d_sim,&
             rvectorScalar, rcollection)
 
 
@@ -3868,7 +3876,7 @@ contains
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrBurgersP2d,&
+            dtime, dscale, transp_coeffVecBdrBurgersP2d_sim,&
             rvectorScalar, rcollection)
 
 
@@ -4230,7 +4238,7 @@ contains
     end if
 
     ! Apply linearised FEM-FCT correction
-    call gfsc_buildConvVectorFCT(&
+    call gfsc_buildConvectionVectorFCT(&
         rproblemLevel%Rmatrix(lumpedMassMatrix),&
         rproblemLevel%Rafcstab(convectionAFC),&
         rsolution, rtimestep%dStep, .false.,&
