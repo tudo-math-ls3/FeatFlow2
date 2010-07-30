@@ -1784,7 +1784,7 @@ contains
         rcollection%SquickAccess(1) = ssectionName
         
         ! Apply flux correction to solution profile
-        call gfsc_buildConvVectorFCT(p_rlumpedMassMatrix,&
+        call gfsc_buildConvectionVectorFCT(p_rlumpedMassMatrix,&
             rafcstab, rvector, 1._DP, .false.,&
             AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 

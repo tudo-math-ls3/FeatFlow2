@@ -85,20 +85,20 @@
 !# 5.) gfsc_buildDiffusionOperator = gfsc_buildDiffusionOperator
 !#     -> Assembles the diffusive part of the transport operator
 !#
-!# 6.) gfsc_buildConvVectorFCT = gfsc_buildConvVecFCTScalar /
-!#                               gfsc_buildConvVecFCTBlock
+!# 6.) gfsc_buildConvectionVectorFCT = gfsc_buildConvVecFCTScalar /
+!#                                     gfsc_buildConvVecFCTBlock
 !#     -> Assembles the convective vector for AFC stabilisation of FCT type
 !#
-!# 7.) gfsc_buildConvVectorTVD = gfsc_buildConvVecTVDScalar /
-!#                               gfsc_buildConvVecTVDBlock
+!# 7.) gfsc_buildConvectionVectorTVD = gfsc_buildConvVecTVDScalar /
+!#                                     gfsc_buildConvVecTVDBlock
 !#     -> Assembles the convective vector for AFC stabilisation of TVD type
 !#
-!# 8.) gfsc_buildConvVectorGP = gfsc_buildConvVecGPScalar /
-!#                              gfsc_buildConvVecGPBlock
+!# 8.) gfsc_buildConvectionVectorGP = gfsc_buildConvVecGPScalar /
+!#                                    gfsc_buildConvVecGPBlock
 !#     -> Assembles the convective vector for AFC stabilisation of general-purpose type
 !#
-!# 9.) gfsc_buildConvVectorSymm = gfsc_buildConvVecSymmScalar /
-!#                                gfsc_buildConvVecSymmBlock
+!# 9.) gfsc_buildConvectionVectorSymm = gfsc_buildConvVecSymmScalar /
+!#                                      gfsc_buildConvVecSymmBlock
 !#     -> Assembles the convective vector for stabilisation by means of
 !#        symmetric flux limiting for diffusion operators
 !#
@@ -174,10 +174,10 @@ module groupfemscalar
   public :: gfsc_isVectorCompatible
   public :: gfsc_buildConvectionOperator
   public :: gfsc_buildDiffusionOperator
-  public :: gfsc_buildConvVectorFCT
-  public :: gfsc_buildConvVectorTVD
-  public :: gfsc_buildConvVectorGP
-  public :: gfsc_buildConvVectorSymm
+  public :: gfsc_buildConvectionVectorFCT
+  public :: gfsc_buildConvectionVectorTVD
+  public :: gfsc_buildConvectionVectorGP
+  public :: gfsc_buildConvectionVectorSymm
   public :: gfsc_buildConvectionJacobian
   public :: gfsc_buildJacobianFCT
   public :: gfsc_buildJacobianTVD
@@ -216,22 +216,22 @@ module groupfemscalar
     module procedure gfsc_buildConvOperatorBlock
   end interface
 
-  interface gfsc_buildConvVectorFCT
+  interface gfsc_buildConvectionVectorFCT
     module procedure gfsc_buildConvVecFCTScalar
     module procedure gfsc_buildConvVecFCTBlock
   end interface
 
-  interface gfsc_buildConvVectorTVD
+  interface gfsc_buildConvectionVectorTVD
     module procedure gfsc_buildConvVecTVDScalar
     module procedure gfsc_buildConvVecTVDBlock
   end interface
 
-  interface gfsc_buildConvVectorGP
+  interface gfsc_buildConvectionVectorGP
     module procedure gfsc_buildConvVecGPScalar
     module procedure gfsc_buildConvVecGPBlock
   end interface
 
-  interface gfsc_buildConvVectorSymm
+  interface gfsc_buildConvectionVectorSymm
     module procedure gfsc_buildConvVecSymmScalar
     module procedure gfsc_buildConvVecSymmBlock
   end interface

@@ -1187,7 +1187,7 @@ contains
             euler_getVariable, Rsolution(1), p_rpredictorEuler)
 
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1208,7 +1208,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1222,7 +1222,7 @@ contains
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(1), rcollection)
       
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1256,7 +1256,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1276,7 +1276,7 @@ contains
           rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
       
       ! Compute linearised FEM-FCT correction (without initialisation)
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_INITALPHA-AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1306,7 +1306,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1316,7 +1316,7 @@ contains
     case (3)   ! Transport first, Euler second
       
       ! Compute linearised FEM-FCT correction      
-      call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+      call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
           rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
           rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
           AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1357,7 +1357,7 @@ contains
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(1), rcollection)
         
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1402,7 +1402,7 @@ contains
             rproblemLevel%Rafcstab(convectionAFC), AFCSTAB_DUP_EDGELIMITER)
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_CORRECT+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))
@@ -1414,7 +1414,7 @@ contains
       if (nfailsafe .gt. 0) then
 
         ! Compute linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD-&
             AFCSTAB_FCTALGO_CORRECT, Rsolution(2))
@@ -1438,7 +1438,7 @@ contains
       else
         
         ! Apply linearised FEM-FCT correction
-        call gfsc_buildConvVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
+        call gfsc_buildConvectionVectorFCT(rproblemLevel%Rmatrix(lumpedMassMatrix),&
             rproblemLevel%Rafcstab(convectionAFC), Rsolution(2),&
             rtimestep%dStep, .false., AFCSTAB_FCTALGO_STANDARD+&
             AFCSTAB_FCTALGO_SCALEBYMASS, Rsolution(2))

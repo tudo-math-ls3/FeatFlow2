@@ -1117,7 +1117,7 @@ contains
         0.0_DP, 0.0_DP, 1.0_DP, .true., rmatrixMass)
 
     ! Apply flux correction to improve the low-order L2-projection
-    call gfsc_buildConvVectorFCT(p_rmatrixMassLumped, rafcstab, rvector, 1._DP,&
+    call gfsc_buildConvectionVectorFCT(p_rmatrixMassLumped, rafcstab, rvector, 1._DP,&
         .false., AFCSTAB_FCTALGO_STANDARD+AFCSTAB_FCTALGO_SCALEBYMASS, rvector)
 
     ! Release stabilisation structure
