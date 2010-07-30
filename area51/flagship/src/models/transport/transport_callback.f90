@@ -747,7 +747,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBurgersP2d,&
+            transp_coeffMatBdrSTBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -789,7 +789,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBuckLevP2d,&
+            transp_coeffMatBdrSTBuckLevP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -868,7 +868,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrBurgersP2d,&
+            transp_coeffMatBdrBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1514,7 +1514,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBurgersP2d,&
+            transp_coeffMatBdrSTBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1530,7 +1530,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrSTBuckLevP2d,&
+            transp_coeffMatBdrSTBuckLevP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -1557,7 +1557,7 @@ contains
         ! Evaluate bilinear form for boundary integral (if any)
         call transp_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
             rtimestep%dTime, 1.0_DP,&
-            transp_coeffMatBdrBurgersP2d,&
+            transp_coeffMatBdrBurgersP2d_sim,&
             rproblemLevel%Rmatrix(transportMatrix),&
             rcollection, BILF_MATC_LUMPED)
 
@@ -3879,14 +3879,14 @@ contains
       case (VELOCITY_BURGERS_SPACETIME)
         ! nonlinear Burgers` equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrSTBurgersP2d,&
+            dtime, dscale, transp_coeffVecBdrSTBurgersP2d_sim,&
             rvectorScalar, rcollection)
 
 
       case (VELOCITY_BUCKLEV_SPACETIME)
         ! nonlinear Buckley-Leverett equation in space-time
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrSTBuckLevP2d,&
+            dtime, dscale, transp_coeffVecBdrSTBuckLevP2d_sim,&
             rvectorScalar, rcollection)
 
 
@@ -3898,7 +3898,7 @@ contains
       case (VELOCITY_BURGERS2D)
         ! nonlinear Burgers` equation in 2D
         call transp_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
-            dtime, dscale, transp_coeffVecBdrBurgersP2d,&
+            dtime, dscale, transp_coeffVecBdrBurgersP2d_sim,&
             rvectorScalar, rcollection)
 
 

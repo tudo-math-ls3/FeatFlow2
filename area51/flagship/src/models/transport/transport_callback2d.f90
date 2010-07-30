@@ -15,16 +15,16 @@
 !# 2.) transp_hadaptCallback2d
 !#     -> Performs application specific tasks in the adaptation algorithm in 2D
 !#
-!# 3.) transp_refFuncBdrInt2d
+!# 3.) transp_refFuncBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the target functional for goal-oriented error estimation
 !#
-!# 4.) transp_errorBdrInt2d
+!# 4.) transp_errorBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the boundary integral
 !#        of the error in the target functional for goal-oriented
 !#        error estimation
 !#
-!# 5.) transp_weightFuncBdrInt2d
+!# 5.) transp_weightFuncBdrInt2d_sim
 !#     -> Callback routine for the evaluation of the weights in
 !#        the boundary integral of the target functional for
 !#        goal-oriented error estimation
@@ -78,11 +78,11 @@
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrSTBurgersP2d
+!# 4.) transp_coeffVecBdrSTBurgersP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrSTBurgersP2d
+!# 5.) transp_coeffMatBdrSTBurgersP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -91,24 +91,24 @@
 !# The following routines for the Buckley-Leverett equation in
 !# space-time are available:
 !#
-!# 1.) transp_calcMatDiagBuckLevP2d_sim
+!# 1.) transp_calcMatDiagSTBuckLevP2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 2.) transp_calcMatGalBuckLevP2d_sim
+!# 2.) transp_calcMatGalSTBuckLevP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatUpwBuckLevP2d_sim
+!# 3.) transp_calcMatUpwSTBuckLevP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrBuckLevP2d
+!# 4.) transp_coeffVecBdrSTBuckLevP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBuckLevP2d
+!# 5.) transp_coeffMatBdrSTBuckLevP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -129,11 +129,11 @@
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrBurgersP2d
+!# 4.) transp_coeffVecBdrBurgersP2d_sim
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBurgersP2d
+!# 5.) transp_coeffMatBdrBurgersP2d_sim
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -159,9 +159,9 @@ module transport_callback2d
 
   public :: transp_setVariable2d
   public :: transp_hadaptCallback2d
-  public :: transp_refFuncBdrInt2d
-  public :: transp_errorBdrInt2d
-  public :: transp_weightFuncBdrInt2d
+  public :: transp_refFuncBdrInt2d_sim
+  public :: transp_errorBdrInt2d_sim
+  public :: transp_weightFuncBdrInt2d_sim
 
   public :: transp_calcMatDiagConvP2d_sim
   public :: transp_calcMatGalConvP2d_sim
@@ -178,20 +178,20 @@ module transport_callback2d
   public :: transp_calcMatDiagSTBurgersP2d_sim
   public :: transp_calcMatGalSTBurgersP2d_sim
   public :: transp_calcMatUpwSTBurgersP2d_sim
-  public :: transp_coeffMatBdrSTBurgersP2d
-  public :: transp_coeffVecBdrSTBurgersP2d
+  public :: transp_coeffMatBdrSTBurgersP2d_sim
+  public :: transp_coeffVecBdrSTBurgersP2d_sim
   
   public :: transp_calcMatDiagSTBuckLevP2d_sim
   public :: transp_calcMatGalSTBuckLevP2d_sim
   public :: transp_calcMatUpwSTBuckLevP2d_sim
-  public :: transp_coeffMatBdrSTBuckLevP2d
-  public :: transp_coeffVecBdrSTBuckLevP2d
+  public :: transp_coeffMatBdrSTBuckLevP2d_sim
+  public :: transp_coeffVecBdrSTBuckLevP2d_sim
 
   public :: transp_calcMatDiagBurgersP2d_sim
   public :: transp_calcMatGalBurgersP2d_sim
   public :: transp_calcMatUpwBurgersP2d_sim
-  public :: transp_coeffMatBdrBurgersP2d
-  public :: transp_coeffVecBdrBurgersP2d
+  public :: transp_coeffMatBdrBurgersP2d_sim
+  public :: transp_coeffVecBdrBurgersP2d_sim
 
 !<globals>
 
@@ -364,7 +364,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_refFuncBdrInt2d(cderivative, rdiscretisation,&
+  subroutine transp_refFuncBdrInt2d_sim(cderivative, rdiscretisation,&
       DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
       rcollection)
 
@@ -559,13 +559,13 @@ contains
     ! Free temporal memory
     deallocate(Dcoefficients)
 
-  end subroutine transp_refFuncBdrInt2d
+  end subroutine transp_refFuncBdrInt2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_errorBdrInt2d(cderivative, rdiscretisation,&
+  subroutine transp_errorBdrInt2d_sim(cderivative, rdiscretisation,&
       DpointsRef, Dpoints, ibct, DpointPar, Ielements, Dvalues,&
       rcollection)
 
@@ -783,13 +783,13 @@ contains
     ! Free temporal memory
     deallocate(Dcoefficients)
 
-  end subroutine transp_errorBdrInt2d
+  end subroutine transp_errorBdrInt2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_weightFuncBdrInt2d(rdiscretisation, DpointsRef,&
+  subroutine transp_weightFuncBdrInt2d_sim(rdiscretisation, DpointsRef,&
       Dpoints, ibct, DpointPar, Ielements, Dvalues, rcollection)
 
     use basicgeometry
@@ -900,7 +900,7 @@ contains
       end do
     end do
 
-  end subroutine transp_weightFuncBdrInt2d
+  end subroutine transp_weightFuncBdrInt2d_sim
 
   !*****************************************************************************
   
@@ -2337,7 +2337,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrSTBurgersP2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBurgersP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2427,13 +2427,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrSTBurgersP2d
+  end subroutine transp_coeffVecBdrSTBurgersP2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrSTBurgersP2d(&
+  subroutine transp_coeffMatBdrSTBurgersP2d_sim(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -2529,7 +2529,7 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrSTBurgersP2d
+  end subroutine transp_coeffMatBdrSTBurgersP2d_sim
 
   !*****************************************************************************
   
@@ -2720,7 +2720,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrSTBuckLevP2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrSTBuckLevP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -2810,13 +2810,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrSTBuckLevP2d
+  end subroutine transp_coeffVecBdrSTBuckLevP2d_sim
 
     !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrSTBuckLevP2d(&
+  subroutine transp_coeffMatBdrSTBuckLevP2d_sim(&
       rdiscretisationTrial, rdiscretisationTest, rform, nelements,&
       npointsPerElement, Dpoints, ibct, DpointPar, IdofsTrial,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
@@ -2912,7 +2912,7 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrSTBuckLevP2d
+  end subroutine transp_coeffMatBdrSTBuckLevP2d_sim
 
   !*****************************************************************************
   
@@ -3082,7 +3082,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrBurgersP2d(rdiscretisation,&
+  subroutine transp_coeffVecBdrBurgersP2d_sim(rdiscretisation,&
       rform, nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -3172,13 +3172,13 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffVecBdrBurgersP2d
+  end subroutine transp_coeffVecBdrBurgersP2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrBurgersP2d( rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrBurgersP2d_sim( rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -3274,6 +3274,6 @@ contains
     print *, "Weak boundary conditions are not available yet"
     stop
 
-  end subroutine transp_coeffMatBdrBurgersP2d
+  end subroutine transp_coeffMatBdrBurgersP2d_sim
 
 end module transport_callback2d
