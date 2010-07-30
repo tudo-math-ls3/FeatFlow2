@@ -24,7 +24,7 @@
 !#         which prints the stack trace to the terminal on some compilers.
 !#
 !#  3.) sys_version
-!#      -> Get kernal version number
+!#      -> Get kernel version number
 !#
 !#  4.) sys_throwFPE
 !#      -> Throw a floating point exception
