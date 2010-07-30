@@ -41,42 +41,24 @@
 !# 2.) transp_calcMatGalConvP2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (primal formulation)
-!4
-!# 3.) transp_calcMatGalConvectionP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        for linear convection in 2D (primal formulation)
 !#
-!# 4.) transp_calcMatUpwConvP2d_sim
+!# 3.) transp_calcMatUpwConvP2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for linear convection in 2D (primal formulation)
 !#
-!# 5.) transp_calcMatUpwConvectionP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        and applies scalar artificial diffusion (discrete upwinding)
-!#        for linear convection in 2D (primal formulation)
-!#
-!# 6.) transp_calcMatDiagConvD2d_sim
+!# 4.) transp_calcMatDiagConvD2d_sim
 !#     -> Calculates the diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
 !#
-!# 7.) transp_calcMatGalConvD2d_sim
+!# 5.) transp_calcMatGalConvD2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        for linear convection in 2D (dual formulation)
-!4
-!# 8.) transp_calcMatGalConvectionD2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        for linear convection in 2D (dual formulation)
 !#
-!# 9.) transp_calcMatUpwConvD2d_sim
+!# 6.) transp_calcMatUpwConvD2d_sim
 !#     -> Calculates the off-diagonal Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for linear convection in 2D (dual formulation)
-!#
-!# 10.) transp_calcMatUpwConvectionD2d
-!#      -> Calculates the Galerkin transport coefficients
-!#         and applies scalar artificial diffusion (discrete upwinding)
-!#         for linear convection in 2D (dual formulation)
 !#
 !#
 !# ****************************************************************************
@@ -91,26 +73,17 @@
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatGalSTBurgersP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        for Burger`s equation in 2D (primal formulation)
-!#
-!# 4.) transp_calcMatUpwSTBurgersP2d_sim
+!# 3.) transp_calcMatUpwSTBurgersP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 5.) transp_calcMatUpwSTBurgersP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        and applies scalar artificial diffusion (discrete upwinding)
-!#        for Burger`s equation in 2D (primal formulation)
-!#
-!# 6.) transp_coeffVecBdrSTBuckLevP2d
+!# 4.) transp_coeffVecBdrSTBurgersP2d
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 7.) transp_coeffMatBdrSTBurgersP2d
-!#     -> Calculates the coefficients for the bilinear form 
+!# 5.) transp_coeffMatBdrSTBurgersP2d
+!#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
 !# ****************************************************************************
@@ -126,25 +99,16 @@
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatGalBuckLevP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        for Buckley-Leverett equation in 2D (primal formulation)
-!#
-!# 4.) transp_calcMatUpwBuckLevP2d_sim
+!# 3.) transp_calcMatUpwBuckLevP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 5.) transp_calcMatUpwBuckLevP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        and applies scalar artificial diffusion (discrete upwinding)
-!#        for Buckley-Leverett equation in 2D (primal formulation)
-!#
-!# 6.) transp_coeffVecBdrSTBuckLevP2d
+!# 4.) transp_coeffVecBdrBuckLevP2d
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 7.) transp_coeffMatBdrSTBuckLevP2d
+!# 5.) transp_coeffMatBdrBuckLevP2d
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -160,25 +124,16 @@
 !#     -> Calculates the Galerkin transport coefficients
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_calcMatGalBurgersP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        for Burger`s equation in 2D (primal formulation)
-!#
-!# 4.) transp_calcMatUpwBurgersP2d_sim
+!# 3.) transp_calcMatUpwBurgersP2d_sim
 !#     -> Calculates the Galerkin transport coefficients
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 5.) transp_calcMatUpwBurgersP2d
-!#     -> Calculates the Galerkin transport coefficients
-!#        and applies scalar artificial diffusion (discrete upwinding)
-!#        for Burger`s equation in 2D (primal formulation)
-!#
-!# 6.) transp_coeffVecBdrBurgersP2d
+!# 4.) transp_coeffVecBdrBurgersP2d
 !#      -> Calculates the coefficients for the linear form
 !#         in 2D (primal formulation)
 !#
-!# 7.) transp_coeffMatBdrBurgersP2d
+!# 5.) transp_coeffMatBdrBurgersP2d
 !#     -> Calculates the coefficients for the bilinear form
 !#        in 2D (primal formulation)
 !#
@@ -209,41 +164,31 @@ module transport_callback2d
   public :: transp_weightFuncBdrInt2d
 
   public :: transp_calcMatDiagConvP2d_sim
-  public :: transp_calcMatGalConvectionP2d
   public :: transp_calcMatGalConvP2d_sim
-  public :: transp_calcMatUpwConvectionP2d
   public :: transp_calcMatUpwConvP2d_sim
   public :: transp_coeffMatBdrConvectionP2d
   public :: transp_coeffVecBdrConvectionP2d
 
   public :: transp_calcMatDiagConvD2d_sim
-  public :: transp_calcMatGalConvectionD2d
   public :: transp_calcMatGalConvD2d_sim
-  public :: transp_calcMatUpwConvectionD2d
   public :: transp_calcMatUpwConvD2d_sim
   public :: transp_coeffMatBdrConvectionD2d
   public :: transp_coeffVecBdrConvectionD2d
 
   public :: transp_calcMatDiagSTBurgersP2d_sim
-  public :: transp_calcMatGalSTBurgersP2d
   public :: transp_calcMatGalSTBurgersP2d_sim
-  public :: transp_calcMatUpwSTBurgersP2d
   public :: transp_calcMatUpwSTBurgersP2d_sim
   public :: transp_coeffMatBdrSTBurgersP2d
   public :: transp_coeffVecBdrSTBurgersP2d
   
   public :: transp_calcMatDiagSTBuckLevP2d_sim
-  public :: transp_calcMatGalSTBuckLevP2d
   public :: transp_calcMatGalSTBuckLevP2d_sim
-  public :: transp_calcMatUpwSTBuckLevP2d
   public :: transp_calcMatUpwSTBuckLevP2d_sim
   public :: transp_coeffMatBdrSTBuckLevP2d
   public :: transp_coeffVecBdrSTBuckLevP2d
 
   public :: transp_calcMatDiagBurgersP2d_sim
-  public :: transp_calcMatGalBurgersP2d
   public :: transp_calcMatGalBurgersP2d_sim
-  public :: transp_calcMatUpwBurgersP2d
   public :: transp_calcMatUpwBurgersP2d_sim
   public :: transp_coeffMatBdrBurgersP2d
   public :: transp_coeffVecBdrBurgersP2d
@@ -1072,49 +1017,7 @@ contains
     end do
 
   end subroutine transp_calcMatGalConvP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatGalConvectionP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij,k_ji,d_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
-
-    ! Compute convective coefficients
-    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
-    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
-
-    ! Set artificial diffusion to zero
-    d_ij = 0.0_DP
-
-  end subroutine transp_calcMatGalConvectionP2d
-
+ 
   !*****************************************************************************
   
 !<subroutine>
@@ -1177,50 +1080,7 @@ contains
     end do
 
   end subroutine transp_calcMatUpwConvP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatUpwConvectionP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij,k_ji,d_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
-
-    ! Compute convective coefficients
-    k_ij = -p_Dvariable1(j)*C_ij(1)-p_Dvariable2(j)*C_ij(2)
-    k_ji = -p_Dvariable1(i)*C_ji(1)-p_Dvariable2(i)*C_ji(2)
-
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-  end subroutine transp_calcMatUpwConvectionP2d
-
+ 
   !*****************************************************************************
   
 !<subroutine>
@@ -1336,46 +1196,7 @@ contains
     end do
     
   end subroutine transp_calcMatGalConvD2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatGalConvectionD2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij,k_ji,d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
-    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
-
-    ! Set artificial diffusion to zero
-    d_ij = 0.0_DP
-
-  end subroutine transp_calcMatGalConvectionD2d
-
+  
   !*****************************************************************************
   
 !<subroutine>
@@ -1438,46 +1259,6 @@ contains
     end do
 
   end subroutine transp_calcMatUpwConvD2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatUpwConvectionD2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the
-    ! form $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij,k_ji,d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = p_Dvariable1(j)*C_ij(1)+p_Dvariable2(j)*C_ij(2)
-    k_ji = p_Dvariable1(i)*C_ji(1)+p_Dvariable2(i)*C_ji(2)
-
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-  end subroutine transp_calcMatUpwConvectionD2d
 
   ! ***************************************************************************
 
@@ -1609,8 +1390,8 @@ contains
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
-          p_rvelocity%RvectorBlock(1), Dpoints, rdomainIntSubset&
-          %p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+          p_rvelocity%RvectorBlock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
       call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
@@ -2489,46 +2270,6 @@ contains
     end do
 
   end subroutine transp_calcMatGalSTBurgersP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatGalSTBurgersP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
-    ! whereby the flux function is given by $f(u)=0.5*u^2$.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
-    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
-
-    ! Set artificial diffusion to zero
-    d_ij = 0.0_DP
-
-  end subroutine transp_calcMatGalSTBurgersP2d
   
   !*****************************************************************************
   
@@ -2591,47 +2332,6 @@ contains
     end do
 
   end subroutine transp_calcMatUpwSTBurgersP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatUpwSTBurgersP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
-    ! whereby the flux function is given by $f(u)=0.5*u^2$.  
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = -0.5_DP*(u_i+u_j)*C_ij(1)-C_ij(2)
-    k_ji = -0.5_DP*(u_i+u_j)*C_ji(1)-C_ji(2)
-
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-  end subroutine transp_calcMatUpwSTBurgersP2d
 
   ! ***************************************************************************
 
@@ -2952,56 +2652,6 @@ contains
   end subroutine transp_calcMatGalSTBuckLevP2d_sim
 
   !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatGalSTBuckLevP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
-    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
-    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: v_i,v_j
-
-    ! Compute velocities
-    v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
-    v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
-
-    ! Compute convective coefficients
-    k_ij = -v_j*C_ij(1)-C_ij(2)
-    k_ji = -v_i*C_ji(1)-C_ji(2)
-
-    ! Set artificial diffusion to zero
-    d_ij = 0.0_DP
-
-  end subroutine transp_calcMatGalSTBuckLevP2d
-
-  !*****************************************************************************
   
 !<subroutine>
 
@@ -3065,57 +2715,6 @@ contains
     end do
     
   end subroutine transp_calcMatUpwSTBuckLevP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatUpwSTBuckLevP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
-    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
-    !
-    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
-    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! local variables
-    real(DP) :: v_i,v_j
-
-    ! Compute velocities
-    v_i = 4*u_i*(1-u_i)/(3*u_i*u_i-2*u_i+1)**2
-    v_j = 4*u_j*(1-u_j)/(3*u_j*u_j-2*u_j+1)**2
-
-    ! Compute convective coefficients
-    k_ij = -v_j*C_ij(1)-C_ij(2)
-    k_ji = -v_i*C_ji(1)-C_ji(2)
-
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-  end subroutine transp_calcMatUpwSTBuckLevP2d
 
   ! ***************************************************************************
 
@@ -3422,44 +3021,6 @@ contains
   end subroutine transp_calcMatGalBurgersP2d_sim
 
   !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatGalBurgersP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the primal Burgers` equation in 2D.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
-    k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
-
-    ! Set artificial diffusion to zero
-    d_ij = 0.0_DP
-
-  end subroutine transp_calcMatGalBurgersP2d
-
-  !*****************************************************************************
   
 !<subroutine>
 
@@ -3516,45 +3077,6 @@ contains
     end do
 
   end subroutine transp_calcMatUpwBurgersP2d_sim
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine transp_calcMatUpwBurgersP2d(&
-      u_i, u_j, C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-!<description>
-    ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for the primal Burgers` equation in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
-!</description>
-
-!<input>
-    ! solution vector
-    real(DP), intent(in) :: u_i, u_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij, C_ji
-
-    ! nodal indices
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! convective coefficients
-    real(DP), intent(out) :: k_ij, k_ji, d_ij
-!</output>
-!</subroutine>
-
-    ! Compute convective coefficients
-    k_ij = -0.5_DP*(u_i+u_j)*(C_ij(1)+C_ij(2))
-    k_ji = -0.5_DP*(u_i+u_j)*(C_ji(1)+C_ji(2))
-
-    ! Compute artificial diffusion coefficient
-    d_ij = max(-k_ij, 0.0_DP, -k_ji)
-
-  end subroutine transp_calcMatUpwBurgersP2d
 
   ! ***************************************************************************
 

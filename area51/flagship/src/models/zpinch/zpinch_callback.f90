@@ -462,8 +462,8 @@ contains
           ! Compute the Jacobian matrix in interleaved format
           call transp_calcJacobianThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -472,8 +472,8 @@ contains
           ! Compute the Jacobian matrix in block format
           call transp_calcJacobianThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 

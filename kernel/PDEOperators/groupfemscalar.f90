@@ -3646,8 +3646,8 @@ contains
 
     else
 
-      call gfsc_buildConvVecSymmScalar(rx%RvectorBlock(1),&
-          dscale, ry%RvectorBlock(1), rafcstab)
+      call gfsc_buildConvVecSymmScalar(&
+          rx%RvectorBlock(1), dscale, ry%RvectorBlock(1), rafcstab)
 
     end if
   end subroutine gfsc_buildConvVecSymmBlock
@@ -3814,8 +3814,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix, hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix)
+  subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx, fcb_calcMatrix_sim,&
+      hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -3855,6 +3855,9 @@ contains
 !<inputoutput>
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -3867,9 +3870,9 @@ contains
 
     else
       
-      call gfsc_buildConvJacobianScalar(RcoeffMatrices,&
-          rx%RvectorBlock(1), fcb_calcMatrix, hstep, dscale,&
-          bbuildStabilisation, bclear, rjacobianMatrix)
+      call gfsc_buildConvJacobianScalar(&
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim, hstep,&
+          dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
       
     end if
 
@@ -3879,8 +3882,8 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix, hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix)
+  subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx, fcb_calcMatrix_sim,&
+      hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -3917,6 +3920,9 @@ contains
 !<inputoutput>
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -4132,16 +4138,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients k_ij and k_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4160,16 +4166,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4258,16 +4264,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients k_ij and k_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij ,k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4286,16 +4292,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4385,16 +4391,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients k_ij and k_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients k_ij and k_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4413,16 +4419,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4511,16 +4517,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4539,16 +4545,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4638,16 +4644,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4666,16 +4672,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4766,16 +4772,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+k_ji)/2._DP
@@ -4794,16 +4800,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = k_ij; a_ji = k_ji
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+k_ij)/2._DP
@@ -4891,16 +4897,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -4919,16 +4925,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -5017,16 +5023,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -5045,16 +5051,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -5144,16 +5150,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -5172,16 +5178,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -5270,16 +5276,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -5298,16 +5304,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -5397,16 +5403,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -5425,16 +5431,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij = (a_ij+l_ij+d_ij)/2._DP
@@ -5525,16 +5531,16 @@ contains
 
           ! (1) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_I
           
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_I" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients
           b_ji = (a_ji+l_ji+d_ij)/2._DP
@@ -5553,16 +5559,16 @@ contains
           
           ! (2) Update Jac(II,IJ,JI,JJ) for perturbation +/-h*e_J
 
-          ! Compute perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply perturbed coefficient to a_ij and a_ji
           a_ij = l_ij+d_ij; a_ji = l_ji+d_ij
           
-          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
-          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$          ! Compute "-h*e_J" perturbed coefficients l_ij and l_ji
+!!$          call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$              C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
           
           ! Apply the average of the perturbed coefficients for J=K
           b_ij =(a_ij+l_ij+d_ij)/2._DP
@@ -5640,9 +5646,9 @@ contains
 
     else
 
-      call gfsc_buildJacLinearFCTScalar(rx%RvectorBlock(1),&
-          theta, tstep, hstep, bclear, rafcstab,&
-          rjacobianMatrix, rconsistentMassMatrix)
+      call gfsc_buildJacLinearFCTScalar(&
+          rx%RvectorBlock(1), theta, tstep, hstep, bclear,&
+          rafcstab, rjacobianMatrix, rconsistentMassMatrix)
 
     end if
   end subroutine gfsc_buildJacLinearFCTBlock
@@ -7372,8 +7378,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianFCTBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, rconsistentMassMatrix)
+      fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, rconsistentMassMatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -7419,6 +7425,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -7431,9 +7440,9 @@ contains
     else
 
       call gfsc_buildJacobianFCTScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix, theta,&
-          tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
-          rconsistentMassMatrix)
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim,&
+          theta, tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
+          rconsistentMassMatrix, rcollection)
 
     end if
   end subroutine gfsc_buildJacobianFCTBlock
@@ -7443,8 +7452,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianFCTScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix, theta, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, rconsistentMassMatrix)
+      fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, rconsistentMassMatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -7489,6 +7498,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -7717,9 +7729,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = theta*d_ij
@@ -7733,9 +7745,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = theta*d_ij
@@ -7760,9 +7772,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = theta*d_ij
@@ -7776,9 +7788,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = theta*d_ij
@@ -7854,9 +7866,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -7870,9 +7882,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -7897,9 +7909,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -7913,9 +7925,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -7993,9 +8005,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = theta*d_ij
@@ -8009,9 +8021,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = theta*d_ij
@@ -8036,9 +8048,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = theta*d_ij
@@ -8052,9 +8064,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = theta*d_ij
@@ -8130,9 +8142,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -8146,9 +8158,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -8173,9 +8185,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -8189,9 +8201,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -8270,9 +8282,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
 
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = theta*d_ij
@@ -8286,9 +8298,9 @@ contains
         end if
 
 
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = theta*d_ij
@@ -8313,9 +8325,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
 
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = theta*d_ij
@@ -8329,9 +8341,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = theta*d_ij
@@ -8409,9 +8421,9 @@ contains
         ! Compute flux for i-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_i)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -8425,9 +8437,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)-hstep, Dx(j),&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_i)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -8452,9 +8464,9 @@ contains
         ! Compute flux for j-th column
         !------------------------------------------------------------
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)+hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient a_ij(u+hstep*e_j)
         a_ij = MC(ij)/tstep+theta*d_ij
@@ -8468,9 +8480,9 @@ contains
         end if
         
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i), Dx(j)-hstep,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Compute perturbed coefficient b_ij(u-hstep*e_j)
         b_ij = MC(ij)/tstep+theta*d_ij
@@ -8501,8 +8513,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianTVDBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity)
+      fcb_calcMatrix_sim, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -8547,6 +8559,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -8559,8 +8574,9 @@ contains
     else
 
       call gfsc_buildJacobianTVDScalar(&
-          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix, tstep,&
-          hstep, bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+          RcoeffMatrices, rx%RvectorBlock(1), fcb_calcMatrix_sim,&
+          tstep, hstep, bclear, rafcstab, rjacobianMatrix,&
+          bextendedSparsity, rcollection)
 
     end if
   end subroutine gfsc_buildJacobianTVDBlock
@@ -8570,8 +8586,8 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildJacobianTVDScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix, tstep, hstep, bclear, rafcstab,&
-      rjacobianMatrix, bextendedSparsity)
+      fcb_calcMatrix_sim, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -8614,6 +8630,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -9365,9 +9384,9 @@ contains
         ! Compute correct sign of perturbation
         dsign = 3-2*iperturb
         
-        ! Compute perturbed coefficients k_ij and k_ji
-        call fcb_calcMatrix(Dx(i)+dsign*hstep_ik, Dx(j)+dsign*hstep_jk,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed coefficients k_ij and k_ji
+!!$        call fcb_calcMatrix(Dx(i)+dsign*hstep_ik, Dx(j)+dsign*hstep_jk,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
         
         ! Apply discrete upwinding
         l_ij = l_ij+d_ij
@@ -9579,9 +9598,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianGPBlock(RcoeffMatrices,&
-      rconsistentMassMatrix, rx, rx0, fcb_calcMatrix, theta, tstep,&
-      hstep, bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+  subroutine gfsc_buildJacobianGPBlock(RcoeffMatrices, rconsistentMassMatrix,&
+      rx, rx0, fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the
@@ -9635,6 +9654,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -9649,8 +9671,8 @@ contains
       
       call gfsc_buildJacobianGPScalar(&
           RcoeffMatrices, rconsistentMassMatrix, rx%RvectorBlock(1),&
-          rx0%RvectorBlock(1), fcb_calcMatrix, theta, tstep, hstep,&
-          bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+          rx0%RvectorBlock(1), fcb_calcMatrix_sim, theta, tstep, hstep,&
+          bclear, rafcstab, rjacobianMatrix,bextendedSparsity, rcollection)
 
     end if
   end subroutine gfsc_buildJacobianGPBlock
@@ -9659,9 +9681,9 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildJacobianGPScalar(RcoeffMatrices,&
-      rconsistentMassMatrix, rx, rx0, fcb_calcMatrix, theta, tstep,&
-      hstep, bclear, rafcstab, rjacobianMatrix, bextendedSparsity)
+  subroutine gfsc_buildJacobianGPScalar(RcoeffMatrices, rconsistentMassMatrix,&
+      rx, rx0, fcb_calcMatrix_sim, theta, tstep, hstep, bclear, rafcstab,&
+      rjacobianMatrix, bextendedSparsity, rcollection)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the stabilisation
@@ -9713,6 +9735,9 @@ contains
 
     ! Jacobian matrix
     type(t_matrixScalar), intent(inout) :: rjacobianMatrix   
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -10531,9 +10556,9 @@ contains
         ! Compute correct sign of perturbation
         dsign = -2*iperturb+3
         
-        ! Compute perturbed velocity
-        call fcb_calcMatrix(Dx(i)+dsign*hstep_ik, Dx(j)+dsign*hstep_jk,&
-            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
+!!$        ! Compute perturbed velocity
+!!$        call fcb_calcMatrix(Dx(i)+dsign*hstep_ik, Dx(j)+dsign*hstep_jk,&
+!!$            C_ij, C_ji, i, j, l_ij, l_ji, d_ij)
 
         ! Perform discrete upwinding
         l_ij = l_ij+d_ij
