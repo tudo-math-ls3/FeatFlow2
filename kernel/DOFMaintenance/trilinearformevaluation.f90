@@ -57,7 +57,11 @@ module trilinearformevaluation
 !<constantblock description="Constants defining the blocking of the assembly">
 
   ! Number of elements to handle simultaneously when building matrices
+#ifdef TRILF_NELEMSIM
+  integer, parameter, public :: TRILF_NELEMSIM   = TRILF_NELEMSIM
+#else
   integer, parameter, public :: TRILF_NELEMSIM   = 1000
+#endif
   
 !</constantblock>
 !</constants>

@@ -25,7 +25,11 @@ public :: t_ufciData
 !<constantblock description="General parameters">
 
   ! Maximum number of functions which may be evaluated simultaneously
+#ifdef UFCI_MAX_SIM
+  integer, parameter, public :: UFCI_MAX_SIM                    = UFCI_MAX_SIM
+#else
   integer, parameter, public :: UFCI_MAX_SIM                    = 32
+#endif
 
 !</constantblock>
 
