@@ -79,7 +79,7 @@
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 19.) euler_calcCharacteristics2d
+!# 19.) euler_calcCharacteristics2d_sim
 !#      -> Computes characteristic variables
 !#
 !# 20.) euler_calcFluxFCTScalarDiss2d
@@ -211,7 +211,7 @@ module euler_callback2d
   public :: euler_calcMatRoeDiss2d_sim
   public :: euler_calcMatRusDissMatD2d_sim
   public :: euler_calcMatRusDiss2d_sim
-  public :: euler_calcCharacteristics2d
+  public :: euler_calcCharacteristics2d_sim
   public :: euler_calcFluxFCTScalarDiss2d
   public :: euler_calcFluxFCTTensorDiss2d
   public :: euler_calcFluxFCTRusanov2d
@@ -289,10 +289,10 @@ contains
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
 #endif
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
-    integer :: iedge
+    integer :: idx
 
     
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -330,68 +330,68 @@ contains
       ! -------------------------------------------------------------------------
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
       
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i )
-      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i )
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
       
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij)
-      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij)
 #endif
 
     end do
@@ -449,9 +449,9 @@ contains
     ! local variables
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -460,39 +460,39 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
       
       ! Assemble symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * ((DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                            DmatrixCoeffsAtEdge(1,2,iedge))/2._DP*dF1_ij+&
-                                           (DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                            DmatrixCoeffsAtEdge(2,2,iedge))/2._DP*dF2_ij)
-      DfluxesAtEdge(:,2,iedge) = DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * ((DmatrixCoeffsAtEdge(1,1,idx)-&
+                                            DmatrixCoeffsAtEdge(1,2,idx))/2._DP*dF1_ij+&
+                                           (DmatrixCoeffsAtEdge(2,1,idx)-&
+                                            DmatrixCoeffsAtEdge(2,2,idx))/2._DP*dF2_ij)
+      DfluxesAtEdge(:,2,idx) = DfluxesAtEdge(:,1,idx)
 
     end do
 
@@ -553,10 +553,10 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux,vel,cs
-    integer :: iedge
+    integer :: idx
 
     
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -565,55 +565,55 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
 
       !-------------------------------------------------------------------------
@@ -621,15 +621,15 @@ contains
       !-------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,iedge)-&
-                  DmatrixCoeffsAtEdge(:,2,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-&
+                  DmatrixCoeffsAtEdge(:,2,idx))
       
       ! Compute Roe mean values
-      aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+      aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
       v_ij = (aux*vi+vj)/(aux+1.0_DP)
-      hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-      hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+      hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+      hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
       
       ! Compute auxiliary variables
@@ -642,7 +642,7 @@ contains
       d_ij = abs(vel) + aux*cs
 
       ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -650,17 +650,17 @@ contains
 
 #ifdef USE_EULER_IBP
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i + Diff)
-      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij + Diff)
-      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij + Diff)
 #endif
 
     end do
@@ -724,10 +724,10 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux
-    integer :: iedge
+    integer :: idx
     
     
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -736,55 +736,55 @@ contains
       !-------------------------------------------------------------------------
 
    ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
       
       !-------------------------------------------------------------------------
@@ -792,15 +792,15 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,iedge)-&
-                  DmatrixCoeffsAtEdge(:,2,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-&
+                  DmatrixCoeffsAtEdge(:,2,idx))
       
       ! Compute Roe mean values
-      aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+      aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
       u_ij = (aux*ui+uj)/(aux+1.0_DP)
       v_ij = (aux*vi+vj)/(aux+1.0_DP)
-      hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-      hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+      hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+      hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
       H_ij = (aux*hi+hj)/(aux+1.0_DP)
       
       ! Compute auxiliary variable
@@ -812,7 +812,7 @@ contains
                abs(a(2)*v_ij) + abs(a(2))*aux )
 
       ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -820,17 +820,17 @@ contains
 
 #ifdef USE_EULER_IBP
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i + Diff)
-      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij + Diff)
-      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij + Diff)
 #endif
 
     end do
@@ -893,10 +893,10 @@ contains
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
     real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
-    integer :: iedge
+    integer :: idx
 
 
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -905,55 +905,55 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
 
       !-------------------------------------------------------------------------
@@ -961,8 +961,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,iedge)-&
-                  DmatrixCoeffsAtEdge(:,2,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-&
+                  DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -971,11 +971,11 @@ contains
         a = a/anorm
         
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
         ! Compute auxiliary variables
@@ -993,7 +993,7 @@ contains
         l4 = abs(aux)
         
         ! Compute solution difference U_j-U_i
-        Diff = DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge)
+        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
@@ -1017,34 +1017,34 @@ contains
 
 #ifdef USE_EULER_IBP
         ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                             DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                             DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i + Diff)
-        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                             DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                             DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                             DmatrixCoeffsAtEdge(2,1,idx)*dF2_i + Diff)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
         ! Assemble fluxes
-        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij + Diff)
-        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij + Diff)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij + Diff)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij + Diff)
 #endif
 
       else
 
 #ifdef USE_EULER_IBP
         ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                             DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                             DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i)
-        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                             DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                             DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                             DmatrixCoeffsAtEdge(2,1,idx)*dF2_i)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
         ! Assemble fluxes
-        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij)
-        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij)
 #endif
 
       end if
@@ -1111,9 +1111,9 @@ contains
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
     real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -1122,55 +1122,55 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
 
       !-------------------------------------------------------------------------
@@ -1178,8 +1178,8 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute the skew-symmetric coefficient
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,iedge)-&
-                  DmatrixCoeffsAtEdge(:,2,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,1,idx)-&
+                  DmatrixCoeffsAtEdge(:,2,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
 
       if (anorm .gt. SYS_EPSREAL) then
@@ -1188,11 +1188,11 @@ contains
         a = abs(a)
         
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
         ! Compute auxiliary variables
@@ -1214,7 +1214,7 @@ contains
         l4 = abs(u_ij)
         
         ! Compute solution difference U_j-U_i
-        Diff1 = DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge)
+        Diff1 = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff1(1)-u_ij*Diff1(2)-v_ij*Diff1(3)+Diff1(4))
@@ -1243,7 +1243,7 @@ contains
         l4 = abs(v_ij)
         
         ! Compute solution difference U_j-U_i
-        Diff2 = DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge)
+        Diff2 = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff2(1)-u_ij*Diff2(2)-v_ij*Diff2(3)+Diff2(4))
@@ -1267,19 +1267,19 @@ contains
 
 #ifdef USE_EULER_IBP
         ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                             DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                             DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i+&
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                             DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                             DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                             DmatrixCoeffsAtEdge(2,1,idx)*dF2_i+&
                                              Diff1+Diff2)
-        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
         ! Assemble fluxes
-        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij+&
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij+&
                                               Diff1+Diff2)
-        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij+&
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij+&
                                               Diff1+Diff2)
 #endif
 
@@ -1287,17 +1287,17 @@ contains
 
 #ifdef USE_EULER_IBP
         ! Assemble skew-symmetric fluxes
-        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                             DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                             DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i)
-        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                             DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                             DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                             DmatrixCoeffsAtEdge(2,1,idx)*dF2_i)
+        DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
         ! Assemble fluxes
-        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij)
-        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                              DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij)
+        DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij)
+        DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij)
 #endif
 
       end if
@@ -1360,9 +1360,9 @@ contains
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: d_ij,ci,cj,Ei,Ej
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
 
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -1371,57 +1371,57 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
 
       !---------------------------------------------------------------------------
@@ -1433,17 +1433,17 @@ contains
       cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
       
       ! Scalar dissipation for the Rusanov flux
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj+&
-                      DmatrixCoeffsAtEdge(2,1,iedge)*vj)+&
-                 sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2+&
-                      DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui+&
-                      DmatrixCoeffsAtEdge(2,2,iedge)*vi)+&
-                 sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2+&
-                      DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                      DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
+                 sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
+                      DmatrixCoeffsAtEdge(2,1,idx)**2)*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                      DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
+                 sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
+                      DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
 
       ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
 
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -1451,17 +1451,17 @@ contains
 
 #ifdef USE_EULER_IBP
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i + Diff)
-      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij + Diff)
-      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij + Diff)
 #endif
 
     end do
@@ -1523,9 +1523,9 @@ contains
     real(DP), dimension(NVAR2D) :: Diff
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: d_ij,ci,cj,Ei,Ej
-    integer :: iedge
+    integer :: idx
     
-    do iedge = 1, size(DfluxesAtEdge,3)
+    do idx = 1, size(DfluxesAtEdge,3)
       
       !-------------------------------------------------------------------------
       ! Evaluate the Galerkin fluxes
@@ -1534,57 +1534,57 @@ contains
       !-------------------------------------------------------------------------
 
       ! Compute velocities
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute auxiliary variables
-      ru2i = ui*DdataAtEdge(2,1,iedge)
-      rv2i = vi*DdataAtEdge(3,1,iedge)
-      ru2j = uj*DdataAtEdge(2,2,iedge)
-      rv2j = vj*DdataAtEdge(3,2,iedge)
+      ru2i = ui*DdataAtEdge(2,1,idx)
+      rv2i = vi*DdataAtEdge(3,1,idx)
+      ru2j = uj*DdataAtEdge(2,2,idx)
+      rv2j = vj*DdataAtEdge(3,2,idx)
 
 #ifdef USE_EULER_IBP
       ! Compute fluxes for x-direction
-      dF1_i(1) = DdataAtEdge(2,1,iedge)
-      dF1_i(2) = G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i
-      dF1_i(3) = DdataAtEdge(3,1,iedge)*ui
-      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui
+      dF1_i(1) = DdataAtEdge(2,1,idx)
+      dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
+      dF1_i(3) = DdataAtEdge(3,1,idx)*ui
+      dF1_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui
       
-      dF1_j(1) = DdataAtEdge(2,2,iedge)
-      dF1_j(2) = G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j
-      dF1_j(3) = DdataAtEdge(3,2,iedge)*uj
-      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_j(1) = DdataAtEdge(2,2,idx)
+      dF1_j(2) = G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j
+      dF1_j(3) = DdataAtEdge(3,2,idx)*uj
+      dF1_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute fluxes for y-direction
-      dF2_i(1) = DdataAtEdge(3,1,iedge)
-      dF2_i(2) = DdataAtEdge(3,1,iedge)*ui
-      dF2_i(3) = G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i
-      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi
+      dF2_i(1) = DdataAtEdge(3,1,idx)
+      dF2_i(2) = DdataAtEdge(3,1,idx)*ui
+      dF2_i(3) = G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i
+      dF2_i(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi
       
-      dF2_j(1) = DdataAtEdge(3,2,iedge)
-      dF2_j(2) = DdataAtEdge(3,2,iedge)*uj
-      dF2_j(3) = (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_j(1) = DdataAtEdge(3,2,idx)
+      dF2_j(2) = DdataAtEdge(3,2,idx)*uj
+      dF2_j(3) = (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_j(4) = (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #else
       ! Compute flux difference for x-direction
-      dF1_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
-      dF1_ij(2) = (G1*DdataAtEdge(4,1,iedge)-G14*ru2i-G2*rv2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*ru2j-G2*rv2j)
-      dF1_ij(3) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*ui-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*uj
+      dF1_ij(1) = DdataAtEdge(2,1,idx) - DdataAtEdge(2,2,idx)
+      dF1_ij(2) = (G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*ru2j-G2*rv2j)
+      dF1_ij(3) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF1_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*ui-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*uj
       
       ! Compute flux difference for y-direction
-      dF2_ij(1) = DdataAtEdge(3,1,iedge) - DdataAtEdge(3,2,iedge)
-      dF2_ij(2) = DdataAtEdge(3,1,iedge)*ui - DdataAtEdge(3,2,iedge)*uj
-      dF2_ij(3) = (G1*DdataAtEdge(4,1,iedge)-G14*rv2i-G2*ru2i)-&
-                  (G1*DdataAtEdge(4,2,iedge)-G14*rv2j-G2*ru2j)
-      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,iedge)-G2*(ru2i+rv2i))*vi-&
-                  (GAMMA*DdataAtEdge(4,2,iedge)-G2*(ru2j+rv2j))*vj
+      dF2_ij(1) = DdataAtEdge(3,1,idx) - DdataAtEdge(3,2,idx)
+      dF2_ij(2) = DdataAtEdge(3,1,idx)*ui - DdataAtEdge(3,2,idx)*uj
+      dF2_ij(3) = (G1*DdataAtEdge(4,1,idx)-G14*rv2i-G2*ru2i)-&
+                  (G1*DdataAtEdge(4,2,idx)-G14*rv2j-G2*ru2j)
+      dF2_ij(4) = (GAMMA*DdataAtEdge(4,1,idx)-G2*(ru2i+rv2i))*vi-&
+                  (GAMMA*DdataAtEdge(4,2,idx)-G2*(ru2j+rv2j))*vj
 #endif
       
       !-------------------------------------------------------------------------
@@ -1596,17 +1596,17 @@ contains
       cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
       
       ! Scalar dissipation
-      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj)+&
-                  abs(DmatrixCoeffsAtEdge(1,1,iedge))*cj,&
-                  abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui)+&
-                  abs(DmatrixCoeffsAtEdge(1,2,iedge))*ci )&
-           + max( abs(DmatrixCoeffsAtEdge(2,1,iedge)*vj)+&
-                  abs(DmatrixCoeffsAtEdge(2,1,iedge))*cj,&
-                  abs(DmatrixCoeffsAtEdge(2,2,iedge)*vi)+&
-                  abs(DmatrixCoeffsAtEdge(2,2,iedge))*ci )
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj)+&
+                  abs(DmatrixCoeffsAtEdge(1,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx)*ui)+&
+                  abs(DmatrixCoeffsAtEdge(1,2,idx))*ci )&
+           + max( abs(DmatrixCoeffsAtEdge(2,1,idx)*vj)+&
+                  abs(DmatrixCoeffsAtEdge(2,1,idx))*cj,&
+                  abs(DmatrixCoeffsAtEdge(2,2,idx)*vi)+&
+                  abs(DmatrixCoeffsAtEdge(2,2,idx))*ci )
 
       ! Multiply the solution difference by the artificial diffusion factor
-      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
+      Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
       
       !-------------------------------------------------------------------------
       ! Build both contributions into the fluxes
@@ -1614,17 +1614,17 @@ contains
 
 #ifdef USE_EULER_IBP
       ! Assemble skew-symmetric fluxes
-      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_j+&
-                                           DmatrixCoeffsAtEdge(2,2,iedge)*dF2_j-&
-                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF1_i-&
-                                           DmatrixCoeffsAtEdge(2,1,iedge)*dF2_i + Diff)
-      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+      DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
+                                           DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
+                                           DmatrixCoeffsAtEdge(1,1,idx)*dF1_i-&
+                                           DmatrixCoeffsAtEdge(2,1,idx)*dF2_i + Diff)
+      DfluxesAtEdge(:,2,idx) = -DfluxesAtEdge(:,1,idx)
 #else
       ! Assemble fluxes
-      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,1,iedge)*dF2_ij + Diff)
-      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF1_ij+&
-                                            DmatrixCoeffsAtEdge(2,2,iedge)*dF2_ij + Diff)
+      DfluxesAtEdge(:,1,idx) =  dscale * (DmatrixCoeffsAtEdge(1,1,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,1,idx)*dF2_ij + Diff)
+      DfluxesAtEdge(:,2,idx) = -dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_ij+&
+                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_ij + Diff)
 #endif
 
     end do
@@ -1811,36 +1811,36 @@ contains
   
     ! local variable
     real(DP) :: ui,uj,vi,vj
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
       
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
       
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(3,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(4,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(3,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(3,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(4,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(3,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx)))
     end do
 
   end subroutine euler_calcMatGalMatD2d_sim
@@ -1884,82 +1884,82 @@ contains
 
     ! local variable
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
       
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
       uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
       
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
       uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
       
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,iedge)+vj*DmatrixCoeffsAtEdge(2,1,iedge)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,iedge)+vi*DmatrixCoeffsAtEdge(2,2,iedge)
+      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
+      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
       
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge( 1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,2,iedge) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 3,2,iedge) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge( 4,2,iedge) = dscale * (G1*qj-GAMMA*Ej)*aux1
+      DcoefficientsAtEdge( 1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,2,idx) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                  uvj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 3,2,idx) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                  uvj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge( 4,2,idx) = dscale * (G1*qj-GAMMA*Ej)*aux1
       
-      DcoefficientsAtEdge( 5,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge( 6,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 7,2,iedge) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 8,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,iedge)-G1*uj*aux1)
+      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge( 6,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 7,2,idx) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,idx)-G1*uj*aux1)
       
-      DcoefficientsAtEdge( 9,2,iedge) = dscale * DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(10,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge(11,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(12,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,iedge)-G1*vj*aux1)
+      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(10,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge(11,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,idx)-G1*vj*aux1)
       
-      DcoefficientsAtEdge(13,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge(15,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(16,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(13,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(15,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge( 1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,3,iedge) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 3,3,iedge) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge( 4,3,iedge) = dscale * (G1*qi-GAMMA*Ei)*aux2
+      DcoefficientsAtEdge( 1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,3,idx) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                  uvi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 3,3,idx) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                  uvi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge( 4,3,idx) = dscale * (G1*qi-GAMMA*Ei)*aux2
       
-      DcoefficientsAtEdge( 5,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge( 6,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 7,3,iedge) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 8,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,iedge)-G1*ui*aux2)
+      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge( 6,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 7,3,idx) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,idx)-G1*ui*aux2)
       
-      DcoefficientsAtEdge( 9,3,iedge) = dscale * DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(10,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge(11,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(12,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,iedge)-G1*vi*aux2)
+      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(10,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge(11,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,idx)-G1*vi*aux2)
       
-      DcoefficientsAtEdge(13,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge(15,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(16,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(13,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(15,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  vi*DmatrixCoeffsAtEdge(2,2,idx)))
     end do
       
   end subroutine euler_calcMatGal2d_sim
@@ -2005,63 +2005,63 @@ contains
     ! local variable
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
 
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
       
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(3,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(4,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(3,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(3,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(4,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(3,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,iedge)-&
-                  DmatrixCoeffsAtEdge(:,1,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,idx)-&
+                  DmatrixCoeffsAtEdge(:,1,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
         
         ! Compute auxiliary variables
         q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         
         ! Compute scalar dissipation
-        DcoefficientsAtEdge(:,1,iedge) = -dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
+        DcoefficientsAtEdge(:,1,idx) = -dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
             anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
 
       end if
     end do
@@ -2110,100 +2110,100 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,aux1,aux2,hi,hj,H_ij,q_ij,u_ij,v_ij
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
       
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
       uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
       
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
       uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
       
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,iedge)+vj*DmatrixCoeffsAtEdge(2,1,iedge)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,iedge)+vi*DmatrixCoeffsAtEdge(2,2,iedge)
+      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
+      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
       
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
       
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge( 1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,2,iedge) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 3,2,iedge) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge( 4,2,iedge) = dscale * (G1*qj-GAMMA*Ej)*aux1
+      DcoefficientsAtEdge( 1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,2,idx) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                  uvj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 3,2,idx) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                  uvj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge( 4,2,idx) = dscale * (G1*qj-GAMMA*Ej)*aux1
       
-      DcoefficientsAtEdge( 5,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge( 6,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 7,2,iedge) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 8,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,iedge)-G1*uj*aux1)
+      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge( 6,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 7,2,idx) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,idx)-G1*uj*aux1)
       
-      DcoefficientsAtEdge( 9,2,iedge) = dscale * DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(10,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge(11,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(12,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,iedge)-G1*vj*aux1)
+      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(10,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge(11,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,idx)-G1*vj*aux1)
       
-      DcoefficientsAtEdge(13,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge(15,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(16,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(13,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(15,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                  vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge( 1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,3,iedge) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 3,3,iedge) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge( 4,3,iedge) = dscale * (G1*qi-GAMMA*Ei)*aux2
+      DcoefficientsAtEdge( 1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,3,idx) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                  uvi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 3,3,idx) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                  uvi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge( 4,3,idx) = dscale * (G1*qi-GAMMA*Ei)*aux2
       
-      DcoefficientsAtEdge( 5,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge( 6,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 7,3,iedge) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 8,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,iedge)-G1*ui*aux2)
+      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge( 6,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 7,3,idx) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,idx)-G1*ui*aux2)
       
-      DcoefficientsAtEdge( 9,3,iedge) = dscale * DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(10,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge(11,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(12,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,iedge)-G1*vi*aux2)
+      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(10,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge(11,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,idx)-G1*vi*aux2)
       
-      DcoefficientsAtEdge(13,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge(15,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(16,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(13,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(15,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                  vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,iedge)-&
-                  DmatrixCoeffsAtEdge(:,1,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,idx)-&
+                  DmatrixCoeffsAtEdge(:,1,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
         
         ! Compute auxiliary variables
@@ -2213,10 +2213,10 @@ contains
         aux = -dscale * (abs(a(1)*u_ij+a(2)*v_ij) +&
             anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
               
-        DcoefficientsAtEdge( 1,1,iedge) = aux
-        DcoefficientsAtEdge( 6,1,iedge) = aux
-        DcoefficientsAtEdge(11,1,iedge) = aux
-        DcoefficientsAtEdge(16,1,iedge) = aux
+        DcoefficientsAtEdge( 1,1,idx) = aux
+        DcoefficientsAtEdge( 6,1,idx) = aux
+        DcoefficientsAtEdge(11,1,idx) = aux
+        DcoefficientsAtEdge(16,1,idx) = aux
 
       end if
     end do
@@ -2266,54 +2266,54 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
     real(DP) :: l1,l2,l3,l4,anorm,c1,c2,cs,cPow2,vel
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
 
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Nullify dissipation tensor
-      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
       
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(3,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(4,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(3,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                 vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(3,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(4,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(3,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                 vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
 
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,iedge)-&
-                  DmatrixCoeffsAtEdge(:,1,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,idx)-&
+                  DmatrixCoeffsAtEdge(:,1,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
 
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
         ! Compute auxiliary values
@@ -2376,18 +2376,18 @@ contains
         anorm = -dscale*anorm
         
         ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-        DcoefficientsAtEdge(1,1,iedge) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+        DcoefficientsAtEdge(1,1,idx) = anorm*( R_ij(1,1)*L_ij(1,1)+&
             R_ij(1,2)*L_ij(2,1)+R_ij(1,3)*L_ij(3,1)+R_ij(1,4)*L_ij(4,1)  )
-        DcoefficientsAtEdge(2,1,iedge) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+        DcoefficientsAtEdge(2,1,idx) = anorm*( R_ij(2,1)*L_ij(1,2)+&
             R_ij(2,2)*L_ij(2,2)+R_ij(2,3)*L_ij(3,2)+R_ij(2,4)*L_ij(4,2)  )
-        DcoefficientsAtEdge(3,1,iedge) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+        DcoefficientsAtEdge(3,1,idx) = anorm*( R_ij(3,1)*L_ij(1,3)+&
             R_ij(3,2)*L_ij(2,3)+R_ij(3,3)*L_ij(3,3)+R_ij(3,4)*L_ij(4,3)  )
-        DcoefficientsAtEdge(4,1,iedge) = anorm*( R_ij(4,1)*L_ij(1,4)+&
+        DcoefficientsAtEdge(4,1,idx) = anorm*( R_ij(4,1)*L_ij(1,4)+&
             R_ij(4,2)*L_ij(2,4)+R_ij(4,3)*L_ij(3,4)+R_ij(4,4)*L_ij(4,4)  )
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
         
       end if
     end do
@@ -2437,97 +2437,97 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: iedge,i,j,k
+    integer :: idx,i,j,k
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
 
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
       uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
       
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
       uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
       
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,iedge)+vj*DmatrixCoeffsAtEdge(2,1,iedge)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,iedge)+vi*DmatrixCoeffsAtEdge(2,2,iedge)
+      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
+      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
 
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge( 1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,2,iedge) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 3,2,iedge) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge( 4,2,iedge) = dscale * (G1*qj-GAMMA*Ej)*aux1
+      DcoefficientsAtEdge( 1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,2,idx) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                 uvj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 3,2,idx) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                 uvj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge( 4,2,idx) = dscale * (G1*qj-GAMMA*Ej)*aux1
       
-      DcoefficientsAtEdge( 5,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge( 6,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 7,2,iedge) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 8,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,iedge)-G1*uj*aux1)
+      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge( 6,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 7,2,idx) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                G1*uj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,idx)-G1*uj*aux1)
       
-      DcoefficientsAtEdge( 9,2,iedge) = dscale * DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(10,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge(11,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(12,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,iedge)-G1*vj*aux1)
+      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(10,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                G1*vj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge(11,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,idx)-G1*vj*aux1)
       
-      DcoefficientsAtEdge(13,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge(15,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(16,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(13,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(15,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge( 1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,3,iedge) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 3,3,iedge) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge( 4,3,iedge) = dscale * (G1*qi-GAMMA*Ei)*aux2
+      DcoefficientsAtEdge( 1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,3,idx) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                uvi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 3,3,idx) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                uvi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge( 4,3,idx) = dscale * (G1*qi-GAMMA*Ei)*aux2
       
-      DcoefficientsAtEdge( 5,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge( 6,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 7,3,iedge) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 8,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,iedge)-G1*ui*aux2)
+      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge( 6,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 7,3,idx) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                G1*ui*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,idx)-G1*ui*aux2)
       
-      DcoefficientsAtEdge( 9,3,iedge) = dscale * DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(10,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge(11,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(12,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,iedge)-G1*vi*aux2)
+      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(10,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                G1*vi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge(11,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,idx)-G1*vi*aux2)
       
-      DcoefficientsAtEdge(13,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge(15,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(16,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(13,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(15,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
       !---------------------------------------------------------------------------
       
       ! Compute skew-symmetric coefficient and its norm
-      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,iedge)-&
-                  DmatrixCoeffsAtEdge(:,1,iedge))
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(:,2,idx)-&
+                  DmatrixCoeffsAtEdge(:,1,idx))
       anorm = sqrt(a(1)*a(1)+a(2)*a(2))
       
       if (anorm .gt. SYS_EPSREAL) then
         
         ! Compute Roe mean values
-        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
         u_ij = (aux*ui+uj)/(aux+1.0_DP)
         v_ij = (aux*vi+vj)/(aux+1.0_DP)
-        hi   = GAMMA*DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui+vi*vi)
-        hj   = GAMMA*DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj+vj*vj)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
         
         ! Compute auxiliary variables
@@ -2596,14 +2596,14 @@ contains
             do k = 1, NVAR2D
               aux = aux + R_ij(i,k)*L_ij(k,j)
             end do
-            DcoefficientsAtEdge(NVAR2D*(j-1)+i,1,iedge) = anorm*aux
+            DcoefficientsAtEdge(NVAR2D*(j-1)+i,1,idx) = anorm*aux
           end do
         end do
         
       else
         
         ! Nullify dissipation tensor
-        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+        DcoefficientsAtEdge(:,1,idx) = 0.0_DP
         
       end if
     end do
@@ -2650,35 +2650,35 @@ contains
 
     ! local variable
     real(DP) :: ui,uj,vi,vj,ci,cj,Ei,Ej
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
       
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
 
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(3,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(4,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                 vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                               vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(3,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                               G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(4,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                               vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(2,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(3,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(4,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                 vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(2,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                               vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(3,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                               G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(4,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                               vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
@@ -2689,15 +2689,15 @@ contains
       cj = sqrt(max(G15*(Ej-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
       
       ! Compute dissipation tensor D_ij
-      DcoefficientsAtEdge(:,1,iedge) = -dscale *&
-          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj+&
-                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2+&
-                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
-               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui+&
-                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2+&
-                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+      DcoefficientsAtEdge(:,1,idx) = -dscale *&
+          max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                   DmatrixCoeffsAtEdge(2,1,idx)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
+                        DmatrixCoeffsAtEdge(2,1,idx)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                   DmatrixCoeffsAtEdge(2,2,idx)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
+                        DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
     end do
 
   end subroutine euler_calcMatRusDissMatD2d_sim
@@ -2743,79 +2743,79 @@ contains
     ! local variable
     real(DP) :: ci,cj,Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj
     real(DP) :: uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
-    integer :: iedge
+    integer :: idx
 
-    do iedge = 1, size(DcoefficientsAtEdge,3)
+    do idx = 1, size(DcoefficientsAtEdge,3)
 
       ! Compute auxiliary variables
-      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
-      vi = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
-      Ei = DdataAtEdge(4,1,iedge)/DdataAtEdge(1,1,iedge)
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+      Ei = DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)
       uvi = ui*vi; qi = ui*ui+vi*vi; uPow2i = ui*ui; vPow2i = vi*vi
       
-      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
-      vj = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
-      Ej = DdataAtEdge(4,2,iedge)/DdataAtEdge(1,2,iedge)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+      Ej = DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)
       uvj = uj*vj; qj = uj*uj+vj*vj; uPow2j = uj*uj; vPow2j = vj*vj
       
-      aux1 = uj*DmatrixCoeffsAtEdge(1,1,iedge)+vj*DmatrixCoeffsAtEdge(2,1,iedge)
-      aux2 = ui*DmatrixCoeffsAtEdge(1,2,iedge)+vi*DmatrixCoeffsAtEdge(2,2,iedge)
+      aux1 = uj*DmatrixCoeffsAtEdge(1,1,idx)+vj*DmatrixCoeffsAtEdge(2,1,idx)
+      aux2 = ui*DmatrixCoeffsAtEdge(1,2,idx)+vi*DmatrixCoeffsAtEdge(2,2,idx)
 
       ! Compute Galerkin coefficient K_ij
-      DcoefficientsAtEdge( 1,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,2,iedge) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 3,2,iedge) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  uvj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge( 4,2,iedge) = dscale * (G1*qj-GAMMA*Ej)*aux1
+      DcoefficientsAtEdge( 1,2,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,2,idx) = dscale * ((G2*qj-uPow2j)*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                uvj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 3,2,idx) = dscale * ((G2*qj-vPow2j)*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                uvj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge( 4,2,idx) = dscale * (G1*qj-GAMMA*Ej)*aux1
       
-      DcoefficientsAtEdge( 5,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge( 6,2,iedge) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 7,2,iedge) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,iedge)-&
-                                                  G1*uj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge( 8,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,iedge)-G1*uj*aux1)
+      DcoefficientsAtEdge( 5,2,idx) = dscale * DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge( 6,2,idx) = dscale * (G13*uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 7,2,idx) = dscale * (vj*DmatrixCoeffsAtEdge(1,1,idx)-&
+                                                G1*uj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge( 8,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(1,1,idx)-G1*uj*aux1)
       
-      DcoefficientsAtEdge( 9,2,iedge) = dscale * DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(10,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,iedge)-&
-                                                  G1*vj*DmatrixCoeffsAtEdge(1,1,iedge))
-      DcoefficientsAtEdge(11,2,iedge) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  G13*vj*DmatrixCoeffsAtEdge(2,1,iedge))
-      DcoefficientsAtEdge(12,2,iedge) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,iedge)-G1*vj*aux1)
+      DcoefficientsAtEdge( 9,2,idx) = dscale * DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(10,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(2,1,idx)-&
+                                                G1*vj*DmatrixCoeffsAtEdge(1,1,idx))
+      DcoefficientsAtEdge(11,2,idx) = dscale * (uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                G13*vj*DmatrixCoeffsAtEdge(2,1,idx))
+      DcoefficientsAtEdge(12,2,idx) = dscale * ((GAMMA*Ej-G2*qj)*DmatrixCoeffsAtEdge(2,1,idx)-G1*vj*aux1)
       
-      DcoefficientsAtEdge(13,2,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
-      DcoefficientsAtEdge(15,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,1,iedge)
-      DcoefficientsAtEdge(16,2,iedge) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,iedge)+&
-                                                  vj*DmatrixCoeffsAtEdge(2,1,iedge)))
+      DcoefficientsAtEdge(13,2,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,1,idx)
+      DcoefficientsAtEdge(15,2,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,1,idx)
+      DcoefficientsAtEdge(16,2,idx) = dscale * (GAMMA*(uj*DmatrixCoeffsAtEdge(1,1,idx)+&
+                                                vj*DmatrixCoeffsAtEdge(2,1,idx)))
       
       ! Compute Galerkin coefficient K_ji
-      DcoefficientsAtEdge( 1,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 2,3,iedge) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 3,3,iedge) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  uvi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge( 4,3,iedge) = dscale * (G1*qi-GAMMA*Ei)*aux2
+      DcoefficientsAtEdge( 1,3,idx) = 0.0_DP
+      DcoefficientsAtEdge( 2,3,idx) = dscale * ((G1*qi-uPow2i)*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                uvi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 3,3,idx) = dscale * ((G1*qi-vPow2i)*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                uvi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge( 4,3,idx) = dscale * (G1*qi-GAMMA*Ei)*aux2
       
-      DcoefficientsAtEdge( 5,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge( 6,3,iedge) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 7,3,iedge) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,iedge)-&
-                                                  G1*ui*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge( 8,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,iedge)-G1*ui*aux2)
+      DcoefficientsAtEdge( 5,3,idx) = dscale * DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge( 6,3,idx) = dscale * (G13*ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 7,3,idx) = dscale * (vi*DmatrixCoeffsAtEdge(1,2,idx)-&
+                                                G1*ui*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge( 8,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(1,2,idx)-G1*ui*aux2)
       
-      DcoefficientsAtEdge( 9,3,iedge) = dscale * DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(10,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,iedge)-&
-                                                  G1*vi*DmatrixCoeffsAtEdge(1,2,iedge))
-      DcoefficientsAtEdge(11,3,iedge) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  G13*vi*DmatrixCoeffsAtEdge(2,2,iedge))
-      DcoefficientsAtEdge(12,3,iedge) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,iedge)-G1*vi*aux2)
+      DcoefficientsAtEdge( 9,3,idx) = dscale * DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(10,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(2,2,idx)-&
+                                                G1*vi*DmatrixCoeffsAtEdge(1,2,idx))
+      DcoefficientsAtEdge(11,3,idx) = dscale * (ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                G13*vi*DmatrixCoeffsAtEdge(2,2,idx))
+      DcoefficientsAtEdge(12,3,idx) = dscale * ((GAMMA*Ei-G2*qi)*DmatrixCoeffsAtEdge(2,2,idx)-G1*vi*aux2)
       
-      DcoefficientsAtEdge(13,3,iedge) = 0.0_DP
-      DcoefficientsAtEdge(14,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
-      DcoefficientsAtEdge(15,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(2,2,iedge)
-      DcoefficientsAtEdge(16,3,iedge) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,iedge)+&
-                                                  vi*DmatrixCoeffsAtEdge(2,2,iedge)))
+      DcoefficientsAtEdge(13,3,idx) = 0.0_DP
+      DcoefficientsAtEdge(14,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(1,2,idx)
+      DcoefficientsAtEdge(15,3,idx) = dscale * G1*DmatrixCoeffsAtEdge(2,2,idx)
+      DcoefficientsAtEdge(16,3,idx) = dscale * (GAMMA*(ui*DmatrixCoeffsAtEdge(1,2,idx)+&
+                                                vi*DmatrixCoeffsAtEdge(2,2,idx)))
 
       !---------------------------------------------------------------------------
       ! Evaluate the dissipation
@@ -2827,20 +2827,20 @@ contains
       
       ! Compute dissipation tensor D_ij
       aux1 = -dscale *&
-          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj+&
-                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2+&
-                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
-               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui+&
-                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
-                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2+&
-                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+          max( abs(DmatrixCoeffsAtEdge(1,1,idx)*uj+&
+                   DmatrixCoeffsAtEdge(2,1,idx)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,idx)**2+&
+                        DmatrixCoeffsAtEdge(2,1,idx)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,idx)*ui+&
+                   DmatrixCoeffsAtEdge(2,2,idx)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,idx)**2+&
+                        DmatrixCoeffsAtEdge(2,2,idx)**2)*ci )
 
-      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
-      DcoefficientsAtEdge( 1,1,iedge) = aux1
-      DcoefficientsAtEdge( 6,1,iedge) = aux1
-      DcoefficientsAtEdge(11,1,iedge) = aux1
-      DcoefficientsAtEdge(16,1,iedge) = aux1
+      DcoefficientsAtEdge(:,1,idx) = 0.0_DP
+      DcoefficientsAtEdge( 1,1,idx) = aux1
+      DcoefficientsAtEdge( 6,1,idx) = aux1
+      DcoefficientsAtEdge(11,1,idx) = aux1
+      DcoefficientsAtEdge(16,1,idx) = aux1
     end do
 
   end subroutine euler_calcMatRusDiss2d_sim
@@ -2849,152 +2849,243 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcCharacteristics2d(&
-      U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  pure subroutine euler_calcCharacteristics2d_sim(Dweight, DdataAtEdge,&
+      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the characteristic variables in 2D
+    ! This subroutine computes the characteristic variables in 1D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! weighting vector
-    real(DP), dimension(:), intent(in) :: Dweight
+    ! Weighting coefficient for wave-decomposition
+    real(DP), dimension(:), intent(in)  :: Dweight
+    
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! vector of characteristic variables
-    real(DP), dimension(:), intent(out), optional :: W_ij
-
-    ! OPTIONAL: diagonal matrix of eigenvalues
-    real(DP), dimension(:), intent(out), optional :: Lbd_ij
-
-    ! OPTIONAL: transformation matrix into conservative variables
-    real(DP), dimension(:), intent(out), optional :: R_ij
-
-    ! OPTIONAL: transformation matrix into characteristic variables
-    real(DP), dimension(:), intent(out), optional :: L_ij
+    ! OPTIONAL: Characteristic variables for all edges under consideration
+    !   DIMENSION(nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DcharVariablesAtEdge
+    
+    ! OPTIONAL: Eigenvalues for all edges under consideration
+    !   DIMENSION(nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DeigenvaluesAtEdge
+    
+    ! OPTIONAL: Matrices of left eigenvectors for all edges under consideration
+    !   DIMENSION(nvar*nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DleftEigenvectorsAtEdge
+    
+    ! OPTIONAL: Matrices of right eigenvectors for all edges under consideration
+    !   DIMENSION(nvar*nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DrightEigenvectorsAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,hi,hj
-    real(DP) :: cPow2,uPow2,vPow2,a1,a2,anorm
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,ui,uj,vi,vj,hi,hj,cPow2,a1,a2,anorm
+    integer :: idx
 
     ! Compute norm of weighting coefficient
     anorm = sqrt(Dweight(1)*Dweight(1)+Dweight(2)*Dweight(2))
 
     ! Check if weighting coefficient is zero
-    if (anorm .gt. SYS_EPSREAL) then
+    if (anorm .le. SYS_EPSREAL) then
+      if (present(DcharVariablesAtEdge))     DcharVariablesAtEdge     = 0.0_DP
+      if (present(DeigenvaluesAtEdge))       DeigenvaluesAtEdge       = 0.0_DP
+      if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0_DP
+      if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0_DP
 
-      ! Compute normalised weighting coefficient
-      a1  = Dweight(1)/anorm
-      a2  = Dweight(2)/anorm
-
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*U_i(2)/U_i(1)+U_j(2)/U_j(1))/(aux+1.0_DP)
-      v_ij = (aux*U_i(3)/U_i(1)+U_j(3)/U_j(1))/(aux+1.0_DP)
-      hi   = GAMMA*U_i(4)/U_i(1)-G2*(U_i(2)*U_i(2)+U_i(3)*U_i(3))/(U_i(1)*U_i(1))
-      hj   = GAMMA*U_j(4)/U_j(1)-G2*(U_j(2)*U_j(2)+U_j(3)*U_j(3))/(U_j(1)*U_j(1))
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-      ! Compute auxiliary variables
-      uPow2 = u_ij*u_ij
-      vPow2 = v_ij*v_ij
-      q_ij  = 0.5_DP*(uPow2+vPow2)
-      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs = sqrt(cPow2)
-      aux   = a1*u_ij+a2*v_ij
-
-      ! Compute diagonal matrix of eigenvalues (if present)
-      if (present(Lbd_ij)) then
-        Lbd_ij(1) = aux-cs
-        Lbd_ij(2) = aux
-        Lbd_ij(3) = aux+cs
-        Lbd_ij(4) = aux
-      end if
-
-      ! Compute matrix of right eigenvectors
-      if (present(R_ij)) then
-        R_ij( 1) =  1.0_DP
-        R_ij( 2) =  u_ij-cs*a1
-        R_ij( 3) =  v_ij-cs*a2
-        R_ij( 4) =  H_ij-cs*aux
-
-        R_ij( 5) =  1.0_DP
-        R_ij( 6) =  u_ij
-        R_ij( 7) =  v_ij
-        R_ij( 8) =  q_ij
-
-        R_ij( 9) =  1.0_DP
-        R_ij(10) =  u_ij+cs*a1
-        R_ij(11) =  v_ij+cs*a2
-        R_ij(12) =  H_ij+cs*aux
-
-        R_ij(13) =  0.0_DP
-        R_ij(14) =  a2
-        R_ij(15) = -a1
-        R_ij(16) =  u_ij*a2-v_ij*a1
-      end if
-
-      ! Compute matrix of left eigenvectors
-      if (present(L_ij)) then
-        L_ij( 1) =  0.5_DP*(G1*q_ij+cs*aux)/cPow2
-        L_ij( 2) = (cPow2-G1*q_ij)/cPow2
-        L_ij( 3) =  0.5_DP*(G1*q_ij-cs*aux)/cPow2
-        L_ij( 4) =  v_ij*a1-u_ij*a2
-
-        L_ij( 5) =  0.5_DP*(-G1*u_ij-cs*a1)/cPow2
-        L_ij( 6) =  G1*u_ij/cPow2
-        L_ij( 7) =  0.5_DP*(-G1*u_ij+cs*a1)/cPow2
-        L_ij( 8) =  a2
-
-        L_ij( 9) =  0.5_DP*(-G1*v_ij-cs*a2)/cPow2
-        L_ij(10) =  G1*v_ij/cPow2
-        L_ij(11) =  0.5_DP*(-G1*v_ij+cs*a2)/cPow2
-        L_ij(12) = -a1
-
-        L_ij(13) =  G2/cPow2
-        L_ij(14) = -G1/cPow2
-        L_ij(15) =  G2/cPow2
-        L_ij(16) =  0.0_DP
-      end if
-
-      ! Compute characteristic solution difference
-      if (present(W_ij)) then
-        ! Compute solution difference U_j-U_i
-        Diff = U_j-U_i
-
-        ! Compute auxiliary quantities for characteristic variables
-        aux1 = G2/cPow2*(q_ij*Diff(1)-&
-                         u_ij*Diff(2)-&
-                         v_ij*Diff(3)+&
-                              Diff(4) )
-        aux2 = 0.5_DP*(aux*Diff(1)-&
-                        a1*Diff(2)-&
-                        a2*Diff(3) )/cs
-
-        ! Compute characteristic variables
-        W_ij(1) = anorm * (aux1 + aux2)
-        W_ij(2) = anorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+G1*(u_ij*Diff(2)+v_ij*Diff(3)-Diff(4))/cPow2)
-        W_ij(3) = anorm * (aux1 - aux2)
-        W_ij(4) = anorm * ((a1*v_ij-a2*u_ij)*Diff(1)+a2*Diff(2)-a1*Diff(3))
-      end if
-
-    else   ! |dweight| = 0
-
-      if (present(Lbd_ij)) Lbd_ij = 0.0_DP
-      if (present(R_ij))   R_ij   = 0.0_DP
-      if (present(L_ij))   L_ij   = 0.0_DP
-      if (present(W_ij))   W_ij   = 0.0_DP
-
+      ! That's it
+      return
     end if
 
-  end subroutine euler_calcCharacteristics2d
+    ! Compute normalised weighting coefficient
+    a1  = Dweight(1)/anorm
+    a2  = Dweight(2)/anorm
+
+    ! Do we have to compute characteristic variables
+    if (present(DcharVariablesAtEdge)) then
+      do idx = 1, size(DdataAtEdge,3)
+        
+        ! Compute velocities
+        ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+        vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+        uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+        vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        v_ij = (aux*vi+vj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary variables
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        aux   = a1*u_ij+a2*v_ij
+
+        ! Compute solution difference U_j-U_i
+        Diff = DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx)
+        
+        ! Compute auxiliary quantities for characteristic variables
+        aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4) )
+        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3) )/cs
+
+        ! Compute characteristic variables
+        DcharVariablesAtEdge(1,idx) = anorm * (aux1 + aux2)
+        DcharVariablesAtEdge(2,idx) = anorm * ((1.0_DP-G1*q_ij/cPow2)*Diff(1)+&
+                                                             G1*(u_ij*Diff(2)+&
+                                                                 v_ij*Diff(3)-&
+                                                                      Diff(4))/cPow2)
+        DcharVariablesAtEdge(3,idx) = anorm * (aux1 - aux2)
+        DcharVariablesAtEdge(4,idx) = anorm * ((a1*v_ij-a2*u_ij)*Diff(1)+&
+                                                              a2*Diff(2)-&
+                                                              a1*Diff(3))
+      end do
+    end if
+
+    ! Do we have to compute eigenvalues
+    if (present(DeigenvaluesAtEdge)) then
+      do idx = 1, size(DdataAtEdge,3)
+
+        ! Compute velocities
+        ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+        vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+        uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+        vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        v_ij = (aux*vi+vj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary variables
+        cs = sqrt(max(G1*(H_ij-0.5_DP*(u_ij*u_ij+v_ij*v_ij)), SYS_EPSREAL))
+        aux   = a1*u_ij+a2*v_ij
+
+        ! Compute eigenvalues
+        DeigenvaluesAtEdge(1,idx) = aux-cs
+        DeigenvaluesAtEdge(2,idx) = aux
+        DeigenvaluesAtEdge(3,idx) = aux+cs
+        DeigenvaluesAtEdge(4,idx) = aux
+      end do
+    end if
+
+    ! Do we have to compute right eigenvectors
+    if (present(DrightEigenvectorsAtEdge)) then
+      do idx = 1, size(DdataAtEdge,3)
+
+        ! Compute velocities
+        ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+        vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+        uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+        vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        v_ij = (aux*vi+vj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary variables
+        q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+        cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+        aux  = a1*u_ij+a2*v_ij
+
+        ! Compute right eigenvectors
+        DrightEigenvectorsAtEdge( 1,idx) =  1.0_DP
+        DrightEigenvectorsAtEdge( 2,idx) =  u_ij-cs*a1
+        DrightEigenvectorsAtEdge( 3,idx) =  v_ij-cs*a2
+        DrightEigenvectorsAtEdge( 4,idx) =  H_ij-cs*aux
+
+        DrightEigenvectorsAtEdge( 5,idx) =  1.0_DP
+        DrightEigenvectorsAtEdge( 6,idx) =  u_ij
+        DrightEigenvectorsAtEdge( 7,idx) =  v_ij
+        DrightEigenvectorsAtEdge( 8,idx) =  q_ij
+
+        DrightEigenvectorsAtEdge( 9,idx) =  1.0_DP
+        DrightEigenvectorsAtEdge(10,idx) =  u_ij+cs*a1
+        DrightEigenvectorsAtEdge(11,idx) =  v_ij+cs*a2
+        DrightEigenvectorsAtEdge(12,idx) =  H_ij+cs*aux
+
+        DrightEigenvectorsAtEdge(13,idx) =  0.0_DP
+        DrightEigenvectorsAtEdge(14,idx) =  a2
+        DrightEigenvectorsAtEdge(15,idx) = -a1
+        DrightEigenvectorsAtEdge(16,idx) =  u_ij*a2-v_ij*a1
+      end do
+    end if
+
+    ! Do we have to compute left eigenvectors
+    if (present(DleftEigenvectorsAtEdge)) then
+      do idx = 1, size(DdataAtEdge,3)
+
+        ! Compute velocities
+        ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+        vi = DdataAtEdge(3,1,idx)/DdataAtEdge(1,1,idx)
+        uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+        vj = DdataAtEdge(3,2,idx)/DdataAtEdge(1,2,idx)
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,idx)/DdataAtEdge(1,2,idx), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        v_ij = (aux*vi+vj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(4,1,idx)/DdataAtEdge(1,1,idx)-G2*(ui*ui+vi*vi)
+        hj   = GAMMA*DdataAtEdge(4,2,idx)/DdataAtEdge(1,2,idx)-G2*(uj*uj+vj*vj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+
+        ! Compute auxiliary variables
+        q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        aux   = a1*u_ij+a2*v_ij
+
+        ! Compute left eigenvectors
+        DleftEigenvectorsAtEdge( 1,idx) =  0.5_DP*(G1*q_ij+cs*aux)/cPow2
+        DleftEigenvectorsAtEdge( 2,idx) = (cPow2-G1*q_ij)/cPow2
+        DleftEigenvectorsAtEdge( 3,idx) =  0.5_DP*(G1*q_ij-cs*aux)/cPow2
+        DleftEigenvectorsAtEdge( 4,idx) =  v_ij*a1-u_ij*a2
+
+        DleftEigenvectorsAtEdge( 5,idx) =  0.5_DP*(-G1*u_ij-cs*a1)/cPow2
+        DleftEigenvectorsAtEdge( 6,idx) =  G1*u_ij/cPow2
+        DleftEigenvectorsAtEdge( 7,idx) =  0.5_DP*(-G1*u_ij+cs*a1)/cPow2
+        DleftEigenvectorsAtEdge( 8,idx) =  a2
+
+        DleftEigenvectorsAtEdge( 9,idx) =  0.5_DP*(-G1*v_ij-cs*a2)/cPow2
+        DleftEigenvectorsAtEdge(10,idx) =  G1*v_ij/cPow2
+        DleftEigenvectorsAtEdge(11,idx) =  0.5_DP*(-G1*v_ij+cs*a2)/cPow2
+        DleftEigenvectorsAtEdge(12,idx) = -a1
+
+        DleftEigenvectorsAtEdge(13,idx) =  G2/cPow2
+        DleftEigenvectorsAtEdge(14,idx) = -G1/cPow2
+        DleftEigenvectorsAtEdge(15,idx) =  G2/cPow2
+        DleftEigenvectorsAtEdge(16,idx) =  0.0_DP
+      end do
+    end if
+
+  end subroutine euler_calcCharacteristics2d_sim
 
   !*****************************************************************************
 

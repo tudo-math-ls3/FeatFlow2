@@ -1230,21 +1230,21 @@ contains
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalNoBdr1d_sim,&
-                euler_calcCharacteristics1d, dscale, .true., rrhs)
+                euler_calcCharacteristics1d_sim, dscale, .true., rrhs)
 
           case (NDIM2D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalNoBdr2d_sim,&
-                euler_calcCharacteristics2d, dscale, .true., rrhs)
+                euler_calcCharacteristics2d_sim, dscale, .true., rrhs)
 
           case (NDIM3D)
             call gfsys_buildDivVectorTVD(&
                 rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
                 rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
                 euler_calcFluxGalNoBdr3d_sim,&
-                euler_calcCharacteristics3d, dscale, .true., rrhs)
+                euler_calcCharacteristics3d_sim, dscale, .true., rrhs)
           end select
 
         case DEFAULT
@@ -1682,21 +1682,21 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr1d_sim,&
-            euler_calcCharacteristics1d, dscale, .false., rres)
+            euler_calcCharacteristics1d_sim, dscale, .false., rres)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr2d_sim,&
-            euler_calcCharacteristics2d, dscale, .false., rres)
+            euler_calcCharacteristics2d_sim, dscale, .false., rres)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr3d_sim,&
-            euler_calcCharacteristics3d, dscale , .false., rres)
+            euler_calcCharacteristics3d_sim, dscale , .false., rres)
       end select
 
     case DEFAULT
@@ -2096,21 +2096,21 @@ contains
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CX),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr1d_sim,&
-            euler_calcCharacteristics1d, dscale, .false., rrhs)
+            euler_calcCharacteristics1d_sim, dscale, .false., rrhs)
 
       case (NDIM2D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CY),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr2d_sim,&
-            euler_calcCharacteristics2d, dscale, .false., rrhs)
+            euler_calcCharacteristics2d_sim, dscale, .false., rrhs)
 
       case (NDIM3D)
         call gfsys_buildDivVectorTVD(&
             rproblemLevel%Rmatrix(coeffMatrix_CX:coeffMatrix_CZ),&
             rproblemLevel%Rafcstab(inviscidAFC), rsolution,&
             euler_calcFluxGalNoBdr3d_sim,&
-            euler_calcCharacteristics3d, dscale, .false., rrhs)
+            euler_calcCharacteristics3d_sim, dscale, .false., rrhs)
 
       end select
 

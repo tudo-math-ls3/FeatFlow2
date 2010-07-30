@@ -286,9 +286,12 @@
 
 !<subroutine>
 
-  subroutine fcb_calcCharacteristics(U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  subroutine fcb_calcCharacteristics_sim(Dweight, DdataAtEdge,&
+      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
     use fsystem
+    use collection
 
 !<description>
     ! This subroutine computes the characteristic transformation
@@ -312,19 +315,44 @@
 !</description>
 
 !<input>
-  real(DP), dimension(:), intent(in)  :: U_i,U_j
+  ! Weighting coefficient for wave-decomposition
   real(DP), dimension(:), intent(in)  :: Dweight
+
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-  real(DP), dimension(:), intent(out), optional :: W_ij
-  real(DP), dimension(:), intent(out), optional :: Lbd_ij
-  real(DP), dimension(:), intent(out), optional :: R_ij
-  real(DP), dimension(:), intent(out), optional :: L_ij
+  ! OPTIONAL: Characteristic variables for all edges under consideration
+  !   DIMENSION(nvar,nedge)
+  ! with nvar the number of variables at each edge
+  real(DP), dimension(:,:), intent(out), optional :: DcharVariablesAtEdge
+
+  ! OPTIONAL: Eigenvalues for all edges under consideration
+  !   DIMENSION(nvar,nedge)
+  ! with nvar the number of variables at each edge
+  real(DP), dimension(:,:), intent(out), optional :: DeigenvaluesAtEdge
+
+  ! OPTIONAL: Matrices of left eigenvectors for all edges under consideration
+  !   DIMENSION(nvar*nvar,nedge)
+  ! with nvar the number of variables at each edge
+  real(DP), dimension(:,:), intent(out), optional :: DleftEigenvectorsAtEdge
+
+  ! OPTIONAL: Matrices of right eigenvectors for all edges under consideration
+  !   DIMENSION(nvar*nvar,nedge)
+  ! with nvar the number of variables at each edge
+  real(DP), dimension(:,:), intent(out), optional :: DrightEigenvectorsAtEdge
 !</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcCharacteristics
+  end subroutine fcb_calcCharacteristics_sim
 
   end interface

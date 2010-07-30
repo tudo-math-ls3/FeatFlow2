@@ -78,7 +78,7 @@
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
-!# 19.) euler_calcCharacteristics3d
+!# 19.) euler_calcCharacteristics3d_sim
 !#      -> Computes characteristic variables
 !#
 !# 20.) euler_calcFluxFCTScalarDiss3d
@@ -207,7 +207,7 @@ module euler_callback3d
   public :: euler_calcMatRoeDiss3d_sim
   public :: euler_calcMatRusDissMatD3d_sim
   public :: euler_calcMatRusDiss3d_sim
-  public :: euler_calcCharacteristics3d
+  public :: euler_calcCharacteristics3d_sim
   public :: euler_calcFluxFCTScalarDiss3d
   public :: euler_calcFluxFCTTensorDiss3d
   public :: euler_calcFluxFCTRusanov3d
@@ -1018,37 +1018,53 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcCharacteristics3d(&
-      U_i, U_j, Dweight, W_ij, Lbd_ij, R_ij, L_ij)
+  pure subroutine euler_calcCharacteristics3d_sim(Dweight, DdataAtEdge,&
+      DcharVariablesAtEdge, DeigenvaluesAtEdge,&
+      DrightEigenvectorsAtEdge, DleftEigenvectorsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the characteristic variables in 3D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! weighting vector
-    real(DP), dimension(:), intent(in) :: Dweight
+    ! Weighting coefficient for wave-decomposition
+    real(DP), dimension(:), intent(in)  :: Dweight
+    
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! vector of characteristic variables
-    real(DP), dimension(:), intent(out), optional :: W_ij
-
-    ! OPTIONAL: diagonal matrix of eigenvalues
-    real(DP), dimension(:), intent(out), optional :: Lbd_ij
-
-    ! OPTIONAL: transformation matrix into conservative variables
-    real(DP), dimension(:), intent(out), optional :: R_ij
-
-    ! OPTIONAL: transformation matrix into characteristic variables
-    real(DP), dimension(:), intent(out), optional :: L_ij
+    ! OPTIONAL: Characteristic variables for all edges under consideration
+    !   DIMENSION(nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DcharVariablesAtEdge
+    
+    ! OPTIONAL: Eigenvalues for all edges under consideration
+    !   DIMENSION(nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DeigenvaluesAtEdge
+    
+    ! OPTIONAL: Matrices of left eigenvectors for all edges under consideration
+    !   DIMENSION(nvar*nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DleftEigenvectorsAtEdge
+    
+    ! OPTIONAL: Matrices of right eigenvectors for all edges under consideration
+    !   DIMENSION(nvar*nvar,nedge)
+    ! with nvar the number of variables at each edge
+    real(DP), dimension(:,:), intent(out), optional :: DrightEigenvectorsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcCharacteristics3d
+  end subroutine euler_calcCharacteristics3d_sim
 
   !*****************************************************************************
 
