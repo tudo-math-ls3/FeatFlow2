@@ -9,72 +9,72 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGalerkin3d
+!# 1.) euler_calcFluxGal3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxGalerkinNoBdr3d
+!# 2.) euler_calcFluxGalNoBdr3d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScalarDiss3d
+!# 3.) euler_calcFluxScDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxScalarDissDiSp3d
+!# 4.) euler_calcFluxScDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 5.) euler_calcFluxTensorDiss3d
+!# 5.) euler_calcFluRoeDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 6.) euler_calcFluxTensorDissDiSp3d
+!# 6.) euler_calcFluxRoeDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities based on
 !#        dimensional splitting approach
 !#
-!# 7.) euler_calcFluxRusanov3d
+!# 7.) euler_calcFluxRusDiss3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 8.) euler_calcFluxRusanovDiSp3d
+!# 8.) euler_calcFluxRusDissDiSp3d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 9.) euler_calcMatrixDiagonalDiag3d
+!# 9.) euler_calcMatDiagMatD3d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 10.) euler_calcMatrixDiagonal3d
+!# 10.) euler_calcMatDiag3d_sim
 !#      -> Computes local matrix for diagonal entry
 !#
-!# 11.) euler_calcMatrixGalerkinDiag3d
+!# 11.) euler_calcMatGalMatD3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 12.) euler_calcMatrixGalerkin3d
+!# 12.) euler_calcMatGal3d_sim
 !#      -> Computes local matrices for standard Galerkin scheme
 !#
-!# 13.) euler_calcMatrixScalarDissDiag3d
+!# 13.) euler_calcMatScDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 14.) euler_calcMatrixScalarDiss3d
+!# 14.) euler_calcMatScDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 15.) euler_calcMatrixTensorDissDiag3d
+!# 15.) euler_calcMatRoeDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 16.) euler_calcMatrixTensorDiss3d
+!# 16.) euler_calcMatRoeDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 17.) euler_calcMatrixRusanovDiag3d
+!# 17.) euler_calcMatRusDissMatD3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 18.) euler_calcMatrixRusanov3d
+!# 18.) euler_calcMatRusDiss3d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
@@ -189,24 +189,24 @@ module euler_callback3d
   implicit none
 
   private
-  public :: euler_calcFluxGalerkin3d
-  public :: euler_calcFluxGalerkinNoBdr3d
-  public :: euler_calcFluxScalarDiss3d
-  public :: euler_calcFluxScalarDissDiSp3d
-  public :: euler_calcFluxTensorDiss3d
-  public :: euler_calcFluxTensorDissDiSp3d
-  public :: euler_calcFluxRusanov3d
-  public :: euler_calcFluxRusanovDiSp3d
-  public :: euler_calcMatrixDiagonalDiag3d
-  public :: euler_calcMatrixDiagonal3d
-  public :: euler_calcMatrixGalerkinDiag3d
-  public :: euler_calcMatrixGalerkin3d
-  public :: euler_calcMatrixScalarDissDiag3d
-  public :: euler_calcMatrixScalarDiss3d
-  public :: euler_calcMatrixTensorDissDiag3d
-  public :: euler_calcMatrixTensorDiss3d
-  public :: euler_calcMatrixRusanovDiag3d
-  public :: euler_calcMatrixRusanov3d
+  public :: euler_calcFluxGal3d_sim
+  public :: euler_calcFluxGalNoBdr3d_sim
+  public :: euler_calcFluxScDiss3d_sim
+  public :: euler_calcFluxScDissDiSp3d_sim
+  public :: euler_calcFluxRoeDiss3d_sim
+  public :: euler_calcFluxRoeDissDiSp3d_sim
+  public :: euler_calcFluxRusDiss3d_sim
+  public :: euler_calcFluxRusDissDiSp3d_sim
+  public :: euler_calcMatDiagMatD3d_sim
+  public :: euler_calcMatDiag3d_sim
+  public :: euler_calcMatGalMatD3d_sim
+  public :: euler_calcMatGal3d_sim
+  public :: euler_calcMatScDissMatD3d_sim
+  public :: euler_calcMatScDiss3d_sim
+  public :: euler_calcMatRoeDissMatD3d_sim
+  public :: euler_calcMatRoeDiss3d_sim
+  public :: euler_calcMatRusDissMatD3d_sim
+  public :: euler_calcMatRusDiss3d_sim
   public :: euler_calcCharacteristics3d
   public :: euler_calcFluxFCTScalarDiss3d
   public :: euler_calcFluxFCTTensorDiss3d
@@ -237,42 +237,55 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalerkin3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGal3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
-    ! This subroutine computes the inviscid fluxes for the standard Galerkin
-    ! discretisation in 3D.
+    ! This subroutine computes the inviscid fluxes for the standard
+    ! Galerkin discretisation in 3D.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxGalerkin3d
+  end subroutine euler_calcFluxGal3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalerkinNoBdr3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalNoBdr3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -283,67 +296,94 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxGalerkinNoBdr3d
+  end subroutine euler_calcFluxGalNoBdr3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScalarDiss3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
-
+  pure subroutine euler_calcFluxScDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using scalar dissipation.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxScalarDiss3d
+  end subroutine euler_calcFluxScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScalarDissDiSp3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxScDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -352,33 +392,46 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxScalarDissDiSp3d
+  end subroutine euler_calcFluxScDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxTensorDiss3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRoeDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -386,33 +439,47 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxTensorDiss3d
+  end subroutine euler_calcFluxRoeDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxTensorDissDiSp3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRoeDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -421,67 +488,93 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxTensorDissDiSp3d
+  end subroutine euler_calcFluxRoeDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusanov3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
-
+  pure subroutine euler_calcFluxRusDiss3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+    
 !<description>
     ! This subroutine computes the inviscid fluxes for the
     ! low-order scheme in 3D using the Rusanov dissipation.
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxRusanov3d
+  end subroutine euler_calcFluxRusDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusanovDiSp3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRusDissDiSp3d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -490,32 +583,46 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
-  end subroutine euler_calcFluxRusanovDiSp3d
+  end subroutine euler_calcFluxRusDissDiSp3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixDiagonalDiag3d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatDiagMatD3d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
+      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -523,32 +630,39 @@ contains
 !</description>
 
 !<input>
-    ! local solution at node I
-    real(DP), dimension(:), intent(in) :: U_i
+  ! Nodal solution values for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ii
+  ! Entries of the coefficient matrices for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all nodes under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtNode
 
-    ! row number
-    integer, intent(in) :: i
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Jacobian matrix
-    real(DP), dimension(:), intent(out) :: K_ii
+  ! Coefficients of the matrix for all nodes under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixDiagonalDiag3d
+  end subroutine euler_calcMatDiagMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixDiagonal3d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatDiag3d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -556,133 +670,157 @@ contains
 !</description>
 
 !<input>
-    ! local solution at node I
-    real(DP), dimension(:), intent(in) :: U_i
+  ! Nodal solution values for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ii
+  ! Entries of the coefficient matrices for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all nodes under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtNode
 
-    ! row number
-    integer, intent(in) :: i
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Jacobian matrix
-    real(DP), dimension(:), intent(out) :: K_ii
+  ! Coefficients of the matrix for all nodes under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixDiagonal3d
+  end subroutine euler_calcMatDiag3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixGalerkinDiag3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatGalMatD3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 3D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixGalerkinDiag3d
+  end subroutine euler_calcMatGalMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixGalerkin3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatGal3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
-     ! This subroutine computes the Galerkin matrices in 3D
+    ! This subroutine computes the Galerkin matrices in 3D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixGalerkin3d
+  end subroutine euler_calcMatGal3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixScalarDissDiag3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-
+  pure subroutine euler_calcMatScDissMatD3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
     ! and applies scalar artificial viscosities in 3D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixScalarDissDiag3d
+  end subroutine euler_calcMatScDissMatD3d_sim
 
 !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixScalarDiss3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatScDiss3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -690,67 +828,39 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixScalarDiss3d
+  end subroutine euler_calcMatScDiss3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixTensorDissDiag3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-
-    !<description>
-    ! This subroutine computes the Galerkin matrices
-    ! and applies tensorial artificial viscosities in 3D
-!</description>
-
-!<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
-
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
-
-    ! node numbers
-    integer, intent(in) :: i, j
-!</input>
-
-!<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
-!</output>
-!</subroutine>
-
-  end subroutine euler_calcMatrixTensorDissDiag3d
-
-  !*****************************************************************************
-
-!<subroutine>
-
-  pure subroutine euler_calcMatrixTensorDiss3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRoeDissMatD3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -758,33 +868,79 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixTensorDiss3d
+  end subroutine euler_calcMatRoeDissMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixRusanovDiag3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRoeDiss3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the Galerkin matrices
+    ! and applies tensorial artificial viscosities in 3D
+!</description>
+
+!<input>
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
+
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+  end subroutine euler_calcMatRoeDiss3d_sim
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  pure subroutine euler_calcMatRusDissMatD3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -792,33 +948,39 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixRusanovDiag3d
+  end subroutine euler_calcMatRusDissMatD3d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixRusanov3d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRusDiss3d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -826,26 +988,31 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Roe matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
-  end subroutine euler_calcMatrixRusanov3d
+  end subroutine euler_calcMatRusDiss3d_sim
 
   !*****************************************************************************
 

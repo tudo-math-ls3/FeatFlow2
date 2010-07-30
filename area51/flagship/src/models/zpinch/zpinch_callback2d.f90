@@ -21,22 +21,73 @@
 !#     -> Performs application specific tasks in the adaptation
 !#        algorithm in 2D, whereby the vector is stored in block format
 !#
-!# 4.) zpinch_calcMatRusConvIntlP2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 4.) zpinch_calcMatDiagConvIntlP2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (primal formulation)
 !#        for Euler systems stored in interleaved format
 !#
-!# 5.) zpinch_calcMatRusConvIntlD2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 5.) zpinch_calcMatRusConvIntlP2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (primal formulation)
+!#        and applies scalar artificial viscosities of Rusanov-type
 !#        for Euler systems stored in interleaved format
 !#
-!# 6.) zpinch_calcMatRusConvBlockP2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
-!#        for Euler systems stored in block format
+!# 6.) zpinch_calcMatRusConvIntlP2d
+!#     -> Calculates the transport Galerkin coefficients
+!#        for linear convection in 2D (primal formulation)
+!#        and applies scalar artificial viscosities of Rusanov-type
+!#        for Euler systems stored in interleaved format
 !#
-!# 7.) zpinch_calcMatRusConvBlockD2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
-!#        for Euler systems stored in block format
+!# 7.) zpinch_calcMatDiagConvIntlD2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (dual formulation)
+!#        for Euler systems stored in interleaved format
 !#
+!# 8.) zpinch_calcMatRusConvIntlD2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (dual formulation)
+!#        and applies scalar artificial viscosities of Rusanov-type
+!#        for Euler systems stored in interleaved format
+!#
+!# 9.) zpinch_calcMatRusConvIntlD2d
+!#     -> Calculates the transport Galerkin coefficients
+!#        for linear convection in 2D (dual formulation)
+!#        and applies scalar artificial viscosities of Rusanov-type
+!#        for Euler systems stored in interleaved format
+!#
+!# 10.) zpinch_calcMatDiagConvBlockP2d_sim
+!#      -> Calculates the diagonal Galerkin transport coefficients
+!#         for linear convection in 2D (primal formulation)
+!#         for Euler systems stored in block format
+!#
+!# 11.) zpinch_calcMatRusConvBlockP2d_sim
+!#      -> Calculates the off-diagonal Galerkin transport coefficients
+!#         for linear convection in 2D (primal formulation)
+!#         and applies scalar artificial viscosities of Rusanov-type
+!#         for Euler systems stored in block format
+!#
+!# 12.) zpinch_calcMatRusConvBlockP2d
+!#      -> Calculates the transport Galerkin coefficients
+!#         for linear convection in 2D (primal formulation)
+!#         and applies scalar artificial viscosities of Rusanov-type
+!#         for Euler systems stored in block format
+!#
+!# 13.) zpinch_calcMatDiagConvBlockD2d_sim
+!#      -> Calculates the diagonal Galerkin transport coefficients
+!#         for linear convection in 2D (dual formulation)
+!#         for Euler systems stored in block format
+!#
+!# 14.) zpinch_calcMatRusConvBlockD2d_sim
+!#      -> Calculates the off-diagonal Galerkin transport coefficients
+!#         for linear convection in 2D (dual formulation)
+!#         and applies scalar artificial viscosities of Rusanov-type
+!#         for Euler systems stored in block format
+!#
+!# 15.) zpinch_calcMatRusConvBlockD2d
+!#      -> Calculates the transport Galerkin coefficients
+!#         for linear convection in 2D (dual formulation)
+!#         and applies scalar artificial viscosities of Rusanov-type
+!#         for Euler systems stored in block format
 !#
 !# </purpose>
 !##############################################################################
@@ -59,11 +110,23 @@ module zpinch_callback2d
   public :: zpinch_setVariable2d
   public :: zpinch_hadaptCallbackScalar2d
   public :: zpinch_hadaptCallbackBlock2d
+  
+  public :: zpinch_calcMatDiagConvIntlP2d_sim
+  public :: zpinch_calcMatRusConvIntlP2d_sim
   public :: zpinch_calcMatRusConvIntlP2d
-  public :: zpinch_calcMatRusConvIntlD2d
-  public :: zpinch_calcMatRusConvBlockP2d
-  public :: zpinch_calcMatRusConvBlockD2d
 
+  public :: zpinch_calcMatDiagConvIntlD2d_sim
+  public :: zpinch_calcMatRusConvIntlD2d_sim
+  public :: zpinch_calcMatRusConvIntlD2d
+
+  public :: zpinch_calcMatDiagConvBlockP2d_sim
+  public :: zpinch_calcMatRusConvBlockP2d_sim
+  public :: zpinch_calcMatRusConvBlockP2d
+
+  public :: zpinch_calcMatDiagConvBlockD2d_sim
+  public :: zpinch_calcMatRusConvBlockD2d_sim
+  public :: zpinch_calcMatRusConvBlockD2d
+  
   interface zpinch_setVariable2d
     module procedure zpinch_setVariableScalar2d
     module procedure zpinch_setVariableBlock2d
@@ -269,7 +332,7 @@ contains
 
       ! Call the general callback function
       call flagship_hadaptCallback2d(iOperation, rcollection)
-
+      
 
     case(HADAPT_OPR_INSERTVERTEXCENTR)
       ! Insert vertex into solution vector for the Euler model
@@ -510,6 +573,161 @@ contains
   end subroutine zpinch_hadaptCallbackBlock2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatDiagConvIntlP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+    
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for the velocity vector $v=v(x,y,t)$
+    ! for the primal problem in 2D.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine zpinch_calcMatDiagConvIntlP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvIntlP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the primal problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+    
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: iedge,idx,jdx
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*Cx_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*Cx_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      
+      ! Compute base indices
+      idx = 4*(IverticesAtEdge(1,iedge)-1)
+      jdx = 4*(IverticesAtEdge(2,iedge)-1)
+      
+      ! Compute auxiliary variables
+      ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
+      vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
+      Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
+      uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
+      vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
+      Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+      
+      ! Compute auxiliary quantities
+      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      
+      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      
+      ! Compute dissipation tensor D_ij
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
+                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui +&
+                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+    end do
+    
+  end subroutine zpinch_calcMatRusConvIntlP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -518,9 +736,9 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
-    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the primal problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
     ! Euler system are stored in interleaved format.
@@ -547,7 +765,7 @@ contains
     real(DP), parameter :: GAMMA = 1.4_DP
 
     ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj, d2_ij
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: idx, jdx
 
     ! Compute convective coefficients
@@ -579,6 +797,161 @@ contains
   end subroutine zpinch_calcMatRusConvIntlP2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatDiagConvIntlD2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+    
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for the velocity vector $v=v(x,y,t)$
+    ! for the dual problem in 2D.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine zpinch_calcMatDiagConvIntlD2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvIntlD2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the dual problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+    
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: iedge,idx,jdx
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*Cx_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*Cx_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      
+      ! Compute base indices
+      idx = 4*(IverticesAtEdge(1,iedge)-1)
+      jdx = 4*(IverticesAtEdge(2,iedge)-1)
+      
+      ! Compute auxiliary variables
+      ui = p_Dvariable3(idx+2)/p_Dvariable3(idx+1)
+      vi = p_Dvariable3(idx+3)/p_Dvariable3(idx+1)
+      Ei = p_Dvariable3(idx+4)/p_Dvariable3(idx+1)
+      uj = p_Dvariable3(jdx+2)/p_Dvariable3(jdx+1)
+      vj = p_Dvariable3(jdx+3)/p_Dvariable3(jdx+1)
+      Ej = p_Dvariable3(jdx+4)/p_Dvariable3(jdx+1)
+      
+      ! Compute auxiliary quantities
+      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      
+      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      
+      ! Compute dissipation tensor D_ij
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
+                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui +&
+                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+    end do
+    
+  end subroutine zpinch_calcMatRusConvIntlD2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -587,9 +960,9 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
-    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the dual problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
     ! Euler system are stored in interleaved format.
@@ -622,6 +995,164 @@ contains
   end subroutine zpinch_calcMatRusConvIntlD2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatDiagConvBlockP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+    
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for the velocity vector $v=v(x,y,t)$
+    ! for the primal problem in 2D.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in block format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine zpinch_calcMatDiagConvBlockP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvBlockP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the dual problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in interleaved format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+    
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+    
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: iedge,neq,i,j
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*Cx_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*Cx_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      
+      ! Get number of equations for single variable
+      neq = size(p_Dvariable1)
+
+      ! Get equations i and j
+      i = IverticesAtEdge(1,iedge)
+      j = IverticesAtEdge(2,iedge)
+      
+      ! Compute auxiliary variables
+      ui = p_Dvariable3(neq  +i)/p_Dvariable3(i)
+      vi = p_Dvariable3(neq*2+i)/p_Dvariable3(i)
+      Ei = p_Dvariable3(neq*3+i)/p_Dvariable3(i)
+      uj = p_Dvariable3(neq  +j)/p_Dvariable3(j)
+      vj = p_Dvariable3(neq*2+j)/p_Dvariable3(j)
+      Ej = p_Dvariable3(neq*3+j)/p_Dvariable3(j)
+      
+      ! Compute auxiliary quantities
+      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      
+      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      
+      ! Compute dissipation tensor D_ij
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
+                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui +&
+                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+    end do
+    
+  end subroutine zpinch_calcMatRusConvBlockP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -630,12 +1161,12 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
-    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
-    ! Moreover, scalar artificial diffusion is applied.
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the dual problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
     !
     ! This subroutine assumes that the conservative variables of the
-    ! Euler system are stored in block format.
+    ! Euler system are stored in interleaved format.
 !</description>
 
 !<input>
@@ -659,7 +1190,7 @@ contains
     real(DP), parameter :: GAMMA = 1.4_DP
 
     ! local variables
-    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj, d2_ij
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
     integer :: neq
 
     ! Compute convective coefficients
@@ -689,6 +1220,164 @@ contains
                 abs(C_ji(1)*ui+C_ji(2)*vi) + sqrt(C_ji(1)**2+C_ji(2)**2)*ci )
 
   end subroutine zpinch_calcMatRusConvBlockP2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatDiagConvBlockD2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+    
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for the velocity vector $v=v(x,y,t)$
+    ! for the dual problem in 2D.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in block format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine zpinch_calcMatDiagConvBlockD2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine zpinch_calcMatRusConvBlockD2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the velocity vector $v=v(x,y,t)$ for
+    ! the dual problem in 2D.  Moreover, scalar artificial viscosity
+    ! of Rusanov-type is applied.
+    !
+    ! This subroutine assumes that the conservative variables of the
+    ! Euler system are stored in block format.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local parameters
+    real(DP), parameter :: GAMMA = 1.4_DP
+    
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    real(DP) :: hi,hj,Ei,Ej,ui,uj,vi,vj,ci,cj
+    integer :: iedge,neq,i,j
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*Cx_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*Cx_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      
+      ! Get number of equations for single variable
+      neq = size(p_Dvariable1)
+      
+      ! Get equations i and j
+      i = IverticesAtEdge(1,iedge)
+      j = IverticesAtEdge(2,iedge)
+
+      ! Compute auxiliary variables
+      ui = p_Dvariable3(neq  +i)/p_Dvariable3(i)
+      vi = p_Dvariable3(neq*2+i)/p_Dvariable3(i)
+      Ei = p_Dvariable3(neq*3+i)/p_Dvariable3(i)
+      uj = p_Dvariable3(neq  +j)/p_Dvariable3(j)
+      vj = p_Dvariable3(neq*2+j)/p_Dvariable3(j)
+      Ej = p_Dvariable3(neq*3+j)/p_Dvariable3(j)
+      
+      ! Compute auxiliary quantities
+      hi = GAMMA*Ei+(1-GAMMA)*0.5*(ui*ui+vi*vi)
+      hj = GAMMA*Ej+(1-GAMMA)*0.5*(uj*uj+vj*vj)
+      
+      ci = sqrt(max((GAMMA-1)*(hi-0.5_DP*(ui*ui+vi*vi)), SYS_EPSREAL))
+      cj = sqrt(max((GAMMA-1)*(hj-0.5_DP*(uj*uj+vj*vj)), SYS_EPSREAL))
+      
+      ! Compute dissipation tensor D_ij
+      DcoefficientsAtEdge(1,iedge) = dscale*&
+          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj +&
+                   DmatrixCoeffsAtEdge(2,1,iedge)*vj) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,1,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,1,iedge)**2)*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui +&
+                   DmatrixCoeffsAtEdge(2,2,iedge)*vi) +&
+                   sqrt(DmatrixCoeffsAtEdge(1,2,iedge)**2 +&
+                        DmatrixCoeffsAtEdge(2,2,iedge)**2)*ci )
+    end do
+    
+  end subroutine zpinch_calcMatRusConvBlockD2d_sim
 
   !*****************************************************************************
 

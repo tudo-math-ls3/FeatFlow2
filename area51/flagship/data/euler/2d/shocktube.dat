@@ -56,14 +56,16 @@ idissipationtype = 2
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 0
+isystemcoupling = 1
 
 # type of preconditioner
 # 0 = Galerkin scheme
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 1
+isystemPrecond = 0
+
+#-------------------------------------------------------------------------------
 
 # variables for flux correction
 # (i)  for synchronized flux correction list 
@@ -116,6 +118,22 @@ iexactsolutiontype = 0
 # section name of exact solution
 sexactsolutionname =
 
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
+
 #-------------------------------------------------------------------------------
 
 # file which contains the boundary parametrisation
@@ -144,7 +162,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 0
+isystemformat = 1
 
 #-------------------------------------------------------------------------------
 
@@ -181,7 +199,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 12
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 1

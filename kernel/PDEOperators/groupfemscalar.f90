@@ -155,6 +155,7 @@ module groupfemscalar
 
   use afcstabilisation
   use basicgeometry
+  use collection
   use fsystem
   use genoutput
   use linearalgebra
@@ -183,7 +184,29 @@ module groupfemscalar
   public :: gfsc_buildJacobianGP
   public :: gfsc_buildJacobianSymm
   public :: gfsc_buildFluxFCT
+ 
+!<constants>
+
+!<constantblock description="Constants defining the blocking of the assembly">
+
+  ! Number of nodes to handle simultaneously when building matrices
+#ifdef GFSC_NEQSIM
+  integer, parameter, public :: GFSC_NEQSIM = GFSC_NEQSIM
+#else
+  integer, parameter, public :: GFSC_NEQSIM = 1000
+#endif
+
+  ! Number of edges to handle simultaneously when building matrices
+#ifdef GFSC_NEDGESIM
+  integer, parameter, public :: GFSC_NEDGESIM = GFSC_NEDGESIM
+#else
+  integer, parameter, public :: GFSC_NEDGESIM = 1000
+#endif
   
+!</constantblock>
+
+!</constants>
+ 
   ! *****************************************************************************
   ! *****************************************************************************
   ! *****************************************************************************
@@ -635,15 +658,18 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, rafcstab, rx,&
-      fcb_calcMatrix, bbuildStabilisation, bclear, rconvMatrix,&
-      bisConservative)
+  subroutine gfsc_buildConvOperatorBlock(RcoeffMatrices, rafcstab,&
+      rx, fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      bbuildStabilisation, bclear, rconvMatrix, rcollection)
     
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !   <tex> $$ \nabla\cdot({\bf v}u) $$ </tex>
+    !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
+    !
+    ! where ${\bf f}(u)$ is a user-defined flux function for the
+    ! scalar field $u$.
     !
     ! Note that this routine serves as a wrapper for block vectors. If there
     ! is only one block, then the corresponding scalar routine is called.
@@ -659,6 +685,9 @@ contains
     ! problems which require the evaluation of the velocity
     type(t_vectorBlock), intent(in) :: rx
     
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -669,12 +698,7 @@ contains
     ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
-    ! OPTIONAL: Switch for (non-)conservative matrix assembly
-    ! TRUE  : assemble conservative convection operator (default)
-    ! FALSE : assemble non-conservative convection operator
-    logical, intent(in), optional :: bisConservative
-
-    ! callback functions to compute velocity
+    ! Callback functions to compute matrix entries
     include 'intf_gfsccallback.inc'
 !</input>
 
@@ -682,8 +706,11 @@ contains
     ! The stabilisation structure
     type(t_afcstab), intent(inout) :: rafcstab
 
-    ! The transport operator
+    ! The global operator
     type(t_matrixScalar), intent(inout) :: rconvMatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
@@ -697,8 +724,8 @@ contains
     else
       
       call gfsc_buildConvOperatorScalar(RcoeffMatrices, rafcstab,&
-          rx%RvectorBlock(1), fcb_calcMatrix, bbuildStabilisation, bclear,&
-          rconvMatrix, bisConservative)
+          rx%RvectorBlock(1), fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim,&
+          dscale, bbuildStabilisation, bclear, rconvMatrix, rcollection)
 
     end if
 
@@ -709,14 +736,17 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvOperatorScalar(RcoeffMatrices, rafcstab,&
-      rx, fcb_calcMatrix, bbuildStabilisation, bclear, rconvMatrix,&
-      bisConservative)
+      rx, fcb_calcMatrixDiagonal_sim, fcb_calcMatrix_sim, dscale,&
+      bbuildStabilisation, bclear, rconvMatrix, rcollection)
 
 !<description>
     ! This subroutine assembles the discrete transport operator which results
     ! from the group finite element formulation of the continuous problem
     !
-    !     <tex> $$ \nabla\cdot({\bf v}u) $$ </tex>
+    !   <tex> $$ \nabla\cdot{\bf f}(u) $$ </tex>
+    !
+    ! where ${\bf f}(u)$ is a user-defined flux function for the
+    ! scalar field $u$.
     !
     ! This routine can be used to apply the following discretisations:
     !
@@ -735,7 +765,7 @@ contains
     ! (3) In addition to (2), discrete upwinding is performed and auxiliary
     !     data required for flux limiting is generated in the optional 
     !     stabilisation structure rafcstab. For symmetric flux limiters,
-    !     the artificil diffusio coefficient d_ij and the entries of the
+    !     the artificial diffusion coefficient d_ij and the entries of the
     !     low-order operator l_ij=k_ij+d_ij are stored as well as the node
     !     numbers i and j and the matrix positions ij/ji of the edge (i,j).
     !     For upwind-biased flux limiters the same data are stored but the
@@ -753,6 +783,9 @@ contains
     ! problems which require the evaluation of the velocity
     type(t_vectorScalar), intent(in) :: rx
 
+    ! Scaling factor
+    real(DP), intent(in) :: dscale
+
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
     ! FALSE : perform no stabilisation
@@ -763,12 +796,7 @@ contains
     ! FALSE : assemble matrix in an additive way
     logical, intent(in) :: bclear
 
-    ! OPTIONAL: Switch for (non-)conservative matrix assembly
-    ! TRUE  : assemble conservative convection operator (default)
-    ! FALSE : assemble non-conservative convection operator
-    logical, intent(in), optional :: bisConservative
-
-    ! callback functions to compute velocity
+    ! Callback functions to compute matrix entries
     include 'intf_gfsccallback.inc'
 !</input>
 
@@ -778,16 +806,18 @@ contains
 
     ! The transport operator
     type(t_matrixScalar), intent(inout) :: rconvMatrix
+
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
 !</inputoutput>
 !</subroutine>
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_CoeffX,p_CoeffY,p_CoeffZ,p_ConvOp,p_Dx
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_ConvOp,p_Dx
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kdiagonal
     integer :: ndim
-    logical :: bconservative
 
 
     ! Check if stabilisation has been initialised
@@ -803,10 +833,6 @@ contains
         (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
       call afcstab_generateVerticesAtEdge(RcoeffMatrices(1), rafcstab)
     end if
-
-    ! Check if conservative of non-conservative convection operator is required
-    bconservative = .true.
-    if (present(bisConservative)) bconservative = bisConservative
     
     ! Clear matrix?
     if (bclear) call lsyssc_clearMatrix(rconvMatrix)
@@ -820,16 +846,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_CoeffZ)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -852,166 +878,62 @@ contains
         call lsyssc_getbase_Kdiagonal(RcoeffMatrices(1), p_Kdiagonal)
       end if
 
-      ! Do we have to perform stabilisation?
+      ! Do we have to build the stabilisation?
       if (bbuildStabilisation) then
         
         ! Set additional pointers
         call afcstab_getbase_DcoeffsAtEdge(rafcstab, p_DcoefficientsAtEdge)
         
+        ! Assemble Galerkin operator with stabilisation
+        select case(ndim)
+        case (NDIM1D)
+          call doOperatorAFCMat79_1D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_Dx, dscale, p_ConvOp, p_DcoefficientsAtEdge)
+        case (NDIM2D)
+          call doOperatorAFCMat79_2D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_ConvOp, p_DcoefficientsAtEdge)
+        case (NDIM3D)
+          call doOperatorAFCMat79_3D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale,&
+              p_ConvOp, p_DcoefficientsAtEdge)
+        end select
+        
+        ! Set state of stabilisation
+        rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
+        
         ! Do we need edge orientation?
         if (gfsc_hasOrientation(rafcstab)) then
-          
-          ! Adopt orientation convention IJ, such that L_ij < L_ji
-          ! and generate edge structure for the flux limiter
-          
-          if (bconservative) then
-            
-            ! Conservative formulation of convection operator
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doOperatorOAFCMat79Cons1D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doOperatorOAFCMat79Cons2D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doOperatorOAFCMat79Cons3D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            ! Non-conservative formulation of convection operator
-
-            select case(ndim)
-            case (NDIM1D)
-              call doOperatorOAFCMat79Nonc1D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doOperatorOAFCMat79Nonc2D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doOperatorOAFCMat79Nonc3D(p_Kdiagonal,&
-                  rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp,&
-                  p_IverticesAtEdge, p_DcoefficientsAtEdge)
-            end select
-
-          end if
-          
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
+          call doUpwindOrientation(p_IverticesAtEdge, p_DcoefficientsAtEdge)
           rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION)
-
-        else   ! bhasOrientation == no
-
-          ! Adopt no orientation convention and generate edge structure
-          
-          if (bconservative) then
-
-            ! Conservative formulation of convection operator
-            
-            select case(ndim)
-            case (NDIM1D)
-              call doOperatorAFCMat79Cons1D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doOperatorAFCMat79Cons2D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doOperatorAFCMat79Cons3D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            end select
-
-          else
-
-            ! Non-conservative formulation of convection operator
-
-            select case(ndim)
-            case (NDIM1D)
-              call doOperatorAFCMat79Nonc1D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            case (NDIM2D)
-              call doOperatorAFCMat79Nonc2D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            case (NDIM3D)
-              call doOperatorAFCMat79Nonc3D(p_Kdiagonal,&
-                  p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                  p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp, p_DcoefficientsAtEdge)
-            end select
-            
-          end if
-          
-          ! Set state of stabilisation
-          rafcstab%iSpec = ior(rafcstab%iSpec, AFCSTAB_HAS_EDGEVALUES)
+        else
           rafcstab%iSpec = iand(rafcstab%iSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
-
-        end if   ! bhasOrientation
+        end if
         
       else   ! bbuildStabilisation == no
         
         ! Apply standard discretisation without stabilisation
-        
-        if (bconservative) then
+        select case(ndim)
+        case (NDIM1D)
+          call doOperatorMat79_1D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_Dx, dscale, p_ConvOp)
+        case (NDIM2D)
+          call doOperatorMat79_2D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_DcoeffY, p_Dx, dscale, p_ConvOp)
+        case (NDIM3D)
+          call doOperatorMat79_3D(p_Kdiagonal,&
+              p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
+              p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, dscale, p_ConvOp)
+        end select
           
-          ! Conservative formulation of convection operator
-
-          select case(ndim)
-          case (NDIM1D)
-            call doOperatorMat79Cons1D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_Dx, p_ConvOp)
-          case (NDIM2D)
-            call doOperatorMat79Cons2D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_CoeffY, p_Dx, p_ConvOp)
-          case (NDIM3D)
-            call doOperatorMat79Cons3D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp)
-          end select
-          
-        else
-          
-          ! Non-conservative formulation of convection operator
-          
-          select case(ndim)
-          case (NDIM1D)
-            call doOperatorMat79Nonc1D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_Dx, p_ConvOp)
-          case (NDIM2D)
-            call doOperatorMat79Nonc2D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_CoeffY, p_Dx, p_ConvOp)
-          case (NDIM3D)
-            call doOperatorMat79Nonc3D(p_Kdiagonal,&
-                p_IverticesAtEdge, rafcstab%NEDGE, rconvMatrix%NEQ,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_ConvOp)
-          end select
-          
-        end if
-        
         ! Set state of stabilisation
         rafcstab%iSpec = iand(rafcstab%iSpec, not(AFCSTAB_HAS_EDGEVALUES))
         rafcstab%iSpec = iand(rafcstab%iSpec, not(AFCSTAB_HAS_EDGEORIENTATION))
-
+        
       end if
       
     case DEFAULT
@@ -1025,1232 +947,1189 @@ contains
     ! Here, the working routine follow
         
     !**************************************************************
-    ! Assemble convection operator operator L in 1D.
+    ! Assemble convection operator K in 1D.
     ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
     
-    subroutine doOperatorMat79Cons1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, Dx, L)
+    subroutine doOperatorMat79_1D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, Dx, dscale, K)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
+      real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
-      real(DP), dimension(:), intent(inout) :: L
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
       
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii)
-
-        ! Compute coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-      end do
-
-    end subroutine doOperatorMat79Cons1D
-
-    !**************************************************************
-    ! Assemble convection operator operator L in 1D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-    
-    subroutine doOperatorMat79Nonc1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, Dx, L)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode, DcoefficientsAtEdge
+      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: i,ii,jj,ij,ji,iedge
       
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-      end do
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
 
-    end subroutine doOperatorMat79Nonc1D
-    
-    !**************************************************************
-    ! Assemble convection operator operator L in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-    
-    subroutine doOperatorMat79Cons2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, Dx, L)
+      ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(1,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
 
-      real(DP), dimension(:), intent(inout) :: L
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
         
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
         
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii)
-
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(1,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
         
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-      end do
-
-    end subroutine doOperatorMat79Cons2D
-
-    !**************************************************************
-    ! Assemble convection operator operator L in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-    
-    subroutine doOperatorMat79Nonc2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, Dx, L)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-      end do
-
-    end subroutine doOperatorMat79Nonc2D
-
-    
-    !**************************************************************
-    ! Assemble convection operator operator L in 3D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-    
-    subroutine doOperatorMat79Cons3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, CoeffZ, Dx, L)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP):: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii); C_ij(3) = CoeffZ(ii)
-
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-      end do
-
-    end subroutine doOperatorMat79Cons3D
-
-    !**************************************************************
-    ! Assemble convection operator operator L in 3D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-    
-    subroutine doOperatorMat79Nonc3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, CoeffZ, Dx, L)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP):: k_ij,k_ji,d_ij
-      integer :: iedge,ii,jj,ij,ji,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-
-        ! Apply artificial diffusion (if any)
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-      end do
-
-    end subroutine doOperatorMat79Nonc3D
-    
-    !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 1D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-    
-    subroutine doOperatorAFCMat79Cons1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, Dx, L, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Compute coefficient
-        C_ij(1) = CoeffX(ii)
-        
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-                  
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-      end do
-      
-    end subroutine doOperatorAFCMat79Cons1D
-
-    !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 1D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-    
-    subroutine doOperatorAFCMat79Nonc1D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, Dx, L, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
           
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+          
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
         
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
       end do
-      
-    end subroutine doOperatorAFCMat79Nonc1D
 
-    !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
 
-    subroutine doOperatorAFCMat79Cons2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, Dx, L, DcoefficientsAtEdge)
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DmatrixCoeffsAtEdge(1,2,GFSC_NEDGESIM))
+      allocate(DcoefficientsAtEdge(3,GFSC_NEDGESIM))
 
-      real(DP), dimension(:), intent(inout) :: L
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
 
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
         
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii)
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
 
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEdge(1,2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DcoefficientsAtEdge(3,IEDGEmax-IEDGEset+1))
         
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+        end do
+
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+        end do
+        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+!!$        deallocate(DcoefficientsAtEdge)
+        
       end do
-      !$omp end parallel do
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-                  
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
-      end do
-      
-    end subroutine doOperatorAFCMat79Cons2D
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
+      deallocate(DcoefficientsAtEdge)
 
-    !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-
-    subroutine doOperatorAFCMat79Nonc2D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, Dx, L, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:,:), intent(in) :: IverticesAtEdge
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-      
-      real(DP), dimension(:), intent(inout) :: L
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-      end do
-      
-    end subroutine doOperatorAFCMat79Nonc2D
+    end subroutine doOperatorMat79_1D
     
     !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 3D.
+    ! Assemble convection operator K in 2D.
     ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
+    
+    subroutine doOperatorMat79_2D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, DcoeffY, Dx, dscale, K)
 
-    subroutine doOperatorAFCMat79Cons3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, CoeffZ, Dx, L, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
+      real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
-      real(DP), dimension(:), intent(inout) :: L
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
       
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode, DcoefficientsAtEdge
+      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: i,ii,jj,ij,ji,iedge
       
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
 
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii); C_ij(3) = CoeffZ(ii)
+      ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(2,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
 
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
+
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
         
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
         
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
+        
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
           
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+          
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+          DmatrixCoeffsAtNode(2,idx) = DcoeffY(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
         
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
       end do
+
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
       
-    end subroutine doOperatorAFCMat79Cons3D
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
 
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DmatrixCoeffsAtEDGE(2,2,GFSC_NEDGESIM))
+      allocate(DcoefficientsAtEDGE(3,GFSC_NEDGESIM))
+
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEDGE(2,2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DcoefficientsAtEDGE(3,IEDGEmax-IEDGEset+1))
+        
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+          
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(2,1,idx) = DcoeffY(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffY(IverticesAtEdge(4,iedge))
+        end do
+        
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+        
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+        end do
+        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+!!$        deallocate(DcoefficientsAtEdge)
+        
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
+      deallocate(DcoefficientsAtEdge)
+      
+    end subroutine doOperatorMat79_2D
+    
     !**************************************************************
-    ! Assemble convection operator L and AFC data w/o edge
-    ! orientation in 3D.
+    ! Assemble convection operator K in 3D.
     ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-
-    subroutine doOperatorAFCMat79Nonc3D(Kdiagonal, IverticesAtEdge,&
-        NEDGE, NEQ, CoeffX, CoeffY, CoeffZ, Dx, L, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+    
+    subroutine doOperatorMat79_3D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K)
+      
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
+      real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
       integer, intent(in) :: NEDGE,NEQ
 
-      real(DP), dimension(:), intent(inout) :: L
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
+      
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode, DcoefficientsAtEdge
+      integer, dimension(:,:), pointer  :: IverticesAtNode
+
+      ! local variables
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: i,ii,jj,ij,ji,iedge
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+      
+      ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(3,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
+
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
+
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
+        
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
+        
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(3,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
+        
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
+          
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+          
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+          DmatrixCoeffsAtNode(2,idx) = DcoeffY(ii)
+          DmatrixCoeffsAtNode(3,idx) = DcoeffZ(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
+        
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+      
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+      allocate(DmatrixCoeffsAtEDGE(3,2,IEDGEmax-IEDGEset+1))
+      allocate(DcoefficientsAtEDGE(3,IEDGEmax-IEDGEset+1))
+      
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEDGE(3,2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DcoefficientsAtEDGE(3,IEDGEmax-IEDGEset+1))
+        
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+          
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(2,1,idx) = DcoeffY(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(3,1,idx) = DcoeffZ(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffY(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffZ(IverticesAtEdge(4,iedge))
+        end do
+        
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,1:IEDGEmax-IEDGEset+1), rcollection)
+        
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,idx)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,idx)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,idx) + DcoefficientsAtEdge(1,idx) 
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,idx) + DcoefficientsAtEdge(1,idx) 
+        end do
+        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+!!$        deallocate(DcoefficientsAtEdge)
+        
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
+      deallocate(DcoefficientsAtEdge)
+
+    end subroutine doOperatorMat79_3D
+    
+    !**************************************************************
+    ! Assemble convection operator K and AFC data in 1D.
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOperatorAFCMat79_1D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, Dx, dscale, K, DcoefficientsAtEdge)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE,NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
+      
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
+      integer, dimension(:,:), pointer  :: IverticesAtNode
+      
+      ! local variables
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: i,ii,jj,ij,ji,iedge
             
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-       
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(1,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
+
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
+
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
+        
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
+        
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(1,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
+        
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
+          
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+          
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+        
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
+        
+      end do
       
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DmatrixCoeffsAtEDGE(1,2,GFSC_NEDGESIM))
+
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+
+        ! DcoefficientsAtEdge is not allocated as temporal array
+        ! since it is given as global output parameter.
+
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEDGE(1,2,IEDGEmax-IEDGEset+1))
+      
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+          
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+        end do
+        
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
+        
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Compute entries of low-order operator
+          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+          DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+        end do
+        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
+      
+    end subroutine doOperatorAFCMat79_1D
+
+    !**************************************************************
+    ! Assemble convection operator K and AFC data in 2D.
+    ! All matrices are stored in matrix format 7 and 9
+    
+    subroutine doOperatorAFCMat79_2D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, DcoeffY, Dx, dscale, K, DcoefficientsAtEdge)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE,NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
+
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
+      integer, dimension(:,:), pointer  :: IverticesAtNode
+   
+      ! local variables
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: i,ii,jj,ij,ji,iedge
+      
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+       ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(2,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
+
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
+
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
+        
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
+        
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
+        
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
+          
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+          DmatrixCoeffsAtNode(2,idx) = DcoeffY(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
+        
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DmatrixCoeffsAtEDGE(2,2,GFSC_NEDGESIM))
+
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+
+        ! DcoefficientsAtEdge is not allocated as temporal arrays
+        ! since it is given as global output parameter.
+
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEDGE(2,2,IEDGEmax-IEDGEset+1))
+      
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+          
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(2,1,idx) = DcoeffY(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffY(IverticesAtEdge(4,iedge))
+        end do
+        
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
+        
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Compute entries of low-order operator
+          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+          DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+        end do
+        
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+
+      end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
+
+    end subroutine doOperatorAFCMat79_2D
+    
+    !**************************************************************
+    ! Assemble convection operator K and AFC data in 3D.
+    ! All matrices are stored in matrix format 7 and 9
+
+    subroutine doOperatorAFCMat79_3D(Kdiagonal, IverticesAtEdge,&
+        NEDGE, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, dscale, K, DcoefficientsAtEdge)
+
+      ! input parameters
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
+      real(DP), intent(in) :: dscale
+      integer, dimension(:,:), intent(in) :: IverticesAtEdge
+      integer, dimension(:), intent(in) :: Kdiagonal
+      integer, intent(in) :: NEDGE,NEQ
+
+      ! input/output parameters
+      real(DP), dimension(:), intent(inout) :: K
+      
+      ! output parameters
+      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+      
+      ! auxiliary arras
+      real(DP), dimension(:), pointer :: DdataAtNode
+      real(DP), dimension(:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DmatrixCoeffsAtNode
+      real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
+      real(DP), dimension(:,:), pointer :: DcoefficientsAtNode
+      integer, dimension(:,:), pointer  :: IverticesAtNode
+
+      ! local variables
+      integer :: idx,IEQset,IEQmax,IEDGEset,IEDGEmax
+      integer :: iedge,i,ii,jj,ij,ji
+
+      !-------------------------------------------------------------------------
+      ! Assemble diagonal entries
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(IverticesAtNode(2,GFSC_NEQSIM))
+      allocate(DdataAtNode(GFSC_NEQSIM))
+      allocate(DmatrixCoeffsAtNode(3,GFSC_NEQSIM))
+      allocate(DcoefficientsAtNode(1,GFSC_NEQSIM))
+
+      ! Loop over the equations
+      do IEQset = 1, NEQ, GFSC_NEQSIM
+
+        ! We always handle GFSC_NEQSIM equations simultaneously.
+        ! How many equations have we actually here?
+        ! Get the maximum equation number, such that we handle 
+        ! at most GFSC_NEQSIM equations simultaneously.
+        
+        IEQmax = min(NEQ, IEQset-1+GFSC_NEQSIM)
+        
+!!$        ! Allocate temporal memory
+!!$        allocate(IverticesAtNode(2,IEQmax-IEQset+1))
+!!$        allocate(DdataAtNode(IEQmax-IEQset+1))
+!!$        allocate(DmatrixCoeffsAtNode(3,IEQmax-IEQset+1))
+!!$        allocate(DcoefficientsAtNode(1,IEQmax-IEQset+1))
+        
+        ! Loop through all equations in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEQmax-IEQset+1
+          
+          ! Get actual equation number
+          i = idx+IEQset-1
+
+          ! Get position of diagonal entry
+          ii = Kdiagonal(i)
+          
+          ! Fill auxiliary arrays
+          IverticesAtNode(1,idx)     = i
+          IverticesAtNode(2,idx)     = ii
+          DdataAtNode(idx)           = Dx(i)
+          DmatrixCoeffsAtNode(1,idx) = DcoeffX(ii)
+          DmatrixCoeffsAtNode(2,idx) = DcoeffY(ii)
+          DmatrixCoeffsAtNode(3,idx) = DcoeffZ(ii)
+        end do
+
+        ! Use callback function to compute diagonal entries
+        call fcb_calcMatrixDiagonal_sim(&
+            DdataAtNode(1:IEQmax-IEQset+1),&
+            DmatrixCoeffsAtNode(:,1:IEQmax-IEQset+1),&
+            IverticesAtNode(:,1:IEQmax-IEQset+1), dscale,&
+            DcoefficientsAtNode(:,1:IEQmax-IEQset+1), rcollection)
+
+        ! Loop through all equations in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEQmax-IEQset+1
+
+          ! Get position of diagonal entry
+          ii = IverticesAtNode(2,idx)
+
+          ! Update the diagonal coefficient
+          K(ii) = K(ii) + DcoefficientsAtNode(1,idx)
+        end do
+
+!!$        ! Deallocate temporal memory
+!!$        deallocate(IverticesAtNode)
+!!$        deallocate(DdataAtNode)
+!!$        deallocate(DmatrixCoeffsAtNode)
+!!$        deallocate(DcoefficientsAtNode)
+
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(IverticesAtNode)
+      deallocate(DdataAtNode)
+      deallocate(DmatrixCoeffsAtNode)
+      deallocate(DcoefficientsAtNode)
+
+      !-------------------------------------------------------------------------
+      ! Assemble off-diagonal entries
+      !-------------------------------------------------------------------------
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(2,GFSC_NEDGESIM))
+      allocate(DmatrixCoeffsAtEDGE(3,2,GFSC_NEDGESIM))
+
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSC_NEDGESIM
+
+        ! We always handle GFSC_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSC_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSC_NEDGESIM)
+
+        ! DcoefficientsAtEdge is not allocated as temporal array
+        ! since it is given as global output parameter.
+
+!!$        ! Allocate temporal memory
+!!$        allocate(DdataAtEdge(2,IEDGEmax-IEDGEset+1))
+!!$        allocate(DmatrixCoeffsAtEDGE(3,2,IEDGEmax-IEDGEset+1))
+      
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+          
+          ! Fill auxiliary arrays
+          DdataAtEdge(1,idx)           = Dx(IverticesAtEdge(1,iedge))
+          DdataAtEdge(2,idx)           = Dx(IverticesAtEdge(2,iedge))
+          DmatrixCoeffsAtEdge(1,1,idx) = DcoeffX(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(2,1,idx) = DcoeffY(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(3,1,idx) = DcoeffZ(IverticesAtEdge(3,iedge))
+          DmatrixCoeffsAtEdge(1,2,idx) = DcoeffX(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffY(IverticesAtEdge(4,iedge))
+          DmatrixCoeffsAtEdge(2,2,idx) = DcoeffZ(IverticesAtEdge(4,iedge))
+        end do
+        
+        ! Use callback function to compute off-diagonal entries
+        call fcb_calcMatrix_sim(&
+            DdataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            DmatrixCoeffsAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            IverticesAtEdge(:,IEDGEset:IEDGEmax), dscale,&
+            DcoefficientsAtEdge(:,IEDGEset:IEDGEmax), rcollection)
+        
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global matrix
+        do idx = 1, IEDGEmax-IEDGEset+1
+         
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
  
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+          ! Get position of diagonal entries
+          ii = Kdiagonal(IverticesAtEdge(1,iedge))
+          jj = Kdiagonal(IverticesAtEdge(2,iedge))
+
+          ! Get position of off-diagonal entries
+          ij = IverticesAtEdge(3,iedge)
+          ji = IverticesAtEdge(4,iedge)
+
+          ! Compute entries of low-order operator
+          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(2,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+          DcoefficientsAtEdge(3,iedge) = DcoefficientsAtEdge(3,iedge) +&
+                                         DcoefficientsAtEdge(1,iedge)
+
+          ! Update the global operator
+          K(ii) = K(ii) - DcoefficientsAtEdge(1,iedge)
+          K(jj) = K(jj) - DcoefficientsAtEdge(1,iedge)
+          K(ij) = K(ij) + DcoefficientsAtEdge(2,iedge)
+          K(ji) = K(ji) + DcoefficientsAtEdge(3,iedge)
+        end do
         
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-               
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC w/o edge orientation
-        DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)          
+!!$        ! Deallocate temporal memory
+!!$        deallocate(DdataAtEdge)
+!!$        deallocate(DmatrixCoeffsAtEdge)
+
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DmatrixCoeffsAtEdge)
       
-    end subroutine doOperatorAFCMat79Nonc3D
+    end subroutine doOperatorAFCMat79_3D
     
     !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 1D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-
-    subroutine doOperatorOAFCMat79Cons1D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
+    ! Enforce edge orientation for upwind-based AFC
+    subroutine doUpwindOrientation(IverticesAtEdge, DcoefficientsAtEdge)
+      
+      ! inout/output parameters
       integer, dimension(:,:), intent(inout) :: IverticesAtEdge
+      real(DP), dimension(:,:), intent(inout) :: DcoefficientsAtEdge
 
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
       ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
+      real(DP) :: daux
+      integer :: iedge,iaux
       
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
+      ! Impose edge orientation a posteriori
+      !$omp parallel do default(shared) private(daux,iaux)
+      do iedge = 1, size(DcoefficientsAtEdge,2)
+        if (DcoefficientsAtEdge(2,iedge) > DcoefficientsAtEdge(3,iedge)) then
+          daux = DcoefficientsAtEdge(2,iedge)
+          DcoefficientsAtEdge(2,iedge) = DcoefficientsAtEdge(3,iedge)
+          DcoefficientsAtEdge(3,iedge) = daux
 
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii)
-        
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-       
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-        
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-        end if
-      end do
-
-    end subroutine doOperatorOAFCMat79Cons1D
-
-    !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 1D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-
-    subroutine doOperatorOAFCMat79Nonc1D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM1D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-        end if
-      end do
-
-    end subroutine doOperatorOAFCMat79Nonc1D
-    
-    !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-
-    subroutine doOperatorOAFCMat79Cons2D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, CoeffY, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii)
-        
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ji, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-        
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-        end if
-      end do
-
-    end subroutine doOperatorOAFCMat79Cons2D
-
-    !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 2D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-
-    subroutine doOperatorOAFCMat79Nonc2D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, CoeffY, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE,NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM2D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-      
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-        end if
-      end do
-
-    end subroutine doOperatorOAFCMat79Nonc2D
-    
-    !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 3D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Conservative formulation
-
-    subroutine doOperatorOAFCMat79Cons3D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, CoeffY, CoeffZ, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE, NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-      
-      ! Loop over all rows
-      !$omp parallel do private(ii,C_ij,k_ij,k_ji,d_ij)
-      do i = 1, NEQ
-        
-        ! Get position of diagonal entry
-        ii = Kdiagonal(i)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ii); C_ij(2) = CoeffY(ii); C_ij(3) = CoeffZ(ii)
-        
-        ! Compute convection coefficients for diagonal
-        call fcb_calcMatrix(Dx(i), Dx(i),&
-            C_ij, C_ij, i, i, k_ij, k_ji, d_ij)
-        
-        ! Update the diagonal coefficient
-        L(ii) = L(ii) + k_ij
-      end do
-      !$omp end parallel do
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
+          iaux = IverticesAtEdge(1,iedge)
+          IverticesAtEdge(1,iedge) = IverticesAtEdge(2,iedge)
+          IverticesAtEdge(2,iedge) = iaux
           
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - d_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - d_ij
-          
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
+          iaux = IverticesAtEdge(3,iedge)
+          IverticesAtEdge(3,iedge) = IverticesAtEdge(4,iedge)
+          IverticesAtEdge(4,iedge) = iaux
         end if
       end do
+      !$omp end parallel do
 
-    end subroutine doOperatorOAFCMat79Cons3D
-
-    !**************************************************************
-    ! Assemble convection operator L and AFC data with edge
-    ! orientation in 3D.
-    ! All matrices are stored in matrix format 7 and 9
-    ! Non-conservative formulation
-
-    subroutine doOperatorOAFCMat79Nonc3D(Kdiagonal, NEDGE, NEQ,&
-        CoeffX, CoeffY, CoeffZ, Dx, L, IverticesAtEdge, DcoefficientsAtEdge)
-
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
-      integer, dimension(:), intent(in) :: Kdiagonal
-      integer, intent(in) :: NEDGE, NEQ
-
-      real(DP), dimension(:), intent(inout) :: L
-      integer, dimension(:,:), intent(inout) :: IverticesAtEdge
-
-      real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
-      
-      ! local variables
-      real(DP), dimension(NDIM3D) :: C_ij,C_ji
-      real(DP) :: d_ij,k_ij,k_ji
-      integer :: ii,ij,ji,jj,iedge,i,j
-      
-
-      ! Loop over all edges
-      do iedge = 1, NEDGE
-        
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-        ij = IverticesAtEdge(3, iedge)
-        ji = IverticesAtEdge(4, iedge)
-        ii = Kdiagonal(i)
-        jj = Kdiagonal(j)
-        
-        ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
-        
-        ! Compute convection coefficients
-        call fcb_calcMatrix(Dx(i), Dx(j),&
-            C_ij, C_ji, i, j, k_ij, k_ji, d_ij)
-        
-        ! Apply artificial diffusion
-        k_ij = k_ij + d_ij
-        k_ji = k_ji + d_ij
-        
-        ! Assemble the global operator
-        L(ii) = L(ii) - k_ij
-        L(ij) = L(ij) + k_ij 
-        L(ji) = L(ji) + k_ji
-        L(jj) = L(jj) - k_ji
-        
-        ! AFC with edge orientation
-        if (k_ij < k_ji) then
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ij, k_ji/)
-        else
-          IverticesAtEdge(:,iedge)     = (/j, i, ji, ij/)
-          DcoefficientsAtEdge(:,iedge) = (/d_ij, k_ji, k_ij/)
-        end if
-      end do
-      
-    end subroutine doOperatorOAFCMat79Nonc3D
+    end subroutine doUpwindOrientation
     
   end subroutine gfsc_buildConvOperatorScalar
 
@@ -3936,7 +3815,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianBlock(RcoeffMatrices, rx,&
-      fcb_calcMatrix, hstep, bbuildStabilisation, bclear, rjacobianMatrix)
+      fcb_calcMatrix, hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective
@@ -3955,6 +3834,9 @@ contains
     
     ! perturbation parameter
     real(DP), intent(in) :: hstep
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
@@ -3986,7 +3868,7 @@ contains
     else
       
       call gfsc_buildConvJacobianScalar(RcoeffMatrices,&
-          rx%RvectorBlock(1), fcb_calcMatrix, hstep,&
+          rx%RvectorBlock(1), fcb_calcMatrix, hstep, dscale,&
           bbuildStabilisation, bclear, rjacobianMatrix)
       
     end if
@@ -3998,7 +3880,7 @@ contains
 !<subroutine>
 
   subroutine gfsc_buildConvJacobianScalar(RcoeffMatrices, rx,&
-      fcb_calcMatrix, hstep, bbuildStabilisation, bclear, rjacobianMatrix)
+      fcb_calcMatrix, hstep, dscale, bbuildStabilisation, bclear, rjacobianMatrix)
 
 !<description>
     ! This subroutine assembles the Jacobian matrix for the convective part
@@ -4014,6 +3896,9 @@ contains
     
     ! perturbation parameter
     real(DP), intent(in) :: hstep
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
 
     ! Switch for stabilisation
     ! TRUE  : perform stabilisation
@@ -4037,7 +3922,7 @@ contains
 
     ! local variables
     integer, dimension(:), pointer :: p_Kld,p_Kcol,p_Ksep,p_Kdiagonal
-    real(DP), dimension(:), pointer :: p_CoeffX,p_CoeffY,p_CoeffZ,p_Jac,p_Dx
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Jac,p_Dx
     integer :: h_Ksep,ndim
     
     
@@ -4052,16 +3937,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
       
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_CoeffZ)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -4092,13 +3977,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doUpwindMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doUpwindMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       else   ! bbuildStabilisation
@@ -4106,13 +3991,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doGalerkinMat7_1D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doGalerkinMat7_2D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doGalerkinMat7_3D(p_Kld, p_Kcol, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       end if   ! bbuildStabilisation
@@ -4142,13 +4027,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doUpwindMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doUpwindMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doUpwindMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
       
       else   ! bbuildStabilisation
@@ -4156,13 +4041,13 @@ contains
         select case(ndim)
         case (NDIM1D)
           call doGalerkinMat9_1D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_Dx, p_Jac)
         case (NDIM2D)
           call doGalerkinMat9_2D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_Dx, p_Jac)
         case (NDIM3D)
           call doGalerkinMat9_3D(p_Kld, p_Kcol, p_Kdiagonal, p_Ksep,&
-              rjacobianMatrix%NEQ, p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Jac)
+              rjacobianMatrix%NEQ, p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Jac)
         end select
 
       end if   ! bbuildStabilisation
@@ -4185,9 +4070,9 @@ contains
     ! operator in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, CoeffX, Dx, Jac)
+    subroutine doGalerkinMat7_1D(Kld, Kcol, Ksep, NEQ, DcoeffX, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -4234,7 +4119,7 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4310,9 +4195,9 @@ contains
     ! operator in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, CoeffX, CoeffY, Dx, Jac)
+    subroutine doGalerkinMat7_2D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -4359,8 +4244,8 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4436,9 +4321,9 @@ contains
     ! operator in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, CoeffX, CoeffY, CoeffZ, Dx, Jac)
+    subroutine doGalerkinMat7_3D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -4485,9 +4370,9 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-          C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4564,9 +4449,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doGalerkinMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, Dx, Jac)
+        DcoeffX, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -4613,7 +4498,7 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4690,9 +4575,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doGalerkinMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, CoeffY, Dx, Jac)
+        DcoeffX, DcoeffY, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -4739,8 +4624,8 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4817,9 +4702,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doGalerkinMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, CoeffY, CoeffZ, Dx, Jac)
+        DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -4866,9 +4751,9 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-          C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -4944,9 +4829,9 @@ contains
     ! operator in 1D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, CoeffX, Dx, Jac)
+    subroutine doUpwindMat7_1D(Kld, Kcol, Ksep, NEQ, DcoeffX, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -4993,7 +4878,7 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -5069,9 +4954,9 @@ contains
     ! operator in 2D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, CoeffX, CoeffY, Dx, Jac)
+    subroutine doUpwindMat7_2D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -5118,8 +5003,8 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -5195,9 +5080,9 @@ contains
     ! operator in 3D and assume zero row-sums.
     ! All matrices are stored in matrix format 7
 
-    subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, CoeffX, CoeffY, CoeffZ, Dx, Jac)
+    subroutine doUpwindMat7_3D(Kld, Kcol, Ksep, NEQ, DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol
       integer, intent(in) :: NEQ
 
@@ -5244,9 +5129,9 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-          C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -5323,9 +5208,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_1D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, Dx, Jac)
+        DcoeffX, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -5372,7 +5257,7 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -5449,9 +5334,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_2D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, CoeffY, Dx, Jac)
+        DcoeffX, DcoeffY, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -5498,8 +5383,8 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -5576,9 +5461,9 @@ contains
     ! All matrices are stored in matrix format 9
 
     subroutine doUpwindMat9_3D(Kld, Kcol, Kdiagonal, Ksep, NEQ,&
-        CoeffX, CoeffY, CoeffZ, Dx, Jac)
+        DcoeffX, DcoeffY, DcoeffZ, Dx, Jac)
 
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx
       integer, dimension(:), intent(in) :: Kld,Kcol,Kdiagonal
       integer, intent(in) :: NEQ
 
@@ -5625,9 +5510,9 @@ contains
           diff = Dx(j)-Dx(i)
 
           ! Compute coefficients
-          C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-          C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-          C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+          C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+          C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+          C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
 
           ! We have to loop over all columns K of the I-th and J-th row
           ! of the Jacobian matrix and update th positions IK and JK,
@@ -7609,7 +7494,7 @@ contains
 
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
-    real(DP), dimension(:), pointer :: p_Dflux,p_Dflux0,p_Dx,p_CoeffX,p_CoeffY,p_CoeffZ,p_MC,p_Jac
+    real(DP), dimension(:), pointer :: p_Dflux,p_Dflux0,p_Dx,p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_MC,p_Jac
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_Kld,p_Kdiagonal
     integer :: ndim
@@ -7639,16 +7524,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_CoeffZ)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -7677,12 +7562,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
@@ -7690,12 +7575,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_CoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE,  p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_CoeffY, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
@@ -7703,12 +7588,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kld,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
@@ -7728,12 +7613,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_1D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
             
@@ -7741,12 +7626,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_CoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_2D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_CoeffY, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
           
@@ -7754,12 +7639,12 @@ contains
           if (present(rconsistentMassMatrix)) then
             call doJacobian_implFCTconsMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           else
             call doJacobian_implFCTnoMass_3D(&
                 p_IverticesAtEdge, p_DcoefficientsAtEdge, p_Kdiagonal,&
-                p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Dflux, p_Dflux0,&
+                p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dflux0,&
                 theta, tstep, hstep, rafcstab%NEDGE, p_Jac)
           end if
         end select
@@ -7785,11 +7670,11 @@ contains
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_1D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, Dx, Dflux, Dflux0,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -7818,7 +7703,7 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -7923,11 +7808,11 @@ contains
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_1D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, MC, Dx, Dflux, Dflux0,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,MC,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -7956,7 +7841,7 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
         
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -8060,11 +7945,11 @@ contains
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_2D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, CoeffY, Dx, Dflux, Dflux0,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in)   :: Kdiagonal
@@ -8093,8 +7978,8 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
         
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -8198,11 +8083,11 @@ contains
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_2D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, CoeffY, MC, Dx, Dflux, Dflux0,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,MC,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in)   :: Kdiagonal
@@ -8231,8 +8116,8 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
 
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -8336,11 +8221,11 @@ contains
     ! whereby no mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTnoMass_3D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, CoeffY, CoeffZ, Dx, Dflux, Dflux0,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx, Dflux, Dflux0,&
         theta, tstep, hstep, NEDGE, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -8369,9 +8254,9 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
 
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -8476,11 +8361,11 @@ contains
     ! whereby consistent mass antidiffusion is built into the Jacobian.
     ! All matrices can be stored in matrix format 7 or 9
     subroutine doJacobian_implFCTconsMass_3D(IverticesAtEdge,&
-        DcoefficientsAtEdge, Kdiagonal, CoeffX, CoeffY, CoeffZ, MC, Dx, Dflux,&
+        DcoefficientsAtEdge, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx, Dflux,&
         Dflux0, theta, tstep, hstep, NEDGE, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,MC,Dx,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dflux,Dflux0
       real(DP), intent(in) :: theta,tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: Kdiagonal
@@ -8509,9 +8394,9 @@ contains
         ii = Kdiagonal(i); jj = Kdiagonal(j)
         
         ! Compute coefficients
-        C_ij(1) = CoeffX(ij); C_ji(1) = CoeffX(ji)
-        C_ij(2) = CoeffY(ij); C_ji(2) = CoeffY(ji)
-        C_ij(3) = CoeffZ(ij); C_ji(3) = CoeffZ(ji)
+        C_ij(1) = DcoeffX(ij); C_ji(1) = DcoeffX(ji)
+        C_ij(2) = DcoeffY(ij); C_ji(2) = DcoeffY(ji)
+        C_ij(3) = DcoeffZ(ij); C_ji(3) = DcoeffZ(ji)
         
         ! Compute solution difference
         diff = Dx(i)-Dx(j)
@@ -8735,7 +8620,7 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Dflux
-    real(DP), dimension(:), pointer :: p_CoeffX,p_CoeffY,p_CoeffZ,p_Jac,p_Dx
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_Jac,p_Dx
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
@@ -8778,16 +8663,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_CoeffZ)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -8831,7 +8716,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+            p_DcoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -8839,7 +8724,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_CoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+            p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -8847,7 +8732,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
             p_Dqp, p_Dqm, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
       end select
@@ -8878,7 +8763,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+            p_DcoeffX, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM2D)
@@ -8886,7 +8771,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_CoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
+            p_DcoeffX, p_DcoeffY, p_Dx, p_Dflux, p_Dpp, p_Dpm, p_Dqp, p_Dqm,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       case (NDIM3D)
@@ -8894,7 +8779,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_CoeffY, p_CoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_Dx, p_Dflux, p_Dpp, p_Dpm,&
             p_Dqp, p_Dqm, tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
       end select
@@ -8976,11 +8861,11 @@ contains
     subroutine doJacobianMat79_TVD_1D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
         DcoefficientsAtEdge, Kld, Kcol, Kdiagonal,&
-        CoeffX, Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
+        DcoeffX, Dx, Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(:), intent(in) :: DcoeffX,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
@@ -9031,8 +8916,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = CoeffX(ij)
-          c_ji = CoeffX(ji)
+          c_ij = DcoeffX(ij)
+          c_ji = DcoeffX(ji)
           
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9056,8 +8941,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = CoeffX(ij)
-          c_ji = CoeffX(ji)
+          c_ij = DcoeffX(ij)
+          c_ji = DcoeffX(ji)
 
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9122,12 +9007,12 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD_2D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, CoeffX, CoeffY, Dx, Dflux,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, Dx, Dflux,&
         Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
@@ -9178,8 +9063,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji)/)
           
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9203,8 +9088,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji)/)
 
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9265,12 +9150,12 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_TVD_3D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, CoeffX, CoeffY, CoeffZ, Dx,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, Dx,&
         Dflux, Dpp, Dpm, Dqp, Dqm, tstep, hstep, NEQ, NEDGE, NNVEDGE,&
         bisExtended, bisMat7, Ksep, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,Dx,Dflux,Dpp,Dpm,Dqp,Dqm
       real(DP), intent(in) :: tstep,hstep
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, dimension(:), intent(in) :: IsuperdiagEdgesIdx
@@ -9321,8 +9206,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij),CoeffZ(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji),CoeffZ(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji),DcoeffZ(ji)/)
           
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9346,8 +9231,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij),CoeffZ(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji),CoeffZ(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji),DcoeffZ(ji)/)
 
           ! Update local coefficients
           call updateJacobianMat79_TVD(&
@@ -9834,7 +9719,7 @@ contains
     ! local variables
     real(DP), dimension(:,:), pointer :: p_DcoefficientsAtEdge
     real(DP), dimension(:), pointer :: p_Dpp,p_Dpm,p_Dqp,p_Dqm,p_Drp,p_Drm,p_Dflux,p_Dflux0
-    real(DP), dimension(:), pointer :: p_CoeffX,p_CoeffY,p_CoeffZ,p_MC,p_Jac,p_Dx,p_Dx0
+    real(DP), dimension(:), pointer :: p_DcoeffX,p_DcoeffY,p_DcoeffZ,p_MC,p_Jac,p_Dx,p_Dx0
     integer, dimension(:,:), pointer :: p_IverticesAtEdge
     integer, dimension(:), pointer :: p_IsuperdiagEdgesIdx
     integer, dimension(:), pointer :: p_IsubdiagEdges
@@ -9882,16 +9767,16 @@ contains
     ndim = size(RcoeffMatrices,1)
     select case(ndim)
     case (NDIM1D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
 
     case (NDIM2D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
 
     case (NDIM3D)
-      call lsyssc_getbase_double(RcoeffMatrices(1), p_CoeffX)
-      call lsyssc_getbase_double(RcoeffMatrices(2), p_CoeffY)
-      call lsyssc_getbase_double(RcoeffMatrices(3), p_CoeffZ)
+      call lsyssc_getbase_double(RcoeffMatrices(1), p_DcoeffX)
+      call lsyssc_getbase_double(RcoeffMatrices(2), p_DcoeffY)
+      call lsyssc_getbase_double(RcoeffMatrices(3), p_DcoeffZ)
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
@@ -9935,7 +9820,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
@@ -9944,7 +9829,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_CoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
@@ -9953,7 +9838,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kld,&
-            p_CoeffX, p_CoeffY, p_CoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .true., p_Ksep, p_Jac)
@@ -9984,7 +9869,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
@@ -9993,7 +9878,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_CoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_DcoeffY, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
@@ -10002,7 +9887,7 @@ contains
             p_IsuperdiagEdgesIdx, p_IverticesAtEdge,&
             p_IsubdiagEdgesIdx, p_IsubdiagEdges,&
             p_DcoefficientsAtEdge, p_Kld, p_Kcol, p_Kdiagonal,&
-            p_CoeffX, p_CoeffY, p_CoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
+            p_DcoeffX, p_DcoeffY, p_DcoeffZ, p_MC, p_Dx, p_Dx0, p_Dflux, p_Dflux0,&
             p_Dpp, p_Dpm, p_Dqp, p_Dqm, p_Drp, p_Drm, theta,&
             tstep, hstep, rafcstab%NEQ, rafcstab%NEDGE,&
             rafcstab%NNVEDGE, bisExtended, .false., p_Ksep, p_Jac)
@@ -10084,12 +9969,12 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_1D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, CoeffX, MC, Dx, Dx0,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, MC, Dx, Dx0,&
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
       
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,MC,Dx,Dx0,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -10142,8 +10027,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = CoeffX(ij)
-          c_ji = CoeffX(ji)
+          c_ij = DcoeffX(ij)
+          c_ji = DcoeffX(ji)
           
           ! Update local coefficients
           call updateJacobianMat79_GP(&
@@ -10169,8 +10054,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = CoeffX(ij)
-          c_ji = CoeffX(ji)
+          c_ij = DcoeffX(ij)
+          c_ji = DcoeffX(ji)
    
           ! Update local coefficients
           call updateJacobianMat79_GP(&
@@ -10239,12 +10124,12 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_2D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, CoeffX, CoeffY, MC, Dx, Dx0,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, MC, Dx, Dx0,&
         Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,MC,Dx,Dx0,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -10297,8 +10182,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji)/)
           
           ! Update local coefficients
           call updateJacobianMat79_GP(&
@@ -10324,8 +10209,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji)/)
    
           ! Update local coefficients
           call updateJacobianMat79_GP(&
@@ -10394,12 +10279,12 @@ contains
     ! whereby the matrix can be stored in format 7 or 9.
     subroutine doJacobianMat79_GP_3D(IsuperdiagEdgesIdx,&
         IverticesAtEdge, IsubdiagEdgesIdx, IsubdiagEdges,&
-        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, CoeffX, CoeffY, CoeffZ, MC, Dx,&
+        DcoefficientsAtEdge, Kld, Kcol, Kdiagonal, DcoeffX, DcoeffY, DcoeffZ, MC, Dx,&
         Dx0, Dflux, Dflux0, Dpp, Dpm, Dqp, Dqm, Drp, Drm, theta, tstep, hstep,&
         NEQ, NEDGE, NNVEDGE, bisExtended, bisMat7, Ksep, Jac)
 
       real(DP), dimension(:,:), intent(in) :: DcoefficientsAtEdge
-      real(DP), dimension(:), intent(in) :: CoeffX,CoeffY,CoeffZ,MC,Dx,Dx0,Dflux,Dflux0
+      real(DP), dimension(:), intent(in) :: DcoeffX,DcoeffY,DcoeffZ,MC,Dx,Dx0,Dflux,Dflux0
       real(DP), dimension(:), intent(in) :: Dpp,Dpm,Dqp,Dqm,Drp,Drm
       real(DP), intent(in) :: theta,tstep,hstep  
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
@@ -10452,8 +10337,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij),CoeffZ(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji),CoeffZ(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji),DcoeffZ(ji)/)
           
           ! Update local coefficients
           call updateJacobianMat79_GP(&
@@ -10479,8 +10364,8 @@ contains
           ji = IverticesAtEdge(4,iedge)
 
           ! Determine matrix coefficients
-          c_ij = (/CoeffX(ij),CoeffY(ij),CoeffZ(ij)/)
-          c_ji = (/CoeffX(ji),CoeffY(ji),CoeffZ(ji)/)
+          c_ij = (/DcoeffX(ij),DcoeffY(ij),DcoeffZ(ij)/)
+          c_ji = (/DcoeffX(ji),DcoeffY(ji),DcoeffZ(ji)/)
    
           ! Update local coefficients
           call updateJacobianMat79_GP(&

@@ -34,85 +34,153 @@
 !#
 !# The following routines for linear velocity case are available:
 !#
-!# 1.) transp_calcMatGalConvectionP2d
-!#     transp_calcMatUpwConvectionP2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 1.) transp_calcMatDiagConvP2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (primal formulation)
 !#
-!# 2.) transp_calcMatGalConvectionD2d
-!#     transp_calcMatUpwConvectionD2d
-!#     -> Calculates the transport coefficients for linear convection in 2D
+!# 2.) transp_calcMatGalConvP2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (primal formulation)
+!4
+!# 3.) transp_calcMatGalConvectionP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        for linear convection in 2D (primal formulation)
 !#
-!# 3.) transp_coeffVecBdrConvectionP2d
-!#      -> Calculates the coefficients for the linear form in 2D
+!# 4.) transp_calcMatUpwConvP2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for linear convection in 2D (primal formulation)
 !#
-!# 4.) transp_coeffVecBdrConvectionD2d
-!#      -> Calculates the coefficients for the linear form in 2D
+!# 5.) transp_calcMatUpwConvectionP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for linear convection in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrConvectionP2d
-!#     -> Calculates the coefficients for the bilinear form in 2D
+!# 6.) transp_calcMatDiagConvD2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (dual formulation)
 !#
-!# 6.) transp_coeffMatBdrConvectionD2d
-!#     -> Calculates the coefficients for the bilinear form in 2D
+!# 7.) transp_calcMatGalConvD2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        for linear convection in 2D (dual formulation)
+!4
+!# 8.) transp_calcMatGalConvectionD2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        for linear convection in 2D (dual formulation)
+!#
+!# 9.) transp_calcMatUpwConvD2d_sim
+!#     -> Calculates the off-diagonal Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for linear convection in 2D (dual formulation)
+!#
+!# 10.) transp_calcMatUpwConvectionD2d
+!#      -> Calculates the Galerkin transport coefficients
+!#         and applies scalar artificial diffusion (discrete upwinding)
+!#         for linear convection in 2D (dual formulation)
 !#
 !#
 !# ****************************************************************************
 !#
-!# The following routines for Burgers` equation
-!# in space-time are available:
+!# The following routines for Burgers` equation in space-time are available:
 !#
-!# 1.) transp_calcMatGalSTBurgersP2d
-!#     transp_calcMatUpwSTBurgersP2d
-!#     -> Calculates the transport coefficients for
-!#        Burgers` equation in space-time
+!# 1.) transp_calcMatDiagSTBurgersP2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 2.) ...
+!# 2.) transp_calcMatGalSTBurgersP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_coeffVecBdrSTBurgersP2d
-!#      -> Calculates the coefficients for the linear form in 2D
+!# 3.) transp_calcMatGalSTBurgersP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) ...
+!# 4.) transp_calcMatUpwSTBurgersP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrSTBurgersP2d
-!#     -> Calculates the coefficients for the bilinear form in 2D
+!# 5.) transp_calcMatUpwSTBurgersP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Burger`s equation in 2D (primal formulation)
+!#
+!# 6.) transp_coeffVecBdrSTBuckLevP2d
+!#      -> Calculates the coefficients for the linear form
+!#         in 2D (primal formulation)
+!#
+!# 7.) transp_coeffMatBdrSTBurgersP2d
+!#     -> Calculates the coefficients for the bilinear form 
+!#        in 2D (primal formulation)
 !#
 !# ****************************************************************************
 !#
-!# The following routines for the Buckley-Leverett
-!#  equation in space-time are available:
+!# The following routines for the Buckley-Leverett equation in
+!# space-time are available:
 !#
-!# 1.) transp_calcMatGalSTBuckLevP2d
-!#     transp_calcMatUpwSTBuckLevP2d
-!#     -> Calculates the transport coefficients for
-!#        Buckley-Leverett equation in space-time
+!# 1.) transp_calcMatDiagBuckLevP2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 2.) ...
+!# 2.) transp_calcMatGalBuckLevP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 3.) transp_coeffVecBdrSTBuckLevP2d
-!#      -> Calculates the coefficients for the linear form in 2D
+!# 3.) transp_calcMatGalBuckLevP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 4.) ...
+!# 4.) transp_calcMatUpwBuckLevP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Buckley-Leverett equation in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrSTBuckLevP2d
-!#     -> Calculates the coefficients for the bilinear form in 2D
+!# 5.) transp_calcMatUpwBuckLevP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Buckley-Leverett equation in 2D (primal formulation)
+!#
+!# 6.) transp_coeffVecBdrSTBuckLevP2d
+!#      -> Calculates the coefficients for the linear form
+!#         in 2D (primal formulation)
+!#
+!# 7.) transp_coeffMatBdrSTBuckLevP2d
+!#     -> Calculates the coefficients for the bilinear form
+!#        in 2D (primal formulation)
 !#
 !# ****************************************************************************
 !#
 !# The following routines for the Burgers` equation in 2D are available:
 !#
-!# 1.) transp_calcMatGalBurgersP2d
-!#     transp_calcMatUpwBurgersP2d
-!#     -> Calculates the transport coefficients for
-!#        Burgers` equation in 2D
+!# 1.) transp_calcMatDiagBurgersP2d_sim
+!#     -> Calculates the diagonal Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 2.) ...
+!# 2.) transp_calcMatGalBurgersP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 3.) transp_coeffVecBdrBurgersP2d
-!#      -> Calculates the coefficients for the linear form in 2D
+!# 3.) transp_calcMatGalBurgersP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 4.) ...
+!# 4.) transp_calcMatUpwBurgersP2d_sim
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Burger`s equation in 2D (primal formulation)
 !#
-!# 5.) transp_coeffMatBdrBurgersP2d
-!#     -> Calculates the coefficients for the bilinear form in 2D
+!# 5.) transp_calcMatUpwBurgersP2d
+!#     -> Calculates the Galerkin transport coefficients
+!#        and applies scalar artificial diffusion (discrete upwinding)
+!#        for Burger`s equation in 2D (primal formulation)
+!#
+!# 6.) transp_coeffVecBdrBurgersP2d
+!#      -> Calculates the coefficients for the linear form
+!#         in 2D (primal formulation)
+!#
+!# 7.) transp_coeffMatBdrBurgersP2d
+!#     -> Calculates the coefficients for the bilinear form
+!#        in 2D (primal formulation)
 !#
 !# </purpose>
 !##############################################################################
@@ -133,31 +201,52 @@ module transport_callback2d
   implicit none
 
   private
-  public :: transp_calcMatGalConvectionD2d
-  public :: transp_calcMatUpwConvectionD2d
-  public :: transp_calcMatGalSTBuckLevP2d
-  public :: transp_calcMatUpwSTBuckLevP2d
-  public :: transp_calcMatGalBurgersP2d
-  public :: transp_calcMatUpwBurgersP2d
-  public :: transp_calcMatGalSTBurgersP2d
-  public :: transp_calcMatUpwSTBurgersP2d
-  public :: transp_calcMatGalConvectionP2d
-  public :: transp_calcMatUpwConvectionP2d
-  public :: transp_coeffMatBdrConvectionD2d
-  public :: transp_coeffMatBdrSTBuckLevP2d
-  public :: transp_coeffMatBdrBurgersP2d
-  public :: transp_coeffMatBdrSTBurgersP2d
-  public :: transp_coeffMatBdrConvectionP2d
-  public :: transp_coeffVecBdrConvectionD2d
-  public :: transp_coeffVecBdrSTBuckLevP2d
-  public :: transp_coeffVecBdrBurgersP2d
-  public :: transp_coeffVecBdrSTBurgersP2d
-  public :: transp_coeffVecBdrConvectionP2d
-  public :: transp_errorBdrInt2d
+
+  public :: transp_setVariable2d
   public :: transp_hadaptCallback2d
   public :: transp_refFuncBdrInt2d
-  public :: transp_setVariable2d
+  public :: transp_errorBdrInt2d
   public :: transp_weightFuncBdrInt2d
+
+  public :: transp_calcMatDiagConvP2d_sim
+  public :: transp_calcMatGalConvectionP2d
+  public :: transp_calcMatGalConvP2d_sim
+  public :: transp_calcMatUpwConvectionP2d
+  public :: transp_calcMatUpwConvP2d_sim
+  public :: transp_coeffMatBdrConvectionP2d
+  public :: transp_coeffVecBdrConvectionP2d
+
+  public :: transp_calcMatDiagConvD2d_sim
+  public :: transp_calcMatGalConvectionD2d
+  public :: transp_calcMatGalConvD2d_sim
+  public :: transp_calcMatUpwConvectionD2d
+  public :: transp_calcMatUpwConvD2d_sim
+  public :: transp_coeffMatBdrConvectionD2d
+  public :: transp_coeffVecBdrConvectionD2d
+
+  public :: transp_calcMatDiagSTBurgersP2d_sim
+  public :: transp_calcMatGalSTBurgersP2d
+  public :: transp_calcMatGalSTBurgersP2d_sim
+  public :: transp_calcMatUpwSTBurgersP2d
+  public :: transp_calcMatUpwSTBurgersP2d_sim
+  public :: transp_coeffMatBdrSTBurgersP2d
+  public :: transp_coeffVecBdrSTBurgersP2d
+  
+  public :: transp_calcMatDiagSTBuckLevP2d_sim
+  public :: transp_calcMatGalSTBuckLevP2d
+  public :: transp_calcMatGalSTBuckLevP2d_sim
+  public :: transp_calcMatUpwSTBuckLevP2d
+  public :: transp_calcMatUpwSTBuckLevP2d_sim
+  public :: transp_coeffMatBdrSTBuckLevP2d
+  public :: transp_coeffVecBdrSTBuckLevP2d
+
+  public :: transp_calcMatDiagBurgersP2d_sim
+  public :: transp_calcMatGalBurgersP2d
+  public :: transp_calcMatGalBurgersP2d_sim
+  public :: transp_calcMatUpwBurgersP2d
+  public :: transp_calcMatUpwBurgersP2d_sim
+  public :: transp_coeffMatBdrBurgersP2d
+  public :: transp_coeffVecBdrBurgersP2d
 
 !<globals>
 
@@ -869,6 +958,122 @@ contains
   end subroutine transp_weightFuncBdrInt2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatDiagConvP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine transp_calcMatDiagConvP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatGalConvP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: iedge
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Set artificial diffusion to zero
+      DcoefficientsAtEdge(1,iedge) = 0
+    end do
+
+  end subroutine transp_calcMatGalConvP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -909,6 +1114,69 @@ contains
     d_ij = 0.0_DP
 
   end subroutine transp_calcMatGalConvectionP2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the primal problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: iedge
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-v_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-v_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute artificial diffusion coefficient
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+    end do
+
+  end subroutine transp_calcMatUpwConvP2d_sim
 
   !*****************************************************************************
 
@@ -954,6 +1222,122 @@ contains
   end subroutine transp_calcMatUpwConvectionP2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatDiagConvD2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: inode
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $v_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine transp_calcMatDiagConvD2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatGalConvD2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+    
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: iedge
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $v_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $v_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Set artificial diffusion to zero
+      DcoefficientsAtEdge(1,iedge) = 0
+    end do
+    
+  end subroutine transp_calcMatGalConvD2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -991,6 +1375,69 @@ contains
     d_ij = 0.0_DP
 
   end subroutine transp_calcMatGalConvectionD2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwConvD2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for a constant velocity vector of the form
+    ! $v=v(x,y)$ or $v=v(x,y,t)$ for the dual problem in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP), dimension(:), pointer :: p_Dvelocity
+    integer :: iedge
+
+!!!    ! Set pointer to velocity vector
+!!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $v_j*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $v_i*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute artificial diffusion coefficient
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+    end do
+
+  end subroutine transp_calcMatUpwConvD2d_sim
 
   !*****************************************************************************
 
@@ -1282,7 +1729,7 @@ contains
 
   end subroutine transp_coeffVecBdrConvectionP2d
 
-   ! ***************************************************************************
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -1932,6 +2379,118 @@ contains
   end subroutine transp_coeffMatBdrConvectionD2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatDiagSTBurgersP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for space-time formulation of the
+    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
+    ! whereby the flux function is given by $f(u)=0.5*u^2$.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: inode
+
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficients  $-[u_i,1]*C_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
+          +                   DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine transp_calcMatDiagSTBurgersP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatGalSTBurgersP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
+    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
+    ! whereby the flux function is given by $f(u)=0.5*u^2$.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Set artificial diffusion to zero
+      DcoefficientsAtEdge(1,iedge) = 0
+    end do
+
+  end subroutine transp_calcMatGalSTBurgersP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -1941,8 +2500,8 @@ contains
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
-    ! the flux function is given by $f(u)=0.5*u^2$.
+    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
+    ! whereby the flux function is given by $f(u)=0.5*u^2$.
 !</description>
 
 !<input>
@@ -1970,8 +2529,70 @@ contains
     d_ij = 0.0_DP
 
   end subroutine transp_calcMatGalSTBurgersP2d
+  
+  !*****************************************************************************
+  
+!<subroutine>
 
-   !*****************************************************************************
+  pure subroutine transp_calcMatUpwSTBurgersP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
+    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
+    ! whereby the flux function is given by $f(u)=0.5*u^2$.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)*&
+          +0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute artificial diffusion coefficient
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+    end do
+
+  end subroutine transp_calcMatUpwSTBurgersP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -1981,9 +2602,9 @@ contains
 !<description>
     ! This subroutine computes the convective matrix coefficients
     ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
-    ! one-dimensional Burgers equation $du/dt+df(u)/dx=0$, whereby
-    ! the flux function is given by $f(u)=0.5*u^2$.
-    ! Moreover, scalar artificial diffusion is applied
+    ! one-dimensional primal Burgers equation $du/dt+df(u)/dx=0$,
+    ! whereby the flux function is given by $f(u)=0.5*u^2$.  
+    ! Moreover, scalar artificial diffusion is applied.
 !</description>
 
 !<input>
@@ -2211,6 +2832,126 @@ contains
   end subroutine transp_coeffMatBdrSTBurgersP2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatDiagSTBuckLevP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
+    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
+    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
+    !
+    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
+    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: ui
+    integer :: inode
+    
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficient  $-[a_i,1]*C_{ii}$
+      ui = DdataAtNode(inode)
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)&
+          +                                  DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine transp_calcMatDiagSTBuckLevP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatGalSTBuckLevP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
+    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
+    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
+    !
+    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
+    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj
+    integer :: iedge
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-[a_j,1]*C_{ij}$
+      ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-[a_i,1]*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Set artificial diffusion to zero
+      DcoefficientsAtEdge(1,iedge) = 0
+    end do
+    
+  end subroutine transp_calcMatGalSTBuckLevP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -2259,6 +3000,71 @@ contains
     d_ij = 0.0_DP
 
   end subroutine transp_calcMatGalSTBuckLevP2d
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwSTBuckLevP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for space-time formulation of the
+    ! Buckley-Leverett equation $du/dt+df(u)/dx=0$, whereby the
+    ! flux function is given by $f(u)=u^2/(u^2+0.5*(1-u)^2)$
+    !
+    ! Here, the characteristic velocity $a(u)=f^\prime(u)$ is given
+    ! by $a(u)=\frac{4u(1-u)}{(3u^2-2u+1)^2}$.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+
+    ! local variable
+    real(DP) :: ui,uj
+    integer :: iedge
+    
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-[a_j,1]*C_{ij}$
+      ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-[a_i,1]*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute artificial diffusion coefficient
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,-DcoefficientsAtEdge(3,iedge))
+    end do
+    
+  end subroutine transp_calcMatUpwSTBuckLevP2d_sim
 
   !*****************************************************************************
 
@@ -2510,6 +3316,112 @@ contains
   end subroutine transp_coeffMatBdrSTBuckLevP2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatDiagBurgersP2d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
+
+!<description>
+    ! This subroutine computes the diagonal convective matrix
+    ! coefficients $k_{ii}$ for the primal Burger`s equation in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all nodes under consideration
+    real(DP), dimension(:), intent(in) :: DdataAtNode
+    
+    ! Entries of the coefficient matrices for all nodes under consideration
+    real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
+    
+    ! Numbers of vertices and matrix entries for all nodes under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtNode
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all nodes under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtNode
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: inode
+
+    do inode = 1, size(DcoefficientsAtNode,2)
+      ! Compute convective coefficients  $-(u_i I)*C_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
+          +DdataAtNode(inode)*DmatrixCoeffsAtNode(2,inode))
+    end do
+    
+  end subroutine transp_calcMatDiagBurgersP2d_sim
+
+  !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatGalBurgersP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the primal Burger`s equation in 2D.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Set artificial diffusion to zero
+      DcoefficientsAtEdge(1,iedge) = 0
+    end do
+
+  end subroutine transp_calcMatGalBurgersP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -2518,7 +3430,7 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 2D.
+    ! $k_{ij}$ and $k_{ji}$ for the primal Burgers` equation in 2D.
 !</description>
 
 !<input>
@@ -2548,6 +3460,64 @@ contains
   end subroutine transp_calcMatGalBurgersP2d
 
   !*****************************************************************************
+  
+!<subroutine>
+
+  pure subroutine transp_calcMatUpwBurgersP2d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+
+!<description>
+    ! This subroutine computes the convective matrix coefficients
+    ! $k_{ij}$ and $k_{ji}$ for the primal Burger`s equation in 2D.
+    ! Moreover, scalar artificial diffusion is applied.
+!</description>
+
+!<input>
+    ! Nodal solution values for all edges under consideration
+    real(DP), dimension(:,:), intent(in) :: DdataAtEdge
+    
+    ! Entries of the coefficient matrices for all edges under consideration
+    real(DP), dimension(:,:,:), intent(in) :: DmatrixCoeffsAtEdge
+    
+    ! Numbers of vertices and matrix entries for all edges under consideration
+    integer, dimension(:,:), intent(in) :: IverticesAtEdge
+
+    ! Scaling parameter
+    real(DP), intent(in) :: dscale
+!</input>
+
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! Coefficients of the matrix for all edges under consideration
+    real(DP), dimension(:,:), intent(out) :: DcoefficientsAtEdge
+!</output>
+!</subroutine>
+    
+    ! local variables
+    integer :: iedge
+
+    do iedge = 1, size(DcoefficientsAtEdge,2)
+      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ij}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
+      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ji}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute artificial diffusion coefficient
+      DcoefficientsAtEdge(1,iedge) =&
+          max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
+    end do
+
+  end subroutine transp_calcMatUpwBurgersP2d_sim
+
+  !*****************************************************************************
 
 !<subroutine>
 
@@ -2556,7 +3526,7 @@ contains
 
 !<description>
     ! This subroutine computes the convective matrix coefficients
-    ! $k_{ij}$ and $k_{ji}$ for Burgers` equation in 2D.
+    ! $k_{ij}$ and $k_{ji}$ for the primal Burgers` equation in 2D.
     ! Moreover, scalar artificial diffusion is applied.
 !</description>
 
@@ -2586,7 +3556,7 @@ contains
 
   end subroutine transp_calcMatUpwBurgersP2d
 
-   ! ***************************************************************************
+  ! ***************************************************************************
 
 !<subroutine>
 
@@ -2682,7 +3652,7 @@ contains
 
   end subroutine transp_coeffVecBdrBurgersP2d
 
-    !*****************************************************************************
+  !*****************************************************************************
 
 !<subroutine>
 

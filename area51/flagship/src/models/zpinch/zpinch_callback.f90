@@ -267,8 +267,10 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatDiagConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -277,8 +279,10 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatDiagConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -320,8 +324,10 @@ contains
               ! Compute the preconditioner in interleaved format
               call transp_calcPrecondThetaScheme(rproblemLevel,&
                   rtimestep, rsolver, rsolution0, rcollection,&
-                  zpinch_calcMatRusConvIntlP2d,&
-                  zpinch_calcMatRusConvIntlD2d,&
+                  zpinch_calcMatDiagConvIntlP2d_sim,&
+                  zpinch_calcMatRusConvIntlP2d_sim,&
+                  zpinch_calcMatDiagConvIntlD2d_sim,&
+                  zpinch_calcMatRusConvIntlD2d_sim,&
                   transp_coeffMatBdrConvectionP2d,&
                   transp_coeffMatBdrConvectionD2d)
 
@@ -330,8 +336,10 @@ contains
               ! Compute the preconditioner in block format
               call transp_calcPrecondThetaScheme(rproblemLevel,&
                   rtimestep, rsolver, rsolution0, rcollection,&
-                  zpinch_calcMatRusConvBlockP2d,&
-                  zpinch_calcMatRusConvBlockD2d,&
+                  zpinch_calcMatDiagConvBlockP2d_sim,&
+                  zpinch_calcMatRusConvBlockP2d_sim,&
+                  zpinch_calcMatDiagConvBlockD2d_sim,&
+                  zpinch_calcMatRusConvBlockD2d_sim,&
                   transp_coeffMatBdrConvectionP2d,&
                   transp_coeffMatBdrConvectionD2d)
 
@@ -367,8 +375,10 @@ contains
             ! Compute the preconditioner in interleaved format
             call transp_calcPrecondThetaScheme(rproblemLevel,&
                 rtimestep, rsolver, rsolution, rcollection,&
-                zpinch_calcMatRusConvIntlP2d,&
-                zpinch_calcMatRusConvIntlD2d,&
+                zpinch_calcMatDiagConvIntlP2d_sim,&
+                zpinch_calcMatRusConvIntlP2d_sim,&
+                zpinch_calcMatDiagConvIntlD2d_sim,&
+                zpinch_calcMatRusConvIntlD2d_sim,&
                 transp_coeffMatBdrConvectionP2d,&
                 transp_coeffMatBdrConvectionD2d)
 
@@ -377,8 +387,10 @@ contains
             ! Compute the preconditioner in block format
             call transp_calcPrecondThetaScheme(rproblemLevel,&
                 rtimestep, rsolver, rsolution, rcollection,&
-                zpinch_calcMatRusConvBlockP2d,&
-                zpinch_calcMatRusConvBlockD2d,&
+                zpinch_calcMatDiagConvBlockP2d_sim,&
+                zpinch_calcMatRusConvBlockP2d_sim,&
+                zpinch_calcMatDiagConvBlockD2d_sim,&
+                zpinch_calcMatRusConvBlockD2d_sim,&
                 transp_coeffMatBdrConvectionP2d,&
                 transp_coeffMatBdrConvectionD2d)
 
@@ -411,8 +423,10 @@ contains
           ! Compute the preconditioner in interleaved format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvIntlP2d,&
-              zpinch_calcMatRusConvIntlD2d,&
+              zpinch_calcMatDiagConvIntlP2d_sim,&
+              zpinch_calcMatRusConvIntlP2d_sim,&
+              zpinch_calcMatDiagConvIntlD2d_sim,&
+              zpinch_calcMatRusConvIntlD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -421,8 +435,10 @@ contains
           ! Compute the preconditioner in block format
           call transp_calcPrecondThetaScheme(rproblemLevel,&
               rtimestep, rsolver, rsolution, rcollection,&
-              zpinch_calcMatRusConvBlockP2d,&
-              zpinch_calcMatRusConvBlockD2d,&
+              zpinch_calcMatDiagConvBlockP2d_sim,&
+              zpinch_calcMatRusConvBlockP2d_sim,&
+              zpinch_calcMatDiagConvBlockD2d_sim,&
+              zpinch_calcMatRusConvBlockD2d_sim,&
               transp_coeffMatBdrConvectionP2d,&
               transp_coeffMatBdrConvectionD2d)
 
@@ -1741,8 +1757,8 @@ contains
         C_ij(2) = Cy(ij); C_ji(2) = Cy(ji)
 
         ! Calculate diffusion coefficient
-        call euler_calcMatrixRusanovDiag2d(u(:,i), u(:,j),&
-            C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
+!!$        call euler_calcMatRusDissMatD2d(u(:,i), u(:,j),&
+!!$            C_ij, C_ji, i, j, 1.0_DP, K_ij, K_ji, D_ij)
 
         ! Compute solution difference
         Diff = u(:,i)-u(:,j)

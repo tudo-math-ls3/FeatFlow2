@@ -9,58 +9,58 @@
 !#
 !# The following callback functions are available:
 !#
-!# 1.) euler_calcFluxGalerkin1d
+!# 1.) euler_calcFluxGal1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#
-!# 2.) euler_calcFluxGalerkinNoBdr1d
+!# 2.) euler_calcFluxGalNoBdr1d_sim
 !#     -> Computes inviscid fluxes for standard Galerkin scheme
 !#        without assembling the symmetric boundary contribution
 !#
-!# 3.) euler_calcFluxScalarDiss1d
+!# 3.) euler_calcFluxScDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting scalar artificial viscosities
 !#
-!# 4.) euler_calcFluxTensorDiss1d
+!# 4.) euler_calcFluxRoeDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting tensorial artificial viscosities
 !#
-!# 5.) euler_calcFluxRusanov1d
+!# 5.) euler_calcFluxRusDiss1d_sim
 !#     -> Computes inviscid fluxes for low-order discretisation
 !#        adopting the Rusanov artificial diffusion
 !#
-!# 6.) euler_calcMatrixDiagonalDiag1d
+!# 6.) euler_calcMatDiagMatD1d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 7.) euler_calcMatrixDiagonal1d
+!# 7.) euler_calcMatDiag1d_sim
 !#     -> Computes local matrix for diagonal entry
 !#
-!# 8.) euler_calcMatrixGalerkinDiag1d
+!# 8.) euler_calcMatGalMatD1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 9.) euler_calcMatrixGalerkin1d
+!# 9.) euler_calcMatGal1d_sim
 !#     -> Computes local matrices for standard Galerkin scheme
 !#
-!# 10.) euler_calcMatrixScalarDissDiag1d
+!# 10.) euler_calcMatScDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 11.) euler_calcMatrixScalarDiss1d
+!# 11.) euler_calcMatScDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting scalar artificial viscosities
 !#
-!# 12.) euler_calcMatrixTensorDissDiag1d
+!# 12.) euler_calcMatRoeDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 13.) euler_calcMatrixTensorDiss1d
+!# 13.) euler_calcMatRoeDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting tensorial artificial viscosities
 !#
-!# 14.) euler_calcMatrixRusanovDiag1d
+!# 14.) euler_calcMatRusDissMatD1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 15.) euler_calcMatrixRusanov1d
+!# 15.) euler_calcMatRusDiss1d_sim
 !#      -> Computes local matrices for low-order discretisation
 !#         adopting the Rusanov flux artificial viscosities
 !#
@@ -179,21 +179,21 @@ module euler_callback1d
   implicit none
 
   private
-  public :: euler_calcFluxGalerkin1d
-  public :: euler_calcFluxGalerkinNoBdr1d
-  public :: euler_calcFluxScalarDiss1d
-  public :: euler_calcFluxTensorDiss1d
-  public :: euler_calcFluxRusanov1d
-  public :: euler_calcMatrixDiagonalDiag1d
-  public :: euler_calcMatrixDiagonal1d
-  public :: euler_calcMatrixGalerkinDiag1d
-  public :: euler_calcMatrixGalerkin1d
-  public :: euler_calcMatrixScalarDissDiag1d
-  public :: euler_calcMatrixScalarDiss1d
-  public :: euler_calcMatrixTensorDissDiag1d
-  public :: euler_calcMatrixTensorDiss1d
-  public :: euler_calcMatrixRusanovDiag1d
-  public :: euler_calcMatrixRusanov1d
+  public :: euler_calcFluxGal1d_sim
+  public :: euler_calcFluxGalNoBdr1d_sim
+  public :: euler_calcFluxScDiss1d_sim
+  public :: euler_calcFluxRoeDiss1d_sim
+  public :: euler_calcFluxRusDiss1d_sim
+  public :: euler_calcMatDiagMatD1d_sim
+  public :: euler_calcMatDiag1d_sim
+  public :: euler_calcMatGalMatD1d_sim
+  public :: euler_calcMatGal1d_sim
+  public :: euler_calcMatScDissMatD1d_sim
+  public :: euler_calcMatScDiss1d_sim
+  public :: euler_calcMatRoeDissMatD1d_sim
+  public :: euler_calcMatRoeDiss1d_sim
+  public :: euler_calcMatRusDissMatD1d_sim
+  public :: euler_calcMatRusDiss1d_sim
   public :: euler_calcCharacteristics1d
   public :: euler_calcFluxFCTScalarDiss1d
   public :: euler_calcFluxFCTTensorDiss1d
@@ -224,8 +224,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalerkin1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGal1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the standard
@@ -233,23 +233,36 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
     ! local variables
@@ -259,71 +272,82 @@ contains
     real(DP), dimension(NVAR1D) :: dF_ij
 #endif
     real(DP) :: ui,uj,ru2i,ru2j
+    integer :: iedge
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin flux
-    !
-    !     / rho*u       \
-    ! F = | rho*u*u + p |
-    !     \ rho*u*H     /
-    !
-    ! Here, we do not compute the pressure p and the enthalpy H but we
-    ! calculate the flux from the conservative variables as follows:
-    !
-    !     / U2                      \
-    ! F = | G1*U3-G14*ru2i          |
-    !     \ (gamma*U3-G2*ru2i)*ui /
-    !
-    ! where the auxiliary values for node i are defined as follows:
-    !
-    ! ru2i = U2*U2/U1 = ui*U2
-    ! ui = U2/U1
-    !
-    ! and the predefined constants are given by:
-    !
-    ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
-    !
-    ! The auxiliary values for node j are defined accordingly.
-    ! ---------------------------------------------------------------------------
 
-    ! Compute velocities
-    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+    do iedge = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin flux
+      !
+      !     / rho*u       \
+      ! F = | rho*u*u + p |
+      !     \ rho*u*H     /
+      !
+      ! Here, we do not compute the pressure p and the enthalpy H but we
+      ! calculate the flux from the conservative variables as follows:
+      !
+      !     / U2                      \
+      ! F = | G1*U3-G14*ru2i          |
+      !     \ (gamma*U3-G2*ru2i)*ui /
+      !
+      ! where the auxiliary values for node i are defined as follows:
+      !
+      ! ru2i = U2*U2/U1 = ui*U2
+      ! ui = U2/U1
+      !
+      ! and the predefined constants are given by:
+      !
+      ! G14 = (gamma-3)/2   and   G2 = (gamma-1)/2   and   G1 = gamma-1
+      !
+      ! The auxiliary values for node j are defined accordingly.
+      !-------------------------------------------------------------------------
 
-    ! Compute auxiliary variables
-    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,iedge)
+      ru2j = uj*DdataAtEdge(2,2,iedge)
 
 #ifdef USE_EULER_IBP
-    ! Compute fluxes for x-direction
-    dF_i(1) = U_i(2)
-    dF_i(2) = G1*U_i(3)-G14*ru2i
-    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
-
-    dF_j(1) = U_j(2)
-    dF_j(2) = G1*U_j(3)-G14*ru2j
-    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
-    F_ji = -F_ij
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,iedge)
+      dF_i(2) = G1*DdataAtEdge(3,1,iedge)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,iedge)
+      dF_j(2) = G1*DdataAtEdge(3,2,iedge)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
+      
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF_i )
+      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
 #else
-    ! Compute flux difference for x-direction
-    dF_ij(1) = U_i(2)                    - U_j(2)
-    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
-    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,iedge)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,iedge)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 
-    ! Assembly fluxes
-    F_ij =   dscale * C_ij(1)*dF_ij
-    F_ji = - dscale * C_ji(1)*dF_ij
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,iedge) =  dscale * DmatrixCoeffsAtEdge(1,1,iedge)*dF_ij
+      DfluxesAtEdge(:,2,iedge) = -dscale * DmatrixCoeffsAtEdge(1,2,iedge)*dF_ij
 #endif
 
-  end subroutine euler_calcFluxGalerkin1d
+    end do
+
+  end subroutine euler_calcFluxGal1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxGalerkinNoBdr1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxGalNoBdr1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the TVD
@@ -334,62 +358,82 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
     ! local variables
     real(DP), dimension(NVAR1D) :: dF_ij
-    real(DP), dimension(NDIM1D) :: a
     real(DP) :: ui,uj,ru2i,ru2j
+    integer :: iedge
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes
-    ! For a detailed description of algorithm and the definition of auxiliary
-    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
-    !---------------------------------------------------------------------------
 
-    ! Compute velocities
-    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
+    do iedge = 1, size(DfluxesAtEdge,3)
 
-    ! Compute auxiliary variables
-    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      ! For a detailed description of algorithm and the definition of auxiliary
+      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      !-------------------------------------------------------------------------
+      
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,iedge)
+      ru2j = uj*DdataAtEdge(2,2,iedge)
+      
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,iedge)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,iedge)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 
-    ! Compute flux difference for x-direction
-    dF_ij(1) = U_i(2)                    - U_j(2)
-    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
-    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
+      ! Assemble symmetric fluxes
+      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,1,iedge)-&
+                                           DmatrixCoeffsAtEdge(1,2,iedge))/2._DP*dF_ij
+      DfluxesAtEdge(:,2,iedge) = DfluxesAtEdge(:,1,iedge)
 
-    ! Compute skew-symmetric coefficient
-    a = 0.5_DP*(C_ij-C_ji)
+    end do
 
-    ! Assembly fluxes
-    F_ij = dscale * a(1)*dF_ij
-    F_ji = F_ij
-
-  end subroutine euler_calcFluxGalerkinNoBdr1d
+  end subroutine euler_calcFluxGalNoBdr1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxScalarDiss1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxScDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -397,23 +441,36 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
     ! local variables
@@ -426,81 +483,95 @@ contains
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: ui,uj,ru2i,ru2j
     real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,aux,vel,cs
+    integer :: iedge
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes
-    ! For a detailed description of algorithm and the definition of auxiliary
-    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
-    !---------------------------------------------------------------------------
+    do iedge = 1, size(DfluxesAtEdge,3)
+          
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      ! For a detailed description of algorithm and the definition of auxiliary
+      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      !-------------------------------------------------------------------------
 
-    ! Compute velocities
-    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
-
-    ! Compute auxiliary variables
-    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,iedge)
+      ru2j = uj*DdataAtEdge(2,2,iedge)
 
 #ifdef USE_EULER_IBP
-    ! Compute fluxes for x-direction
-    dF_i(1) = U_i(2)
-    dF_i(2) = G1*U_i(3)-G14*ru2i
-    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
-
-    dF_j(1) = U_j(2)
-    dF_j(2) = G1*U_j(3)-G14*ru2j
-    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
-    F_ji = -F_ij
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,iedge)
+      dF_i(2) = G1*DdataAtEdge(3,1,iedge)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,iedge)
+      dF_j(2) = G1*DdataAtEdge(3,2,iedge)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #else
-    ! Compute flux difference for x-direction
-    dF_ij(1) = U_i(2)                    - U_j(2)
-    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
-    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij =   dscale * C_ij(1)*dF_ij
-    F_ji = - dscale * C_ji(1)*dF_ij
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,iedge)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,iedge)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #endif
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation proportional to the spaectral radius
+      !-------------------------------------------------------------------------
 
-    ! Compute skew-symmetric coefficient
-    a = 0.5_DP*(C_ij-C_ji)
+      ! Compute skew-symmetric coefficient
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                  DmatrixCoeffsAtEdge(1,2,iedge))
 
-    ! Compute Roe mean values
-    aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-    u_ij = (aux*ui+uj)/(aux+1.0_DP)
-    hi   = GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
-    hj   = GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
-    H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      ! Compute Roe mean values
+      aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+      u_ij = (aux*ui+uj)/(aux+1.0_DP)
+      hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+      hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
+      aux  = abs(a(1)) ! = sqrt(a(1)*a(1))
+      vel  = u_ij*a(1)
+      q_ij = 0.5_DP*(u_ij*u_ij)
+      cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+      
+      ! Scalar dissipation
+      d_ij = abs(vel) + aux*cs
+      
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
 
-    ! Compute auxiliary variables
-    aux  = abs(a(1)) ! = sqrt(a(1)*a(1))
-    vel  = u_ij*a(1)
-    q_ij = 0.5_DP*(u_ij*u_ij)
-    cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
 
-    ! Scalar dissipation
-    d_ij = dscale * (abs(vel) + aux*cs)
+#ifdef USE_EULER_IBP
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF_i + Diff)
+      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
 
-    ! Multiply the solution difference by the artificial diffusion factor
-    Diff = d_ij*(U_j-U_i)
+#else
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF_ij + Diff)
+      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_ij + Diff)
+#endif
 
-    ! Add the artificial diffusion to the fluxes
-    F_ij = F_ij+Diff
-    F_ji = F_ji-Diff
+    end do
 
-  end subroutine euler_calcFluxScalarDiss1d
+  end subroutine euler_calcFluxScDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxTensorDiss1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRoeDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -508,23 +579,36 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
     ! local variables
@@ -538,110 +622,138 @@ contains
     real(DP) :: ui,uj,ru2i,ru2j,b1,b2
     real(DP) :: aux,uPow2,hi,hj,H_ij,q_ij,u_ij
     real(DP) :: anorm,l1,l2,l3,w1,w2,w3,cPow2,cs
+    integer :: iedge
+    
+    
+    do iedge = 1, size(DfluxesAtEdge,3)
+          
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      ! For a detailed description of algorithm and the definition of auxiliary
+      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      !-------------------------------------------------------------------------
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes
-    ! For a detailed description of algorithm and the definition of auxiliary
-    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
-    !---------------------------------------------------------------------------
-
-    ! Compute velocities
-    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
-
-    ! Compute auxiliary variables
-    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,iedge)
+      ru2j = uj*DdataAtEdge(2,2,iedge)
 
 #ifdef USE_EULER_IBP
-    ! Compute fluxes for x-direction
-    dF_i(1) = U_i(2)
-    dF_i(2) = G1*U_i(3)-G14*ru2i
-    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
-
-    dF_j(1) = U_j(2)
-    dF_j(2) = G1*U_j(3)-G14*ru2j
-    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
-    F_ji = -F_ij
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,iedge)
+      dF_i(2) = G1*DdataAtEdge(3,1,iedge)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,iedge)
+      dF_j(2) = G1*DdataAtEdge(3,2,iedge)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #else
-    ! Compute flux difference for x-direction
-    dF_ij(1) = U_i(2)                    - U_j(2)
-    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
-    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij =   dscale * C_ij(1)*dF_ij
-    F_ji = - dscale * C_ji(1)*dF_ij
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,iedge)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,iedge)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #endif
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      ! Evaluate the dissipation tensor by Roe
+      !-------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,1,iedge)-&
+                  DmatrixCoeffsAtEdge(1,2,iedge))
+      anorm = abs(a(1))
+      
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary variables
+        uPow2 = u_ij*u_ij
+        q_ij  = 0.5_DP*uPow2
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        
+        ! Compute eigenvalues
+        l1 = abs(u_ij-cs)
+        l2 = abs(u_ij)
+        l3 = abs(u_ij+cs)
+        
+        ! Compute solution difference U_j-U_i
+        Diff = DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge)
+        
+        ! Compute auxiliary quantities for characteristic variables
+        b2 = G1/cPow2; b1 = b2*q_ij
+        
+        ! Compute characteristic variables multiplied by the
+        ! corresponding eigenvalue
+        w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
+                            (b2*u_ij+1.0_DP/cs)*Diff(2) +&
+                                             b2*Diff(3) )
+        w2 = l2 *          (             (1-b1)*Diff(1) +&
+                                        b2*u_ij*Diff(2) -&
+                                             b2*Diff(3) )
+        w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
+                            (b2*u_ij-1.0_DP/cs)*Diff(2) +&
+                                             b2*Diff(3) )
+        
+        ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+        Diff(1) = anorm * ( w1 + w2 + w3 )
+        Diff(2) = anorm * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
+        Diff(3) = anorm * ( (H_ij-u_ij*cs)*w1 + q_ij*w2 + (H_ij+u_ij*cs)*w3 )
+        
+        !-----------------------------------------------------------------------
+        ! Build both contributions into the fluxes
+        !-------------------------------------------------------------------------
 
-    ! Compute the skew-symmetric coefficient
-    a = 0.5_DP*(C_ij-C_ji); anorm = abs(a(1))
+#ifdef USE_EULER_IBP
+        ! Assemble skew-symmetric fluxes
+        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_j-&
+                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF_i + Diff)
+        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        
+#else
+        ! Assemble fluxes
+        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF_ij + Diff)
+        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_ij + Diff)
+#endif
 
-    if (anorm .gt. SYS_EPSREAL) then
+      else
 
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*ui+uj)/(aux+1.0_DP)
-      hi   = GAMMA*U_i(3)/U_i(1)-G2*(U_i(2)*U_i(2))/(U_i(1)*U_i(1))
-      hj   = GAMMA*U_j(3)/U_j(1)-G2*(U_j(2)*U_j(2))/(U_j(1)*U_j(1))
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+#ifdef USE_EULER_IBP
+        ! Assemble skew-symmetric fluxes
+        DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_j-&
+                                             DmatrixCoeffsAtEdge(1,1,iedge)*dF_i )
+        DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
+        
+#else
+        ! Assemble fluxes
+        DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF_ij)
+        DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_ij)
+#endif
 
-      ! Compute auxiliary variables
-      uPow2 = u_ij*u_ij
-      q_ij  = 0.5_DP*uPow2
-      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs    = sqrt(cPow2)
+      end if
 
-      ! Compute eigenvalues
-      l1 = abs(u_ij-cs)
-      l2 = abs(u_ij)
-      l3 = abs(u_ij+cs)
+    end do
 
-      ! Compute solution difference U_j-U_i
-      Diff = U_j-U_i
-
-      ! Compute auxiliary quantities for characteristic variables
-      b2 = G1/cPow2; b1 = b2*q_ij
-
-      ! Compute characteristic variables multiplied by the
-      ! corresponding eigenvalue
-      w1 = l1 * 0.5_DP * (       (b1+u_ij/cs)*Diff(1) -&
-                          (b2*u_ij+1.0_DP/cs)*Diff(2) +&
-                                           b2*Diff(3) )
-      w2 = l2 *          (             (1-b1)*Diff(1) +&
-                                      b2*u_ij*Diff(2) -&
-                                           b2*Diff(3) )
-      w3 = l3 * 0.5_DP * (       (b1-u_ij/cs)*Diff(1) -&
-                          (b2*u_ij-1.0_DP/cs)*Diff(2) +&
-                                           b2*Diff(3) )
-
-      ! Compute "anorm * dscale"
-      anorm = anorm*dscale
-
-      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
-      Diff(1) = anorm * ( w1 + w2 + w3 )
-      Diff(2) = anorm * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
-      Diff(3) = anorm * ( (H_ij-u_ij*cs)*w1 + q_ij*w2 + (H_ij+u_ij*cs)*w3 )
-
-      ! Add the artificial diffusion to the fluxes
-      F_ij = F_ij+Diff
-      F_ji = F_ji-Diff
-
-    end if
-
-  end subroutine euler_calcFluxTensorDiss1d
+  end subroutine euler_calcFluxRoeDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcFluxRusanov1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, F_ij, F_ji)
+  pure subroutine euler_calcFluxRusDiss1d_sim(DdataAtEdge, DmatrixCoeffsAtEdge,&
+      IverticesAtEdge, dscale, DfluxesAtEdge, rcollection)
+
 
 !<description>
     ! This subroutine computes the inviscid fluxes for the
@@ -649,23 +761,36 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  !   DIMENSION(ndim,2,nedges)
+  ! with ndim the number of spatial dimensions
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling coefficient
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  !   DIMENSION(4,nedges)
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! inviscid fluxes
-    real(DP), dimension(:), intent(out) :: F_ij, F_ji
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
+
 !</subroutine>
 
     ! local variables
@@ -677,70 +802,88 @@ contains
     real(DP), dimension(NVAR1D) :: Diff
     real(DP) :: ui,uj,ru2i,ru2j
     real(DP) :: d_ij,ci,cj,Ei,Ej
+    integer :: iedge
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the Galerkin fluxes
-    ! For a detailed description of algorithm and the definition of auxiliary
-    ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
-    !---------------------------------------------------------------------------
+    
+    do iedge = 1, size(DfluxesAtEdge,3)
+      
+      !-------------------------------------------------------------------------
+      ! Evaluate the Galerkin fluxes
+      ! For a detailed description of algorithm and the definition of auxiliary
+      ! quantities have a look at the subroutine "euler_calcFluxGalerkin1d".
+      !-------------------------------------------------------------------------
 
-    ! Compute velocities and energy
-    ui = U_i(2)/U_i(1); uj = U_j(2)/U_j(1)
-    Ei = U_i(3)/U_i(1); Ej = U_j(3)/U_j(1)
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
 
-    ! Compute auxiliary variables
-    ru2i = ui*U_i(2); ru2j = uj*U_j(2)
-
+      ! Compute auxiliary variables
+      ru2i = ui*DdataAtEdge(2,1,iedge)
+      ru2j = uj*DdataAtEdge(2,2,iedge)
+      
 #ifdef USE_EULER_IBP
-    ! Compute fluxes for x-direction
-    dF_i(1) = U_i(2)
-    dF_i(2) = G1*U_i(3)-G14*ru2i
-    dF_i(3) = (GAMMA*U_i(3)-G2*ru2i)*ui
-
-    dF_j(1) = U_j(2)
-    dF_j(2) = G1*U_j(3)-G14*ru2j
-    dF_j(3) = (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij = dscale * ( C_ji(1)*dF_j - C_ij(1)*dF_i )
-    F_ji = -F_ij
+      ! Compute fluxes for x-direction
+      dF_i(1) = DdataAtEdge(2,1,iedge)
+      dF_i(2) = G1*DdataAtEdge(3,1,iedge)-G14*ru2i
+      dF_i(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui
+      
+      dF_j(1) = DdataAtEdge(2,2,iedge)
+      dF_j(2) = G1*DdataAtEdge(3,2,iedge)-G14*ru2j
+      dF_j(3) = (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #else
-    ! Compute flux difference for x-direction
-    dF_ij(1) = U_i(2)                    - U_j(2)
-    dF_ij(2) = G1*U_i(3)-G14*ru2i        - (G1*U_j(3)-G14*ru2j)
-    dF_ij(3) = (GAMMA*U_i(3)-G2*ru2i)*ui - (GAMMA*U_j(3)-G2*ru2j)*uj
-
-    ! Assembly fluxes
-    F_ij =   dscale * C_ij(1)*dF_ij
-    F_ji = - dscale * C_ji(1)*dF_ij
+      ! Compute flux difference for x-direction
+      dF_ij(1) = DdataAtEdge(2,1,iedge) - DdataAtEdge(2,2,iedge)
+      dF_ij(2) = (G1*DdataAtEdge(3,1,iedge)-G14*ru2i)-&
+                 (G1*DdataAtEdge(3,2,iedge)-G14*ru2j)
+      dF_ij(3) = (GAMMA*DdataAtEdge(3,1,iedge)-G2*ru2i)*ui-&
+                 (GAMMA*DdataAtEdge(3,2,iedge)-G2*ru2j)*uj
 #endif
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
+      ! Evaluate the scalar dissipation of Rusanov-type
+      !-------------------------------------------------------------------------
+      
+      ! Compute the speed of sound
+      ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+      cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+      
+      ! Scalar dissipation for the Rusanov flux
+      d_ij = max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj)+&
+                  abs(DmatrixCoeffsAtEdge(1,1,iedge))*cj,&
+                  abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui)+&
+                  abs(DmatrixCoeffsAtEdge(1,2,iedge))*ci )
 
-    ! Compute the speed of sound
-    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
-    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+      ! Multiply the solution difference by the artificial diffusion factor
+      Diff = d_ij*(DdataAtEdge(:,2,iedge)-DdataAtEdge(:,1,iedge))
 
-    ! Scalar dissipation
-    d_ij = max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
-                abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
+      !-------------------------------------------------------------------------
+      ! Build both contributions into the fluxes
+      !-------------------------------------------------------------------------
 
-    ! Multiply the solution difference by the artificial diffusion factor
-    Diff = dscale * d_ij*(U_j-U_i)
+#ifdef USE_EULER_IBP
+      ! Assemble skew-symmetric fluxes
+      DfluxesAtEdge(:,1,iedge) = dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_j-&
+                                           DmatrixCoeffsAtEdge(1,1,iedge)*dF_i + Diff)
+      DfluxesAtEdge(:,2,iedge) = -DfluxesAtEdge(:,1,iedge)
 
-    ! Add the artificial diffusion to the fluxes
-    F_ij = F_ij+Diff
-    F_ji = F_ji-Diff
+#else
+      ! Assemble fluxes
+      DfluxesAtEdge(:,1,iedge) =  dscale * (DmatrixCoeffsAtEdge(1,1,iedge)*dF_ij + Diff)
+      DfluxesAtEdge(:,2,iedge) = -dscale * (DmatrixCoeffsAtEdge(1,2,iedge)*dF_ij + Diff)
+#endif
 
-  end subroutine euler_calcFluxRusanov1d
+    end do
+
+  end subroutine euler_calcFluxRusDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixDiagonalDiag1d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatDiagMatD1d_sim(DdataAtNode, DmatrixCoeffsAtNode,&
+      IverticesAtNode, dscale, DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -748,43 +891,54 @@ contains
 !</description>
 
 !<input>
-    ! local solution at node I
-    real(DP), dimension(:), intent(in) :: U_i
+  ! Nodal solution values for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ii
+  ! Entries of the coefficient matrices for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all nodes under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtNode
 
-    ! row number
-    integer, intent(in) :: i
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Jacobian matrix
-    real(DP), dimension(:), intent(out) :: K_ii
+  ! Coefficients of the matrix for all nodes under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui
+    integer :: inode
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1)
+    do inode = 1, size(DcoefficientsAtNode,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtNode(2,inode)/DdataAtNode(1,inode)
+      
+      ! Compute Galerkin coefficient K_ii
+      DcoefficientsAtNode(1,1,inode) = 0.0_DP
+      DcoefficientsAtNode(2,1,inode) = dscale * G13*ui*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(3,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+    end do
 
-    ! Compute Galerkin coefficient K_ii
-    K_ii(1) = 0.0_DP
-    K_ii(2) = dscale * G13*ui*C_ii(1)
-    K_ii(3) = dscale * GAMMA*ui*C_ii(1)
-
-  end subroutine euler_calcMatrixDiagonalDiag1d
+  end subroutine euler_calcMatDiagMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixDiagonal1d(U_i, C_ii, i, dscale, K_ii)
+  pure subroutine euler_calcMatDiag1d_sim(DdataAtNode,&
+      DmatrixCoeffsAtNode, IverticesAtNode, dscale,&
+      DcoefficientsAtNode, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices for the diagonal
@@ -792,253 +946,304 @@ contains
 !</description>
 
 !<input>
-    ! local solution at node I
-    real(DP), dimension(:), intent(in) :: U_i
+  ! Nodal solution values for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DdataAtNode
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ii
+  ! Entries of the coefficient matrices for all nodes under consideration
+  real(DP), dimension(:,:), intent(in) :: DmatrixCoeffsAtNode
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all nodes under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtNode
 
-    ! row number
-    integer, intent(in) :: i
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local Jacobian matrix
-    real(DP), dimension(:), intent(out) :: K_ii
+  ! Coefficients of the matrix for all nodes under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtNode
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui,Ei,uPow2i
+    integer :: inode
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
-
-    ! Compute Galerkin coefficient K_ii
-    K_ii(1) = 0.0_DP
-    K_ii(2) = dscale * G14*uPow2i*C_ii(1)
-    K_ii(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ii(1)
-
-    K_ii(4) = dscale * C_ii(1)
-    K_ii(5) = dscale * G13*ui*C_ii(1)
-    K_ii(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ii(1)
-
-    K_ii(7) = 0.0_DP
-    K_ii(8) = dscale * G1*C_ii(1)
-    K_ii(9) = dscale * GAMMA*ui*C_ii(1)
-
-  end subroutine euler_calcMatrixDiagonal1d
+    do inode = 1, size(DcoefficientsAtNode,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtNode(2,inode)/DdataAtNode(1,inode)
+      Ei = DdataAtNode(3,inode)/DdataAtNode(1,inode)
+      uPow2i = ui*ui
+      
+      ! Compute Galerkin coefficient K_ii
+      DcoefficientsAtNode(1,1,inode) = 0.0_DP
+      DcoefficientsAtNode(2,1,inode) = dscale * G14*uPow2i*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(3,1,inode) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtNode(1,inode)
+      
+      DcoefficientsAtNode(4,1,inode) = dscale * DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(5,1,inode) = dscale * G13*ui*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(6,1,inode) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtNode(1,inode)
+      
+      DcoefficientsAtNode(7,1,inode) = 0.0_DP
+      DcoefficientsAtNode(8,1,inode) = dscale * G1*DmatrixCoeffsAtNode(1,inode)
+      DcoefficientsAtNode(9,1,inode) = dscale * GAMMA*ui*DmatrixCoeffsAtNode(1,inode)
+    end do
+    
+  end subroutine euler_calcMatDiag1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixGalerkinDiag1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatGalMatD1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices in 1D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui,uj
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    do iedge = 1, size(DcoefficientsAtEdge,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Nullify dissipation tensor
+      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G13*uj*C_ij(1)
-    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+    end do
 
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G13*ui*C_ji(1)
-    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
-
-    ! Nullify dissipation tensor
-    D_ij = 0.0_DP
-
-  end subroutine euler_calcMatrixGalerkinDiag1d
+  end subroutine euler_calcMatGalMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixGalerkin1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatGal1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices in 1D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui,uj,Ei,Ej,uPow2i,uPow2j
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
-    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+    do iedge = 1, size(DcoefficientsAtEdge,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
+      uPow2i = ui*ui
+      
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      uPow2j = uj*uj
+      
+      ! Nullify dissipation tensor
+      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
-    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(4,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(5,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(6,2,iedge) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(7,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(9,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(4,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(5,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(6,3,iedge) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(7,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(9,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+    end do
 
-    K_ij(4) = dscale * C_ij(1)
-    K_ij(5) = dscale * G13*uj*C_ij(1)
-    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
-
-    K_ij(7) = 0.0_DP
-    K_ij(8) = dscale * G1*C_ij(1)
-    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
-
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
-    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
-
-    K_ji(4) = dscale * C_ji(1)
-    K_ji(5) = dscale * G13*ui*C_ji(1)
-    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
-
-    K_ji(7) = 0.0_DP
-    K_ji(8) = dscale * G1*C_ji(1)
-    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
-
-    ! Nullify dissipation tensor
-    D_ij = 0.0_DP
-
-  end subroutine euler_calcMatrixGalerkin1d
+  end subroutine euler_calcMatGal1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixScalarDissDiag1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
-
+  pure subroutine euler_calcMatScDissMatD1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
+    
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
     ! and applies scalar artificial viscosities in 1D
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,ui,uj,u_ij
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+    do iedge = 1, size(DcoefficientsAtEdge,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G13*uj*C_ij(1)
-    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                  DmatrixCoeffsAtEdge(1,1,iedge))
+      anorm = abs(a(1))
+      
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary values
+        q_ij = 0.5_DP*u_ij*u_ij
+        
+        ! Compute scalar dissipation
+        DcoefficientsAtEdge(:,1,iedge) = -dscale * (abs(a(1)*u_ij) +&
+            anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
+      else
+        
+        ! Nullify dissipation tensor
+        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+        
+      end if
+    end do
 
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G13*ui*C_ji(1)
-    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
-
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
-
-    ! Compute skew-symmetric coefficient and its norm
-    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
-
-    if (anorm .gt. SYS_EPSREAL) then
-
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*ui+uj)/(aux+1.0_DP)
-      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
-      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-      ! Compute auxiliary values
-      q_ij = 0.5_DP*u_ij*u_ij
-
-      ! Compute scalar dissipation
-      D_ij = dscale * (abs(a(1)*u_ij) +&
-                       anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
-    else
-
-      ! Nullify dissipation tensor
-      D_ij = 0.0_DP
-
-    end if
-
-  end subroutine euler_calcMatrixScalarDissDiag1d
+  end subroutine euler_calcMatScDissMatD1d_sim
 
 !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixScalarDiss1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatScDiss1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1046,102 +1251,114 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: anorm,aux,hi,hj,Ei,Ej,H_ij,q_ij,ui,uj,u_ij,uPow2i,uPow2j
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
-    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+    do iedge = 1, size(DcoefficientsAtEdge,3)
+    
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
+      uPow2i = ui*ui
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      uPow2j = uj*uj
+      
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(4,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(5,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(6,2,iedge) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(7,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(9,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(4,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(5,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(6,3,iedge) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(7,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(9,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
-    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
-
-    K_ij(4) = dscale * C_ij(1)
-    K_ij(5) = dscale * G13*uj*C_ij(1)
-    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
-
-    K_ij(7) = 0.0_DP
-    K_ij(8) = dscale * G1*C_ij(1)
-    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
-
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
-    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
-
-    K_ji(4) = dscale * C_ji(1)
-    K_ji(5) = dscale * G13*ui*C_ji(1)
-    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
-
-    K_ji(7) = 0.0_DP
-    K_ji(8) = dscale * G1*C_ji(1)
-    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
-
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
-
-    ! Compute coefficients
-    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
-
-    if (anorm .gt. SYS_EPSREAL) then
-
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*ui+uj)/(aux+1.0_DP)
-      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
-      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-      ! Compute auxiliary values
-      q_ij = 0.5_DP*u_ij*u_ij
-
-      ! Compute scalar dissipation
-      aux = dscale * (abs(a(1)*u_ij) +&
-                      anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
-
-      D_ij    = 0.0_DP
-      D_ij(1) = aux
-      D_ij(5) = aux
-      D_ij(9) = aux
-
-    else
-
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                  DmatrixCoeffsAtEdge(1,1,iedge))
+      anorm = abs(a(1))
+      
       ! Nullify dissipation tensor
-      D_ij = 0.0_DP
+      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
 
-    end if
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
-  end subroutine euler_calcMatrixScalarDiss1d
+        ! Compute auxiliary values
+        q_ij = 0.5_DP*u_ij*u_ij
+        
+        ! Compute scalar dissipation
+        aux = -dscale * (abs(a(1)*u_ij) +&
+            anorm*sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL)))
+        
+        DcoefficientsAtEdge(1,1,iedge) = aux
+        DcoefficientsAtEdge(5,1,iedge) = aux
+        DcoefficientsAtEdge(9,1,iedge) = aux
+      end if
+    end do
+    
+  end subroutine euler_calcMatScDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixTensorDissDiag1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRoeDissMatD1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1149,22 +1366,27 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
@@ -1173,101 +1395,108 @@ contains
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij
     real(DP) :: l1,l2,l3,anorm,cs,cPow2,b1,b2
+    integer :: iedge
+    
+    do iedge = 1, size(DcoefficientsAtEdge,3)
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G13*uj*C_ij(1)
-    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
 
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G13*ui*C_ji(1)
-    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                  DmatrixCoeffsAtEdge(1,1,iedge))
+      anorm = abs(a(1))
+      
+      if (anorm .gt. SYS_EPSREAL) then
+        
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
+        
+        ! Compute auxiliary values
+        q_ij  = 0.5_DP*u_ij*u_ij
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        
+        b2    = G1/cPow2
+        b1    = b2*q_ij
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
+        ! Diagonal matrix of eigenvalues
+        l1 = abs(u_ij-cs)
+        l2 = abs(u_ij)
+        l3 = abs(u_ij+cs)
+        
+        ! Matrix of right eigenvectors
+        R_ij(1,1) =  l1
+        R_ij(2,1) =  l1*(u_ij-cs)
+        R_ij(3,1) =  l1*(H_ij-cs*u_ij)
+        
+        R_ij(1,2) =  l2
+        R_ij(2,2) =  l2*u_ij
+        R_ij(3,2) =  l2*q_ij
+        
+        R_ij(1,3) =  l3
+        R_ij(2,3) =  l3*(u_ij+cs)
+        R_ij(3,3) =  l3*(H_ij+cs*u_ij)
+        
+        ! Matrix of left eigenvectors
+        L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
+        L_ij(2,1) = 1.0_DP-b1
+        L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
+        
+        L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
+        L_ij(2,2) =  b2*u_ij
+        L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
+        
+        L_ij(1,3) = 0.5_DP*b2
+        L_ij(2,3) = -b2
+        L_ij(3,3) = 0.5_DP*b2
 
-    ! Compute skew-symmetric coefficient and its norm
-    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
+        ! Include scaling parameter
+        anorm = -dscale*anorm
 
-    if (anorm .gt. SYS_EPSREAL) then
+        ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
+        DcoefficientsAtEdge(1,1,iedge) = anorm*( R_ij(1,1)*L_ij(1,1)+&
+            R_ij(1,2)*L_ij(2,1)+R_ij(1,3)*L_ij(3,1)  )
+        DcoefficientsAtEdge(2,1,iedge) = anorm*( R_ij(2,1)*L_ij(1,2)+&
+            R_ij(2,2)*L_ij(2,2)+R_ij(2,3)*L_ij(3,2)  )
+        DcoefficientsAtEdge(3,1,iedge) = anorm*( R_ij(3,1)*L_ij(1,3)+&
+            R_ij(3,2)*L_ij(2,3)+R_ij(3,3)*L_ij(3,3)  )
+      else
+        
+        ! Nullify dissipation tensor
+        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
 
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*ui+uj)/(aux+1.0_DP)
-      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
-      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
+      end if
+    end do
 
-      ! Compute auxiliary values
-      q_ij  = 0.5_DP*u_ij*u_ij
-      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs    = sqrt(cPow2)
-
-      b2    = G1/cPow2
-      b1    = b2*q_ij
-
-      ! Diagonal matrix of eigenvalues
-      l1 = abs(u_ij-cs)
-      l2 = abs(u_ij)
-      l3 = abs(u_ij+cs)
-
-      ! Matrix of right eigenvectors
-      R_ij(1,1) =  l1
-      R_ij(2,1) =  l1*(u_ij-cs)
-      R_ij(3,1) =  l1*(H_ij-cs*u_ij)
-
-      R_ij(1,2) =  l2
-      R_ij(2,2) =  l2*u_ij
-      R_ij(3,2) =  l2*q_ij
-
-      R_ij(1,3) =  l3
-      R_ij(2,3) =  l3*(u_ij+cs)
-      R_ij(3,3) =  l3*(H_ij+cs*u_ij)
-
-      ! Matrix of left eigenvectors
-      L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
-      L_ij(2,1) = 1.0_DP-b1
-      L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
-
-      L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
-      L_ij(2,2) =  b2*u_ij
-      L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
-
-      L_ij(1,3) = 0.5_DP*b2
-      L_ij(2,3) = -b2
-      L_ij(3,3) = 0.5_DP*b2
-
-      ! Compute tensorial dissipation D_ij = diag(R_ij*|Lbd_ij|*L_ij)*I
-      D_ij    = 0.0_DP
-      D_ij(1) = anorm*( R_ij(1,1)*L_ij(1,1)+&
-                        R_ij(1,2)*L_ij(2,1)+&
-                        R_ij(1,3)*L_ij(3,1)  )
-      D_ij(2) = anorm*( R_ij(2,1)*L_ij(1,2)+&
-                        R_ij(2,2)*L_ij(2,2)+&
-                        R_ij(2,3)*L_ij(3,2)  )
-      D_ij(3) = anorm*( R_ij(3,1)*L_ij(1,3)+&
-                        R_ij(3,2)*L_ij(2,3)+&
-                        R_ij(3,3)*L_ij(3,3)  )
-    else
-
-      ! Nullify dissipation tensor
-      D_ij = 0.0_DP
-
-    end if
-
-  end subroutine euler_calcMatrixTensorDissDiag1d
+  end subroutine euler_calcMatRoeDissMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine euler_calcMatrixTensorDiss1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRoeDiss1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1275,22 +1504,27 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
@@ -1299,110 +1533,131 @@ contains
     real(DP), dimension(NDIM1D) :: a
     real(DP) :: aux,Ei,Ej,hi,hj,H_ij,q_ij,ui,uj,u_ij
     real(DP) :: l1,l2,l3,anorm,cs,cPow2,b1,b2,uPow2i,uPow2j
+    integer :: iedge,i,j,k
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
-    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+    do iedge = 1, size(DcoefficientsAtEdge,3)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
-    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
+      uPow2i = ui*ui
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      uPow2j = uj*uj
+      
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(4,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(5,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(6,2,iedge) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(7,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(9,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(4,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(5,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(6,3,iedge) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(7,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(9,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
 
-    K_ij(4) = dscale * C_ij(1)
-    K_ij(5) = dscale * G13*uj*C_ij(1)
-    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute skew-symmetric coefficient and its norm
+      a = 0.5_DP*(DmatrixCoeffsAtEdge(1,2,iedge)-&
+                  DmatrixCoeffsAtEdge(1,1,iedge))
+      anorm = abs(a(1))      
 
-    K_ij(7) = 0.0_DP
-    K_ij(8) = dscale * G1*C_ij(1)
-    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+      if (anorm .gt. SYS_EPSREAL) then
 
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
-    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
+        ! Compute Roe mean values
+        aux  = sqrt(max(DdataAtEdge(1,1,iedge)/DdataAtEdge(1,2,iedge), SYS_EPSREAL))
+        u_ij = (aux*ui+uj)/(aux+1.0_DP)
+        hi   = GAMMA*DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)-G2*(ui*ui)
+        hj   = GAMMA*DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)-G2*(uj*uj)
+        H_ij = (aux*hi+hj)/(aux+1.0_DP)
 
-    K_ji(4) = dscale * C_ji(1)
-    K_ji(5) = dscale * G13*ui*C_ji(1)
-    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
+        ! Compute auxiliary values
+        q_ij  = 0.5_DP*u_ij*u_ij
+        cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
+        cs    = sqrt(cPow2)
+        b2    = G1/cPow2
+        b1    = b2*q_ij
+        
+        ! Diagonal matrix of eigenvalues
+        l1 = abs(u_ij-cs)
+        l2 = abs(u_ij)
+        l3 = abs(u_ij+cs)
+        
+        ! Matrix of right eigenvectors
+        R_ij(1,1) =  l1
+        R_ij(2,1) =  l1*(u_ij-cs)
+        R_ij(3,1) =  l1*(H_ij-cs*u_ij)
+        
+        R_ij(1,2) =  l2
+        R_ij(2,2) =  l2*u_ij
+        R_ij(3,2) =  l2*q_ij
+        
+        R_ij(1,3) =  l3
+        R_ij(2,3) =  l3*(u_ij+cs)
+        R_ij(3,3) =  l3*(H_ij+cs*u_ij)
+        
+        ! Matrix of left eigenvectors
+        L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
+        L_ij(2,1) = 1.0_DP-b1
+        L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
+        
+        L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
+        L_ij(2,2) =  b2*u_ij
+        L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
+        
+        L_ij(1,3) = 0.5_DP*b2
+        L_ij(2,3) = -b2
+        L_ij(3,3) = 0.5_DP*b2
+        
+        ! Include scaling parameter
+        anorm = -dscale*anorm
 
-    K_ji(7) = 0.0_DP
-    K_ji(8) = dscale * G1*C_ji(1)
-    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
+        ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
+        do i = 1, NVAR1D
+          do j = 1, NVAR1D
+            aux = 0.0_DP
+            do k = 1, NVAR1D
+              aux = aux + R_ij(i,k)*L_ij(k,j)
+            end do
+            DcoefficientsAtEdge(NVAR1D*(j-1)+i,1,iedge) = anorm*aux
+          end do
+        end do
+        
+      else
+        
+        ! Nullify dissipation tensor
+        DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+        
+      end if
+    end do
 
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
-
-    ! Compute coefficients
-    a = 0.5_DP*(C_ji-C_ij); anorm = abs(a(1))
-
-    if (anorm .gt. SYS_EPSREAL) then
-
-      ! Compute Roe mean values
-      aux  = sqrt(max(U_i(1)/U_j(1), SYS_EPSREAL))
-      u_ij = (aux*ui+uj)/(aux+1.0_DP)
-      hi   = GAMMA*U_i(3)/U_i(1)-G2*(ui*ui)
-      hj   = GAMMA*U_j(3)/U_j(1)-G2*(uj*uj)
-      H_ij = (aux*hi+hj)/(aux+1.0_DP)
-
-      ! Compute auxiliary values
-      q_ij  = 0.5_DP*u_ij*u_ij
-      cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs    = sqrt(cPow2)
-      b2    = G1/cPow2
-      b1    = b2*q_ij
-
-      ! Diagonal matrix of eigenvalues
-      l1 = abs(u_ij-cs)
-      l2 = abs(u_ij)
-      l3 = abs(u_ij+cs)
-
-      ! Matrix of right eigenvectors
-      R_ij(1,1) =  l1
-      R_ij(2,1) =  l1*(u_ij-cs)
-      R_ij(3,1) =  l1*(H_ij-cs*u_ij)
-
-      R_ij(1,2) =  l2
-      R_ij(2,2) =  l2*u_ij
-      R_ij(3,2) =  l2*q_ij
-
-      R_ij(1,3) =  l3
-      R_ij(2,3) =  l3*(u_ij+cs)
-      R_ij(3,3) =  l3*(H_ij+cs*u_ij)
-
-      ! Matrix of left eigenvectors
-      L_ij(1,1) = 0.5_DP*(b1+u_ij/cs)
-      L_ij(2,1) = 1.0_DP-b1
-      L_ij(3,1) = 0.5_DP*(b1-u_ij/cs)
-
-      L_ij(1,2) = -0.5_DP*(b2*u_ij+1/cs)
-      L_ij(2,2) =  b2*u_ij
-      L_ij(3,2) = -0.5_DP*(b2*u_ij-1/cs)
-
-      L_ij(1,3) = 0.5_DP*b2
-      L_ij(2,3) = -b2
-      L_ij(3,3) = 0.5_DP*b2
-
-      ! Compute tensorial dissipation D_ij = R_ij*|Lbd_ij|*L_ij
-      call DGEMM('n', 'n', NVAR1D, NVAR1D, NVAR1D, anorm,&
-          R_ij, NVAR1D, L_ij, NVAR1D, 0.0_DP, D_ij, NVAR1D)
-
-    else
-
-      ! Nullify dissipation tensor
-      D_ij = 0.0_DP
-
-    end if
-
-  end subroutine euler_calcMatrixTensorDiss1d
+  end subroutine euler_calcMatRoeDiss1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixRusanovDiag1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRusDissMatD1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the diagonal of the Galerkin matrices
@@ -1410,62 +1665,77 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui,uj,ci,cj,Ei,Ej
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   uj = U_j(2)/U_j(1)
-    Ei = U_i(3)/U_i(1);   Ej = U_j(3)/U_j(1)
+    do iedge = 1, size(DcoefficientsAtEdge,3)
+      
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)      
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G13*uj*C_ij(1)
-    K_ij(3) = dscale * GAMMA*uj*C_ij(1)
-
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G13*ui*C_ji(1)
-    K_ji(3) = dscale * GAMMA*ui*C_ji(1)
-
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
-
-    ! Compute the speed of sound
-    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
-    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
-
-    ! Compute dissipation tensor D_ij
-    D_ij = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
-                         abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
-
-  end subroutine euler_calcMatrixRusanovDiag1d
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute the speed of sound
+      ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+      cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
+      
+      ! Compute dissipation tensor D_ij
+      DcoefficientsAtEdge(:,1,iedge) = -dscale *&
+          max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj)+&
+               abs(DmatrixCoeffsAtEdge(1,1,iedge))*cj,&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui)+&
+               abs(DmatrixCoeffsAtEdge(1,2,iedge))*ci )
+    end do
+    
+  end subroutine euler_calcMatRusDissMatD1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_calcMatrixRusanov1d(&
-      U_i, U_j, C_ij, C_ji, i, j, dscale, K_ij, K_ji, D_ij)
+  pure subroutine euler_calcMatRusDiss1d_sim(DdataAtEdge,&
+      DmatrixCoeffsAtEdge, IverticesAtEdge, dscale,&
+      DcoefficientsAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the Galerkin matrices
@@ -1473,76 +1743,91 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+  ! Nodal solution values for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-    ! coefficients from spatial discretisation
-    real(DP), dimension(:), intent(in) :: C_ij,C_ji
+  ! Entries of the coefficient matrices for all edges under consideration
+  real(DP), dimension(:,:,:), intent(in) ::  DmatrixCoeffsAtEdge
 
-    ! scaling parameter
-    real(DP), intent(in) :: dscale
+  ! Numbers of vertices and matrix entries for all edges under consideration
+  integer, dimension(:,:), intent(in) :: IverticesAtEdge
 
-    ! node numbers
-    integer, intent(in) :: i, j
+  ! Scaling parameter
+  real(DP), intent(in) :: dscale
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! local matrices
-    real(DP), dimension(:), intent(out) :: K_ij,K_ji,D_ij
+  ! Coefficients of the matrix for all edges under consideration
+  real(DP), dimension(:,:,:), intent(out) :: DcoefficientsAtEdge
 !</output>
 !</subroutine>
 
     ! local variable
     real(DP) :: ui,uj,ci,cj,Ei,Ej,uPow2i,uPow2j,aux
+    integer :: iedge
 
-    ! Compute auxiliary variables
-    ui = U_i(2)/U_i(1);   Ei = U_i(3)/U_i(1);   uPow2i = ui*ui
-    uj = U_j(2)/U_j(1);   Ej = U_j(3)/U_j(1);   uPow2j = uj*uj
+    do iedge = 1, size(DcoefficientsAtEdge,3)
 
-    ! Compute Galerkin coefficient K_ij
-    K_ij(1) = 0.0_DP
-    K_ij(2) = dscale * G14*uPow2j*C_ij(1)
-    K_ij(3) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*C_ij(1)
+      ! Compute auxiliary variables
+      ui = DdataAtEdge(2,1,iedge)/DdataAtEdge(1,1,iedge)
+      Ei = DdataAtEdge(3,1,iedge)/DdataAtEdge(1,1,iedge)
+      uPow2i = ui*ui
+      uj = DdataAtEdge(2,2,iedge)/DdataAtEdge(1,2,iedge)
+      Ej = DdataAtEdge(3,2,iedge)/DdataAtEdge(1,2,iedge)
+      uPow2j = uj*uj
+      
+      ! Compute Galerkin coefficient K_ij
+      DcoefficientsAtEdge(1,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,2,iedge) = dscale * G14*uPow2j*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(3,2,iedge) = dscale * (G1*uPow2j-GAMMA*Ej)*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(4,2,iedge) = dscale * DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(5,2,iedge) = dscale * G13*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(6,2,iedge) = dscale * (GAMMA*Ej-G16*uPow2j)*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      DcoefficientsAtEdge(7,2,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,2,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,1,iedge)
+      DcoefficientsAtEdge(9,2,iedge) = dscale * GAMMA*uj*DmatrixCoeffsAtEdge(1,1,iedge)
+      
+      ! Compute Galerkin coefficient K_ji
+      DcoefficientsAtEdge(1,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(2,3,iedge) = dscale * G14*uPow2i*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(3,3,iedge) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(4,3,iedge) = dscale * DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(5,3,iedge) = dscale * G13*ui*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(6,3,iedge) = dscale * (GAMMA*Ei-G16*uPow2i)*DmatrixCoeffsAtEdge(1,2,iedge)
+      
+      DcoefficientsAtEdge(7,3,iedge) = 0.0_DP
+      DcoefficientsAtEdge(8,3,iedge) = dscale * G1*DmatrixCoeffsAtEdge(1,2,iedge)
+      DcoefficientsAtEdge(9,3,iedge) = dscale * GAMMA*ui*DmatrixCoeffsAtEdge(1,2,iedge)
 
-    K_ij(4) = dscale * C_ij(1)
-    K_ij(5) = dscale * G13*uj*C_ij(1)
-    K_ij(6) = dscale * (GAMMA*Ej-G16*uPow2j)*C_ij(1)
+      !---------------------------------------------------------------------------
+      ! Evaluate the dissipation
+      !---------------------------------------------------------------------------
+      
+      ! Compute the speed of sound
+      ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
+      cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
 
-    K_ij(7) = 0.0_DP
-    K_ij(8) = dscale * G1*C_ij(1)
-    K_ij(9) = dscale * GAMMA*uj*C_ij(1)
+      ! Compute dissipation tensor D_ij
+      aux = -dscale * max( abs(DmatrixCoeffsAtEdge(1,1,iedge)*uj)+&
+                           abs(DmatrixCoeffsAtEdge(1,1,iedge))*cj,&
+                           abs(DmatrixCoeffsAtEdge(1,2,iedge)*ui)+&
+                           abs(DmatrixCoeffsAtEdge(1,2,iedge))*ci )
 
-    ! Compute Galerkin coefficient K_ji
-    K_ji(1) = 0.0_DP
-    K_ji(2) = dscale * G14*uPow2i*C_ji(1)
-    K_ji(3) = dscale * (G1*uPow2i-GAMMA*Ei)*ui*C_ji(1)
-
-    K_ji(4) = dscale * C_ji(1)
-    K_ji(5) = dscale * G13*ui*C_ji(1)
-    K_ji(6) = dscale * (GAMMA*Ei-G16*uPow2i)*C_ji(1)
-
-    K_ji(7) = 0.0_DP
-    K_ji(8) = dscale * G1*C_ji(1)
-    K_ji(9) = dscale * GAMMA*ui*C_ji(1)
-
-    !---------------------------------------------------------------------------
-    ! Evaluate the dissipation
-    !---------------------------------------------------------------------------
-
-    ! Compute the speed of sound
-    ci = sqrt(max(G15*(Ei-0.5_DP*ui*ui), SYS_EPSREAL))
-    cj = sqrt(max(G15*(Ej-0.5_DP*uj*uj), SYS_EPSREAL))
-
-    ! Compute dissipation tensor D_ij
-    aux = dscale * max( abs(C_ij(1)*uj) + abs(C_ij(1))*cj,&
-                        abs(C_ji(1)*ui) + abs(C_ji(1))*ci )
-
-    D_ij = 0.0_DP
-    D_ij(1) = aux
-    D_ij(5) = aux
-    D_ij(9) = aux
-
-  end subroutine euler_calcMatrixRusanov1d
+      DcoefficientsAtEdge(:,1,iedge) = 0.0_DP
+      DcoefficientsAtEdge(1,1,iedge) = aux
+      DcoefficientsAtEdge(5,1,iedge) = aux
+      DcoefficientsAtEdge(9,1,iedge) = aux
+    end do
+    
+  end subroutine euler_calcMatRusDiss1d_sim
 
   !*****************************************************************************
 
@@ -2595,7 +2880,7 @@ contains
         else
           call output_line('Riemann solver failed due to divergence in' // &
               ' Newton-Raphson iteration',&
-              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues2d')
+              OU_CLASS_ERROR,OU_MODE_STD,'euler_calcBoundaryvalues1d')
           call sys_halt()
         end if
       end if
