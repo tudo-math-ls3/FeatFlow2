@@ -110,7 +110,7 @@
 
 !<output>
   ! Coefficients of the matrix for all edges under consideration
-  !   DIMENSION(mvar,ncoeffs,nnodes)
+  !   DIMENSION(mvar,ncoeffs,nedges)
   ! with ncoeffs the number of matrix coefficients at the edge and
   ! mvar the size of the local matrix entry at the edge.
   ! For local block-diagonal matrices mvar=nvar and for locally
@@ -173,7 +173,7 @@
 
 !<output>
   ! Internodal fluxes for all edges under consideration
-  !   DIMENSION(nvar,2,nnodes)
+  !   DIMENSION(nvar,2,nedges)
   ! with nvar the number of variables at each endpoint
   real(DP), dimension(:,:,:), intent(out) :: DfluxesAtEdge
 !</output>
@@ -226,63 +226,98 @@
 
   end subroutine fcb_calcFluxFCT
 
+  end interface
+
   ! ***************************************************************************
+
+  interface
 
 !<subroutine>
 
-  subroutine fcb_calcFluxTransformation(U_i, U_j, F_ij, G_ij, G_ji)
+  subroutine fcb_calcFluxTransformation_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
     use fsystem
+    use collection
 
 !<description>
     ! This subroutine computes the transformed fluxes.
 !</description>
 
 !<input>
-  ! Variables at states $i$ and $j$
-  real(DP), dimension(:), intent(in) :: U_i, U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 
-  ! Raw antidiffusive flux from node $j$ into node $i$
-  real(DP), dimension(:), intent(in) :: F_ij
+  ! Internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-  ! Transformed raw antidiffusive fluxes
-  real(DP), dimension(:), intent(out) :: G_ij,G_ji
-  !</output>
+  ! Transformed internodal fluxes for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
+!</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcFluxTransformation
+  end subroutine fcb_calcFluxTransformation_sim
+
+  end interface
 
   ! ***************************************************************************
 
+  interface
+
 !<subroutine>
 
-  subroutine fcb_calcDiffTransformation(U_i, U_j, U_ij)
+  subroutine fcb_calcDiffTransformation_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
     use fsystem
+    use collection
 
 !<description>
     ! This subroutine computes the transformed solution difference.
 !</description>
 
 !<input>
-  ! Variables at states $i$ and $j$
-  real(DP), dimension(:), intent(in) :: U_i, U_j
+  ! Nodal solution values for all edges under consideration
+  !   DIMENSION(nvar,2,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+  ! OPTIONAL: collection structure
+  type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-  ! Transformed solution difference
-  real(DP), dimension(:), intent(out) :: U_ij
-  !</output>
+  ! Difference of transformed solution values for all edges under consideration
+  !   DIMENSION(nvar,nedges)
+  ! with nvar the number of variables at each endpoint
+  real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
+!</output>
 
 !</subroutine>
 
-  end subroutine fcb_calcDiffTransformation
+  end subroutine fcb_calcDiffTransformation_sim
 
+  end interface
 
   ! ***************************************************************************
+
+  interface
 
 !<subroutine>
 

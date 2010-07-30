@@ -2763,17 +2763,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity1d, euler_trafoDiffDensity1d)
+              euler_trafoFluxDensity1d_sim, euler_trafoDiffDensity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity2d, euler_trafoDiffDensity2d)
+              euler_trafoFluxDensity2d_sim, euler_trafoDiffDensity2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDensity3d, euler_trafoDiffDensity3d)
+              euler_trafoFluxDensity3d_sim, euler_trafoDiffDensity3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'energy') then
@@ -2784,17 +2784,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy1d, euler_trafoDiffEnergy1d)
+              euler_trafoFluxEnergy1d_sim, euler_trafoDiffEnergy1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy2d, euler_trafoDiffEnergy2d)
+              euler_trafoFluxEnergy2d_sim, euler_trafoDiffEnergy2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxEnergy3d, euler_trafoDiffEnergy3d)
+              euler_trafoFluxEnergy3d_sim, euler_trafoDiffEnergy3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'pressure') then
@@ -2805,17 +2805,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure1d, euler_trafoDiffPressure1d)
+              euler_trafoFluxPressure1d_sim, euler_trafoDiffPressure1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure2d, euler_trafoDiffPressure2d)
+              euler_trafoFluxPressure2d_sim, euler_trafoDiffPressure2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxPressure3d, euler_trafoDiffPressure3d)
+              euler_trafoFluxPressure3d_sim, euler_trafoDiffPressure3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'velocity') then
@@ -2826,18 +2826,18 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity1d, euler_trafoDiffVelocity1d)
+              euler_trafoFluxVelocity1d_sim, euler_trafoDiffVelocity1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity2d, euler_trafoDiffVelocity2d,&
+              euler_trafoFluxVelocity2d_sim, euler_trafoDiffVelocity2d_sim,&
               fcb_limitEdgewise=euler_limitEdgewiseVelocity)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxVelocity3d, euler_trafoDiffVelocity3d,&
+              euler_trafoFluxVelocity3d_sim, euler_trafoDiffVelocity3d_sim,&
               fcb_limitEdgewise=euler_limitEdgewiseVelocity)
         end select
 
@@ -2849,18 +2849,18 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum1d, euler_trafoDiffMomentum1d)
+              euler_trafoFluxMomentum1d_sim, euler_trafoDiffMomentum1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum2d, euler_trafoDiffMomentum2d,&
+              euler_trafoFluxMomentum2d_sim, euler_trafoDiffMomentum2d_sim,&
               fcb_limitEdgewise=euler_limitEdgewiseMomentum)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxMomentum3d, euler_trafoDiffMomentum3d,&
+              euler_trafoFluxMomentum3d_sim, euler_trafoDiffMomentum3d_sim,&
               fcb_limitEdgewise=euler_limitEdgewiseMomentum)
         end select
         
@@ -2872,17 +2872,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng1d, euler_trafoDiffDenEng1d)
+              euler_trafoFluxDenEng1d_sim, euler_trafoDiffDenEng1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng2d, euler_trafoDiffDenEng2d)
+              euler_trafoFluxDenEng2d_sim, euler_trafoDiffDenEng2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenEng3d, euler_trafoDiffDenEng3d)
+              euler_trafoFluxDenEng3d_sim, euler_trafoDiffDenEng3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,pressure') then
@@ -2893,17 +2893,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre1d, euler_trafoDiffDenPre1d)
+              euler_trafoFluxDenPre1d_sim, euler_trafoDiffDenPre1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre2d, euler_trafoDiffDenPre2d)
+              euler_trafoFluxDenPre2d_sim, euler_trafoDiffDenPre2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPre3d, euler_trafoDiffDenPre3d)
+              euler_trafoFluxDenPre3d_sim, euler_trafoDiffDenPre3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'density,energy,momentum') then
@@ -2925,17 +2925,17 @@ contains
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel1d, euler_trafoDiffDenPreVel1d)
+              euler_trafoFluxDenPreVel1d_sim, euler_trafoDiffDenPreVel1d_sim)
         case (NDIM2D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel2d, euler_trafoDiffDenPreVel2d)
+              euler_trafoFluxDenPreVel2d_sim, euler_trafoDiffDenPreVel2d_sim)
         case (NDIM3D)
           call gfsys_buildDivVectorFCT(&
               rproblemLevel%Rmatrix(lumpedMassMatrix), p_rafcstab,&
               rsolution, dscale, bclear, iopSpec, rresidual, nvartransformed,&
-              euler_trafoFluxDenPreVel3d, euler_trafoDiffDenPreVel3d)
+              euler_trafoFluxDenPreVel3d_sim, euler_trafoDiffDenPreVel3d_sim)
         end select
 
       elseif (trim(slimitingvariable) .eq. 'none') then
@@ -2994,7 +2994,7 @@ contains
 
   subroutine euler_limitEdgewiseVelocity(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation, Dflux0, rcollection)
+      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
@@ -3034,7 +3034,7 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
@@ -3049,10 +3049,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! auxiliary arras
+    real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+    real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+
     ! local variables
-    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
-    integer :: iedge,i,j
+    integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
     if (present(Dflux0)) then
@@ -3067,34 +3071,102 @@ contains
         ! The vector is given in interleave format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-          
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute velocity average
-          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
-                        Dx(2:NVARtransformed+1,j)/Dx(1,j))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+            
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
+                          Dx(2:NVARtransformed+1,j)/Dx(1,j))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+        
+!!$        ! Loop over all edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Get node numbers and matrix positions
+!!$          i  = IverticesAtEdge(1, iedge)
+!!$          j  = IverticesAtEdge(2, iedge)
+!!$          
+!!$          ! Compute transformed velocity fluxes
+!!$          call fcb_calcFluxTransformation_sim(&
+!!$              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+!!$          
+!!$          ! Compute nodal correction factors
+!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+!!$          
+!!$          ! Compute edgewise correction factors
+!!$          R_ij = min(R_ij, R_ji)
+!!$          
+!!$          ! Compute velocity average
+!!$          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)/Dx(1,i)+&
+!!$                        Dx(2:NVARtransformed+1,j)/Dx(1,j))
+!!$          
+!!$          ! Compute correction factor
+!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+!!$          
+!!$          ! Compute multiplicative correction factor
+!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+!!$        end do
 
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
@@ -3102,34 +3174,102 @@ contains
         ! The vector is given in block format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute velocity average
-          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
-                        Dx(j,2:NVARtransformed+1)/Dx(j,1))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
+                          Dx(j,2:NVARtransformed+1)/Dx(j,1))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+        
+!!$        ! Loop over all edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Get node numbers and matrix positions
+!!$          i  = IverticesAtEdge(1, iedge)
+!!$          j  = IverticesAtEdge(2, iedge)
+!!$          
+!!$          ! Compute transformed velocity fluxes
+!!$          call fcb_calcFluxTransformation_sim(&
+!!$              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+!!$          
+!!$          ! Compute nodal correction factors
+!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+!!$          
+!!$          ! Compute edgewise correction factors
+!!$          R_ij = min(R_ij, R_ji)
+!!$          
+!!$          ! Compute velocity average
+!!$          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)/Dx(i,1)+&
+!!$                        Dx(j,2:NVARtransformed+1)/Dx(j,1))
+!!$          
+!!$          ! Compute correction factor
+!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+!!$          
+!!$          ! Compute multiplicative correction factor
+!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+!!$        end do
 
       else
         
@@ -3148,7 +3288,7 @@ contains
 
   subroutine euler_limitEdgewiseMomentum(IverticesAtEdge, NEDGE, NEQ,&
       NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm, Dalpha,&
-      fcb_calcFluxTransformation, Dflux0, rcollection)
+      fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
 !<description>
     ! This subroutine computes the edgewise correction factors
@@ -3188,7 +3328,7 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include '../../../../../kernel/PDEOperators/intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
@@ -3203,10 +3343,14 @@ contains
 !</inputoutput>
 !</subroutine>
 
+    ! auxiliary arras
+    real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+    real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+    
     ! local variables
-    real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji,Ui,Uj,Uij
+    real(DP), dimension(NVARtransformed) :: R_ij,R_ji,Uij
     real(DP) :: alpha_ij
-    integer :: iedge,i,j
+    integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
     
     ! Do we have to use the explicit fluxes as constraints?
     if (present(Dflux0)) then
@@ -3221,34 +3365,102 @@ contains
         ! The vector is given in interleave format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
-          
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute momentum average
-          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
-                        Dx(2:NVARtransformed+1,j))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+            DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
+
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+            
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
+                          Dx(2:NVARtransformed+1,j))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+
+!!$        ! Loop over all edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Get node numbers and matrix positions
+!!$          i  = IverticesAtEdge(1, iedge)
+!!$          j  = IverticesAtEdge(2, iedge)
+!!$          
+!!$          ! Compute transformed velocity fluxes
+!!$          call fcb_calcFluxTransformation_sim(&
+!!$              Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+!!$          
+!!$          ! Compute nodal correction factors
+!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+!!$          
+!!$          ! Compute edgewise correction factors
+!!$          R_ij = min(R_ij, R_ji)
+!!$          
+!!$          ! Compute momentum average
+!!$          Uij = 0.5_DP*(Dx(2:NVARtransformed+1,i)+&
+!!$                        Dx(2:NVARtransformed+1,j))
+!!$          
+!!$          ! Compute correction factor
+!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+!!$          
+!!$          ! Compute multiplicative correction factor
+!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+!!$        end do
 
       elseif ((ndim1 .eq. NEQ) .and. (ndim2 .eq. NVAR)) then
 
@@ -3256,34 +3468,102 @@ contains
         ! The vector is goven in block format
         !-----------------------------------------------------------------------
 
-        ! Loop over all edges
-        do iedge = 1, NEDGE
+        ! Allocate temporal memory
+        allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+        allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+
+        ! Loop over the edges
+        do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
           
-          ! Get node numbers and matrix positions
-          i  = IverticesAtEdge(1, iedge)
-          j  = IverticesAtEdge(2, iedge)
+          ! We always handle GFSYS_NEDGESIM edges simultaneously.
+          ! How many edges have we actually here?
+          ! Get the maximum edge number, such that we handle 
+          ! at most GFSYS_NEDGESIM edges simultaneously.
           
-          ! Compute transformed velocity fluxes
-          call fcb_calcFluxTransformation(&
-              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+          IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
           
-          ! Compute nodal correction factors
-          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+          ! Loop through all edges in the current set
+          ! and prepare the auxiliary arrays
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Fill auxiliary arrays
+            DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+            DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          end do
+
+          ! Use callback function to compute transformed fluxes
+          call fcb_calcFluxTransformation_sim(&
+              DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+              Dflux(:,IEDGEset:IEDGEmax),&
+              DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1))
           
-          ! Compute edgewise correction factors
-          R_ij = min(R_ij, R_ji)
-          
-          ! Compute momentum average
-          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
-                        Dx(j,2:NVARtransformed+1))
-          
-          ! Compute correction factor
-          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
-          
-          ! Compute multiplicative correction factor
-          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          ! Loop through all edges in the current set
+          ! and scatter the entries to the global vector
+          do idx = 1, IEDGEmax-IEDGEset+1
+            
+            ! Get actual edge number
+            iedge = idx+IEDGEset-1
+            
+            ! Get position of nodes
+            i = IverticesAtEdge(1,iedge)
+            j = IverticesAtEdge(2,iedge)
+
+            ! Compute nodal correction factors
+            R_ij = merge(Drp(:,i), Drm(:,i),&
+                         DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+            R_ji = merge(Drp(:,j), Drm(:,j),&
+                         DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+            
+            ! Compute edgewise correction factors
+            R_ij = min(R_ij, R_ji)
+
+            ! Compute velocity average
+            Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
+                          Dx(j,2:NVARtransformed+1))
+            
+            ! Compute correction factor
+            alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+            
+            ! Compute multiplicative correction factor
+            Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+          end do
         end do
+        
+        ! Deallocate temporal memory
+        deallocate(DdataAtEdge)
+        deallocate(DtransformedFluxesAtEdge)
+
+!!$        ! Loop over all edges
+!!$        do iedge = 1, NEDGE
+!!$          
+!!$          ! Get node numbers and matrix positions
+!!$          i  = IverticesAtEdge(1, iedge)
+!!$          j  = IverticesAtEdge(2, iedge)
+!!$          
+!!$          ! Compute transformed velocity fluxes
+!!$          call fcb_calcFluxTransformation_sim(&
+!!$              Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+!!$          
+!!$          ! Compute nodal correction factors
+!!$          R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
+!!$          R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+!!$          
+!!$          ! Compute edgewise correction factors
+!!$          R_ij = min(R_ij, R_ji)
+!!$          
+!!$          ! Compute momentum average
+!!$          Uij = 0.5_DP*(Dx(i,2:NVARtransformed+1)+&
+!!$                        Dx(j,2:NVARtransformed+1))
+!!$          
+!!$          ! Compute correction factor
+!!$          alpha_ij = sum(R_ij*Uij*Uij)/(sum(Uij*Uij)+SYS_EPSREAL)
+!!$          
+!!$          ! Compute multiplicative correction factor
+!!$          Dalpha(iedge) = Dalpha(iedge) *alpha_ij
+!!$        end do
 
       else
 

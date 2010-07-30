@@ -13,7 +13,7 @@
 
   subroutine fcb_calcADIncrements(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, ndim1, ndim2, Dx, Dflux, Dalpha,&
-        Dpp, Dpm, fcb_calcFluxTransformation, Dflux0, rcollection)
+        Dpp, Dpm, fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
     use fsystem
     use collection
@@ -52,7 +52,7 @@
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for prelimiting
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0
@@ -76,7 +76,7 @@
 !<subroutine>
 
   subroutine fcb_calcBounds(IverticesAtEdge, NEDGE, NEQ, NVAR, NVARtransformed,&
-      ndim1, ndim2, Dx, Dqp, Dqm, fcb_calcDiffTransformation, rcollection)
+      ndim1, ndim2, Dx, Dqp, Dqm, fcb_calcDiffTransformation_sim, rcollection)
 
     use fsystem
     use collection
@@ -109,7 +109,7 @@
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcDiffTransformation
+    optional :: fcb_calcDiffTransformation_sim
 !</input>
 
 !<inputoutput>
@@ -176,7 +176,7 @@
 
   subroutine fcb_limitEdgewise(IverticesAtEdge, NEDGE, NEQ, NVAR,&
       NVARtransformed, ndim1, ndim2, Dx, Dflux, Drp, Drm,&
-      Dalpha, fcb_calcFluxTransformation, Dflux0, rcollection)
+      Dalpha, fcb_calcFluxTransformation_sim, Dflux0, rcollection)
 
     use fsystem
     use collection
@@ -215,7 +215,7 @@
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
+    optional :: fcb_calcFluxTransformation_sim
 
     ! OPTIONAL: Antidiffusive flux for constraining
     real(DP), dimension(NVAR,NEDGE), intent(in), optional :: Dflux0

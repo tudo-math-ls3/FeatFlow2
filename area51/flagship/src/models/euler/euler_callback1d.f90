@@ -79,67 +79,67 @@
 !#      -> Computes inviscid fluxes for FCT algorithm
 !#         adopting the Rusanov artificial viscosities
 !#
-!# 20.) euler_trafoFluxDensity1d
+!# 20.) euler_trafoFluxDensity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density
 !#
-!# 21.) euler_trafoDiffDensity1d
+!# 21.) euler_trafoDiffDensity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density
 !#
-!# 22.) euler_trafoFluxEnergy1d
+!# 22.) euler_trafoFluxEnergy1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the energy
 !#
-!# 23.) euler_trafoDiffEnergy1d
+!# 23.) euler_trafoDiffEnergy1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the energy
 !#
-!# 24.) euler_trafoFluxPressure1d
+!# 24.) euler_trafoFluxPressure1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the pressure
 !#
-!# 25.) euler_trafoDiffPressure1d
+!# 25.) euler_trafoDiffPressure1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the pressure
 !#
-!# 26.) euler_trafoFluxVelocity1d
+!# 26.) euler_trafoFluxVelocity1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the velocity
 !#
-!# 27.) euler_trafoDiffVelocity1d
+!# 27.) euler_trafoDiffVelocity1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the velocity
 !#
-!# 28.) euler_trafoFluxMomentum1d
+!# 28.) euler_trafoFluxMomentum1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the momentum
 !#
-!# 29.) euler_trafoDiffMomentum1d
+!# 29.) euler_trafoDiffMomentum1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the momentum
 !#
-!# 30.) euler_trafoFluxDenEng1d
+!# 30.) euler_trafoFluxDenEng1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and energy
 !#
-!# 31.) euler_trafoDiffDenEng1d
+!# 31.) euler_trafoDiffDenEng1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and energy
 !#
-!# 32.) euler_trafoFluxDenPre1d
+!# 32.) euler_trafoFluxDenPre1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density and the pessure
 !#
-!# 33.) euler_trafoDiffDenPre1d
+!# 33.) euler_trafoDiffDenPre1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density and the pessure
 !#
-!# 34.) euler_trafoFluxDenPreVel1d
+!# 34.) euler_trafoFluxDenPreVel1d_sim
 !#      -> Computes the transformation from conservative fluxes
 !#         to fluxes for the density, the pressure and the velocity
 !#
-!# 35.) euler_trafoDiffDenPreVel1d
+!# 35.) euler_trafoDiffDenPreVel1d_sim
 !#      -> Computes the transformation from conservative solution
 !#         differences to differences for the density, the pressure 
 !#         and the velocity
@@ -198,22 +198,22 @@ module euler_callback1d
   public :: euler_calcFluxFCTScalarDiss1d
   public :: euler_calcFluxFCTTensorDiss1d
   public :: euler_calcFluxFCTRusanov1d
-  public :: euler_trafoFluxDensity1d
-  public :: euler_trafoFluxEnergy1d
-  public :: euler_trafoFluxPressure1d
-  public :: euler_trafoFluxVelocity1d
-  public :: euler_trafoFluxMomentum1d
-  public :: euler_trafoFluxDenEng1d
-  public :: euler_trafoFluxDenPre1d
-  public :: euler_trafoFluxDenPreVel1d
-  public :: euler_trafoDiffDensity1d  
-  public :: euler_trafoDiffEnergy1d
-  public :: euler_trafoDiffPressure1d
-  public :: euler_trafoDiffVelocity1d
-  public :: euler_trafoDiffMomentum1d
-  public :: euler_trafoDiffDenEng1d
-  public :: euler_trafoDiffDenPre1d
-  public :: euler_trafoDiffDenPreVel1d
+  public :: euler_trafoFluxDensity1d_sim
+  public :: euler_trafoFluxEnergy1d_sim
+  public :: euler_trafoFluxPressure1d_sim
+  public :: euler_trafoFluxVelocity1d_sim
+  public :: euler_trafoFluxMomentum1d_sim
+  public :: euler_trafoFluxDenEng1d_sim
+  public :: euler_trafoFluxDenPre1d_sim
+  public :: euler_trafoFluxDenPreVel1d_sim
+  public :: euler_trafoDiffDensity1d_sim
+  public :: euler_trafoDiffEnergy1d_sim
+  public :: euler_trafoDiffPressure1d_sim
+  public :: euler_trafoDiffVelocity1d_sim
+  public :: euler_trafoDiffMomentum1d_sim
+  public :: euler_trafoDiffDenEng1d_sim
+  public :: euler_trafoDiffDenPre1d_sim
+  public :: euler_trafoDiffDenPreVel1d_sim
   public :: euler_calcBoundaryvalues1d
   public :: euler_hadaptCallbackScalar1d
   public :: euler_hadaptCallbackBlock1d
@@ -2253,7 +2253,8 @@ contains
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDensity1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDensity1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2261,30 +2262,48 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
-    ! density fluxes
-    G_ij(1) =  F_ij(1)
-    G_ji(1) = -F_ij(1)
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed density fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
+    end do
 
-  end subroutine euler_trafoFluxDensity1d
+  end subroutine euler_trafoFluxDensity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDensity1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffDensity1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2292,26 +2311,42 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed difference
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
-    ! density difference
-    U_ij(1) =  U_j(1)-U_i(1)
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed density difference
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+    end do
 
-  end subroutine euler_trafoDiffDensity1d
+  end subroutine euler_trafoDiffDensity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxEnergy1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxEnergy1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2319,30 +2354,48 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
-    
-    ! energy fluxes
-    G_ij(1) =  F_ij(3)
-    G_ji(1) = -F_ij(3)
 
-  end subroutine euler_trafoFluxEnergy1d
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed total energy fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(3,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(3,idx)
+    end do
+
+  end subroutine euler_trafoFluxEnergy1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffEnergy1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffEnergy1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2350,26 +2403,42 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed difference
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
-    
-    ! energy difference
-    U_ij(1) =  U_j(3)-U_i(3)
 
-  end subroutine euler_trafoDiffEnergy1d
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed total density difference
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(3,2,idx)-DdataAtEdge(3,1,idx)
+    end do
+
+  end subroutine euler_trafoDiffEnergy1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxPressure1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxPressure1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2377,37 +2446,55 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: ui,uj
-
-    ! velocities
-    ui = U_i(2)/U_i(1)
-    uj = U_j(2)/U_j(1)
-
-    ! pressure fluxes
-    G_ij(1) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
-    G_ji(1) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
+    integer :: idx
     
-  end subroutine euler_trafoFluxPressure1d
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Transformed pressure fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = G1*(0.5_DP*ui*ui*DfluxesAtEdge(1,idx)-&
+                                          ui*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+      DtransformedFluxesAtEdge(1,2,idx) =-G1*(0.5_DP*uj*uj*DfluxesAtEdge(1,idx)-&
+                                          uj*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+    end do
+    
+  end subroutine euler_trafoFluxPressure1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffPressure1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffPressure1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2415,33 +2502,49 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed difference
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: pi,pj
+    integer :: idx
 
-    ! pressures
-    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
-    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute pressures
+      pi = G1*(DdataAtEdge(3,1,idx)-&
+          0.5_DP*DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx))
+      pj = G1*(DdataAtEdge(3,2,idx)-&
+          0.5_DP*DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx))
 
-    ! pressure difference
-    U_ij(1) = pj-pi
+      ! Transformed pressure difference
+      DtransformedDataAtEdge(1,idx) = pj-pi
+    end do
 
-  end subroutine euler_trafoDiffPressure1d
+  end subroutine euler_trafoDiffPressure1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxVelocity1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxVelocity1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2449,37 +2552,55 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
+    integer :: idx
     real(DP) :: ui,uj
 
-    ! velocities
-    ui = U_i(2)/U_i(1)
-    uj = U_j(2)/U_j(1)
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
 
-    ! velocity fluxes in x-direction
-    G_ij(1) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
-    G_ji(1) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
+      ! Transformed velocity fluxes in x-direction
+      DtransformedFluxesAtEdge(1,1,idx) = (DfluxesAtEdge(2,idx)-&
+                                           ui*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-(DfluxesAtEdge(2,idx)-&
+                                           uj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
+    end do
     
-  end subroutine euler_trafoFluxVelocity1d
+  end subroutine euler_trafoFluxVelocity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffVelocity1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffVelocity1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2487,26 +2608,43 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed differences
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
-    ! velocity difference in x-direction
-    U_ij(1) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
 
-  end subroutine euler_trafoDiffVelocity1d
+      ! Transformed velocity difference in x-direction
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)-&
+                                      DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+    end do
+
+  end subroutine euler_trafoDiffVelocity1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxMomentum1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxMomentum1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2514,30 +2652,48 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
-    ! momentum fluxes in x-direction
-    G_ij(1) =  F_ij(2)
-    G_ji(1) = -F_ij(2)
+    ! local variables
+    integer :: idx
     
-  end subroutine euler_trafoFluxMomentum1d
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed momentum fluxes in x-direction
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(2,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(2,idx)
+    end do
+    
+  end subroutine euler_trafoFluxMomentum1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffMomentum1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffMomentum1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2545,26 +2701,42 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed differences
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
-    ! momentum difference in x-direction
-    U_ij(1) =  U_j(2)-U_i(2)
+     ! local variables
+    integer :: idx
     
-  end subroutine euler_trafoDiffMomentum1d
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed momentum difference in x-direction
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(2,2,idx)-DdataAtEdge(2,1,idx)
+    end do
+    
+  end subroutine euler_trafoDiffMomentum1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenEng1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenEng1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2572,34 +2744,52 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
-    ! density fluxes
-    G_ij(1) =  F_ij(1)
-    G_ji(1) = -F_ij(1)
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Transformed density fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
 
-    ! energy fluxes
-    G_ij(2) =  F_ij(3)
-    G_ji(2) = -F_ij(3)
+      ! Transformed total energy fluxes
+      DtransformedFluxesAtEdge(2,1,idx) = DfluxesAtEdge(3,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =-DfluxesAtEdge(3,idx)
+    end do
 
-  end subroutine euler_trafoFluxDenEng1d
+  end subroutine euler_trafoFluxDenEng1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenEng1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffDenEng1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2607,29 +2797,45 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed differences
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
-    ! density difference
-    U_ij(1) =  U_j(1)-U_i(1)
+    ! local variables
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
 
-    ! energy difference
-    U_ij(2) =  U_j(3)-U_i(3)
+      ! Transformed density difference
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
 
-  end subroutine euler_trafoDiffDenEng1d
+      ! Transformed total energy difference
+      DtransformedDataAtEdge(2,idx) = DdataAtEdge(3,2,idx)-DdataAtEdge(3,1,idx)
+    end do
+
+  end subroutine euler_trafoDiffDenEng1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPre1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPre1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2637,41 +2843,59 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: ui,uj
+    integer :: idx
 
-    ! velocities
-    ui = U_i(2)/U_i(1)
-    uj = U_j(2)/U_j(1)
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Transformed density fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
 
-    ! density fluxes
-    G_ij(1) =  F_ij(1)
-    G_ji(1) = -F_ij(1)
+      ! Transformed pressure fluxes
+      DtransformedFluxesAtEdge(2,1,idx) = G1*(0.5_DP*ui*ui*DfluxesAtEdge(1,idx)-&
+                                          ui*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+      DtransformedFluxesAtEdge(2,2,idx) =-G1*(0.5_DP*uj*uj*DfluxesAtEdge(1,idx)-&
+                                          uj*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+    end do
 
-    ! pressure fluxes
-    G_ij(2) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
-    G_ji(2) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
-
-  end subroutine euler_trafoFluxDenPre1d
+  end subroutine euler_trafoFluxDenPre1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPre1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffDenPre1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2679,36 +2903,52 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed differences
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: pi,pj
+    integer :: idx
+    
+    do idx = 1, size(DdataAtEdge,3)
 
-    ! pressures
-    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
-    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+      ! Compute pressures
+      pi = G1*(DdataAtEdge(3,1,idx)-0.5_DP*&
+          DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx))
+      pj = G1*(DdataAtEdge(3,2,idx)-0.5_DP*&
+          DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx))
+      
+      ! Transformed density difference
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      
+      ! Transformed pressure difference
+      DtransformedDataAtEdge(2,idx) = pj-pi
+    end do
 
-    ! density difference
-    U_ij(1) = U_j(1)-U_i(1)
-
-    ! pressure difference
-    U_ij(2) = pj-pi
-
-  end subroutine euler_trafoDiffDenPre1d
+  end subroutine euler_trafoDiffDenPre1d_sim
   
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoFluxDenPreVel1d(U_i, U_j, F_ij, G_ij, G_ji)
+  pure subroutine euler_trafoFluxDenPreVel1d_sim(DdataAtEdge,&
+      DfluxesAtEdge, DtransformedFluxesAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2716,45 +2956,65 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
-
-    ! flux
-    real(DP), dimension(:), intent(in) :: F_ij
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
+    
+    ! Internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(in) :: DfluxesAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed flux
-    real(DP), dimension(:), intent(out) :: G_ij,G_ji
+    ! Transformed internodal fluxes for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(out) :: DtransformedFluxesAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: ui,uj
+    integer :: idx
 
-    ! velocities
-    ui = U_i(2)/U_i(1)
-    uj = U_j(2)/U_j(1)
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute velocities
+      ui = DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      uj = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)
+      
+      ! Transformed density fluxes
+      DtransformedFluxesAtEdge(1,1,idx) = DfluxesAtEdge(1,idx)
+      DtransformedFluxesAtEdge(1,2,idx) =-DfluxesAtEdge(1,idx)
 
-    ! density fluxes
-    G_ij(1) =  F_ij(1)
-    G_ji(1) = -F_ij(1)
+      ! Transformed velocity fluxes in x-direction
+      DtransformedFluxesAtEdge(2,1,idx) = (DfluxesAtEdge(2,idx)-&
+                                           ui*DfluxesAtEdge(1,idx))/DdataAtEdge(1,1,idx)
+      DtransformedFluxesAtEdge(2,2,idx) =-(DfluxesAtEdge(2,idx)-&
+                                           uj*DfluxesAtEdge(1,idx))/DdataAtEdge(1,2,idx)
 
-    ! velocity fluxes in x-direction
-    G_ij(2) =  (F_ij(2)-ui*F_ij(1))/U_i(1)
-    G_ji(2) = -(F_ij(2)-uj*F_ij(1))/U_j(1)
-
-    ! pressure fluxes
-    G_ij(3) =  G1*(0.5_DP*ui*ui*F_ij(1)-ui*F_ij(2)+F_ij(3))
-    G_ji(3) = -G1*(0.5_DP*uj*uj*F_ij(1)-uj*F_ij(2)+F_ij(3))
-
-  end subroutine euler_trafoFluxDenPreVel1d
+      ! Transformed pressure fluxes
+      DtransformedFluxesAtEdge(3,1,idx) = G1*(0.5_DP*ui*ui*DfluxesAtEdge(1,idx)-&
+                                          ui*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+      DtransformedFluxesAtEdge(3,2,idx) =-G1*(0.5_DP*uj*uj*DfluxesAtEdge(1,idx)-&
+                                          uj*DfluxesAtEdge(2,idx)+DfluxesAtEdge(3,idx))
+    end do
+      
+  end subroutine euler_trafoFluxDenPreVel1d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  pure subroutine euler_trafoDiffDenPreVel1d(U_i, U_j, U_ij)
+  pure subroutine euler_trafoDiffDenPreVel1d_sim(DdataAtEdge,&
+      DtransformedDataAtEdge, rcollection)
 
 !<description>
     ! This subroutine computes the transformation of
@@ -2762,33 +3022,49 @@ contains
 !</description>
 
 !<input>
-    ! local solution at nodes I and J
-    real(DP), dimension(:), intent(in) :: U_i,U_j
+    ! Nodal solution values for all edges under consideration
+    !   DIMENSION(nvar,2,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:,:), intent(in) :: DdataAtEdge
 !</input>
 
+!<inputoutput>
+    ! OPTIONAL: collection structure
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
 !<output>
-    ! transformed differences
-    real(DP), dimension(:), intent(out) :: U_ij
+    ! Difference of transformed solution values for all edges under consideration
+    !   DIMENSION(nvar,nedges)
+    ! with nvar the number of variables at each endpoint
+    real(DP), dimension(:,:), intent(out) :: DtransformedDataAtEdge
 !</output>
 !</subroutine>
 
     ! local variables
     real(DP) :: pi,pj
+    integer :: idx
 
-    ! pressures
-    pi = G1*(U_i(3)-0.5_DP*U_i(2)*U_i(2)/U_i(1))
-    pj = G1*(U_j(3)-0.5_DP*U_j(2)*U_j(2)/U_j(1))
+    do idx = 1, size(DdataAtEdge,3)
+      
+      ! Compute pressures
+      pi = G1*(DdataAtEdge(3,1,idx)-0.5_DP*&
+               DdataAtEdge(2,1,idx)*DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx))
+      pj = G1*(DdataAtEdge(3,2,idx)-0.5_DP*&
+               DdataAtEdge(2,2,idx)*DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx))
+      
+      ! Transformed density difference
+      DtransformedDataAtEdge(1,idx) = DdataAtEdge(1,2,idx)-DdataAtEdge(1,1,idx)
+      
+      ! Transformed velocity difference in x-direction
+      DtransformedDataAtEdge(2,idx) = DdataAtEdge(2,2,idx)/DdataAtEdge(1,2,idx)-&
+                                      DdataAtEdge(2,1,idx)/DdataAtEdge(1,1,idx)
+      
+      ! Transformed pressure difference
+      DtransformedDataAtEdge(3,idx) = pj-pi
+    end do
 
-    ! density difference
-    U_ij(1) = U_j(1)-U_i(1)
-
-    ! velocity difference in x-direction
-    U_ij(2) =  U_j(2)/U_j(1)-U_i(2)/U_i(1)
-    
-    ! pressure difference
-    U_ij(3) = pj-pi
-
-  end subroutine euler_trafoDiffDenPreVel1d
+  end subroutine euler_trafoDiffDenPreVel1d_sim
 
   !*****************************************************************************
 

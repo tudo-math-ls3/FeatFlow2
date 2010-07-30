@@ -88,12 +88,12 @@
 !#                            gfsys_buildDivVectorBlock
 !#     -> assembles the divergence vector
 !#
-!# 6.) gfsys_buildDivVectorTVD = gfsys_buildVecTVDScalar /
-!#                               gfsys_buildVecTVDBlock
+!# 6.) gfsys_buildDivVectorTVD = gfsys_buildDivVecTVDScalar /
+!#                               gfsys_buildDivVecTVDBlock
 !#     -> assembles the divergence term for FEM-TVD stabilisation
 !#
-!# 7.) gfsys_buildDivVectorFCT = gfsys_buildVecFCTScalar /
-!#                               gfsys_buildVecFCTBlock
+!# 7.) gfsys_buildDivVectorFCT = gfsys_buildDivVecFCTScalar /
+!#                               gfsys_buildDivVecFCTBlock
 !#     -> assembles the divergence term for FEM-FCT stabilisation
 !#
 !# 8.) gfsys_buildFluxFCT = gfsys_buildFluxFCTScalar /
@@ -258,13 +258,13 @@ module groupfemsystem
   end interface
 
   interface gfsys_buildDivVectorTVD
-    module procedure gfsys_buildVecTVDScalar
-    module procedure gfsys_buildVecTVDBlock
+    module procedure gfsys_buildDivVecTVDScalar
+    module procedure gfsys_buildDivVecTVDBlock
   end interface
 
   interface gfsys_buildDivVectorFCT
-    module procedure gfsys_buildVecFCTScalar
-    module procedure gfsys_buildVecFCTBlock
+    module procedure gfsys_buildDivVecFCTScalar
+    module procedure gfsys_buildDivVecFCTBlock
   end interface
 
   interface gfsys_buildFluxFCT
@@ -3288,7 +3288,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3386,7 +3385,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3486,7 +3484,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3713,7 +3710,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3811,7 +3807,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3911,7 +3906,6 @@ contains
       ! auxiliary arras
       real(DP), dimension(:,:,:), pointer :: DdataAtEdge,DfluxesAtEdge
       real(DP), dimension(:,:,:), pointer :: DmatrixCoeffsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
       
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -3998,7 +3992,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsys_buildVecTVDBlock(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildDivVecTVDBlock(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux_sim, fcb_calcCharacteristics_sim,&
       dscale, bclear, ry, rcollection)
 
@@ -4048,7 +4042,7 @@ contains
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1) ) then
-      call gfsys_buildVecTVDScalar(RcoeffMatrices, rafcstab,&
+      call gfsys_buildDivVecTVDScalar(RcoeffMatrices, rafcstab,&
           rx%RvectorBlock(1), fcb_calcFlux_sim,&
           fcb_calcCharacteristics_sim, dscale, bclear,&
           ry%RvectorBlock(1), rcollection)
@@ -4058,7 +4052,7 @@ contains
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
     end if
 
@@ -4101,7 +4095,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
     end select
 
@@ -4133,7 +4127,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDBlock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDBlock')
       call sys_halt()
     end select
 
@@ -4170,7 +4164,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -4357,7 +4350,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -4630,7 +4622,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -5107,13 +5098,13 @@ contains
 
     end subroutine doLimitADFluxes_sim
 
-  end subroutine gfsys_buildVecTVDBlock
+  end subroutine gfsys_buildDivVecTVDBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildVecTVDScalar(RcoeffMatrices, rafcstab, rx,&
+  subroutine gfsys_buildDivVecTVDScalar(RcoeffMatrices, rafcstab, rx,&
       fcb_calcFlux_sim, fcb_calcCharacteristics_sim,&
       dscale, bclear, ry, rcollection)
 
@@ -5162,7 +5153,7 @@ contains
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end if
 
@@ -5203,7 +5194,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported spatial dimension!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end select
 
@@ -5235,7 +5226,7 @@ contains
 
     case DEFAULT
       call output_line('Unsupported matrix format!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecTVDScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecTVDScalar')
       call sys_halt()
     end select
 
@@ -5272,7 +5263,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -5459,7 +5449,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -5732,7 +5721,6 @@ contains
       real(DP), dimension(:,:), pointer :: DcharVariablesAtEdge
       real(DP), dimension(:,:), pointer :: DeigenvaluesAtEdge
       real(DP), dimension(:,:), pointer :: DrighteigenvectorsAtEdge
-      integer, dimension(:,:), pointer  :: IverticesAtNode
 
       ! local variables
       integer :: i,j,idx,iedge,IEDGEset,IEDGEmax
@@ -6207,15 +6195,15 @@ contains
 
     end subroutine doLimitADFluxes_sim
 
-  end subroutine gfsys_buildVecTVDScalar
+  end subroutine gfsys_buildDivVecTVDScalar
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildVecFCTBlock(rlumpedMassMatrix,&
+  subroutine gfsys_buildDivVecFCTBlock(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed, &
-      fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+      fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
       fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
       fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
@@ -6224,7 +6212,7 @@ contains
     ! FEM-FCT schemes.  If the vectors contain only one block, then
     ! the scalar counterpart of this routine is called with the scalar
     ! subvectors. Consider the documentation of subroutine
-    ! 'gfsys_buildVecFCTScalar' for further details.
+    ! 'gfsys_buildDivVecFCTScalar' for further details.
 !</description>
 
 !<input>
@@ -6254,8 +6242,8 @@ contains
     
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
-    optional :: fcb_calcDiffTransformation
+    optional :: fcb_calcFluxTransformation_sim
+    optional :: fcb_calcDiffTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
     include 'intf_groupfemcallback.inc'
@@ -6287,10 +6275,10 @@ contains
 
     ! Check if block vectors contain only one block.
     if ((rx%nblocks .eq. 1) .and. (ry%nblocks .eq. 1)) then
-      call gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
+      call gfsys_buildDivVecFCTScalar(rlumpedMassMatrix,&
           rafcstab, rx%RvectorBlock(1), dscale, bclear,&
           ioperationSpec, ry%RvectorBlock(1), NVARtransformed,&
-          fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+          fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
           fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
           fcb_limitEdgewise, fcb_calcCorrection, rcollection)
       return
@@ -6299,7 +6287,7 @@ contains
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBLock')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBLock')
       call sys_halt()
     end if
 
@@ -6353,7 +6341,7 @@ contains
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6361,7 +6349,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6388,8 +6376,9 @@ contains
           call fcb_calcADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Dalpha,&
-              p_Dpp, p_Dpm, fcb_calcFluxTransformation, p_Dflux0, rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, p_Dflux0,&
+              rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doPreADIncrementsTransformed(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
@@ -6408,8 +6397,9 @@ contains
           call fcb_calcADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Dalpha,&
-              p_Dpp, p_Dpm, fcb_calcFluxTransformation, rcollection=rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim,&
+              rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doADIncrementsTransformed(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
@@ -6436,7 +6426,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6452,17 +6442,16 @@ contains
         call fcb_calcBounds(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
             rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm,&
-            fcb_calcDiffTransformation, rcollection)
-      elseif (present(fcb_calcDiffTransformation)) then
+            fcb_calcDiffTransformation_sim, rcollection)
+      elseif (present(fcb_calcDiffTransformation_sim)) then
         ! Standard routine with difference transformation
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
             nvariable, p_Dx, p_Dqp, p_Dqm)
         ! Standard routine without difference transformation
       else
-        call doBounds(p_IverticesAtEdge,&
-            rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
-            p_Dx, p_Dqp, p_Dqm)
+        call doBounds(p_IverticesAtEdge, rafcstab%NEDGE,&
+            rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dqp, p_Dqm)
       end if
       
       ! Set specifiers
@@ -6479,7 +6468,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6520,7 +6509,7 @@ contains
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6528,7 +6517,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6551,8 +6540,8 @@ contains
           call fcb_limitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation, p_Dflux0, rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
@@ -6572,8 +6561,8 @@ contains
           call fcb_limitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NEQ, rafcstab%NVAR, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation, rcollection=rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dalpha, fcb_calcFluxTransformation_sim, rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
@@ -6600,14 +6589,14 @@ contains
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6615,7 +6604,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTBlock')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTBlock')
         call sys_halt()
       end if
 
@@ -6671,16 +6660,19 @@ contains
     subroutine doADIncrements(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
@@ -6702,6 +6694,7 @@ contains
         Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
         Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
       end do
+
     end subroutine doADIncrements
 
     !**************************************************************
@@ -6712,43 +6705,88 @@ contains
     subroutine doADIncrementsTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
 
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+      
       ! local variables
-      real(DP), dimension(NVAR) :: Diff
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Apply multiplicative correction factor
-        Diff = Dalpha(iedge) * Dflux(:,iedge)
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Diff, F_ij, F_ji)
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
 
-        ! Compute the sums of positive/negative antidiffusive increments
-        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+          DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vectors
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute the sums of positive/negative antidiffusive increments
+          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+          Dpp(:,j) = Dpp(:,j)+max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+          Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DfluxesAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+
     end subroutine doADIncrementsTransformed
 
     !**************************************************************
@@ -6758,17 +6796,20 @@ contains
     subroutine doPreADIncrements(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Dflux0, Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       real(DP) :: alpha_ij
       integer :: iedge,i,j
+
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
@@ -6799,6 +6840,7 @@ contains
         Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
         Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
       end do
+
     end subroutine doPreADIncrements
 
     !**************************************************************
@@ -6811,77 +6853,136 @@ contains
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dflux0,&
         Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedPrelFluxesAtEdge
+      
       ! local variables
-      real(DP), dimension(NVAR) :: Diff
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,G_ij,G_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji
       real(DP) :: alpha_ij,alpha_ji
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Apply multiplicative correction factor
-        Diff = Dalpha(iedge)*Dflux(:,iedge)
-
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Diff, F_ij, F_ji)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
         
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Dflux0(:,iedge), G_ij, G_ji)
-        
-        ! MinMod prelimiting
-        alpha_ij = minval(mprim_minmod3(F_ij, G_ij, F_ij))
-        alpha_ji = minval(mprim_minmod3(F_ji, G_ji, F_ji))
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Synchronisation of correction factors
-        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        ! Update the raw antidiffusive fluxes
-         F_ij = alpha_ij * F_ij
-         F_ji = alpha_ij * F_ji
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
 
-        ! Compute the sums of positive/negative antidiffusive increments
-        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+          DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+          DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Use callback function to compute transformed fluxes
+        ! for the explicit part for prelimiting
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux0(:,IEDGEset:IEDGEmax),&
+            DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! MinMod prelimiting
+          alpha_ij = minval(mprim_minmod3(&
+                            DtransformedFluxesAtEdge(:,1,idx),&
+                            DtransformedPrelFluxesAtEdge(:,1,idx), F_ij))
+          alpha_ji = minval(mprim_minmod3(&
+                            DtransformedFluxesAtEdge(:,2,idx),&
+                            DtransformedPrelFluxesAtEdge(:,2,idx), F_ji))
+          
+          ! Synchronisation of correction factors TODO!!!!
+          Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+          
+          ! Update the raw antidiffusive fluxes
+          F_ij = alpha_ij * F_ij
+          F_ji = alpha_ij * F_ji
+
+          ! Compute the sums of positive/negative antidiffusive increments
+          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+          Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
+          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+          Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+        end do
       end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DfluxesAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+      deallocate(DtransformedPrelFluxesAtEdge)
+
     end subroutine doPreADIncrementsTransformed
 
     !**************************************************************
     ! Assemble local bounds from the predicted solution
     ! without transformation
 
-    subroutine doBounds(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
+    subroutine doBounds(IverticesAtEdge, NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
 
+      ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dqp,Dqm
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dqp,Dqm
 
       ! local variables
       real(DP), dimension(NVAR) :: Diff
       integer :: iedge,i,j
+
 
       ! Clear Q`s
       call lalg_clearVector(Dqp)
@@ -6904,6 +7005,7 @@ contains
         Dqm(:,i) = min(Dqm(:,i), Diff)
         Dqm(:,j) = min(Dqm(:,j),-Diff)
       end do
+
     end subroutine doBounds
 
     !**************************************************************
@@ -6913,38 +7015,81 @@ contains
     subroutine doBoundsTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dqp, Dqm)
 
+      ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dqp,Dqm
+      ! input/output parameters
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dqp,Dqm
+
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
-      real(DP), dimension(NVARtransformed) :: Diff
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+      
 
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
+      
       ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute transformed solution difference
-        call fcb_calcDiffTransformation(&
-            Dx(i,:), Dx(j,:), Diff)
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        ! Compute the distance to a local extremum
-        ! of the predicted solution
-        Dqp(:,i) = max(Dqp(:,i), Diff)
-        Dqp(:,j) = max(Dqp(:,j),-Diff)
-        Dqm(:,i) = min(Dqm(:,i), Diff)
-        Dqm(:,j) = min(Dqm(:,j),-Diff)
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+          DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+        end do
+
+        ! Use callback function to compute transformed differences
+        call fcb_calcDiffTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+        
+          ! Compute the distance to a local extremum of the predicted solution
+          Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
+          Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
+          Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
+          Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedDataAtEdge)
+
     end subroutine doBoundsTransformed
 
     !**************************************************************
@@ -6953,29 +7098,33 @@ contains
     subroutine doLimitNodal(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
 
       ! local variables
       integer :: ieq
 
+
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL)
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL)
       end do
       !$omp end parallel do
+
     end subroutine doLimitNodal
 
     !**************************************************************
@@ -6984,18 +7133,21 @@ contains
     subroutine doLimitNodalConstrained(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
 
       ! local variables
       integer :: ieq
 
+
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default shared
       do ieq = 1, NEQ
         Drp(:,ieq) = min(1.0_DP,&
             ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL))
@@ -7003,12 +7155,13 @@ contains
       !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default shared
       do ieq = 1, NEQ
         Drm(:,ieq) = min(1.0_DP,&
             ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
       end do
       !$omp end parallel do
+
     end subroutine doLimitNodalConstrained
 
     !**************************************************************
@@ -7018,16 +7171,19 @@ contains
     subroutine doLimitEdgewise(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij,R_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -7049,6 +7205,7 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
+
     end subroutine doLimitEdgewise
 
     !**************************************************************
@@ -7060,36 +7217,84 @@ contains
     subroutine doLimitEdgewiseTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Drp, Drm, Dalpha)
 
+      ! input  parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji
-      integer :: iedge,i,j
+      real(DP), dimension(NVARtransformed) :: R_ij,R_ji
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Dflux(:,iedge), F_ij, F_ji)
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Compute nodal correction factors
-        R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-        R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+          DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i),&
+                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j),&
+                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+     
     end subroutine doLimitEdgewiseTransformed
 
     !**************************************************************
@@ -7100,11 +7305,13 @@ contains
     subroutine doLimitEdgewiseConstrained(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
       ! local variables
@@ -7136,6 +7343,7 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
+
     end subroutine doLimitEdgewiseConstrained
 
     !**************************************************************
@@ -7147,50 +7355,110 @@ contains
 
     subroutine doLimitEdgewiseConstrainedTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, Drp, Drm, Dalpha)
-
+      
+      ! input parameters
       real(DP), dimension(NEQ,NVAR), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxes1AtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxes2AtEdge
+
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F1_ij,F1_ji,F2_ij,F2_ji,R_ij,R_ji
-      integer :: iedge,i,j
+      real(DP), dimension(NVARtransformed) :: R_ij,R_ji
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Dflux1(:,iedge), F1_ij, F1_ji)
-        call fcb_calcFluxTransformation(&
-            Dx(i,:), Dx(j,:), Dflux2(:,iedge), F2_ij, F2_ji)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute nodal correction factors
-        where (F1_ij*F2_ij .le. 0.0_DP)
-          R_ij = 0.0_DP
-        elsewhere
-          R_ij = min(1.0_DP,&
-              F1_ij/F2_ij*merge(Drp(:,i), Drm(:,i), F1_ij .ge. 0.0_DP))
-        end where
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        where (F1_ji*F2_ji .le. 0.0_DP)
-          R_ji = 0.0_DP
-        elsewhere
-          R_ji = min(1.0_DP,&
-              F1_ji/F2_ji*merge(Drp(:,j), Drm(:,j), F1_ji .ge. 0.0_DP))
-        end where
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
 
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(IverticesAtEdge(1,iedge),:)
+          DdataAtEdge(:,2,idx) = Dx(IverticesAtEdge(2,iedge),:)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux1(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxes1AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux2(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxes2AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute nodal correction factors
+          where (DtransformedFluxes1AtEdge(:,1,idx)*&
+                 DtransformedFluxes2AtEdge(:,1,idx) .le. 0.0_DP)
+            R_ij = 0.0_DP
+          elsewhere
+            R_ij = min(1.0_DP, DtransformedFluxes1AtEdge(:,1,idx)/&
+                               DtransformedFluxes2AtEdge(:,1,idx)*&
+                         merge(Drp(:,i), Drm(:,i),&
+                               DtransformedFluxes1AtEdge(:,1,idx) .ge. 0.0_DP))
+          end where
+          
+          where (DtransformedFluxes1AtEdge(:,2,idx)*&
+                 DtransformedFluxes2AtEdge(:,2,idx) .le. 0.0_DP)
+            R_ji = 0.0_DP
+          elsewhere
+            R_ji = min(1.0_DP, DtransformedFluxes1AtEdge(:,2,idx)/&
+                               DtransformedFluxes2AtEdge(:,2,idx)*&
+                         merge(Drp(:,j), Drm(:,j),&
+                               DtransformedFluxes1AtEdge(:,2,idx) .ge. 0.0_DP))
+          end where
+
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        end do
       end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedFluxes1AtEdge)
+      deallocate(DtransformedFluxes2AtEdge)
+      
     end subroutine doLimitEdgewiseConstrainedTransformed
 
     !**************************************************************
@@ -7199,17 +7467,20 @@ contains
     subroutine doCorrect(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
 
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -7225,6 +7496,7 @@ contains
         Dy(i,:) = Dy(i,:) + F_ij
         Dy(j,:) = Dy(j,:) - F_ij
       end do
+
     end subroutine doCorrect
 
     !**************************************************************
@@ -7234,17 +7506,20 @@ contains
     subroutine doCorrectScaleByMass(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
 
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha,ML
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NEQ,NVAR), intent(inout) :: Dy
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -7262,15 +7537,15 @@ contains
       end do
     end subroutine doCorrectScaleByMass
 
-  end subroutine gfsys_buildVecFCTBlock
+  end subroutine gfsys_buildDivVecFCTBlock
 
   ! *****************************************************************************
 
 !<subroutine>
 
-  subroutine gfsys_buildVecFCTScalar(rlumpedMassMatrix,&
+  subroutine gfsys_buildDivVecFCTScalar(rlumpedMassMatrix,&
       rafcstab, rx, dscale, bclear, ioperationSpec, ry, NVARtransformed,&
-      fcb_calcFluxTransformation, fcb_calcDiffTransformation,&
+      fcb_calcFluxTransformation_sim, fcb_calcDiffTransformation_sim,&
       fcb_calcADIncrements, fcb_calcBounds, fcb_limitNodal,&
       fcb_limitEdgewise, fcb_calcCorrection, rcollection)
 
@@ -7350,8 +7625,8 @@ contains
 
     ! OPTIONAL: callback function to compute variable transformation
     include 'intf_gfsyscallback.inc'
-    optional :: fcb_calcFluxTransformation
-    optional :: fcb_calcDiffTransformation
+    optional :: fcb_calcFluxTransformation_sim
+    optional :: fcb_calcDiffTransformation_sim
 
     ! OPTIONAL: callback functions to overwrite the standard operations
     include 'intf_groupfemcallback.inc'
@@ -7384,7 +7659,7 @@ contains
     ! Check if stabilisation is prepared
     if (iand(rafcstab%iSpec, AFCSTAB_INITIALISED) .eq. 0) then
       call output_line('Stabilisation has not been initialised',&
-          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+          OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
       call sys_halt()
     end if
 
@@ -7439,7 +7714,7 @@ contains
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7447,7 +7722,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7474,8 +7749,9 @@ contains
           call fcb_calcADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
-              p_Dpp, p_Dpm, fcb_calcFluxTransformation, p_Dflux0, rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim, p_Dflux0,&
+              rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doPreADIncrementsTransformed(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
@@ -7494,8 +7770,9 @@ contains
           call fcb_calcADIncrements(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Dalpha,&
-              p_Dpp, p_Dpm, fcb_calcFluxTransformation, rcollection=rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dpp, p_Dpm, fcb_calcFluxTransformation_sim,&
+              rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doADIncrementsTransformed(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
@@ -7522,7 +7799,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7538,8 +7815,8 @@ contains
         call fcb_calcBounds(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
             rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dqp, p_Dqm,&
-            fcb_calcDiffTransformation, rcollection)
-      elseif (present(fcb_calcDiffTransformation)) then
+            fcb_calcDiffTransformation_sim, rcollection)
+      elseif (present(fcb_calcDiffTransformation_sim)) then
         ! Standard routine with difference transformation
         call doBoundsTransformed(p_IverticesAtEdge,&
             rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR,&
@@ -7565,7 +7842,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_ADINCREMENTS) .eq. 0) .or.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_BOUNDS)       .eq. 0)) then
         call output_line('Stabilisation does not provide increments and/or bounds',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7606,7 +7883,7 @@ contains
       ! Check if stabilisation provides nodal correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_NODELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides nodal correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7614,7 +7891,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7637,8 +7914,8 @@ contains
           call fcb_limitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation, p_Dflux0, rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dalpha, fcb_calcFluxTransformation_sim, p_Dflux0, rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseConstrainedTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
@@ -7658,8 +7935,9 @@ contains
           call fcb_limitEdgewise(p_IverticesAtEdge,&
               rafcstab%NEDGE, rafcstab%NEQ, rafcstab%NVAR, nvariable,&
               rafcstab%NVAR, rafcstab%NEQ, p_Dx, p_Dflux, p_Drp, p_Drm,&
-              p_Dalpha, fcb_calcFluxTransformation, rcollection=rcollection)
-        elseif (present(fcb_calcFluxTransformation)) then
+              p_Dalpha, fcb_calcFluxTransformation_sim,&
+              rcollection=rcollection)
+        elseif (present(fcb_calcFluxTransformation_sim)) then
           ! Standard routine with flux transformation
           call doLimitEdgewiseTransformed(&
               p_IverticesAtEdge, rafcstab%NEDGE, rafcstab%NEQ,&
@@ -7686,14 +7964,14 @@ contains
       ! Check if stabilisation provides edgewise correction factors
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGELIMITER) .eq. 0) then
         call output_line('Stabilisation does not provides edgewise correction factors',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
       ! Check if stabilisation provides raw antidiffusive fluxes
       if (iand(rafcstab%iSpec, AFCSTAB_HAS_ADFLUXES) .eq. 0) then
         call output_line('Stabilisation does not provide antidiffusive fluxes',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7701,7 +7979,7 @@ contains
       if ((iand(rafcstab%iSpec, AFCSTAB_HAS_EDGESTRUCTURE)   .eq. 0) .and.&
           (iand(rafcstab%iSpec, AFCSTAB_HAS_EDGEORIENTATION) .eq. 0)) then
         call output_line('Stabilisation does not provide edge structure',&
-            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildVecFCTScalar')
+            OU_CLASS_ERROR,OU_MODE_STD,'gfsys_buildDivVecFCTScalar')
         call sys_halt()
       end if
 
@@ -7757,16 +8035,19 @@ contains
     subroutine doADIncrements(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
@@ -7788,6 +8069,7 @@ contains
         Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
         Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
       end do
+
     end subroutine doADIncrements
 
     !**************************************************************
@@ -7798,43 +8080,88 @@ contains
     subroutine doADIncrementsTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(:), intent(in) :: Dalpha
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+      ! input/output parameters
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+      
       ! local variables
-      real(DP), dimension(NVAR) :: Diff
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Apply multiplicative correction factor
-        Diff = Dalpha(iedge)*Dflux(:,iedge)
-
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Diff, F_ij, F_ji)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
         
-        ! Compute the sums of positive/negative antidiffusive increments
-        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
+
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+          DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vectors
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute the sums of positive/negative antidiffusive increments
+          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+          Dpp(:,j) = Dpp(:,j)+max(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, DtransformedFluxesAtEdge(:,1,idx))
+          Dpm(:,j) = Dpm(:,j)+min(0.0_DP, DtransformedFluxesAtEdge(:,2,idx))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DfluxesAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+
     end subroutine doADIncrementsTransformed
 
     !**************************************************************
@@ -7843,18 +8170,21 @@ contains
 
     subroutine doPreADIncrements(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Dflux0, Dalpha, Dpp, Dpm)
-
+      
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
       
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dpp,Dpm
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dpp,Dpm
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       real(DP) :: alpha_ij
       integer :: iedge,i,j
+
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
@@ -7885,6 +8215,7 @@ contains
         Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
         Dpm(:,j) = Dpm(:,j)+min(0.0_DP,-F_ij)
       end do
+
     end subroutine doPreADIncrements
 
     !**************************************************************
@@ -7897,77 +8228,136 @@ contains
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Dflux0,&
         Dalpha, Dpp, Dpm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux,Dflux0
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/outpu parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dpp,Dpm
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dpp,Dpm
 
+      ! auxiliary arras
+      real(DP), dimension(:,:), pointer :: DfluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedPrelFluxesAtEdge
+      
       ! local variables
-      real(DP), dimension(NVAR) :: Diff
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,G_ij,G_ji
+      real(DP), dimension(NVAR) :: F_ij,F_ji
       real(DP) :: alpha_ij,alpha_ji
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+
+
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DfluxesAtEdge(NVAR,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      allocate(DtransformedPrelFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
       ! Clear P`s
       call lalg_clearVector(Dpp)
       call lalg_clearVector(Dpm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
-
-        ! Apply multiplicative correction factor
-        Diff = Dalpha(iedge)*Dflux(:,iedge)
-
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Diff, F_ij, F_ji)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
         
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Dflux0(:,iedge), G_ij, G_ji)
-        
-        ! MinMod prelimiting
-        alpha_ij = minval(mprim_minmod3(F_ij, G_ij, F_ij))
-        alpha_ji = minval(mprim_minmod3(F_ji, G_ji, F_ji))
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Synchronisation of correction factors
-        Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        ! Update the raw antidiffusive fluxes
-         F_ij = alpha_ij * F_ij
-         F_ji = alpha_ij * F_ji
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
 
-        ! Compute the sums of positive/negative antidiffusive increments
-        Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
-        Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
-        Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
-        Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+          DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+          DfluxesAtEdge(:,idx) = Dalpha(iedge)*Dflux(:,iedge)
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DfluxesAtEdge(:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Use callback function to compute transformed fluxes
+        ! for the explicit part for prelimiting
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux0(:,IEDGEset:IEDGEmax),&
+            DtransformedPrelFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! MinMod prelimiting
+          alpha_ij = minval(mprim_minmod3(&
+                            DtransformedFluxesAtEdge(:,1,idx),&
+                            DtransformedPrelFluxesAtEdge(:,1,idx), F_ij))
+          alpha_ji = minval(mprim_minmod3(&
+                            DtransformedFluxesAtEdge(:,2,idx),&
+                            DtransformedPrelFluxesAtEdge(:,2,idx), F_ji))
+          
+          ! Synchronisation of correction factors TODO!!!!
+          Dalpha(iedge) = Dalpha(iedge) * alpha_ij
+          
+          ! Update the raw antidiffusive fluxes
+          F_ij = alpha_ij * F_ij
+          F_ji = alpha_ij * F_ji
+
+          ! Compute the sums of positive/negative antidiffusive increments
+          Dpp(:,i) = Dpp(:,i)+max(0.0_DP, F_ij)
+          Dpp(:,j) = Dpp(:,j)+max(0.0_DP, F_ji)
+          Dpm(:,i) = Dpm(:,i)+min(0.0_DP, F_ij)
+          Dpm(:,j) = Dpm(:,j)+min(0.0_DP, F_ji)
+        end do
       end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DfluxesAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+      deallocate(DtransformedPrelFluxesAtEdge)
+
     end subroutine doPreADIncrementsTransformed
     
     !**************************************************************
     ! Assemble local bounds from the predicted solution
     ! without transformation
 
-    subroutine doBounds(IverticesAtEdge,&
-        NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
+    subroutine doBounds(IverticesAtEdge, NEDGE, NEQ, NVAR, Dx, Dqp, Dqm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
-      real(DP), dimension(NVAR,NEQ), intent(out) :: Dqp,Dqm
+      ! input/output parameters
+      real(DP), dimension(NVAR,NEQ), intent(inout) :: Dqp,Dqm
 
       ! local variables
       real(DP), dimension(NVAR) :: Diff
       integer :: iedge,i,j
+
 
       ! Clear Q`s
       call lalg_clearVector(Dqp)
@@ -7990,6 +8380,7 @@ contains
         Dqm(:,i) = min(Dqm(:,i), Diff)
         Dqm(:,j) = min(Dqm(:,j),-Diff)
       end do
+
     end subroutine doBounds
 
     !**************************************************************
@@ -7999,38 +8390,81 @@ contains
     subroutine doBoundsTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dqp, Dqm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
-      real(DP), dimension(NVARtransformed,NEQ), intent(out) :: Dqp,Dqm
+      ! input/output parameters
+      real(DP), dimension(NVARtransformed,NEQ), intent(inout) :: Dqp,Dqm
+
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:), pointer :: DtransformedDataAtEdge
 
       ! local variables
-      real(DP), dimension(NVARtransformed) :: Diff
-      integer :: iedge,i,j
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
+      
 
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedDataAtEdge(NVARtransformed,GFSYS_NEDGESIM))
+      
       ! Clear Q`s
       call lalg_clearVector(Dqp)
       call lalg_clearVector(Dqm)
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Get node numbers
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute transformed solution difference
-        call fcb_calcDiffTransformation(&
-            Dx(:,i), Dx(:,j), Diff)
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        ! Compute the distance to a local extremum
-        ! of the predicted solution
-        Dqp(:,i) = max(Dqp(:,i), Diff)
-        Dqp(:,j) = max(Dqp(:,j),-Diff)
-        Dqm(:,i) = min(Dqm(:,i), Diff)
-        Dqm(:,j) = min(Dqm(:,j),-Diff)
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+          DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+        end do
+
+        ! Use callback function to compute transformed differences
+        call fcb_calcDiffTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            DtransformedDataAtEdge(:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+        
+          ! Compute the distance to a local extremum of the predicted solution
+          Dqp(:,i) = max(Dqp(:,i), DtransformedDataAtEdge(:,idx))
+          Dqp(:,j) = max(Dqp(:,j),-DtransformedDataAtEdge(:,idx))
+          Dqm(:,i) = min(Dqm(:,i), DtransformedDataAtEdge(:,idx))
+          Dqm(:,j) = min(Dqm(:,j),-DtransformedDataAtEdge(:,idx))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedDataAtEdge)
+
     end subroutine doBoundsTransformed
 
     !**************************************************************
@@ -8039,29 +8473,33 @@ contains
     subroutine doLimitNodal(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
 
       ! local variables
       integer :: ieq
 
+
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         Drp(:,ieq) = ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL)
       end do
       !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default(shared)
       do ieq = 1, NEQ
         Drm(:,ieq) = ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL)
       end do
       !$omp end parallel do
+
     end subroutine doLimitNodal
 
     !**************************************************************
@@ -8070,18 +8508,21 @@ contains
     subroutine doLimitNodalConstrained(NEQ, NVAR, dscale,&
         ML, Dpp, Dpm, Dqp, Dqm, Drp, Drm)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dpp,Dpm,Dqp,Dqm
       real(DP), dimension(:), intent(in) :: ML
       real(DP), intent(in) :: dscale
       integer, intent(in) :: NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Drp,Drm
 
       ! local variables
       integer :: ieq
 
+
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default shared
       do ieq = 1, NEQ
         Drp(:,ieq) = min(1.0_DP,&
             ML(ieq)*Dqp(:,ieq)/(dscale*Dpp(:,ieq)+SYS_EPSREAL))
@@ -8089,7 +8530,7 @@ contains
       !$omp end parallel do
 
       ! Loop over all vertices
-      !$omp parallel do
+      !$omp parallel do default shared
       do ieq = 1, NEQ
         Drm(:,ieq) = min(1.0_DP,&
             ML(ieq)*Dqm(:,ieq)/(dscale*Dpm(:,ieq)-SYS_EPSREAL))
@@ -8105,16 +8546,19 @@ contains
     subroutine doLimitEdgewise(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij,R_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -8136,6 +8580,7 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
+
     end subroutine doLimitEdgewise
 
     !**************************************************************
@@ -8147,36 +8592,84 @@ contains
     subroutine doLimitEdgewiseTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxesAtEdge
+
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F_ij,F_ji,R_ij,R_ji
-      integer :: iedge,i,j
+      real(DP), dimension(NVARtransformed) :: R_ij,R_ji
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxesAtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
 
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Dflux(:,iedge), F_ij, F_ji)
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Compute nodal correction factors
-        R_ij = merge(Drp(:,i), Drm(:,i), F_ij .ge. 0.0_DP)
-        R_ji = merge(Drp(:,j), Drm(:,j), F_ji .ge. 0.0_DP)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+          DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxesAtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute nodal correction factors
+          R_ij = merge(Drp(:,i), Drm(:,i),&
+                       DtransformedFluxesAtEdge(:,1,idx) .ge. 0.0_DP)
+          R_ji = merge(Drp(:,j), Drm(:,j),&
+                       DtransformedFluxesAtEdge(:,2,idx) .ge. 0.0_DP)
+
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        end do
       end do
+
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedFluxesAtEdge)
+      
     end subroutine doLimitEdgewiseTransformed
 
     !**************************************************************
@@ -8187,16 +8680,19 @@ contains
     subroutine doLimitEdgewiseConstrained(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVAR,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
       ! local variables
       real(DP), dimension(NVAR) :: F1_ij,F2_ij,R_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -8223,6 +8719,7 @@ contains
         ! Compute multiplicative correction factor
         Dalpha(iedge) = Dalpha(iedge) * minval(R_ij)
       end do
+
     end subroutine doLimitEdgewiseConstrained
 
     !**************************************************************
@@ -8235,49 +8732,109 @@ contains
     subroutine doLimitEdgewiseConstrainedTransformed(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, NVARtransformed, Dx, Dflux1, Dflux2, Drp, Drm, Dalpha)
 
+      ! input parameters
       real(DP), dimension(NVAR,NEQ), intent(in) :: Dx
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux1,Dflux2
       real(DP), dimension(NVARtransformed,NEQ), intent(in) :: Drp,Drm
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR,NVARtransformed
 
+      ! input/output parameters
       real(DP), dimension(:), intent(inout) :: Dalpha
 
+      ! auxiliary arras
+      real(DP), dimension(:,:,:), pointer :: DdataAtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxes1AtEdge
+      real(DP), dimension(:,:,:), pointer :: DtransformedFluxes2AtEdge
+
       ! local variables
-      real(DP), dimension(NVARtransformed) :: F1_ij,F1_ji,F2_ij,F2_ji,R_ij,R_ji
-      integer :: iedge,i,j
+      real(DP), dimension(NVARtransformed) :: R_ij,R_ji
+      integer :: idx,IEDGEset,IEDGEmax,i,j,iedge
 
-      ! Loop over all edges
-      do iedge = 1, NEDGE
 
-        ! Get node numbers and matrix positions
-        i  = IverticesAtEdge(1, iedge)
-        j  = IverticesAtEdge(2, iedge)
+      ! Allocate temporal memory
+      allocate(DdataAtEdge(NVAR,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxes1AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      allocate(DtransformedFluxes2AtEdge(NVARtransformed,2,GFSYS_NEDGESIM))
+      
+      ! Loop over the edges
+      do IEDGEset = 1, NEDGE, GFSYS_NEDGESIM
 
-        ! Compute transformed fluxes
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Dflux1(:,iedge), F1_ij, F1_ji)
-        call fcb_calcFluxTransformation(&
-            Dx(:,i), Dx(:,j), Dflux2(:,iedge), F2_ij, F2_ji)
+        ! We always handle GFSYS_NEDGESIM edges simultaneously.
+        ! How many edges have we actually here?
+        ! Get the maximum edge number, such that we handle 
+        ! at most GFSYS_NEDGESIM edges simultaneously.
+        
+        IEDGEmax = min(NEDGE, IEDGEset-1+GFSYS_NEDGESIM)
 
-        ! Compute nodal correction factors
-        where (F1_ij*F2_ij .le. 0.0_DP)
-          R_ij = 0.0_DP
-        elsewhere
-          R_ij = min(1.0_DP,&
-              F1_ij/F2_ij*merge(Drp(:,i), Drm(:,i), F1_ij .ge. 0.0_DP))
-        end where
+        ! Loop through all edges in the current set
+        ! and prepare the auxiliary arrays
+        do idx = 1, IEDGEmax-IEDGEset+1
 
-        where (F1_ji*F2_ji .le. 0.0_DP)
-          R_ji = 0.0_DP
-        elsewhere
-          R_ji = min(1.0_DP,&
-              F1_ji/F2_ji*merge(Drp(:,j), Drm(:,j), F1_ji .ge. 0.0_DP))
-        end where
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
 
-        ! Compute multiplicative correction factor
-        Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+          ! Fill auxiliary arrays
+          DdataAtEdge(:,1,idx) = Dx(:,IverticesAtEdge(1,iedge))
+          DdataAtEdge(:,2,idx) = Dx(:,IverticesAtEdge(2,iedge))
+        end do
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux1(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxes1AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Use callback function to compute transformed fluxes
+        call fcb_calcFluxTransformation_sim(&
+            DdataAtEdge(:,:,1:IEDGEmax-IEDGEset+1), &
+            Dflux2(:,IEDGEset:IEDGEmax),&
+            DtransformedFluxes2AtEdge(:,:,1:IEDGEmax-IEDGEset+1),&
+            rcollection)
+
+        ! Loop through all edges in the current set
+        ! and scatter the entries to the global vector
+        do idx = 1, IEDGEmax-IEDGEset+1
+          
+          ! Get actual edge number
+          iedge = idx+IEDGEset-1
+
+          ! Get position of nodes
+          i = IverticesAtEdge(1,iedge)
+          j = IverticesAtEdge(2,iedge)
+
+          ! Compute nodal correction factors
+          where (DtransformedFluxes1AtEdge(:,1,idx)*&
+                 DtransformedFluxes2AtEdge(:,1,idx) .le. 0.0_DP)
+            R_ij = 0.0_DP
+          elsewhere
+            R_ij = min(1.0_DP, DtransformedFluxes1AtEdge(:,1,idx)/&
+                               DtransformedFluxes2AtEdge(:,1,idx)*&
+                         merge(Drp(:,i), Drm(:,i),&
+                               DtransformedFluxes1AtEdge(:,1,idx) .ge. 0.0_DP))
+          end where
+          
+          where (DtransformedFluxes1AtEdge(:,2,idx)*&
+                 DtransformedFluxes2AtEdge(:,2,idx) .le. 0.0_DP)
+            R_ji = 0.0_DP
+          elsewhere
+            R_ji = min(1.0_DP, DtransformedFluxes1AtEdge(:,2,idx)/&
+                               DtransformedFluxes2AtEdge(:,2,idx)*&
+                         merge(Drp(:,j), Drm(:,j),&
+                               DtransformedFluxes1AtEdge(:,2,idx) .ge. 0.0_DP))
+          end where
+
+          ! Compute multiplicative correction factor
+          Dalpha(iedge) = Dalpha(iedge) * minval(min(R_ij, R_ji))
+        end do
       end do
+      
+      ! Deallocate temporal memory
+      deallocate(DdataAtEdge)
+      deallocate(DtransformedFluxes1AtEdge)
+      deallocate(DtransformedFluxes2AtEdge)
+      
     end subroutine doLimitEdgewiseConstrainedTransformed
 
     !**************************************************************
@@ -8286,17 +8843,20 @@ contains
     subroutine doCorrect(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, dscale, Dalpha, Dflux, Dy)
 
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -8312,6 +8872,7 @@ contains
         Dy(:,i) = Dy(:,i) + F_ij
         Dy(:,j) = Dy(:,j) - F_ij
       end do
+      
     end subroutine doCorrect
 
     !**************************************************************
@@ -8321,17 +8882,20 @@ contains
     subroutine doCorrectScaleByMass(IverticesAtEdge,&
         NEDGE, NEQ, NVAR, dscale, ML, Dalpha, Dflux, Dy)
 
+      ! input parameters
       real(DP), dimension(:), intent(in) :: Dalpha,ML
       real(DP), dimension(NVAR,NEDGE), intent(in) :: Dflux
       real(DP), intent(in) :: dscale
       integer, dimension(:,:), intent(in) :: IverticesAtEdge
       integer, intent(in) :: NEDGE,NEQ,NVAR
 
+      ! input/output parameters
       real(DP), dimension(NVAR,NEQ), intent(inout) :: Dy
 
       ! local variables
       real(DP), dimension(NVAR) :: F_ij
       integer :: iedge,i,j
+
 
       ! Loop over all edges
       do iedge = 1, NEDGE
@@ -8347,9 +8911,10 @@ contains
         Dy(:,i) = Dy(:,i) + F_ij/ML(i)
         Dy(:,j) = Dy(:,j) - F_ij/ML(j)
       end do
+
     end subroutine doCorrectScaleByMass
 
-  end subroutine gfsys_buildVecFCTScalar
+  end subroutine gfsys_buildDivVecFCTScalar
 
   !*****************************************************************************
 
