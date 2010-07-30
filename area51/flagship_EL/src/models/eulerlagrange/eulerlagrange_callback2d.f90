@@ -5322,14 +5322,6 @@ contains
     ! Loop over the particles
     do iPart = 1, rParticles%nPart
  
-   	! Store old data
-	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
-	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
-	rParticles%p_xvelo_old(iPart)=	   rParticles%p_xvelo(iPart)
-	rParticles%p_yvelo_old(iPart)=	   rParticles%p_yvelo(iPart)
-	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
-	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
-
     ! Find the start element for each particle
     call eulerlagrange_findelement(rparlist,p_rproblemLevel,rParticles,iPart)
 
@@ -6418,9 +6410,13 @@ contains
         cycle
 	end if	
     
-    ! Store old position of the particle 
-  	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
+   	! Store old data
+	rParticles%p_xpos_old(iPart)=	   rParticles%p_xpos(iPart)
 	rParticles%p_ypos_old(iPart)=	   rParticles%p_ypos(iPart)
+	rParticles%p_xvelo_old(iPart)=	   rParticles%p_xvelo(iPart)
+	rParticles%p_yvelo_old(iPart)=	   rParticles%p_yvelo(iPart)
+	rParticles%p_xvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
+	rParticles%p_yvelo_gas_old(iPart)= rParticles%p_xvelo_gas(iPart)
           
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
     if (rParticles%p_xpos(iPart) .ge. maxval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
@@ -7444,8 +7440,11 @@ end subroutine eulerlagrange_setnewinitialvalue
         rParticles%p_ypos(iPart)= dy
         rParticles%p_xvelo(iPart)= 0.0_dp
         rParticles%p_yvelo(iPart)= 0.0_dp
+        rParticles%p_xvelo_old(iPart)= 0.0_dp
+        rParticles%p_yvelo_old(iPart)= 0.0_dp
         rParticles%p_xvelo_gas(iPart)= 0.0_dp
         rParticles%p_yvelo_gas(iPart)= 0.0_dp
+        
     end if
 	
     if (rParticles%p_xpos(iPart) .le. minval(p_DvertexCoords(1,:))) rParticles%p_xpos(iPart) = minval(p_DvertexCoords(1,:))
