@@ -38,14 +38,14 @@ SRCLIST=SRC/ilaenv.f SRC/ieeeck.f SRC/iparmq.f \
 	SRC/dormlq.f SRC/dlabad.f SRC/dlascl.f SRC/dlange.f SRC/dgelqf.f SRC/dormqr.f \
 	SRC/dorml2.f SRC/dgeqrf.f SRC/dlarft.f SRC/dlarfb.f SRC/dgeqr2.f SRC/dgelq2.f \
 	SRC/dorm2r.f SRC/dlassq.f SRC/dlarf.f SRC/dlarfg.f SRC/dlapy2.f \
-	INSTALL/dlamch.f 
+	INSTALL/dlamch.f
 
 ifneq ($(GOTOBLAS_PATCH_FOR_LAPACK), REQUIRED)
 # Do compile the following LAPACK source files except when using
 # a recent GotoBLAS version as the symbols are already contained therein.
 SRCLIST+=SRC/xerbla.f SRC/dgesv.f SRC/dgetf2.f SRC/dgetrf.f SRC/dgetrs.f SRC/dlaswp.f \
 	 SRC/dgesv.f SRC/sgesv.f SRC/sgetrf.f SRC/sgetrs.f SRC/sgetf2.f SRC/slaswp.f \
-	 INSTALL/slamch.f INSTALL/lsame.f 
+	 INSTALL/slamch.f INSTALL/lsame.f
 endif
 
 OBJ = $(patsubst %.f, $(OBJDIR)/%.o, $(notdir $(SRCLIST)))
@@ -101,7 +101,7 @@ $(OBJDIR)/%.o: INSTALL/%.f
 #$(OBJDIR)/dlamch.o: INSTALL/dlamch.f
 #	$(F77) $(OPTS) -c $< -o $@
 #
-#$(OBJDIR)/lsame.o: INSTALL/lsame.f 
+#$(OBJDIR)/lsame.o: INSTALL/lsame.f
 #	$(F77) $(OPTS) -c $< -o $@
 
 $(OBJDIR):
@@ -112,10 +112,10 @@ $(OBJDIR):
 # Create the library
 #-------------------------------------------------------------------------------
 # Note:
-# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# Explicitly take precautions to reflect the considerations in Section 11.3 of
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
@@ -133,22 +133,22 @@ $(LAPACKLIB): $(OBJ)
 # A tarball should only get extracted (and possibly patched) once. If already
 # extracted, there is no need to reextract it. Parallel make runs should stick
 # to this rule as well.
-# All source files are created by one rule, the extract command. But 
+# All source files are created by one rule, the extract command. But
 # implementing it like:
 #   $(SRC_LAPACK):
 #         <extract tarball>
 # would mean that e.g. in a 4-way parallel make run, a tarball would get
 # extracted 4 times in parallel, because make is not aware that the rule is
-# identical for the first 4 items of $(SRC_LAPACK). Extracting the same tarball 
-# several times simultaneously, may cause several problems. Among those is 
-# the case where a source file gets already compiled while it is being 
+# identical for the first 4 items of $(SRC_LAPACK). Extracting the same tarball
+# several times simultaneously, may cause several problems. Among those is
+# the case where a source file gets already compiled while it is being
 # overwritten by its copy from the tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
 # when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
-# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target
 # .NOTPARALLEL is not an option.)
 
 
@@ -159,6 +159,8 @@ $(LAPACKLIB): $(OBJ)
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+LAPACK_TARBALL  = ../lapack-3.2.1.tgz
 
 # List of required source files from LAPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -174,11 +176,11 @@ LAST_FILE_FROM_LAPACK_TARBALL = TESTING/ztest_rfp.in
 $(SRC_LAPACK): $(LAST_FILE_FROM_LAPACK_TARBALL)
 
 # To catch the case where several applications simultaneously
-# try to build the LAPACK library (e.g. parallel make of the 
+# try to build the LAPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_LAPACK_TARBALL):  NAME       = "LAPACK 3.2.1 reference implementation sources"
-$(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL    = ../lapack-3.2.1.tgz
+$(LAST_FILE_FROM_LAPACK_TARBALL):  TARBALL    = $(LAPACK_TARBALL)
 $(LAST_FILE_FROM_LAPACK_TARBALL):  LOCKFILE   = ../LOCK.unpack.lapack-3.2.1.tar.gz
 # Wait 15 minutes at most
 $(LAST_FILE_FROM_LAPACK_TARBALL):  WAITTIME   = 30
@@ -186,8 +188,12 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 30
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.2.1_pgi-6.x-8.x.patch | patch -p1
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT1 = "\# Patching LAPACK 3.2.1 sources to get rid of non-Fortran 77 'exit' occurrences..."
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT2 = "\# This prevents compile problems with PGI 6.x-8.x."
-$(LAST_FILE_FROM_LAPACK_TARBALL):
+$(LAST_FILE_FROM_LAPACK_TARBALL): $(LAPACK_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(LAPACK_TARBALL):
+	@wget -O $(LAPACK_TARBALL) http://www.netlib.org/lapack/lapack-3.2.1.tgz
 
 
 
@@ -563,7 +569,7 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):
 # 	$(ARCH) $(ARCHFLAGS) $@ $(ALLOBJ) $(ALLXOBJ)
 # 	$(RANLIB) $@
 
-# single: $(SLASRC) $(ALLAUX) $(SCLAUX) 
+# single: $(SLASRC) $(ALLAUX) $(SCLAUX)
 # 	$(ARCH) $(ARCHFLAGS) ../$(LAPACKLIB) $(SLASRC) $(ALLAUX) \
 # 	$(SCLAUX)
 # 	$(RANLIB) ../$(LAPACKLIB)
@@ -604,7 +610,7 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):
 # clean:
 # 	rm -f *.o
 
-# .f.o: 
+# .f.o:
 # 	$(FORTRAN) $(OPTS) -c $< -o $@
 
 # slaruv.o: slaruv.f ; $(FORTRAN) $(NOOPT) -c $< -o $@
@@ -613,4 +619,3 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):
 # dla_wwaddw.o: dla_wwaddw.f ; $(FORTRAN) $(NOOPT) -c $< -o $@
 # cla_wwaddw.o: cla_wwaddw.f ; $(FORTRAN) $(NOOPT) -c $< -o $@
 # zla_wwaddw.o: zla_wwaddw.f ; $(FORTRAN) $(NOOPT) -c $< -o $@
-

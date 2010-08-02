@@ -166,12 +166,12 @@ $(OBJDIR)/umf_dl_%.o: Source/umf_%.c $(INC)
 	$(C) -DDLONG -c $< -o $@
 
 #FEAST# Workaround:
-#FEAST# Compiling umf_dl_garbage_collection.o and umf_dl_blas3_update.o on a 
-#FEAST# NEC gateway Itanium2 server gives an internal compiler error with 
+#FEAST# Compiling umf_dl_garbage_collection.o and umf_dl_blas3_update.o on a
+#FEAST# NEC gateway Itanium2 server gives an internal compiler error with
 #FEAST# NEC C IA-64 Compiler, Revision 6.1 if -O3 and -DLONG are used together.
 #FEAST# Lowering optimisation to -O2 helps.
 #FEAST# Note: It would be natural to test the version of the C compiler in here.
-#FEAST# But unfortunately, the MPI wrapper command mpicc for NEC C IA-64 Compiler, 
+#FEAST# But unfortunately, the MPI wrapper command mpicc for NEC C IA-64 Compiler,
 #FEAST# Revision 6.1 does report nothing when command line argument -V is used.
 #FEAST# The c++ cousin, however, does report the version.
 COMPILERVERSION := $(shell eval $(CXXVERSION) )
@@ -301,7 +301,7 @@ $(OBJDIR)/umfpack_gn_%.o: Source/umfpack_%.c $(INC)
 
 #FEAST# purge: clean
 #FEAST# 	- $(RM) ../Lib/libumfpack.a
-#FEAST# 
+#FEAST#
 #FEAST# clean:
 #FEAST# 	- $(RM) $(CLEAN)
 
@@ -326,10 +326,10 @@ endif
 # Create the library
 #-------------------------------------------------------------------------------
 # Note:
-# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# Explicitly take precautions to reflect the considerations in Section 11.3 of
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
@@ -344,7 +344,7 @@ $(OBJDIR)/libumfpack.a: $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL) $(OBJDIR)/umf4
 # Before creating any object file, first create the object directory.
 #-------------------------------------------------------------------------------
 # Note:
-# An order-only prerequisite shall not be put on the same line as a prerequisite 
+# An order-only prerequisite shall not be put on the same line as a prerequisite
 # of an implicit rule. Otherwise the target defined in this implicit rule is
 # rebuilt every time you invoke make!
 $(II) $(LL) $(GN) $(DI) $(DL) $(ZI) $(ZL) $(OBJDIR)/umf4_f77wrapper_feast.o: | $(OBJDIR)
@@ -371,7 +371,7 @@ match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 # A tarball should only get extracted (and possibly patched) once. If already
 # extracted, there is no need to reextract it. Parallel make runs should stick
 # to this rule as well.
-# All source files are created by one rule, the extract command. But 
+# All source files are created by one rule, the extract command. But
 # implementing it like:
 #   $(SRC_AMD):
 #         <extract tarball>
@@ -387,7 +387,7 @@ match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 # when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
-# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target
 # .NOTPARALLEL is not an option.)
 
 
@@ -398,6 +398,8 @@ match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+AMD_TARBALL = ../AMD-2.2.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -412,22 +414,28 @@ LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 
 # To catch the case where several applications simultaneously
-# try to build the UMFPACK library (e.g. parallel make of the 
+# try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
-$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
 $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
-$(LAST_FILE_FROM_AMD_TARBALL):
+$(LAST_FILE_FROM_AMD_TARBALL): $(AMD_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(AMD_TARBALL):
+	@wget -O $(AMD_TARBALL) http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract UFconfig tarball when required.
 #-------------------------------------------------------------------------------
+
+UFCONFIG_TARBALL = ../UFconfig-3.4.0.tar.gz
 
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -435,18 +443,24 @@ $(LAST_FILE_FROM_AMD_TARBALL):
 SRC_UFCONFIG = $(UFCONFIG)
 
 $(UFCONFIG):  NAME     = "UFconfig 3.4.0 sources"
-$(UFCONFIG):  TARBALL  = ../UFconfig-3.4.0.tar.gz
+$(UFCONFIG):  TARBALL  = $(UFCONFIG_TARBALL)
 $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
-$(UFCONFIG):
+$(UFCONFIG): $(UFCONFIG_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(UFCONFIG_TARBALL):
+	@wget -O $(UFCONFIG_TARBALL) http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract UMFPACK tarball when required.
 #-------------------------------------------------------------------------------
+
+UMFPACK_TARBALL = ../UMFPACK-5.4.tar.gz
 
 # List of required source files from UMFPACK package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -471,7 +485,7 @@ LAST_FILE_FROM_UMFPACK_TARBALL = ../UMFPACK/Makefile
 $(SRC_UMFPACK): $(LAST_FILE_FROM_UMFPACK_TARBALL)
 
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  NAME     = "UMFPACK 5.4 sources"
-$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = ../UMFPACK-5.4.tar.gz
+$(LAST_FILE_FROM_UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  LOCKFILE = ../LOCK.unpack.umfpack-5.4.tar.gz
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  RETRIES  = 24
@@ -482,8 +496,12 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHTEXT1 = "\# Patching UMFPACK 5.4 source
 else
 $(LAST_FILE_FROM_UMFPACK_TARBALL):  PATCHCMD   = echo
 endif
-$(LAST_FILE_FROM_UMFPACK_TARBALL):
+$(LAST_FILE_FROM_UMFPACK_TARBALL): $(UMFPACK_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(UMFPACK_TARBALL):
+	@wget -O $(UMFPACK_TARBALL) http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.4.0.tar.gz
 
 
 
@@ -501,7 +519,7 @@ endef
 clean:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
 clean:
 #	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(FILES), $(remove_file))
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
@@ -509,7 +527,7 @@ clean:
 .PHONY:	purge
 purge:     FILES=$(wildcard $(OBJDIR)/umf*) $(OBJDIR)/libumfpack.a
 purge:
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(FILES), $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done

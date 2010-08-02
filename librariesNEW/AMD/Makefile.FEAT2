@@ -114,10 +114,10 @@ $(OBJDIR)/libamdf77.a: $(AMDF77)
 # Create the library
 #-------------------------------------------------------------------------------
 # Note:
-# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# Explicitly take precautions to reflect the considerations in Section 11.3 of
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
@@ -149,29 +149,31 @@ $(OBJDIR):
 # A tarball should only get extracted (and possibly patched) once. If already
 # extracted, there is no need to reextract it. Parallel make runs should stick
 # to this rule as well.
-# All source files are created by one rule, the extract command. But 
+# All source files are created by one rule, the extract command. But
 # implementing it like:
 #   $(SRC_AMD):
 #         <extract tarball>
 # would mean that e.g. in a 4-way parallel make run, a tarball would get
 # extracted 4 times in parallel, because make is not aware that the rule is
 # identical for the first 4 items of $(SRC_AMD). The same holds for
-# $(SRC_UFCONFIG). Extracting the same tarball several times simultaneously, 
-# gives rise to several problems. Among those is the case where a source file 
-# gets already compiled while it is being overwritten by its copy from the 
+# $(SRC_UFCONFIG). Extracting the same tarball several times simultaneously,
+# gives rise to several problems. Among those is the case where a source file
+# gets already compiled while it is being overwritten by its copy from the
 # tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
 # when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
-# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target
 # .NOTPARALLEL is not an option.)
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
+
+AMD_TARBALL = ../AMD-2.2.tar.gz
 
 # List of required source files from AMD package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -182,23 +184,27 @@ SRC_AMD = Include/amd_internal.h Include/amd.h \
 
 # Choose the last file that is extracted from the AMD tarball. It's
 # existence indicates that the AMD tarball has been unpacked already
-# completely. This approach is a hack to serialise a parallel make run, 
+# completely. This approach is a hack to serialise a parallel make run,
 # parallel threads pause till make has passed through this needle's eye.
 LAST_FILE_FROM_AMD_TARBALL = ../AMD/README.txt
 $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 
 # To catch the case where several applications simultaneously
-# try to build the UMFPACK library (e.g. parallel make of the 
+# try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
-$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = ../AMD-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
 $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
-$(LAST_FILE_FROM_AMD_TARBALL):
+$(LAST_FILE_FROM_AMD_TARBALL): $(AMD_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(AMD_TARBALL):
+	@wget -O $(AMD_TARBALL) http://www.netlib.org/blas/blas.tgz
 
 
 #-------------------------------------------------------------------------------
@@ -209,19 +215,25 @@ $(LAST_FILE_FROM_AMD_TARBALL):
 # using a locking mechanism
 include ../unpack.mk
 
+UFCONFIG_TARBALL = ../UFconfig-3.4.0.tar.gz
+
 # List of required source files from UFconfig package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
 SRC_UFCONFIG = $(UFCONFIG)
 
 $(UFCONFIG):  NAME     = "UFconfig 3.4.0 sources"
-$(UFCONFIG):  TARBALL  = ../UFconfig-3.4.0.tar.gz
+$(UFCONFIG):  TARBALL  = $(UFCONFIG_TARBALL)
 $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
-$(UFCONFIG):
+$(UFCONFIG): $(TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(UFCONFIG_TARBALL):
+	@wget -O $(UFCONFIG_TARBALL) http://www.netlib.org/blas/blas.tgz
 
 
 #-------------------------------------------------------------------------------
@@ -237,14 +249,14 @@ endef
 .PHONY:	clean
 clean:
 #	-rm $(OBJ) $(OBJDIR)/libamd.a # *.il work.*
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
 
 .PHONY:	purge
 purge:
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(OBJDIR)/amd_global.o $(AMDI) $(AMDL) $(OBJDIR)/libamd.a, $(remove_file))
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done

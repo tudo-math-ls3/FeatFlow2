@@ -193,10 +193,10 @@ FRC:
 # Create the library
 #-------------------------------------------------------------------------------
 # Note:
-# Explicitly take precautions to reflect the considerations in Section 11.3 of 
+# Explicitly take precautions to reflect the considerations in Section 11.3 of
 # the GNU Make Manual, http://www.gnu.org/software/make/manual/make.html#Archive-Pitfalls:
 # This Makefile is potentially called simultaneously from multiple make processes,
-# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent 
+# e.g. when compiling the FEAT2 regression benchmark in parallel. Concurrent
 # attempts to create the archive should not happen. Try to avoid it with the
 # standard FEAT2 lock file mechanism.
 include ../create_library.mk
@@ -226,7 +226,7 @@ define remove_file
 endef
 
 clean:
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(ALLBLAS) $(CB1AUX) $(ZB1AUX) \
 			 $(CBLAS1) $(CBLAS2) $(CBLAS3) \
@@ -236,7 +236,7 @@ clean:
 	-if test -d $(OBJDIR); then rmdir $(OBJDIR); fi;
 
 purge:
-        # Delete every file separately to prevent errors of kind: 
+        # Delete every file separately to prevent errors of kind:
         # execvp: rm: Arg list too long
 	-$(foreach file, $(ALLBLAS) $(CB1AUX) $(ZB1AUX) \
 			 $(CBLAS1) $(CBLAS2) $(CBLAS3) \
@@ -269,7 +269,7 @@ $(OBJDIR):
 	@test -d $(OBJDIR) || (rm -f $(OBJDIR); mkdir -p $(OBJDIR))
 
 # Phony targets
-.PHONY:	single double complex complex16 FRC clean purge 
+.PHONY:	single double complex complex16 FRC clean purge
 
 
 #.f.o:
@@ -283,22 +283,22 @@ $(OBJDIR):
 # A tarball should only get extracted (and possibly patched) once. If already
 # extracted, there is no need to reextract it. Parallel make runs should stick
 # to this rule as well.
-# All source files are created by one rule, the extract command. But 
+# All source files are created by one rule, the extract command. But
 # implementing it like:
 #   $(SRC_BLAS):
 #         <extract tarball>
 # would mean that e.g. in a 4-way parallel make run, a tarball would get
 # extracted 4 times in parallel, because make is not aware that the rule is
-# identical for the first 4 items of $(SRC_BLAS). Extracting the same tarball 
-# several times simultaneously, may cause several problems. Among those is 
-# the case where a source file gets already compiled while it is being 
+# identical for the first 4 items of $(SRC_BLAS). Extracting the same tarball
+# several times simultaneously, may cause several problems. Among those is
+# the case where a source file gets already compiled while it is being
 # overwritten by its copy from the tarball. Beware of doing that.
 # Things get worse when multiple external Makefiles call this Makefile in
 # parallel and ask for the compilation of the library. This happens regularly
 # when compiling the FEAT2 regression benchmark as this is usually done in
 # parallel with up to 32 processes.
 # The extraction of tarballs needs to be serialised somehow - which is not
-# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target 
+# possible with GNU Make 3.81 (or earlier) intrinsics (in particular the target
 # .NOTPARALLEL is not an option.)
 
 
@@ -309,6 +309,8 @@ $(OBJDIR):
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+BLAS_TARBALL = ../blas.tgz
 
 # List of required source files from BLAS package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
@@ -326,16 +328,19 @@ LAST_FILE_FROM_BLAS_TARBALL = ../BLAS/ztrsv.f
 $(SRC_BLAS): $(LAST_FILE_FROM_BLAS_TARBALL)
 
 # To catch the case where several applications simultaneously
-# try to build the BLAS library (e.g. parallel make of the 
+# try to build the BLAS library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_BLAS_TARBALL):  NAME     = "BLAS reference implementation sources"
-$(LAST_FILE_FROM_BLAS_TARBALL):  TARBALL  = ../blas.tgz
+$(LAST_FILE_FROM_BLAS_TARBALL):  TARBALL  = $(BLAS_TARBALL)
 $(LAST_FILE_FROM_BLAS_TARBALL):  LOCKFILE = ../LOCK.unpack.blas.tar.gz
 $(LAST_FILE_FROM_BLAS_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_BLAS_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_BLAS_TARBALL):  PATCHCMD = echo
-$(LAST_FILE_FROM_BLAS_TARBALL):
+$(LAST_FILE_FROM_BLAS_TARBALL): $(BLAS_TARBALL)
 	@$(call UNPACK)
 
+# Try to download tar ball if not present
+$(BLAS_TARBALL):
+	@wget -O $(TARBALL) http://www.netlib.org/blas/blas.tgz
 

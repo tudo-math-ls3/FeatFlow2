@@ -94,6 +94,8 @@ $(OBJDIR):
 # using a locking mechanism
 include ../unpack.mk
 
+SPLIB_TARBALL = ../splib.tar.gz
+
 # List of required source files from SPLIB package. Purpose: let them share
 # a single common prerequisite that in turn is created by unpacking the tarball.
 # That's the key to serialise the unpacking process.
@@ -111,7 +113,7 @@ $(SRC_SPLIB): $(LAST_FILE_FROM_SPLIB_TARBALL)
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
 $(LAST_FILE_FROM_SPLIB_TARBALL):  NAME       = "SPLIB sources"
-$(LAST_FILE_FROM_SPLIB_TARBALL):  TARBALL    = ../splib.tar.gz
+$(LAST_FILE_FROM_SPLIB_TARBALL):  TARBALL    =  $(SPLIB_TARBALL)
 $(LAST_FILE_FROM_SPLIB_TARBALL):  LOCKFILE   = ../LOCK.unpack.splib.tar.gz
 $(LAST_FILE_FROM_SPLIB_TARBALL):  WAITTIME   = 10
 $(LAST_FILE_FROM_SPLIB_TARBALL):  RETRIES    = 24
@@ -119,8 +121,12 @@ $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHCMD   = cat ../splib_no.mytime.declaratio
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT1 = "\# Patching SPLIB sources to get rid of an unused variable declaration causing a"
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT2 = "\# dependency on a symbol not required otherwise. This prevents linker problems"
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT3 = "\# with g95."
-$(LAST_FILE_FROM_SPLIB_TARBALL):
+$(LAST_FILE_FROM_SPLIB_TARBALL): $(SPLIB_TARBALL)
 	@$(call UNPACK)
+
+# Try to download tar ball if not present
+$(SPLIB_TARBALL):
+	@wget -O $(SPLIB_TARBALL) http://www.cs.indiana.edu/ftp/bramley/splib.tar.gz
 
 
 #-------------------------------------------------------------------------------
