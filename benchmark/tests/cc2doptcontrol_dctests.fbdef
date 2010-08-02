@@ -10,6 +10,8 @@
 # As a result, the calculated control emulates the negative
 # nonlinearity of the Navier-Stokes flow to compensate for that.
 
+include 'defaults.inc'
+
 appl = cc2doptcontrol
 class = DEFAULT
 
@@ -42,7 +44,7 @@ SPACEDISCRETISATION_iElementType = 3
 TIMEDISCRETISATION_ntimesteps = 5
 TIMEDISCRETISATION_dtimeStepTheta = 1.0
 #
-# Optimal control parameters 
+# Optimal control parameters
 #
 OPTIMALCONTROL_dalphaC = 0.01
 OPTIMALCONTROL_dgammaC = 0.0

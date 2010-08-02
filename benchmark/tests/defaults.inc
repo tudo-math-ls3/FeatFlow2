@@ -8,13 +8,13 @@
 # This file is supposed to be a simple ASCII text file. Settings are
 # defined per line via
 #   keyword  = value
-# The scope of a keyword/value setting is from its definition till 
-# being overwritten or till the end of file. 
-# A test definition starts with 
+# The scope of a keyword/value setting is from its definition till
+# being overwritten or till the end of file.
+# A test definition starts with
 #   testid       = ARBITRARY_TESTNAME
-# All keyword/value settings defined earlier - as well as those defined in 
+# All keyword/value settings defined earlier - as well as those defined in
 # the file defaults.fbdef - are automatically assigned to this test definition.
-# The value of any keyword can, of course, be subsequently overwritten 
+# The value of any keyword can, of course, be subsequently overwritten
 # via a line "keyword = value". This updated keyword/value setting will then
 # be the default for any subsequently defined test.
 # Anything behind a hash sign (#) is regarded as comment.
@@ -22,7 +22,7 @@
 # Every keyword found is exported as environment variable (in uppercase).
 # The case of the corresponding values is left untouched.
 #
-# Example for keyword/value settings inheritance: The following block 
+# Example for keyword/value settings inheritance: The following block
 #
 #	grid = grids/foo/bar1.feast
 #	mglevels = 1,2,3,4
@@ -53,7 +53,7 @@
 #	appl = foobar
 #	grid = grids/foo/bar2.feast
 #	mglevels = 5,6
-# 
+#
 
 
 # FEAT2 only supports serial execution, don't try to run any application
@@ -61,9 +61,9 @@
 execmode = serial
 
 
-# comma-separated list of names of hosts a benchmark test should 
-# be run on. 
-# To run a test on any host, specify 'all' or 'any' (without the 
+# comma-separated list of names of hosts a benchmark test should
+# be run on.
+# To run a test on any host, specify 'all' or 'any' (without the
 # single ticks). To disable execution in general, specify 'none'.
 #
 # Let's just hope that nobody will ever have access to a machine
@@ -74,21 +74,21 @@ execmode = serial
 allowhosts       = all
 
 
-# comma-separated list of names of hosts a benchmark test should 
+# comma-separated list of names of hosts a benchmark test should
 # *never* be run on.
 # Special values: 'all', 'any', 'none'
 # Complementary to the 'allowhosts' keyword in the following sense:
-# A host added via 'allowhosts' is automatically removed from the 
+# A host added via 'allowhosts' is automatically removed from the
 # whitelist when it occurs in a subsequent 'denyhosts' statement.
 # Vice versa holds for the blacklist.
 denyhosts        = dantooine,tatooine,jerusalem,jericho,peppone
 
 
 # comma-separated lists of build IDs (standard FEAT2 five dash-separated tokens
-# to identify architecture, cpu, operating system, compiler suite, BLAS 
-# implementation) a benchmark test should be (never) be run on. 
-# The mechanism works exactly like 'allowhosts' and supports the same special 
-# values 'all', 'any' and 'none'. The remark on the complementary nature of 
+# to identify architecture, cpu, operating system, compiler suite, BLAS
+# implementation) a benchmark test should be (never) be run on.
+# The mechanism works exactly like 'allowhosts' and supports the same special
+# values 'all', 'any' and 'none'. The remark on the complementary nature of
 # 'allowhosts'/'denyhosts' holds for 'allowbuildID'/'denybuildID', too.
 #
 # Example:

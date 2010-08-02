@@ -1,9 +1,13 @@
+# -*- mode: sh -*-
+
 #============================================================
 # global settings for CC2D Stokes test for long domains
 #
 # This test calculates a poiseulle flow on a mesh consisting
 # of cells which are glued together to a long channel.
 #============================================================
+
+include 'defaults.inc'
 
 appl = cc2d
 class = DEFAULT

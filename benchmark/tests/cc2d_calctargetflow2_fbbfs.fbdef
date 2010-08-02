@@ -1,3 +1,7 @@
+# -*- mode: sh -*-
+
+include 'defaults.inc'
+
 #============================================================
 # global settings for all CC2D tests defined in this file
 #============================================================

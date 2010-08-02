@@ -1,3 +1,5 @@
+# -*- mode: sh -*-
+
 #####################################################################
 #
 # This file defines a set of configurations to obtain reference
@@ -40,6 +42,8 @@
 # directly starts with u(t=0)=0. The simulation is carried out
 # in a time cylinder up to Tmax=8.
 #####################################################################
+
+include 'defaults.inc'
 
 #============================================================
 # global settings for all CC2D tests defined in this file
@@ -327,7 +331,7 @@ TIMEDISCRETISATION_DTIMEMAX = 10
 ################
 # Step 6. Additional tests starting from Step 5, just for testing purposes
 ################
-# Test 1/2: 
+# Test 1/2:
 #  Comparison implicit Euler and semi-implicit Euler in the pressure.
 #  Level 4, larger timestep. Is there a difference in the drag/lift values
 #  when changing to the actual 'correct' pressure discretisation?
@@ -550,7 +554,7 @@ mglevels = 3
 ################
 # Step 2. Additional tests with the bench3-configuration.
 ################
-# Test 1/2: 
+# Test 1/2:
 #  Comparison implicit Euler and semi-implicit Euler in the pressure.
 #  Level 4. Is there a difference in the drag/lift values
 #  when changing to the actual 'correct' pressure discretisation?

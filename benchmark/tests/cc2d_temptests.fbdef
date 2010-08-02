@@ -4,13 +4,13 @@
 # This file is supposed to be a simple ASCII text file. Settings are
 # defined per line via
 #   keyword  = value
-# The scope of a keyword/value setting is from its definition till 
-# being overwritten or till the end of file. 
-# A test definition starts with 
+# The scope of a keyword/value setting is from its definition till
+# being overwritten or till the end of file.
+# A test definition starts with
 #   testid       = ARBITRARY_TESTNAME
-# All keyword/value settings defined earlier - as well as those defined in 
+# All keyword/value settings defined earlier - as well as those defined in
 # the file defaults.fbdef - are automatically assigned to this test definition.
-# The value of any keyword can, of course, be subsequently overwritten 
+# The value of any keyword can, of course, be subsequently overwritten
 # via a line "keyword = value". This updated keyword/value setting will then
 # be the default for any subsequently defined test.
 # Anything behind a hash sign (#) is regarded as comment.
@@ -18,7 +18,7 @@
 # Every keyword found is exported as environment variable (in uppercase).
 # The case of the corresponding values is left untouched.
 #
-# Example for keyword/value settings inheritance: The following block 
+# Example for keyword/value settings inheritance: The following block
 #
 #	grid = grids/foo/bar1.feast
 #	mglevels = 1,2,3,4
@@ -49,7 +49,9 @@
 #	appl = foobar
 #	grid = grids/foo/bar2.feast
 #	mglevels = 5,6
-# 
+#
+
+include 'defaults.inc'
 
 #============================================================
 # global settings for all CC2D tests defined in this file
