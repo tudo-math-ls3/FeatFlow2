@@ -199,7 +199,7 @@ $(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
-$(LAST_FILE_FROM_AMD_TARBALL): $(AMD_TARBALL)
+$(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
@@ -228,7 +228,7 @@ $(UFCONFIG):  LOCKFILE = ../LOCK.unpack.ufconfig-3.4.0.tar.gz
 $(UFCONFIG):  WAITTIME = 10
 $(UFCONFIG):  RETRIES  = 24
 $(UFCONFIG):  PATCHCMD = echo
-$(UFCONFIG): $(TARBALL)
+$(UFCONFIG): | $(TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present

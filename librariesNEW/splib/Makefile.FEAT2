@@ -121,7 +121,7 @@ $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHCMD   = cat ../splib_no.mytime.declaratio
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT1 = "\# Patching SPLIB sources to get rid of an unused variable declaration causing a"
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT2 = "\# dependency on a symbol not required otherwise. This prevents linker problems"
 $(LAST_FILE_FROM_SPLIB_TARBALL):  PATCHTEXT3 = "\# with g95."
-$(LAST_FILE_FROM_SPLIB_TARBALL): $(SPLIB_TARBALL)
+$(LAST_FILE_FROM_SPLIB_TARBALL): | $(SPLIB_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present

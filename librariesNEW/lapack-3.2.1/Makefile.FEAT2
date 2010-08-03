@@ -188,7 +188,7 @@ $(LAST_FILE_FROM_LAPACK_TARBALL):  RETRIES    = 30
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHCMD   = cat ../lapack-3.2.1_pgi-6.x-8.x.patch | patch -p1
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT1 = "\# Patching LAPACK 3.2.1 sources to get rid of non-Fortran 77 'exit' occurrences..."
 $(LAST_FILE_FROM_LAPACK_TARBALL):  PATCHTEXT2 = "\# This prevents compile problems with PGI 6.x-8.x."
-$(LAST_FILE_FROM_LAPACK_TARBALL): $(LAPACK_TARBALL)
+$(LAST_FILE_FROM_LAPACK_TARBALL): | $(LAPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
