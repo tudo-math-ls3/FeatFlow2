@@ -1,3 +1,5 @@
+# -*- makefile -*-
+
 ###############################################################
 # 
 #	Makefile for the inshape2d + opennurbs library
