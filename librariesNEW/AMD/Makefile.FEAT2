@@ -169,6 +169,15 @@ $(OBJDIR):
 # .NOTPARALLEL is not an option.)
 
 
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
+
+# Function to unpack a tarball - as a serialised operation
+# using a locking mechanism
+include ../unpack.mk
+
+
 #-------------------------------------------------------------------------------
 # Automatically extract AMD tarball when required.
 #-------------------------------------------------------------------------------
@@ -203,17 +212,18 @@ $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
+$(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.0.tar.gz
+$(AMD_TARBALL):  WAITTIME = 15
+$(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
-	@wget -O $(AMD_TARBALL) http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
+	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
 # Automatically extract UFconfig tarball when required.
 #-------------------------------------------------------------------------------
-
-# Function to unpack a tarball - as a serialised operation
-# using a locking mechanism
-include ../unpack.mk
 
 UFCONFIG_TARBALL = ../UFconfig-3.4.0.tar.gz
 
@@ -232,8 +242,13 @@ $(UFCONFIG): | $(UFCONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  TARBALL  = $(UFCONFIG_TARBALL)
+$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  WAITTIME = 15
+$(UFCONFIG_TARBALL):  RETRIES  = 24
 $(UFCONFIG_TARBALL):
-	@wget -O $(UFCONFIG_TARBALL) http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
+	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------

@@ -152,13 +152,18 @@ $(LAPACKLIB): $(OBJ)
 # .NOTPARALLEL is not an option.)
 
 
-#-------------------------------------------------------------------------------
-# Automatically extract LAPACK tarball when required.
-#-------------------------------------------------------------------------------
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
 
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract LAPACK tarball when required.
+#-------------------------------------------------------------------------------
 
 LAPACK_TARBALL  = ../lapack-3.2.1.tgz
 
@@ -192,8 +197,13 @@ $(LAST_FILE_FROM_LAPACK_TARBALL): | $(LAPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(LAPACK_TARBALL):  URL      = http://www.netlib.org/lapack/lapack-3.2.1.tgz
+$(LAPACK_TARBALL):  TARBALL  = $(LAPACK_TARBALL)
+$(LAPACK_TARBALL):  LOCKFILE = ../LOCK.download.lapack-3.2.1.tar.gz
+$(LAPACK_TARBALL):  WAITTIME = 15
+$(LAPACK_TARBALL):  RETRIES  = 24
 $(LAPACK_TARBALL):
-	@wget -O $(LAPACK_TARBALL) http://www.netlib.org/lapack/lapack-3.2.1.tgz
+	@$(call DOWNLOAD)
 
 
 

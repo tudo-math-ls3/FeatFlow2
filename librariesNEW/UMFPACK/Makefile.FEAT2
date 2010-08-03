@@ -391,13 +391,18 @@ match=$(shell echo $(1) | sed -e 's/$(2)/yes/')
 # .NOTPARALLEL is not an option.)
 
 
-#-------------------------------------------------------------------------------
-# Automatically extract AMD tarball when required.
-#-------------------------------------------------------------------------------
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
 
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract AMD tarball when required.
+#-------------------------------------------------------------------------------
 
 AMD_TARBALL = ../AMD-2.2.tar.gz
 
@@ -427,8 +432,13 @@ $(LAST_FILE_FROM_AMD_TARBALL): | $(AMD_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(AMD_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
+$(AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
+$(AMD_TARBALL):  LOCKFILE = ../LOCK.download.amd-2.2.0.tar.gz
+$(AMD_TARBALL):  WAITTIME = 15
+$(AMD_TARBALL):  RETRIES  = 24
 $(AMD_TARBALL):
-	@wget -O $(AMD_TARBALL) http://www.cise.ufl.edu/research/sparse/amd/AMD-2.2.0.tar.gz
+	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
@@ -452,8 +462,13 @@ $(UFCONFIG): | $(UFCONFIG_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(UFCONFIG_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  TARBALL  = $(UFCONFIG_TARBALL)
+$(UFCONFIG_TARBALL):  LOCKFILE = ../LOCK.download.ufconfig-3.4.0.tar.gz
+$(UFCONFIG_TARBALL):  WAITTIME = 15
+$(UFCONFIG_TARBALL):  RETRIES  = 24
 $(UFCONFIG_TARBALL):
-	@wget -O $(UFCONFIG_TARBALL) http://www.cise.ufl.edu/research/sparse/UFconfig/UFconfig-3.4.0.tar.gz
+	@$(call DOWNLOAD)
 
 
 #-------------------------------------------------------------------------------
@@ -500,8 +515,13 @@ $(LAST_FILE_FROM_UMFPACK_TARBALL): | $(UMFPACK_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(UMFPACK_TARBALL):  URL      = http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.4.0.tar.gz
+$(UMFPACK_TARBALL):  TARBALL  = $(UMFPACK_TARBALL)
+$(UMFPACK_TARBALL):  LOCKFILE = ../LOCK.download.umfpack-5.4.0.tar.gz
+$(UMFPACK_TARBALL):  WAITTIME = 15
+$(UMFPACK_TARBALL):  RETRIES  = 24
 $(UMFPACK_TARBALL):
-	@wget -O $(UMFPACK_TARBALL) http://www.cise.ufl.edu/research/sparse/umfpack/UMFPACK-5.4.0.tar.gz
+	@$(call DOWNLOAD)
 
 
 
@@ -533,4 +553,3 @@ purge:
 	-for dir in $(OBJDIR); do if test -d $${dir}; then rmdir $${dir}; fi; done
 	-rm -rf Demo Doc Include Lib MATLAB Makefile README.txt Source Tcov
 	-rm -rf ../UFconfig/UFconfig.h ../UFconfig/README.txt ../UFconfig/xerbla ../UFconfig/UFconfig.mk
-

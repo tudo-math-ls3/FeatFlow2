@@ -302,13 +302,18 @@ $(OBJDIR):
 # .NOTPARALLEL is not an option.)
 
 
-#-------------------------------------------------------------------------------
-# Automatically extract BLAS tarball when required.
-#-------------------------------------------------------------------------------
+# Function to download a tarball - as a serialised operation
+# using a locking mechanism
+include ../download.mk
 
 # Function to unpack a tarball - as a serialised operation
 # using a locking mechanism
 include ../unpack.mk
+
+
+#-------------------------------------------------------------------------------
+# Automatically extract BLAS tarball when required.
+#-------------------------------------------------------------------------------
 
 BLAS_TARBALL = ../blas.tgz
 
@@ -341,6 +346,10 @@ $(LAST_FILE_FROM_BLAS_TARBALL): | $(BLAS_TARBALL)
 	@$(call UNPACK)
 
 # Try to download tar ball if not present
+$(BLAS_TARBALL):  URL      = http://www.netlib.org/blas/blas.tgz
+$(BLAS_TARBALL):  TARBALL  = $(BLAS_TARBALL)
+$(BLAS_TARBALL):  LOCKFILE = ../LOCK.download.blas.tar.gz
+$(BLAS_TARBALL):  WAITTIME = 15
+$(BLAS_TARBALL):  RETRIES  = 24
 $(BLAS_TARBALL):
-	@wget -O $(TARBALL) http://www.netlib.org/blas/blas.tgz
-
+	@$(call DOWNLOAD)
