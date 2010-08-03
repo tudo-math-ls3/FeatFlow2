@@ -417,9 +417,9 @@ $(SRC_AMD): $(LAST_FILE_FROM_AMD_TARBALL)
 # try to build the UMFPACK library (e.g. parallel make of the
 # FEAT2 regression benchmark), this extractions needs to deploy
 # a locking mechanism.
-$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2 sources"
+$(LAST_FILE_FROM_AMD_TARBALL):  NAME     = "AMD 2.2.0 sources"
 $(LAST_FILE_FROM_AMD_TARBALL):  TARBALL  = $(AMD_TARBALL)
-$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.tar.gz
+$(LAST_FILE_FROM_AMD_TARBALL):  LOCKFILE = ../LOCK.unpack.amd-2.2.0.tar.gz
 $(LAST_FILE_FROM_AMD_TARBALL):  WAITTIME = 10
 $(LAST_FILE_FROM_AMD_TARBALL):  RETRIES  = 24
 $(LAST_FILE_FROM_AMD_TARBALL):  PATCHCMD = echo
