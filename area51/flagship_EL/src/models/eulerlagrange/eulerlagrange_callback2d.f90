@@ -5756,6 +5756,7 @@ contains
             rParticles%p_yvelo_old(iPart))/(rParticles%p_diam(iPart)*4)
 
     ! Compute the gravity
+    ! F_G = m * g
     F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
     F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
     
@@ -6167,6 +6168,7 @@ contains
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
     real(DP) :: velogasx, velogasy
+    real(DP) :: domscalex, domscaley
      
     ! Variables for the velocity of the gas phase in the corner vertices
     type(t_vectorScalar) :: rvector1, rvector2, rvector3
@@ -6213,9 +6215,13 @@ contains
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "isolutionpart", isolutionpart)
 
+    ! Get scalars for scaling the velocity
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
 
+    ! Get scalar for scaling the domain
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscalex", domscalex)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscaley", domscaley)
 
     ! Get data from solution
     call eulerlagrange_getVariable(rsolutionPrimal, 'velocity_x', rvector1)
@@ -6290,7 +6296,7 @@ contains
 
         ! Get number of interfacial forces
         nselectforce = max(1,&
-        parlst_querysubstrings(rparlist,'Eulerlagrange', 'sselectforce'))
+        parlst_querysubstrings(rparlist,'Eulerlagrange', 'nselectforce'))
 
         ! Calculate the relative velocity
         Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
@@ -6320,6 +6326,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6328,12 +6335,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6361,17 +6372,17 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
+        ! Compute new velocity of the particle
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
         rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)/rParticles%p_mass(iPart)
         
-        ! Compute the new position
-        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/velogasx
-        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/velogasy
+        ! Compute the new position of the particle
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
 
                              
     case (2)
@@ -6379,6 +6390,10 @@ contains
         ! improved Euler method (interfacial forces)
         ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
         !*******************************************************************
+   
+        ! Get number of interfacial forces
+        nselectforce = max(1,&
+        parlst_querysubstrings(rparlist,'Eulerlagrange', 'nselectforce'))
                 
         ! Calculate the relative velocity
         Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
@@ -6410,6 +6425,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6418,12 +6434,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6451,21 +6471,21 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
+        ! Compute new velocity of the particle
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
         rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)/rParticles%p_mass(iPart)
                 
         ! Compute first constant for Runge-Kutta
-        rk_k1(1)= rParticles%p_xvelo(iPart)/velogasx
-        rk_k1(2)= rParticles%p_yvelo(iPart)/velogasy
+        rk_k1(1)= rParticles%p_xvelo(iPart)
+        rk_k1(2)= rParticles%p_yvelo(iPart)
         
-        ! first position
-        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)
-        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)
+        ! Set new position of the particle
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/domscalex
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/domscaley
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
@@ -6536,6 +6556,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6544,12 +6565,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6577,29 +6602,33 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
-        rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
-        rk_k2(2)=  rk_k1(2)+dt*F_ges(2)/rParticles%p_mass(iPart)/velogasy
+        ! Compute new velocity of the particle
+        rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)
+        rk_k2(2)=  rk_k1(2)+dt*F_ges(2)/rParticles%p_mass(iPart)
         
-        ! Compute the new position
+        ! Compute the new position of the particle
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* &
-            (rk_k1(1) + v1_i1(1))/2.0_dp
+            (rk_k1(1) + v1_i1(1))/(2.0_dp*domscalex)
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* &
-            (rk_k1(2) + v1_i1(2))/2.0_dp
+            (rk_k1(2) + v1_i1(2))/(2.0_dp*domscaley)
             
-        ! Scale the new velocity
-        rParticles%p_xvelo(iPart)=rk_k2(1)*velogasx
-        rParticles%p_yvelo(iPart)=rk_k2(2)*velogasy
+        ! Set new velocity of the particle
+        rParticles%p_xvelo(iPart)=rk_k2(1)
+        rParticles%p_yvelo(iPart)=rk_k2(2)
           
     case (3)
         !*******************************************************************
         ! classic Runge-Kutta algorithmn (interfacial forces)
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
         !*******************************************************************
+ 
+        ! Get number of interfacial forces
+        nselectforce = max(1,&
+        parlst_querysubstrings(rparlist,'Eulerlagrange', 'nselectforce'))
           
         ! Calculate the relative velocity
         Velo_rel= sqrt((rParticles%p_xvelo(iPart)-rParticles%p_xvelo_old(iPart))**2.0_dp +&
@@ -6631,6 +6660,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6639,12 +6669,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6672,21 +6706,21 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
+        ! Compute new velocity of the particle
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_old(iPart)+dt*F_ges(1)/rParticles%p_mass(iPart)
         rParticles%p_yvelo(iPart)= rParticles%p_yvelo_old(iPart)+dt*F_ges(2)/rParticles%p_mass(iPart)
                 
         ! Compute first constant for Runge-Kutta
-        rk_k1(1)= rParticles%p_xvelo(iPart)/velogasx
-        rk_k1(2)= rParticles%p_yvelo(iPart)/velogasy
+        rk_k1(1)= rParticles%p_xvelo(iPart)
+        rk_k1(2)= rParticles%p_yvelo(iPart)
         
-        ! first position
-        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/2.0_dp
-        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/2.0_dp
+        ! Set first position
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/(2.0_dp*domscalex)
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/(2.0_dp*domscaley)
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
@@ -6721,7 +6755,7 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! first velocity
+        ! Velocity in the first position
         v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
@@ -6758,6 +6792,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6766,12 +6801,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6799,17 +6838,17 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
-        rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
-        rk_k2(2)=  rk_k1(2)+dt*F_ges(2)/rParticles%p_mass(iPart)/velogasy
+        ! Compute new velocity of the particle
+        rk_k2(1)=  rk_k1(1)+dt*F_ges(1)/rParticles%p_mass(iPart)
+        rk_k2(2)=  rk_k1(2)+dt*F_ges(2)/rParticles%p_mass(iPart)
         
-        ! second position
-        p2_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k2(1)/2.0_dp
-        p2_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k2(2)/2.0_dp
+        ! Set second position of the particle
+        p2_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k2(1)/(2.0_dp*domscalex)
+        p2_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k2(2)/(2.0_dp*domscaley)
 
         ! Check if particle is out of the domain
 	    if (p2_i1(1).ge.rParticles%maxvalx) then
@@ -6829,7 +6868,7 @@ contains
 	        cycle
 	    end if     
 
-         ! Velocity and density of the gas in the first corner (in mathematically positive sense)
+        ! Velocity and density of the gas in the first corner (in mathematically positive sense)
         ux1_part= p_Ddata1(p_IverticesAtElement(1,currentElement))
         uy1_part= p_Ddata2(p_IverticesAtElement(1,currentElement))
         rho_gas(1)= p_Ddata3(p_IverticesAtElement(1,currentElement))
@@ -6844,7 +6883,7 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! second velocity
+        ! Compute the velocity in the second position
         v2_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
@@ -6853,7 +6892,7 @@ contains
 					Dbarycoords(3) * uy3_part / rho_gas(3)
  
  
-         ! Calculate the relative velocity
+        ! Calculate the relative velocity
         Velo_rel= sqrt((rk_k2(1)-v2_i1(1))**2.0_dp +&
                        (rk_k2(2)-v2_i1(2))**2.0_dp)
 
@@ -6882,6 +6921,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -6890,12 +6930,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -6923,17 +6967,17 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
-        rk_k3(1)=  rk_k2(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
-        rk_k3(2)=  rk_k2(2)+dt*F_ges(2)/rParticles%p_mass(iPart)/velogasy
+        ! Compute new velocity of the particle
+        rk_k3(1)=  rk_k2(1)+dt*F_ges(1)/rParticles%p_mass(iPart)
+        rk_k3(2)=  rk_k2(2)+dt*F_ges(2)/rParticles%p_mass(iPart)
         
-        ! third position
-        p3_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k3(1)
-        p3_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k3(2)
+        ! Set third position of the particle
+        p3_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k3(1)/domscalex
+        p3_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k3(2)/domscaley
    
         ! Check if particle is out of the domain
 	    if (p3_i1(1).ge.rParticles%maxvalx) then
@@ -6968,7 +7012,7 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! third velocity
+        ! Compute the velocity in the third position
         v3_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
@@ -6976,7 +7020,7 @@ contains
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
  
-         ! Calculate the relative velocity
+        ! Calculate the relative velocity
         Velo_rel= sqrt((rk_k3(1)-v3_i1(1))**2.0_dp +&
                        (rk_k3(2)-v3_i1(2))**2.0_dp)
 
@@ -7004,6 +7048,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
+                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
                         (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
@@ -7012,12 +7057,16 @@ contains
             elseif (trim(cforce) .eq. 'gravity') then
 
                 ! Compute the gravity
+                ! F_G = m * g
                 F_G(1)= rParticles%gravity(1)*rParticles%p_mass(iPart)
                 F_G(2)= rParticles%gravity(2)*rParticles%p_mass(iPart)
 
             elseif (trim(cforce) .eq. 'virtualmassforce') then
 
                 ! Compute the virtualmass force
+                ! F_VM = C_VM * \frac{\rho_g}{\rho_p} * m_p *
+                !           ((\partial_t v_g + v_g \cdot \nabla v_g)-
+                !            (\partial_t v_p + v_p \cdot \nabla v_p))
                 F_VM(1)= 0.0_dp
                 F_VM(2)= 0.0_dp
 
@@ -7045,23 +7094,23 @@ contains
 
         end do ! Loop over all forces
 
-        ! Set force
+        ! Set resulting force for the particle
         F_ges(1)= F_D(1) + F_G(1) + F_VM(1) + F_B(1) + F_M(1) + F_S(1)
         F_ges(2)= F_D(2) + F_G(2) + F_VM(2) + F_B(2) + F_M(2) + F_S(2)
 
-        ! Compute new velocity of the particles
-        rk_k4(1)=  rk_k3(1)+dt*F_ges(1)/rParticles%p_mass(iPart)/velogasx
-        rk_k4(2)=  rk_k3(2)+dt*F_ges(2)/rParticles%p_mass(iPart)/velogasy
+        ! Compute new velocity of the particle
+        rk_k4(1)=  rk_k3(1)+dt*F_ges(1)/rParticles%p_mass(iPart)
+        rk_k4(2)=  rk_k3(2)+dt*F_ges(2)/rParticles%p_mass(iPart)
  
-        ! Set new particle-position
+        ! Set new position of the particle
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + &
-                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/6.0_dp
+                dt*(rk_k1(1) + 2 * rk_k2(1) + 2 * rk_k3(1) + rk_k4(1))/(6.0_dp*domscalex)
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + &
-                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/6.0_dp
+                dt*(rk_k1(2) + 2 * rk_k2(2) + 2 * rk_k3(2) + rk_k4(2))/(6.0_dp*domscaley)
 
-        ! Set direction of the velocita of the particle
-        rParticles%p_xvelo(iPart)= rk_k4(1)*velogasx
-        rParticles%p_yvelo(iPart)= rk_k4(2)*velogasy
+        ! Set new velocity of the particle
+        rParticles%p_xvelo(iPart)= rk_k4(1)
+        rParticles%p_yvelo(iPart)= rk_k4(2)
         
     case (-1)  
         !*******************************************************************
@@ -7069,13 +7118,13 @@ contains
         ! x_i+1 = x_i + \Delta t v_i
         !*******************************************************************
 
-        ! Set the velocity of the particles
-        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
-        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
+        ! Set the velocity of the particle
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)*velogasx
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)*velogasy
         
         ! Compute the new position
-        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)
-        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)
+        rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* rParticles%p_xvelo(iPart)/domscalex
+        rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* rParticles%p_yvelo(iPart)/domscaley
 
                              
     case (-2)
@@ -7084,15 +7133,15 @@ contains
         ! x_i+1 = x_i + \frac12 \Delta t (v_i + v_i+1)
         !*******************************************************************
                 
-        ! Set new velocity of the particles
-        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
-        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
+        ! Set new velocity of the particle
+        rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)*velogasx
+        rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)*velogasy
                         
-        ! Compute the new position
-        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rParticles%p_xvelo(iPart)
-        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rParticles%p_yvelo(iPart)
+        ! Compute the new position of the particle
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rParticles%p_xvelo(iPart)/domscalex
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rParticles%p_yvelo(iPart)/domscaley
  
-         ! Check if particle is out of the domain
+        ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
 	        ! If particle is out of the domain set new initial values 
 	        call eulerlagrange_setnewinitialvalue(rparlist,p_rproblemLevel,rParticles,iPart)
@@ -7133,11 +7182,15 @@ contains
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
           
+        ! Scaling the velocity
+        v1_i1(1)= v1_i1(1)*velogasx  
+        v1_i1(2)= v1_i1(2)*velogasx  
+          
         ! Compute the new position with both velocities
         rParticles%p_xpos(iPart)= rParticles%p_xpos_old(iPart) + dt* &
-            (rParticles%p_xvelo(iPart) + v1_i1(1))/2.0_dp
+            (rParticles%p_xvelo(iPart) + v1_i1(1))/(2.0_dp*domscalex)
         rParticles%p_ypos(iPart)= rParticles%p_ypos_old(iPart) + dt* &
-            (rParticles%p_yvelo(iPart) + v1_i1(2))/2.0_dp
+            (rParticles%p_yvelo(iPart) + v1_i1(2))/(2.0_dp*domscaley)
             
         ! Set the new velocity
         rParticles%p_xvelo(iPart)=v1_i1(1)
@@ -7149,17 +7202,17 @@ contains
         ! x_i+1= x_i + \frac16 \Delta t ( v_i + 2v_i+1^1 + 2v_i+1^2 + v_i+1^3)
         !*******************************************************************
           
-        ! Set new velocity of the particles
+        ! Set new velocity of the particle
         rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
         rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
                 
         ! Set the first constant for Runge-Kutta
-        rk_k1(1)= rParticles%p_xvelo(iPart)
-        rk_k1(2)= rParticles%p_yvelo(iPart)
+        rk_k1(1)= rParticles%p_xvelo(iPart)*velogasx
+        rk_k1(2)= rParticles%p_yvelo(iPart)*velogasy
         
         ! Compute the first position p1
-        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/2.0_dp
-        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/2.0_dp
+        p1_i1(1)= rParticles%p_xpos(iPart) + dt*rk_k1(1)/(2.0_dp*domscalex)
+        p1_i1(2)= rParticles%p_ypos(iPart) + dt*rk_k1(2)/(2.0_dp*domscaley)
 
         ! Check if particle is out of the domain
 	    if (p1_i1(1).ge.rParticles%maxvalx) then
@@ -7194,17 +7247,21 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! first velocity
+        ! Compute the velocity in the first position
         v1_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
         v1_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
-    
+
+        ! Scaling the velocity of the particle
+        v1_i1(1)= v1_i1(1)*velogasx  
+        v1_i1(2)= v1_i1(2)*velogasx  
+
         ! Compute the second position p2
-        p2_i1(1)= rParticles%p_xpos(iPart) + dt*v1_i1(1)/2.0_dp
-        p2_i1(2)= rParticles%p_ypos(iPart) + dt*v1_i1(2)/2.0_dp
+        p2_i1(1)= rParticles%p_xpos(iPart) + dt*v1_i1(1)/(2.0_dp*domscalex)
+        p2_i1(2)= rParticles%p_ypos(iPart) + dt*v1_i1(2)/(2.0_dp*domscaley)
         
         ! Check if particle is out of the domain
 	    if (p2_i1(1).ge.rParticles%maxvalx) then
@@ -7239,17 +7296,21 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! second velocity
+        ! Compute the velocity in the second position
         v2_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
         v2_i1(2)= 	Dbarycoords(1) * uy1_part / rho_gas(1) + &
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
+
+        ! Scaling the velocity
+        v2_i1(1)= v2_i1(1)*velogasx  
+        v2_i1(2)= v2_i1(2)*velogasx  
         
         ! Compute the third position p3
-        p3_i1(1)= rParticles%p_xpos(iPart) + dt*v2_i1(1)
-        p3_i1(2)= rParticles%p_ypos(iPart) + dt*v2_i1(2)
+        p3_i1(1)= rParticles%p_xpos(iPart) + dt*v2_i1(1)/domscalex
+        p3_i1(2)= rParticles%p_ypos(iPart) + dt*v2_i1(2)/domscaley
 
         ! Check if particle is out of the domain
 	    if (p3_i1(1).ge.rParticles%maxvalx) then
@@ -7284,7 +7345,7 @@ contains
         uy3_part= p_Ddata2(p_IverticesAtElement(3,currentElement))
         rho_gas(3)= p_Ddata3(p_IverticesAtElement(3,currentElement))
 
-        ! third velocity
+        ! Compute the velocity in the third position
         v3_i1(1)= 	Dbarycoords(1) * ux1_part / rho_gas(1) + &
 					Dbarycoords(2) * ux2_part / rho_gas(2) + &
 					Dbarycoords(3) * ux3_part / rho_gas(3)
@@ -7292,13 +7353,17 @@ contains
 					Dbarycoords(2) * uy2_part / rho_gas(2) + &
 					Dbarycoords(3) * uy3_part / rho_gas(3)
  
-        ! Set new particle-position
+        ! Scaling the velocity
+        v3_i1(1)= v3_i1(1)*velogasx  
+        v3_i1(2)= v3_i1(2)*velogasx  
+          
+        ! Set new position of the particle
         rParticles%p_xpos(iPart)= rParticles%p_xpos(iPart) + &
-                dt*(rk_k1(1) + 2.0_dp * v1_i1(1) + 2.0_dp * v2_i1(1) + v3_i1(1))/6.0_dp
+                dt*(rk_k1(1) + 2.0_dp * v1_i1(1) + 2.0_dp * v2_i1(1) + v3_i1(1))/(6.0_dp*domscalex)
         rParticles%p_ypos(iPart)= rParticles%p_ypos(iPart) + &
-                dt*(rk_k1(2) + 2.0_dp * v1_i1(2) + 2.0_dp * v2_i1(2) + v3_i1(2))/6.0_dp
+                dt*(rk_k1(2) + 2.0_dp * v1_i1(2) + 2.0_dp * v2_i1(2) + v3_i1(2))/(6.0_dp*domscaley)
 
-        ! Set direction of the velocita of the particle
+        ! Set new velocity of the particle
         rParticles%p_xvelo(iPart)= v3_i1(1)
         rParticles%p_yvelo(iPart)= v3_i1(2)
 
@@ -7437,6 +7502,7 @@ contains
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
     real(DP) :: velogasx, velogasy
+    real(DP) :: domscalex, domscaley
          
     ! Variables for randome numbers
     real(DP) :: random1, random2, random3
@@ -7482,6 +7548,10 @@ contains
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velopartx", velopartx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "veloparty", veloparty)
 	
+    ! get scalar for scaling of the domain
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscalex", domscalex)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscaley", domscaley)
+
     ! Get particle-mass, -temp and -diameter
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particledensity", particledensity)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "particlediam", particlediam)
@@ -7603,7 +7673,7 @@ contains
       partxmin= minval(p_DvertexCoords(1,:))
     
       ! Set startingpositions of the particle
-      rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)
+      rParticles%p_xpos(iPart)= partxmin + random1*dt*rParticles%p_xvelo(iPart)/domscalex
       rParticles%p_ypos(iPart)= partymin + random2*0.999_dp*(partymax - partymin)+(partymax - partymin)*0.001_dp
       rParticles%p_xpos_old(iPart)= rParticles%p_xpos(iPart)
       rParticles%p_ypos_old(iPart)= rParticles%p_ypos(iPart)

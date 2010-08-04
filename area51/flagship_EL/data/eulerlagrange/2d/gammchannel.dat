@@ -156,8 +156,9 @@ rho_gas= 1.5e0
 #-------------------------------------------------------------------------------
 # boundarybehaviour of the particles
 #-------------------------------------------------------------------------------
-# 0 ideal wall collision
-# 1 slip condition
+# 0 ideal wall collision (incidence angle is equal to emergent angle)
+# 1 slip condition (particle slips along the boundary)
+# 2 no slip condition 
 #-------------------------------------------------------------------------------
 boundbehav = 0
 
@@ -166,11 +167,11 @@ boundbehav = 0
 # gravity
 #-------------------------------------------------------------------------------
 
-# gravity in x-direction
+# gravity in x-direction in m/s^2
 gravityx = 0
 
-# gravity in y-direction (normally -9.81)
-gravityy = -9.81
+# gravity in y-direction in m/s^2 (conventional standard value: -9.80665)
+gravityy = -9.80665
 
 
 #-------------------------------------------------------------------------------
