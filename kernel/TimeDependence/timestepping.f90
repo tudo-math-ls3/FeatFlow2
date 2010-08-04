@@ -433,8 +433,6 @@ contains
 
     if (rtstepScheme%ctimestepType .ne. TSCHM_FRACTIONALSTEP) then
       ! Standard time stepping scheme.
-      rtstepScheme%dtstep = dtstep
-
       rtstepScheme%nsubsteps        = 1
       
       dtheta1                       = rtstepScheme%dtheta
