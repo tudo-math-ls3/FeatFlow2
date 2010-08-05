@@ -100,7 +100,7 @@ particledensitymin = 4000
 particledensitymax = 4000
 
 #-------------------------------------------------------------------------------
-# diameter of the particle
+# diameter of the particle 
 #-------------------------------------------------------------------------------
 # 0 all particles have the same diameter 
 # 1 random diameter of the particles (0 to particlediam)
@@ -108,8 +108,14 @@ particledensitymax = 4000
 #-------------------------------------------------------------------------------
 idiampart = 0
 
-# particle-diameter
-particlediam = 1e-6
+#-------------------------------------------------------------------------------
+# typical diameters
+#-------------------------------------------------------------------------------
+# combustions or terpene: 	1e-10 m to 1e-9 m
+# soot from a blast furnace:	1e-9 m to 1e-6 m
+#-------------------------------------------------------------------------------
+# diameter of the particle in m
+particlediam = 1e-10
 
 # particle diameter minimum in m
 particlediammin = 1e-8
@@ -239,7 +245,7 @@ icouplingpart = 1
 # -2 	Runge-Kutta second order / improved Euler method (particle tracing)
 # -3	Runge-Kutta fourth order / classic Runge-Kutta (particle tracing)
 #-------------------------------------------------------------------------------
-isolutionpart = -1
+isolutionpart = 1
 
 #-------------------------------------------------------------------------------
 # select interfacial forces for the particle movement
