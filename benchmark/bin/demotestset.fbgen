@@ -1,0 +1,65 @@
+# Base name of the test-set. Shall be unique.
+
+testname = demotestset
+
+# A comment for the test which may take several lines. Each line must end
+# with a double-backslash if the comment continues in the next line.
+# the comment is included with comment characters at teh beginning of the file.
+
+comment = This is a demo testset.\
+ The set runs about a couple of levels and damping parameters.\
+ The NLMIN parameter changes with the NLMAX parameter.
+
+# Application
+# If empty (""), this is not printed.
+
+appl = testapplication
+
+# Test class.
+# If empty (""), this is not printed.
+
+class = DEFAULT
+
+# An optional description of the test set.
+
+descr = 
+
+# Name + Path of one or multiple include file which is included prior to 
+# every test. If multiple include files are to be defined, there must be
+# one line "testinclude = "..." " for each include file.
+
+testinclude = "testdefaults.fbdef"
+
+# List of parameters.
+# The values of the parameters are separated via commas.
+# Example:
+#    NLMAX = 3,4,5,6,7,8
+#
+# If a parameter name ends with "*", it is dependent on the paramete in the
+# previous line, so it proceeds a step if the previous parameter proceeds
+# to the next step. In this case, if the list is shorter than the
+# previous parameter, it starts from the beginning.
+#
+# If the value is a numerical value, it is acceptable to specify
+# ranges in the form "start:end:stepsize", where "stepsize" is assumed
+# to be =1 if not specified. Example: "2:8:3" generates a sequence "2 5 8".
+# If the parameter is a dependent parameter (marked with "*"), either
+# "start" or "end" can be skipped. 
+# Example: Let the parent parameter have 3 entries. Then
+#    "2::4" generates a sequence "2 6 10"
+#    ":6:4" generates a sequence "-2 2 6".
+#
+# String parameters must be enclosed in "" and are acceptable either
+# as single parameter or list of strings.
+#
+# The parameter allows an associated alias.  The alias is the name of
+# the parameter when writing out the test definition file. The parameter
+# name is the internal name used to generate the test id.
+# Definition:
+#   internal name : external name = values
+#
+# The "\" character defines a line break in the parameter list.
+
+NLMAX = 3,4,5,6,7,8                    # Level 3-8
+NLMIN* = 2,3                           # min. level 2 3 2 3 ...
+DOMEGA:LINSOL_OMEGA = 0.3:0.9:0.2      # Damping 0.3, 0.5, 0.7, 0.9
