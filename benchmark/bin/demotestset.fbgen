@@ -21,8 +21,9 @@ appl = testapplication
 class = DEFAULT
 
 # An optional description of the test set.
+# May optionally contain references to the variables below.
 
-descr = 
+descr = Level $(NLMAX), Element $(IELEMENT), OMEGA $(OMEGA), NSM $(NSM)
 
 # Name + Path of one or multiple include file which is included prior to 
 # every test. If multiple include files are to be defined, there must be

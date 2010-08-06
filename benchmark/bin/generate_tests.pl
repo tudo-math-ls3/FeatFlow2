@@ -447,6 +447,66 @@ sub expand_values($) {
   }
 }
 
+# Expands a string using  the current configuration of a test setting.
+#
+# Call:
+#    expand_value value configuration varindex
+#
+# In:
+#    value         = string to expand
+#    varvalues     = reference to a hash defining all the values
+#    varindex      = reference to a hash with indices defining the current
+#                    configuration
+#
+# Returns the fully expanded string, including calls to the shell.
+sub expand_value ($$$) {
+  my $value = shift;
+  my $varvalues = shift;
+  my $varindex = shift;
+  
+  # Check if there is the term "$(...)" in the value.
+  # If yes, try to replace it with the current value of
+  # the corresponding varible.
+  while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.]?\)/ ) {
+    # Try to get the referring value.
+    my $varname2 = $2;
+    my $idx2 = $varindex->{$varname2};
+    die "ERROR: Could not determine value of referring ".
+        "variable <$varname2>\nOriginal value: $value\n"
+      if ( !defined($idx2) );
+
+    print STDERR "Detected replacement variable '$varname2' in '$value'."
+      if (DEBUG==1);
+
+    my $parlist2;
+    my $value2;
+    
+    if ($1 eq "%") {
+      $value2 = $idx2 + 1;
+    }
+    else {
+      $parlist2 = $varvalues->{$varname2};
+      $value2 = $$parlist2[$idx2];
+    }
+    print STDERR " Replacing '\$($1$varname2)' by '$value2'.\n"
+      if (DEBUG==1);
+    $value =~ s/\$\(\%?([^\)]+)[\*\.]?\)/$value2/;
+  }
+  
+  # Probably invoke the shell to execute any subcommand.
+  if ( $value =~ m/`([^`]+)`/ ) {
+    my $value2 = `$1`;
+    chomp($value2);
+    
+    print STDERR "Replacing command string '$1' by '$value2'.\n"
+      if (DEBUG==1);
+    $value =~ s/`([^`]+)`/$value2/;
+  }
+  
+  return $value;
+  
+}
+
 # Generates all test-id's from a fully qualified configuration
 # Call:
 #    generate_tests(\%configuration)
@@ -535,7 +595,7 @@ sub generate_tests($$) {
     if ($onlyids == 0) {
       print "\n";
       print "testid = $testid\n";
-      print "descr = $descr\n";
+      print "descr = " . expand_value ($descr,$varvalues,\%varindex) . "\n";
       
       # Print the includes.
       foreach my $incl (@$testinclude) {
@@ -552,46 +612,9 @@ sub generate_tests($$) {
         # Get the value.
         my $idx = $varindex{$varname};
         my $parlist = $varvalues->{$varname};
-        my $value = $$parlist[$idx];
+        my $value = $$parlist[$idx];      
         
-        # Check if there is the term "$(...)" in the value.
-        # If yes, try to replace it with the current value of
-        # the corresponding varible.
-        while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.]?\)/ ) {
-          # Try to get the referring value.
-          my $varname2 = $2;
-          my $idx2 = $varindex{$varname2};
-          die "ERROR: Could not determine value of referring ".
-              "variable <$varname2>\nOriginal value: $value\n"
-            if ( !defined($idx2) );
-
-          print STDERR "Detected replacement variable '$varname2' in '$value'."
-            if (DEBUG==1);
-
-          my $parlist2;
-          my $value2;
-          
-          if ($1 eq "%") {
-            $value2 = $idx2 + 1;
-          }
-          else {
-            $parlist2 = $varvalues->{"NLMAX"};
-            $value2 = $$parlist2[$idx2];
-          }
-          print STDERR " Replacing '\$($1$varname2)' by '$value2'.\n"
-            if (DEBUG==1);
-          $value =~ s/\$\(\%?([^\)]+)[\*\.]?\)/$value2/;
-        }
-        
-        # Probably invoke the shell to execute any subcommand.
-        if ( $value =~ m/`([^`]+)`/ ) {
-          my $value2 = `$1`;
-          chomp($value2);
-          
-          print STDERR "Replacing command string '$1' by '$value2'.\n"
-            if (DEBUG==1);
-          $value =~ s/`([^`]+)`/$value2/;
-        }
+        $value = expand_value ($value,$varvalues,\%varindex);
         
         print "$alias = $value\n";
         
