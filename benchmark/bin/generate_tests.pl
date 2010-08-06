@@ -622,9 +622,11 @@ sub generate_tests($$) {
       #
       # If the variable modifier contains a '.', the variable
       # is not increased.
-      if ( $varmod =~ m/\./ ) {
-        next;
-      }
+      #
+      # RULE DISABLED: The . below is more general.
+      # if ( $varmod =~ m/\./ ) {
+      #   next;
+      # }
       
       if (++($varindex{$varname}) >= @$parlist) {
         $varindex{$varname} = 0;
@@ -635,7 +637,7 @@ sub generate_tests($$) {
         # parameters do not change.
         # If this is a 'child' parameter, also increase the previous
         # parameter until we increased the 'master' of the group.
-        if ( $varmod !~ m/\*/ ) {
+        if ( $varmod !~ m/[\*.]/ ) {
           next LOOP;
         }
       }

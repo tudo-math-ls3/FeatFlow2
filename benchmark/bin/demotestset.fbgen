@@ -36,7 +36,7 @@ testinclude = "testdefaults.fbdef"
 # Example:
 #    NLMAX = 3,4,5,6,7,8
 #
-# If a parameter name ends with "*", it is dependent on the paramete in the
+# If a parameter name ends with "*", it is dependent on the parameter in the
 # previous line, so it proceeds a step if the previous parameter proceeds
 # to the next step. In this case, if the list is shorter than the
 # previous parameter, counting starts from the beginning if the end
@@ -47,12 +47,12 @@ testinclude = "testdefaults.fbdef"
 # This generates
 #    (NLMAX,NLMIN) = (3,2) , (4,3) , (5,2) , (6,3)
 #
-# If a parameter name ends with a ".", it is assumed to stay constant and
-# is not included in the test-id of the test.
+# If a parameter name ends with a ".", it is dependent on the previous parameter
+# (like "*"), but it is not included in the test-id of the test.
 # Example:
-#    IELEMENT. = 11
-# In this case, IELEMENT is set to 11, not changed during the test generation
-# and not included into the filename.
+#    IELEMENT. = 11,13
+# In this case, IELEMENT changes between 11 and 13 together with its parent, 
+# but it is not included in the test-id.
 #
 # The variable names which are not marked with a "." are included in
 # the name of the test id with an index specifying the corresponding setting.
@@ -111,13 +111,13 @@ NLMIN* = 2,3
 
 # Multiply the index of NLMAX by 2 and take that value ans number of
 # smoothing steps; thus the number of smoothing steps doubles with
-# every level.
+# every level. NSM is taken as constant and not included to the test-id.
 
 NSM. = `expr 2 \"*\" $(%NLMAX)`
 
 # Constant element ID. Not included in the test-id.
 
-IELEMENT. = 11
+IELEMENT. = 11,13
 
 # Damping 0.3, 0.5, 0.7, 0.9
 
