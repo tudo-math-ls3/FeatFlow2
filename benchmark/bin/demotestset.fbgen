@@ -116,7 +116,7 @@ NLMIN* = 2,3
 
 NSM. = `expr 2 \"*\" $(%NLMAX)`
 
-# Constant element ID. Not included in the test-id.
+# Element ID, changing with every level. Not included in the test-id.
 
 IELEMENT. = 11,13
 
