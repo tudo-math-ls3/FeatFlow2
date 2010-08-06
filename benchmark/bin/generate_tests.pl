@@ -236,6 +236,11 @@ sub readfbgenfile ($) {
   
   # 5.) A hash of all values for all variables. The keys are the variable names.
   my %varvalues;
+  
+  # 6.) A hash that contains modifiers vor a variable.
+  # Modifiers are: "*": Increase the index of a variable together with it's
+  # parent.
+  my %varmodifiers;
 
   # Read the file, line by line.
   my $currentline = "";
@@ -268,7 +273,7 @@ sub readfbgenfile ($) {
       chop($currentline);
 
       # If there is double-backslash remove the newline.
-      if ($currentline !~ m/.*\\\\$/) {
+      if ($currentline =~ m/.*\\$/) {
         chop($currentline);
         $currentline .= "\n";
       }
@@ -339,24 +344,35 @@ sub readfbgenfile ($) {
     }
     
     # Append variable names.
-    if ($currentline =~ m/^\s*(\w+\*?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
+    if ($currentline =~ m/^\s*(\w+)([\*\.]?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
       
-      # Push the variable name.
-      push (@varnames,$1);
+      # Get the variable name and a possible modifier.
+      my $varname = $1;
+      my $varmod = $2;
       
-      # Remember the alias if defined. If not, the name is the alias.
-      my $alias = $2;
+      # Get the alias if defined. If not, the name is the alias.
+      my $alias = $3;
       if ($alias eq "") {
         # The alias is the name itself -- without a possibly trailing "*".
-        $alias = $1;
-        $alias =~ s/\*$//
+        $alias = $varname;
       }
-      $varalias{$1} = $alias;
-      print STDERR "Variable found: $1=$alias: $3\n"
+      
+      my $varvalue = $4;
+
+      print STDERR "Variable found: $varname$varmod:$alias: '$varvalue'\n"
         if (DEBUG==1);
+
+      # Push the variable name.
+      push (@varnames,$varname);
+
+      # Remember the alias.
+      $varalias{$1} = $alias;
       
       # Put the values into the hash.
-      $varvalues{$1} = $3;
+      $varvalues{$varname} = $varvalue;
+
+      # Put the modifiers into the hash.
+      $varmodifiers{$varname} = $varmod;
             
       next LINE;
     }
@@ -377,6 +393,7 @@ sub readfbgenfile ($) {
       "testinclude" => \@testinclude,
       "varnames" => \@varnames,
       "varalias" => \%varalias,
+      "varmodifiers" => \%varmodifiers,
       "varvalues" => \%varvalues );
   
   return %configuration;
@@ -454,6 +471,7 @@ sub generate_tests($$) {
 
   my $varalias = $configuration->{"varalias"};
   my $varvalues = $configuration->{"varvalues"};
+  my $varmod = $configuration->{"varmodifiers"};
   my $testinclude = $configuration->{"testinclude"};
   
   # Create a hash for indexing of the current configuration.
@@ -496,13 +514,19 @@ sub generate_tests($$) {
    
     # Get the actual test id.
     my $testid = $testname;
-    foreach (@varnamessorted) {
+    foreach my $varname (@varnamessorted) {
+      # Get the corresponding modifier
+      my $varmod = $varmod->{$varname};
+      
       # Append the current index and variable name to the test id.
-      $testid = $testid . "-" . $_ . ($varindex{$_}+1);
+      # Variables with a "." at the end are not included.
+      if ($varmod !~ m/\./) {
+        $testid = $testid . "-" . $varname . ($varindex{$varname}+1);
+      }
     }
     
-    # Remove any "*".
-    $testid =~ s/\*//;
+    # Remove any "*" or ".".
+  $testid =~ s/[\*\.]//;
     
     print STDERR "Generated test-id: $testid\n"
       if (DEBUG==1);
@@ -530,6 +554,45 @@ sub generate_tests($$) {
         my $parlist = $varvalues->{$varname};
         my $value = $$parlist[$idx];
         
+        # Check if there is the term "$(...)" in the value.
+        # If yes, try to replace it with the current value of
+        # the corresponding varible.
+        while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.]?\)/ ) {
+          # Try to get the referring value.
+          my $varname2 = $2;
+          my $idx2 = $varindex{$varname2};
+          die "ERROR: Could not determine value of referring ".
+              "variable <$varname2>\nOriginal value: $value\n"
+            if ( !defined($idx2) );
+
+          print STDERR "Detected replacement variable '$varname2' in '$value'."
+            if (DEBUG==1);
+
+          my $parlist2;
+          my $value2;
+          
+          if ($1 eq "%") {
+            $value2 = $idx2;
+          }
+          else {
+            $parlist2 = $varvalues->{"NLMAX"};
+            $value2 = $$parlist2[$idx2];
+          }
+          print STDERR " Replacing '\$($1$varname2)' by '$value2'.\n"
+            if (DEBUG==1);
+          $value =~ s/\$\(\%?([^\)]+)[\*\.]?\)/$value2/;
+        }
+        
+        # Probably invoke the shell to execute any subcommand.
+        if ( $value =~ m/`([^`]+)`/ ) {
+          my $value2 = `$1`;
+          chomp($value2);
+          
+          print STDERR "Replacing command string '$1' by '$value2'.\n"
+            if (DEBUG==1);
+          $value =~ s/`([^`]+)`/$value2/;
+        }
+        
         print "$alias = $value\n";
         
       }
@@ -545,6 +608,9 @@ sub generate_tests($$) {
       # Corresponding variable name...
       my $varname = $$varnames[$idx];
       
+      # Corresponding modifiers...
+      my $varmod = $varmod->{$varname};
+      
       # Get the corresponding parameter list of parameter $idx.
       my $parlist = $varvalues->{$varname};
       
@@ -553,6 +619,13 @@ sub generate_tests($$) {
       # previous position. Otherwise, we can continue
       # the loop directly, as the previous positions
       # stay unchanged.
+      #
+      # If the variable modifier contains a '.', the variable
+      # is not increased.
+      if ( $varmod =~ m/\./ ) {
+        next;
+      }
+      
       if (++($varindex{$varname}) >= @$parlist) {
         $varindex{$varname} = 0;
       }
@@ -562,7 +635,7 @@ sub generate_tests($$) {
         # parameters do not change.
         # If this is a 'child' parameter, also increase the previous
         # parameter until we increased the 'master' of the group.
-        if ( $varname !~ m/.*\*$/ ) {
+        if ( $varmod !~ m/\*/ ) {
           next LOOP;
         }
       }

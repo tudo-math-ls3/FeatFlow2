@@ -6,8 +6,8 @@ testname = demotestset
 # with a double-backslash if the comment continues in the next line.
 # the comment is included with comment characters at teh beginning of the file.
 
-comment = This is a demo testset.\
- The set runs about a couple of levels and damping parameters.\
+comment = This is a demo testset.\\
+ The set runs about a couple of levels and damping parameters.\\
  The NLMIN parameter changes with the NLMAX parameter.
 
 # Application
@@ -31,6 +31,7 @@ descr =
 testinclude = "testdefaults.fbdef"
 
 # List of parameters.
+#
 # The values of the parameters are separated via commas.
 # Example:
 #    NLMAX = 3,4,5,6,7,8
@@ -38,7 +39,23 @@ testinclude = "testdefaults.fbdef"
 # If a parameter name ends with "*", it is dependent on the paramete in the
 # previous line, so it proceeds a step if the previous parameter proceeds
 # to the next step. In this case, if the list is shorter than the
-# previous parameter, it starts from the beginning.
+# previous parameter, counting starts from the beginning if the end
+# is reached.
+# Example:
+#    NLMAX = 3,4,5,6
+#    NLMIN* = 2,3
+# This generates
+#    (NLMAX,NLMIN) = (3,2) , (4,3) , (5,2) , (6,3)
+#
+# If a parameter name ends with a ".", it is assumed to stay constant and
+# is not included in the test-id of the test.
+# Example:
+#    IELEMENT. = 11
+# In this case, IELEMENT is set to 11, not changed during the test generation
+# and not included into the filename.
+#
+# The variable names which are not marked with a "." are included in
+# the name of the test id with an index specifying the corresponding setting.
 #
 # If the value is a numerical value, it is acceptable to specify
 # ranges in the form "start:end:stepsize", where "stepsize" is assumed
@@ -52,14 +69,62 @@ testinclude = "testdefaults.fbdef"
 # String parameters must be enclosed in "" and are acceptable either
 # as single parameter or list of strings.
 #
+# A variable may contain another variable, either direct or by index.
+# If the content of another variable should be included into the string, the
+# variable to be included must be encoded as "$(NAME)". If the index should
+# be included, it must be encoded as "$(%NAME)".
+# Example:
+#    NLMAX = 5,6,7
+#    OMEGA* = 0.5, 0.7, 0.9
+#    OUTPUTFILE = "u_$(NLMAX)_$(%OMEGA).vtk"
+# This generates the sequence
+#    "u_5_1.vtk", "u_6_2.vtk", "u_7_3.vtk"
+# The "%"-modifier allows to refer to the index which may be a better
+# choice for variables containing float numbers.
+#
+# If the variable contains a string of the form ´command´, the 'command'
+# is interpreted as a shell command and executed. The resulting command
+# replaces the command string. This e.g. allows to use shell commands like
+# "expr" to do complex operations to variable values or indices.
+# Quotes inside of command must be escaped with a backslash.
+# Example:
+#    NSM. = `expr 2 \"*\" $(%NLMAX)`
+# This executes the command 'expr 2 "*" $(NLMAX)' and fetches its result
+# into NSM.
+#
 # The parameter allows an associated alias.  The alias is the name of
 # the parameter when writing out the test definition file. The parameter
 # name is the internal name used to generate the test id.
 # Definition:
 #   internal name : external name = values
 #
-# The "\" character defines a line break in the parameter list.
+# The "\" character as last character in a line allows to break a parameter list
+# to several lines.
 
-NLMAX = 3,4,5,6,7,8                    # Level 3-8
-NLMIN* = 2,3                           # min. level 2 3 2 3 ...
-DOMEGA:LINSOL_OMEGA = 0.3:0.9:0.2      # Damping 0.3, 0.5, 0.7, 0.9
+# Level 3-8
+
+NLMAX = 3,4,5,6,7,8
+
+# min. level 2 3 2 3 ...
+
+NLMIN* = 2,3
+
+# Multiply the index of NLMAX by 2 and take that value ans number of
+# smoothing steps; thus the number of smoothing steps doubles with
+# every level.
+
+NSM. = `expr 2 \"*\" $(%NLMAX)`
+
+# Constant element ID. Not included in the test-id.
+
+IELEMENT. = 11
+
+# Damping 0.3, 0.5, 0.7, 0.9
+
+OMEGA:LINSOL_OMEGA = 0.3:0.9:0.2
+
+# Name of the output file. Depends on the level and omega.
+# The omega value itself is not included to the filename, only the
+# corresponding index is included.
+
+OUTPUTFILE. = "u_$(NLMAX)_$(%OMEGA).vtk"
