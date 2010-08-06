@@ -8310,6 +8310,9 @@ end subroutine eulerlagrange_setnewinitialvalue
     ! Tangent and normal for collision with the boundary
     real(DP), dimension(2) :: tang, norm
     
+    ! Variables for domscale
+    real(DP) :: domscalex, domscaley
+    
     ! Timestep
     real(DP) :: dt
 
@@ -8331,6 +8334,9 @@ end subroutine eulerlagrange_setnewinitialvalue
     call storage_getbase_int2D(&
          p_rtriangulation%h_IverticesAtEdge, p_IverticesAtEdge)
 
+    ! get scalar for scaling of the domain
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscalex", domscalex)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscaley", domscaley)
 
     ! Find the edge on the boundary
     edgesearch: do i=1, 3
@@ -8407,8 +8413,8 @@ end subroutine eulerlagrange_setnewinitialvalue
         rParticles%p_ypos_old(iPart)= dy
 
         ! Set new position of the particle
-        rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt*(1-da) * rParticles%p_xvelo(iPart)
-        rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)
+        rParticles%p_xpos(iPart) = rParticles%p_xpos_old(iPart) + dt*(1-da) * rParticles%p_xvelo(iPart)/domscalex
+        rParticles%p_ypos(iPart) = rParticles%p_ypos_old(iPart) + dt*(1-da) * rParticles%p_yvelo(iPart)/domscaley
 
     else
         ! Set new "old position" and "old velocity" of the particle

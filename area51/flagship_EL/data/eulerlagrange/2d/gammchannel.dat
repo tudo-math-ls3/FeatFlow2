@@ -115,7 +115,7 @@ idiampart = 0
 # soot from a blast furnace:	1e-9 m to 1e-6 m
 #-------------------------------------------------------------------------------
 # diameter of the particle in m
-particlediam = 1e-10
+particlediam = 1e-8
 
 # particle diameter minimum in m
 particlediammin = 1e-8
