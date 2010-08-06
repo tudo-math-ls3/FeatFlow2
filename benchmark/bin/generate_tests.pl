@@ -572,7 +572,7 @@ sub generate_tests($$) {
           my $value2;
           
           if ($1 eq "%") {
-            $value2 = $idx2;
+            $value2 = $idx2 + 1;
           }
           else {
             $parlist2 = $varvalues->{"NLMAX"};
@@ -623,7 +623,7 @@ sub generate_tests($$) {
       # If the variable modifier contains a '.', the variable
       # is not increased.
       #
-      # RULE DISABLED: The . below is more general.
+      # RULE DISABLED: The "." below is more general.
       # if ( $varmod =~ m/\./ ) {
       #   next;
       # }

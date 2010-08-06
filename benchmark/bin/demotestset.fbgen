@@ -80,7 +80,7 @@ testinclude = "testdefaults.fbdef"
 # This generates the sequence
 #    "u_5_1.vtk", "u_6_2.vtk", "u_7_3.vtk"
 # The "%"-modifier allows to refer to the index which may be a better
-# choice for variables containing float numbers.
+# choice for variables containing float numbers. Indices start with 1.
 #
 # If the variable contains a string of the form ´command´, the 'command'
 # is interpreted as a shell command and executed. The resulting command
@@ -89,8 +89,8 @@ testinclude = "testdefaults.fbdef"
 # Quotes inside of command must be escaped with a backslash.
 # Example:
 #    NSM. = `expr 2 \"*\" $(%NLMAX)`
-# This executes the command 'expr 2 "*" $(NLMAX)' and fetches its result
-# into NSM.
+# This executes the command 'expr 2 "*" $(NLMAX) - 1' and fetches its result
+# into NSM. Therefore, this generates a sequence "2 4 6 8 ...".
 #
 # The parameter allows an associated alias.  The alias is the name of
 # the parameter when writing out the test definition file. The parameter
@@ -112,6 +112,7 @@ NLMIN* = 2,3
 # Multiply the index of NLMAX by 2 and take that value ans number of
 # smoothing steps; thus the number of smoothing steps doubles with
 # every level. NSM is taken as constant and not included to the test-id.
+# The index starts at 1.
 
 NSM. = `expr 2 \"*\" $(%NLMAX)`
 
