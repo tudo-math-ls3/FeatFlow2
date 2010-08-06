@@ -599,7 +599,7 @@ sub generate_tests($$) {
       
       # Print the includes.
       foreach my $incl (@$testinclude) {
-        print "include $incl\n";
+        print "include " . expand_value ($incl,$varvalues,\%varindex) . "\n";
       }
       
       # Print all parameters (or so to say, their alias values)
