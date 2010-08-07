@@ -222,6 +222,7 @@ sub readfbgenfile ($) {
   my $application = "";
   my $class = "";
   my $descr = "";
+  my $testid = "";
   my $datfile = "";
   my $comment = "";
 
@@ -316,6 +317,16 @@ sub readfbgenfile ($) {
       }
     }
 
+    # Test id template
+    if ($testid eq "") {
+      if ($currentline =~ m/^\s*testid\s*=\s*(.+)\s*$/) {
+        $testid = $1;
+        print STDERR "Template for test-id's: $testid\n"
+          if (DEBUG==1);
+        next LINE;
+      }
+    }
+
     # Test description
     if ($descr eq "") {
       if ($currentline =~ m/^\s*descr\s*=\s*(.+)\s*$/) {
@@ -325,7 +336,6 @@ sub readfbgenfile ($) {
         next LINE;
       }
     }
-
     # data file
     if ($datfile eq "") {
       if ($currentline =~ m/^\s*datfile\s*=\s*(.+)\s*$/) {
@@ -355,7 +365,7 @@ sub readfbgenfile ($) {
     }
     
     # Append variable names.
-    if ($currentline =~ m/^\s*(\w+)([\*\.]?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
+    if ($currentline =~ m/^\s*(\w+)([\*\.\~]?)\s*:?\s*(\w*)\s*=\s*(.+)\s*$/) {
       
       # Get the variable name and a possible modifier.
       my $varname = $1;
@@ -400,6 +410,7 @@ sub readfbgenfile ($) {
       "appl" => $application,
       "class" => $class,
       "descr" => $descr,
+      "testid" => $testid,
       "datfile" => $datfile,
       "comment" => $comment,
       "testinclude" => \@testinclude,
@@ -426,20 +437,23 @@ sub expand_values($) {
   
   # Loop through all variable names
   my $varnames = $configuration->{"varnames"};
+  my $varvalues = $configuration->{"varvalues"};
+  my $varmodifiers = $configuration->{"varmodifiers"};
   
   my $lastcount = 0;
   
   foreach my $var (@$varnames) {
     
     # Get the line;
-    my $unexpanded_line = $configuration->{"varvalues"}->{$var};
+    my $unexpanded_line = $varvalues->{$var};
+    my $varmodifiers = $varmodifiers->{$var};
     my @expanded_line = ();
     print STDERR "Expanding <$var> = $unexpanded_line\n"
       if (DEBUG==1);
 
-    # If the variable name has a trailing "*", it is a dependent variable
+    # If the modifier contain "*", "~" or ".", it is a dependent variable
     # and has as many entries as its parent -- the last non-"*" parameter.
-    if ($var =~ m/.*\*$/) {
+    if ($varmodifiers  =~ m/\*|\.|\~$/) {
       # Dependent variable.
       @expanded_line = expand_paramlist($lastcount,$unexpanded_line);
     } else {
@@ -454,7 +468,7 @@ sub expand_values($) {
     
 
     # Replace the line with a reference to the expanded line.
-    $configuration->{"varvalues"}->{$var} = \@expanded_line;
+    $varvalues->{$var} = \@expanded_line;
     
   }
 }
@@ -479,7 +493,7 @@ sub expand_value ($$$) {
   # Check if there is the term "$(...)" in the value.
   # If yes, try to replace it with the current value of
   # the corresponding varible.
-  while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.]?\)/ ) {
+  while ( $value =~ m/\$\((\%?)([^\)]+)[\*\.\~]?\)/ ) {
     # Try to get the referring value.
     my $varname2 = $2;
     my $idx2 = $varindex->{$varname2};
@@ -502,7 +516,7 @@ sub expand_value ($$$) {
     }
     print STDERR " Replacing '\$($1$varname2)' by '$value2'.\n"
       if (DEBUG==1);
-    $value =~ s/\$\(\%?([^\)]+)[\*\.]?\)/$value2/;
+    $value =~ s/\$\(\%?([^\)]+)[\*\.\~]?\)/$value2/;
   }
   
   # Probably invoke the shell to execute any subcommand.
@@ -537,7 +551,6 @@ sub generate_tests($$) {
   
   # Get a sorted list of all variables etc.
   my $varnames = $configuration->{"varnames"};
-  my @varnamessorted = sort @$varnames;
   print STDERR "Variables to process: @$varnames\n"
     if (DEBUG==1);
 
@@ -557,6 +570,7 @@ sub generate_tests($$) {
   my $application = $configuration->{"appl"};
   my $class = $configuration->{"class"};
   my $descr = $configuration->{"descr"};
+  my $testidtemplate = $configuration->{"testid"};
   my $datfile = $configuration->{"datfile"};
   my $comment = $configuration->{"comment"};
   
@@ -586,20 +600,29 @@ sub generate_tests($$) {
   LOOP: while (1==1) {
    
     # Get the actual test id.
-    my $testid = $testname;
-    foreach my $varname (@varnamessorted) {
-      # Get the corresponding modifier
-      my $varmod = $varmod->{$varname};
-      
-      # Append the current index and variable name to the test id.
-      # Variables with a "." at the end are not included.
-      if ($varmod !~ m/\./) {
-        $testid = $testid . "-" . $varname . ($varindex{$varname}+1);
+    # If a template is specified, use it. Otherwise, determine the test
+    # id automatically.
+    my $testid;
+    
+    if ($testidtemplate eq "") {
+      $testid = $testname;
+      foreach my $varname (@$varnames) {
+        # Get the corresponding modifier
+        my $varmod = $varmod->{$varname};
+        
+        # Append the current index and variable name to the test id.
+        # Variables with a "." at the end are not included.
+        if ($varmod !~ m/[\.\~]/) {
+          $testid = $testid . "-" . $varname . ($varindex{$varname}+1);
+        }
       }
     }
+    else {
+      $testid = expand_value ($testidtemplate,$varvalues,\%varindex)
+    }
     
-    # Remove any "*" or ".".
-  $testid =~ s/[\*\.]//;
+    # Remove any "*", "~" or ".".
+    $testid =~ s/[\*\.\~]//;
     
     print STDERR "Generated test-id: $testid\n"
       if (DEBUG==1);
@@ -619,6 +642,12 @@ sub generate_tests($$) {
       # Print all parameters (or so to say, their alias values)
       # with the corresponding value.
       foreach my $varname (@$varnames) {
+
+        # Ignore the parameter if it's modifier contains a "~".
+        my $mod = $varmod->{$varname};
+        if ($mod =~ m/\~/) {
+          next;
+        }
         
         # Get the alias
         my $alias = $varalias->{$varname};
@@ -626,7 +655,7 @@ sub generate_tests($$) {
         # Get the value.
         my $idx = $varindex{$varname};
         my $parlist = $varvalues->{$varname};
-        my $value = $$parlist[$idx];      
+        my $value = $$parlist[$idx];
         
         $value = expand_value ($value,$varvalues,\%varindex);
         
@@ -674,7 +703,7 @@ sub generate_tests($$) {
         # parameters do not change.
         # If this is a 'child' parameter, also increase the previous
         # parameter until we increased the 'master' of the group.
-        if ( $varmod !~ m/[\*.]/ ) {
+        if ( $varmod !~ m/[\*\.\~]/ ) {
           next LOOP;
         }
       }

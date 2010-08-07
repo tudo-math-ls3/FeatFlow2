@@ -2,6 +2,11 @@
 
 testname = demotestset
 
+# Test-id for the tests.
+# ="": Determine test-id automatically (default)
+
+testid =
+
 # A comment for the test which may take several lines. Each line must end
 # with a double-backslash if the comment continues in the next line.
 # the comment is included with comment characters at teh beginning of the file.
@@ -23,7 +28,7 @@ class = DEFAULT
 # An optional description of the test set.
 # May optionally contain references to the variables below.
 
-descr = Level $(NLMAX), Element $(IELEMENT), OMEGA $(OMEGA), NSM $(NSM)
+descr = Level $(NLMAX), Element $(ELNAME), OMEGA $(OMEGA), NSM $(NSM)
 
 # Data file that is used by the application to provide parameters.
 # May optionally contain references to the variables below.
@@ -60,6 +65,19 @@ testinclude = "testdefaults.fbdef"
 #    IELEMENT. = 11,13
 # In this case, IELEMENT changes between 11 and 13 together with its parent, 
 # but it is not included in the test-id.
+#
+# If a parameter name ends with a "~", it is dependent on the previous parameter
+# (like "*"), it is not included in the default test-id of the test (like ".")
+# and it is not included in the test setting at all. "~" parameters can be
+# called "comment" parameters that allow to specify e.g. text strings that
+# quantify a parmeter for ither dependent parameters. 
+# Example:
+#    descr = Element: $(ELNAME)
+#    IELEMENT = 11,13
+#    ELNAME~ = Q1, Q2
+# In this case, the description will contain the name of the element
+# (either Q1 or Q2), but the parameter ELNAME is not included
+# in the parameter output that specifies the test.
 #
 # The variable names which are not marked with a "." are included in
 # the name of the test id with an index specifying the corresponding setting.
@@ -124,8 +142,12 @@ NLMIN* = 2,3
 NSM. = `expr 2 \"*\" $(%NLMAX)`
 
 # Element ID, changing with every level. Not included in the test-id.
+# The element id is followed by the element name which is an internal
+# variable, not included in the test-id, but used for documentational
+# purposes in "descr".
 
-IELEMENT. = 11,13
+IELEMENT. = 11, 13
+ELNAME~ = Q1, Q2
 
 # Damping 0.3, 0.5, 0.7, 0.9
 
