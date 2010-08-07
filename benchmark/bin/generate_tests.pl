@@ -217,11 +217,12 @@ sub readfbgenfile ($) {
     if (DEBUG==1);
 
   # A test is described by the following variables:
-  # 1.) Name of the test, application, test class
+  # 1.) Name of the test, application, test class,...
   my $testname = "";
   my $application = "";
   my $class = "";
   my $descr = "";
+  my $datfile = "";
   my $comment = "";
 
   # 2.) A list of include files whcih to include prior to the test definition.
@@ -325,6 +326,16 @@ sub readfbgenfile ($) {
       }
     }
 
+    # data file
+    if ($datfile eq "") {
+      if ($currentline =~ m/^\s*datfile\s*=\s*(.+)\s*$/) {
+        $datfile = $1;
+        print STDERR "Data file for the test: $datfile\n"
+          if (DEBUG==1);
+        next LINE;
+      }
+    }
+
     # Test comment
     if ($comment eq "") {
       if ($currentline =~ m/^\s*comment\s*=(.*)\s*/s) {
@@ -389,6 +400,7 @@ sub readfbgenfile ($) {
       "appl" => $application,
       "class" => $class,
       "descr" => $descr,
+      "datfile" => $datfile,
       "comment" => $comment,
       "testinclude" => \@testinclude,
       "varnames" => \@varnames,
@@ -545,6 +557,7 @@ sub generate_tests($$) {
   my $application = $configuration->{"appl"};
   my $class = $configuration->{"class"};
   my $descr = $configuration->{"descr"};
+  my $datfile = $configuration->{"datfile"};
   my $comment = $configuration->{"comment"};
   
   # Print a header
@@ -596,6 +609,7 @@ sub generate_tests($$) {
       print "\n";
       print "testid = $testid\n";
       print "descr = " . expand_value ($descr,$varvalues,\%varindex) . "\n";
+      print "datfile = " . expand_value ($datfile,$varvalues,\%varindex) . "\n";
       
       # Print the includes.
       foreach my $incl (@$testinclude) {

@@ -25,6 +25,11 @@ class = DEFAULT
 
 descr = Level $(NLMAX), Element $(IELEMENT), OMEGA $(OMEGA), NSM $(NSM)
 
+# Data file that is used by the application to provide parameters.
+# May optionally contain references to the variables below.
+
+datfile = "./data/demotestset.dat"
+
 # Name + Path of one or multiple include file which is included prior to 
 # every test. If multiple include files are to be defined, there must be
 # one line "testinclude = "..." " for each include file.
