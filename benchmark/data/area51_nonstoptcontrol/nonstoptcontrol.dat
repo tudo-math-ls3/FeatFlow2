@@ -90,7 +90,8 @@ icalcerror = 1
 # cfespace: -1=automatic.
 # =1: 1st order (Q1, Q1~/Q0)
 # =2: 2nd order (Q2, Q2/QP1)
-cfespace = -1
+
+cfespace =  $SPACETIMEDISCRETISATION_CFESPACE
 
 nspacelevels = $SPACETIMEDISCRETISATION_NSPACELEVELS
 ntimelevels = $SPACETIMEDISCRETISATION_NTIMELEVELS
@@ -113,23 +114,27 @@ csolverType = -1    # -1=automatic
 nsmoothingSteps = $SPACETIMELINEARSOLVER_NSMOOTHINGSTEPS
 nmaxiterations = 1000
 
-# Type of smoother.
+# ONLY MULTIGRID: Type of smoother.
 # =0: Block-Jacobi
-# =1: Block-FBGS, half coupled (forward-backward solver)
+# =1: Block-FBSIM, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled
 # =3: BiCGStab with Block-Jacobi
-# =4: BiCGStab with Block-FBGS, half coupled
+# =4: BiCGStab with Block-FBSIM, half coupled
 # =5: BiCGStab with Block-FBGS, fully coupled
 
 ismoother = $SPACETIMELINEARSOLVER_ISMOOTHER
 
-# Type of coarse grid solver.
+# ONLY MULTIGRID: Type of coarse grid solver.
 # =0: Block-Jacobi
-# =1: Block-FBGS, half coupled (forward-backward solver)
+# =1: Block-FBSIM, half coupled (forward-backward solver)
 # =2: Block-FBGS, fully coupled (forward-backward optimiser)
+# =3: BiCGStab with Block-Jacobi
+# =4: BiCGStab with Block-FBSIM, half coupled (forward-backward solver)
+# =5: BiCGStab with Block-FBGS, fully coupled (forward-backward optimiser)
+
 icoarsegridsolver = $SPACETIMELINEARSOLVER_ICOARSEGRIDSOLVER
 
-# Type of projection in time.
+# ONLY MULTIGRID: Type of projection in time.
 # -1: automatic
 # =0: constant prolongation/restriction
 # =1: linear prolongation/restriction. primal+dual solutions located
@@ -146,7 +151,8 @@ icoarsegridsolver = $SPACETIMELINEARSOLVER_ICOARSEGRIDSOLVER
 #     time endpoints. (not completely implemented)
 # =5: Piecewise linear with larger stencil. Solutions located at the
 #     time endpoints. (not completely implemented)
-itypeProjection = -1
+
+itypeProjection = $SPACETIMELINEARSOLVER_ITYPEPROJECTION
 
 depsrel = 1E-10
 depsabs = 1E-17
@@ -172,7 +178,7 @@ dadcgcorrMax = 10.0
 ddamping = 1.0
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 ifullcouplingFBGS2 = 1
@@ -188,11 +194,11 @@ depsabs = 1E-17
 ddamping = $SPACETIMECOARSEGRIDSOLVER_DDAMPING
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
-ifullcouplingFBGS2 = $SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2
+ifullcouplingFBGS = $SPACETIMECOARSEGRIDSOLVER_IFULLCOUPLINGFBGS2
 
 ####################
 [SPACETIME-SMOOTHER]
@@ -203,11 +209,12 @@ ioutputlevel = $SPACETIMESMOOTHER_IOUTPUTLEVEL
 ddamping = $SPACETIMESMOOTHER_DDAMPING
 drelax = 1.0
 
-# Use full (forward+backward) coupling in FBGS2.
+# Use full (forward+backward) coupling in FBGS.
 # =0: Use only one-way coupling to previous or next timestep
 # =1: Use two-way coupling to previous and next timestep
 
-ifullcouplingFBGS2 = 1
+ifullcouplingFBGS = 1
+
 # Reinitialisation counter for BiCGStab
 # =0: deactivate
 niteReinit = 0
@@ -215,11 +222,10 @@ niteReinit = 0
 ####################
 [SPACE-LINEARSOLVER]
 ####################
-
 # Type of the solver in space.
 # =0: UMFPACK
 # =1: Multigrid
-csolverType = 0
+csolverType = $SPACELINEARSOLVER_CSOLVERTYPE
 
 # Type of smoother/coarse grid solver.
 # =0: Defect correction + Jacobi/VANKA preconditioning
