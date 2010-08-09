@@ -68,6 +68,10 @@ QTYPE=-1
 # ="": Automatic
 QNAME=
 
+# Virtual memory to be allocated (in MB).
+# ="": Automatic
+VMEM=
+
 # ==================================================================
 # Global status variables
 

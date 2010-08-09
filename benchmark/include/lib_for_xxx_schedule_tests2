@@ -275,6 +275,11 @@ submits the job file to the scheduler.
       kills the job if it takes longer. The format is "hours:min:sec",
       e.g. "00:40:00".
       Default: $WALLCLOCKLIMIT
+  --vmem <memory>, -v <memory>
+      Optional parameter that allows to specify the maximum allowed
+      memory (in MB) which is allocated on the nodes. If not specified,
+      the default setting of the cluster is used.
+      Example: "--vmem 2048": Reserves 2GB ram per node.
   --corespernode <cores>, -c <cores>
       Allows to define how many cores should be allocated on the cluster per
       compute node. If not being set, the standard behaviour is to allocate all
@@ -392,6 +397,13 @@ fb_readargs() {
       --wallclocklimit|-w)  # wallclock time address
           WALLCLOCKLIMIT="$2"
           echo "$0: Using wallclocklimit $WALLCLOCKLIMIT"
+          shift
+          shift
+          ;;
+
+      --vmem|-v)  # virtual memory
+          VMEM="$2"
+          echo "$0: Using limit for virtual memory $VMEM"
           shift
           shift
           ;;
@@ -788,13 +800,25 @@ fb_createPBSHeader()
       echo "#PBS -m bae"
     fi
   
-  if test "$USEDCORES" = ""
+  if test "$VMEM" = ""
     then
-      # Scheduling on a per-task basis.
-      echo "#PBS -l nodes=$NODES"
+      if test "$USEDCORES" = ""
+        then
+          # Scheduling on a per-task basis.
+          echo "#PBS -l nodes=$NODES"
+        else
+          # Allocate complete nodes
+          echo "#PBS -l nodes=$NODES:ppn=${CORES}"
+        fi
     else
-      # Allocate complete nodes
-      echo "#PBS -l nodes=$NODES:ppn=${CORES}"
+      if test "$USEDCORES" = ""
+        then
+          # Scheduling on a per-task basis.
+          echo "#PBS -l nodes=$NODES, vmem=$(VMEM)mb"
+        else
+          # Allocate complete nodes
+          echo "#PBS -l nodes=$NODES:ppn=${CORES}, vmem=$(VMEM)mb"
+        fi
     fi
   
   if test "$AFTERJOB" != ""
