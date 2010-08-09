@@ -814,10 +814,10 @@ fb_createPBSHeader()
       if test "$USEDCORES" = ""
         then
           # Scheduling on a per-task basis.
-          echo "#PBS -l nodes=$NODES, vmem=$(VMEM)mb"
+          echo "#PBS -l nodes=$NODES, vmem=${VMEM}mb"
         else
           # Allocate complete nodes
-          echo "#PBS -l nodes=$NODES:ppn=${CORES}, vmem=$(VMEM)mb"
+          echo "#PBS -l nodes=$NODES:ppn=${CORES}, vmem=${VMEM}mb"
         fi
     fi
   
