@@ -8288,7 +8288,6 @@ end subroutine eulerlagrange_setnewinitialvalue
 	real(DP), dimension(2) :: velo_rest
 	real(DP) :: proj_tang, proj_norm
 	real(DP), dimension(2) :: bdy_move
-
     integer :: i, iedge
 
     ! Local varibales for the calculation of the intersection point
@@ -8310,7 +8309,7 @@ end subroutine eulerlagrange_setnewinitialvalue
     ! Tangent and normal for collision with the boundary
     real(DP), dimension(2) :: tang, norm
     
-    ! Variables for domscale
+    ! Variables for scaling th domain
     real(DP) :: domscalex, domscaley
     
     ! Timestep
