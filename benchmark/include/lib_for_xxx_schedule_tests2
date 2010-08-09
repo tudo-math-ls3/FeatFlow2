@@ -800,25 +800,18 @@ fb_createPBSHeader()
       echo "#PBS -m bae"
     fi
   
-  if test "$VMEM" = ""
+  if test "$USEDCORES" = ""
     then
-      if test "$USEDCORES" = ""
-        then
-          # Scheduling on a per-task basis.
-          echo "#PBS -l nodes=$NODES"
-        else
-          # Allocate complete nodes
-          echo "#PBS -l nodes=$NODES:ppn=${CORES}"
-        fi
+      # Scheduling on a per-task basis.
+      echo "#PBS -l nodes=$NODES"
     else
-      if test "$USEDCORES" = ""
-        then
-          # Scheduling on a per-task basis.
-          echo "#PBS -l nodes=$NODES, vmem=${VMEM}mb"
-        else
-          # Allocate complete nodes
-          echo "#PBS -l nodes=$NODES:ppn=${CORES}, vmem=${VMEM}mb"
-        fi
+      # Allocate complete nodes
+      echo "#PBS -l nodes=$NODES:ppn=${CORES}"
+    fi
+
+  if test "$VMEM" != ""
+    then
+      echo "#PBS -l vmem=${VMEM}mb"
     fi
   
   if test "$AFTERJOB" != ""
