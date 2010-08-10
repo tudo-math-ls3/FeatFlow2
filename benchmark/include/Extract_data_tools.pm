@@ -122,7 +122,7 @@ our @EXPORT = qw(grep_datablocks
                  extract_column_from_hashlist
                  resulthash_to_list
                  list_to_resultgroups
-                 merge_lists
+                 merge_tables
                  getline_CSV
                  list_to_CSV
                  empty_CSV_line);
@@ -583,7 +583,7 @@ sub list_to_resultgroups (\@\%\@) {
 # columns of @source_table are appended.
 # If $iblocksize=0, @source_table is completely inserted at position $ipos.
 # The return value is the new table.
-sub merge_lists (\@\@$$) {
+sub merge_tables (\@\@$$) {
   my ($sourcetable,$desttable,$ipos,$iblocksize) = @_;
   
   # Create a new list.
