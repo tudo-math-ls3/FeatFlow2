@@ -54,30 +54,30 @@
 #
 # 5.) resulthash_to_list
 #  Extracts some or all keys from a resulthash-hash and creates a list of
-#  columns with the corresponding values.
+#  columns with the corresponding values. This defines a table.
 #  One specifies a hash %resulthash with the results and an optional
 #  list of keys @columns. The routine generates a list containing
 #  lists of values according to the columns in the form
 #
-#    $resultcolumns[$i] = \@ ($resulthash{$columns[$i]})
+#    $table[$i] = \@ ($resulthash{$columns[$i]})
 #
-#  If @columns is not specified, the result is a list of columns for all
+#  If @columns is not specified, the result is a table containing all
 #  keys, in the order of the keys of %resulthash.
 #
 # 6.) extract_column_from_hashlist
 #  Combination of regroup_results and resulthash_to_list. This routine does not
 #  create a hash from a list of hashes and a column name, but it creates a list
-#  of columns with values.
+#  of columns with values. This defines a table.
 #  One specifies a column name $column and a list of hashes with
 #  results @resulthashlist,
 #
 #    @resulthashlist = ( \%hash_1, \%hash_2, \%hash_3, ... ).
 #
-#  and one obtains a list @resultcolumns with
+#  and one obtains a list @table with
 #
-#    $resultcolumns[$i] = \@ ($hash_$i->{$column}).
+#    $table[$i] = \@ ($hash_$i->{$column}).
 #
-#  The advantage is that a list does not need a unique key.
+#  The advantage is that the table does not need unique keys.
 #
 # 7.) list_to_resultgroups
 #  The inverse operation of resulthash_to_list. Takes a list of columns
@@ -85,10 +85,10 @@
 #  names as keys and the columns as values.
 #
 # 8.) list_to_CSV
-#  Allows to export a list of columns @resultcolumns into CSV data.
-#  @resultcolumns contains a list of pointers to other lists with values, so
+#  Allows to export a list of columns @table into CSV data.
+#  @table contains a list of pointers to other lists with values, so
 #  
-#    $resultcolumns[$i] = \@values-of-column-$i
+#    $table[$i] = \@values-of-column-$i
 #
 #  Such a list can be generated e.g. by extract_column_from_hashlist or
 #  resulthash_to_list. The routine produces a list of strings containing
@@ -115,6 +115,7 @@ our @EXPORT = qw(grep_datablocks
                  extract_column_from_hashlist
                  resulthash_to_list
                  list_to_resultgroups
+                 merge_lists
                  getline_CSV
                  list_to_CSV
                  empty_CSV_line);
@@ -353,12 +354,12 @@ sub split_to_pairs(\@\@\@)
   }
 }
 
-# resultcolumns the results of an output file.
+# table the results of an output file.
 #
 # Call:
 #    group_results (\@names,\@values,\@columns,\%resulthash)
 #
-# Analyses the list @names=@values and resultcolumns results into columns.
+# Analyses the list @names=@values and table results into columns.
 # @columns is a list of all items to be searches as name in @names.
 # The routine searches for these items and incorporates the values
 # into the hash %resulthash. Old values in the hash are not deleted,
@@ -459,7 +460,7 @@ sub fillup_lists (\%;$$) {
 # Extract a column from a hash list.
 #
 # Call:
-#    extract_column_from_hashlist ($column, \@resulthashlist, \@resultcolumns)
+#    extract_column_from_hashlist ($column, \@resulthashlist, \@table)
 #
 # @resulthashlist is assumed to be a list of resulthash-hashes, each
 # hash corresponding to one file and containing all extracted values
@@ -467,12 +468,12 @@ sub fillup_lists (\%;$$) {
 # extract_column_from_hashlist loops now through all hashes in this list
 # and extracts the column $column from all the hashes. It appends
 # a list of all value-lists of the columns in the order specified
-# by @grouplist to the columns in @resultcolumns.
+# by @grouplist to the columns in @table.
 # The list data is copied in memory.
 sub extract_column_from_hashlist ($\@\@) {
-  my ($column,$resulthashlist,$resultcolumns) = @_;
+  my ($column,$resulthashlist,$table) = @_;
   
-  # Loop through all resultcolumns.
+  # Loop through all table.
   for (my $ihash=0; $ihash < @$resulthashlist; $ihash++) {
     # Get the hash with the results.
     my $resulthash = $resulthashlist->[$ihash];
@@ -487,11 +488,11 @@ sub extract_column_from_hashlist ($\@\@) {
     }
     
     # Append the data to the columns; create columns if necessary.
-    if (!defined($resultcolumns->[$ihash])) {
+    if (!defined($table->[$ihash])) {
       my @newlist = ();
-      $resultcolumns->[$ihash] = \@newlist;
+      $table->[$ihash] = \@newlist;
     }
-    my $targetlist = $resultcolumns->[$ihash];
+    my $targetlist = $table->[$ihash];
     push (@$targetlist,@$valuelist);
   }
 }
@@ -503,7 +504,7 @@ sub extract_column_from_hashlist ($\@\@) {
 #
 # Extracts some columns from a resulthash list and stores them
 # to a list of value-lists. @columns is a list of all column headlines
-# that should be extracted. If not present, all resultcolumns are extracted.
+# that should be extracted. If not present, all table are extracted.
 # The list data is copied in memory.
 sub resulthash_to_list (\%;\@) {
   my ($resulthash,$columns) = @_;
@@ -515,9 +516,9 @@ sub resulthash_to_list (\%;\@) {
     $columns = \@columnkeys;
   }
   
-  my @resultcolumns = ();
+  my @table = ();
   
-  # Loop through all resultcolumns.
+  # Loop through all table.
   foreach my $column (@$columns) {
     # $resulthash is a pointer to a hash with the values.
     # Get the list of the values associated to the column.
@@ -526,27 +527,27 @@ sub resulthash_to_list (\%;\@) {
     # Attach the pointer to the result columns.
     my @newlist;
     push (@newlist,$valuelist);
-    $resultcolumns[@resultcolumns] = \@newlist;
+    $table[@table] = \@newlist;
   }
-  return @resultcolumns;
+  return @table;
 }
 
 # Convert a list of value-lists to a resulthash hash.
 #
 # Call:
-#    list_to_resultgroups (\@resultcolumns,\%resulthash,\@columns)
+#    list_to_resultgroups (\@table,\%resulthash,\@columns)
 #
-# Interprets all lists in @resultcolumns as value-lists and appends the data
+# Interprets all lists in @table as value-lists and appends the data
 # to the hash %resulthash. @columns defines a list of
 # headlines for the columns, which are used as keys for the hash.
 # The list data is copied in memory.
 sub list_to_resultgroups (\@\%\@) {
-  my ($resultcolumns,$resulthash,$columns) = @_;
+  my ($table,$resulthash,$columns) = @_;
   
-  # Loop through all data resultcolumns.
+  # Loop through all data table.
   for (my $igroup = 0; $igroup < @$columns; ++$igroup) {
     my $groupname = $columns->[$igroup];
-    my $valuelist = $resultcolumns->[$igroup];
+    my $valuelist = $table->[$igroup];
     
     # Does the group already exist?
     if (exists $resulthash->{$groupname}) {
@@ -561,6 +562,45 @@ sub list_to_resultgroups (\@\%\@) {
       $resulthash->{$groupname} = \@newlist;
     }
   }
+}
+
+# Incorporate the columns of a table into another table.
+#
+# Call:
+#    merge_lists (\@source_table,\@dest_table,$ipos,$iblocksize)
+#
+# The columns of the table are incorporated into the destination table @table.
+# They are inserted in the columns
+#    $ipos, $ipos+$iblocksize, $ipos+2*$iblocksize, $ipos+3*$iblocksize, ...
+# If the destination table does not contain enough columns, the remaining
+# columns of @source_table are appended.
+# The return value is the new table.
+sub merge_lists (\@\@$$) {
+  my ($sourcetable,$desttable,$ipos,$iblocksize) = @_;
+  
+  # Create a new list.
+  my @newlist = ();
+  
+  # Shuffle the entries.
+  my $icol = 0;
+  my $relpos = 0;
+  foreach my $element (@$desttable) {
+    # If $relpos reaches position $ipos, insert the column and decrease
+    # $relpos by $blocksize.
+    if ($relpos++ == $ipos) {
+      push (@newlist,$sourcetable->[$icol++]);
+      $relpos -= $iblocksize;
+    }
+    push (@newlist,$element);
+  }
+  
+  # Append remaining elements
+  for (my $i=$icol; $i < @$sourcetable; ++$i) {
+    push (@newlist,$sourcetable->[$icol]);
+  }
+  
+  # return the list
+  return @newlist;
 }
 
 # Generates one line of CSV output.
@@ -583,13 +623,13 @@ sub getline_CSV(\@) {
 # Convert result-list to CSV data.
 #
 # Call:
-#    list_to_CSV (\@resultcolumns)
+#    list_to_CSV (\@table)
 #
-# Converts a data list to CSV output. @resultcolumns is a list of value-lists
+# Converts a data list to CSV output. @table is a list of value-lists
 # that contains columns of data. The routine generates a list of strings in CSV
 # format that can be written to a CSV file.
 sub list_to_CSV(\@;\@) {
-  my ($resultcolumns) = @_;
+  my ($table) = @_;
   
   my @lines = ();
   
@@ -598,7 +638,7 @@ sub list_to_CSV(\@;\@) {
   my $colcount = 0;
   
   # Determine number of rows from the first column.
-  my $col = $resultcolumns->[0];
+  my $col = $table->[0];
   my $rowcount = @$col;
   
   # Loop through the rows.
@@ -607,9 +647,9 @@ sub list_to_CSV(\@;\@) {
     $line = "";
 
     # Loop through the columns.
-    for (my $icol=0; $icol < @$resultcolumns; ++$icol) {
+    for (my $icol=0; $icol < @$table; ++$icol) {
       # Create the line.
-      my $col = $resultcolumns->[$icol];
+      my $col = $table->[$icol];
       my $data = $col->[$irow];
       $line .= (($icol > 0) ? ";" : "") . "\"" . $data . "\"";
     }
