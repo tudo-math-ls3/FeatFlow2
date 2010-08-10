@@ -79,12 +79,19 @@
 #
 #  The advantage is that the table does not need unique keys.
 #
-# 7.) list_to_resultgroups
+# 7.) merge_tables
+#  This subroutine allows to merge a table into another one.
+#  The destination table is divided into blocks of columns with a defined
+#  block size. The columns of the source table are incorporated into
+#  the destination table every $iblocksize columns, starting from a
+#  defined starting column.
+#
+# 8.) list_to_resultgroups
 #  The inverse operation of resulthash_to_list. Takes a list of columns
 #  and a list of column names and creates a resulthash hash with the column
 #  names as keys and the columns as values.
 #
-# 8.) list_to_CSV
+# 9.) list_to_CSV
 #  Allows to export a list of columns @table into CSV data.
 #  @table contains a list of pointers to other lists with values, so
 #  
@@ -574,6 +581,7 @@ sub list_to_resultgroups (\@\%\@) {
 #    $ipos, $ipos+$iblocksize, $ipos+2*$iblocksize, $ipos+3*$iblocksize, ...
 # If the destination table does not contain enough columns, the remaining
 # columns of @source_table are appended.
+# If $iblocksize=0, @source_table is completely inserted at position $ipos.
 # The return value is the new table.
 sub merge_lists (\@\@$$) {
   my ($sourcetable,$desttable,$ipos,$iblocksize) = @_;
@@ -587,11 +595,12 @@ sub merge_lists (\@\@$$) {
   foreach my $element (@$desttable) {
     # If $relpos reaches position $ipos, insert the column and decrease
     # $relpos by $blocksize.
-    if ($relpos++ == $ipos) {
+    while (($relpos == $ipos) && ($icol < @$sourcetable)) {
       push (@newlist,$sourcetable->[$icol++]);
       $relpos -= $iblocksize;
     }
     push (@newlist,$element);
+    ++$relpos;
   }
   
   # Append remaining elements
