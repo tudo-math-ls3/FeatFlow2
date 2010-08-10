@@ -14,8 +14,9 @@
 !#     To add a new application, you should create a new subdirectory in
 !#     src/models giving it the name of your application. Then you should
 !#     implement your application so that it can be evoked by a single
-!#     call to xxx_app(rparlist), where xxx stands for the application
-!#     name and user-defined parameters are supplied via parameter list.
+!#     call to xxx_app(rparlist,'appname'), where xxx stands for the
+!#     application name and user-defined parameters are supplied via
+!#     the parameter list rparlist.
 !#
 !# TODO
 !#
