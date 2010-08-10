@@ -69,6 +69,7 @@
 module zpinch_application
 
   use afcstabilisation
+  use boundarycondaux
   use boundaryfilter
   use collection
   use euler_application
@@ -353,8 +354,9 @@ contains
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrf_readBoundaryCondition(p_rbdrCondEuler, sindatfileName,&
-          '['//trim(sbdrcondName)//']', ndimension)
+      call bdrc_readBoundaryCondition(p_rbdrCondEuler,&
+          sindatfileName, '['//trim(sbdrcondName)//']',&
+          ndimension, euler_getBdrCondExprNumber)
 
       ! Initialize the boundary condition for the transport model
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
@@ -364,8 +366,9 @@ contains
 
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrf_readBoundaryCondition(p_rbdrCondTransport,&
-          sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
+      call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
+          sindatfileName, '['//trim(sbdrcondName)//']',&
+          ndimension, transp_getBdrCondExprNumber)
       
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -411,8 +414,8 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrf_release(p_rbdrCondEuler)
-    call bdrf_release(p_rbdrCondTransport)
+    call bdrc_release(p_rbdrCondEuler)
+    call bdrc_release(p_rbdrCondTransport)
 
     ! Release vectors
     call lsysbl_releaseVector(p_rsolutionEuler)

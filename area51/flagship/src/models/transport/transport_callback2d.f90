@@ -60,6 +60,21 @@
 !#        and applies scalar artificial diffusion (discrete upwinding)
 !#        for linear convection in 2D (dual formulation)
 !#
+!# 7.) transp_coeffVecBdrConvP2d_sim
+!#      -> Calculates the coefficients for the linear form
+!#         in 2D (primal formulation)
+!#
+!# 8.) transp_coeffMatBdrConvP2d_sim
+!#     -> Calculates the coefficients for the bilinear form
+!#        in 2D (primal formulation)
+!#
+!# 9.) transp_coeffVecBdrConvD2d_sim
+!#      -> Calculates the coefficients for the linear form
+!#         in 2D (dual formulation)
+!#
+!# 10.) transp_coeffMatBdrConvD2d_sim
+!#     -> Calculates the coefficients for the bilinear form
+!#        in 2D (dual formulation)
 !#
 !# ****************************************************************************
 !#
@@ -152,6 +167,7 @@ module transport_callback2d
   use storage
 
   use flagship_callback
+  use transport_basic
 
   implicit none
 
@@ -166,14 +182,14 @@ module transport_callback2d
   public :: transp_calcMatDiagConvP2d_sim
   public :: transp_calcMatGalConvP2d_sim
   public :: transp_calcMatUpwConvP2d_sim
-  public :: transp_coeffMatBdrConvectionP2d
-  public :: transp_coeffVecBdrConvectionP2d
+  public :: transp_coeffMatBdrConvP2d_sim
+  public :: transp_coeffVecBdrConvP2d_sim
 
   public :: transp_calcMatDiagConvD2d_sim
   public :: transp_calcMatGalConvD2d_sim
   public :: transp_calcMatUpwConvD2d_sim
-  public :: transp_coeffMatBdrConvectionD2d
-  public :: transp_coeffVecBdrConvectionD2d
+  public :: transp_coeffMatBdrConvD2d_sim
+  public :: transp_coeffVecBdrConvD2d_sim
 
   public :: transp_calcMatDiagSTBurgersP2d_sim
   public :: transp_calcMatGalSTBurgersP2d_sim
@@ -672,17 +688,17 @@ contains
     p_rvelocity => rcollection%p_rvectorQuickAccess2
 
     ! Evaluate the FE function in the cubature points on the boundary
-    call fevl_evaluate_sim1(DER_FUNC, Dvalues, p_rsolution%RvectorBlock(1),&
-                            Dpoints, Ielements, DpointsRef)
+    call fevl_evaluate_sim(DER_FUNC, Dvalues,&
+        p_rsolution%RvectorBlock(1), Dpoints, Ielements, DpointsRef)
 
     ! Allocate temporal memory
     allocate(Dcoefficients(size(Dvalues,1), size(Dvalues,2), 5))
 
     ! Evaluate the velocity field in the cubature points on the boundary
     ! and store the result in Dcoefficients(:,:,1:2)
-    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,1),&
+    call fevl_evaluate_sim(DER_FUNC, Dcoefficients(:,:,1),&
         p_rvelocity%RvectorBlock(1), Dpoints, Ielements, DpointsRef)
-    call fevl_evaluate_sim1(DER_FUNC, Dcoefficients(:,:,2),&
+    call fevl_evaluate_sim(DER_FUNC, Dcoefficients(:,:,2),&
         p_rvelocity%RvectorBlock(2), Dpoints, Ielements, DpointsRef)
 
     ! This subroutine assumes that the first quick access integer
@@ -949,10 +965,18 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $-v_i*Cx_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+#else
+      ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
           +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+#endif
     end do
     
   end subroutine transp_calcMatDiagConvP2d_sim
@@ -1004,14 +1028,27 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -1066,15 +1103,28 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
@@ -1128,10 +1178,18 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $v_i*C_{ii}$
+      
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = -dscale*&
+          (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
+          +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+#else
+      ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
           (p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)&
           +p_Dvariable2(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(2,inode))
+#endif
     end do
     
   end subroutine transp_calcMatDiagConvD2d_sim
@@ -1183,14 +1241,27 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji] = -v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji] = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+      
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -1245,14 +1316,27 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)&
           +p_Dvariable2(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
           (p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)&
           +p_Dvariable2(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+      
       ! Compute artificial diffusion coefficient
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
@@ -1264,7 +1348,7 @@ contains
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrConvectionP2d(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrConvP2d_sim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1382,18 +1466,164 @@ contains
     ! What type of boundary conditions are we?
     select case(ibdrtype)
 
-    case(BDR_DIRICHLET_WEAK)
+    case (BDRC_HOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Homogeneous Neumann boundary conditions:
+      ! Do nothing since the boundary term vanishes
+      Dcoefficients = 0.0_DP
+
+      ! This routine should not be called at all for homogeneous Neumann boundary
+      ! conditions since it corresponds to an expensive assemble of "zero".
+       call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
+
+
+    case (BDRC_INHOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Inhomogeneous Neumann boundary conditions:
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma wg {\rm d}s $$
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+
+      ! Evaluate the function parser for the Neumann values in the
+      ! cubature points on the boundary and store the result in
+      ! Dcoefficients(:,:,1).
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          ! Set values for function parser
+          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment,&
+              Dvalue, Dcoefficients(1,ipoint,iel))
+
+          ! Multiply by scaling coefficient
+          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+        end do
+      end do
+      
+      
+    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Dirichlet or Robin boundary conditions:
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s $$
+      ! The difference between Dirichlet and Robin boundary conditions
+      ! is in the treatment of the bilinearform
+      
+      ! Allocate temporal memory
+      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+      ! Evaluate the velocity field in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1:2)
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+          p_rvelocity%RvectorBlock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+          p_rvelocity%RvectorBlock(2), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+
+      ! Evaluate the function parser for the Dirichlet values in the
+      ! cubature points on the boundary and store the result in
+      ! Dcoefficients(:,:,3).
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          ! Set values for function parser
+          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment,&
+              Dvalue, Daux(ipoint,iel,3))
+        end do
+      end do
+
+      ! Get the minimum and maximum parameter value. The point with the minimal
+      ! parameter value is the start point of the interval, the point with the
+      ! maximum parameter value the endpoint.
+      dminPar = DpointPar(1,1)
+      dmaxPar = DpointPar(1,1)
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+          dminPar = min(DpointPar(ipoint,iel), dminPar)
+          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+        end do
+      end do
+
+      ! Multiply the velocity vector with the normal in each point
+      ! to get the normal velocity.
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          dt = DpointPar(ipoint,iel)
+
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length
+          ! parametrisation!  When we are at the left or right
+          ! endpoint of the interval, we calculate the normal vector
+          ! based on the current edge.  Without that, the behaviour of
+          ! the routine may lead to some confusion if the endpoints of
+          ! the interval coincide with the endpoints of a boundary
+          ! edge. In such a case, the routine would normally compute
+          ! the normal vector as a mean on the normal vectors of the
+          ! edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+            ! End point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal velocity and impose Dirichlet boundary condition
+          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+        end do
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(Daux)
+
+      
+    case(BDRC_FLUX_WEAK)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s, $$
+      ! where $\Gamma$ denotes the inflow part of the boundary
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
-      call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints, &
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
@@ -1478,43 +1708,21 @@ contains
       ! Deallocate temporal memory
       deallocate(Daux)
 
-
-    case(BDR_INHOMNEUMANN_WEAK)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-
-          ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Dcoefficients(1,ipoint,iel))
-
-          ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
-        end do
-      end do
-
+      
+    case default
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvP2d_sim')
+      call sys_halt()
+      
     end select
 
-  end subroutine transp_coeffVecBdrConvectionP2d
+  end subroutine transp_coeffVecBdrConvP2d_sim
 
   ! ***************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffVecBdrConvectionD2d(rdiscretisation, rform,&
+  subroutine transp_coeffVecBdrConvD2d_sim(rdiscretisation, rform,&
       nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
       IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
 
@@ -1632,18 +1840,164 @@ contains
     ! What type of boundary conditions are we?
     select case(ibdrtype)
 
-    case(BDR_DIRICHLET_WEAK)
+    case (BDRC_HOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Homogeneous Neumann boundary conditions:
+      ! Do nothing since the boundary term vanishes
+      Dcoefficients = 0.0_DP
+
+      ! This routine should not be called at all for homogeneous Neumann boundary
+      ! conditions since it corresponds to an expensive assemble of "zero".
+       call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
+
+
+    case (BDRC_INHOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Inhomogeneous Neumann boundary conditions
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma wg {\rm d}s $$
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+      
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+      
+      ! Evaluate the function parser for the Neumann values in the
+      ! cubature points on the boundary and store the result in
+      ! Dcoefficients(:,:,1).
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+          
+          ! Set values for function parser
+          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+          
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment,&
+              Dvalue, Dcoefficients(1,ipoint,iel))
+          
+          ! Multiply by scaling coefficient
+          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
+        end do
+      end do
+      
+      
+    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Dirichlet or Robin boundary conditions
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s $$
+      ! The difference between Dirichlet and Robin boundary conditions
+      ! is in the treatment of the bilinearform
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
-      call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,1),&
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
+          p_rvelocity%RvectorBlock(1), Dpoints, &
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
+          p_rvelocity%RvectorBlock(2), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! Initialize values
+      Dvalue = 0.0_DP
+      Dvalue(NDIM3D+1) = dtime
+
+      ! Set number of spatial dimensions
+      ndim = size(Dpoints, 1)
+
+      ! Evaluate the function parser for the Dirichlet values in the
+      ! cubature points on the boundary and store the result in
+      ! Dcoefficients(:,:,3).
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          ! Set values for function parser
+          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+          ! Evaluate function parser
+          call fparser_evalFunction(p_rfparser, isegment,&
+              Dvalue, Daux(ipoint,iel,3))
+        end do
+      end do
+
+      ! Get the minimum and maximum parameter value. The point with the minimal
+      ! parameter value is the start point of the interval, the point with the
+      ! maximum parameter value the endpoint.
+      dminPar = DpointPar(1,1)
+      dmaxPar = DpointPar(1,1)
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+          dminPar = min(DpointPar(ipoint,iel), dminPar)
+          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+        end do
+      end do
+
+      ! Multiply the velocity vector with the normal in each point
+      ! to get the normal velocity.
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          dt = DpointPar(ipoint,iel)
+
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length
+          ! parametrisation!  When we are at the left or right
+          ! endpoint of the interval, we calculate the normal vector
+          ! based on the current edge.  Without that, the behaviour of
+          ! the routine may lead to some confusion if the endpoints of
+          ! the interval coincide with the endpoints of a boundary
+          ! edge. In such a case, the routine would normally compute
+          ! the normal vector as a mean on the normal vectors of the
+          ! edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+            ! End point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal velocity and impose Dirichlet boundary condition
+          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+          Dcoefficients(1,ipoint,iel) = dscale * dnv * Daux(ipoint,iel,3)
+        end do
+      end do
+
+      ! Deallocate temporal memory
+      deallocate(Daux)
+
+      
+    case(BDRC_FLUX_WEAK)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s prescribed at the inlet)
+      ! Evaluate coefficient for the linear form
+      ! $$ \int_\Gamma w ({\bf v}g)\cdot{\bf n} {\rm d}s, $$
+      ! where $\Gamma$ denotes the inflow part of the boundary
+      
+      ! Allocate temporal memory
+      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+      ! Evaluate the velocity field in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1:2)
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      call fevl_evaluate_sim1(DER_FUNC2D, Daux(:,:,2),&
+      call fevl_evaluate_sim(DER_FUNC2D, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
@@ -1727,42 +2081,20 @@ contains
       ! Deallocate temporal memory
       deallocate(Daux)
 
-      case(BDR_INHOMNEUMANN_WEAK)
-
-      ! Initialize values
-      Dvalue = 0.0_DP
-      Dvalue(NDIM3D+1) = dtime
-
-      ! Set number of spatial dimensions
-      ndim = size(Dpoints, 1)
-
-      ! Evaluate the function parser for the Neumann values in the
-      ! cubature points on the boundary and store the result in
-      ! Dcoefficients(:,:,1).
-      do iel = 1, size(rdomainIntSubset%p_Ielements)
-        do ipoint = 1, ubound(Dpoints,2)
-
-          ! Set values for function parser
-          Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
-
-          ! Evaluate function parser
-          call fparser_evalFunction(p_rfparser, isegment,&
-              Dvalue, Dcoefficients(1,ipoint,iel))
-
-          ! Multiply by scaling coefficient
-          Dcoefficients(1,ipoint,iel) = dscale * Dcoefficients(1,ipoint,iel)
-        end do
-      end do
-
+    case default
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffVecBdrConvD2d_sim')
+      call sys_halt()
+      
     end select
-
-  end subroutine transp_coeffVecBdrConvectionD2d
+    
+  end subroutine transp_coeffVecBdrConvD2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrConvectionP2d(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrConvP2d_sim(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -1877,18 +2209,21 @@ contains
     ! What type of boundary conditions are we?
     select case(ibdrtype)
 
-    case(BDR_DIRICHLET_WEAK)
+    case (BDRC_HOMNEUMANN_WEAK, BDRC_INHOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! (In-)Homogeneous Neumann boundary conditions:
+      ! Assemble the boundary integral for the convective term      
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
-      call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
@@ -1938,8 +2273,92 @@ contains
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
 
-          ! Check if we are at the primal inflow boundary
-          if (dnv .lt. -SYS_EPSREAL) then
+          ! Scale normal velocity by scaling parameter
+          Dcoefficients(1,ipoint,iel) = dscale * dnv
+        end do
+      end do
+
+      ! Free temporal memory
+      deallocate(Daux)
+
+      
+    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Dirichlet or Robin boundary conditions:
+      ! Do nothing since the boundary values are build into the linear form      
+      Dcoefficients = 0.0_DP
+
+      ! This routine should not be called at all for homogeneous Neumann boundary
+      ! conditions since it corresponds to an expensive assemble of "zero".
+      call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
+
+      
+    case(BDRC_FLUX_WEAK)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s at the outlet)
+
+      ! Allocate temporal memory
+      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+      ! Evaluate the velocity field in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1:2)
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,1),&
+          p_rvelocity%RvectorBlock(1), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,2),&
+          p_rvelocity%RvectorBlock(2), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! Get the minimum and maximum parameter value. The point with the minimal
+      ! parameter value is the start point of the interval, the point with the
+      ! maximum parameter value the endpoint.
+      dminPar = DpointPar(1,1)
+      dmaxPar = DpointPar(1,1)
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+          dminPar = min(DpointPar(ipoint,iel), dminPar)
+          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+        end do
+      end do
+
+      ! Multiply the velocity vector with the normal in each point
+      ! to get the normal velocity.
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          dt = DpointPar(ipoint,iel)
+
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length parametrisation!
+          ! When we are at the left or right endpoint of the interval, we
+          ! calculate the normal vector based on the current edge.
+          ! Without that, the behaviour of the routine may lead to some
+          ! confusion if the endpoints of the interval coincide with
+          ! the endpoints of a boundary edge. In such a case, the routine
+          ! would normally compute the normal vector as a mean on the
+          ! normal vectors of the edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+            ! End point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal velocity
+          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+          ! Check if we are at the primal outflow boundary
+          if (dnv .gt. SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -1949,20 +2368,22 @@ contains
 
       ! Free temporal memory
       deallocate(Daux)
-
+    
+    
     case default
-
-      ! Do nothing
-
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvP2d_sim')
+      call sys_halt()
+      
     end select
-
-  end subroutine transp_coeffMatBdrConvectionP2d
+    
+  end subroutine transp_coeffMatBdrConvP2d_sim
 
   !*****************************************************************************
 
 !<subroutine>
 
-  subroutine transp_coeffMatBdrConvectionD2d(rdiscretisationTrial,&
+  subroutine transp_coeffMatBdrConvD2d_sim(rdiscretisationTrial,&
       rdiscretisationTest, rform, nelements, npointsPerElement,&
       Dpoints, ibct, DpointPar, IdofsTrial, IdofsTest,&
       rdomainIntSubset, Dcoefficients, rcollection)
@@ -2078,18 +2499,21 @@ contains
     ! What type of boundary conditions are we?
     select case(ibdrtype)
 
-    case(BDR_DIRICHLET_WEAK)
+    case (BDRC_HOMNEUMANN_WEAK, BDRC_INHOMNEUMANN_WEAK)
+      !-------------------------------------------------------------------------
+      ! (In-)Homogeneous Neumann boundary conditions:
+      ! Assemble the boundary integral for the convective term      
 
       ! Allocate temporal memory
       allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
 
       ! Evaluate the velocity field in the cubature points on the boundary
       ! and store the result in Daux(:,:,:,1:2)
-      call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,1),&
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,1),&
           p_rvelocity%RvectorBlock(1), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
-      call fevl_evaluate_sim1(DER_FUNC, Daux(:,:,2),&
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,2),&
           p_rvelocity%RvectorBlock(2), Dpoints,&
           rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
 
@@ -2139,8 +2563,92 @@ contains
           ! Compute the normal velocity
           dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
 
-          ! Check if we are at the dual inflow boundary
-          if (dnv .gt. SYS_EPSREAL) then
+          ! Scale normal velocity by scaling parameter
+          Dcoefficients(1,ipoint,iel) = dscale * dnv
+        end do
+      end do
+
+      ! Free temporal memory
+      deallocate(Daux)
+
+
+    case (BDRC_DIRICHLET_WEAK, BDRC_ROBIN_WEAK)
+      !-------------------------------------------------------------------------
+      ! Dirichlet or Robin boundary conditions:
+      ! Do nothing since the boundary values are build into the linear form.
+      Dcoefficients = 0.0_DP
+
+      ! This routine should not be called at all for homogeneous Neumann boundary
+      ! conditions since it corresponds to an expensive assemble of "zero".
+      call output_line('Redundant assembly of vanishing boundary term!',&
+          OU_CLASS_WARNING,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
+      
+
+    case(BDRC_FLUX_WEAK)
+      !-------------------------------------------------------------------------
+      ! Flux boundary conditions (Robin bc`s at the outlet)
+
+      ! Allocate temporal memory
+      allocate(Daux(ubound(Dpoints,2), ubound(Dpoints,3), NDIM2D+1))
+
+      ! Evaluate the velocity field in the cubature points on the boundary
+      ! and store the result in Daux(:,:,:,1:2)
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,1),&
+          p_rvelocity%RvectorBlock(1), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      call fevl_evaluate_sim(DER_FUNC, Daux(:,:,2),&
+          p_rvelocity%RvectorBlock(2), Dpoints,&
+          rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! Get the minimum and maximum parameter value. The point with the minimal
+      ! parameter value is the start point of the interval, the point with the
+      ! maximum parameter value the endpoint.
+      dminPar = DpointPar(1,1)
+      dmaxPar = DpointPar(1,1)
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+          dminPar = min(DpointPar(ipoint,iel), dminPar)
+          dmaxPar = max(DpointPar(ipoint,iel), dmaxPar)
+        end do
+      end do
+
+      ! Multiply the velocity vector with the normal in each point
+      ! to get the normal velocity.
+      do iel = 1, size(rdomainIntSubset%p_Ielements)
+        do ipoint = 1, ubound(Dpoints,2)
+
+          dt = DpointPar(ipoint,iel)
+
+          ! Get the normal vector in the point from the boundary.
+          ! Note that the parameter value is in length parametrisation!
+          ! When we are at the left or right endpoint of the interval, we
+          ! calculate the normal vector based on the current edge.
+          ! Without that, the behaviour of the routine may lead to some
+          ! confusion if the endpoints of the interval coincide with
+          ! the endpoints of a boundary edge. In such a case, the routine
+          ! would normally compute the normal vector as a mean on the
+          ! normal vectors of the edges adjacent to such a point!
+          if (DpointPar(ipoint,iel) .eq. dminPar) then
+            ! Start point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_RIGHT, BDR_PAR_LENGTH)
+
+          else if (DpointPar(ipoint,iel) .eq. dmaxPar) then
+            ! End point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, BDR_NORMAL_LEFT, BDR_PAR_LENGTH)
+          else
+            ! Inner point
+            call boundary_getNormalVec2D(rdiscretisationTrial%p_rboundary,&
+                ibct, dt, dnx, dny, cparType=BDR_PAR_LENGTH)
+          end if
+
+          ! Compute the normal velocity
+          dnv = dnx * Daux(ipoint,iel,1) + dny * Daux(ipoint,iel,2)
+
+          ! Check if we are at the dual outflow boundary
+          if (dnv .lt. -SYS_EPSREAL) then
             Dcoefficients(1,ipoint,iel) = dscale * dnv
           else
             Dcoefficients(1,ipoint,iel) = 0.0_DP
@@ -2151,13 +2659,15 @@ contains
       ! Free temporal memory
       deallocate(Daux)
 
+      
     case default
-
-      ! Do nothing
+      call output_line('Invalid type of boundary conditions!',&
+          OU_CLASS_ERROR,OU_MODE_STD,'transp_coeffMatBdrConvD2d_sim')
+      call sys_halt()
 
     end select
 
-  end subroutine transp_coeffMatBdrConvectionD2d
+  end subroutine transp_coeffMatBdrConvD2d_sim
 
   !*****************************************************************************
   
@@ -2203,10 +2713,18 @@ contains
     integer :: inode
 
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficients  $-[u_i,1]*C_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficients $k_{ii} = [u_i,1]*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
+          +                   DmatrixCoeffsAtNode(2,inode))
+#else
+      ! Compute convective coefficients $k_{ii} = -[u_i,1]*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
           +                   DmatrixCoeffsAtNode(2,inode))
+#endif
     end do
     
   end subroutine transp_calcMatDiagSTBurgersP2d_sim
@@ -2255,16 +2773,31 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = [(u_i+u_j)/2,1]*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = [(u_i+u_j)/2,1]*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -[(u_i+u_j)/2,1]*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (DmatrixCoeffsAtEdge(1,1,iedge)*&
            0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
           +DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -[(u_i+u_j)/2,1]*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (DmatrixCoeffsAtEdge(1,2,iedge)*&
            0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
           +DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -2316,17 +2849,32 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = [(u_i+u_j)/2,1]*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)*&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = [(u_i+u_j)/2,1]*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)*&
+          +0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+          +DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -[(u_i+u_j)/2,1]*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (DmatrixCoeffsAtEdge(1,1,iedge)*&
            0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
           +DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -[(u_i+u_j)/2,1]*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (DmatrixCoeffsAtEdge(1,2,iedge)*&
           +0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
           +DmatrixCoeffsAtEdge(2,2,iedge))
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
@@ -2579,11 +3127,20 @@ contains
     integer :: inode
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $-[a_i,1]*C_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ii} = [a_i,1]*C_{ii}$
+      ui = DdataAtNode(inode)
+      DcoefficientsAtNode(1,inode) = dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)&
+          +                                  DmatrixCoeffsAtNode(2,inode))
+#else
+      ! Compute convective coefficient $k_{ii} = -[a_i,1]*C_{ii}$
       ui = DdataAtNode(inode)
       DcoefficientsAtNode(1,inode) = -dscale*&
           ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)&
           +                                  DmatrixCoeffsAtNode(2,inode))
+#endif
     end do
     
   end subroutine transp_calcMatDiagSTBuckLevP2d_sim
@@ -2636,15 +3193,29 @@ contains
     integer :: iedge
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-[a_j,1]*C_{ij}$
+
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = [a_j,1]*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = [a_i,1]*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -[a_j,1]*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
           +                                  DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-[a_i,1]*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -[a_i,1]*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
           +                                  DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -2700,16 +3271,30 @@ contains
     integer :: iedge
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-[a_j,1]*C_{ij}$
+
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = [a_j,1]*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = [a_i,1]*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
+          +                                  DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -[a_j,1]*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           ((4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)&
           +                                  DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-[a_i,1]*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -[a_i,1]*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           ((4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)&
           +                                  DmatrixCoeffsAtEdge(2,2,iedge))
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,-DcoefficientsAtEdge(3,iedge))
     end do
@@ -2956,10 +3541,18 @@ contains
     integer :: inode
 
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficients  $-(u_i I)*C_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficients $k_{ii} = (u_i I)*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
+          +DdataAtNode(inode)*DmatrixCoeffsAtNode(2,inode))
+#else
+      ! Compute convective coefficients $k_{ii} = -(u_i I)*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)&
           +DdataAtNode(inode)*DmatrixCoeffsAtNode(2,inode))
+#endif
     end do
     
   end subroutine transp_calcMatDiagBurgersP2d_sim
@@ -3006,14 +3599,27 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = (u_i+u_j)I/2*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = (u_i+u_j)I/2*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -(u_i+u_j)I/2*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -(u_i+u_j)I/2*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
           (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -3063,15 +3669,28 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = (u_i+u_j)I/2*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
+      ! Compute convective coefficient $k_{ji} = (u_i+u_j)I/2*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
+          (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
+#else
+      ! Compute convective coefficient $k_{ij} = -(u_i+u_j)I/2*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
           (DmatrixCoeffsAtEdge(1,1,iedge)+DmatrixCoeffsAtEdge(2,1,iedge))
-      ! Compute convective coefficient  $-(u_i+u_j)I/2*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -(u_i+u_j)I/2*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))*&
           (DmatrixCoeffsAtEdge(1,2,iedge)+DmatrixCoeffsAtEdge(2,2,iedge))
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do

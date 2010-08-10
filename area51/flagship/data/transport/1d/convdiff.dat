@@ -40,12 +40,12 @@ algorithm = stationary_primal
 # 0 = no mass matrix
 # 1 = consistent mass matrix
 # 2 = lumped mass matrix
-imasstype = 0
+imasstype = 2
 
 # type of mass antidiffusion
 # 0 = no mass antidiffusion
 # 1 = consistent mass antidiffusion
-imassantidiffusiontype = 0
+imassantidiffusiontype = 1
 
 # type of flow velocity
 # 0 = zero velocity v=0
@@ -116,6 +116,8 @@ itargetfunctype = 0
 # section name of target functional
 stargetfuncname = @targetFuncInt
 
+# section name of exacttarget functional
+sexacttargetfuncname = 
 
 #-------------------------------------------------------------------------------
 
@@ -139,7 +141,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -179,7 +181,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 # perform prelimiting
 iprelimiting = 1
@@ -252,7 +254,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 1.0
+dfinalTime = 0.01
 
 # initial time step size
 dinitialStep = 0.01
@@ -302,10 +304,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 7
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 7
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce

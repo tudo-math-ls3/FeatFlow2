@@ -205,6 +205,41 @@ module transport_basic
 
 !</constantblock>
 
+
+!<constantblock description="Types of boundary conditions">
+
+  ! Homogeneous Neumann boundary conditions
+  integer, parameter, public :: BDRC_HOMNEUMANN_WEAK = 1
+  integer, parameter, public :: BDRC_HOMNEUMANN      = -BDRC_HOMNEUMANN_WEAK
+
+  ! Inhomogeneous Neumann boundary conditions
+  integer, parameter, public :: BDRC_INHOMNEUMANN_WEAK = 2
+  integer, parameter, public :: BDRC_INHOMNEUMANN      = -BDRC_INHOMNEUMANN_WEAK
+
+  ! Dirichlet boundary conditions
+  integer, parameter, public :: BDRC_DIRICHLET_WEAK = 3
+  integer, parameter, public :: BDRC_DIRICHLET      = -BDRC_DIRICHLET_WEAK
+
+  ! Robin boundary conditions
+  integer, parameter, public :: BDRC_ROBIN_WEAK = 4
+  integer, parameter, public :: BDRC_ROBIN      = -BDRC_ROBIN_WEAK
+
+  ! Flux boundary condition
+  integer, parameter, public :: BDRC_FLUX_WEAK = 5
+  integer, parameter, public :: BDRC_FLUX      = -BDRC_FLUX_WEAK
+
+  ! Periodic boundary condition (symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_PERIODIC_WEAK = 101
+  integer, parameter, public :: BDRC_PERIODIC      = -BDRC_PERIODIC_WEAK
+
+  ! Periodic boundary condition (anti-symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_ANTIPERIODIC_WEAK = 102
+  integer, parameter, public :: BDRC_ANTIPERIODIC      = -BDRC_ANTIPERIODIC_WEAK
+
+!</constantblock>
+
 !</constants>
 
 contains

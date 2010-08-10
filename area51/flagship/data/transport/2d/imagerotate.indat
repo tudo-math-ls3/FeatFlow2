@@ -22,16 +22,6 @@ defexpr:  sqr3 = SQRT((x-_x2)^2+(y-_y2)^2)
 defexpr:  sqr4 = SQRT((x-_x1)^2+(y-_y1)^2)/_r0
 defexpr:  sqr5 = SQRT((x-_x2)^2+(y-_y2)^2)
 
-# Specify the initial solution
-deffunc: @initsol = if(@sqr1 <= _r0  & (ABS(x-0.5)>=0.025 | ABS(y-0.6) >=0.25), 1,...
-                    if(@sqr2 <= _r0, 1-@sqr4,...
-                    if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,z,t
-
-# Specify the exact solution
-deffunc: @exactsol = if(@sqr1 <= _r0  & (ABS(x-0.5)>=0.025 | ABS(y-0.6) >=0.25), 1,...
-                     if(@sqr2 <= _r0, 1-@sqr4,...
-                     if(@sqr3 <= _r0, 0.25*(1+COS(_pi*(MIN(@sqr5,_r0))/_r0)), 0))) ; x,y,z,t
-
 # Specify the velocity field
 deffunc: @velocity_x = 0.5 - y ; x,y,z,t
 deffunc: @velocity_y = x - 0.5 ; x,y,z,t
@@ -52,15 +42,6 @@ NEXPR
 IBCT
 1
 NCOMP
-8
+1
 PARAMETERS
-0.5  F  0
-1.0  T  1  0.0
-1.5  F  0
-2.0  T  1  0.0
-2.5  F  0
-3.0  T  1  0.0
-3.5  F  0
-4.0  T  1  0.0
-
-4.0  T  0
+4.0  T  -5  0.0   # zero influx condition

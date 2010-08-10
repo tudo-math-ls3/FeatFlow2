@@ -32,6 +32,7 @@ module zpinch_callback
 
   use afcstabilisation
   use basicgeometry
+  use boundarycondaux
   use boundaryfilter
   use collection
   use derivatives
@@ -271,8 +272,8 @@ contains
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim,&
               zpinch_calcMatRusConvIntlD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case (SYSTEM_BLOCKFORMAT)
 
@@ -283,8 +284,8 @@ contains
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim,&
               zpinch_calcMatRusConvBlockD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case DEFAULT
           call output_line('Invalid system format!',&
@@ -296,8 +297,8 @@ contains
         call transp_calcRhsRungeKuttaScheme(rproblemLevel,&
             rtimestep, rsolver, rsolution, rsolution0,&
             rrhs, istep, rcollection,&
-            fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvectionP2d,&
-            fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvectionD2d)
+            fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvP2d_sim,&
+            fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvD2d_sim)
         
         ! Remove specifier for the preconditioner (if any)
         iSpec = iand(iSpec, not(NLSOL_OPSPEC_CALCPRECOND))
@@ -328,8 +329,8 @@ contains
                   zpinch_calcMatRusConvIntlP2d_sim,&
                   zpinch_calcMatDiagConvIntlD2d_sim,&
                   zpinch_calcMatRusConvIntlD2d_sim,&
-                  transp_coeffMatBdrConvectionP2d,&
-                  transp_coeffMatBdrConvectionD2d)
+                  transp_coeffMatBdrConvP2d_sim,&
+                  transp_coeffMatBdrConvD2d_sim)
 
             case (SYSTEM_BLOCKFORMAT)
 
@@ -340,8 +341,8 @@ contains
                   zpinch_calcMatRusConvBlockP2d_sim,&
                   zpinch_calcMatDiagConvBlockD2d_sim,&
                   zpinch_calcMatRusConvBlockD2d_sim,&
-                  transp_coeffMatBdrConvectionP2d,&
-                  transp_coeffMatBdrConvectionD2d)
+                  transp_coeffMatBdrConvP2d_sim,&
+                  transp_coeffMatBdrConvD2d_sim)
 
             case DEFAULT
               call output_line('Invalid system format!',&
@@ -352,8 +353,8 @@ contains
             ! Assemble the constant right-hand side
             call transp_calcRhsThetaScheme(rproblemLevel, rtimestep,&
                 rsolver, rsolution0, rrhs, rcollection,&
-                fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvectionP2d,&
-                fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvectionD2d)
+                fcb_coeffVecBdrPrimal_sim=transp_coeffVecBdrConvP2d_sim,&
+                fcb_coeffVecBdrDual_sim=transp_coeffVecBdrConvD2d_sim)
 
           end if
 
@@ -379,8 +380,8 @@ contains
                 zpinch_calcMatRusConvIntlP2d_sim,&
                 zpinch_calcMatDiagConvIntlD2d_sim,&
                 zpinch_calcMatRusConvIntlD2d_sim,&
-                transp_coeffMatBdrConvectionP2d,&
-                transp_coeffMatBdrConvectionD2d)
+                transp_coeffMatBdrConvP2d_sim,&
+                transp_coeffMatBdrConvD2d_sim)
 
           case (SYSTEM_BLOCKFORMAT)
             
@@ -391,8 +392,8 @@ contains
                 zpinch_calcMatRusConvBlockP2d_sim,&
                 zpinch_calcMatDiagConvBlockD2d_sim,&
                 zpinch_calcMatRusConvBlockD2d_sim,&
-                transp_coeffMatBdrConvectionP2d,&
-                transp_coeffMatBdrConvectionD2d)
+                transp_coeffMatBdrConvP2d_sim,&
+                transp_coeffMatBdrConvD2d_sim)
 
           case DEFAULT
             call output_line('Invalid system format!',&
@@ -427,8 +428,8 @@ contains
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatDiagConvIntlD2d_sim,&
               zpinch_calcMatRusConvIntlD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case (SYSTEM_BLOCKFORMAT)
           
@@ -439,8 +440,8 @@ contains
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatDiagConvBlockD2d_sim,&
               zpinch_calcMatRusConvBlockD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case DEFAULT
           call output_line('Invalid system format!',&
@@ -464,8 +465,8 @@ contains
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
               zpinch_calcMatRusConvIntlP2d_sim,&
               zpinch_calcMatRusConvIntlD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case (SYSTEM_BLOCKFORMAT)
 
@@ -474,8 +475,8 @@ contains
               rtimestep, rsolver, rsolution, rsolution0, rcollection,&
               zpinch_calcMatRusConvBlockP2d_sim,&
               zpinch_calcMatRusConvBlockD2d_sim,&
-              transp_coeffMatBdrConvectionP2d,&
-              transp_coeffMatBdrConvectionD2d)
+              transp_coeffMatBdrConvP2d_sim,&
+              transp_coeffMatBdrConvD2d_sim)
 
         case DEFAULT
           call output_line('Invalid system format!',&
@@ -1113,8 +1114,8 @@ contains
     call transp_calcRhsThetaScheme(rproblemLevel, rtimestepAux,&
         rsolverTransport, Rsolution(2), p_rpredictorTransport,&
         rcollection,&
-        fcb_coeffVecBdrPrimal_sim = transp_coeffVecBdrConvectionP2d,&
-        fcb_coeffVecBdrDual_sim = transp_coeffVecBdrConvectionD2d)
+        fcb_coeffVecBdrPrimal_sim = transp_coeffVecBdrConvP2d_sim,&
+        fcb_coeffVecBdrDual_sim = transp_coeffVecBdrConvD2d_sim)
 
     ! Compute low-order predictor
     call lsysbl_invertedDiagMatVec(&

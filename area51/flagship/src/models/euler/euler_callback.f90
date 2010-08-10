@@ -65,8 +65,16 @@
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 14.) euler_calcMassFluxFCT
-!#      -> Calculates the antidiffusive mass flux for FCT algorithm
+!# 14.) euler_getBdrCondExprNumber
+!#      -> Callback routine for the treatment of boundary conditions
+!#
+!# 15.) euler_calcBilfBoundaryConditions
+!#      -> Calculates the bilinear form arising from the weak
+!#        imposition of boundary conditions
+!#
+!# 16.) euler_calcLinfBoundaryConditions
+!#      -> Calculates the linear form arising from the weak
+!#         imposition of boundary conditions
 !#
 !# Frequently asked questions?
 !#
@@ -91,8 +99,12 @@ module euler_callback
 
   use afcstabilisation
   use basicgeometry
+  use boundary
+  use boundarycondaux
   use boundaryfilter
+  use cubature
   use collection
+  use derivatives
   use euler_basic
   use euler_callback1d
   use euler_callback2d
@@ -102,10 +114,12 @@ module euler_callback
   use genoutput
   use groupfemsystem
   use linearalgebra
+  use linearformevaluation
   use linearsystemblock
   use linearsystemscalar
   use paramlist
   use problem
+  use scalarpde
   use solveraux
   use statistics
   use storage
@@ -114,12 +128,12 @@ module euler_callback
   implicit none
 
   private
-  public :: euler_calcJacobianThetaScheme
-  public :: euler_calcPrecondThetaScheme
-  public :: euler_calcResidualThetaScheme
-  public :: euler_calcRhsRungeKuttaScheme
-  public :: euler_calcRhsThetaScheme
   public :: euler_nlsolverCallback
+  public :: euler_calcPrecondThetaScheme
+  public :: euler_calcJacobianThetaScheme
+  public :: euler_calcResidualThetaScheme
+  public :: euler_calcRhsThetaScheme
+  public :: euler_calcRhsRungeKuttaScheme
   public :: euler_setBoundaryConditions
   public :: euler_calcLinearisedFCT
   public :: euler_calcFluxFCT
@@ -128,7 +142,9 @@ module euler_callback
   public :: euler_limitEdgewiseMomentum
   public :: euler_coeffVectorFE
   public :: euler_coeffVectorAnalytic
-  public :: euler_calcMassFluxFCT
+  public :: euler_getBdrCondExprNumber
+  public :: euler_calcBilfBoundaryConditions
+  public :: euler_calcLinfBoundaryConditions
 
 contains
 
@@ -1001,7 +1017,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial high-order right-hand side
           !
-          !   $$ rhs = (1-theta)*dt*K(U^n)*U^n $$
+          !   $$ rhs = (1-theta)*dt*K(U^n)*U^n - b.c.`s $$
           !---------------------------------------------------------------------
 
           select case(rproblemLevel%rtriangulation%ndim)
@@ -1033,7 +1049,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side
           !
-          !   $$ rhs = (1-theta)*dt*L(U^n)*U^n $$
+          !   $$ rhs = (1-theta)*dt*L(U^n)*U^n - b.c.`s $$
           !---------------------------------------------------------------------
 
           ! What type of dissipation is applied?
@@ -1221,7 +1237,7 @@ contains
           !---------------------------------------------------------------------
           ! Compute the initial low-order right-hand side + FEM-TVD stabilisation
           !
-          !   $$ rhs = (1-theta)dt*L(U^n)*U^n + F(U^n) $$
+          !   $$ rhs = (1-theta)dt*L(U^n)*U^n + F(U^n) - b.c.`s $$
           !---------------------------------------------------------------------
 
           select case(rproblemLevel%rtriangulation%ndim)
@@ -1252,6 +1268,22 @@ contains
               OU_CLASS_ERROR,OU_MODE_STD,'euler_calcRhsThetaScheme')
           call sys_halt()
         end select
+
+        !-----------------------------------------------------------------------
+        ! Evaluate linear form for boundary integral (if any)
+        !-----------------------------------------------------------------------
+
+        ! --- explicit part ---
+        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            rsolution, rtimestep%dTime-rtimestep%dStep, -dscale,&
+            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+
+        dscale = rtimestep%theta*rtimestep%dStep
+        
+        ! --- implicit part ---
+        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            rsolution, rtimestep%dTime, -dscale,&
+            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
 
         !-----------------------------------------------------------------------
         ! Compute the transient term
@@ -1287,6 +1319,15 @@ contains
               rrhs%RvectorBlock(iblock), 1.0_DP , 0.0_DP)
         end do
 
+        ! Evaluate linear form for boundary integral (if any)
+        
+        dscale = rtimestep%theta*rtimestep%dStep
+
+        ! --- implicit part ---
+        call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+            rsolution, rtimestep%dTime, -dscale,&
+            euler_coeffVectorBdr2d_sim, rrhs, rcollection)
+
       end if ! theta
 
     case DEFAULT
@@ -1294,11 +1335,16 @@ contains
       !-------------------------------------------------------------------------
       ! Initialize the constant right-hand side by zeros
       !
-      !   $$ rhs = 0 $$
+      !   $$ rhs = "0" - b.c.`s $$
       !-------------------------------------------------------------------------
 
       ! Clear vector
       call lsysbl_clearVector(rrhs)
+
+      ! Evaluate linear form for boundary integral (if any)
+      call euler_calcLinfBoundaryConditions(rproblemLevel, rsolver,&
+          rsolution, rtimestep%dTime, -1.0_DP,&
+          euler_coeffVectorBdr2d_sim, rrhs, rcollection)
 
     end select
 
@@ -3763,5 +3809,233 @@ contains
     F_ij = dscale1*(U1_i-U1_j)
     
   end subroutine euler_calcMassFluxFCT
+
+  ! *****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_getBdrCondExprNumber(ibdrCondType, ndimension, nexpr)
+
+!<description>
+    ! This subroutine calculates the number of expressions required for
+    ! boundary condition of type ibdrCondType in given spatial dimension.
+!</description>
+
+!<input>
+    ! type of boundary condition
+    integer, intent(in) :: ibdrCondType
+
+    ! number of spatial dimensions
+    integer, intent(in) :: ndimension
+!</input>
+
+!<output>
+    integer, intent(out) :: nexpr
+!</output>
+!</subroutine>
+
+    select case (ibdrCondType)
+      
+    case (BDRC_EULERWALL, BDRC_EULERWALL_WEAK,&
+          BDRC_VISCOUSWALL, BDRC_VISCOUSWALL_WEAK,&
+          BDRC_SUPEROUTLET, BDRC_SUPEROUTLET_WEAK)
+      nexpr = 0
+
+    case (BDRC_SUBOUTLET, BDRC_SUBOUTLET_WEAK,&
+          BDRC_MASSOUTLET, BDRC_MASSOUTLET_WEAK)
+      nexpr = 1
+
+    case (BDRC_FREESTREAM, BDRC_FREESTREAM_WEAK,&
+          BDRC_SUPERINLET, BDRC_SUPERINLET_WEAK)
+      nexpr = ndimension+2
+
+    case (BDRC_SUBINLET, BDRC_SUBINLET_WEAK,&
+          BDRC_MASSINLET, BDRC_MASSINLET_WEAK)
+      nexpr = 2
+
+!!$    case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
+!!$          BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
+!!$      nexpr = -1
+
+    case default
+      nexpr = 0
+    end select
+
+  end subroutine euler_getBdrCondExprNumber
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcBilfBoundaryConditions(rproblemLevel, rsolver,&
+      rsolution, dtime, dscale, fcoeff_buildMatrixScBdr2D_sim,&
+      rmatrix, rcollection, cconstrType)
+
+!<description>
+    ! This subroutine computes the bilinear form arising from the weak
+    ! imposition of boundary conditions. The following types of boundary
+    ! conditions are supported for this application
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient matrices.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientMatrixScBdr2D.inc'
+
+    ! OPTIONAL: One of the BILF_MATC_xxxx constants that allow to
+    ! specify the matrix construction method. If not specified,
+    ! BILF_MATC_ELEMENTBASED is used.
+    integer, intent(in), optional :: cconstrType
+!</intput>
+
+!<inputoutput>
+    ! matrix
+    type(t_matrixScalar), intent(inout) :: rmatrix
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+
+  end subroutine euler_calcBilfBoundaryConditions
+
+  !*****************************************************************************
+
+!<subroutine>
+
+  subroutine euler_calcLinfBoundaryConditions(rproblemLevel, rsolver, rsolution,&
+      dtime, dscale, fcoeff_buildVectorBlBdr2D_sim, rvector, rcollection)
+
+!<description>
+    ! This subroutine computes the linear form arising from the weak
+    ! imposition of boundary conditions. The following types of boundary
+    ! conditions are supported for this application
+!</description>
+
+!<input>
+    ! problem level structure
+    type(t_problemLevel), intent(in) :: rproblemLevel
+
+    ! solver structure
+    type(t_solver), intent(in) :: rsolver
+
+    ! solution vector
+    type(t_vectorBlock), intent(in), target :: rsolution
+
+    ! simulation time
+    real(DP), intent(in) :: dtime
+
+    ! scaling factor
+    real(DP), intent(in) :: dscale
+
+    ! callback routine for nonconstant coefficient vectors.
+    include '../../../../../kernel/DOFMaintenance/intf_coefficientVectorBlBdr2D.inc'
+!</intput>
+
+!<inputoutput>
+    ! residual/right-hand side vector
+    type(t_vectorBlock), intent(inout) :: rvector
+
+    ! collection
+    type(t_collection), intent(inout) :: rcollection
+!</inputoutput>
+!</subroutine>
+    
+    ! local variables
+    type(t_boundaryCondition), pointer :: p_rboundaryCondition
+    type(t_parlist), pointer :: p_rparlist
+    type(t_collection) :: rcollectionTmp
+    type(t_boundaryRegion) :: rboundaryRegion
+    type(t_linearForm) :: rform
+    integer, dimension(:), pointer :: p_IbdrCondCpIdx, p_IbdrCondType
+    integer :: ivelocitytype, velocityfield
+    integer :: ibct, isegment
+
+    ! Evaluate linear form for boundary integral and return if
+    ! there are no weak boundary conditions available
+    p_rboundaryCondition => rsolver%rboundaryCondition
+    if (.not.p_rboundaryCondition%bWeakBdrCond) return
+
+    ! Initialize temporal collection structure
+    call collct_init(rcollectionTmp)
+
+    ! Attach function parser from boundary conditions to collection
+    ! structure and specify its name in quick access string array
+    call collct_setvalue_pars(rcollectionTmp, 'rfparser',&
+        p_rboundaryCondition%rfparser, .true.)
+    rcollectionTmp%SquickAccess(1) = 'rfparser'
+
+    ! Attach solution vector to temporal collection structure
+    rcollectionTmp%p_rvectorQuickAccess1 => rsolution
+
+    ! How many spatial dimensions are we?
+    select case(rproblemLevel%rtriangulation%ndim)
+    case(NDIM2D)
+      ! Set pointers
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondCpIdx,&
+          p_IbdrCondCpIdx)
+      call storage_getbase_int(p_rboundaryCondition%h_IbdrCondType,&
+          p_IbdrCondType)
+
+      ! Loop over all boundary components
+      do ibct = 1, p_rboundaryCondition%iboundarycount
+
+        ! Loop over all boundary segments
+        do isegment = p_IbdrCondCpIdx(ibct),&
+                      p_IbdrCondCpIdx(ibct+1)-1
+
+          ! Prepare quick access array of temporal collection structure
+          rcollectionTmp%DquickAccess(1) = dtime
+          rcollectionTmp%DquickAccess(2) = dscale
+          rcollectionTmp%IquickAccess(1) = p_IbdrCondType(isegment)
+          rcollectionTmp%IquickAccess(2) = isegment
+          rcollectionTmp%IquickAccess(3) = p_rboundaryCondition%nmaxExpressions
+
+          ! Initialize the linear form
+          rform%itermCount = 1
+          rform%Idescriptors(1) = DER_FUNC
+          
+          ! Create boundary segment
+          call bdrc_createRegion(p_rboundaryCondition, ibct,&
+              isegment-p_IbdrCondCpIdx(ibct)+1, rboundaryRegion)
+
+          ! Assemble the linear form
+          if (rvector%nblocks .eq. 1) then
+            call linf_buildVecIntlScalarBdr2d(rform, CUB_G3_1D, .false.,&
+                rvector%RvectorBlock(1), fcoeff_buildVectorBlBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp)
+          else
+            call linf_buildVectorBlockBdr2d(rform, CUB_G3_1D, .false.,&
+                rvector, fcoeff_buildVectorBlBdr2D_sim,&
+                rboundaryRegion, rcollectionTmp)
+          end if
+
+        end do ! isegment
+      end do ! ibct
+      
+    case default
+      call output_line('Unsupported spatial dimension !',&
+          OU_CLASS_ERROR,OU_MODE_STD,'euler_calcLinfBoundaryConditions')
+      call sys_halt()
+    end select
+    
+    ! Release temporal collection structure
+    call collct_done(rcollectionTmp)
+
+  end subroutine euler_calcLinfBoundaryConditions
 
 end module euler_callback

@@ -68,7 +68,7 @@ svelocityname(2) =
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname = 
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -76,7 +76,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname = 
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -84,7 +84,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -111,11 +111,13 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
-# 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname = 
+
+# section name of exacttarget functional
+sexacttargetfuncname = 
 
 
 #-------------------------------------------------------------------------------
@@ -186,10 +188,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -259,7 +261,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 2.5
 
 # initial time step size
 dinitialStep = 0.001
@@ -309,10 +311,10 @@ depsSteady = 0.0
 ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -367,14 +369,14 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 100
+ilmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
 # 1 = V-cycle
 # 2 = W-cycle
 # 3,4,5 =  corresponding saw tooth variants
-icycle = 0
+icycle = 1
 
 # nonlinear coarse grid solver
 # 1 = nonlinear single-grid solver
@@ -447,7 +449,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -552,11 +554,11 @@ ssmoothername = LinearSmoother
 
 # number of presmoothing steps (if saw tooth variant is used, then no
 # presmoothing steps are performed in the coarse-to-fine part of the cycle)
-npresmooth = 3
+npresmooth = 2
 
 # number of postsmoothing steps (if saw tooth variant is used, then no
 # postsmoothing steps are performed in the coarse-to-fine part of the cycle)
-npostsmooth = 0
+npostsmooth = 2
 
 # factor for pre/postsm. on coarser levels (On each level l, the number of
 # smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
@@ -617,7 +619,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -651,7 +653,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-1
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -687,7 +689,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 4
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -696,10 +698,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.005
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 4
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

@@ -204,6 +204,125 @@ module euler_basic
 
 !</constantblock>
 
+
+!<constantblock description="Types of boundary conditions">
+
+  ! Euler wall and symmetry plane boundary condition
+  ! The normal component of the velocity vector is set to zero
+  !
+  ! V*n = 0
+
+  integer, parameter, public :: BDRC_EULERWALL_WEAK = 1
+  integer, parameter, public :: BDRC_EULERWALL      = -BDRC_EULERWALL_WEAK
+
+  ! Relaxed Euler wall and symmetry plane boundary condition
+  ! The normal component of the velocity vector is "approching" zero
+  !
+  ! (V-c*Vold)*n = 0, where   0 < c <= 1
+
+  integer, parameter, public :: BDRC_RLXEULERWALL_WEAK = 2
+  integer, parameter, public :: BDRC_RLXEULERWALL      = -BDRC_RLXEULERWALL_WEAK
+
+  ! Viscous wall boundary condition
+  ! The velocity vector is set to zero
+  !
+  ! V = 0
+
+  integer, parameter, public :: BDRC_VISCOUSWALL_WEAK = 3
+  integer, parameter, public :: BDRC_VISCOUSWALL      = -BDRC_VISCOUSWALL_WEAK
+
+  ! Free stream boundary condition using characteristics
+  ! These boundary conditions can be used for both subsonic and
+  ! supersonic in- and outflow where the characteristics are either
+  ! set from free stream quantities for ingoing characteristics or
+  ! adopted from the interior values for outgoing characteristics.
+
+  integer, parameter, public :: BDRC_FREESTREAM_WEAK = 4
+  integer, parameter, public :: BDRC_FREESTREAM      = -BDRC_FREESTREAM_WEAK
+
+  ! Subsonic inlet boundary condition
+  ! At a subsonic inlet, the recommended boundary condition is to specify
+  ! the total temperature and total pressure as well as the flow angle.
+
+  integer, parameter, public :: BDRC_SUBINLET_WEAK = 5
+  integer, parameter, public :: BDRC_SUBINLET      = -BDRC_SUBINLET_WEAK
+
+  ! Subsonic outlet boundary condition
+  ! At a subsonic outlet the recommended boundary condition is to specify
+  ! the static pressure.
+
+  integer, parameter, public :: BDRC_SUBOUTLET_WEAK = 6
+  integer, parameter, public :: BDRC_SUBOUTLET      = -BDRC_SUBOUTLET_WEAK
+
+  ! Massflow inlet boundary condition
+  ! This boundary condition can be prescribed at a subsonic inflow boundary
+  ! which requires a given value of mass flow. It is in principal identical
+  ! to the total states inflow boundary condition, where the value of total
+  ! pressure is a function of mass flow. First, the velocity normal to the
+  ! boundary is found from the value of desired mass flow and density
+  !
+  ! (1) V_n = Massflow/rho
+  !
+  ! Next, the Lavel number is defined as
+  !
+  ! (2) Laval = SQRT(U_n^2+V_n^2)/c
+  !
+  ! Finally, the total pressure is calculated as
+  !
+  ! (3) p0 = p*(1-(gamma-1)/(gamma+1)Laval^2)^(-gamma)/(gamma-1)
+
+  integer, parameter, public :: BDRC_MASSINLET_WEAK = 7
+  integer, parameter, public :: BDRC_MASSINLET      = -BDRC_MASSINLET_WEAK
+
+  ! Massflow outlet boundary condition
+  ! This boundary condition can be prescribed at a subsonic outflow boundary
+  ! which requires a given value of mass flow. It is in principal identical
+  ! to the static pressure inflow boundary condition where the value of
+  ! static pressure is a function of mass flow. For each value of total
+  ! state and given mass flow, there is a corresponding value of static pressure.
+  ! Mathematically, this can be achieved by solving the implicit equation
+  ! for the velocity V_n:
+  !
+  ! (1) Massflow = p0*V_n*(1-(gamma-1)/(2*c0^2)*V_n^2)^1/(gamma-1)*S,
+  !
+  ! where the total states are known from the solution. Next, the Laval number
+  ! is computed from the velocity value as follows
+  !
+  ! (2) Laval = V_n/(c0*SQRT(2/(gamma+1))),
+  !
+  ! where c0 is the total speed of sound. Finally, the static pressure is
+  ! computed from the Laval number as follows
+  !
+  ! (3) p = p0*(1-(gamma-1)/(gamma+1)*Laval^2)^gamma/(gamma-1)
+
+  integer, parameter, public :: BDRC_MASSOUTLET_WEAK = 8
+  integer, parameter, public :: BDRC_MASSOUTLET      = -BDRC_MASSOUTLET_WEAK
+
+  ! Mach outflow boundary condition
+  ! This condition is similar to the mass flow outflow boundary condition. It is
+  ! basically the static pressure outflow boundary condition, where the value of
+  ! static pressure is expressed as function of desired Mach number M and known
+  ! value of total pressure p0
+  !
+  ! p = p0*(1+(gamma-1)/2*M^2)^(-gamma/(gamma-1))
+
+  integer, parameter, public :: BDRC_MACHOUTLET_WEAK = 9
+  integer, parameter, public :: BDRC_MACHOUTLET      = -BDRC_MACHOUTLET_WEAK
+
+  ! Supersonic inlet boundary condition
+  ! All boundary conditions are prescribed by the free stream quantities
+
+  integer, parameter, public :: BDRC_SUPERINLET_WEAK = 10
+  integer, parameter, public :: BDRC_SUPERINLET      = -BDRC_SUPERINLET_WEAK
+
+  ! Supersonic outlet boundary condition
+  ! No boundary conditions are prescribed at all
+
+  integer, parameter, public :: BDRC_SUPEROUTLET_WEAK = 11
+  integer, parameter, public :: BDRC_SUPEROUTLET      = -BDRC_SUPEROUTLET_WEAK
+
+!</constantblock>
+
 !</constants>
 
 contains

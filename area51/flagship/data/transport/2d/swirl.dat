@@ -118,7 +118,6 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
-# 4 = analytical target functional
 itargetfunctype = 0
 
 # section name of target functional
@@ -196,10 +195,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -269,7 +268,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 2.5
+dfinalTime = 1.5
 
 # initial time step size
 dinitialStep = 0.001
@@ -316,7 +315,7 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # minimum multigrid level number
 nlmin = 6
@@ -377,14 +376,14 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 100
+ilmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
 # 1 = V-cycle
 # 2 = W-cycle
 # 3,4,5 =  corresponding saw tooth variants
-icycle = 0
+icycle = 1
 
 # nonlinear coarse grid solver
 # 1 = nonlinear single-grid solver
@@ -457,7 +456,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -516,7 +515,7 @@ ssolvername = LinearSolver
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -562,11 +561,11 @@ ssmoothername = LinearSmoother
 
 # number of presmoothing steps (if saw tooth variant is used, then no
 # presmoothing steps are performed in the coarse-to-fine part of the cycle)
-npresmooth = 3
+npresmooth = 2
 
 # number of postsmoothing steps (if saw tooth variant is used, then no
 # postsmoothing steps are performed in the coarse-to-fine part of the cycle)
-npostsmooth = 0
+npostsmooth = 2
 
 # factor for pre/postsm. on coarser levels (On each level l, the number of
 # smoothing steps is computed from SM_l=SM_L*NSFAC**(L-l), where L stands
@@ -709,7 +708,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

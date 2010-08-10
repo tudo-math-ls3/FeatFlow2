@@ -103,6 +103,7 @@ module euler_application
   use afcstabilisation
   use bilinearformevaluation
   use boundary
+  use boundarycondaux
   use boundaryfilter
   use collection
   use cubature
@@ -346,8 +347,9 @@ contains
       
       ! The boundary condition for the primal problem is required for
       ! all solution strategies so initialize it from the parameter file
-      call bdrf_readBoundaryCondition(rbdrCondPrimal, sindatfileName,&
-          '['//trim(sbdrcondName)//']', ndimension)
+      call bdrc_readBoundaryCondition(rbdrCondPrimal,&
+          sindatfileName, '['//trim(sbdrcondName)//']',&
+          ndimension, euler_getBdrCondExprNumber)
 
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -397,8 +399,8 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrf_release(rbdrCondPrimal)
-    call bdrf_release(rbdrCondDual)
+    call bdrc_release(rbdrCondPrimal)
+    call bdrc_release(rbdrCondDual)
 
     ! Release vectors
     call lsysbl_releaseVector(rsolutionPrimal)

@@ -186,6 +186,7 @@ module transport_application
   use afcstabilisation
   use bilinearformevaluation
   use boundary
+  use boundarycondaux
   use boundaryfilter
   use collection
   use cubature
@@ -436,8 +437,9 @@ contains
       ! The boundary conditions for the primal problem are required
       ! for all solution strategies. Hence, set the pointer and
       ! initialize boundary conditions from the parameter file.
-      call bdrf_readBoundaryCondition(rbdrCondPrimal,&
-          sindatfileName, '['//trim(sbdrcondName)//']', ndimension)
+      call bdrc_readBoundaryCondition(rbdrCondPrimal,&
+          sindatfileName, '['//trim(sbdrcondName)//']',&
+          ndimension, transp_getBdrCondExprNumber)
 
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -462,8 +464,9 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call parlst_getvalue_string(rparlist, ssectionName,&
             'sdualbdrcondname', sbdrcondName)
-        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
-            '['//trim(sbdrcondName)//']', ndimension)
+        call bdrc_readBoundaryCondition(rbdrCondDual,&
+            sindatfileName, '['//trim(sbdrcondName)//']',&
+            ndimension, transp_getBdrCondExprNumber)
 
         call transp_solveTransientPrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
@@ -496,8 +499,9 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call parlst_getvalue_string(rparlist, ssectionName,&
             'sdualbdrcondname', sbdrcondName)
-        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
-            '['//trim(sbdrcondName)//']', ndimension)
+        call bdrc_readBoundaryCondition(rbdrCondDual,&
+            sindatfileName, '['//trim(sbdrcondName)//']',&
+            ndimension, transp_getBdrCondExprNumber)
 
         call transp_solvePseudoTransientPrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
@@ -530,8 +534,9 @@ contains
         !- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         call parlst_getvalue_string(rparlist, ssectionName,&
             'sdualbdrcondname', sbdrcondName)
-        call bdrf_readBoundaryCondition(rbdrCondDual, sindatfileName,&
-            '['//trim(sbdrcondName)//']', ndimension)
+        call bdrc_readBoundaryCondition(rbdrCondDual,&
+            sindatfileName, '['//trim(sbdrcondName)//']',&
+            ndimension, transp_getBdrCondExprNumber)
 
         call transp_solveSteadyStatePrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
@@ -575,8 +580,8 @@ contains
     call problem_releaseProblem(rproblem)
 
     ! Release boundary conditions
-    call bdrf_release(rbdrCondPrimal)
-    call bdrf_release(rbdrCondDual)
+    call bdrc_release(rbdrCondPrimal)
+    call bdrc_release(rbdrCondDual)
 
     ! Release vectors
     call lsysbl_releaseVector(rsolutionPrimal)
@@ -1230,7 +1235,8 @@ contains
       if (rproblemLevel%Rafcstab(convectionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rafcstab(convectionAFC))
+            rproblemLevel%Rafcstab(convectionAFC),&
+            p_rdiscretisation)
 
       else
         call afcstab_resizeStabilisation(&
@@ -1249,7 +1255,8 @@ contains
       if (rproblemLevel%Rafcstab(diffusionAFC)%iSpec .eq. AFCSTAB_UNDEFINED) then
         call gfsc_initStabilisation(&
             rproblemLevel%Rmatrix(templateMatrix),&
-            rproblemLevel%Rafcstab(diffusionAFC))
+            rproblemLevel%Rafcstab(diffusionAFC),&
+            p_rdiscretisation)
 
       else
         call afcstab_resizeStabilisation(&
@@ -1300,8 +1307,8 @@ contains
         call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
-        ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
+        ! of the physical diffusion parameter alpha
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
 
       case DEFAULT
         call lsyssc_clearMatrix(rmatrix)
@@ -1339,8 +1346,8 @@ contains
         call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
-        ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
+        ! of the physical diffusion parameter alpha
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
 
       case (DIFFUSION_ANISOTROPIC)
 
@@ -1357,6 +1364,7 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
+        rform%Dcoefficients     = -1.0_DP
 
         ! Initialize the bilinear form
         rform%itermCount = 4
@@ -1411,8 +1419,8 @@ contains
         call fparser_evalFunction(rfparser, icomp, Dunity, dalpha)
 
         ! Assemble the Laplace matrix multiplied by the negative value
-        ! of the parameter alpha
-        call stdop_assembleLaplaceMatrix(rmatrix, .true., dalpha)
+        ! of the physical diffusion parameter alpha
+        call stdop_assembleLaplaceMatrix(rmatrix, .true., -dalpha)
 
       case (DIFFUSION_ANISOTROPIC)
 
@@ -1429,6 +1437,7 @@ contains
         ! We have constant coefficients
         rform%ballCoeffConstant = .true.
         rform%BconstantCoeff    = .true.
+        rform%Dcoefficients     = -1.0_DP
 
         ! Initialize the bilinear form
         rform%itermCount = 9

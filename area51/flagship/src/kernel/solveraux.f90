@@ -122,6 +122,7 @@
 
 module solveraux
 
+  use boundarycondaux
   use boundaryfilter
   use fsystem
   use genoutput

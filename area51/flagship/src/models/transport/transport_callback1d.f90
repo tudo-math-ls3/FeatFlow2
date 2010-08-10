@@ -319,9 +319,16 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $-v_i*C_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+#endif 
     end do
     
   end subroutine transp_calcMatDiagConvP1d_sim
@@ -373,12 +380,23 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $-v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -433,13 +451,24 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $-v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
-      ! Compute artificial diffusion coefficient
+#endif
+      
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
@@ -493,9 +522,16 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $v_i*C_{ii}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ii} = -v_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = dscale*&
           p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute convective coefficient $k_{ii} = v_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          p_Dvariable1(IverticesAtNode(1,inode))*DmatrixCoeffsAtNode(1,inode)
+#endif
     end do
     
   end subroutine transp_calcMatDiagConvD1d_sim
@@ -547,12 +583,23 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
           p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -607,13 +654,24 @@ contains
 !!!    p_Dvelocity => collct_getvalue_vec(rcollection, 'velocity')
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $v_j*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient $k_{ij} = -v_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = -dscale*&
+          p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient $k_{ji} = -v_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = -dscale*&
+          p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient $k_{ij} = v_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = dscale*&
           p_Dvariable1(IverticesAtEdge(2,iedge))*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $v_i*C_{ji}$
+      ! Compute convective coefficient $k_{ji} = v_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = dscale*&
           p_Dvariable1(IverticesAtEdge(1,iedge))*DmatrixCoeffsAtEdge(1,2,iedge)
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) = dscale*&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
@@ -662,9 +720,16 @@ contains
     integer :: inode
 
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficients  $-u_i*C_{ii}$
+      
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficients  $k_{ii} = u_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute convective coefficients  $k_{ii} = -u_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           DdataAtNode(inode)*DmatrixCoeffsAtNode(1,inode)
+#endif
     end do
     
   end subroutine transp_calcMatDiagBurgersP1d_sim
@@ -711,12 +776,23 @@ contains
     integer :: iedge
 
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-(u_i+u_j)/2*C_{ij}$
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
+      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
+#else
+      ! Compute convective coefficient  $k_{ij} = -(u_i+u_j)/2*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-      ! Compute convective coefficient  $-(u_i+u_j)/2*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -(u_i+u_j)/2*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -765,14 +841,25 @@ contains
     ! local variables
     integer :: iedge
 
-    do iedge  = 1, size(DcoefficientsAtEdge,2)    
-      ! Compute convective coefficient  $-(u_i+u_j)/2*C_{ij}$
+    do iedge  = 1, size(DcoefficientsAtEdge,2)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
+      ! Compute convective coefficient  $k_{ij} = (u_i+u_j)/2*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
+          0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
+#else
+      ! Compute convective coefficient  $k_{ij} = -(u_i+u_j)/2*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*DmatrixCoeffsAtEdge(1,1,iedge)*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-      ! Compute convective coefficient  $-(u_i+u_j)/2*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -(u_i+u_j)/2*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*DmatrixCoeffsAtEdge(1,2,iedge)*&
           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))
-      ! Compute artificial diffusion coefficient
+#endif
+
+      ! Compute artificial diffusion coefficient $d_{ij} = \max\{-k_{ij},0,-k_{ji}\}$
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP, -DcoefficientsAtEdge(3,iedge))
     end do
@@ -827,10 +914,18 @@ contains
     integer :: inode
     
     do inode = 1, size(DcoefficientsAtNode,2)
-      ! Compute convective coefficient  $-a_i*C_{ii}$
+
       ui = DdataAtNode(inode)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient  $k_{ii} = a_i*C_{ii}$
+      DcoefficientsAtNode(1,inode) = dscale*&
+          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)
+#else
+      ! Compute convective coefficient  $k_{ii} = -a_i*C_{ii}$
       DcoefficientsAtNode(1,inode) = -dscale*&
           (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtNode(1,inode)
+#endif
     end do
     
   end subroutine transp_calcMatDiagBuckLevP1d_sim
@@ -883,13 +978,25 @@ contains
     integer :: iedge
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-a_j*C_{ij}$
+
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $-a_i*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+#endif
+
       ! Set artificial diffusion to zero
       DcoefficientsAtEdge(1,iedge) = 0
     end do
@@ -945,13 +1052,25 @@ contains
     integer :: iedge
     
     do iedge = 1, size(DcoefficientsAtEdge,2)
-      ! Compute convective coefficient  $-a_j*C_{ij}$
+
       ui = DdataAtEdge(1,iedge); uj = DdataAtEdge(2,iedge)
+
+#ifdef USE_TRANSP_INTEGRATEBYPARTS
+      ! Compute convective coefficient  $k_{ij} = a_j*C_{ji}$
+      DcoefficientsAtEdge(2,iedge) = dscale*&
+          (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+      ! Compute convective coefficient  $k_{ji} = a_i*C_{ij}$
+      DcoefficientsAtEdge(3,iedge) = dscale*&
+          (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
+#else
+      ! Compute convective coefficient  $k_{ij} = -a_j*C_{ij}$
       DcoefficientsAtEdge(2,iedge) = -dscale*&
           (4*uj*(1-uj)/(3*uj*uj-2*uj+1)**2)*DmatrixCoeffsAtEdge(1,1,iedge)
-      ! Compute convective coefficient  $-a_i*C_{ji}$
+      ! Compute convective coefficient  $k_{ji} = -a_i*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (4*ui*(1-ui)/(3*ui*ui-2*ui+1)**2)*DmatrixCoeffsAtEdge(1,2,iedge)
+#endif
+
       ! Compute artificial diffusion coefficient
       DcoefficientsAtEdge(1,iedge) =&
           max(-DcoefficientsAtEdge(2,iedge), 0.0_DP,-DcoefficientsAtEdge(3,iedge))

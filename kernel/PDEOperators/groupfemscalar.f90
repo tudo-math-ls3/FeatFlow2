@@ -162,6 +162,7 @@ module groupfemscalar
   use linearsystemblock
   use linearsystemscalar
   use mprimitives
+  use spatialdiscretisation
   use storage
   use triangulation
 
@@ -282,7 +283,7 @@ contains
 
 !<subroutine>
 
-  subroutine gfsc_initStabilisation(rmatrixTemplate, rafcstab)
+  subroutine gfsc_initStabilisation(rmatrixTemplate, rafcstab, rblockDiscretisation)
 
 !<description>
     ! This subroutine initialises the discrete stabilisation structure
@@ -299,6 +300,10 @@ contains
 !<input>
     ! The template matrix
     type(t_matrixScalar), intent(in) :: rmatrixTemplate
+
+    ! OPTIONAL: block discretisation structure which is used to
+    ! create auxiliary vectors, e.g., for the predictor
+    type(t_blockDiscretisation), intent(in), optional :: rblockDiscretisation
 !</input>
 
 !<inputoutput>
@@ -358,7 +363,7 @@ contains
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
       rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
       rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
@@ -368,9 +373,15 @@ contains
 
       ! We need 1 nodal vector for the predictor
       allocate(rafcstab%RnodalBlockVectors(1))
-      call lsysbl_createVectorBlock(&
-          rafcstab%RnodalBlockVectors(1),&
-          rafcstab%NEQ, 1, .false., ST_DOUBLE)
+
+      if (present(rblockDiscretisation)) then
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
+      else
+        call lsysbl_createVectorBlock(&
+            rafcstab%RnodalBlockVectors(1),&
+            rafcstab%NEQ, 1, .false., ST_DOUBLE)
+      end if
       
       ! Associate vector
       rafcstab%p_rvectorPredictor => rafcstab%RnodalBlockVectors(1)
@@ -426,7 +437,7 @@ contains
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
       
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
       rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
       rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
@@ -442,7 +453,7 @@ contains
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
       
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
       rafcstab%p_rvectorFlux0 => rafcstab%RedgeVectors(2)
       rafcstab%p_rvectorFlux  => rafcstab%RedgeVectors(3)
@@ -472,7 +483,7 @@ contains
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
 
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
       rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
       rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)
@@ -494,7 +505,7 @@ contains
             rafcstab%NEDGE, .false., ST_DOUBLE)
       end do
 
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorAlpha => rafcstab%RedgeVectors(1)
       rafcstab%p_rvectorFlux => rafcstab%RedgeVectors(2)
 
@@ -509,9 +520,15 @@ contains
       ! We need 1 nodal block-vector for the 
       ! approximation to the time derivative
       allocate(rafcstab%RnodalBlockVectors(1))
-      call lsysbl_createVectorBlock(&
-          rafcstab%RnodalBlockVectors(1),&
-          rafcstab%NEQ, 1, .false., ST_DOUBLE)
+
+      if (present(rblockDiscretisation)) then
+        call lsysbl_createVectorBlock(rblockDiscretisation,&
+            rafcstab%RnodalBlockVectors(1), .false., ST_DOUBLE)
+      else
+        call lsysbl_createVectorBlock(&
+            rafcstab%RnodalBlockVectors(1),&
+            rafcstab%NEQ, 1, .false., ST_DOUBLE)
+      end if
 
       ! Associate vector
       rafcstab%p_rvectorPredictor  => rafcstab%RnodalBlockVectors(1)
@@ -540,7 +557,7 @@ contains
             rafcstab%NEQ, .false., ST_DOUBLE)
       end do
       
-      ! Associated vectors
+      ! Associate vectors
       rafcstab%p_rvectorPp => rafcstab%RnodalVectors(1)
       rafcstab%p_rvectorPm => rafcstab%RnodalVectors(2)
       rafcstab%p_rvectorQp => rafcstab%RnodalVectors(3)

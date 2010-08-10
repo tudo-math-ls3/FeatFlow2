@@ -71,7 +71,7 @@ svelocityname(2) =
 idiffusiontype = 0
 
 # section name of diffusion tensor
-sdiffusionname = @diffusion
+sdiffusionname = 
 
 # type of flow reaction
 # 0 = zero reactive term
@@ -79,7 +79,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname = 
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -87,7 +87,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -114,11 +114,13 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
-# 4 = analytical target functional
 itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname = 
+
+# section name of exacttarget functional
+sexacttargetfuncname = 
 
 
 #-------------------------------------------------------------------------------
@@ -189,10 +191,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 11
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -262,7 +264,7 @@ multisteps = 0
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.05
+dfinalTime = 0.5
 
 # initial time step size
 dinitialStep = 0.001
@@ -370,7 +372,7 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 100
+ilmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -591,7 +593,7 @@ depsStag = 0.0
 #  7 = BiCGSTAB
 #  8 = FGMRES
 # 50 = ILU
-isolver = 7
+isolver = 5
 
 # dimension of the Krylov subspace for FGMRES method
 nkrylov = 15

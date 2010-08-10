@@ -34,4 +34,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  0
+4.0  T  -1   # homogeneous Neumann condition

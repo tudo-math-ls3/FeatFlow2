@@ -101,7 +101,7 @@ ssolutionname = @initsol
 
 # type of exact solution profile
 # 0 = no exact solution available
-# 1 = analytical initial solution
+# 1 = analytical exact solution
 # 2 = PGM image
 iexactsolutiontype = 1
 
@@ -190,10 +190,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -219,7 +219,7 @@ istabilisation = 0
 iformatUCD = 1
 
 # time interval for UCD output
-dstepUCD = 1.0
+dstepUCD = 0.0
 
 # file for UCD output of solution
 sucdsolution = out/leveque
@@ -263,7 +263,7 @@ multisteps = 2
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.001
+dfinalTime = 6.2831853
 
 # initial time step size
 dinitialStep = 0.001
@@ -451,7 +451,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -691,7 +691,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 2
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -703,7 +703,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

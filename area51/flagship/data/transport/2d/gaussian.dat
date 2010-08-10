@@ -53,7 +53,7 @@ imassantidiffusiontype = 1
 # 3 = Burgers equation in space-time
 # 4 = Buckley Leverett in space-time
 # 6 = Burgers' equation in 2D
-ivelocitytype = 2
+ivelocitytype = 1
 
 # section name of velocity field
 svelocityname(2) = 
@@ -76,7 +76,7 @@ sdiffusionname = @diffusion
 ireactiontype = 0
 
 # section name of reactive term
-sreactionname = @reaction
+sreactionname = 
 
 # type of right-hand side vector
 # 0 = zero right-hand side
@@ -84,7 +84,7 @@ sreactionname = @reaction
 irhstype = 0
 
 # section name of right-hand side vector
-srhsname = @rhs
+srhsname = 
 
 # type of initial solution profile
 # 0 = zero initial solution
@@ -111,11 +111,13 @@ sexactsolutionname = @exactsol
 # 1 = volume integral
 # 2 = surface integral
 # 3 = mixed volume/surface integral
-# 4 = analytical target functional
-itargetfunctype = 1
+itargetfunctype = 0
 
 # section name of target functional
-stargetfuncname = @targetFuncInt
+stargetfuncname = 
+
+# section name of exacttarget functional
+sexacttargetfuncname = 
 
 
 #-------------------------------------------------------------------------------
@@ -146,7 +148,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -186,10 +188,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 10
+istabilisation = 12
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -234,7 +236,7 @@ sucderror = out/gaussian_error
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # type of time-stepping algorithm
 # 1 = two-level theta-scheme
@@ -259,7 +261,7 @@ multisteps = 2
 dinitialTime = 1.57079633
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 6.2831853
 
 # initial time step size
 dinitialStep = 0.001
@@ -306,13 +308,13 @@ depsSteady = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 0
 
 # minimum multigrid level number
-nlmin = 5
+nlmin = 6
 
 # maximum multigrid level number
-nlmax = 5
+nlmax = 6
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -428,7 +430,7 @@ depsStag = 0.0
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 2
+ioutputlevel = 3
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -447,7 +449,7 @@ nmaxIterations = 100
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration
@@ -617,7 +619,7 @@ sprecondName = LinearPrecond
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 0
+ioutputlevel = 2
 
 # norm to use for defect checking
 # 0 = Euclidian norm
@@ -651,7 +653,7 @@ domega = 1.0
 depsAbs = 1e-12
 
 # relative tolerance for residual
-depsRel = 0.0
+depsRel = 1e-1
 
 # relative tolerance for stagnation
 depsStag = 0.0
@@ -687,7 +689,7 @@ domega = 1.0
 ################################################################################
 
 # number of pre-adaptation steps
-npreadapt = 5
+npreadapt = 0
 
 # number of adaptation steps
 nadapt = 0
@@ -696,10 +698,10 @@ nadapt = 0
 dtimeadapt = 0.0
 
 # time step for grid adaptivity
-dstepadapt = 0.01
+dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 5
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green

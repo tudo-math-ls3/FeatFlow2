@@ -155,7 +155,7 @@ imatrixformat = 9
 # type of Jacobian matrix
 # 0 = standard sparsity pattern
 # 1 = extended sparsity pattern
-ijacobianformat = 1
+ijacobianformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -195,10 +195,10 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 20
+istabilisation = 1
 
 # perform prelimiting
-iprelimiting = 1
+iprelimiting = 0
 
 
 ################################################################################
@@ -456,7 +456,7 @@ nmaxIterations = 10
 # 1 = block-diagonal preconditioner
 # 2 = defect-correction algorithm
 # 3 = algebraic Newton algorithm
-iprecond = 3
+iprecond = 2
 
 # nonlinear solver
 # 101 = fixed-point iteration

@@ -266,7 +266,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -311,7 +311,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -474,7 +474,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -501,7 +501,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -550,7 +550,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
@@ -612,7 +612,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -641,7 +641,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -715,7 +715,7 @@ contains
         ! Build both contributions into the fluxes
         !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
@@ -729,7 +729,7 @@ contains
 
       else
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                            DmatrixCoeffsAtEdge(1,1,idx)*dF_i )
@@ -794,7 +794,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR1D) :: dF_i, dF_j
 #else
     real(DP), dimension(NVAR1D) :: dF_ij
@@ -823,7 +823,7 @@ contains
       ru2i = ui*DdataAtEdge(2,1,idx)
       ru2j = uj*DdataAtEdge(2,2,idx)
       
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF_i(1) = DdataAtEdge(2,1,idx)
       dF_i(2) = G1*DdataAtEdge(3,1,idx)-G14*ru2i
@@ -862,7 +862,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF_j-&
                                          DmatrixCoeffsAtEdge(1,1,idx)*dF_i + Diff)
@@ -3311,7 +3311,7 @@ contains
       Du(3) = p/G1+0.5_DP*rho*(vn*vn)
 
 
-    case(BDR_FARFIELD)
+    case(BDR_FREESTREAM)
       !-------------------------------------------------------------------------
 
       ! The free stream primitive variables are Deval=[rho,v1,p]

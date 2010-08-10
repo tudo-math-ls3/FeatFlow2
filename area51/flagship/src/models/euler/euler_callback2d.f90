@@ -166,6 +166,11 @@
 !#      -> Performs application specific tasks in the adaptation
 !#         algorithm in 2D, whereby the vector is stored in block format
 !#
+!# 41.) euler_coeffVectorBdr2d_sim
+!#      -> Calculates the coefficients for the linear form in 2D
+!#
+!# 42.) euler_coeffMatrixBdr2d_sim
+!#      -> Calculates the coefficients for the bilinear form in 2D
 !# </purpose>
 !##############################################################################
 
@@ -173,6 +178,7 @@ module euler_callback2d
 
   use boundaryfilter
   use collection
+  use derivatives
   use euler_basic
   use flagship_callback
   use fsystem
@@ -229,6 +235,7 @@ module euler_callback2d
   public :: euler_trafoDiffDenPre2d_sim
   public :: euler_trafoDiffDenPreVel2d_sim
   public :: euler_calcBoundaryvalues2d
+  public :: euler_coeffVectorBdr2d_sim
   public :: euler_hadaptCallbackScalar2d
   public :: euler_hadaptCallbackBlock2d
 
@@ -280,7 +287,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -338,7 +345,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
       
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -541,7 +548,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -549,7 +556,7 @@ contains
     real(DP), dimension(NVAR2D) :: Diff
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
-    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux,vel,cs
+    real(DP) :: d_ij,hi,hj,H_ij,q_ij,u_ij,v_ij,aux,vel,c_ij
     integer :: idx
 
     
@@ -573,7 +580,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -633,10 +640,10 @@ contains
       aux  = sqrt(a(1)*a(1)+a(2)*a(2))
       vel  = u_ij*a(1) + v_ij*a(2)
       q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-      cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+      c_ij = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
       
       ! Scalar dissipation
-      d_ij = abs(vel) + aux*cs
+      d_ij = abs(vel) + aux*c_ij
 
       ! Multiply the solution difference by the artificial diffusion factor
       Diff = d_ij*(DdataAtEdge(:,2,idx)-DdataAtEdge(:,1,idx))
@@ -645,7 +652,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -712,7 +719,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -744,7 +751,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -815,7 +822,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -880,7 +887,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -889,7 +896,7 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,c_ij
     integer :: idx
 
 
@@ -913,7 +920,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -981,12 +988,12 @@ contains
         vPow2 = v_ij*v_ij
         q_ij  = 0.5_DP*(uPow2+vPow2)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs = sqrt(cPow2)
+        c_ij= sqrt(cPow2)
         
         ! Compute eigenvalues
-        l1 = abs(aux-cs)
+        l1 = abs(aux-c_ij)
         l2 = abs(aux)
-        l3 = abs(aux+cs)
+        l3 = abs(aux+c_ij)
         l4 = abs(aux)
         
         ! Compute solution difference U_j-U_i
@@ -994,7 +1001,7 @@ contains
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4))
-        aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/cs
+        aux2 = 0.5_DP*(aux*Diff(1)-a(1)*Diff(2)-a(2)*Diff(3))/c_ij
         
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -1004,15 +1011,16 @@ contains
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         Diff(1) = anorm * ( w1 + w2 + w3 )
-        Diff(2) = anorm * ( (u_ij-cs*a(1))*w1 + u_ij*w2 + (u_ij+cs*a(1))*w3 + a(2)*w4 )
-        Diff(3) = anorm * ( (v_ij-cs*a(2))*w1 + v_ij*w2 + (v_ij+cs*a(2))*w3 - a(1)*w4 )
-        Diff(4) = anorm * ( (H_ij-cs*aux)*w1  + q_ij*w2 + (H_ij+cs*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
+        Diff(2) = anorm * ( (u_ij-c_ij*a(1))*w1 + u_ij*w2 + (u_ij+c_ij*a(1))*w3 + a(2)*w4 )
+        Diff(3) = anorm * ( (v_ij-c_ij*a(2))*w1 + v_ij*w2 + (v_ij+c_ij*a(2))*w3 - a(1)*w4 )
+        Diff(4) = anorm * ( (H_ij-c_ij*aux)*w1  + q_ij*w2 +&
+                            (H_ij+c_ij*aux)*w3  + (u_ij*a(2)-v_ij*a(1))*w4 )
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
         !-----------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -1029,7 +1037,7 @@ contains
 
       else
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -1098,7 +1106,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -1107,7 +1115,7 @@ contains
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: ui,vi,uj,vj,ru2i,ru2j,rv2i,rv2j
     real(DP) :: aux,aux1,aux2,uPow2,vPow2,hi,hj,H_ij,q_ij,u_ij,v_ij
-    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,cs
+    real(DP) :: anorm,l1,l2,l3,l4,w1,w2,w3,w4,cPow2,c_ij
     integer :: idx
 
     do idx = 1, size(DfluxesAtEdge,3)
@@ -1130,7 +1138,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -1198,16 +1206,16 @@ contains
         vPow2 = v_ij*v_ij
         q_ij  = 0.5_DP*(uPow2+vPow2)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs = sqrt(cPow2)
+        c_ij  = sqrt(cPow2)
 
         !-----------------------------------------------------------------------
         ! Dimensional splitting: x-direction
         !-----------------------------------------------------------------------
         
         ! Compute eigenvalues
-        l1 = abs(u_ij-cs)
+        l1 = abs(u_ij-c_ij)
         l2 = abs(u_ij)
-        l3 = abs(u_ij+cs)
+        l3 = abs(u_ij+c_ij)
         l4 = abs(u_ij)
         
         ! Compute solution difference U_j-U_i
@@ -1215,7 +1223,7 @@ contains
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff1(1)-u_ij*Diff1(2)-v_ij*Diff1(3)+Diff1(4))
-        aux2 = 0.5_DP*(u_ij*Diff1(1)-Diff1(2))/cs
+        aux2 = 0.5_DP*(u_ij*Diff1(1)-Diff1(2))/c_ij
         
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -1225,18 +1233,18 @@ contains
         
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         Diff1(1) = a(1) * ( w1 + w2 + w3 )
-        Diff1(2) = a(1) * ( (u_ij-cs)*w1 + u_ij*w2 + (u_ij+cs)*w3 )
+        Diff1(2) = a(1) * ( (u_ij-c_ij)*w1 + u_ij*w2 + (u_ij+c_ij)*w3 )
         Diff1(3) = a(1) * ( v_ij*w1 + v_ij*w2 + v_ij*w3 - w4 )
-        Diff1(4) = a(1) * ( (H_ij-cs*u_ij)*w1  + q_ij*w2 + (H_ij+cs*u_ij)*w3  -v_ij*w4 )
+        Diff1(4) = a(1) * ( (H_ij-c_ij*u_ij)*w1  + q_ij*w2 + (H_ij+c_ij*u_ij)*w3  -v_ij*w4 )
         
         !-----------------------------------------------------------------------
         ! Dimensional splitting: y-direction
         !-----------------------------------------------------------------------
 
         ! Compute eigenvalues
-        l1 = abs(v_ij-cs)
+        l1 = abs(v_ij-c_ij)
         l2 = abs(v_ij)
-        l3 = abs(v_ij+cs)
+        l3 = abs(v_ij+c_ij)
         l4 = abs(v_ij)
         
         ! Compute solution difference U_j-U_i
@@ -1244,7 +1252,7 @@ contains
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff2(1)-u_ij*Diff2(2)-v_ij*Diff2(3)+Diff2(4))
-        aux2 = 0.5_DP*(v_ij*Diff2(1)-Diff2(3))/cs
+        aux2 = 0.5_DP*(v_ij*Diff2(1)-Diff2(3))/c_ij
 
         ! Compute characteristic variables multiplied by the corresponding eigenvalue
         w1 = l1 * (aux1 + aux2)
@@ -1255,14 +1263,14 @@ contains
         ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
         Diff2(1) = a(2) * ( w1 + w2 + w3 )
         Diff2(2) = a(2) * ( u_ij*w1 + u_ij*w2 + u_ij*w3 + w4 )
-        Diff2(3) = a(2) * ( (v_ij-cs)*w1 + v_ij*w2 + (v_ij+cs)*w3 )
-        Diff2(4) = a(2) * ( (H_ij-cs*v_ij)*w1  + q_ij*w2 + (H_ij+cs*v_ij)*w3  + u_ij*w4 )
+        Diff2(3) = a(2) * ( (v_ij-c_ij)*w1 + v_ij*w2 + (v_ij+c_ij)*w3 )
+        Diff2(4) = a(2) * ( (H_ij-c_ij*v_ij)*w1  + q_ij*w2 + (H_ij+c_ij*v_ij)*w3  + u_ij*w4 )
 
         !-----------------------------------------------------------------------
         ! Build both contributions into the fluxes
         !-----------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -1282,7 +1290,7 @@ contains
 
       else
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
         ! Assemble skew-symmetric fluxes
         DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                              DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -1349,7 +1357,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -1381,7 +1389,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -1446,7 +1454,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -1512,7 +1520,7 @@ contains
 !</subroutine>
 
     ! local variables
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
     real(DP), dimension(NVAR2D) :: dF1_i, dF2_i, dF1_j, dF2_j
 #else
     real(DP), dimension(NVAR2D) :: dF1_ij, dF2_ij
@@ -1544,7 +1552,7 @@ contains
       ru2j = uj*DdataAtEdge(2,2,idx)
       rv2j = vj*DdataAtEdge(3,2,idx)
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Compute fluxes for x-direction
       dF1_i(1) = DdataAtEdge(2,1,idx)
       dF1_i(2) = G1*DdataAtEdge(4,1,idx)-G14*ru2i-G2*rv2i
@@ -1609,7 +1617,7 @@ contains
       ! Build both contributions into the fluxes
       !-------------------------------------------------------------------------
 
-#ifdef USE_EULER_IBP
+#ifdef USE_EULER_INTEGRATEBYPARTS
       ! Assemble skew-symmetric fluxes
       DfluxesAtEdge(:,1,idx) = dscale * (DmatrixCoeffsAtEdge(1,2,idx)*dF1_j+&
                                            DmatrixCoeffsAtEdge(2,2,idx)*dF2_j-&
@@ -2262,7 +2270,7 @@ contains
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
     real(DP), dimension(NDIM2D) :: a
     real(DP) :: aux,hi,hj,H_ij,q_ij,ui,uj,u_ij,vi,vj,v_ij
-    real(DP) :: l1,l2,l3,l4,anorm,c1,c2,cs,cPow2,vel
+    real(DP) :: l1,l2,l3,l4,anorm,c1,c2,c_ij,cPow2,vel
     integer :: idx
 
     do idx = 1, size(DcoefficientsAtEdge,3)
@@ -2319,19 +2327,19 @@ contains
         vel   = c1*u_ij+c2*v_ij
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs = sqrt(cPow2)
+        c_ij= sqrt(cPow2)
         
         ! Diagonal matrix of eigenvalues
-        l1 = abs(vel-cs)
+        l1 = abs(vel-c_ij)
         l2 = abs(vel)
-        l3 = abs(vel+cs)
+        l3 = abs(vel+c_ij)
         l4 = abs(vel)
 
         ! Matrix of right eigenvectors
         R_ij(1,1) =  l1
-        R_ij(2,1) =  l1*(u_ij-cs*c1)
-        R_ij(3,1) =  l1*(v_ij-cs*c2)
-        R_ij(4,1) =  l1*(H_ij-cs*vel)
+        R_ij(2,1) =  l1*(u_ij-c_ij*c1)
+        R_ij(3,1) =  l1*(v_ij-c_ij*c2)
+        R_ij(4,1) =  l1*(H_ij-c_ij*vel)
         
         R_ij(1,2) =  l2
         R_ij(2,2) =  l2*u_ij
@@ -2339,9 +2347,9 @@ contains
         R_ij(4,2) =  l2*q_ij
         
         R_ij(1,3) =  l3
-        R_ij(2,3) =  l3*(u_ij+cs*c1)
-        R_ij(3,3) =  l3*(v_ij+cs*c2)
-        R_ij(4,3) =  l3*(H_ij+cs*vel)
+        R_ij(2,3) =  l3*(u_ij+c_ij*c1)
+        R_ij(3,3) =  l3*(v_ij+c_ij*c2)
+        R_ij(4,3) =  l3*(H_ij+c_ij*vel)
         
         R_ij(1,4) =  0.0_DP
         R_ij(2,4) =  l4*c2
@@ -2349,19 +2357,19 @@ contains
         R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
+        L_ij(1,1) = 0.5_DP*(G1*q_ij+c_ij*vel)/cPow2
         L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
-        L_ij(3,1) = 0.5_DP*(G1*q_ij-cs*vel)/cPow2
+        L_ij(3,1) = 0.5_DP*(G1*q_ij-c_ij*vel)/cPow2
         L_ij(4,1) = v_ij*c1-u_ij*c2
         
-        L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs*c1)/cPow2
+        L_ij(1,2) = 0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2
         L_ij(2,2) = G1*u_ij/cPow2
-        L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs*c1)/cPow2
+        L_ij(3,2) = 0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2
         L_ij(4,2) = c2
 
-        L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs*c2)/cPow2
+        L_ij(1,3) = 0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2
         L_ij(2,3) = G1*v_ij/cPow2
-        L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs*c2)/cPow2
+        L_ij(3,3) = 0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2
         L_ij(4,3) = -c1
         
         L_ij(1,4) =  G2/cPow2
@@ -2432,7 +2440,7 @@ contains
     ! local variable
     real(DP), dimension(NVAR2D,NVAR2D) :: R_ij,L_ij
     real(DP), dimension(NDIM2D) :: a
-    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,cs,l1,l2,l3,l4
+    real(DP) :: anorm,aux,hi,hj,H_ij,q_ij,u_ij,v_ij,vel,c1,c2,cPow2,c_ij,l1,l2,l3,l4
     real(DP) :: Ei,Ej,ui,uj,vi,vj,qi,qj,uvi,uvj,uPow2i,uPow2j,vPow2i,vPow2j,aux1,aux2
     integer :: idx,i,j,k
 
@@ -2533,19 +2541,19 @@ contains
         vel   = c1*u_ij+c2*v_ij
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs    = sqrt(cPow2)
+        c_ij  = sqrt(cPow2)
         
         ! Diagonal matrix of eigenvalues
-        l1 = abs(vel-cs)
+        l1 = abs(vel-c_ij)
         l2 = abs(vel)
-        l3 = abs(vel+cs)
+        l3 = abs(vel+c_ij)
         l4 = abs(vel)
         
         ! Matrix of right eigenvectors
         R_ij(1,1) =  l1
-        R_ij(2,1) =  l1*(u_ij-cs*c1)
-        R_ij(3,1) =  l1*(v_ij-cs*c2)
-        R_ij(4,1) =  l1*(H_ij-cs*vel)
+        R_ij(2,1) =  l1*(u_ij-c_ij*c1)
+        R_ij(3,1) =  l1*(v_ij-c_ij*c2)
+        R_ij(4,1) =  l1*(H_ij-c_ij*vel)
         
         R_ij(1,2) =  l2
         R_ij(2,2) =  l2*u_ij
@@ -2553,9 +2561,9 @@ contains
         R_ij(4,2) =  l2*q_ij
         
         R_ij(1,3) =  l3
-        R_ij(2,3) =  l3*(u_ij+cs*c1)
-        R_ij(3,3) =  l3*(v_ij+cs*c2)
-        R_ij(4,3) =  l3*(H_ij+cs*vel)
+        R_ij(2,3) =  l3*(u_ij+c_ij*c1)
+        R_ij(3,3) =  l3*(v_ij+c_ij*c2)
+        R_ij(4,3) =  l3*(H_ij+c_ij*vel)
         
         R_ij(1,4) =  0.0_DP
         R_ij(2,4) =  l4*c2
@@ -2563,19 +2571,19 @@ contains
         R_ij(4,4) =  l4*(u_ij*c2-v_ij*c1)
         
         ! Matrix of left eigenvectors
-        L_ij(1,1) = 0.5_DP*(G1*q_ij+cs*vel)/cPow2
+        L_ij(1,1) = 0.5_DP*(G1*q_ij+c_ij*vel)/cPow2
         L_ij(2,1) = (cPow2-G1*q_ij)/cPow2
-        L_ij(3,1) = 0.5_DP*(G1*q_ij-cs*vel)/cPow2
+        L_ij(3,1) = 0.5_DP*(G1*q_ij-c_ij*vel)/cPow2
         L_ij(4,1) = v_ij*c1-u_ij*c2
         
-        L_ij(1,2) = 0.5_DP*(-G1*u_ij-cs*c1)/cPow2
+        L_ij(1,2) = 0.5_DP*(-G1*u_ij-c_ij*c1)/cPow2
         L_ij(2,2) = G1*u_ij/cPow2
-        L_ij(3,2) = 0.5_DP*(-G1*u_ij+cs*c1)/cPow2
+        L_ij(3,2) = 0.5_DP*(-G1*u_ij+c_ij*c1)/cPow2
         L_ij(4,2) = c2
         
-        L_ij(1,3) = 0.5_DP*(-G1*v_ij-cs*c2)/cPow2
+        L_ij(1,3) = 0.5_DP*(-G1*v_ij-c_ij*c2)/cPow2
         L_ij(2,3) = G1*v_ij/cPow2
-        L_ij(3,3) = 0.5_DP*(-G1*v_ij+cs*c2)/cPow2
+        L_ij(3,3) = 0.5_DP*(-G1*v_ij+c_ij*c2)/cPow2
         L_ij(4,3) = -c1
         
         L_ij(1,4) =  G2/cPow2
@@ -2894,7 +2902,7 @@ contains
 
     ! local variables
     real(DP), dimension(NVAR2D) :: Diff
-    real(DP) :: u_ij,v_ij,H_ij,q_ij,cs,aux,aux1,aux2,ui,uj,vi,vj,hi,hj,cPow2,a1,a2,anorm
+    real(DP) :: u_ij,v_ij,H_ij,q_ij,c_ij,aux,aux1,aux2,ui,uj,vi,vj,hi,hj,cPow2,a1,a2,anorm
     integer :: idx
 
     ! Compute norm of weighting coefficient
@@ -2907,7 +2915,7 @@ contains
       if (present(DrightEigenvectorsAtEdge)) DrightEigenvectorsAtEdge = 0.0_DP
       if (present(DleftEigenvectorsAtEdge))  DleftEigenvectorsAtEdge  = 0.0_DP
 
-      ! That's it
+      ! That`s it
       return
     end if
 
@@ -2936,7 +2944,7 @@ contains
         ! Compute auxiliary variables
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs    = sqrt(cPow2)
+        c_ij  = sqrt(cPow2)
         aux   = a1*u_ij+a2*v_ij
 
         ! Compute solution difference U_j-U_i
@@ -2944,7 +2952,7 @@ contains
         
         ! Compute auxiliary quantities for characteristic variables
         aux1 = G2/cPow2*(q_ij*Diff(1)-u_ij*Diff(2)-v_ij*Diff(3)+Diff(4) )
-        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3) )/cs
+        aux2 = 0.5_DP*(aux*Diff(1)-a1*Diff(2)-a2*Diff(3) )/c_ij
 
         ! Compute characteristic variables
         DcharVariablesAtEdge(1,idx) = anorm * (aux1 + aux2)
@@ -2978,13 +2986,13 @@ contains
         H_ij = (aux*hi+hj)/(aux+1.0_DP)
         
         ! Compute auxiliary variables
-        cs = sqrt(max(G1*(H_ij-0.5_DP*(u_ij*u_ij+v_ij*v_ij)), SYS_EPSREAL))
+        c_ij= sqrt(max(G1*(H_ij-0.5_DP*(u_ij*u_ij+v_ij*v_ij)), SYS_EPSREAL))
         aux   = a1*u_ij+a2*v_ij
 
         ! Compute eigenvalues
-        DeigenvaluesAtEdge(1,idx) = aux-cs
+        DeigenvaluesAtEdge(1,idx) = aux-c_ij
         DeigenvaluesAtEdge(2,idx) = aux
-        DeigenvaluesAtEdge(3,idx) = aux+cs
+        DeigenvaluesAtEdge(3,idx) = aux+c_ij
         DeigenvaluesAtEdge(4,idx) = aux
       end do
     end if
@@ -3009,14 +3017,14 @@ contains
         
         ! Compute auxiliary variables
         q_ij = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
-        cs   = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
+        c_ij  = sqrt(max(G1*(H_ij-q_ij), SYS_EPSREAL))
         aux  = a1*u_ij+a2*v_ij
 
         ! Compute right eigenvectors
         DrightEigenvectorsAtEdge( 1,idx) =  1.0_DP
-        DrightEigenvectorsAtEdge( 2,idx) =  u_ij-cs*a1
-        DrightEigenvectorsAtEdge( 3,idx) =  v_ij-cs*a2
-        DrightEigenvectorsAtEdge( 4,idx) =  H_ij-cs*aux
+        DrightEigenvectorsAtEdge( 2,idx) =  u_ij-c_ij*a1
+        DrightEigenvectorsAtEdge( 3,idx) =  v_ij-c_ij*a2
+        DrightEigenvectorsAtEdge( 4,idx) =  H_ij-c_ij*aux
 
         DrightEigenvectorsAtEdge( 5,idx) =  1.0_DP
         DrightEigenvectorsAtEdge( 6,idx) =  u_ij
@@ -3024,9 +3032,9 @@ contains
         DrightEigenvectorsAtEdge( 8,idx) =  q_ij
 
         DrightEigenvectorsAtEdge( 9,idx) =  1.0_DP
-        DrightEigenvectorsAtEdge(10,idx) =  u_ij+cs*a1
-        DrightEigenvectorsAtEdge(11,idx) =  v_ij+cs*a2
-        DrightEigenvectorsAtEdge(12,idx) =  H_ij+cs*aux
+        DrightEigenvectorsAtEdge(10,idx) =  u_ij+c_ij*a1
+        DrightEigenvectorsAtEdge(11,idx) =  v_ij+c_ij*a2
+        DrightEigenvectorsAtEdge(12,idx) =  H_ij+c_ij*aux
 
         DrightEigenvectorsAtEdge(13,idx) =  0.0_DP
         DrightEigenvectorsAtEdge(14,idx) =  a2
@@ -3056,23 +3064,23 @@ contains
         ! Compute auxiliary variables
         q_ij  = 0.5_DP*(u_ij*u_ij+v_ij*v_ij)
         cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-        cs    = sqrt(cPow2)
+        c_ij   = sqrt(cPow2)
         aux   = a1*u_ij+a2*v_ij
 
         ! Compute left eigenvectors
-        DleftEigenvectorsAtEdge( 1,idx) =  0.5_DP*(G1*q_ij+cs*aux)/cPow2
+        DleftEigenvectorsAtEdge( 1,idx) =  0.5_DP*(G1*q_ij+c_ij*aux)/cPow2
         DleftEigenvectorsAtEdge( 2,idx) = (cPow2-G1*q_ij)/cPow2
-        DleftEigenvectorsAtEdge( 3,idx) =  0.5_DP*(G1*q_ij-cs*aux)/cPow2
+        DleftEigenvectorsAtEdge( 3,idx) =  0.5_DP*(G1*q_ij-c_ij*aux)/cPow2
         DleftEigenvectorsAtEdge( 4,idx) =  v_ij*a1-u_ij*a2
 
-        DleftEigenvectorsAtEdge( 5,idx) =  0.5_DP*(-G1*u_ij-cs*a1)/cPow2
+        DleftEigenvectorsAtEdge( 5,idx) =  0.5_DP*(-G1*u_ij-c_ij*a1)/cPow2
         DleftEigenvectorsAtEdge( 6,idx) =  G1*u_ij/cPow2
-        DleftEigenvectorsAtEdge( 7,idx) =  0.5_DP*(-G1*u_ij+cs*a1)/cPow2
+        DleftEigenvectorsAtEdge( 7,idx) =  0.5_DP*(-G1*u_ij+c_ij*a1)/cPow2
         DleftEigenvectorsAtEdge( 8,idx) =  a2
 
-        DleftEigenvectorsAtEdge( 9,idx) =  0.5_DP*(-G1*v_ij-cs*a2)/cPow2
+        DleftEigenvectorsAtEdge( 9,idx) =  0.5_DP*(-G1*v_ij-c_ij*a2)/cPow2
         DleftEigenvectorsAtEdge(10,idx) =  G1*v_ij/cPow2
-        DleftEigenvectorsAtEdge(11,idx) =  0.5_DP*(-G1*v_ij+cs*a2)/cPow2
+        DleftEigenvectorsAtEdge(11,idx) =  0.5_DP*(-G1*v_ij+c_ij*a2)/cPow2
         DleftEigenvectorsAtEdge(12,idx) = -a1
 
         DleftEigenvectorsAtEdge(13,idx) =  G2/cPow2
@@ -3218,7 +3226,7 @@ contains
       vPow2 = v_ij*v_ij
       q_ij  = 0.5_DP*(uPow2+vPow2)
       cPow2 = max(G1*(H_ij-q_ij), SYS_EPSREAL)
-      cs = sqrt(cPow2)
+      cs  = sqrt(cPow2)
 
       ! Compute eigenvalues
       l1 = abs(aux-cs)
@@ -4224,8 +4232,8 @@ contains
 
     ! What type of boundary condition is given?
     select case(ibdrCondType)
-    case(BDR_EULERWALL,&
-         BDR_RLXEULERWALL)
+    case(BDRC_EULERWALL,&
+         BDRC_RLXEULERWALL)
       !-------------------------------------------------------------------------
 
       ! The wall boundary conditions follow algorithm II from the paper
@@ -4279,7 +4287,7 @@ contains
       dnx2 = DbdrNormal(1)*DbdrNormal(1)
       dny2 = DbdrNormal(2)*DbdrNormal(2)
 
-      if (ibdrCondType .eq. BDR_EULERWALL) then
+      if (ibdrCondType .eq. BDRC_EULERWALL) then
         ! Compute reflected velocities at the boundary
         v1_b = (dny2-dnx2)*v1 - 2.0_DP*dnxy*v2
         v2_b = (dnx2-dny2)*v2 - 2.0_DP*dnxy*v1
@@ -4442,7 +4450,7 @@ contains
       Du(4) = pstar/G1+0.5_DP*rho*(vn*vn+vt*vt)
 
 
-    case(BDR_VISCOUSWALL)
+    case(BDRC_VISCOUSWALL)
       !-------------------------------------------------------------------------
 
       ! Compute primitive variables
@@ -4458,7 +4466,7 @@ contains
       Du(4) = p/G1
 
 
-    case(BDR_SUPERINLET)
+    case(BDRC_SUPERINLET)
       !-------------------------------------------------------------------------
 
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
@@ -4488,7 +4496,7 @@ contains
       Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
 
 
-    case(BDR_FARFIELD)
+    case(BDRC_FREESTREAM)
       !-------------------------------------------------------------------------
 
       ! The free stream primitive variables are Deval=[rho,v1,v2,p]
@@ -4541,7 +4549,7 @@ contains
       Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
 
 
-    case(BDR_SUBINLET)
+    case(BDRC_SUBINLET)
       !-------------------------------------------------------------------------
 
       ! Compute primitive variables
@@ -4579,7 +4587,7 @@ contains
       Du(4) = p/G1+0.5_DP*rho*(vn*vn+vt*vt)
 
 
-    case(BDR_SUBOUTLET)
+    case(BDRC_SUBOUTLET)
       !-------------------------------------------------------------------------
 
       ! The subsonic outlet conditions follow the thesis
@@ -4628,6 +4636,571 @@ contains
     end select
 
   end subroutine euler_calcBoundaryvalues2d
+
+  ! ***************************************************************************
+
+!<subroutine>
+
+  subroutine euler_coeffVectorBdr2d_sim(rdiscretisation, rform,&
+      nelements, npointsPerElement, Dpoints, ibct, DpointPar,&
+      IdofsTest, rdomainIntSubset, Dcoefficients, rcollection)
+
+    use basicgeometry
+    use boundary
+    use boundaryfilter
+    use collection
+    use domainintegration
+    use feevaluation
+    use fparser
+    use scalarpde
+    use spatialdiscretisation
+    use triangulation
+
+!<description>
+    ! This subroutine is called during the vector assembly. It has to
+    ! compute the coefficients in front of the terms of the linear
+    ! form. This routine can be used universaly for arbitrary linear
+    ! forms for which the coefficients are evaluated analytically
+    ! using a function parser which is passed using the collection.
+    !
+    ! The routine accepts a set of elements and a set of points on these
+    ! elements (cubature points) in real coordinates.
+    ! According to the terms in the linear form, the routine has to compute
+    ! simultaneously for all these points and all the terms in the linear form
+    ! the corresponding coefficients in front of the terms.
+    !
+    ! This routine handles the constant velocities in the primal problem.
+!</description>
+
+!<input>
+    ! The discretisation structure that defines the basic shape of the
+    ! triangulation with references to the underlying triangulation,
+    ! analytic boundary boundary description etc.
+    type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+
+    ! The linear form which is currently to be evaluated:
+    type(t_linearForm), intent(in) :: rform
+
+    ! Number of elements, where the coefficients must be computed.
+    integer, intent(in) :: nelements
+
+    ! Number of points per element, where the coefficients must be computed
+    integer, intent(in) :: npointsPerElement
+
+    ! This is an array of all points on all the elements where coefficients
+    ! are needed.
+    ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+    ! DIMENSION(dimension,npointsPerElement,nelements)
+    real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+    ! This is the number of the boundary component that contains the
+    ! points in Dpoint. All points are on the same boundary component.
+    integer, intent(in) :: ibct
+
+    ! For every point under consideration, this specifies the parameter
+    ! value of the point on the boundary component. The parameter value
+    ! is calculated in LENGTH PARAMETRISATION!
+    ! DIMENSION(npointsPerElement,nelements)
+    real(DP), dimension(:,:), intent(in) :: DpointPar
+
+    ! An array accepting the DOF`s on all elements trial in the trial space.
+    ! DIMENSION(#local DOF`s in test space,nelements)
+    integer, dimension(:,:), intent(in) :: IdofsTest
+
+    ! This is a t_domainIntSubset structure specifying more detailed information
+    ! about the element set that is currently being integrated.
+    ! It is usually used in more complex situations (e.g. nonlinear matrices).
+    type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+!</input>
+
+!<inputoutput>
+    ! Optional: A collection structure to provide additional
+    ! information to the coefficient routine.
+    type(t_collection), intent(inout), optional :: rcollection
+!</inputoutput>
+
+!<output>
+    ! A list of all coefficients in front of all terms in the linear form -
+    ! for all given points on all given elements.
+    !   DIMENSION(nblocks,itermCount,npointsPerElement,nelements)
+    ! with itermCount the number of terms in the linear form.
+    real(DP), dimension(:,:,:,:), intent(out) :: Dcoefficients
+!</output>
+!</subroutine>
+
+    ! local variables
+    type(t_fparser), pointer :: p_rfparser
+    type(t_vectorBlock), pointer :: p_rsolution
+    real(DP), dimension(:,:), pointer :: Daux1
+    real(DP), dimension(:,:,:), pointer :: Daux2
+    real(DP), dimension(NVAR2D) :: DstateI,DstateM,Dflux,Diff
+    real(DP), dimension(NDIM3D+1) :: Dvalue
+    real(DP) :: dnx,dny,dtime,dscale,pI,cI,rM,pM,cM,dvnI,dvtI,dvnM,dvtM
+    integer :: ibdrtype,isegment,iel,ipoint,ndim,ivar,nvar,iexpr,nmaxExpr
+
+    ! This subroutine assumes that the first quick access string
+    ! value holds the name of the function parser in the collection.
+    p_rfparser => collct_getvalue_pars(rcollection,&
+        trim(rcollection%SquickAccess(1)))
+
+    ! This subroutine assumes that the first quick access vector
+    ! points to the solution vector
+    p_rsolution => rcollection%p_rvectorQuickAccess1
+
+    ! Check if the solution is given in block or interleaved format
+    if (p_rsolution%nblocks .eq. 1) then
+      nvar = p_rsolution%RvectorBlock(1)%NVAR
+    else
+      nvar = p_rsolution%nblocks
+    end if
+    
+    ! The first two quick access double values hold the simulation
+    ! time and the scaling parameter
+    dtime  = rcollection%DquickAccess(1)
+    dscale = rcollection%DquickAccess(2)
+
+    ! The first three quick access integer values hold:
+    ! - the type of boundary condition
+    ! - the segment number
+    ! - the maximum number of expressions
+    ibdrtype = rcollection%IquickAccess(1)
+    isegment = rcollection%IquickAccess(2)
+    nmaxExpr = rcollection%IquickAccess(3)
+
+    if (p_rsolution%nblocks .eq. 1) then
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in interleaved format
+      !-------------------------------------------------------------------------
+      
+      ! Allocate temporal memory
+      allocate(Daux1(ubound(Dpoints,2)*nvar, ubound(Dpoints,3)))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      call fevl_evaluate_sim(DER_FUNC, Daux1, p_rsolution%RvectorBlock(1),&
+          Dpoints, rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+
+      ! What type of boundary conditions are we?
+      select case(ibdrtype)
+        
+      case (BDRC_FREESTREAM_WEAK)
+        !-----------------------------------------------------------------------
+        ! Free-stream boundary conditions:
+
+        ! Initialize values for function parser
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, size(rdomainIntSubset%p_Ielements)
+          do ipoint = 1, ubound(Dpoints,2)
+
+            ! Get the normal vector in the point from the boundary.
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute free stream values from function parser given in
+            ! term of the primitive variables [rho,v1,v2,p]
+            do iexpr = 1, 4
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute auxiliary quantities based on free stream state vector
+            rM = DstateM(1)
+            pM = DstateM(4)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            dvnM =  dnx*DstateM(2)+dny*DstateM(3)
+            dvtM = -dny*DstateM(2)+dnx*DstateM(3)
+            
+            ! Compute auxiliary quantities based on internal state vector
+            pI = G1*(Daux1((ipoint-1)*NVAR2D+4,iel)-0.5_DP*&
+                     (Daux1((ipoint-1)*NVAR2D+2,iel)**2+&
+                      Daux1((ipoint-1)*NVAR2D+3,iel)**2))/&
+                 Daux1((ipoint-1)*NVAR2D+1,iel)
+            cI = sqrt(max(GAMMA*pI/Daux1((ipoint-1)*NVAR2D+1,iel), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based
+            ! on internal state vector
+            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            dvtI = (-dny*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     dnx*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            
+            ! Select free stream or computed Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-G9*cM
+            else
+              DstateM(1) = dvnI-G9*cI
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(2) = dvnM+G9*cM
+            else
+              DstateM(2) = dvnI+G9*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(3) = pM/(rM**GAMMA)
+              DstateM(4) = dvtM
+            else
+              DstateM(3) = pI/(Daux1((ipoint-1)*NVAR2D+1,iel)**GAMMA)
+              DstateM(4) = dvtI
+            end if
+
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25_DP*G1*(DstateM(2)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(3)))**G3
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(2))
+            dvtM = DstateM(4)
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
+            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(4) = pM/G1+0.5_DP*(dvnM*dvnM+dvtM*dvtM)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
+            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
+          end do
+        end do
+
+        
+      case (BDRC_EULERWALL_WEAK)
+        !-----------------------------------------------------------------------
+        ! Euler wall boundary condition:
+        
+        do iel = 1, size(rdomainIntSubset%p_Ielements)
+          do ipoint = 1, ubound(Dpoints,2)
+            
+            ! Get the normal vector in the point from the boundary.
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux1((ipoint-1)*NVAR2D+1,iel)
+            DstateI(2) = Daux1((ipoint-1)*NVAR2D+2,iel)
+            DstateI(3) = Daux1((ipoint-1)*NVAR2D+3,iel)
+            DstateI(4) = Daux1((ipoint-1)*NVAR2D+4,iel)
+            
+            ! Compute the normal and tangential velocities based
+            ! on the internal state vector
+            dvnI = ( dnx*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     dny*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+            dvtI = (-dny*Daux1((ipoint-1)*NVAR2D+2,iel)+&
+                     dnx*Daux1((ipoint-1)*NVAR2D+3,iel) )/&
+                     Daux1((ipoint-1)*NVAR2D+1,iel)
+
+            ! Compute the mirrored state vector
+            DstateM(1) = DstateI(1)
+            DstateM(2) = DstateM(1)*(-dvnI*dnx - dvtI*dny)
+            DstateM(3) = DstateM(1)*(-dvnI*dny + dvtI*dnx)
+            DstateM(4) = DstateI(4)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
+          end do
+        end do
+
+      case default
+
+        print *, ibdrtype
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorBdr2d_sim')
+        call sys_halt()
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(Daux1)
+        
+    else
+
+      !-------------------------------------------------------------------------
+      ! Solution is stored in block format
+      !-------------------------------------------------------------------------
+      
+      ! Allocate temporal memory
+      allocate(Daux2(ubound(Dpoints,2), ubound(Dpoints,3), nvar))
+      
+      ! Evaluate the solution in the cubature points on the boundary
+      do ivar = 1, nvar
+        call fevl_evaluate_sim(DER_FUNC, Daux2(:,:,ivar),&
+            p_rsolution%RvectorBlock(ivar), Dpoints,&
+            rdomainIntSubset%p_Ielements, rdomainIntSubset%p_DcubPtsRef)
+      end do
+
+      ! What type of boundary conditions are we?
+      select case(ibdrtype)
+        
+      case (BDRC_FREESTREAM_WEAK)
+        !-----------------------------------------------------------------------
+        ! Free-stream boundary conditions:
+
+        ! Initialize values for function parser
+        Dvalue = 0.0_DP
+        Dvalue(NDIM3D+1) = dtime
+
+        ! Set number of spatial dimensions
+        ndim = size(Dpoints, 1)
+
+        do iel = 1, size(rdomainIntSubset%p_Ielements)
+          do ipoint = 1, ubound(Dpoints,2)
+
+            ! Get the normal vector in the point from the boundary.
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+            
+            ! Set values for function parser
+            Dvalue(1:ndim) = Dpoints(:, ipoint, iel)
+
+            ! Compute free stream values from function parser given in
+            ! term of the primitive variables [rho,v1,v2,p]
+            do iexpr = 1, 4
+              call fparser_evalFunction(p_rfparser,&
+                  nmaxExpr*(isegment-1)+iexpr, Dvalue, DstateM(iexpr))
+            end do
+
+            ! Compute auxiliary quantities based on free stream state vector
+            rM = DstateM(1)
+            pM = DstateM(4)
+            cM = sqrt(max(GAMMA*pM/rM, SYS_EPSREAL))
+            dvnM =  dnx*DstateM(2)+dny*DstateM(3)
+            dvtM = -dny*DstateM(2)+dnx*DstateM(3)
+
+            ! Compute auxiliary quantities based on internal state vector
+            pI = G1*(Daux2(ipoint,iel,4)-0.5_DP*&
+                     (Daux2(ipoint,iel,2)**2+&
+                      Daux2(ipoint,iel,3)**2))/Daux2(ipoint,iel,1)
+            cI = sqrt(max(GAMMA*pI/Daux2(ipoint,iel,1), SYS_EPSREAL))
+
+            ! Compute the normal and tangential velocities based
+            ! on internal state vector
+            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
+                     dny*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+            dvtI = (-dny*Daux2(ipoint,iel,2)+&
+                     dnx*Daux2(ipoint,iel,3))/Daux2(ipoint,iel,1)
+
+            ! Select free stream or computed Riemann invariant depending
+            ! on the sign of the corresponding eigenvalue
+            if (dvnI .lt. cI) then
+              DstateM(1) = dvnM-G9*cM
+            else
+              DstateM(1) = dvnI-G9*cI
+            end if
+
+            if (dvnI .lt. -cI) then
+              DstateM(2) = dvnM+G9*cM
+            else
+              DstateM(2) = dvnI+G9*cI
+            end if
+
+            if (dvnI .lt. SYS_EPSREAL) then
+              DstateM(3) = pM/(rM**GAMMA)
+              DstateM(4) = dvtM
+            else
+              DstateM(3) = pI/(Daux2(ipoint,iel,1)**GAMMA)
+              DstateM(4) = dvtI
+            end if
+
+            ! Convert Riemann invariants into conservative state variables
+            cM = 0.25_DP*G1*(DstateM(2)-DstateM(1))
+            rM = (cM*cM/(GAMMA*DstateM(3)))**G3
+            pM = rM*cM*cM/GAMMA
+            dvnM = 0.5_DP*(DstateM(1)+DstateM(2))
+            dvtM = DstateM(4)
+
+            ! Setup the state vector based on Riemann invariants
+            DstateM(1) = rM
+            DstateM(2) = rM*( dnx*dvnM+dny*dvtM)
+            DstateM(3) = rM*(-dny*dvnM+dnx*dvtM)
+            DstateM(4) = pM/G1+0.5_DP*(dvnM*dvnM+dvtM*dvtM)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            DstateI(4) = Daux2(ipoint,iel,4)
+            
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
+          end do
+        end do
+
+
+      case (BDRC_EULERWALL_WEAK)
+       
+ !-----------------------------------------------------------------------
+        ! Euler wall boundary condition:
+        
+        do iel = 1, size(rdomainIntSubset%p_Ielements)
+          do ipoint = 1, ubound(Dpoints,2)
+            
+            ! Get the normal vector in the point from the boundary
+            call boundary_getNormalVec2D(rdiscretisation%p_rboundary,&
+                ibct, DpointPar(ipoint,iel), dnx, dny, cparType=BDR_PAR_LENGTH)
+            
+            ! Setup the computed internal state vector
+            DstateI(1) = Daux2(ipoint,iel,1)
+            DstateI(2) = Daux2(ipoint,iel,2)
+            DstateI(3) = Daux2(ipoint,iel,3)
+            DstateI(4) = Daux2(ipoint,iel,4)
+
+            ! Compute the normal and tangential velocities based
+            ! on the internal state vector
+            dvnI = ( dnx*Daux2(ipoint,iel,2)+&
+                     dny*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+            dvtI = (-dny*Daux2(ipoint,iel,2)+&
+                      dnx*Daux2(ipoint,iel,3) )/Daux2(ipoint,iel,1)
+
+            ! Compute the mirrored state vector
+            DstateM(1) = DstateI(1)
+            DstateM(2) = DstateM(1)*(-dvnI*dnx - dvtI*dny)
+            DstateM(3) = DstateM(1)*(-dvnI*dny + dvtI*dnx)
+            DstateM(4) = DstateI(4)
+
+            ! Invoke Riemann solver
+            call doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+            
+            ! Store flux in the cubature points
+            Dcoefficients(:,1,ipoint,iel) = dscale*0.5_DP*(Dflux-Diff)
+          end do
+        end do
+
+      case default
+        call output_line('Invalid type of boundary conditions!',&
+            OU_CLASS_ERROR,OU_MODE_STD,'euler_coeffVectorBdr2d_sim')
+        call sys_halt()
+        
+      end select
+
+      ! Deallocate temporal memory
+      deallocate(Daux2)
+      
+    end if
+
+  contains
+
+    ! Here comes the working routine
+
+    !***************************************************************************
+    ! Approximate Riemann solver along the outward unit normal
+    !***************************************************************************
+
+    subroutine doRiemannSolver(DstateI, DstateM, dnx, dny, Dflux, Diff)
+
+      ! input parameters
+      real(DP), dimension(NVAR2D), intent(in) :: DstateI, DstateM
+      real(DP), intent(in) :: dnx, dny
+
+      ! output parameters
+      real(DP), dimension(NVAR2D), intent(out) :: Dflux, Diff
+
+      ! local variables
+      real(DP) :: uI,vI,ru2I,rv2I,uM,vM,ru2M,rv2M,hI,hM
+      real(DP) :: cPow2,uPow2,vPow2,c_IM,h_IM,q_IM,u_IM,v_IM
+      real(DP) :: l1,l2,l3,l4,w1,w2,w3,w4,aux,aux1,aux2,dveln
+      
+      ! Compute auxiliary quantities
+      uI = DstateI(2)/DstateI(1)
+      vI = DstateI(3)/DstateI(1)
+      ru2I = uI*DstateI(2)
+      rv2I = vI*DstateI(3)
+      
+      ! Compute auxiliary quantities
+      uM = DstateM(2)/DstateM(1)
+      vM = DstateM(3)/DstateM(1)
+      ru2M = uM*DstateM(2)
+      rv2M = vM*DstateM(3)
+
+      ! Calculate $\frac12{\bf n}\cdot[{\bf F}(U_I)+{\bf F}(U_M)]$
+      Dflux(1) = dnx*(DstateI(2)+DstateM(2))+&
+                 dny*(DstateI(3)+DstateM(3))
+      Dflux(2) = dnx*(G1*(DstateI(4)+DstateM(4))-&
+                      G14*(ru2I+ru2M)-&
+                       G2*(rv2I+rv2M))+&
+                 dny*(DstateI(2)*vI+DstateM(2)*vM)
+      Dflux(3) = dnx*(DstateI(3)*uI+DstateM(3)*uM)+&
+                 dny*(G1*(DstateI(4)+DstateM(4))-&
+                      G14*(rv2I+rv2M)-&
+                       G2*(ru2I+ru2M))
+      Dflux(4) = dnx*((GAMMA*DstateI(4)-G2*(ru2I+rv2I))*uI+&
+                      (GAMMA*DstateM(4)-G2*(ru2M+rv2M))*uM)+&
+                 dny*((GAMMA*DstateI(4)-G2*(ru2I+rv2I))*vI+&
+                      (GAMMA*DstateM(4)-G2*(ru2M+rv2M))*vM)
+      
+      ! Compute Roe mean values
+      aux  = sqrt(max(DstateI(1)/DstateM(1), SYS_EPSREAL))
+      u_IM = (aux*uI+uM)/(aux+1.0_DP)
+      v_IM = (aux*vI+vM)/(aux+1.0_DP)
+      hI   = GAMMA*DstateI(4)/DstateI(1)-G2*(uI**2+vI**2)
+      hM   = GAMMA*DstateM(4)/DstateM(1)-G2*(uM**2+vM**2)
+      h_IM =(aux*hI+hM)/(aux+1.0_DP)
+      
+      ! Compute auxiliary variables
+      uPow2 = u_IM*u_IM
+      vPow2 = v_IM*v_IM
+      q_IM  = 0.5_DP*(uPow2+vPow2)
+      cPow2 = max(G1*(H_IM-q_IM), SYS_EPSREAL)
+      c_IM  = sqrt(cPow2)
+
+      ! Compute normal velocity
+      dveln =  dnx*uI+dny*vI
+
+      ! Compute eigenvalues
+      l1 = abs(dveln-c_IM)
+      l2 = abs(dveln)
+      l3 = abs(dveln+c_IM)
+      l4 = abs(dveln)
+      
+      ! Compute solution difference U_M-U_I
+      Diff = DstateM-DstateI
+      
+      ! Compute auxiliary quantities for characteristic variables
+      aux1 = G2/cPow2*(q_IM*Diff(1)-u_IM*Diff(2)-v_IM*Diff(3)+Diff(4))
+      aux2 = 0.5_DP*(aux*Diff(1)-dnx*Diff(2)-dny*Diff(3))/c_IM
+      
+      ! Compute characteristic variables multiplied by the corresponding eigenvalue
+      w1 = l1 * (aux1 + aux2)
+      w2 = l2 * ((1.0_DP-G1*q_IM/cPow2)*Diff(1)+G1*(u_IM*Diff(2)+v_IM*Diff(3)-Diff(4))/cPow2)
+      w3 = l3 * (aux1 - aux2)
+      w4 = l4 * ((dnx*v_IM-dny*u_IM)*Diff(1)+dny*Diff(2)-dnx*Diff(3))
+      
+      ! Compute "R_ij * |Lbd_ij| * L_ij * dU"
+      Diff(1) = w1 + w2 + w3
+      Diff(2) = (u_IM-c_IM*dnx)*w1 + u_IM*w2 + (u_IM+c_IM*dnx)*w3 + dny*w4
+      Diff(3) = (v_IM-c_IM*dny)*w1 + v_IM*w2 + (v_IM+c_IM*dny)*w3 - dnx*w4
+      Diff(4) = (H_IM-c_IM*dveln)*w1  + q_IM*w2 +&
+                (H_IM+c_IM*dveln)*w3  + (u_IM*dny-v_IM*dnx)*w4
+
+    end subroutine doRiemannSolver
+    
+  end subroutine euler_coeffVectorBdr2d_sim
 
   !*****************************************************************************
 

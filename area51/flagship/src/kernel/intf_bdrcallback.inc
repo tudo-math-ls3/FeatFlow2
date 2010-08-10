@@ -36,3 +36,34 @@
   end subroutine fcb_calcBoundaryvalues
 
   end interface
+
+  ! ***************************************************************************
+
+  interface
+
+!<subroutine>
+
+  subroutine fcb_getBdrCondExprNumber(ibdrCondType, ndimension, nexpr)
+
+!<description>
+    ! This subroutine calculates the number of mathematical expressions
+    ! required for boundary conditions of type ibdrCondType in the
+    ! given spatial dimension ndimension.
+!</description>
+
+!<input>
+    ! type of boundary condition
+    integer, intent(in) :: ibdrCondType
+
+    ! number of spatial dimensions
+    integer, intent(in) :: ndimension
+!</input>
+
+!<output>
+    integer, intent(out) :: nexpr
+!</outpu>
+!</subroutine>
+
+  end subroutine fcb_getBdrCondExprNumber
+
+  end interface

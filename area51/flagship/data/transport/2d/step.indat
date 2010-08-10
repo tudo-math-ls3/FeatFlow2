@@ -10,17 +10,14 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol = sin(2*_pi*x) ; x,y,z,t
-
-#if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0) ; x,y,z,t
+deffunc: @initsol = if(x>=0.2 & x<=0.4 & y>=0.2 & y<=0.4,1,0) ; x,y,z,t
 
 # Specify the exact solution
 deffunc: @exactsol = if(x>=0.2+t & x<=0.4+t & y>=0.2+t & y<=0.4+t,1,0) ; x,y,z,t
 
 # Specify the velocity field
 deffunc: @velocity_x = 1.0 ; x,y,z,t
-deffunc: @velocity_y = 0.0 ; x,y,z,t
-#deffunc: @velocity_y = 1.0 ; x,y,z,t
+deffunc: @velocity_y = 1.0 ; x,y,z,t
 
 # Specify the boundary conditions for the primal problem
 # 1. The first item of the parameter section always contains 
@@ -38,10 +35,9 @@ NEXPR
 IBCT
 1
 NCOMP
-2
+1
 PARAMETERS
-1.0  F  1   0.0
-4.0  F  0
+4.0  F  -5  0.0   # zero influx condition
 
 # Specify the boundary conditions for the primal problem
 [boundary_conditions_dual]
@@ -54,4 +50,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  1   0.0
+4.0  F  -5  0.0  # zero influx condition

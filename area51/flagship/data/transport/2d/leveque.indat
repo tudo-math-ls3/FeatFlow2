@@ -50,4 +50,4 @@ IBCT
 NCOMP
 1
 PARAMETERS
-4.0  T  0
+4.0  T  -5  0.0   # zero influx condition
