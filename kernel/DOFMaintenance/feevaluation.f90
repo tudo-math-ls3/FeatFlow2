@@ -1290,10 +1290,10 @@ contains
 !<input>
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(in)                            :: iderType
+  integer, intent(in) :: iderType
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(in)              :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! A list of points where to evaluate. All points must be inside
   ! of element ielement.
@@ -1320,7 +1320,7 @@ contains
 
     ! local variables
     logical :: bnonpar
-    integer :: ipoint,indof,nve,ibas,iel
+    integer :: ipoint,indof,nve,ibas,iel,ivar
     integer(I32) :: celement
     integer, dimension(:), pointer :: p_IelementDistr
     logical, dimension(EL_MAXNDER) :: Bder
@@ -1388,7 +1388,7 @@ contains
       call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     case DEFAULT
       call output_line ('Unsupported vector precision!',&
-          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate')
+          OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim1')
       call sys_halt()
     end select
     
@@ -1473,46 +1473,111 @@ contains
              
     ! Calculate the desired values. We loop over all points and all elements
     if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
-      do iel = 1, size(Ielements)
-        do ipoint = 1,ubound(Dpoints,2)
-      
-          dval = 0.0_DP
+
+      ! Check if vector is stored in interleaved format
+      if (rvectorScalar%NVAR .eq. 1) then
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+
+        do iel = 1, size(Ielements)
+          do ipoint = 1,ubound(Dpoints,2)
+            
+            dval = 0.0_DP
+
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Ddata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues(ipoint,iel) = dval
+            
+          end do ! ipoint
+        end do ! iel
+
+      else
+
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
         
-          ! Now that we have the basis functions, we want to have the function values.
-          ! We get them by multiplying the FE-coefficients with the values of the
-          ! basis functions and summing up.
-          !          
-          ! Calculate the value in the point
-          do ibas = 1,indof
-            dval = dval + p_Ddata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
-          end do
-        
-          ! Save the value in the point
-          Dvalues(ipoint,iel) = dval
-        
-        end do ! ipoint
-      end do ! iel
+        do iel = 1,size(Ielements)
+          do ipoint = 1,ubound(Dpoints,2)
+            do ivar = 1,rvectorScalar%NVAR
+              
+              dval = 0.0_DP
+              
+              ! Calculate the value in the point
+              do ibas = 1,indof
+                dval = dval + p_Ddata((Idofs(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                              Dbas(ibas,iderType,ipoint,iel)
+              end do
+              
+              ! Save the value in the point
+              Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+              
+            end do ! ivar
+          end do ! ipoint
+        end do ! iel
+      end if
 
     else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
-    
-      do iel = 1, size(Ielements)
-        do ipoint = 1,ubound(Dpoints,2)
-          
-          ! Now that we have the basis functions, we want to have the function values.
-          ! We get them by multiplying the FE-coefficients with the values of the
-          ! basis functions and summing up.
-          !
-          ! Calculate the value in the point
-          do ibas = 1,indof
-            dval = dval + p_Fdata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
-          end do
+
+      ! Check if vector is stored in interleaved format
+      if (rvectorScalar%NVAR .eq. 1) then
         
-          ! Save the value in the point
-          Dvalues(ipoint,iel) = dval
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
         
-        end do ! ipoint
-      end do ! iel
-      
+        do iel = 1, size(Ielements)
+          do ipoint = 1,ubound(Dpoints,2)
+
+            dval = 0.0_DP
+
+            ! Calculate the value in the point
+            do ibas = 1,indof
+              dval = dval + p_Fdata(Idofs(ibas,iel)) * Dbas(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues(ipoint,iel) = dval
+            
+          end do ! ipoint
+        end do ! iel
+        
+      else
+        
+        ! Now that we have the basis functions, we want to have the
+        ! function values.  We get them by multiplying the
+        ! FE-coefficients with the values of the basis functions and
+        ! summing up.
+        
+        do iel = 1,size(Ielements)
+          do ipoint = 1,ubound(Dpoints,2)
+            do ivar = 1,rvectorScalar%NVAR
+              
+              dval = 0.0_DP
+              
+              ! Calculate the value in the point
+              do ibas = 1,indof
+                dval = dval + p_Fdata((Idofs(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                              Dbas(ibas,iderType,ipoint,iel)
+              end do
+              
+              ! Save the value in the point
+              Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+              
+            end do ! ivar
+          end do ! ipoint
+        end do ! iel
+      end if
+
     end if
     
     ! Release allocated memory
@@ -1529,7 +1594,7 @@ contains
 !<subroutine>
 
   subroutine fevl_evaluate_sim2 (rvectorScalar, Dcoords, Djac, Ddetj, &
-                  celement, IdofsTrial, npoints,  nelements, Dpoints, iderType,&
+                  celement, IdofsTrial, npoints, nelements, Dpoints, iderType,&
                   Dvalues,ItwistIndexEdges)
                                       
 !<description>
@@ -1548,32 +1613,32 @@ contains
 
 !<input>
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(in)              :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(in)                      :: celement
+  integer(I32), intent(in) :: celement
 
   ! A list of the corner vertices of all elements in progress.
   ! array [1..NDIM2D,1..TRIA_MAXNVE2D,1..Number of elements] of double
-  real(DP), dimension(:,:,:), intent(in)        :: Dcoords
+  real(DP), dimension(:,:,:), intent(in) :: Dcoords
   
   ! The Jacobian matrix of the mapping between the reference and each
   ! real element, for all points on all elements in progress.
   ! array [1..TRAFO_NJACENTRIES,1..npointsPerElement,1..Number of elements]
-  real(DP), dimension(:,:,:),intent(in)         :: Djac
+  real(DP), dimension(:,:,:),intent(in) :: Djac
   
   ! The Jacobian determinant of the mapping of each point from the
   ! reference element to each real element in progress.
   ! array [1..npointsPerElement,1..Number of elements]
-  real(DP), dimension(:,:), intent(in)          :: Ddetj
+  real(DP), dimension(:,:), intent(in) :: Ddetj
   
   ! An array accepting the DOF`s on all elements in the trial space
   ! of the FE function.
   ! DIMENSION(\#local DOF`s in trial space,nelements)
-  integer, dimension(:,:), intent(in)           :: IdofsTrial
+  integer, dimension(:,:), intent(in) :: IdofsTrial
   
   ! Number of points on every element where to evalate the function
   integer, intent(in) :: npoints
@@ -1597,7 +1662,7 @@ contains
 
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(in)                            :: iderType
+  integer, intent(in) :: iderType
 
   ! OPTIONAL: List of twist indices. Defines for every element the
   ! orgientation of the edges.
@@ -1619,7 +1684,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial
   real(DP) :: dval
-  integer :: iel,ipoint,ibas
+  integer :: iel,ipoint,ibas,ivar
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   
@@ -1633,53 +1698,129 @@ contains
   
   ! Evaluate the basis functions
   call elem_generic_sim (celement, Dcoords, Djac, Ddetj, &
-                         Bder, DbasTrial, npoints, nelements, Dpoints,ItwistIndexEdges)  
+      Bder, DbasTrial, npoints, nelements, Dpoints, ItwistIndexEdges)  
   
   if (rvectorScalar%cdataType .eq. ST_DOUBLE) then
   
     ! Get the data array from the vector
     call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Ddata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          
+          dval = 0.0_DP
+
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Ddata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+          
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+          
+        end do ! ipoint
+      end do ! iel
+
+    else
+      
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Ddata((IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
     
   else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
   
     ! Get the data array from the vector
     call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Fdata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+      
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Fdata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
+
+    else
     
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Fdata((IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
+
   else
     call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim2')
     call sys_halt()
   end if
   
@@ -1717,13 +1858,13 @@ contains
   type(t_evalElementSet), intent(in) :: revalElementSet
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(in)              :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! The FE function must be discretised with the same trial functions on all
   ! elements where it should be evaluated here. celement defines the type
   ! of FE trial function that was used for the discretisation on those 
   ! elements that we are concerning here.
-  integer(I32), intent(in)                      :: celement
+  integer(I32), intent(in) :: celement
 
   ! An array accepting the DOF`s on all elements in the trial space
   ! of the FE function.
@@ -1732,7 +1873,7 @@ contains
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(in)                            :: iderType
+  integer, intent(in) :: iderType
 !</input>
 
 !<output>
@@ -1748,7 +1889,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
-  integer :: iel,ipoint,ibas
+  integer :: iel,ipoint,ibas,ivar
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
   
@@ -1770,47 +1911,122 @@ contains
   
     ! Get the data array from the vector
     call lsyssc_getbase_double(rvectorScalar,p_Ddata)
+
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Ddata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Ddata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
+
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+            
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Ddata((IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+            
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if     
     
   else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
   
     ! Get the data array from the vector
     call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Fdata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+      
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Fdata(IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
     
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+          
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Fdata((IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+            
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
+      
   else
     call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim3')
     call sys_halt()
   end if
   
@@ -1851,18 +2067,18 @@ contains
 !<input>
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being evaluated.
-  type(t_domainIntSubset), intent(in)            :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(in)               :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(in)                            :: iderType
+  integer, intent(in) :: iderType
   
   ! Number of the subarray in Dvalues where the result is written to.
   ! The routine writes the resulting values to Dvalues(iterm,:,:).
-  integer, intent(in)                            :: iterm
+  integer, intent(in) :: iterm
 !</input>
 
 !<output>
@@ -1878,7 +2094,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
-  integer :: iel,ipoint,ibas
+  integer :: iel,ipoint,ibas,ivar
   integer(I32) :: celement
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
@@ -1918,46 +2134,118 @@ contains
     ! Get the data array from the vector
     call lsyssc_getbase_double(rvectorScalar,p_Ddata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Ddata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(iterm,ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+      
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the FE-coefficients
+      ! with the values of the basis functions and summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Ddata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(iterm,ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
+
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the FE-coefficients
+      ! with the values of the basis functions and summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Ddata((p_IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues(iterm,(ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
     
   else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
   
     ! Get the data array from the vector
     call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Fdata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(iterm,ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+    
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the FE-coefficients
+      ! with the values of the basis functions and summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+          
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Fdata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(iterm,ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
+
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the FE-coefficients
+      ! with the values of the basis functions and summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+            
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Fdata((p_IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues(iterm,(ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+            
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
     
   else
     call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim4')
     call sys_halt()
   end if
   
@@ -1995,14 +2283,14 @@ contains
 !<input>
   ! This is a t_domainIntSubset structure specifying more detailed information
   ! about the element set that is currently being evaluated.
-  type(t_domainIntSubset), intent(in)            :: rdomainIntSubset
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
 
   ! The scalar solution vector that is to be evaluated.
-  type(t_vectorScalar), intent(in)               :: rvectorScalar
+  type(t_vectorScalar), intent(in) :: rvectorScalar
   
   ! Type of function value to evaluate. One of the DER_xxxx constants,
   ! e.g. DER_FUNC for function values, DER_DERIV_X for x-derivatives etc.
-  integer, intent(in)                            :: iderType
+  integer, intent(in) :: iderType
 !</input>
 
 !<output>
@@ -2018,7 +2306,7 @@ contains
   real(DP), dimension(:,:,:,:), allocatable :: DbasTrial
   integer :: indofTrial,npoints,nelements
   real(DP) :: dval
-  integer :: iel,ipoint,ibas
+  integer :: iel,ipoint,ibas,ivar
   integer(I32) :: celement
   real(DP), dimension(:), pointer :: p_Ddata
   real(SP), dimension(:), pointer :: p_Fdata
@@ -2057,47 +2345,123 @@ contains
   
     ! Get the data array from the vector
     call lsyssc_getbase_double(rvectorScalar,p_Ddata)
+
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Ddata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+          
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Ddata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+          
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+          
+        end do ! ipoint
+      end do ! iel
+
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+      
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar = 1,rvectorScalar%NVAR
+            
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Ddata((p_IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+          
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+          
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
     
   else if (rvectorScalar%cdataType .eq. ST_SINGLE) then
   
     ! Get the data array from the vector
     call lsyssc_getbase_single(rvectorScalar,p_Fdata)
     
-    ! Now that we have the basis functions, we want to have the function values.
-    ! We get them by multiplying the FE-coefficients with the values of the
-    ! basis functions and summing up.
-    do iel=1,nelements
-      do ipoint = 1,npoints
-        ! Calculate the value in the point
-        dval = 0.0_DP
-        do ibas = 1,indofTrial
-          dval = dval + &
-                 p_Fdata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
-        end do
-        ! Save the value in the point
-        Dvalues(ipoint,iel) = dval
-      end do
-    end do
+    ! Check if vector is stored in interleaved format
+    if (rvectorScalar%NVAR .eq. 1) then
+      
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+
+          dval = 0.0_DP
+
+          ! Calculate the value in the point
+          do ibas = 1,indofTrial
+            dval = dval + &
+                   p_Fdata(p_IdofsTrial(ibas,iel)) * DbasTrial(ibas,iderType,ipoint,iel)
+          end do
+
+          ! Save the value in the point
+          Dvalues(ipoint,iel) = dval
+
+        end do ! ipoint
+      end do ! iel
     
+    else
+
+      ! Now that we have the basis functions, we want to have the
+      ! function values.  We get them by multiplying the
+      ! FE-coefficients with the values of the basis functions and
+      ! summing up.
+
+      do iel=1,nelements
+        do ipoint = 1,npoints
+          do ivar =1,rvectorScalar%NVAR
+
+            dval = 0.0_DP
+            
+            ! Calculate the value in the point
+            do ibas = 1,indofTrial
+              dval = dval + &
+                     p_Fdata((p_IdofsTrial(ibas,iel)-1)*rvectorScalar%NVAR+ivar) *&
+                     DbasTrial(ibas,iderType,ipoint,iel)
+            end do
+            
+            ! Save the value in the point
+            Dvalues((ipoint-1)*rvectorScalar%NVAR+ivar,iel) = dval
+
+          end do ! ivar
+        end do ! ipoint
+      end do ! iel
+
+    end if
+
   else
     call output_line('Unsupported vector precision!',&
-      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim')
+      OU_CLASS_ERROR,OU_MODE_STD,'fevl_evaluate_sim5')
     call sys_halt()
   end if
   
