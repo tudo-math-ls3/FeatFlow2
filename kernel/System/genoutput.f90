@@ -718,7 +718,7 @@ contains
     if (cdateTime .ne. OU_DTP_NONE) then
     
       ! Get date and time.
-      call DATE_AND_TIME(sdate,stime)
+      call date_and_time(sdate,stime)
       
       ! Reformat the message.
       select case (cdatetimeLogFormat)
