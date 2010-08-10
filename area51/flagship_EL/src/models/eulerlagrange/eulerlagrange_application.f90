@@ -3966,7 +3966,7 @@ subroutine eulerlagrange_init(rparlist,p_rproblemLevel,rsolution,rtimestep,rcoll
 
         ! Set particle mass
         rParticles%p_mass(iPart)= &
-               rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**3 * 3.14159265358_dp /6.0_dp)
+               rParticles%p_density(iPart)*(rParticles%p_diam(iPart)**2 * 3.14159265358_dp /6.0_dp)
 
         ! Set initial values for the particles
         rParticles%p_xvelo(iPart)= velopartx

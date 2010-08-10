@@ -6328,9 +6328,15 @@ contains
                 ! Compute the dragforce
                 ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
                 F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                        (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))/8.0_dp
                 F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                        (rParticles%p_yvelo(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                        (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                !F_D(1)= (3*rho_g*rParticles%p_mass(iPart)*C_W*Velo_rel)/&
+                !        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
+                !        (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))
+                !F_D(2)= (3*rho_g*rParticles%p_mass(iPart)*C_W*Velo_rel)/&
+                !        (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
+                !        (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))
 
             elseif (trim(cforce) .eq. 'gravity') then
 
