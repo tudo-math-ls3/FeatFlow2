@@ -6167,7 +6167,7 @@ contains
    
     ! Scalar for velocity of the particles and the gas
     real(DP) :: velopartx, veloparty
-    real(DP) :: velogasx, velogasy
+    real(DP) :: velogasx, velogasy, r_gas
     real(DP) :: domscalex, domscaley
      
     ! Variables for the velocity of the gas phase in the corner vertices
@@ -6215,9 +6215,10 @@ contains
     ! Get values for the startingpositions of the particles
     call parlst_getvalue_int(rparlist, 'Eulerlagrange', "isolutionpart", isolutionpart)
 
-    ! Get scalars for scaling the velocity
+    ! Get scalars for scaling the velocity and density
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasx", velogasx)
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "velogasy", velogasy)
+    call parlst_getvalue_double(rparlist, 'Eulerlagrange', "rho_gas", r_gas)
 
     ! Get scalar for scaling the domain
     call parlst_getvalue_double(rparlist, 'Eulerlagrange', "domscalex", domscalex)
@@ -6274,6 +6275,13 @@ contains
 			rParticles%p_lambda2(iPart)*rho_gas(2) + &
 			rParticles%p_lambda3(iPart)*rho_gas(3) 
 
+    ! Scaling of the velocity for physical values
+    rParticles%p_xvelo_gas(iPart)= velogasx*rParticles%p_xvelo_gas(iPart)
+    rParticles%p_yvelo_gas(iPart)= velogasy*rParticles%p_yvelo_gas(iPart)
+
+    ! Scaling for the density for physical values
+    rho_g= r_gas*rho_g
+
     ! Set velocity of the particle in the current psoition
     rParticles%p_xvelo(iPart)= rParticles%p_xvelo_gas(iPart)
     rParticles%p_yvelo(iPart)= rParticles%p_yvelo_gas(iPart)
@@ -6307,13 +6315,13 @@ contains
         ! Re_p= \frac{d_p\ \left|\textbf{u}_g-\textbf{u}_p\right|}{\nu_g}
         ! with \nu_g=\frac{\eta_g}{\rho_g}
         !
-        Re_p= rho_g*0.5_dp*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
+        Re_p= rho_g*rParticles%p_diam(iPart)*Velo_rel/rParticles%nu_g
 
         ! Calculate the drag force coefficient
         if (Re_p<1000) then
 	        C_W= 24.0_dp/Re_p*(1.0_dp+0.15_dp*Re_p**0.687_dp)
         else
-	        C_W= 24.0_dp/Re_p
+	        C_W= 0.44_dp    !24.0_dp/Re_p
         end if
 
         ! Loop over all forces
@@ -6326,11 +6334,7 @@ contains
             if (trim(cforce) .eq. 'dragforce') then
 
                 ! Compute the dragforce
-                ! F_D = C_W * \frac{\pi}{8} * \rho_g * \d_p^2 * v_{rel} * \vec{v}_{rel}
-                !F_D(1)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                !        (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))/8.0_dp
-                !F_D(2)= C_W*c_pi*rho_g*rParticles%p_diam(iPart)**2*Velo_rel*&
-                !        (rParticles%p_yvelo_gas(iPart)-rParticles%p_yvelo_old(iPart))/8.0_dp
+                ! F_D = \frac{3}{4} * \frac{\rho_g}{d\rho_p} * m_p * C_W * v_{rel} * \vec{v}_{rel}
                 F_D(1)= (3*rho_g*C_W*Velo_rel*rParticles%p_mass(iPart))/&
                         (4*rParticles%p_diam(iPart)*rParticles%p_density(iPart))*&
                         (rParticles%p_xvelo_gas(iPart)-rParticles%p_xvelo_old(iPart))
