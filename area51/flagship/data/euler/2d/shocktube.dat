@@ -56,14 +56,14 @@ idissipationtype = 2
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 1
+isystemcoupling = 0
 
 # type of preconditioner
 # 0 = Galerkin scheme
 # 1 = low-order scheme with scalar dissipation
 # 2 = low-order scheme with tensorial dissipation
 # 3 = low-order schemes of Rusanov type
-isystemPrecond = 0
+isystemPrecond = 1
 
 #-------------------------------------------------------------------------------
 
@@ -80,14 +80,11 @@ isystemPrecond = 0
 #      density
 #      pressure
 #      velocity
-slimitingvariable(4) = 
-  density
+slimitingvariable(1) = 
   pressure
-  velocity_x
-  velocity_y
   
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 3
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -162,7 +159,7 @@ imatrixformat = 9
 # type of system format
 # 0 = interleave scalar format
 # 1 = block system
-isystemformat = 1
+isystemformat = 0
 
 #-------------------------------------------------------------------------------
 
@@ -199,7 +196,7 @@ errorestimator = ErrorEstimator
 # 14 = characteristic FEM-FCT
 # 20 = FEM-TVD
 # 21 = FEM-GP
-istabilisation = 1
+istabilisation = 12
 
 # perform prelimiting
 iprelimiting = 1
@@ -318,10 +315,10 @@ depsSteady = 0.0
 ioutputlevel = 2
 
 # minimum multigrid level number
-nlmin = 2
+nlmin = 1
 
 # maximum multigrid level number
-nlmax = 2
+nlmax = 1
 
 # type of multigrid cycle
 # 0 = F-cylce

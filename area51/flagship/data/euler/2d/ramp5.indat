@@ -23,16 +23,19 @@
 ################################################################################
 
 # constants
-defconst: angle = 0.0
+defconst: angle  = 0.0
+defconst: period = 0.05
+defconst: t0     = 15.0
 
 # Specify the initial solution
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
+deffunc: @initsol_rho   = 1.0 ; x,y,z,t
 deffunc: @initsol_vel_x = 2.0*COS(_angle*_PI/180) ; x,y,z,t
 deffunc: @initsol_vel_y = 1.0*SIN(_angle*_PI/180) ; x,y,z,t
-deffunc: @initsol_Etot = 3.78571428571429 ; x,y,z,t
+deffunc: @initsol_Etot  = 3.78571428571429 ; x,y,z,t
 
-# Specify the boundary conditions
-[boundary_conditions_primal]
+# Specify the boundary conditions:
+# Supersonic inflow with constant angle of attach
+[bdrcond_primal_constant]
 NBCT
 1
 NEXPR
@@ -42,8 +45,24 @@ IBCT
 NCOMP
 4
 PARAMETERS
-1.0   T  2
-2.0   F  11
-3.0   F  2
-4.0   T  10   1.0   '2.0*COS(_angle*_PI/180)'   'SIN(_angle*_PI/180)'   0.71428571428571
+2.0  T  'EULERWALL_WEAK'
+3.0  F  'SUPEROUTLET_WEAK'
+5.0  F  'EULERWALL_WEAK'
+6.0  T  'SUPERINLET_WEAK'  '1.0'  '2.0*COS(_angle*_PI/180)'  'SIN(_angle*_PI/180)' '3.78571428571429'
 
+# Specify the boundary conditions
+# Supersonic inflow with periodically changing angle of attack
+[bdrcond_primal_periodic]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+2.0  T  'EULERWALL_WEAK'
+3.0  F  'SUPEROUTLET_WEAK'
+5.0  F  'EULERWALL_WEAK'
+6.0  T  'SUPERINLET_WEAK'  1.0  '(3.0-COS(_period*MAX(0,t-_t0)))*COS(_angle*_PI/180)'  'SIN(_angle*_PI/180)'  '0.71428571428571'

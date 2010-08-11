@@ -19,8 +19,8 @@
 # u=v = 0 (medium at rest)
 
 # Specify the initial solution
-deffunc: @initsol_rho = 200000/287/300 ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_rho  = 200000/287/300 ; x,y,z,t
+deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 500000 ; x,y,z,t
 
 # Specify the boundary conditions
@@ -34,7 +34,7 @@ IBCT
 NCOMP
 4
 PARAMETERS
-66.0  1  2
-67.0  0  6   100000   0.0   0.0   0.0
-68.0  1  2
-69.0  0  2   200000/287/300   0.0   0.0   500000
+66.0  1  'EULERWALL_WEAK'
+67.0  0  'SUBOUTLET_WEAK'  '100000'
+68.0  1  'EULERWALL_WEAK'
+69.0  0  'SUBINLET_WEAK'   '200000/287/300'  '0.0'  '500000'

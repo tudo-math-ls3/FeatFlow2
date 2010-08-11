@@ -29,10 +29,10 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
+deffunc: @initsol_rho   = 1.0 ; x,y,z,t
 deffunc: @initsol_vel_x = 1.0 ; x,y,z,t
 deffunc: @initsol_vel_y = 0.0 ; x,y,z,t
-deffunc: @initsol_Etot = 1.59119116656413/0.4+0.5 ; x,y,z,t
+deffunc: @initsol_Etot  = 1.59119116656413/0.4+0.5 ; x,y,z,t
 
 # Specify the boundary conditions
 [boundary_conditions_primal]
@@ -45,12 +45,23 @@ IBCT
 NCOMP
 4
 PARAMETERS
-3.0  F  2
-4.0  T  4   1.0  1.0  0.0  1.59119116656413
-5.0  F  2
-6.0  T  4   1.0  1.0  0.0  1.59119116656413
+3.0  F  'EULERWALL_WEAK'
+4.0  T  'FREESTREAM_WEAK'  1.0  1.0  0.0  1.59119116656413
+5.0  F  'EULERWALL_WEAK'
+6.0  T  'FREESTREAM_WEAK'  1.0  1.0  0.0  1.59119116656413
 
-3.0  F  2
-4.0  T  6   1.59119116656413 0.0 0.0 0.0
-5.0  F  2
-6.0  T  4   1.0  1.0  0.0  1.59119116656413
+# Specify the boundary conditions
+[boundary_conditions_primal_dummy]
+NBCT
+1
+NEXPR
+4
+IBCT
+1
+NCOMP
+4
+PARAMETERS
+3.0  F  'EULERWALL_WEAK
+4.0  T  'SUBOUTLET_WEAK'  1.59119116656413 0.0 0.0 0.0
+5.0  F  'EULERWALL_WEAK'
+6.0  T  'SUBINLET_WEAK'   1.0  1.0  1.59119116656413

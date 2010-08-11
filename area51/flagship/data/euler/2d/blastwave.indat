@@ -17,8 +17,8 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_rho  = 1.0 ; x,y,z,t
+deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(x < 0.1, 1000.0, if(x > 0.9, 100.0, 0.01)) ; x,y,z,t
 
 # Specify the boundary conditions
@@ -30,16 +30,6 @@ NEXPR
 IBCT
 1
 NCOMP
-4
+1
 PARAMETERS
-1.0 T  0
-2.0 F  0
-3.0 T  0
-4.0 F  0
-
-PARAMETERS
-0.5 T  2
-1.0 T  2
-2.0 F  2
-3.0 T  2
-4.0 F  2
+4.0 T  'EULERWALL_WEAK'

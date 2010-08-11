@@ -26,8 +26,8 @@
 ################################################################################
 
 # Specify the initial solution
-deffunc: @initsol_rho = 1.0 ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_rho  = 1.0 ; x,y,z,t
+deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = 2.5 ; x,y,z,t
 
 # Specify the boundary conditions
@@ -41,7 +41,7 @@ IBCT
 NCOMP
 4
 PARAMETERS
-1.0  T  2
-2.0  T  2
-5.0  F  4    1.0  0.0  0.0  1.0
-6.0  F  10   1.862068449  0.821677818  0.0  2.458332279
+1.0  T  'EULERWALL_WEAK'
+2.0  T  'EULERWALL_WEAK'
+5.0  F  'FREESTREAM_WEAK'  1.0  0.0  0.0  1.0
+6.0  F  'SUPERINLET_WEAK'  1.862068449  0.821677818  0.0  2.458332279

@@ -27,8 +27,8 @@ defconst: y0 = 0.4
 defexpr:  sqr1 = SQRT((x-_x0)^2+(y-_y0)^2)
 
 # Specify the initial solution
-deffunc: @initsol_rho = if(@sqr1 < _r0, 5.0, 1.0) ; x,y,z,t
-deffunc: @initsol_vel = 0.0 ; x,y,z,t
+deffunc: @initsol_rho  = if(@sqr1 < _r0, 5.0, 1.0) ; x,y,z,t
+deffunc: @initsol_vel  = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(@sqr1 < _r0, 12.5, 2.5) ; x,y,z,t
 
 # Specify the boundary conditions
@@ -40,9 +40,6 @@ NEXPR
 IBCT
 1
 NCOMP
-4
+1
 PARAMETERS
-1.0 T 2
-2.0 F 2
-3.0 T 2
-4.0 F 2
+4.0 T 'EULERWALL_WEAK'

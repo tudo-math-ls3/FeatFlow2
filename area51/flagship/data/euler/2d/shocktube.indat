@@ -17,11 +17,6 @@ deffunc: @initsol_rho = if(x < 0.5, 1.0, 0.125) ; x,y,z,t
 deffunc: @initsol_vel = 0.0 ; x,y,z,t
 deffunc: @initsol_Etot = if(x < 0.5, 2.5, 0.25) ; x,y,z,t
 
-#deffunc: @initsol_rho = 1.0 ; x,y,z,t
-#deffunc: @initsol_vel1 = if(x < 0.5, -2.0, 2.0) ; x,y,z,t
-#deffunc: @initsol_vel2 = 0.0 ; x,y,z,t
-#deffunc: @initsol_Etot = 3.0 ; x,y,z,t
-
 # Specify the boundary conditions
 [boundary_conditions_primal]
 NBCT
@@ -31,9 +26,6 @@ NEXPR
 IBCT
 1
 NCOMP
-4
+1
 PARAMETERS
-1.0 T  2
-2.0 F  2
-3.0 T  2
-4.0 F  2
+4.0 T  'EULERWALL_WEAK'

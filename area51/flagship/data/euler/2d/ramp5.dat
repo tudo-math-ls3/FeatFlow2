@@ -23,7 +23,7 @@ application = euler
 ################################################################################
 
 # file which contains the application specific data
-indatfile = data/euler/2d/ramp5_inlet.indat
+indatfile = data/euler/2d/ramp5.indat
 
 # section name of boundary condition for primal problem
 sprimalbdrcondname = boundary_conditions_primal
@@ -55,12 +55,12 @@ imassantidiffusiontype = 0
 # 1 = scalar dissipation (-1 = dimensional splitting)
 # 2 = tensorial dissipation (-2 = dimensional splitting)
 # 3 = Rusanov type (-3 = dimensional splitting)
-idissipationtype = 1
+idissipationtype = 2
 
 # type of system coupling
 # 0 = segregated approach
 # 1 = fully-coupled approach
-isystemcoupling = 0
+isystemcoupling = 1
 
 # type of preconditioner
 # 0 = Galerkin scheme
@@ -82,10 +82,14 @@ isystemPrecond = 2
 #      density
 #      pressure
 #      velocity
-slimitingvariable = density,energy,momentum
+slimitingvariable(4) = 
+  density
+  pressure
+  velocity_x
+  velocity_y
 
 # number of failsafe steps
-nfailsafe = 4
+nfailsafe = 0
 
 # variables for failsafe flux correction
 sfailsafevariable(3) =
@@ -115,6 +119,22 @@ iexactsolutiontype = 0
 
 # section name of exact solution
 sexactsolutionname =
+
+# variables for constrained initialization
+ssolutionconstrainvariable(2) =
+  density
+  pressure
+
+# number of failsafe steps in constrained initialization
+nsolutionfailsafe = 3
+
+# variables for failsafe constrained initialization
+ssolutionfailsafevariable(5) =
+  density
+  pressure
+  velocity_x
+  velocity_y
+  energy
 
 #-------------------------------------------------------------------------------
 
@@ -244,13 +264,13 @@ isolNorm = 0
 theta = 1.0
 
 # number of steps for multisteps scheme
-multisteps = 2
+multisteps = 0
 
 # initial time for the simulation
 dinitialTime = 0.0
 
 # final time for the simulation.
-dfinalTime = 0.0
+dfinalTime = 1.0
 
 # initial time step size
 dinitialStep = 0.001
@@ -297,7 +317,7 @@ depsSteady = 1e-6
 # 2 = errors+warnings
 # 3 = information
 # 4 = verbose output
-ioutputlevel = 3
+ioutputlevel = 2
 
 # minimum multigrid level number
 nlmin = 6
@@ -432,7 +452,7 @@ iresNorm = 0
 nminIterations = 1
 
 # maximum number of nonlinear steps
-nmaxIterations = 10
+nmaxIterations = 25
 
 # preconditioner for the nonlinear solver
 # 1 = block-diagonal preconditioner
@@ -517,7 +537,7 @@ nlmax = 1
 ilmin = 1
 
 # maximum number of linear mg steps
-ilmax = 100
+ilmax = 25
 
 # type of multigrid cycle
 # 0 = F-cylce
@@ -639,7 +659,7 @@ nkrylov = 10
 domega = 1.0
 
 # absolute tolerance for residual
-depsAbs = 1e-14
+depsAbs = 1e-12
 
 # relative tolerance for residual
 depsRel = 1e-2
@@ -690,7 +710,7 @@ dtimeadapt = 0.0
 dstepadapt = 0.0
 
 # maximum number of refinement levels
-nsubdividemax = 3
+nsubdividemax = 0
 
 # adaptation strategy
 # 1 = red-green
