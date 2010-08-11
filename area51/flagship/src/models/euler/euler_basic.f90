@@ -321,6 +321,16 @@ module euler_basic
   integer, parameter, public :: BDRC_SUPEROUTLET_WEAK = 11
   integer, parameter, public :: BDRC_SUPEROUTLET      = -BDRC_SUPEROUTLET_WEAK
 
+  ! Periodic boundary condition (symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_PERIODIC_WEAK = 101
+  integer, parameter, public :: BDRC_PERIODIC      = -BDRC_PERIODIC_WEAK
+
+  ! Periodic boundary condition (anti-symmetric)
+  ! This condition couples two boundary segments periodically
+  integer, parameter, public :: BDRC_ANTIPERIODIC_WEAK = 102
+  integer, parameter, public :: BDRC_ANTIPERIODIC      = -BDRC_ANTIPERIODIC_WEAK
+
 !</constantblock>
 
 !</constants>

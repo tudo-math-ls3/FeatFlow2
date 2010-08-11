@@ -349,7 +349,7 @@ contains
       ! all solution strategies so initialize it from the parameter file
       call bdrc_readBoundaryCondition(rbdrCondPrimal,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, euler_getBdrCondExprNumber)
+          ndimension, euler_parseBoundaryCondition)
 
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then

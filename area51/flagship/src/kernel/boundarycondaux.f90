@@ -159,7 +159,7 @@ contains
 !<subroutine>
 
   subroutine bdrc_readBoundaryCondition(rboundaryCondition, sfilename,&
-      ssectionname, ndimension, fcb_getBdrCondExprNumber, berror)
+      ssectionname, ndimension, fcb_parseBoundaryCondition, berror)
 
 !<description>
     ! This subroutine reads boundary conditions from the parameter
@@ -352,7 +352,11 @@ contains
       
       ! Read parameters from file
       read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-          p_BisSegClosed(icomp), p_IbdrCondType(icomp)
+          p_BisSegClosed(icomp), keyword
+
+      ! Parse type of boundary conditions and number of mathematical expressions
+      call fcb_parseBoundaryCondition(keyword, ndimension,&
+          p_IbdrCondType(icomp), nexpr)
 
       ! Set indicator for weak/strong boundary conditions
       if (p_IbdrCondType(icomp) .lt. 0) then
@@ -363,22 +367,21 @@ contains
 
       ! How many mathematical expressions are required for
       ! this type of boundary conditions?
-      call fcb_getBdrCondExprNumber(p_IbdrCondType(icomp), ndimension, nexpr)
       if (nexpr .eq. 0) then
         ! Set mathematical expressions to zero
         cMathExpression = '0'
       elseif (nexpr .lt. 0) then
-        ! Reread parameters from file and obtain number of periodic boundary segment
+        ! Reread parameters from file and obtain 
+        ! number of periodic boundary segment
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-            p_BisSegClosed(icomp), p_IbdrCondType(icomp),&
+            p_BisSegClosed(icomp), keyword,&
             p_IbdrCompPeriodic(icomp), p_IbdrCondPeriodic(icomp)
       else
         ! Reread parameters from file to obtain mathematical expressions
         backspace iunit
         read(iunit, *, end=8888, ERR=9999) p_DmaxPar(icomp),&
-            p_BisSegClosed(icomp), p_IbdrCondType(icomp),&
-            cMathExpression
+            p_BisSegClosed(icomp), keyword, cMathExpression
       end if
       
       ! Loop over all expressions and apply them to function parser

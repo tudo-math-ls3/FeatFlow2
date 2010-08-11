@@ -43,27 +43,34 @@
 
 !<subroutine>
 
-  subroutine fcb_getBdrCondExprNumber(ibdrCondType, ndimension, nexpr)
+  subroutine fcb_parseBoundaryCondition(cbdrCondType, ndimension,&
+      ibdrCondType, nexpressions)
 
 !<description>
-    ! This subroutine calculates the number of mathematical expressions
-    ! required for boundary conditions of type ibdrCondType in the
-    ! given spatial dimension ndimension.
+    ! This subroutine parses the boundarry condition defined in the
+    ! parameter file. That is, the string cbdrCondType is tansformed
+    ! into an integer value ibdrCondType and the number of
+    ! mathematical expressions corresponding to the given boundary
+    ! type and the spatial dimension ndimension are returned.
 !</description>
 
 !<input>
-    ! type of boundary condition
-    integer, intent(in) :: ibdrCondType
+    ! character string: type of boundary conditions
+    character(len=*), intent(in) :: cbdrCondType
 
     ! number of spatial dimensions
     integer, intent(in) :: ndimension
 !</input>
 
 !<output>
-    integer, intent(out) :: nexpr
+    ! type of boundary condition
+    integer, intent(out) :: ibdrCondType
+
+    ! number of mathematical expressions
+    integer, intent(out) :: nexpressions
 !</outpu>
 !</subroutine>
 
-  end subroutine fcb_getBdrCondExprNumber
+  end subroutine fcb_parseBoundaryCondition
 
   end interface

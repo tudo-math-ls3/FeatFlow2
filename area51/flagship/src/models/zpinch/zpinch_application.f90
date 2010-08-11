@@ -356,7 +356,7 @@ contains
       ! all solution strategies so initialize it from the parameter file
       call bdrc_readBoundaryCondition(p_rbdrCondEuler,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, euler_getBdrCondExprNumber)
+          ndimension, euler_parseBoundaryCondition)
 
       ! Initialize the boundary condition for the transport model
       call parlst_getvalue_string(rparlist, ssectionNameTransport,&
@@ -368,7 +368,7 @@ contains
       ! all solution strategies so initialize it from the parameter file
       call bdrc_readBoundaryCondition(p_rbdrCondTransport,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, transp_getBdrCondExprNumber)
+          ndimension, transp_parseBoundaryCondition)
       
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then

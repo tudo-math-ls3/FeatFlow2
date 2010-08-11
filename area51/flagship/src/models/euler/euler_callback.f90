@@ -65,7 +65,7 @@
 !#      -> Callback routine for the evaluation of linear forms
 !#         using a given FE-solution for interpolation
 !#
-!# 14.) euler_getBdrCondExprNumber
+!# 14.) euler_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
 !# 15.) euler_calcBilfBoundaryConditions
@@ -142,7 +142,7 @@ module euler_callback
   public :: euler_limitEdgewiseMomentum
   public :: euler_coeffVectorFE
   public :: euler_coeffVectorAnalytic
-  public :: euler_getBdrCondExprNumber
+  public :: euler_parseBoundaryCondition
   public :: euler_calcBilfBoundaryConditions
   public :: euler_calcLinfBoundaryConditions
 
@@ -3814,54 +3814,146 @@ contains
 
 !<subroutine>
 
-  subroutine euler_getBdrCondExprNumber(ibdrCondType, ndimension, nexpr)
+  subroutine euler_parseBoundaryCondition(cbdrCondType, ndimension,&
+      ibdrCondType, nexpressions)
 
 !<description>
-    ! This subroutine calculates the number of expressions required for
-    ! boundary condition of type ibdrCondType in given spatial dimension.
+    ! This subroutine parses the boundarry condition defined in the
+    ! parameter file. That is, the string cbdrCondType is tansformed
+    ! into an integer value ibdrCondType and the number of
+    ! mathematical expressions corresponding to the given boundary
+    ! type and the spatial dimension ndimension are returned.
 !</description>
 
 !<input>
-    ! type of boundary condition
-    integer, intent(in) :: ibdrCondType
+    ! character string: type of boundary conditions
+    character(len=*), intent(in) :: cbdrCondType
 
     ! number of spatial dimensions
     integer, intent(in) :: ndimension
 !</input>
 
 !<output>
-    integer, intent(out) :: nexpr
-!</output>
+    ! type of boundary condition
+    integer, intent(out) :: ibdrCondType
+
+    ! number of mathematical expressions
+    integer, intent(out) :: nexpressions
+!</outpu>
 !</subroutine>
 
+    ! Determine type of boundary condition in numeral form
+    select case (sys_upcase(cbdrCondType))
+
+    case ('EULERWALL')
+      ibdrCondType = BDRC_EULERWALL
+
+    case ('EULERWALL_WEAK')
+      ibdrCondType = BDRC_EULERWALL_WEAK
+
+    case ('RLXEULERWALL')
+      ibdrCondType = BDRC_RLXEULERWALL
+
+    case ('RLXEULERWALL_WEAK')
+      ibdrCondType = BDRC_RLXEULERWALL_WEAK
+
+    case ('VISCOUSWALL')
+      ibdrCondType = BDRC_VISCOUSWALL
+
+    case ('VISCOUSWALL_WEAK')
+      ibdrCondType = BDRC_VISCOUSWALL_WEAK
+
+    case ('SUPEROUTLET')
+      ibdrCondType = BDRC_SUPEROUTLET
+
+    case ('SUPEROUTLET_WEAK')
+      ibdrCondType = BDRC_SUPEROUTLET_WEAK
+
+    case ('SUBOUTLET')
+      ibdrCondType = BDRC_SUBOUTLET
+
+    case ('SUBOUTLET_WEAK')
+      ibdrCondType = BDRC_SUBOUTLET_WEAK
+
+    case ('MASSOUTLET')
+      ibdrCondType = BDRC_MASSOUTLET
+
+    case ('MASSOUTLET_WEAK')
+      ibdrCondType = BDRC_MASSOUTLET_WEAK
+      
+    case ('FREESTREAM')
+      ibdrCondType = BDRC_FREESTREAM
+      
+    case ('FREESTREAM_WEAK')
+      ibdrCondType = BDRC_FREESTREAM_WEAK
+
+    case ('SUPERINLET')
+      ibdrCondType = BDRC_SUPERINLET
+
+    case ('SUPERINLET_WEAK')
+      ibdrCondType = BDRC_SUPERINLET_WEAK
+
+    case ('SUBINLET')
+      ibdrCondType = BDRC_SUBINLET
+
+    case ('SUBINLET_WEAK')
+      ibdrCondType = BDRC_SUBINLET_WEAK
+
+    case ('MASSINLET')
+      ibdrCondType = BDRC_MASSINLET
+
+    case ('MASSINLET_WEAK')
+      ibdrCondType = BDRC_MASSINLET_WEAK
+
+    case ('PERIODIC')
+      ibdrCondType = BDRC_PERIODIC
+      
+    case ('PERIODIC_WEAK')
+      ibdrCondType = BDRC_PERIODIC_WEAK
+      
+    case ('ANTIPERIODIC')
+      ibdrCondType = BDRC_ANTIPERIODIC
+      
+    case ('ANTIPERIODIC_WEAK')
+      ibdrCondType = BDRC_ANTIPERIODIC_WEAK
+
+    case default
+      read(cbdrCondType, '(I)') ibdrCondType
+    end select
+
+    
+    ! Determine number of mathematical expressions
     select case (ibdrCondType)
       
     case (BDRC_EULERWALL, BDRC_EULERWALL_WEAK,&
           BDRC_VISCOUSWALL, BDRC_VISCOUSWALL_WEAK,&
           BDRC_SUPEROUTLET, BDRC_SUPEROUTLET_WEAK)
-      nexpr = 0
+      nexpressions = 0
 
     case (BDRC_SUBOUTLET, BDRC_SUBOUTLET_WEAK,&
-          BDRC_MASSOUTLET, BDRC_MASSOUTLET_WEAK)
-      nexpr = 1
+          BDRC_MASSOUTLET, BDRC_MASSOUTLET_WEAK,&
+          BDRC_RLXEULERWALL, BDRC_RLXEULERWALL_WEAK)
+      nexpressions = 1
+     
+    case (BDRC_MASSINLET, BDRC_MASSINLET_WEAK)
+      nexpressions = 2
+
+    case (BDRC_SUBINLET, BDRC_SUBINLET_WEAK)
+      nexpressions = 3
 
     case (BDRC_FREESTREAM, BDRC_FREESTREAM_WEAK,&
           BDRC_SUPERINLET, BDRC_SUPERINLET_WEAK)
-      nexpr = ndimension+2
-
-    case (BDRC_SUBINLET, BDRC_SUBINLET_WEAK,&
-          BDRC_MASSINLET, BDRC_MASSINLET_WEAK)
-      nexpr = 2
-
-!!$    case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
-!!$          BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
-!!$      nexpr = -1
+      nexpressions = ndimension+2
+      
+    case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
+          BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
+      nexpressions = -1
 
     case default
-      nexpr = 0
+      nexpressions = 0
     end select
 
-  end subroutine euler_getBdrCondExprNumber
+  end subroutine euler_parseBoundaryCondition
 
   !*****************************************************************************
 

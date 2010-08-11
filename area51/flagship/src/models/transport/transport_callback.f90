@@ -84,7 +84,7 @@
 !#      -> Callback routine for the evaluation of the weights in
 !#         the target functional for goal-oriented error estimation
 !#
-!# 17.) transp_getBdrCondExprNumber
+!# 17.) transp_parseBoundaryCondition
 !#      -> Callback routine for the treatment of boundary conditions
 !#
 !#
@@ -166,7 +166,7 @@ module transport_callback
   public :: transp_coeffVectorAnalytic
   public :: transp_refFuncAnalytic
   public :: transp_weightFuncAnalytic
-  public :: transp_getBdrCondExprNumber
+  public :: transp_parseBoundaryCondition
 
 contains
 
@@ -4751,45 +4751,104 @@ contains
 
 !<subroutine>
 
-  subroutine transp_getBdrCondExprNumber(ibdrCondType, ndimension, nexpr)
+  subroutine transp_parseBoundaryCondition(cbdrCondType, ndimension,&
+      ibdrCondType, nexpressions)
 
 !<description>
-    ! This subroutine calculates the number of expressions required for
-    ! boundary condition of type ibdrCondType in given spatial dimension.
+    ! This subroutine parses the boundarry condition defined in the
+    ! parameter file. That is, the string cbdrCondType is tansformed
+    ! into an integer value ibdrCondType and the number of
+    ! mathematical expressions corresponding to the given boundary
+    ! type and the spatial dimension ndimension are returned.
 !</description>
 
 !<input>
-    ! type of boundary condition
-    integer, intent(in) :: ibdrCondType
+    ! character string: type of boundary conditions
+    character(len=*), intent(in) :: cbdrCondType
 
     ! number of spatial dimensions
     integer, intent(in) :: ndimension
 !</input>
 
 !<output>
-    integer, intent(out) :: nexpr
-!</output>
+    ! type of boundary condition
+    integer, intent(out) :: ibdrCondType
+
+    ! number of mathematical expressions
+    integer, intent(out) :: nexpressions
+!</outpu>
 !</subroutine>
 
-    select case (ibdrCondType)
+    ! Determine type of boundary condition in numeral form
+    select case (sys_upcase(cbdrCondType))
+
+    case ('HOMNEUMANN')
+      ibdrCondType = BDRC_HOMNEUMANN
+
+    case ('HOMNEUMANN_WEAK')
+      ibdrCondType = BDRC_HOMNEUMANN_WEAK
       
+    case ('INHOMNEUMANN')
+      ibdrCondType = BDRC_INHOMNEUMANN
+
+    case ('INHOMNEUMANN_WEAK')
+      ibdrCondType = BDRC_INHOMNEUMANN_WEAK
+      
+    case ('DIRICHLET')
+      ibdrCondType = BDRC_DIRICHLET
+
+    case ('DIRICHLET_WEAK')
+      ibdrCondType = BDRC_DIRICHLET_WEAK
+
+    case ('ROBIN')
+      ibdrCondType = BDRC_ROBIN
+
+    case ('ROBIN_WEAK')
+      ibdrCondType = BDRC_ROBIN_WEAK
+
+    case ('FLUX')
+      ibdrCondType = BDRC_FLUX
+
+    case ('FLUX_WEAK')
+      ibdrCondType = BDRC_FLUX_WEAK
+
+    case ('PERIODIC')
+      ibdrCondType = BDRC_PERIODIC
+
+    case ('PERIODIC_WEAK')
+      ibdrCondType = BDRC_PERIODIC_WEAK
+
+    case ('ANTIPERIODIC')
+      ibdrCondType = BDRC_ANTIPERIODIC
+
+    case ('ANTIPERIODIC_WEAK')
+      ibdrCondType = BDRC_ANTIPERIODIC_WEAK
+
+    case default
+      read(cbdrCondType, '(I)') ibdrCondType
+    end select
+
+    
+    ! Determine number of mathematical expressions
+    select case (ibdrCondType)
+
     case (BDRC_HOMNEUMANN, BDRC_HOMNEUMANN_WEAK)
-        nexpr = 0
+      nexpressions = 0
       
     case (BDRC_INHOMNEUMANN, BDRC_INHOMNEUMANN_WEAK,&
           BDRC_DIRICHLET, BDRC_DIRICHLET_WEAK,&
           BDRC_ROBIN, BDRC_ROBIN_WEAK,&
           BDRC_FLUX, BDRC_FLUX_WEAK)
-      nexpr = 1
+      nexpressions = 1
 
     case (BDRC_PERIODIC, BDRC_PERIODIC_WEAK,&
           BDRC_ANTIPERIODIC, BDRC_ANTIPERIODIC_WEAK)
-      nexpr = -1
+      nexpressions = -1
 
     case default
-      nexpr = 0
+      nexpressions = 0
     end select
 
-  end subroutine transp_getBdrCondExprNumber
+  end subroutine transp_parseBoundaryCondition
 
 end module transport_callback

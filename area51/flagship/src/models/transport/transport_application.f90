@@ -439,7 +439,7 @@ contains
       ! initialize boundary conditions from the parameter file.
       call bdrc_readBoundaryCondition(rbdrCondPrimal,&
           sindatfileName, '['//trim(sbdrcondName)//']',&
-          ndimension, transp_getBdrCondExprNumber)
+          ndimension, transp_parseBoundaryCondition)
 
       ! What solution algorithm should be applied?
       if (trim(algorithm) .eq. 'transient_primal') then
@@ -466,7 +466,7 @@ contains
             'sdualbdrcondname', sbdrcondName)
         call bdrc_readBoundaryCondition(rbdrCondDual,&
             sindatfileName, '['//trim(sbdrcondName)//']',&
-            ndimension, transp_getBdrCondExprNumber)
+            ndimension, transp_parseBoundaryCondition)
 
         call transp_solveTransientPrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
@@ -501,7 +501,7 @@ contains
             'sdualbdrcondname', sbdrcondName)
         call bdrc_readBoundaryCondition(rbdrCondDual,&
             sindatfileName, '['//trim(sbdrcondName)//']',&
-            ndimension, transp_getBdrCondExprNumber)
+            ndimension, transp_parseBoundaryCondition)
 
         call transp_solvePseudoTransientPrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
@@ -536,7 +536,7 @@ contains
             'sdualbdrcondname', sbdrcondName)
         call bdrc_readBoundaryCondition(rbdrCondDual,&
             sindatfileName, '['//trim(sbdrcondName)//']',&
-            ndimension, transp_getBdrCondExprNumber)
+            ndimension, transp_parseBoundaryCondition)
 
         call transp_solveSteadyStatePrimalDual(rparlist, ssectionName,&
             rbdrCondPrimal, rbdrCondDual, rproblem, rtimestep,&
