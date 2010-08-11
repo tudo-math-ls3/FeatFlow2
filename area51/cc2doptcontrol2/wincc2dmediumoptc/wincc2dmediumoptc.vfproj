@@ -90,7 +90,7 @@
 		<File RelativePath="..\src\timeevaluation.f90"/></Filter>
 		<Filter Name="spacetimesolver">
 		<File RelativePath="..\src\forwardbackwardsimulation.f90"/>
-		<File RelativePath="..\src\linearspacetimesolver.f90"/>
+		<File RelativePath="..\src\spacetimelinearsolver.f90"/>
 		<File RelativePath="..\src\nonlinearoneshotspacetimesolver.f90"/></Filter>
 		<Filter Name="template assembly">
 		<File RelativePath="..\src\assemblytemplatesoptc.f90"/>
