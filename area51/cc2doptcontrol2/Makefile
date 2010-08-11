@@ -14,7 +14,7 @@ SRC = adaptivetimestep.f90 cc2dmediumm2basic.f90 \
   cc2dmediumm2boundary.f90 cc2dmediumm2boundarydef.f90 \
   cc2dmediumm2init.f90     cc2dmediumm2scriptfile.f90 \
   cc2dmediumoptc.f90       cc2dmedium_callback.f90 \
-  cc2dmedium_method2.f90   linearspacetimesolver.f90 \
+  cc2dmedium_method2.f90   spacetimelinearsolver.f90 \
   nonlinearoneshotspacetimesolver.f90 nonstationaryoptcsolver.f90\
   optcanalysis.f90         postprocessing.f90 \
   spacediscretisation.f90  spacematvecassembly.f90\
