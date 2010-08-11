@@ -3444,8 +3444,8 @@ contains
             call lsyssc_releaseVector(relementError)
 
             ! Generate standard mesh from raw mesh
-            call tria_initStandardMeshFromRaw(p_rproblemLevel&
-                %rtriangulation, rproblem%rboundary)
+            call tria_initStandardMeshFromRaw(&
+                p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
             ! Update the template matrix according to the sparsity pattern
             call grph_generateMatrix(rgraph, p_rproblemLevel&
@@ -3663,8 +3663,8 @@ contains
         call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
         ! Generate standard mesh from raw mesh
-        call tria_initStandardMeshFromRaw(p_rproblemLevel&
-            %rtriangulation, rproblem%rboundary)
+        call tria_initStandardMeshFromRaw(&
+            p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
         ! Stop time measurement for generation of the triangulation
         call stat_stopTimer(p_rtimerTriangulation)
@@ -4047,8 +4047,8 @@ contains
       call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel&
-          %rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(&
+          p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(p_rtimerTriangulation)
@@ -4439,8 +4439,8 @@ contains
       call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel&
-          %rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(&
+          p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(p_rtimerTriangulation)
@@ -4740,8 +4740,8 @@ contains
       call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel&
-          %rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(&
+          p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(p_rtimerTriangulation)
@@ -5139,8 +5139,8 @@ contains
       call stat_startTimer(p_rtimerTriangulation, STAT_TIMERSHORT)
 
       ! Generate standard mesh from raw mesh
-      call tria_initStandardMeshFromRaw(p_rproblemLevel&
-          %rtriangulation, rproblem%rboundary)
+      call tria_initStandardMeshFromRaw(&
+          p_rproblemLevel%rtriangulation, rproblem%rboundary)
 
       ! Stop time measurement for generation of the triangulation
       call stat_stopTimer(p_rtimerTriangulation)

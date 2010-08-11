@@ -1126,7 +1126,8 @@ contains
         ! Initialise stabilisation structure
         call gfsys_initStabilisation(&
             rproblemLevel%RmatrixBlock(systemMatrix),&
-            rproblemLevel%Rafcstab(inviscidAFC), nvartransformed)
+            rproblemLevel%Rafcstab(inviscidAFC),&
+            nvartransformed, p_rdiscretisation)
 
       else
         ! Resize stabilisation structure
