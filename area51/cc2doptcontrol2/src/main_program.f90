@@ -1333,6 +1333,8 @@ contains
     ! Initialise log file for output.
     call output_init (rsettings%routput%smsgLog,rsettings%routput%serrorLog)
     OU_LINE_LENGTH = 132
+    cdefaultDateTimeLogPolicy = OU_DTP_ADDDATETIME
+    cdatetimeLogFormat = 1
     
     ! Now we can really start!
     !
