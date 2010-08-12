@@ -2324,7 +2324,7 @@ contains
       ! Compute convective coefficient  $-[(u_i+u_j)/2,1]*C_{ji}$
       DcoefficientsAtEdge(3,iedge) = -dscale*&
           (DmatrixCoeffsAtEdge(1,2,iedge)*&
-          +0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
+           0.5_DP*(DdataAtEdge(1,iedge)+DdataAtEdge(2,iedge))&
           +DmatrixCoeffsAtEdge(2,2,iedge))
       ! Compute artificial diffusion coefficient
       DcoefficientsAtEdge(1,iedge) =&
