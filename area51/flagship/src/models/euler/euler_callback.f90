@@ -3918,7 +3918,7 @@ contains
       ibdrCondType = BDRC_ANTIPERIODIC_WEAK
 
     case default
-      read(cbdrCondType, '(I)') ibdrCondType
+      read(cbdrCondType, '(3I)') ibdrCondType
     end select
 
     
@@ -4089,6 +4089,9 @@ contains
         ! Loop over all boundary segments
         do isegment = p_IbdrCondCpIdx(ibct),&
                       p_IbdrCondCpIdx(ibct+1)-1
+
+	  ! Process only weak boundary conditions
+	  if (p_IbdrCondType(isegment) .lt. 0) cycle
 
           ! Prepare quick access array of temporal collection structure
           rcollectionTmp%DquickAccess(1) = dtime

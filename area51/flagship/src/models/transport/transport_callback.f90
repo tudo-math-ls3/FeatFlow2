@@ -4825,7 +4825,7 @@ contains
       ibdrCondType = BDRC_ANTIPERIODIC_WEAK
 
     case default
-      read(cbdrCondType, '(I)') ibdrCondType
+      read(cbdrCondType, '(3I)') ibdrCondType
     end select
 
     
