@@ -326,7 +326,7 @@ contains
         (rmatrixBlockTemplate%nblocksPerRow .eq. 1)) then
       call gfsys_initStabilisationScalar(&
           rmatrixBlockTemplate%RmatrixBlock(1,1),&
-          rafcstab, NVARtransformed)
+          rafcstab, NVARtransformed, rblockDiscretisation)
       return
     end if
 
