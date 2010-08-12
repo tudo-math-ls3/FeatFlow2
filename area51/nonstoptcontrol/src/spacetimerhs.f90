@@ -81,6 +81,9 @@ contains
     rcollection%DquickAccess(3) = rphysics%doptControlAlpha
     rcollection%DquickAccess(4) = rphysics%doptControlGamma
     rcollection%DquickAccess(5) = dtheta
+    rcollection%DquickAccess(6) = rphysics%dpar
+    rcollection%DquickAccess(7) = rphysics%dcouplePrimalToDual
+    rcollection%DquickAccess(8) = rphysics%dcoupleDualToPrimal
     
     select case (rphysics%cequation)
     case (0,2)

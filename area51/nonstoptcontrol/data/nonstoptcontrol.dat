@@ -47,6 +47,11 @@ cequation = 0
 #      y = t^2   x1 
 #      l = (1-t)^2 x1
 #
+#   creferenceproblem = 7:
+#     wa = exp(dpar*PI^2*t) sin(PI*x1) sin(PI*x2)
+#      y = -1(2+dpar) PI^2 wa(t,x1,x2)
+#      l = wa(t,x1,x2) - wa(1.0,x1,x2)
+#
 # cequation = 1: (2D Stokes equation)
 #
 #   creferenceproblem = 1:
@@ -78,6 +83,11 @@ doptControlGamma = 0.0
 dcouplePrimalToDual = 1.0
 dcoupleDualToPrimal = 1.0
 dcoupleTermCond = 1.0
+
+# Equation-specific parameter.
+# Used e.g. for reference Problem "Heat-equation 7".
+
+dpar = 0.1013211836
 
 [POSTPROC]
 iwriteUCD = 1
@@ -157,7 +167,6 @@ itypeProjection = -1
 
 depsrel = 1E-10
 depsabs = 1E-17
-
 # ONLY MULTIGRID: Type of Cycle.
 # =0: F-cycle, =1: V-cycle, =2: W-cycle
 

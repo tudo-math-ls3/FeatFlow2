@@ -79,6 +79,7 @@ module main_program
   use spatialoperators
   use postprocessing
   use spacetimeinterlevelprojection
+  use timebc
 
   implicit none
 
@@ -765,7 +766,7 @@ contains
       ntstepscoarse = 5*2**(nminleveltime-1) !1 !5*2**(nminleveltime-1)
     
       ! Get parameters
-      call cb_getPhysicsHeatEqn(rparlist,rparams%rphysics)
+      call cb_getPhysics(rparlist,rparams%rphysics)
       
       ! Read boundary and generate mesh hierarchy
       select case (rparams%rphysics%cequation)
@@ -852,7 +853,7 @@ contains
             rparams%p_RspaceTimeBC(ilev))
 
         ! Matrix
-        call stmv_createMatrix (0,ilev,rparams%rspacetimeHierarchy,rparams%rphysics,&
+        call stmat_createMatrix (0,ilev,rparams%rspacetimeHierarchy,rparams%rphysics,&
             rparams%p_RspaceTimeBC(ilev),rparams%p_RmatvecTempl,p_Rmatrices(ilev))
 
       end do
@@ -865,7 +866,7 @@ contains
 
       ! Get the discretisation info of the max. level.
       call sth_getLevel (rparams%rspacetimeHierarchy,rparams%rspacetimeHierarchy%nlevels,&
-        p_rfeSpaceLevel,p_rtimeDiscr)
+          p_rfeSpaceLevel,p_rtimeDiscr)
       p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
       
       ! Create the right hand side.
@@ -880,16 +881,19 @@ contains
         call stls_setMatrix (rlinearSolver%rsolver,ilev,p_Rmatrices(ilev))
       end do
 
-      ! Apply boundary conditions, prepare to solve.    
-      call sptivec_initVector (rtemp,p_rtimeDiscr,p_rspaceDiscr)
+      ! Apply initial/boundary conditions, prepare to solve.    
       call sptivec_initVector (rsolution,p_rtimeDiscr,p_rspaceDiscr)
       call sptivec_clearVector (rsolution)
+
+      call spop_applyInitCondSolRhs(p_Rmatrices(rparams%rspacetimeHierarchy%nlevels),rsolution,rrhs)
       
       call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
           SPOP_RHS, rrhs)
       call spop_applyBC (rparams%p_RspaceTimeBC(rparams%rspacetimeHierarchy%nlevels), &
           SPOP_SOLUTION, rsolution)
-      
+
+      call sptivec_initVector (rtemp,p_rtimeDiscr,p_rspaceDiscr)
+          
       !call sptivec_saveToFileSequence (rrhs,"('ns/rhs_"//&
       !    trim(sys_siL(nminleveltime,2))//"-"//&
       !    trim(sys_siL(ntimelevels,2))//"lv.txt.',I5.5)",.true.)
@@ -940,7 +944,7 @@ contains
       end select
       
       do ilev=1,rparams%rspacetimeHierarchy%nlevels
-        call stmv_releaseMatrix(p_Rmatrices(ilev))
+        call stmat_releaseMatrix(p_Rmatrices(ilev))
         call spop_releaseBC(rparams%p_RspaceTimeBC(ilev))
       end do
 

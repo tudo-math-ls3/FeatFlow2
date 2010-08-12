@@ -205,6 +205,7 @@ contains
           rcollection%DquickAccess(1) = dtime
           rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
           rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
+          rcollection%DquickAccess(4) = rbc%p_rphysics%dpar
           call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
               icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
         end do
@@ -231,6 +232,7 @@ contains
             rcollection%DquickAccess(1) = dtime
             rcollection%DquickAccess(2) = rbc%p_rphysics%doptControlAlpha
             rcollection%DquickAccess(3) = rbc%p_rphysics%doptControlGamma
+            rcollection%DquickAccess(4) = rbc%p_rphysics%dpar
             call bcasm_newDirichletBConRealBd (p_rfeSpaceLevel%p_rdiscretisation, &
                 icomponent, rregion, rdiscreteBC, cb_getBoundaryValuesOptC, rcollection)
           end if
@@ -324,6 +326,20 @@ contains
           call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
               fct_heatLambda6 (0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               fct_heatLambda6 (1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 2)
+        end if
+        
+      case (7)
+        ! 7.)
+        if (icomponent .eq. 1) then
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatY7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatY7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              iequation = 1)
+        else
+          call bcasm_newDirichletBC_1D(p_rfeSpaceLevel%p_rdiscretisation, rdiscreteBC, &
+              fct_heatLambda7 (rbc%p_rphysics%dpar,0.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
+              fct_heatLambda7 (rbc%p_rphysics%dpar,1.0_DP,0.0_DP,dtime,rbc%p_rphysics%doptControlAlpha), &
               iequation = 2)
         end if
         

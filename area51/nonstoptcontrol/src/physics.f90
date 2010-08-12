@@ -62,6 +62,9 @@ module physics
     !
     integer :: creferenceproblem = 0
     
+    ! Equation-specific parameter
+    real(DP) :: dpar
+    
     ! Viscosity parameter
     real(DP) :: dviscosity = 0.0_DP
     

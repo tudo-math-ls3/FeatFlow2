@@ -592,7 +592,7 @@ contains
         p_rfeSpaceLevel => rsolver%p_rspaceTimeHierarchy%p_rfeHierarchy%p_rfeSpaces(ilev)
         p_rspaceDiscr => p_rfeSpaceLevel%p_rdiscretisation
         
-        call stmv_allocSubmatrix (rsolver%p_rmatrix%cmatrixType,&
+        call stmat_allocSubmatrix (rsolver%p_rmatrix%cmatrixType,&
             rsolver%p_rmatrix%p_rphysics,rsolver%p_RmatVecTempl(ilev),&
             rsolver%p_RspaceMatrices(ilev),rsolver%p_RdiscreteBC(ilev))
             
@@ -1571,11 +1571,11 @@ contains
       
       do ilev = 1,ispaceLevel
         ! Assemble diagonal submatrix of that timestep on all levels
-        call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+        call stmat_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
             rsolver%p_RspaceMatrices(ilev))
             
         ! Apply the boundary conditions to the matrix
-        call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+        call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
             ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
             rsolver%p_RdiscreteBC(ilev))
       end do
@@ -1693,10 +1693,10 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(ispaceLevel))
 
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(ispaceLevel))
 
@@ -1708,11 +1708,11 @@ contains
         
         do ilev = 1,ispaceLevel
           ! Assemble diagonal submatrix of that timestep on all levels
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
               rsolver%p_RspaceMatrices(ilev))
               
           ! Apply the boundary conditions to the matrix
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
               rsolver%p_RdiscreteBC(ilev))
         end do
@@ -1725,7 +1725,7 @@ contains
         
         ! Remove the primal part from the matrix
         do ilev = 1,ispaceLevel
-          call stmv_reduceDiagToPrimal (rsolver%p_RspaceMatrices(ilev))
+          call stmat_reduceDiagToPrimal (rsolver%p_RspaceMatrices(ilev))
         end do
         
         ! Apply the space solver
@@ -1765,10 +1765,10 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
               rsolver%p_RspaceMatrices(ispaceLevel))
 
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
               rsolver%p_RdiscreteBC(ispaceLevel))
 
@@ -1780,11 +1780,11 @@ contains
         
         do ilev = 1,ispaceLevel
           ! Assemble diagonal submatrix of that timestep on all levels
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
               rsolver%p_RspaceMatrices(ilev))
               
           ! Apply the boundary conditions to the matrix
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
               rsolver%p_RdiscreteBC(ilev))
         end do
@@ -1797,7 +1797,7 @@ contains
         
         ! Remove the dual part from the matrix
         do ilev = 1,ispaceLevel
-          call stmv_reduceDiagToDual (rsolver%p_RspaceMatrices(ilev))
+          call stmat_reduceDiagToDual (rsolver%p_RspaceMatrices(ilev))
         end do
         
         ! Apply the space solver
@@ -1924,10 +1924,10 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(ispaceLevel))
 
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(ispaceLevel))
 
@@ -1940,10 +1940,10 @@ contains
 !          call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
 !          
 !          ! Subtract the primal.
-!          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
+!          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
 !              rsolver%p_RspaceMatrices(ispaceLevel))
 !
-!          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+!          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
 !              ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
 !              rsolver%p_RdiscreteBC(ispaceLevel))
 !
@@ -1955,11 +1955,11 @@ contains
         
         do ilev = 1,ispaceLevel
           ! Assemble diagonal submatrix of that timestep on all levels
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
               rsolver%p_RspaceMatrices(ilev))
               
           ! Apply the boundary conditions to the matrix
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
               rsolver%p_RdiscreteBC(ilev))
         end do
@@ -2004,10 +2004,10 @@ contains
           call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep-1,rsolver%rspaceTemp2)
           
           ! Subtract the primal.
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep-1, &
               rsolver%p_RspaceMatrices(ispaceLevel))
 
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep-1, &
               rsolver%p_RdiscreteBC(ispaceLevel))
 
@@ -2021,10 +2021,10 @@ contains
             call sptivec_getTimestepData(rsolver%rspaceTimeTemp1,istep+1,rsolver%rspaceTemp2)
             
             ! Subtract the primal.
-            call stmv_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
+            call stmat_getSubmatrix (rsolver%p_rmatrix, ispaceLevel, istep, istep+1, &
                 rsolver%p_RspaceMatrices(ispaceLevel))
 
-            call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+            call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
                 ispaceLevel,rsolver%p_RspaceMatrices(ispaceLevel), istep, istep+1, &
                 rsolver%p_RdiscreteBC(ispaceLevel))
 
@@ -2035,11 +2035,11 @@ contains
         
         do ilev = 1,ispaceLevel
           ! Assemble diagonal submatrix of that timestep on all levels
-          call stmv_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
+          call stmat_getSubmatrix (rsolver%p_rmatrix, ilev, istep, istep, &
               rsolver%p_RspaceMatrices(ilev))
               
           ! Apply the boundary conditions to the matrix
-          call stmv_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
+          call stmat_implementDefBCSubmatrix (rsolver%p_rmatrix%p_rboundaryCond, &
               ilev, rsolver%p_RspaceMatrices(ilev), istep, istep, &
               rsolver%p_RdiscreteBC(ilev))
         end do

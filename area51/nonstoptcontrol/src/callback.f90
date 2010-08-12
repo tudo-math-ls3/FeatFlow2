@@ -18,6 +18,7 @@ module callback
   use spatialdiscretisation
   use boundary
   use discretebc
+  use derivatives
   
   use scalarpde
   use linearformevaluation
@@ -33,7 +34,7 @@ contains
 
   ! ***************************************************************************
 
-  subroutine cb_getPhysicsHeatEqn(rparlist,rphysics)
+  subroutine cb_getPhysics(rparlist,rphysics)
   
   ! Initialises the physics structure for the equation
   
@@ -59,6 +60,8 @@ contains
         "cequation", rphysics%cequation)
     call parlst_getvalue_int (rparlist, "PHYSICS", &
         "creferenceProblem", rphysics%creferenceProblem)
+    call parlst_getvalue_double (rparlist, "PHYSICS", &
+        "dpar", rphysics%dpar)
     call parlst_getvalue_double (rparlist, "PHYSICS", &
         "dviscosity", rphysics%dviscosity)
     call parlst_getvalue_double (rparlist, "PHYSICS", &
@@ -237,6 +240,47 @@ contains
   elemental real(DP) function fct_heatZ6 (dx,dy,dtime,dalpha)
   real(DP), intent(in) :: dx,dy,dtime,dalpha
     fct_heatZ6 = dtime**2*dx-2.0_DP*(1.0_DP-dtime)*dx
+  end function
+
+  ! ***************************************************************************
+  ! Heat equation, function set 7.
+  !   wa = exp(da*PI^2*t) sin(PI*x1) sin(PI*x2)
+  !    y = -1(2+da) PI^2 wa(t,x1,x2)
+  !    l = wa(t,x1,x2) - wa(1.0,x1,x2)
+  ! ***************************************************************************
+
+  elemental real(DP) function fct_eig7 (da,dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+    fct_eig7 = exp(da*SYS_PI**2*dtime) * sin(SYS_PI*dx) * sin(SYS_PI*dy)
+  end function
+
+  elemental real(DP) function fct_heatY7 (da,dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+    fct_heatY7 = -SYS_PI**2/(2.0_DP+da) * fct_eig7 (da,dx,dy,dtime,dalpha)
+  end function
+
+  elemental real(DP) function fct_heatLambda7 (da,dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+    fct_heatLambda7 = fct_eig7 (da,dx,dy,dtime,dalpha) - fct_eig7 (da,dx,dy,1.0_DP,dalpha)
+  end function
+    
+  elemental real(DP) function fct_heatF7 (da,dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+    fct_heatF7 = - ( SYS_PI**4 * dalpha * fct_eig7 (da,dx,dy,dtime,dalpha) - &
+                     fct_eig7 (da,dx,dy,dtime,dalpha) + &
+                     fct_eig7 (da,dx,dy,1.0_DP,dalpha) ) / dalpha
+    !fct_heatF7 = -SYS_PI**4 * fct_eig7 (da,dx,dy,1.0_DP,dalpha)
+  end function
+  
+  elemental real(DP) function fct_heatZ7 (da,dx,dy,dtime,dalpha)
+  real(DP), intent(in) :: da,dx,dy,dtime,dalpha
+    fct_heatZ7 = SYS_PI**2 / (2.0_DP+da) * &
+        ( da**2 * fct_eig7 (da,dx,dy,dtime,dalpha) - &
+          5.0_DP * fct_eig7 (da,dx,dy,dtime,dalpha) + &
+          4.0_DP * fct_eig7 (da,dx,dy,1.0_DP,dalpha) + &
+          2.0_DP * da * fct_eig7 (da,dx,dy,1.0_DP,dalpha) )
+    !fct_heatZ7 = (da**2-2.0_DP)/(1.0_DP+da) * SYS_PI**2 * fct_eig7 (da,dx,dy,dtime,dalpha) + &
+    !    SYS_PI**2*fct_eig7 (da,dx,dy,1.0_DP,dalpha)
   end function
 
   ! ***************************************************************************
@@ -646,6 +690,481 @@ contains
 
   ! ***************************************************************************
 
+!<subroutine>
+
+  subroutine ferrFunction (cderivative, rdiscretisation, &
+                                  nelements, npointsPerElement, Dpoints, &
+                                  IdofsTest, rdomainIntSubset, &
+                                  Dvalues, rcollection)
+  
+  use fsystem
+  use basicgeometry
+  use triangulation
+  use scalarpde
+  use domainintegration
+  use spatialdiscretisation
+  use collection
+  
+!<description>
+  ! Callback function to calculate the error of a FE function to the
+  ! corresponding analytical function.
+!</description>
+  
+!<input>
+  ! This is a DER_xxxx derivative identifier (from derivative.f90) that
+  ! specifies what to compute: DER_FUNC=function value, DER_DERIV_X=x-derivative,...
+  ! The result must be written to the Dvalue-array below.
+  integer, intent(in) :: cderivative
+
+  ! The discretisation structure that defines the basic shape of the
+  ! triangulation with references to the underlying triangulation,
+  ! analytic boundary boundary description etc.
+  type(t_spatialDiscretisation), intent(in) :: rdiscretisation
+  
+  ! Number of elements, where the coefficients must be computed.
+  integer, intent(in) :: nelements
+  
+  ! Number of points per element, where the coefficients must be computed
+  integer, intent(in) :: npointsPerElement
+  
+  ! This is an array of all points on all the elements where coefficients
+  ! are needed.
+  ! DIMENSION(NDIM2D,npointsPerElement,nelements)
+  ! Remark: This usually coincides with rdomainSubset%p_DcubPtsReal.
+  real(DP), dimension(:,:,:), intent(in) :: Dpoints
+
+  ! An array accepting the DOF`s on all elements trial in the trial space.
+  ! DIMENSION(\#local DOF`s in trial space,Number of elements)
+  integer, dimension(:,:), intent(in) :: IdofsTest
+
+  ! This is a t_domainIntSubset structure specifying more detailed information
+  ! about the element set that is currently being integrated.
+  ! It is usually used in more complex situations (e.g. nonlinear matrices).
+  type(t_domainIntSubset), intent(in) :: rdomainIntSubset
+
+  ! Optional: A collection structure to provide additional 
+  ! information to the coefficient routine. 
+  type(t_collection), intent(inout), optional :: rcollection
+  
+!</input>
+
+!<output>
+  ! This array has to receive the values of the (analytical) function
+  ! in all the points specified in Dpoints, or the appropriate derivative
+  ! of the function, respectively, according to cderivative.
+  !   DIMENSION(npointsPerElement,nelements)
+  real(DP), dimension(:,:), intent(out) :: Dvalues
+!</output>
+  
+!</subroutine>
+    integer :: icomponent,cequation,creferenceProblem,ierrType
+    real(DP) :: dtime,dalpha,dpar
+
+    ! Get the settings of the equation
+    icomponent = rcollection%IquickAccess (1)
+    cequation = rcollection%IquickAccess (2)
+    creferenceProblem = rcollection%IquickAccess (3)
+    dtime = rcollection%DquickAccess (1)
+    dalpha = rcollection%DquickAccess (2)
+    dpar = rcollection%DquickAccess (3)
+
+    if (cderivative .eq. DER_FUNC) then
+      ! Select the equation and calculate the error.
+      select case (cequation)
+      case (0,2)
+        ! -------------------------------------------------------------
+        ! Heat equation
+        ! -------------------------------------------------------------
+        select case (icomponent)
+        case (1)
+          !Dvalues(:,:) = dtime*(Dpoints(1,:,:)*Dpoints(2,:,:))
+          !Dvalues(:,:) = 0.0_DP
+          
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+          
+          case (2)
+            ! 2.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (3)
+            ! 3.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (4)
+            ! 4.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (5)
+            ! 5.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (6)
+            ! 6.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (7)
+            ! 7.) -> BC in spacetimebc.f90 beachten!
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatY7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+          
+        case (2)
+          !Dvalues(:,:) = (1.0_DP-dtime)*(Dpoints(1,:,:)*Dpoints(2,:,:))
+          !Dvalues(:,:) = 0.0_DP
+          !Dvalues(:,:) = - (2.0_DP*dtime**2 * Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) 
+          ! +  2.0_DP*dtime**2.0_DP * Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)) )
+          
+          ! For 1D: See BC in spacetimebc.f90!!!
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case (2)
+            ! 2.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+
+          case (3)
+            ! 3.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case (4)
+            ! 4.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case (5)
+            ! 5.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case (6)
+            ! 6.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case (7)
+            ! 7.) 
+            if (ubound(Dpoints,1) .eq. NDIM1D) then
+              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha)
+            else
+              Dvalues(:,:) = fct_heatLambda7 (dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+            end if
+            
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+        case default
+          ! Should not happen
+          call sys_halt()
+        end select
+
+      case (1)
+        ! -------------------------------------------------------------
+        ! Stokes equation
+        ! -------------------------------------------------------------
+        select case (icomponent)
+        
+        ! Primal BC
+        case (1)
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesY1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesY2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesY3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesY4_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesY5_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesY6_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesY7_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+          
+        case (2)
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesY1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesY2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesY3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesY4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesY5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesY6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesY7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+        
+        case (3)
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesP1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesP2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesP3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesP4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesP5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesP6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesP7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+        
+        ! Dual BC
+        case (4)
+        
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesLambda1_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesLambda2_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesLambda3_x (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesLambda4_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesLambda5_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesLambda6_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesLambda7_x(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+          
+        case (5)
+        
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesLambda1_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesLambda2_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+          
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesLambda3_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesLambda4_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesLambda5_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesLambda6_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesLambda7_y (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+        
+        case (6)
+        
+          select case (creferenceProblem)
+          case (0)
+          case (1)
+            ! 1.)
+            Dvalues(:,:) = fct_stokesXi1 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (2)
+            ! 2.)
+            Dvalues(:,:) = fct_stokesXi2 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (3)
+            ! 3.)
+            Dvalues(:,:) = fct_stokesXi3 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (4)
+            ! 4.)
+            Dvalues(:,:) = fct_stokesXi4 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (5)
+            ! 5.)
+            Dvalues(:,:) = fct_stokesXi5 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (6)
+            ! 6.)
+            Dvalues(:,:) = fct_stokesXi6 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case (7)
+            ! 7.)
+            Dvalues(:,:) = fct_stokesXi7 (Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)
+
+          case default
+            call output_line ("Problem not supported.")
+            call sys_halt()
+          end select
+        
+        case default
+          ! Should not happen
+          call sys_halt()
+        end select
+        
+      case default
+      
+        call output_line ("Equation not supported.")
+        call sys_halt()
+        
+      end select
+
+    else
+    
+      call output_line ("only function values supported.")
+      call sys_halt()
+      
+    end if
+
+  end subroutine 
+  
+  ! ***************************************************************************
+
   subroutine rhs_heatEquation (rdiscretisation, rform, &
                 nelements, npointsPerElement, Dpoints, &
                 IdofsTest, rdomainIntSubset, &
@@ -661,11 +1180,12 @@ contains
   integer, dimension(:,:), intent(in) :: IdofsTest
   type(t_domainIntSubset), intent(in) :: rdomainIntSubset    
   type(t_collection), intent(inout), optional :: rcollection
+  real(DP) :: dcouplePrimalToDual,dcoupleDualToPrimal
 
   real(DP), dimension(:,:,:), intent(out) :: Dcoefficients
   
     integer :: icomponent,creferenceProblem,ithetaschemetype
-    real(DP) :: dtime,dalpha,dtstep,dgamma,dtheta
+    real(DP) :: dtime,dalpha,dtstep,dgamma,dtheta,dpar
     
     icomponent = rcollection%IquickAccess(1)
     creferenceProblem = rcollection%IquickAccess(2)
@@ -675,6 +1195,9 @@ contains
     dalpha = rcollection%DquickAccess(3)
     dgamma = rcollection%DquickAccess(4)
     dtheta = rcollection%DquickAccess(5)
+    dpar = rcollection%DquickAccess(6)
+    dcouplePrimalToDual = rcollection%DquickAccess(7)
+    dcoupleDualToPrimal = rcollection%DquickAccess(8)
     
     Dcoefficients(1,:,:) = 0.0_DP
     
@@ -690,7 +1213,8 @@ contains
         !                     + ((1.0_DP-dtime)/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
         !Dcoefficients(1,:,:) = 2*dtime*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) &
-        !                     + 2*dtime**2*(Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)))        !                     + ((1.0_DP-dtime)**2/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
+        !                     + 2*dtime**2*(Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:)) + Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:)))        
+        !                     + ((1.0_DP-dtime)**2/dalpha)*Dpoints(1,:,:)*(1.0_DP-Dpoints(1,:,:))*Dpoints(2,:,:)*(1.0_DP-Dpoints(2,:,:))
         
         select case (creferenceProblem)
         case (0)
@@ -740,6 +1264,17 @@ contains
             Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
           else
             Dcoefficients(1,:,:) = fct_heatF6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
+          end if
+
+        case (7)
+          ! 7.)
+          if (ubound(Dpoints,1) .eq. NDIM1D) then
+            Dcoefficients(1,:,:) = fct_heatF7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha) 
+          else
+            Dcoefficients(1,:,:) = &
+              -(1.0_DP-dcoupleDualToPrimal)/dalpha * &
+                (fct_heatLambda7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)) &
+              + fct_heatF7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) 
           end if
 
         case default
@@ -825,6 +1360,18 @@ contains
         else
           Dcoefficients(1,:,:) = &
             - (fct_heatZ6(Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
+        end if
+
+      case (7)
+        ! 7.)
+        if (ubound(Dpoints,1) .eq. NDIM1D) then
+          Dcoefficients(1,:,:) = &
+            - (fct_heatZ7(dpar,Dpoints(1,:,:),0.0_DP,dtime,dalpha) )
+        else
+          Dcoefficients(1,:,:) = &
+            (1.0_DP-dcouplePrimalToDual) * &
+                (fct_heatY7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha)) &
+            - (fct_heatZ7(dpar,Dpoints(1,:,:),Dpoints(2,:,:),dtime,dalpha) )
         end if
 
       case default
@@ -1092,7 +1639,7 @@ contains
     ! To get the X/Y-coordinates of the boundary point, use:
     !
     real(DP) :: dx,dy
-    real(DP) :: dtime,dalpha
+    real(DP) :: dtime,dalpha,dpar
     integer :: icomponent,cequation,creferenceProblem
     
     icomponent = rcollection%IquickAccess(1)
@@ -1100,6 +1647,7 @@ contains
     creferenceProblem = rcollection%IquickAccess(3)
     dtime = rcollection%DquickAccess(1)
     dalpha = rcollection%DquickAccess(2)
+    dpar = rcollection%DquickAccess(4)
     
     if (rdiscretisation%p_rtriangulation%ndim .eq. NDIM2D) then
       call boundary_getCoords(rdiscretisation%p_rboundary, &
@@ -1147,6 +1695,10 @@ contains
           ! 6.) -> BC in spacetimebc.f90 beachten!
           Dvalues(1) = fct_heatY6 (dx,dy,dtime,dalpha)
 
+        case (7)
+          ! 6.) -> BC in spacetimebc.f90 beachten!
+          Dvalues(1) = fct_heatY7 (dpar,dx,dy,dtime,dalpha)
+
         case default
           call output_line ("Problem not supported.")
           call sys_halt()
@@ -1183,6 +1735,10 @@ contains
         case (6)
           ! 6.) 
           Dvalues(1) = fct_heatLambda6 (dx,dy,dtime,dalpha)
+          
+        case (7)
+          ! 6.) 
+          Dvalues(1) = fct_heatLambda7 (dpar,dx,dy,dtime,dalpha)
           
         case default
           call output_line ("Problem not supported.")
