@@ -198,6 +198,13 @@ sedscript="${sedscript} s|//|/=%/~|g; s|/\*|/=%*~|g;"
 # How do I handle Unix shell quoting in sed?)
 sedscript="${sedscript} s|\([# ]include [<"\""']\).*/\([^/]*[>"\""']\)|\1\2|;"
 
+# Sed command (4) to hide all LaTeX forced line breaks (\\) and ASCII art
+# ending in a backslash from the C preprocessor. Especially from
+# version >= 4.5.0.
+#
+# Whenever changing the token \=%/~~, please do not forget to update all
+# occurences in kernel/feastcppmacros.h!
+sedscript="${sedscript} s|\\\\[ 	]*$|\\\\=%/~~|g;"
 
 # Replaces calls of error_print() with a version that automatically
 # inserts file name and line number of calling position.
@@ -277,7 +284,7 @@ fi
 # Postprocess preprocessor output
 # (particularly remove the absolute path to the source file as it likely
 #  blows the 132 character limit the Fortran 90/95 standard imposes)
-perl -pe "s/MYNEWLINE/\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
+perl -pe "s/MYNEWLINE/\n/g; s%${objdir}/%%g; s|\. TRUE \.|.TRUE.|g; s|\. FALSE \.|.FALSE.|g; s|\/=%\/~|//|g; s|\/=%\*~|/*|g; s|\\\\=%/~~$|\\\\|; s/= >/=>/g;" < ${preprocessedfile}".$$" | \
     awk -f ../../bin/postprocess_cppoutput.awk | \
     sed 's/^\#/!\#/g;' > ${preprocessedfile}
 
