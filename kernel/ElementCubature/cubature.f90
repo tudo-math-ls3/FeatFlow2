@@ -384,7 +384,7 @@ contains
   !****************************************************************************
 
 !<function>  
-  integer function cub_igetID(scubName)
+  integer(I32) function cub_igetID(scubName)
   
 !<description>
   ! This routine returns the cubature id to a given cubature formula name. It is 
