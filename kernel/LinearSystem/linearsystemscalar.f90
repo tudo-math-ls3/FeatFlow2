@@ -760,6 +760,8 @@ module linearsystemscalar
   interface lsyssc_createVector
     module procedure lsyssc_createVectorDefault
     module procedure lsyssc_createVectorIntl
+    module procedure lsyssc_createVecByDiscrDefault
+    module procedure lsyssc_createVecByDiscrIntl
   end interface
 
   interface lsyssc_createVecByDiscr
@@ -814,7 +816,9 @@ module linearsystemscalar
   public :: lsyssc_clearVector
   public :: lsyssc_vectorLinearComb
   public :: lsyssc_copyMatrix
-  public :: lsyssc_transposeMatrix, lsyssc_transposeMatrixInSitu, lsyssc_transposeMatrixDirect
+  public :: lsyssc_transposeMatrix
+  public :: lsyssc_transposeMatrixInSitu
+  public :: lsyssc_transposeMatrixDirect
   public :: lsyssc_allocEmptyMatrix
   public :: lsyssc_lumpMatrixScalar
   public :: lsyssc_scaleMatrix

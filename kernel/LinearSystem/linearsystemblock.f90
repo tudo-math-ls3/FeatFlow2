@@ -442,12 +442,14 @@ module linearsystemblock
     module procedure lsysbl_createVecBlockDirect 
     module procedure lsysbl_createVecBlockDirectDims
     module procedure lsysbl_createVecBlockIndirect 
+    module procedure lsysbl_createVecBlockIndMat
     module procedure lsysbl_createVecBlockByDiscr
   end interface
 
   public :: lsysbl_createVectorBlock
   public :: lsysbl_createVecBlockDirect
   public :: lsysbl_createVecBlockIndirect
+  public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createVecBlockByDiscr
 
   interface lsysbl_resizeVectorBlock
@@ -481,8 +483,6 @@ module linearsystemblock
   end interface
 
   public :: lsysbl_invertedDiagMatVec
-  
-  public :: lsysbl_createVecBlockIndMat
   public :: lsysbl_createMatFromScalar
   public :: lsysbl_createVecFromScalar
   public :: lsysbl_createMatBlockByDiscr
