@@ -69,7 +69,7 @@ module hadaptivity
   use hadaptaux
   use hadaptaux1d
   use hadaptaux2d
-  use hadaptaux3d
+!!$  use hadaptaux3d
   use io
   use list
   use octree
